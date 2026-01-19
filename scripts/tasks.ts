@@ -16,13 +16,6 @@ const VV_IMAGE = "voicevox/voicevox_engine:cpu-ubuntu20.04-latest";
 const VV_PORT = "50121";
 
 TASKS["voicevox:start"] = () => {
-    // Fail fast if this fails, or use '|| true' in shell if ignoring is desired.
-    // Assuming cleaner to just run it. If it fails (e.g. doesn't exist), we might want to ignore.
-    // But per instructions: "Delete try-except".
-    // We can use ignore stdio to suppress output, but if it throws, it throws.
-    // For idempotency, 'docker rm -f' handles non-existence if we don't throw.
-    // But execSync throws on non-zero exit.
-    // To allow idempotent cleanup without try-catch, we could use spawnSync which returns status.
     spawnSync("docker", ["rm", "-f", VV_CONTAINER], { stdio: 'ignore' });
 
     runCmd("docker", ["pull", VV_IMAGE], { stdio: 'ignore' });
@@ -73,8 +66,6 @@ TASKS["up"] = () => {
 };
 
 TASKS["down"] = () => {
-    // Use pkill directly; if it fails (no process), it fails.
-    // Or use spawnSync to avoid throwing.
     spawnSync("pkill", ["-f", "aim up"]);
     TASKS["voicevox:stop"]();
     spawnSync("pkill", ["-f", "discord_news_bot"]);
@@ -82,7 +73,6 @@ TASKS["down"] = () => {
 };
 
 TASKS["status"] = () => {
-    // Using spawnSync to just output directly without throw if grep fails
     const ps = spawnSync("sh", ["-c", "ps aux | grep -E \"(aim|discord_news_bot)\" | grep -v grep"], { encoding: 'utf-8' });
     if (ps.stdout) console.log(ps.stdout);
     else console.log("No local services running.");

@@ -31,3 +31,23 @@ tasks:
 
   cron:
     cmds: [npx tsx scripts/tasks.ts cron]
+
+  director:
+    cmds: ["npx tsx src/step.ts director {{.CLI_ARGS}}"]
+    desc: "Run director agent. Args: [run_id|latest|new] [bucket]"
+
+  reporter:
+    cmds: ["npx tsx src/step.ts reporter {{.CLI_ARGS}}"]
+    desc: "Run reporter agent. Args: [run_id|latest]"
+
+  script:
+    cmds: ["npx tsx src/step.ts script {{.CLI_ARGS}}"]
+    desc: "Run script agent. Args: [run_id|latest]"
+
+  audio:
+    cmds: ["npx tsx src/step.ts audio {{.CLI_ARGS}}"]
+    desc: "Run audio agent. Args: [run_id|latest]"
+
+  video:
+    cmds: ["npx tsx src/step.ts video {{.CLI_ARGS}}"]
+    desc: "Run video agent. Args: [run_id|latest]"

@@ -14,35 +14,44 @@ ROOTにファイルを生成しない。適切なディレクトリに追加し�
     - `graph.ts`: LangGraph `StateGraph` definition.
     - `models.ts`: Zod schemas & Types.
     - `state.ts`: `AgentState` interface.
-    - `config.ts`: Configuration and prompt loader.
-    - `utils.ts`: Minimal utilities.
-    - `agents/*.ts`: Agent implementations.
+    - `config.ts`: Configuration, Prompt loader, LLM Factory.
+    - `utils.ts`: Parsers and helpers.
+    - **agents/**:
+        - `base.ts`: **BaseAgent** (Shared LLM logic).
+        - `director.ts`: **DirectorAgent** (Strategy/Research).
+        - `reporter.ts`: **ReporterAgent** (Web Search/News).
+        - `script.ts`: **ScriptAgent** (Content Generation).
+        - `audio.ts`, `video.ts`: Media processing.
 
 - **config/**: YAML configuration.
     - `default.yaml`: Application settings.
 
 - **prompts/**: Prompt templates (YAML).
-    - `trend.yaml`, `director.yaml`, `knowledge.yaml`, `script.yaml`, `news.yaml`
+    - `director.yaml`: Strategy prompting.
+    - `reporter.yaml`: Search extraction.
+    - `script.yaml`: Script generation.
 
 - **scripts/**: Automation & Bots (TypeScript).
+    - `tasks.ts`: Task runner.
 
 ## Build & Run
 
 - `task bootstrap` — complete setup (npm install).
 - `task run` — run workflow: `task run -- "Topic"`
-- `task check` — type check (`tsc`).
+- `task lint` — type check (`tsc`).
 - `task up/down` — start/stop services.
 
 ## Coding Rules
 
 1. **No Comments**: Self-explanatory code only.
 2. **Config-Driven**: Use `loadPrompt()` and `loadConfig()`.
-3. **No Error Handling**: Fail fast.
-4. **Pure Functions**: Nodes should be stateless.
+3. **Fail Fast**: No redundant `try-catch` blocks. Let errors bubble up.
+4. **Inheritance**: All LLM agents MUST extend `BaseAgent` to reuse logic.
+5. **Pure Functions**: Graph nodes should be stateless wrappers around Agents.
 
 ## Technologies
 
 - **LangGraph.js**: Workflow orchestration.
-- **Gemini**: LLM for generation.
+- **Gemini**: LLM for generation (via `BaseAgent`).
 - **Voicevox**: TTS engine.
 - **FFmpeg**: Video rendering.
