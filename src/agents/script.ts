@@ -25,8 +25,8 @@ export class ScriptAgent extends BaseAgent {
                 speaker: seg.speaker, text: seg.text, duration: 0.0,
             }));
             return {
-                title: news[0]?.title || "News",
-                description: "",
+                title: data.title || (news[0]?.title || "News"),
+                description: data.description || "",
                 lines: lines,
                 total_duration: 0.0,
             };

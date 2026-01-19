@@ -2,18 +2,7 @@
 import yaml from "js-yaml";
 
 export function cleanCodeBlock(text: string): string {
-    let cleaned = text.trim();
-    if (cleaned.startsWith("```")) {
-        const lines = cleaned.split("\n");
-        if (lines.length > 1) {
-            cleaned = lines.slice(1).join("\n");
-        }
-        cleaned = cleaned.replace(/```$/, "");
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length - 3);
-        }
-    }
-    return cleaned.trim();
+    return (text ?? "").trim().replace(/^```[a-z]*\n/, "").replace(/```$/, "").trim();
 }
 
 type Parser<T> = (text: string) => T;

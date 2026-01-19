@@ -29,14 +29,7 @@ export class DirectorAgent extends BaseAgent {
         const user = cfg.user_template.replace("{category}", category);
 
         return this.runLlm(system, user, (text) => {
-            const parsed = parseLlmJson<any>(text);
-            return (!parsed || Object.keys(parsed).length === 0) ? {
-                topic: category,
-                angle: "STRUCTURAL",
-                title_hook: category,
-                search_query: category,
-                key_questions: [],
-            } : parsed;
+            return parseLlmJson<any>(text);
         });
     }
 }

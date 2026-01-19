@@ -1,94 +1,85 @@
 
-import { StateGraph, END } from "@langchain/langgraph";
-import { AgentState } from "./state.js";
+import { StateGraph } from "@langchain/langgraph";
 import { AssetStore } from "./asset.js";
 import { DirectorAgent } from "./agents/director.js";
 import { ReporterAgent } from "./agents/reporter.js";
 import { ScriptAgent } from "./agents/script.js";
 import { AudioAgent } from "./agents/audio.js";
 import { VideoAgent } from "./agents/video.js";
+import { ThumbnailAgent } from "./agents/thumbnail.js";
+import { MetadataAgent } from "./agents/metadata.js";
+import { AgentState } from "./state.js";
 
-// Define channels for StateGraph
-const channels = {
-    run_id: { reducer: (x: string, y: string) => y || x, default: () => "" },
-    bucket: { reducer: (x: string, y: string) => y || x, default: () => "General" },
-    limit: { reducer: (x: number, y: number) => y ?? x, default: () => 3 },
-    news: { reducer: (x: any, y: any) => y || x, default: () => [] },
-    script: { reducer: (x: any, y: any) => y || x, default: () => undefined },
-    audio_paths: { reducer: (x: any, y: any) => y || x, default: () => [] },
-    video_path: { reducer: (x: string, y: string) => y || x, default: () => "" },
-    status: { reducer: (x: string, y: string) => y || x, default: () => "" },
-    research_data: { reducer: (x: any, y: any) => y || x, default: () => ({}) },
-    trend_data: { reducer: (x: any, y: any) => y || x, default: () => ({}) },
-    director_data: { reducer: (x: any, y: any) => y || x, default: () => ({}) },
-    knowledge_context: { reducer: (x: any, y: any) => y || x, default: () => ({}) },
+const channels: any = {
+    run_id: { reducer: (x: string, y: string) => y, default: () => "" },
+    bucket: { reducer: (x: string, y: string) => y, default: () => "General" },
+    limit: { reducer: (x: number, y: number) => y, default: () => 3 },
+    news: { reducer: (x: any, y: any) => y, default: () => [] },
+    script: { reducer: (x: any, y: any) => y, default: () => undefined },
+    metadata: { reducer: (x: any, y: any) => y, default: () => undefined },
+    audio_paths: { reducer: (x: string[], y: string[]) => [...x, ...y], default: () => [] },
+    video_path: { reducer: (x: string, y: string) => y, default: () => "" },
+    thumbnail_path: { reducer: (x: string, y: string) => y, default: () => "" },
+    status: { reducer: (x: string, y: string) => y, default: () => "idle" },
 };
 
-export function createGraph() {
-    // Node definitions
-    async function researchNode(state: AgentState) {
-        const store = new AssetStore(state.run_id);
-        const agent = new DirectorAgent(store);
-        const category = state.bucket;
-        const result = await agent.run(category);
-        return {
-            director_data: result,
-            bucket: result.search_query || category
-        };
-    }
+export function createGraph(store: AssetStore) {
+    const director = new DirectorAgent(store);
+    const reporter = new ReporterAgent(store);
+    const scriptAgent = new ScriptAgent(store);
+    const audioAgent = new AudioAgent(store);
+    const videoAgent = new VideoAgent(store);
+    const thumbnailAgent = new ThumbnailAgent(store);
+    const metadataAgent = new MetadataAgent(store);
 
-    async function searchNode(state: AgentState) {
-        const store = new AssetStore(state.run_id);
-        const agent = new ReporterAgent(store);
-        const query = state.bucket;
-        const items = await agent.run(query, state.limit || 3);
-        return { news: items };
-    }
+    const workflow = new StateGraph<AgentState>({ channels });
 
-    async function scriptNode(state: AgentState) {
-        const store = new AssetStore(state.run_id);
-        const agent = new ScriptAgent(store);
-        const script = await agent.run(
-            state.news || [],
-            state.director_data || {},
-            state.knowledge_context || {}
-        );
+    workflow.addNode("director", async (state) => {
+        const data = await director.run(state.bucket);
+        return { director_data: data };
+    });
+
+    workflow.addNode("reporter", async (state) => {
+        const news = await reporter.run(state.bucket, state.limit);
+        return { news };
+    });
+
+    workflow.addNode("script", async (state) => {
+        const script = await scriptAgent.run(state.news, state.director_data);
         return { script };
-    }
+    });
 
-    async function audioNode(state: AgentState) {
-        const store = new AssetStore(state.run_id);
-        const agent = new AudioAgent(store);
-        if (!state.script) throw new Error("No script generated");
-        const paths = await agent.run(state.script);
+    workflow.addNode("metadata", async (state) => {
+        const metadata = await metadataAgent.run(state.news, state.script);
+        return { metadata };
+    });
+
+    workflow.addNode("audio", async (state) => {
+        const paths = await audioAgent.run(state.script);
         return { audio_paths: paths };
-    }
+    });
 
-    async function videoNode(state: AgentState) {
-        const store = new AssetStore(state.run_id);
-        const agent = new VideoAgent(store);
-        if (!state.audio_paths) throw new Error("No audio paths generated");
-        const path = await agent.run(state.audio_paths);
+    workflow.addNode("thumbnail", async (state) => {
+        // Use thumbnail_title from metadata if available
+        const scriptForThumb = { ...state.script, title: state.metadata?.thumbnail_title || state.script.title };
+        const path = await thumbnailAgent.run(scriptForThumb);
+        return { thumbnail_path: path };
+    });
+
+    workflow.addNode("video", async (state) => {
+        const path = await videoAgent.run(state.audio_paths, state.thumbnail_path);
         return { video_path: path, status: "completed" };
-    }
+    });
 
-    // Build workflow
-    const workflow = new StateGraph<AgentState>({
-        channels: channels as any
-    })
-        .addNode("director", researchNode)
-        .addNode("reporter", searchNode)
-        .addNode("script", scriptNode)
-        .addNode("audio", audioNode)
-        .addNode("video", videoNode)
-
-        // Edges
-        .addEdge("__start__", "director")
-        .addEdge("director", "reporter")
-        .addEdge("reporter", "script")
-        .addEdge("script", "audio")
-        .addEdge("audio", "video")
-        .addEdge("video", "__end__");
+    workflow.addEdge("__start__", "director");
+    workflow.addEdge("director", "reporter");
+    workflow.addEdge("reporter", "script");
+    workflow.addEdge("script", "metadata");
+    workflow.addEdge("metadata", "audio");
+    workflow.addEdge("metadata", "thumbnail");
+    workflow.addEdge("audio", "video");
+    workflow.addEdge("thumbnail", "video");
+    workflow.addEdge("video", "__end__");
 
     return workflow.compile();
 }

@@ -52,6 +52,6 @@ ROOTにファイルを生成しない。適切なディレクトリに追加し�
 ## Technologies
 
 - **LangGraph.js**: Workflow orchestration.
-- **Gemini**: LLM for generation (via `BaseAgent`).
+- **Gemini**: LLM (Model: `gemini-3-flash-preview` REQUIRED).
 - **Voicevox**: TTS engine.
 - **FFmpeg**: Video rendering.

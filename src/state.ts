@@ -9,6 +9,7 @@ export interface AgentState {
     script?: Script;
     audio_paths?: string[];
     video_path?: string;
+    thumbnail_path?: string;
     status?: string;
 
     research_data?: any;

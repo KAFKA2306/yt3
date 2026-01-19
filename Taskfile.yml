@@ -44,6 +44,14 @@ tasks:
     cmds: ["npx tsx src/step.ts script {{.CLI_ARGS}}"]
     desc: "Run script agent. Args: [run_id|latest]"
 
+  metadata:
+    cmds: ["npx tsx src/step.ts metadata {{.CLI_ARGS}}"]
+    desc: "Run metadata agent. Args: [run_id|latest]"
+
+  thumbnail:
+    cmds: ["npx tsx src/step.ts thumbnail {{.CLI_ARGS}}"]
+    desc: "Run thumbnail agent. Args: [run_id|latest]"
+
   audio:
     cmds: ["npx tsx src/step.ts audio {{.CLI_ARGS}}"]
     desc: "Run audio agent. Args: [run_id|latest]"

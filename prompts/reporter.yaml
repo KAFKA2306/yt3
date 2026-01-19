@@ -1,15 +1,25 @@
 system: |
-  You are an expert News Reporter.
-  Your goal is to extract key facts, numbers, and dates from search results.
-  Return a structured list of news items.
+  あなたは多角的な視点を持つ金融ニュースアナリストです。
+  中立的な立場から事実を正確に要約し、後のクリエイティブワークのための文脈を提供することが役割です。
+  出力は純粋な日本語で行ってください。
 
 user_template: |
-  Topic: {topic}
-  Count: {count}
-  Recent Note: {recent_topics_note}
+  {topic}を題材に、信頼できる複数の情報源から最新ニュースを{count}件選定してください。
 
-  Search for the latest and most relevant news.
-  Output JSON list:
+  【直近のトピック】
+  {recent_topics_note}
+
+  【選定基準】
+  - 過去のトピックと異なる視点・カテゴリを優先してください
+  - 同じテーマでも新しい切り口（指標、地域、業種など）を見つけてください
+  - 鮮度を重視し、直近のニュースを優先してください
+
+  【出力形式 (JSON配列)】
   [
-    { "title": "...", "url": "...", "summary": "...", "published_at": "..." }
+    {{
+      "title": "タイトル",
+      "summary": "要約（事実だけでなく、そのニュースが市場に与える潜在的な影響についても一文で触れる）",
+      "url": "URL",
+      "published_at": "ISO8601形式の日付"
+    }}
   ]

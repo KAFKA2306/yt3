@@ -26,6 +26,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "discord.js": "^14.25.1"
+    "@types/sharp": "^0.31.1",
+    "discord.js": "^14.25.1",
+    "sharp": "^0.34.5"
   }
 }

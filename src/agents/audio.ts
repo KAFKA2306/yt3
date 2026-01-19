@@ -28,23 +28,31 @@ export class AudioAgent {
 
         for (let i = 0; i < script.lines.length; i++) {
             const line = script.lines[i];
-            const spkId = this.speakers[line.speaker] || 1;
+            const spkId = this.speakers[line.speaker];
             const text = line.text;
 
-            const q = await axios.post(`${this.baseUrl}/audio_query`, null, {
-                params: { text: text, speaker: spkId }
-            });
-            const qData = q.data;
+            console.log(`Synthesizing line ${i}: [Speaker: ${line.speaker} (ID: ${spkId})] Text: ${text.slice(0, 20)}...`);
 
-            const s = await axios.post(`${this.baseUrl}/synthesis`, qData, {
-                params: { speaker: spkId },
-                responseType: 'arraybuffer'
-            });
+            try {
+                const q = await axios.post(`${this.baseUrl}/audio_query`, null, {
+                    params: { text: text, speaker: spkId }
+                });
+                const qData = q.data;
 
-            const fileName = `${String(i).padStart(3, '0')}_${line.speaker}.wav`;
-            const filePath = path.join(audioDir, fileName);
-            fs.writeFileSync(filePath, Buffer.from(s.data));
-            audioPaths.push(filePath);
+                const s = await axios.post(`${this.baseUrl}/synthesis`, qData, {
+                    params: { speaker: spkId },
+                    responseType: 'arraybuffer'
+                });
+
+                const fileName = `${String(i).padStart(3, '0')}_${line.speaker}.wav`;
+                const filePath = path.join(audioDir, fileName);
+                fs.writeFileSync(filePath, Buffer.from(s.data));
+                audioPaths.push(filePath);
+            } catch (err: any) {
+                console.error(`Failed to synthesize line ${i}: ${err.message}`);
+                if (err.response) console.error(`Response data: ${JSON.stringify(err.response.data)}`);
+                throw err;
+            }
         }
 
         if (audioPaths.length > 0) {

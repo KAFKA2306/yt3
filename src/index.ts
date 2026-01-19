@@ -6,8 +6,8 @@ import { AgentState } from "./state.js";
 
 async function main() {
     const graph = createGraph();
-    const runId = process.env.RUN_ID || randomUUID().slice(0, 8);
-    const bucket = process.argv[2] || "General";
+    const runId = process.env.RUN_ID;
+    const bucket = process.argv[2];
 
     console.log(`Starting run: ${runId} with bucket: ${bucket}`);
 

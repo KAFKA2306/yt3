@@ -93,27 +93,27 @@ steps:
     background_color: "#FFE14A"
     title_color: "#C62828"
     subtitle_color: "#FFD166"
-    show_subtitle: false
+    show_subtitle: true
     padding: 80
     max_lines: 4
-    max_chars_per_line: 12
-    title_font_size: 96
+    max_chars_per_line: 5
+    title_font_size: 150
     subtitle_font_size: 56
     font_path: "assets/fonts/ZenMaruGothic-Bold.ttf"
-    right_guard_band_px: 400
+    right_guard_band_px: 600
     outline_inner_color: "#FFFFFF"
-    outline_inner_width: 1
+    outline_inner_width: 20
     outline_outer_color: "#000000"
-    outline_outer_width: 0
+    outline_outer_width: 20
     palettes:
-      - {background_color: "#FFE14A", title_color: "#C62828", outline_inner_color: "#FFFFFF", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 0}
-      - {background_color: "#B71C1C", title_color: "#FFC107", outline_inner_color: "#0B0F19", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 1}
-      - {background_color: "#0B0F19", title_color: "#E5FCF4", outline_inner_color: "#000000", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 0}
-      - {background_color: "#0D1D40", title_color: "#FACC15", outline_inner_color: "#000000", outline_inner_width: 0, outline_outer_color: "#0B0F19", outline_outer_width: 0}
-      - {background_color: "#0A0F1F", title_color: "#E31C23", outline_inner_color: "#FFFFFF", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 0}
+      - {background_color: "#FFE14A", title_color: "#C62828", outline_inner_color: "#FFFFFF", outline_inner_width: 20, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#B71C1C"}
+      - {background_color: "#B71C1C", title_color: "#FFC107", outline_inner_color: "#000000", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 10, subtitle_color: "#FFFFFF"}
+      - {background_color: "#0B0F19", title_color: "#E5FCF4", outline_inner_color: "#000000", outline_inner_width: 10, outline_outer_color: "#FFFFFF", outline_outer_width: 5, subtitle_color: "#00D4FF"}
+      - {background_color: "#0D1D40", title_color: "#FACC15", outline_inner_color: "#000000", outline_inner_width: 0, outline_outer_color: "#0B0F19", outline_outer_width: 25, subtitle_color: "#FFFFFF"}
+      - {background_color: "#0A0F1F", title_color: "#E31C23", outline_inner_color: "#FFFFFF", outline_inner_width: 20, outline_outer_color: "#000000", outline_outer_width: 15, subtitle_color: "#FFD166"}
     overlays:
-      - {name: "character", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.85, offset: {right: 20, bottom: 0}}
-      - {name: "logo", enabled: false, image_path: "assets/icon2510youtuber-mini.png", anchor: "bottom_right", height: 100, offset: {right: 40, bottom: 40}}
+      - {name: "character", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.95, offset: {right: 0, bottom: 0}}
+      - {name: "logo", enabled: true, image_path: "assets/icon2510youtuber-mini.png", anchor: "top_right", height: 120, offset: {right: 20, top: 20}}
 
   thumbnail_ai: {enabled: true, width: 1920, height: 1080, num_steps: 6}
 
@@ -158,14 +158,14 @@ steps:
 
 providers:
   llm:
-    gemini: {model: "gemini/gemini-2.5-flash", fallback_model: null, temperature: 0.35, max_tokens: 32768}
+    gemini: {model: "gemini-3-flash-preview", fallback_model: null, temperature: 0.35, max_tokens: 32768}
   tts:
     voicevox:
       enabled: true
       url: "http://localhost:50121"
       manager_script: "scripts/voicevox_manager.sh"
       auto_start: false
-      speakers: {春日部つむぎ: 8, ずんだもん: 1, 玄野武宏: 11}
+      speakers: {春日部つむぎ: 8, ずんだもん: 1, 玄野: 11}
       voice_parameters:
         default: {speedScale: 1.0, intonationScale: 1.0, pitchScale: 0.0, volumeScale: 1.0}
         by_character: {春日部つむぎ: {speedScale: 1.0, intonationScale: 1.2}, ずんだもん: {speedScale: 1.0, intonationScale: 1.0}}

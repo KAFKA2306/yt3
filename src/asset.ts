@@ -12,6 +12,17 @@ export class AssetStore {
         fs.ensureDirSync(this.runDir);
     }
 
+    loadState(): any {
+        const p = path.join(this.runDir, "state.json");
+        return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf-8")) : {};
+    }
+
+    updateState(update: any): void {
+        const state = this.loadState();
+        const newState = { ...state, ...update };
+        fs.writeFileSync(path.join(this.runDir, "state.json"), JSON.stringify(newState, null, 2));
+    }
+
     save(stage: string, name: string, data: any): string {
         const stageDir = path.join(this.runDir, stage);
         fs.ensureDirSync(stageDir);
@@ -22,10 +33,7 @@ export class AssetStore {
 
     load(stage: string, name: string): any {
         const p = path.join(this.runDir, stage, `${name}.yaml`);
-        if (fs.existsSync(p)) {
-            return yaml.load(fs.readFileSync(p, "utf8"));
-        }
-        return null;
+        return yaml.load(fs.readFileSync(p, "utf8"));
     }
 
     saveBinary(stage: string, name: string, data: Buffer): string {

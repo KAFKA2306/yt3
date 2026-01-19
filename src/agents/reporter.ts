@@ -6,8 +6,7 @@ import { NewsItem } from "../models.js";
 
 export class ReporterAgent extends BaseAgent {
     constructor(store: AssetStore) {
-        // @ts-ignore
-        super(store, "reporter", { model: "gemini-2.0-flash", extra: { tools: [{ google_search: {} }] } });
+        super(store, "reporter", { extra: { tools: [{ google_search: {} }] } });
     }
 
     async run(query: string, count: number = 3): Promise<NewsItem[]> {

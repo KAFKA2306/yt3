@@ -3,6 +3,9 @@ import path from "path";
 import fs from "fs";
 import yaml from "js-yaml";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const ROOT = process.cwd();
 
@@ -21,12 +24,12 @@ export function loadPrompt(name: string): any {
 
 export function getSpeakers(): Record<string, number> {
     const cfg = loadConfig();
-    return cfg?.providers?.tts?.voicevox?.speakers || {};
+    return cfg.providers.tts.voicevox.speakers;
 }
 
 export function getLlmModel(): string {
     const cfg = loadConfig();
-    return cfg?.providers?.llm?.gemini?.model || "gemini-2.0-flash";
+    return cfg.providers.llm.gemini.model;
 }
 
 export function createLlm(options: any = {}): ChatGoogleGenerativeAI {
