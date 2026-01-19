@@ -1,16 +1,14 @@
 from langgraph.graph import END, StateGraph
 
 from src.agents.audio import AudioAgent
+from src.agents.director import DirectorAgent
+from src.agents.knowledge import KnowledgeAgent
 from src.agents.script import ScriptAgent
 from src.agents.search import WebSearchAgent
 from src.agents.trend import TrendAgent
 from src.agents.video import VideoAgent
 from src.asset import AssetStore
 from src.state import AgentState
-
-
-from src.agents.director import DirectorAgent
-from src.agents.knowledge import KnowledgeAgent
 
 
 def create_graph():
@@ -59,7 +57,7 @@ def create_graph():
         script = agent.run(
             state["news"],
             director_data=state.get("director_data", {}),
-            knowledge_context=state.get("knowledge_context", {})
+            knowledge_context=state.get("knowledge_context", {}),
         )
         return {"script": script}
 

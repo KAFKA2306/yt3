@@ -17,11 +17,10 @@ class ScriptAgent:
     def run(self, news: list[NewsItem], director_data: dict = {}, knowledge_context: dict = {}) -> Script:
         prompt_cfg = load_prompt("script")
 
-        self.store.log_input("script", {
-            "news": [n.model_dump() for n in news],
-            "director": director_data,
-            "knowledge": knowledge_context
-        })
+        self.store.log_input(
+            "script",
+            {"news": [n.model_dump() for n in news], "director": director_data, "knowledge": knowledge_context},
+        )
 
         system = prompt_cfg["system"]
         # Format user template with RAG context
