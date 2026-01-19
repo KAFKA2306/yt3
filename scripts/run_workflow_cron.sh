@@ -27,7 +27,7 @@ printf '[%s] INFO  starting workflow run (pid=%s)\n' "$(timestamp)" "$$"
 readonly start=${SECONDS}
 run_exit=0
 
-if (cd "${repo_dir}" && "${uv_bin}" run python -m src.main); then
+if (cd "${repo_dir}" && npx tsx src/index.ts); then
   run_exit=0
 else
   run_exit=$?

@@ -1,5 +1,5 @@
 
-import { StateGraph } from "@langchain/langgraph";
+import { StateGraph, START, END } from "@langchain/langgraph";
 import { AssetStore } from "./asset.js";
 import { DirectorAgent } from "./agents/director.js";
 import { ReporterAgent } from "./agents/reporter.js";
@@ -8,6 +8,7 @@ import { AudioAgent } from "./agents/audio.js";
 import { VideoAgent } from "./agents/video.js";
 import { ThumbnailAgent } from "./agents/thumbnail.js";
 import { MetadataAgent } from "./agents/metadata.js";
+import { PublishAgent } from "./agents/publish.js";
 import { AgentState } from "./state.js";
 
 const channels: any = {
@@ -21,6 +22,7 @@ const channels: any = {
     video_path: { reducer: (x: string, y: string) => y, default: () => "" },
     thumbnail_path: { reducer: (x: string, y: string) => y, default: () => "" },
     status: { reducer: (x: string, y: string) => y, default: () => "idle" },
+    publish_results: { reducer: (x: any, y: any) => y, default: () => undefined },
 };
 
 export function createGraph(store: AssetStore) {
@@ -31,6 +33,7 @@ export function createGraph(store: AssetStore) {
     const videoAgent = new VideoAgent(store);
     const thumbnailAgent = new ThumbnailAgent(store);
     const metadataAgent = new MetadataAgent(store);
+    const publishAgent = new PublishAgent(store);
 
     const workflow = new StateGraph<AgentState>({ channels });
 
@@ -45,41 +48,48 @@ export function createGraph(store: AssetStore) {
     });
 
     workflow.addNode("script", async (state) => {
-        const script = await scriptAgent.run(state.news, state.director_data);
+        const script = await scriptAgent.run(state.news!, state.director_data!);
         return { script };
     });
 
     workflow.addNode("metadata", async (state) => {
-        const metadata = await metadataAgent.run(state.news, state.script);
+        const metadata = await metadataAgent.run(state.news!, state.script!);
         return { metadata };
     });
 
     workflow.addNode("audio", async (state) => {
-        const paths = await audioAgent.run(state.script);
+        const paths = await audioAgent.run(state.script!);
         return { audio_paths: paths };
     });
 
     workflow.addNode("thumbnail", async (state) => {
         // Use thumbnail_title from metadata if available
-        const scriptForThumb = { ...state.script, title: state.metadata?.thumbnail_title || state.script.title };
+        const scriptForThumb = { ...state.script!, title: state.metadata?.thumbnail_title || state.script!.title };
         const path = await thumbnailAgent.run(scriptForThumb);
         return { thumbnail_path: path };
     });
 
     workflow.addNode("video", async (state) => {
-        const path = await videoAgent.run(state.audio_paths, state.thumbnail_path);
-        return { video_path: path, status: "completed" };
+        const path = await videoAgent.run(state.audio_paths!, state.thumbnail_path!);
+        return { video_path: path };
     });
 
-    workflow.addEdge("__start__", "director");
-    workflow.addEdge("director", "reporter");
-    workflow.addEdge("reporter", "script");
-    workflow.addEdge("script", "metadata");
-    workflow.addEdge("metadata", "audio");
-    workflow.addEdge("metadata", "thumbnail");
-    workflow.addEdge("audio", "video");
-    workflow.addEdge("thumbnail", "video");
-    workflow.addEdge("video", "__end__");
+    workflow.addNode("publish", async (state) => {
+        const results = await publishAgent.run(state);
+        return { publish_results: results, status: "completed" };
+    });
+
+    const graphBuilder = workflow as any;
+    graphBuilder.addEdge(START, "director");
+    graphBuilder.addEdge("director", "reporter");
+    graphBuilder.addEdge("reporter", "script");
+    graphBuilder.addEdge("script", "metadata");
+    graphBuilder.addEdge("metadata", "audio");
+    graphBuilder.addEdge("metadata", "thumbnail");
+    graphBuilder.addEdge("audio", "video");
+    graphBuilder.addEdge("thumbnail", "video");
+    graphBuilder.addEdge("video", "publish");
+    graphBuilder.addEdge("publish", END);
 
     return workflow.compile();
 }

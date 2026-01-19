@@ -16,4 +16,6 @@ export interface AgentState {
     trend_data?: any;
     director_data?: any;
     knowledge_context?: any;
+    metadata?: any;
+    publish_results?: any;
 }

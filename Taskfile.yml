@@ -59,3 +59,7 @@ tasks:
   video:
     cmds: ["npx tsx src/step.ts video {{.CLI_ARGS}}"]
     desc: "Run video agent. Args: [run_id|latest]"
+ 
+  publish:
+    cmds: ["npx tsx src/step.ts publish {{.CLI_ARGS}}"]
+    desc: "Run publish agent (YouTube/Twitter). Args: [run_id|latest]"

@@ -31,3 +31,9 @@ export const VideoMetadataSchema = z.object({
     thumbnail_path: z.string().default(""),
 });
 export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
+
+export const PublishResultSchema = z.object({
+    youtube: z.any().optional(),
+    twitter: z.any().optional(),
+});
+export type PublishResult = z.infer<typeof PublishResultSchema>;
