@@ -2,68 +2,32 @@ version: '3'
 
 tasks:
   default:
-    cmds: [task --list]
+    cmds: [npx tsx scripts/tasks.ts]
     silent: true
 
   bootstrap:
-    desc: Complete setup
-    cmds:
-      - uv sync
-      - task hf:sync
-      - task up
+    cmds: [npx tsx scripts/tasks.ts bootstrap]
 
   up:
-    desc: Start services
-    cmds:
-      - nohup bash scripts/start_aim.sh >/dev/null 2>&1 &
-      - nohup bash scripts/voicevox_manager.sh start >/dev/null 2>&1 &
-      - nohup uv run python scripts/discord_news_bot.py >/dev/null 2>&1 &
-      - sleep 2
+    cmds: [npx tsx scripts/tasks.ts up]
 
   down:
-    desc: Stop services
-    cmds:
-      - pkill -f "aim up" || true
-      - bash scripts/voicevox_manager.sh stop || true
-      - pkill -f "discord_news_bot" || true
+    cmds: [npx tsx scripts/tasks.ts down]
 
   status:
-    desc: Check services
     aliases: [s]
-    cmds:
-      - ps aux | grep -E "(aim|voicevox|discord_news_bot)" | grep -v grep || echo "None"
-      - docker ps | grep voicevox || echo "Voicevox not running"
-    silent: true
+    cmds: [npx tsx scripts/tasks.ts status]
 
   run:
-    desc: Run workflow
     aliases: [r]
-    cmds:
-      - uv run python -m src.main {{.CLI_ARGS}}
+    cmds: ["npx tsx scripts/tasks.ts run {{.CLI_ARGS}}"]
 
-  check:
-    desc: Lint + type check
-    aliases: [c]
-    cmds:
-      - uv run ruff check --fix src
-      - uv run ruff format src
-      - uv run mypy src
-
-  test:
-    desc: Run unit tests
-    aliases: [t]
-    cmds:
-      - uv run pytest tests/ -v {{.CLI_ARGS}}
+  lint:
+    aliases: [l]
+    cmds: [npx tsx scripts/tasks.ts lint]
 
   hf:sync:
-    desc: Sync HF models
-    env:
-      HF_HOME: "{{.HOME}}/.cache/huggingface"
-      HF_HUB_CACHE: "{{.HOME}}/.cache/huggingface/hub"
-    cmds:
-      - task -d external/hf-cache-hub hf:sync
+    cmds: [npx tsx scripts/tasks.ts hf:sync]
 
   cron:
-    desc: Install cron
-    cmds:
-      - uv run python scripts/automation.py --install-cron
+    cmds: [npx tsx scripts/tasks.ts cron]

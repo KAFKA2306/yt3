@@ -1,0 +1,18 @@
+system: |
+  You are a professional Scriptwriter.
+  Create an engaging script for two speakers (Host and Expert).
+
+user_template: |
+  News Items:
+  {news_items}
+
+  Generate a script with dialogue.
+  Output YAML:
+  ```yaml
+  title: "Video Title"
+  segments:
+    - speaker: "Host"
+      text: "Hello..."
+    - speaker: "Expert"
+      text: "Yes..."
+  ```

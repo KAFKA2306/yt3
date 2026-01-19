@@ -4,8 +4,8 @@
 
 **AI-Powered Japanese Finance Video Generator**
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![LangGraph](https://img.shields.io/badge/LangGraph-Workflow-00a67e?style=flat-square)](https://langchain-ai.github.io/langgraph/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Workflow-00a67e?style=flat-square)](https://langchain-ai.github.io/langgraphjs/)
 [![Gemini](https://img.shields.io/badge/Gemini-LLM-4285f4?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev/)
 
 </div>
@@ -15,16 +15,17 @@
 ## ⚡ Quick Start
 
 ```bash
-task bootstrap                    # First-time setup
-task run -- --query "FOMC 金利"   # Generate video
+task bootstrap            # Install dependencies & sync
+task run -- "FOMC 金利"   # Generate video
 ```
 
 ## 🛠️ Commands
 
 ```
 task run      │ Run workflow
-task check    │ Lint + type check
-task up       │ Start services
+task lint     │ Type check (tsc)
+task test     │ Run unit tests
+task up       │ Start services (Discord Bot, Voicevox)
 task down     │ Stop services
 task status   │ Check status
 ```
@@ -33,24 +34,27 @@ task status   │ Check status
 
 ```
 src/
-├── agents/    → LangGraph agents
-├── graph.py   → Workflow definition
-└── main.py    → Entry point
+├── agents/    → LangGraph agents (Research, Audio, etc.)
+├── graph.ts   → Workflow definition (StateGraph)
+├── state.ts   → State interfaces
+└── index.ts   → Entry point
 
+scripts/       → Automation & Bots
 config/        → YAML settings
-prompts/       → Prompt templates
-runs/          → Generated outputs
+prompts/       → Prompt templates (YAML)
+runs/          → Outputs
 ```
 
 ## ⚙️ Config
 
 | File | Purpose |
 |:-----|:--------|
-| `config/default.yaml` | Workflow settings |
-| `prompts/*.yaml` | Prompt templates |
+| `config/default.yaml` | System & Provider settings |
+| `prompts/*.yaml` | Agent Prompts |
+| `.env` | API Keys |
 
 ---
 
 <div align="center">
-<sub>Built with LangGraph • Gemini • Voicevox • FFmpeg</sub>
+<sub>Built with LangGraph.js • Gemini • Voicevox • FFmpeg</sub>
 </div>

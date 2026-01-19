@@ -1,0 +1,31 @@
+{
+  "name": "yt3",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KAFKA2306/yt3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/KAFKA2306/yt3/issues"
+  },
+  "homepage": "https://github.com/KAFKA2306/yt3#readme",
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.28",
+    "@types/fs-extra": "^11.0.4",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.0.9",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "discord.js": "^14.25.1"
+  }
+}

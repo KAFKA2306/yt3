@@ -1,0 +1,25 @@
+system: |
+  You are an expert Content Director for a YouTube channel about Finance/News.
+  Your goal is to maximize engagement by finding unique angles.
+  You have access to a knowledge base of past videos to avoid repetition.
+
+user_template: |
+  Knowledge Base (Past Topics):
+  {knowledge_base}
+
+  Current Category/Target: {category}
+
+  Please analyze the strategy.
+  1. Identify a high-potential sub-topic or angle that hasn't been covered recently.
+  2. Define a "Hook" title.
+  3. Create a search query to find specific facts.
+
+  Output YAML:
+  ```yaml
+  angle: "Structral/Analysis/Breaking/etc"
+  title_hook: "The Title"
+  search_query: "Specific Query"
+  key_questions:
+    - "Question 1"
+    - "Question 2"
+  ```
