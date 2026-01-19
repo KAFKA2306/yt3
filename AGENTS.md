@@ -10,52 +10,39 @@ ROOTにファイルを生成しない。適切なディレクトリに追加し�
 ## Project Structure
 
 - **src/**: Core application logic.
-    - `main.py`: CLI entry point initializes and runs the graph.
+    - `main.py`: CLI entry point.
     - `graph.py`: LangGraph `StateGraph` definition.
-    - `models.py`: Pydantic data models (`NewsItem`, `Script`, etc.).
+    - `models.py`: Pydantic data models.
     - `state.py`: `AgentState` TypedDict definition.
     - `config.py`: Configuration and prompt loader.
-    - `utils.py`: Minimal utilities (LLM parsing).
-    - `nodes/`: Pure function graph nodes (`research`, `script`, `audio`, `video`).
-    - `rag/`: Haystack 2.0 components (`PerplexityFetcher`) and pipelines.
+    - `utils.py`: Minimal utilities.
+    - `agents/`: LangGraph agent implementations.
 
-- **config/**: System configuration.
-    - `default.yaml`: Application settings (URLs, models, video params).
+- **config/**: YAML configuration.
+    - `default.yaml`: Application settings.
 
-- **prompts/**: Prompt Templates.
-    - `news.yaml`: News collection prompts.
-    - `script.yaml`: Script generation prompts and persona definitions.
+- **prompts/**: Prompt templates (YAML).
+    - `trend.yaml`, `director.yaml`, `knowledge.yaml`, `script.yaml`, `news.yaml`
 
-- **scripts/**: Automation and maintenance scripts (`discord_news_bot`, `automation.py`).
-- **outputs/**: Generated artifacts (audio, video, script).
+- **scripts/**: Automation scripts.
 
 ## Build & Run
 
-### Using Task Runner
-- `task bootstrap` — complete setup (deps + services).
-- `task run` — run the main workflow: `task run -- --query "Topic"`
-- `task check` — linting (`uv run ruff check`).
-- `task up/down` — start/stop background services (Voicevox, Aim, Discord).
-
-### Manual
-- `uv sync`
-- `uv run python -m src.main --query "Topic"`
-- `uv run ruff check src`
+- `task bootstrap` — complete setup.
+- `task run` — run workflow: `task run -- --query "Topic"`
+- `task check` — linting.
+- `task up/down` — start/stop services.
 
 ## Coding Rules
 
-1.  **No Comments**: Code must be self-explanatory. Docstrings only for complex interface usage if absolutely necessary (but prefer none).
-2.  **Config-Driven**: 
-    - No hardcoded prompts. Use `src.config.load_prompt("name")`.
-    - No hardcoded URLs/Models. Use `src.config.load_config()`.
-3.  **No Error Handling**: Fail fast. Let the orchestrator or user handle failures. No `try-except` blocks.
-4.  **No Deep Hierarchies**: Keep structure flat where possible (`src/nodes`, `src/rag`).
-5.  **Pure Functions**: Nodes should be stateless functions taking `AgentState` and returning a dict update.
+1. **No Comments**: Self-explanatory code only.
+2. **Config-Driven**: Use `src.config.load_prompt()` and `src.config.load_config()`.
+3. **No Error Handling**: Fail fast.
+4. **Pure Functions**: Nodes should be stateless.
 
 ## Technologies
 
 - **LangGraph**: Workflow orchestration.
-- **Haystack 2.0**: RAG pipeline (News Collection).
-- **Gemini**: LLM for script generation.
+- **Gemini**: LLM for generation.
 - **Voicevox**: TTS engine.
 - **FFmpeg**: Video rendering.

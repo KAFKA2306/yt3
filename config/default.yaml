@@ -1,7 +1,6 @@
 workflow:
   default_run_dir: "runs"
   checkpoint_enabled: true
-
   trend_settings:
     enabled: true
     regions: ["JP", "US"]
@@ -9,8 +8,6 @@ workflow:
 
 steps:
   news:
-  news:
-    # query: "DEPRECATED - using query_buckets"
     query_buckets:
       macro_economy: "GDP CPI 雇用統計 金融政策 日銀 FRB インフレ デフレ 景気動向"
       japanese_stock: "日経平均 TOPIX 日本株 決算 上方修正 自社株買い 株式分割 プライム市場 グロース市場"
@@ -19,33 +16,18 @@ steps:
       commodities: "原油価格 金相場 商品先物 エネルギー価格 天然ガス 穀物相場"
       crypto_web3: "ビットコイン 暗号資産 仮想通貨 イーサリアム ブロックチェーン Web3 NFT"
       tech_semicon: "半導体 生成AI 人工知能 テクノロジー DX スタートアップ"
-    
     fetch_count: 10
     final_count: 3
     cooldown_hours: 24
-    
-    # Legacy settings to be safe
     count: 3
     recent_topics_runs: 5
     recent_topics_max_chars: 500
     recent_topics_min_token_length: 2
-    recent_topics_stopwords:
-      - "が"
-      - "の"
-      - "を"
-      - "に"
-      - "は"
-      - "で"
-      - "と"
-      - "も"
-      - "から"
-      - "まで"
-      - "より"
-      - "など"
+    recent_topics_stopwords: ["が", "の", "を", "に", "は", "で", "と", "も", "から", "まで", "より", "など"]
 
   script:
-    min_duration: 300  # 5分
-    max_duration: 600  # 10分
+    min_duration: 300
+    max_duration: 600
     target_wow_score: 5.0
     retention_optimization:
       enabled: true
@@ -57,20 +39,13 @@ steps:
     speakers:
       analyst:
         name: "春日部つむぎ"
-        aliases:
-          - "春日部つむぎ"
-          - "かすかべ つむぎ"
-          - "つむぎ"
+        aliases: ["春日部つむぎ", "かすかべ つむぎ", "つむぎ"]
       reporter:
         name: "ずんだもん"
-        aliases:
-          - "ずんだもん"
+        aliases: ["ずんだもん"]
       narrator:
         name: "玄野武宏"
-        aliases:
-          - "玄野武宏"
-          - "ナレーション"
-          - "ナレーター"
+        aliases: ["玄野武宏", "ナレーション", "ナレーター"]
 
   audio:
     sample_rate: 24000
@@ -91,11 +66,7 @@ steps:
       rc: "vbr"
       cq: 19
       acodec: "aac"
-    encoder_global_args:
-      - "-hwaccel"
-      - "cuda"
-      - "-hwaccel_output_format"
-      - "cuda"
+    encoder_global_args: ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
     intro_outro:
       enabled: true
       intro_path: "assets/video/おはようございます。今日も世界の動きを見てみましょう.mp4"
@@ -117,17 +88,13 @@ steps:
         image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png"
         anchor: "bottom_right"
         height_ratio: 0.85
-        offset:
-          right: 20
-          bottom: 0
+        offset: {right: 20, bottom: 0}
       - type: "overlay"
         enabled: true
         image_path: "assets/zundamon.webp"
         anchor: "bottom_left"
         height_ratio: 0.51
-        offset:
-          left: 20
-          bottom: 0
+        offset: {left: 20, bottom: 0}
     thumbnail_overlay:
       enabled: true
       duration_seconds: 0.1
@@ -140,7 +107,7 @@ steps:
       outline_colour: "&H000000&"
       outline: 2
       alignment: 2
-      margin_l: 0 #400
+      margin_l: 0
       margin_r: 0
       margin_v: 10
 
@@ -164,53 +131,24 @@ steps:
     outline_outer_color: "#000000"
     outline_outer_width: 0
     palettes:
-      - background_color: "#FFE14A"
-        title_color: "#C62828"
-        outline_inner_color: "#FFFFFF"
-        outline_inner_width: 1
-        outline_outer_color: "#000000"
-        outline_outer_width: 0
-      - background_color: "#B71C1C"
-        title_color: "#FFC107"
-        outline_inner_color: "#0B0F19"
-        outline_inner_width: 1
-        outline_outer_color: "#000000"
-        outline_outer_width: 1
-      - background_color: "#0B0F19"
-        title_color: "#E5FCF4"
-        outline_inner_color: "#000000"
-        outline_inner_width: 1
-        outline_outer_color: "#000000"
-        outline_outer_width: 0
-      - background_color: "#0D1D40"
-        title_color: "#FACC15"
-        outline_inner_color: "#000000"
-        outline_inner_width: 0
-        outline_outer_color: "#0B0F19"
-        outline_outer_width: 0
-      - background_color: "#0A0F1F"
-        title_color: "#E31C23"
-        outline_inner_color: "#FFFFFF"
-        outline_inner_width: 1
-        outline_outer_color: "#000000"
-        outline_outer_width: 0
+      - {background_color: "#FFE14A", title_color: "#C62828", outline_inner_color: "#FFFFFF", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 0}
+      - {background_color: "#B71C1C", title_color: "#FFC107", outline_inner_color: "#0B0F19", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 1}
+      - {background_color: "#0B0F19", title_color: "#E5FCF4", outline_inner_color: "#000000", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 0}
+      - {background_color: "#0D1D40", title_color: "#FACC15", outline_inner_color: "#000000", outline_inner_width: 0, outline_outer_color: "#0B0F19", outline_outer_width: 0}
+      - {background_color: "#0A0F1F", title_color: "#E31C23", outline_inner_color: "#FFFFFF", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 0}
     overlays:
       - name: "character"
         enabled: true
         image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png"
         anchor: "bottom_right"
         height_ratio: 0.85
-        offset:
-          right: 20
-          bottom: 0
+        offset: {right: 20, bottom: 0}
       - name: "logo"
         enabled: false
         image_path: "assets/icon2510youtuber-mini.png"
         anchor: "bottom_right"
         height: 100
-        offset:
-          right: 40
-          bottom: 40
+        offset: {right: 40, bottom: 40}
 
   thumbnail_ai:
     enabled: true
@@ -219,33 +157,25 @@ steps:
     num_steps: 6
 
   scene_generator:
-    enabled: false  # Enable after running 'task hf:sync'
-    images_per_video: 4  # Number of scene timestamps
-    variants_per_type: 2  # Variants per type (literal/abstract/atmospheric)
-    width: 1280  # 16:9 aspect ratio for YouTube
+    enabled: false
+    images_per_video: 4
+    variants_per_type: 2
+    width: 1280
     height: 720
-    num_steps: 9  # Quality/speed balanced setting
+    num_steps: 9
     scene_duration_seconds: 30
     model_path: "external/hf-cache-hub/models/Z-Image-Turbo"
     device: "cuda"
-
 
   metadata:
     enabled: true
     use_llm: true
     llm_model: null
     fallback_llm_model: null
-    target_keywords:
-      - "金融"
-      - "経済"
-      - "投資"
-      - "株"
+    target_keywords: ["金融", "経済", "投資", "株"]
     max_title_length: 50
     max_description_length: 5000
-    default_tags:
-      - "金融"
-      - "経済"
-      - "投資"
+    default_tags: ["金融", "経済", "投資"]
     tone:
       guidelines:
         - "タイトルと説明文は事実を端的に伝える落ち着いた専門家の語調に統一する"
@@ -254,30 +184,8 @@ steps:
         - "タイトルには終値や決算数値など確定した金額・指標を通貨や単位付きで記載する"
         - "タイトルで変化幅だけに触れず、いつの時点でいくらになったのかを具体的に記述する"
         - "タイトルは必要最小限の語で構成し、冗長な枕詞や情緒的な形容を避ける"
-      title_disallowed_terms:
-        - "闇"
-        - "陰謀"
-        - "激震"
-        - "暴露"
-        - "暴走"
-        - "やばい"
-        - "ショック"
-        - "衝撃"
-        - "暴落"
-        - "警告"
-        - "危機"
-      description_disallowed_terms:
-        - "闇"
-        - "陰謀"
-        - "激震"
-        - "暴露"
-        - "暴走"
-        - "やばい"
-        - "ショック"
-        - "衝撃"
-        - "暴落"
-        - "警告"
-        - "危機"
+      title_disallowed_terms: ["闇", "陰謀", "激震", "暴露", "暴走", "やばい", "ショック", "衝撃", "暴落", "警告", "危機"]
+      description_disallowed_terms: ["闇", "陰謀", "激震", "暴露", "暴走", "やばい", "ショック", "衝撃", "暴落", "警告", "危機"]
       replacements:
         闇: "課題"
         陰謀: "構造的課題"
@@ -298,10 +206,7 @@ steps:
     category_id: 25
     max_title_length: 100
     max_description_length: 5000
-    default_tags:
-      - "金融"
-      - "ニュース"
-      - "経済"
+    default_tags: ["金融", "ニュース", "経済"]
 
   twitter:
     enabled: false
@@ -328,6 +233,7 @@ steps:
     feed_description: "AI生成の日本経済・金融ニュース解説"
     feed_author: "2510 YouTuber AI"
     feed_url: "https://example.com/podcast"
+
   buzzsprout:
     enabled: false
     podcast_id: null
@@ -355,32 +261,19 @@ providers:
         ずんだもん: 1
         玄野武宏: 11
       voice_parameters:
-        default:
-          speedScale: 1.0
-          intonationScale: 1.0
-          pitchScale: 0.0
-          volumeScale: 1.0
+        default: {speedScale: 1.0, intonationScale: 1.0, pitchScale: 0.0, volumeScale: 1.0}
         by_character:
-          春日部つむぎ:
-            speedScale: 1.0
-            intonationScale: 1.2
-          ずんだもん:
-            speedScale: 1.0
-            intonationScale: 1.0
+          春日部つむぎ: {speedScale: 1.0, intonationScale: 1.2}
+          ずんだもん: {speedScale: 1.0, intonationScale: 1.0}
         by_type:
-          opening:
-            speedScale: 1.1
-            intonationScale: 1.2
-          explanation:
-            speedScale: 1.0
-          emphasis:
-            speedScale: 1.0
-            intonationScale: 1.3
+          opening: {speedScale: 1.1, intonationScale: 1.2}
+          explanation: {speedScale: 1.0}
+          emphasis: {speedScale: 1.0, intonationScale: 1.3}
 
   news:
     perplexity:
       enabled: false
-      model: "sonar" #"sonar-pro"
+      model: "sonar"
       temperature: 0.2
       max_tokens: 2048
       search_recency_filter: "week"
@@ -388,7 +281,6 @@ providers:
   cloudflare_ai:
     account_id: "dc1aa018702e10045b00865b63f144d0"
     model: "@cf/black-forest-labs/flux-1-schnell"
-
 
 logging:
   level: "INFO"
@@ -399,37 +291,17 @@ automation:
   venv_activate: ".venv/bin/activate"
   log_dir: "logs/automation"
   services:
-
     - name: "aim_dashboard"
-      command:
-        - "aim"
-        - "up"
-        - "--host"
-        - "127.0.0.1"
-        - "--port"
-        - "43800"
+      command: ["aim", "up", "--host", "127.0.0.1", "--port", "43800"]
     - name: "voicevox"
-      command:
-        - "bash"
-        - "scripts/voicevox_manager.sh"
-        - "start"
+      command: ["bash", "scripts/voicevox_manager.sh", "start"]
     - name: "discord_news_bot"
-      command:
-        - "python"
-        - "scripts/discord_news_bot.py"
+      command: ["python", "scripts/discord_news_bot.py"]
   schedules:
     - name: "workflow_twice_daily"
-      command:
-        - "bash"
-        - "scripts/run_workflow_cron.sh"
+      command: ["bash", "scripts/run_workflow_cron.sh"]
       cron: "0 6,18 * * *"
     - name: "trend_workflow_hourly"
-      command:
-        - "uv"
-        - "run"
-        - "python"
-        - "-m"
-        - "src.main"
-      args:
-        - "--trend-mode"
-      cron: "0 * * * *"  # Run hourly to catch breaking trends
+      command: ["uv", "run", "python", "-m", "src.main"]
+      args: ["--trend-mode"]
+      cron: "0 * * * *"

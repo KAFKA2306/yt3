@@ -1,36 +1,16 @@
-# Scene Generation Prompts Configuration
-# YouTube-optimized, timeless, psychologically-driven visual prompts
-
-# ============================================================
-# COMMON SETTINGS
-# ============================================================
 common:
-  # Quality baseline (simplified, non-redundant)
   quality: "cinematic 16:9, professional grade, ultra sharp"
-  
-  # YouTube psychological triggers
   youtube_appeal: "bold composition, saturated color palette, instant visual impact"
-  
-  # Composition theory elements (randomly applied)
   composition_techniques:
     - "rule of thirds framing"
     - "leading lines perspective"
     - "symmetrical balance"
     - "dynamic diagonal composition"
     - "golden ratio layout"
-  
-  # Base negative prompt (essential only)
   negative_base: "text, watermark, people, faces, low quality, blurry, VRChat, virtual, metaverse"
 
-# ============================================================
-# TYPE-SPECIFIC PROMPTS
-# ============================================================
-
-# LITERAL: Direct financial/business imagery
 literal:
   description: "Concrete financial and business scenes"
-  
-  # Core visual concepts (abstract enough for variation)
   core_elements:
     - "metropolitan financial district, glass architecture, reflective surfaces"
     - "trading floor environment, multiple digital displays, data visualization"
@@ -40,8 +20,6 @@ literal:
     - "iconic financial landmark, monumental scale, dramatic perspective"
     - "stock exchange architecture, LED information displays, modern design"
     - "secure vault environment, precious metal storage, institutional setting"
-  
-  # Mood-specific modifiers
   mood_modifiers:
     crisis:
       lighting: "high contrast chiaroscuro, dramatic shadows, red key light"
@@ -55,15 +33,10 @@ literal:
       lighting: "three-point lighting, balanced exposure, professional"
       atmosphere: "stability, neutral weather, corporate"
       color: "slate gray, steel blue, charcoal"
-  
-  # Additional negative prompts
   negative_extra: "anime, cartoon, cluttered, messy"
 
-# ABSTRACT: Mood and sentiment visualization
 abstract:
   description: "Abstract metaphors for emotions and market sentiment"
-  
-  # Core visual concepts (flexible metaphors)
   core_elements:
     - "ocean dynamics, wave motion, water energy"
     - "mountain landscape, cloud formations, atmospheric drama"
@@ -73,8 +46,6 @@ abstract:
     - "particle dynamics, organized flow, systematic movement"
     - "atmospheric light, volumetric rays, ethereal glow"
     - "organic growth, time-lapse transformation, natural expansion"
-  
-  # Mood-specific modifiers
   mood_modifiers:
     crisis:
       atmosphere: "turbulence, storm energy, electrical discharge"
@@ -88,15 +59,10 @@ abstract:
       atmosphere: "stillness, symmetry, gentle undulation"
       color: "ocean blue, dove gray, seafoam teal, balanced palette"
       motion: "steady pulse, gentle wave, calm rhythm"
-  
-  # Additional negative prompts
   negative_extra: "buildings, cities, finance symbols, charts, literal objects"
 
-# ATMOSPHERIC: Background-optimized for overlays
 atmospheric:
   description: "Soft unobtrusive backgrounds for text/character overlays"
-  
-  # Core visual concepts (background-focused)
   core_elements:
     - "defocused urban lights, bokeh orbs, night ambiance"
     - "gradient color field, smooth transition, minimal texture"
@@ -106,8 +72,6 @@ atmospheric:
     - "lens flare elements, light leak, gradient overlay"
     - "natural bokeh, leaf patterns, organic blur"
     - "color gradient, seamless blend, minimalist aesthetic"
-  
-  # Mood-specific modifiers
   mood_modifiers:
     crisis:
       color: "arctic blue, deep purple, high contrast gradient"
@@ -118,24 +82,14 @@ atmospheric:
     neutral:
       color: "pearl gray, powder blue, corporate neutral"
       effect: "balanced bokeh, professional gradient, clean blur"
-  
-  # Additional negative prompts
   negative_extra: "sharp details, busy composition, complex patterns"
 
-# ============================================================
-# YOUTUBE PSYCHOLOGICAL TRIGGERS
-# ============================================================
 youtube_boosters:
-  # Timeless quality indicators
   - "award-winning cinematography"
   - "professional photography standard"
   - "editorial quality composition"
-  
-  # Emotional triggers
   - "visually striking"
   - "immediately captivating"
   - "scroll-stopping imagery"
-  
-  # Technical excellence
   - "masterful lighting"
   - "perfect color harmony"

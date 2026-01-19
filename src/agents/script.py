@@ -12,7 +12,7 @@ class ScriptAgent:
     def __init__(self, store: AssetStore):
         self.store = store
         model = get_llm_model()
-        self.llm = ChatGoogleGenerativeAI(model=model, api_key=os.getenv("GEMINI_API_KEY"))
+        self.llm = ChatGoogleGenerativeAI(model=model, api_key=os.getenv("GEMINI_API_KEY"), temperature=0.8)
 
     def run(self, news: list[NewsItem], director_data: dict = {}, knowledge_context: dict = {}) -> Script:
         prompt_cfg = load_prompt("script")

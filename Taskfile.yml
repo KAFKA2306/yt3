@@ -2,82 +2,55 @@ version: '3'
 
 tasks:
   default:
-    desc: Show available tasks
-    cmds:
-      - task --list
+    cmds: [task --list]
     silent: true
 
-  # ============================================================
-  # 🚀 SETUP & SERVICES
-  # ============================================================
-
   bootstrap:
-    desc: "Complete first-time setup: deps + models + services + cron"
+    desc: Complete setup
     cmds:
       - uv sync
       - task hf:sync
       - task up
-      - uv run python scripts/automation.py --skip-cron
-      - uv run python scripts/automation.py --install-cron
-      - task status
 
   up:
-    desc: Start all services (Aim, Voicevox, Discord)
-    aliases: [start]
+    desc: Start services
     cmds:
       - nohup bash scripts/start_aim.sh >/dev/null 2>&1 &
       - nohup bash scripts/voicevox_manager.sh start >/dev/null 2>&1 &
       - nohup uv run python scripts/discord_news_bot.py >/dev/null 2>&1 &
       - sleep 2
-      - echo "✅ Services started"
 
   down:
-    desc: Stop all services
-    aliases: [stop]
+    desc: Stop services
     cmds:
       - pkill -f "aim up" || true
       - bash scripts/voicevox_manager.sh stop || true
       - pkill -f "discord_news_bot" || true
-      - echo "✅ Services stopped"
 
   status:
-    desc: Check all services status
+    desc: Check services
     aliases: [s]
     cmds:
-      - echo "=== Processes ===" && ps aux | grep -E "(aim|voicevox|discord_news_bot)" | grep -v grep || echo "None"
-      - echo "=== Docker ===" && docker ps | grep voicevox || echo "Voicevox not running"
-      - echo "=== Cron ===" && crontab -l || echo "No cron"
+      - ps aux | grep -E "(aim|voicevox|discord_news_bot)" | grep -v grep || echo "None"
+      - docker ps | grep voicevox || echo "Voicevox not running"
     silent: true
 
-  # ============================================================
-  # 🎬 WORKFLOW
-  # ============================================================
-
   run:
-    desc: Run main workflow (use -- to pass args)
+    desc: Run workflow
     aliases: [r]
     cmds:
       - uv run python -m src.main {{.CLI_ARGS}}
 
-
-  # ============================================================
-  # ✅ CODE QUALITY & TEST
-  # ============================================================
-
   check:
-    desc: Lint + fast tests
+    desc: Lint + type check
     aliases: [c]
     cmds:
       - uv run ruff check --fix src
       - uv run ruff format src
-      - uv run mypy src 
-
-  # ============================================================
-  # 🤖 MODELS & AUTOMATION
-  # ============================================================
+      - uv run mypy src
 
   hf:sync:
-    desc: Download and link HF models
+    desc: Sync HF models
     env:
       HF_HOME: "{{.HOME}}/.cache/huggingface"
       HF_HUB_CACHE: "{{.HOME}}/.cache/huggingface/hub"
@@ -85,12 +58,6 @@ tasks:
       - task -d external/hf-cache-hub hf:sync
 
   cron:
-    desc: Install/update cron automation
+    desc: Install cron
     cmds:
       - uv run python scripts/automation.py --install-cron
-      - crontab -l
-
-  aim:
-    desc: Start Aim dashboard (blocking)
-    cmds:
-      - aim up --host 0.0.0.0 --port 43800

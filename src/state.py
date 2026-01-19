@@ -11,7 +11,6 @@ class AgentState(TypedDict):
     script: Script
     audio_paths: List[str]
     video_path: str
-    video_path: str
     status: str
     trend_mode: bool
     trend_data: dict
