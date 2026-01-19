@@ -5,7 +5,7 @@ import yaml from "js-yaml";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ path: path.join(process.cwd(), "config", ".env") });
 
 export const ROOT = process.cwd();
 

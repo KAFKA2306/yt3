@@ -191,6 +191,7 @@ automation:
 prompts:
   research:
     system: |
+      Your response MUST be a valid JSON object, and contain ONLY the JSON object. Do NOT include any other text or explanation.
       You are the Research Director for a premium Japanese finance channel.
       Your job: Find a VIRAL topic, define the ANGLE, and identify CONTEXT from past videos.
       

@@ -1,5 +1,5 @@
 
-import "dotenv/config";
+import "./config.js"; // Ensure config (and dotenv) is loaded first
 import { randomUUID } from "crypto";
 import { AssetStore } from "./asset.js";
 import { createGraph } from "./graph.js";

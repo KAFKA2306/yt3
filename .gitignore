@@ -9,6 +9,7 @@ yarn-error.log*
 *.env
 secret/
 *lock*
+*.pickle
 
 # Logs & Output
 *.log

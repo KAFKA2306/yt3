@@ -28,6 +28,7 @@ export abstract class BaseAgent {
         return parsed;
     }
 
+
     loadPrompt(name: string) { return loadPrompt(name); }
     logInput(data: any) { this.store.logInput(this.name, data); }
 }

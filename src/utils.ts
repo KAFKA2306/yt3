@@ -2,8 +2,13 @@
 import yaml from "js-yaml";
 
 export function cleanCodeBlock(text: string): string {
-    return (text ?? "").trim().replace(/^```[a-z]*\n/, "").replace(/```$/, "").trim();
+    const match = text.match(/```json\s*([\s\S]*?)\s*```/i);
+    if (match && match[1]) {
+        return match[1].trim();
+    }
+    return text.trim();
 }
+
 
 type Parser<T> = (text: string) => T;
 

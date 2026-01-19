@@ -15,6 +15,7 @@ const channels: any = {
     run_id: { reducer: (x: string, y: string) => y, default: () => "" },
     bucket: { reducer: (x: string, y: string) => y, default: () => "General" },
     limit: { reducer: (x: number, y: number) => y, default: () => 3 },
+    director_data: { reducer: (x: any, y: any) => y, default: () => undefined },
     news: { reducer: (x: any, y: any) => y, default: () => [] },
     script: { reducer: (x: any, y: any) => y, default: () => undefined },
     metadata: { reducer: (x: any, y: any) => y, default: () => undefined },
@@ -24,6 +25,8 @@ const channels: any = {
     status: { reducer: (x: string, y: string) => y, default: () => "idle" },
     publish_results: { reducer: (x: any, y: any) => y, default: () => undefined },
 };
+
+
 
 export function createGraph(store: AssetStore) {
     const director = new DirectorAgent(store);
@@ -47,12 +50,12 @@ export function createGraph(store: AssetStore) {
         return { news };
     });
 
-    workflow.addNode("script", async (state) => {
+    workflow.addNode("script_node", async (state) => {
         const script = await scriptAgent.run(state.news!, state.director_data!);
         return { script };
     });
 
-    workflow.addNode("metadata", async (state) => {
+    workflow.addNode("metadata_node", async (state) => {
         const metadata = await metadataAgent.run(state.news!, state.script!);
         return { metadata };
     });
@@ -82,10 +85,10 @@ export function createGraph(store: AssetStore) {
     const graphBuilder = workflow as any;
     graphBuilder.addEdge(START, "director");
     graphBuilder.addEdge("director", "reporter");
-    graphBuilder.addEdge("reporter", "script");
-    graphBuilder.addEdge("script", "metadata");
-    graphBuilder.addEdge("metadata", "audio");
-    graphBuilder.addEdge("metadata", "thumbnail");
+    graphBuilder.addEdge("reporter", "script_node");
+    graphBuilder.addEdge("script_node", "metadata_node");
+    graphBuilder.addEdge("metadata_node", "audio");
+    graphBuilder.addEdge("metadata_node", "thumbnail");
     graphBuilder.addEdge("audio", "video");
     graphBuilder.addEdge("thumbnail", "video");
     graphBuilder.addEdge("video", "publish");
