@@ -49,6 +49,12 @@ tasks:
       - uv run ruff format src
       - uv run mypy src
 
+  test:
+    desc: Run unit tests
+    aliases: [t]
+    cmds:
+      - uv run pytest tests/ -v {{.CLI_ARGS}}
+
   hf:sync:
     desc: Sync HF models
     env:

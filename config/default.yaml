@@ -61,44 +61,19 @@ steps:
     fps: 25
     codec: "h264_nvenc"
     preset: "p5"
-    encoder_options:
-      pix_fmt: "yuv420p"
-      rc: "vbr"
-      cq: 19
-      acodec: "aac"
+    encoder_options: {pix_fmt: "yuv420p", rc: "vbr", cq: 19, acodec: "aac"}
     encoder_global_args: ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
     intro_outro:
       enabled: true
       intro_path: "assets/video/おはようございます。今日も世界の動きを見てみましょう.mp4"
       outro_path: "assets/video/チャンネル登録と通知オンをお願いします.mp4"
       twitter_outro_path: "assets/video/続きはYoutube.mp4"
-      thumbnail_clip:
-        enabled: true
-        duration_seconds: 0.1
-        source_key: "generate_thumbnail"
+      thumbnail_clip: {enabled: true, duration_seconds: 0.1, source_key: "generate_thumbnail"}
     effects:
-      - type: "ken_burns"
-        enabled: true
-        zoom_speed: 0.0015
-        max_zoom: 1.2
-        hold_frame_factor: 1.0
-        pan_mode: "center"
-      - type: "overlay"
-        enabled: true
-        image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png"
-        anchor: "bottom_right"
-        height_ratio: 0.85
-        offset: {right: 20, bottom: 0}
-      - type: "overlay"
-        enabled: true
-        image_path: "assets/zundamon.webp"
-        anchor: "bottom_left"
-        height_ratio: 0.51
-        offset: {left: 20, bottom: 0}
-    thumbnail_overlay:
-      enabled: true
-      duration_seconds: 0.1
-      source_key: "generate_thumbnail"
+      - {type: "ken_burns", enabled: true, zoom_speed: 0.0015, max_zoom: 1.2, hold_frame_factor: 1.0, pan_mode: "center"}
+      - {type: "overlay", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.85, offset: {right: 20, bottom: 0}}
+      - {type: "overlay", enabled: true, image_path: "assets/zundamon.webp", anchor: "bottom_left", height_ratio: 0.51, offset: {left: 20, bottom: 0}}
+    thumbnail_overlay: {enabled: true, duration_seconds: 0.1, source_key: "generate_thumbnail"}
     subtitles:
       font_path: "assets/fonts/ZenMaruGothic-Bold.ttf"
       font_name: "Zen Maru Gothic"
@@ -137,24 +112,10 @@ steps:
       - {background_color: "#0D1D40", title_color: "#FACC15", outline_inner_color: "#000000", outline_inner_width: 0, outline_outer_color: "#0B0F19", outline_outer_width: 0}
       - {background_color: "#0A0F1F", title_color: "#E31C23", outline_inner_color: "#FFFFFF", outline_inner_width: 1, outline_outer_color: "#000000", outline_outer_width: 0}
     overlays:
-      - name: "character"
-        enabled: true
-        image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png"
-        anchor: "bottom_right"
-        height_ratio: 0.85
-        offset: {right: 20, bottom: 0}
-      - name: "logo"
-        enabled: false
-        image_path: "assets/icon2510youtuber-mini.png"
-        anchor: "bottom_right"
-        height: 100
-        offset: {right: 40, bottom: 40}
+      - {name: "character", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.85, offset: {right: 20, bottom: 0}}
+      - {name: "logo", enabled: false, image_path: "assets/icon2510youtuber-mini.png", anchor: "bottom_right", height: 100, offset: {right: 40, bottom: 40}}
 
-  thumbnail_ai:
-    enabled: true
-    width: 1920
-    height: 1080
-    num_steps: 6
+  thumbnail_ai: {enabled: true, width: 1920, height: 1080, num_steps: 6}
 
   scene_generator:
     enabled: false
@@ -186,122 +147,166 @@ steps:
         - "タイトルは必要最小限の語で構成し、冗長な枕詞や情緒的な形容を避ける"
       title_disallowed_terms: ["闇", "陰謀", "激震", "暴露", "暴走", "やばい", "ショック", "衝撃", "暴落", "警告", "危機"]
       description_disallowed_terms: ["闇", "陰謀", "激震", "暴露", "暴走", "やばい", "ショック", "衝撃", "暴落", "警告", "危機"]
-      replacements:
-        闇: "課題"
-        陰謀: "構造的課題"
-        激震: "急変"
-        衝撃: "注目"
-        ショック: "変化"
-        暴露: "解説"
-        暴走: "過熱"
-        やばい: "注意"
-        暴落: "下落"
-        警告: "注意喚起"
-        危機: "リスク"
+      replacements: {闇: "課題", 陰謀: "構造的課題", 激震: "急変", 衝撃: "注目", ショック: "変化", 暴露: "解説", 暴走: "過熱", やばい: "注意", 暴落: "下落", 警告: "注意喚起", 危機: "リスク"}
 
-  youtube:
-    enabled: true
-    dry_run: false
-    default_visibility: "public"
-    category_id: 25
-    max_title_length: 100
-    max_description_length: 5000
-    default_tags: ["金融", "ニュース", "経済"]
-
-  twitter:
-    enabled: false
-    dry_run: false
-    clip_duration_seconds: 60
-    start_offset_seconds: 0
-
-  linkedin:
-    enabled: false
-    dry_run: true
-    access_token: "linkedin_access_token"
-    author_urn: "urn:li:person:YOUR_ID"
-
-  hatena:
-    enabled: false
-    dry_run: true
-    hatena_id: "your_hatena_id"
-    blog_id: "your_blog_id.hatenablog.com"
-    api_key: "hatena_api_key"
-
-  podcast:
-    enabled: false
-    feed_title: "金融ニュース解説ポッドキャスト"
-    feed_description: "AI生成の日本経済・金融ニュース解説"
-    feed_author: "2510 YouTuber AI"
-    feed_url: "https://example.com/podcast"
-
-  buzzsprout:
-    enabled: false
-    podcast_id: null
-    token_key: "buzzsprout_api_token"
-    podcast_id_key: "buzzsprout_podcast_id"
-    title_template: "金融ニュース解説 Episode {run_id}"
-    publish_immediately: true
+  youtube: {enabled: true, dry_run: false, default_visibility: "public", category_id: 25, max_title_length: 100, max_description_length: 5000, default_tags: ["金融", "ニュース", "経済"]}
+  twitter: {enabled: false, dry_run: false, clip_duration_seconds: 60, start_offset_seconds: 0}
+  linkedin: {enabled: false, dry_run: true, access_token: "linkedin_access_token", author_urn: "urn:li:person:YOUR_ID"}
+  hatena: {enabled: false, dry_run: true, hatena_id: "your_hatena_id", blog_id: "your_blog_id.hatenablog.com", api_key: "hatena_api_key"}
+  podcast: {enabled: false, feed_title: "金融ニュース解説ポッドキャスト", feed_description: "AI生成の日本経済・金融ニュース解説", feed_author: "2510 YouTuber AI", feed_url: "https://example.com/podcast"}
+  buzzsprout: {enabled: false, podcast_id: null, token_key: "buzzsprout_api_token", podcast_id_key: "buzzsprout_podcast_id", title_template: "金融ニュース解説 Episode {run_id}", publish_immediately: true}
 
 providers:
   llm:
-    gemini:
-      model: "gemini/gemini-2.5-flash"
-      fallback_model: null
-      temperature: 0.35
-      max_tokens: 32768
-
+    gemini: {model: "gemini/gemini-2.5-flash", fallback_model: null, temperature: 0.35, max_tokens: 32768}
   tts:
     voicevox:
       enabled: true
       url: "http://localhost:50121"
       manager_script: "scripts/voicevox_manager.sh"
       auto_start: false
-      speakers:
-        春日部つむぎ: 8
-        ずんだもん: 1
-        玄野武宏: 11
+      speakers: {春日部つむぎ: 8, ずんだもん: 1, 玄野武宏: 11}
       voice_parameters:
         default: {speedScale: 1.0, intonationScale: 1.0, pitchScale: 0.0, volumeScale: 1.0}
-        by_character:
-          春日部つむぎ: {speedScale: 1.0, intonationScale: 1.2}
-          ずんだもん: {speedScale: 1.0, intonationScale: 1.0}
-        by_type:
-          opening: {speedScale: 1.1, intonationScale: 1.2}
-          explanation: {speedScale: 1.0}
-          emphasis: {speedScale: 1.0, intonationScale: 1.3}
-
+        by_character: {春日部つむぎ: {speedScale: 1.0, intonationScale: 1.2}, ずんだもん: {speedScale: 1.0, intonationScale: 1.0}}
+        by_type: {opening: {speedScale: 1.1, intonationScale: 1.2}, explanation: {speedScale: 1.0}, emphasis: {speedScale: 1.0, intonationScale: 1.3}}
   news:
-    perplexity:
-      enabled: false
-      model: "sonar"
-      temperature: 0.2
-      max_tokens: 2048
-      search_recency_filter: "week"
+    perplexity: {enabled: false, model: "sonar", temperature: 0.2, max_tokens: 2048, search_recency_filter: "week"}
+  cloudflare_ai: {account_id: "dc1aa018702e10045b00865b63f144d0", model: "@cf/black-forest-labs/flux-1-schnell"}
 
-  cloudflare_ai:
-    account_id: "dc1aa018702e10045b00865b63f144d0"
-    model: "@cf/black-forest-labs/flux-1-schnell"
-
-logging:
-  level: "INFO"
-  format: "json"
+logging: {level: "INFO", format: "json"}
 
 automation:
   enabled: true
   venv_activate: ".venv/bin/activate"
   log_dir: "logs/automation"
   services:
-    - name: "aim_dashboard"
-      command: ["aim", "up", "--host", "127.0.0.1", "--port", "43800"]
-    - name: "voicevox"
-      command: ["bash", "scripts/voicevox_manager.sh", "start"]
-    - name: "discord_news_bot"
-      command: ["python", "scripts/discord_news_bot.py"]
+    - {name: "aim_dashboard", command: ["aim", "up", "--host", "127.0.0.1", "--port", "43800"]}
+    - {name: "voicevox", command: ["bash", "scripts/voicevox_manager.sh", "start"]}
+    - {name: "discord_news_bot", command: ["python", "scripts/discord_news_bot.py"]}
   schedules:
-    - name: "workflow_twice_daily"
-      command: ["bash", "scripts/run_workflow_cron.sh"]
-      cron: "0 6,18 * * *"
-    - name: "trend_workflow_hourly"
-      command: ["uv", "run", "python", "-m", "src.main"]
-      args: ["--trend-mode"]
-      cron: "0 * * * *"
+    - {name: "workflow_twice_daily", command: ["bash", "scripts/run_workflow_cron.sh"], cron: "0 6,18 * * *"}
+    - {name: "trend_workflow_hourly", command: ["uv", "run", "python", "-m", "src.main"], args: ["--trend-mode"], cron: "0 * * * *"}
+
+prompts:
+  research:
+    system: |
+      You are the Research Director for a premium Japanese finance channel.
+      Your job: Find a VIRAL topic, define the ANGLE, and identify CONTEXT from past videos.
+      
+      Past Videos:
+      {knowledge_base}
+      
+      Prioritize topics that are:
+      1. Paradigm Shifts (old rules obsolete)
+      2. Polarizing (strong opposing views)
+      3. Personal Stakes (impacts viewer's wealth)
+      4. Counter-Intuitive (common belief is wrong)
+      
+      Angles:
+      - STRUCTURAL: Deep historical/economic cause
+      - CONTRARIAN: Attack mainstream view
+      - FUTURE: 5-10 year prediction
+      - HOT-TAKE: Bold shareable opinion
+      - MYTH-BUSTER: Debunk common beliefs
+    user_template: |
+      Category: {category}
+      
+      Find the best topic and strategy.
+      
+      Output (JSON):
+      {{
+        "topic": "Punchy topic (under 10 words)",
+        "angle": "STRUCTURAL|CONTRARIAN|FUTURE|HOT-TAKE|MYTH-BUSTER",
+        "title_hook": "YouTube title (under 40 chars)",
+        "viral_hook": "One-sentence hook for thumbnail/intro",
+        "search_query": "Best query for deep research",
+        "key_questions": ["Q1", "Q2", "Q3"],
+        "past_callback": "Reference to past video if relevant (or null)"
+      }}
+
+  script:
+    system: |
+      あなたは人気YouTubeチャンネルのヒットメーカー構成作家。
+      視聴者が「なるほど！」と唸り、友人にシェアしたくなる知的エンターテイメントを設計する。
+    speakers:
+      analyst: {name: "春日部つむぎ", persona: "一人称「あーし」。明るく分析結果を平易に語る。"}
+      reporter: {name: "ずんだもん", persona: "一人称「ボク」。視聴者代表として「〜なのだ！」と問いかける。"}
+      narrator: {name: "玄野武宏", persona: "天の声。中立に議論を整理。"}
+    user_template: |
+      ニュース:
+      {news_items}
+      
+      【構成】
+      1. HOOK: 逆説的な問いで開始。常識を覆す。
+      2. INTRO: なぜ今これが重要か。視聴者へのメリット提示。
+      3. BODY:
+         - 玄野: データと歴史的背景
+         - つむぎ: 洞察と因果関係
+         - ずんだもん: 素朴な疑問
+         - 60-90秒ごとに「意外な事実」を挿入
+      4. CLIMAX: 一つの明確なメッセージ。シェアしたくなる一言。
+      5. CTA: 視聴者の思考を促す質問。「あなたはA派？B派？」
+      
+      【出力: YAMLのみ】
+      segments:
+        - speaker: "春日部つむぎ"
+          text: "..."
+        - speaker: "ずんだもん"
+          text: "..."
+
+scene_prompts:
+  common:
+    quality: "cinematic 16:9, professional grade, ultra sharp"
+    youtube_appeal: "bold composition, saturated color palette, instant visual impact"
+    composition_techniques: ["rule of thirds framing", "leading lines perspective", "symmetrical balance", "dynamic diagonal composition", "golden ratio layout"]
+    negative_base: "text, watermark, people, faces, low quality, blurry, VRChat, virtual, metaverse"
+  literal:
+    description: "Concrete financial and business scenes"
+    core_elements:
+      - "metropolitan financial district, glass architecture, reflective surfaces"
+      - "trading floor environment, multiple digital displays, data visualization"
+      - "currency and financial symbols, holographic projection, digital space"
+      - "executive office interior, panoramic windows, urban skyline"
+      - "technology infrastructure, server systems, data flow visualization"
+      - "iconic financial landmark, monumental scale, dramatic perspective"
+      - "stock exchange architecture, LED information displays, modern design"
+      - "secure vault environment, precious metal storage, institutional setting"
+    mood_modifiers:
+      crisis: {lighting: "high contrast chiaroscuro, dramatic shadows, red key light", atmosphere: "tension, storm clouds, ominous sky", color: "crimson red, midnight blue, stark contrast"}
+      opportunity: {lighting: "golden hour glow, rim lighting, warm highlights", atmosphere: "optimism, clear skies, energetic", color: "emerald green, amber gold, azure blue"}
+      neutral: {lighting: "three-point lighting, balanced exposure, professional", atmosphere: "stability, neutral weather, corporate", color: "slate gray, steel blue, charcoal"}
+    negative_extra: "anime, cartoon, cluttered, messy"
+  abstract:
+    description: "Abstract metaphors for emotions and market sentiment"
+    core_elements:
+      - "ocean dynamics, wave motion, water energy"
+      - "mountain landscape, cloud formations, atmospheric drama"
+      - "liquid metal flow, reflective surface, fluid motion"
+      - "crystalline structures, light refraction, geometric patterns"
+      - "cosmic phenomena, nebula, stellar formations"
+      - "particle dynamics, organized flow, systematic movement"
+      - "atmospheric light, volumetric rays, ethereal glow"
+      - "organic growth, time-lapse transformation, natural expansion"
+    mood_modifiers:
+      crisis: {atmosphere: "turbulence, storm energy, electrical discharge", color: "deep violet, charcoal gray, electric cyan, blood red", motion: "chaos, vortex spiral, explosive force"}
+      opportunity: {atmosphere: "dawn light, natural bloom, ascending energy", color: "sunrise orange, spring green, sky blue, rose pink", motion: "upward trajectory, expansion, harmonic flow"}
+      neutral: {atmosphere: "stillness, symmetry, gentle undulation", color: "ocean blue, dove gray, seafoam teal, balanced palette", motion: "steady pulse, gentle wave, calm rhythm"}
+    negative_extra: "buildings, cities, finance symbols, charts, literal objects"
+  atmospheric:
+    description: "Soft unobtrusive backgrounds for text/character overlays"
+    core_elements:
+      - "defocused urban lights, bokeh orbs, night ambiance"
+      - "gradient color field, smooth transition, minimal texture"
+      - "out-of-focus workspace, depth of field, soft environment"
+      - "abstract color wash, subtle grain, clean backdrop"
+      - "frosted glass effect, diffused cityscape, translucent layer"
+      - "lens flare elements, light leak, gradient overlay"
+      - "natural bokeh, leaf patterns, organic blur"
+      - "color gradient, seamless blend, minimalist aesthetic"
+    mood_modifiers:
+      crisis: {color: "arctic blue, deep purple, high contrast gradient", effect: "strong bokeh, aggressive depth of field, sharp blur"}
+      opportunity: {color: "honey gold, mint green, warm gradient", effect: "soft glow, gentle bokeh, luminous haze"}
+      neutral: {color: "pearl gray, powder blue, corporate neutral", effect: "balanced bokeh, professional gradient, clean blur"}
+    negative_extra: "sharp details, busy composition, complex patterns"
+  youtube_boosters: ["award-winning cinematography", "professional photography standard", "editorial quality composition", "visually striking", "immediately captivating", "scroll-stopping imagery", "masterful lighting", "perfect color harmony"]
