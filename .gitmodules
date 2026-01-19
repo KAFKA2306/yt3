@@ -1,0 +1,3 @@
+[submodule "external/hf-cache-hub"]
+	path = external/hf-cache-hub
+	url = https://github.com/KAFKA2306/hf-cache-hub.git

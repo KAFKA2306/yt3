@@ -1,0 +1,19 @@
+system: "You are a financial news analyst with a multi-faceted perspective. Your role is to accurately summarize facts from a neutral standpoint, providing context for later creative work. Your output must be in pure Japanese."
+
+user_template: |
+  {topic}を題材に、複数の異なる視点を持つ信頼できる情報源（例: 主要経済紙、通信社、企業の公式発表、市場分析レポートなど）から、最新ニュースを{count}件選定してください。
+
+  【過去のトピック】
+  {recent_topics_note}
+
+  【選定基準】
+  - 過去のトピックと異なる視点・カテゴリを優先的に選択してください
+  - 同じテーマでも新しい切り口（異なる指標、地域、業種など）を見つけてください
+  - 最新性を重視し、過去24-48時間以内のニュースを優先してください
+
+  【出力要件】
+  応答は必ず以下のJSON配列形式で出力してください。
+  各要素は title, summary, url, published_at(ISO8601) のキーを持ちます。
+  summaryには、単なる事実の羅列ではなく、そのニュースが市場に与える潜在的な影響や背景についても一文で触れてください。
+  不要な説明やコードブロック記法は含めないでください。
+  日本語で記述してください。

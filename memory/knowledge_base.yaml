@@ -1,0 +1,11 @@
+videos:
+  - id: "init_001"
+    date: "2025-01-01"
+    topic: "NISA Reform"
+    angle: "Structural"
+    summary: "Explained the 2026 NISA changes as a government strategy to shift assets from cash to stocks."
+  - id: "init_002"
+    date: "2025-01-15"
+    topic: "Yen Weakness"
+    angle: "Macro Cycles"
+    summary: "Described the 50-year weak yen cycle utilizing historical interest rate data."

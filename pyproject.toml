@@ -1,0 +1,97 @@
+[project]
+name = "youtube-ai-v2"
+version = "2.0.0"
+description = "Minimal, resilient YouTube video generator from financial news"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "pydantic",
+    "pyyaml",
+    "litellm",
+    "ffmpeg-python",
+    "python-dotenv",
+    "pydub",
+    "imageio-ffmpeg",
+    "Pillow",
+    "requests",
+    "google-auth",
+    "google-auth-oauthlib",
+    "google-api-python-client",
+    "discord.py",
+    "feedgen",
+    "tweepy",
+    "aim",
+    "torch",
+    "diffusers @ git+https://github.com/huggingface/diffusers",
+    "transformers",
+    "huggingface-hub",
+    "haystack-ai",
+    "langgraph",
+    "langchain-google-genai",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "ruff",
+    "mypy",
+    "types-pyyaml",
+    "types-requests",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "config", "docs", "tests", "pyproject.toml", "README.md"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: Unit tests (fast, no external deps)",
+    "integration: Integration tests (mocked APIs)",
+    "e2e: End-to-end tests (real APIs, slow)",
+]
+
+[tool.mypy]
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = [
+    "pydub",
+    "pydub.silence",
+    "pydub.effects",
+    "pydub.utils",
+    "tweepy",
+    "feedgen",
+    "diffusers",
+    "transformers",
+    "langchain_google_genai",
+    "aim",
+    "google.auth",
+    "google_auth_oauthlib",
+    "googleapiclient",
+    "discord",
+]
+ignore_missing_imports = true
+
+
