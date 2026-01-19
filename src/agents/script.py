@@ -29,10 +29,17 @@ class ScriptAgent:
 
         # We need to inject the extra context into the prompt
         # Assuming the prompt has placeholders or we append it
-        strategy_str = f"Strategy/Angle: {director_data.get('angle', 'Default')}\nKey Questions: {director_data.get('key_questions', [])}"
+        strategy_str = (
+            f"Strategy/Angle: {director_data.get('angle', 'Default')}\n"
+            f"Key Questions: {director_data.get('key_questions', [])}"
+        )
         context_str = f"Past References: {knowledge_context.get('past_references', [])}"
 
-        user = base_prompt.format(news_items=news) + f"\n\n[STRATEGIC INSTRUCTION]\n{strategy_str}\n\n[KNOWLEDGE CONTEXT]\n{context_str}"
+        user = (
+            base_prompt.format(news_items=news)
+            + f"\n\n[STRATEGIC INSTRUCTION]\n{strategy_str}"
+            + f"\n\n[KNOWLEDGE CONTEXT]\n{context_str}"
+        )
 
         messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
         res = self.llm.invoke(messages)
