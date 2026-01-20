@@ -63,3 +63,7 @@ tasks:
   publish:
     cmds: ["npx tsx src/step.ts publish {{.CLI_ARGS}}"]
     desc: "Run publish agent (YouTube/Twitter). Args: [run_id|latest]"
+
+  memory:sync:
+    cmds: ["npx tsx scripts/sync_memory.ts"]
+    desc: "Sync runs to memory/index.yaml for RAG"
