@@ -1,11 +1,7 @@
-import fs from "fs";
-import path from "path";
-import yaml from "js-yaml";
-import { AssetStore } from "../asset.js";
-import { ROOT } from "../config.js";
-import { BaseAgent } from "./base.js";
-import { parseLlmJson } from "../utils.js";
-import { NewsItem } from "../models.js";
+import { AssetStore, ROOT, BaseAgent, parseLlmJson } from "../core.js";
+import { NewsItem } from "../types.js";
+
+import { loadMemoryIndex, loadMemoryEssences } from "../agents/memory.js";
 
 export interface ResearchResult { director_data: any; news: NewsItem[]; memory_context: string; }
 
@@ -13,8 +9,8 @@ export class ResearchAgent extends BaseAgent {
     constructor(store: AssetStore) { super(store, "research", { temperature: 0.5 }); }
 
     async loadMemory(query: string): Promise<{ recent: string; essences: string }> {
-        const idx = yaml.load(fs.readFileSync(path.join(ROOT, "memory", "index.yaml"), "utf8")) as any;
-        const ess = yaml.load(fs.readFileSync(path.join(ROOT, "memory", "essences.yaml"), "utf8")) as any;
+        const idx = loadMemoryIndex();
+        const ess = loadMemoryEssences();
         const recent = idx.videos.filter((v: any) => (Date.now() - new Date(v.date).getTime()) / 86400000 <= 14);
 
         let relevant = ess.essences;

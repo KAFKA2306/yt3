@@ -1,10 +1,16 @@
-import fs from "fs-extra";
 import path from "path";
+import fs from "fs-extra";
 import yaml from "js-yaml";
-import { AssetStore } from "../asset.js";
-import { ROOT } from "../config.js";
-import { BaseAgent } from "./base.js";
-import { parseLlmJson } from "../utils.js";
+import { AssetStore, BaseAgent, ROOT, readYamlFile } from "../core.js";
+import { parseLlmJson } from "../core.js";
+
+export function loadMemoryIndex(): any {
+    return readYamlFile(path.join(ROOT, "memory", "index.yaml")) || { videos: [] };
+}
+
+export function loadMemoryEssences(): any {
+    return readYamlFile(path.join(ROOT, "memory", "essences.yaml")) || { essences: [] };
+}
 
 export class MemoryAgent extends BaseAgent {
     constructor(store: AssetStore) { super(store, "memory", { temperature: 0.2 }); }
@@ -19,10 +25,7 @@ export class MemoryAgent extends BaseAgent {
 
         // 1. Update Index (Videos)
         const indexPath = path.join(ROOT, "memory", "index.yaml");
-        let idx: any = { videos: [] };
-        if (fs.existsSync(indexPath)) {
-            idx = yaml.load(fs.readFileSync(indexPath, "utf8"));
-        }
+        let idx = loadMemoryIndex();
 
         const newEntry = {
             id: state.run_id,
@@ -39,10 +42,7 @@ export class MemoryAgent extends BaseAgent {
 
         // 2. Update Essences
         const essencesPath = path.join(ROOT, "memory", "essences.yaml");
-        let ess: any = { essences: [] };
-        if (fs.existsSync(essencesPath)) {
-            ess = yaml.load(fs.readFileSync(essencesPath, "utf8"));
-        }
+        let ess = loadMemoryEssences();
 
         const cfg = this.loadPrompt("memory");
         const scriptText = state.script.lines.map((l: any) => l.text).join(" ");

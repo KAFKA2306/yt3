@@ -1,10 +1,8 @@
-
 import fs from "fs-extra";
 import path from "path";
 import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
-import { AssetStore } from "../asset.js";
-import { loadConfig } from "../config.js";
+import { AssetStore, loadConfig } from "../core.js";
 
 export class PublishAgent {
     store: AssetStore;

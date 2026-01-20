@@ -2,15 +2,14 @@
 
 | File Path | Core Responsibility | Key Logic |
 | :--- | :--- | :--- |
+| File Path | Core Responsibility | Key Logic |
+| :--- | :--- | :--- |
 | `src/index.ts` | Entry Point | Setup env and run graph. |
 | `src/graph.ts` | Orchestrator | Direct 4-agent linear flow. |
-| `src/state.ts` | State | Global data interfaces. |
-| `src/models.ts` | Models | Shared domain models. |
-| `src/config.ts` | Config | Provider and prompt loading. |
-| `src/asset.ts` | Storage | Run-specific asset management. |
-| `src/utils.ts` | Parsers | Standardized LLM result processing. |
+| `src/types.ts` | Types | Shared domain models and global state. |
+| `src/core.ts` | Core | Config, Assets, Utils, and Base Agent. |
+| `src/layout_engine.ts` | Layout | Visual composition and rendering. |
 | `src/step.ts` | CLI | Granular stage execution. |
-| `src/agents/base.ts` | Foundation | Minimal LLM wrapper. |
 | `src/agents/research.ts` | Research | Memory novelty + single-turn web research. |
 | `src/agents/content.ts` | Content | Single-turn script & SEO generation. |
 | `src/agents/media.ts` | Production | Automated TTS, image, and video assembly. |

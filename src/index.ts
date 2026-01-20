@@ -1,9 +1,9 @@
 
-import "./config.js"; // Ensure config (and dotenv) is loaded first
+import "./core.js"; // Ensure config (and dotenv) is loaded first
 import { randomUUID } from "crypto";
-import { AssetStore } from "./asset.js";
+import { AssetStore } from "./core.js";
 import { createGraph } from "./graph.js";
-import { AgentState } from "./state.js";
+import { AgentState } from "./types.js";
 
 async function main() {
     const runId = process.env.RUN_ID || new Date().toISOString().split("T")[0];

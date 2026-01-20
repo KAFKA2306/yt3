@@ -1,15 +1,11 @@
 import path from "path";
+import os from "os";
 import fs from "fs-extra";
 import axios from "axios";
 import ffmpeg from "fluent-ffmpeg";
-import sharp from "sharp";
-import os from "os";
-import { AssetStore } from "../asset.js";
-import { loadConfig, getSpeakers, ROOT } from "../config.js";
-import { Script } from "../models.js";
+import { AssetStore, loadConfig, getSpeakers, resolvePath } from "../core.js";
+import { Script } from "../types.js";
 import { LayoutEngine, RenderPlan } from "../layout_engine.js";
-
-const resolvePath = (p: string): string => path.isAbsolute(p) ? p : path.join(ROOT, p);
 
 export interface MediaResult { audio_paths: string[]; thumbnail_path: string; video_path: string; subtitle_path: string; }
 
@@ -38,7 +34,7 @@ export class MediaAgent {
         const audioDir = this.store.audioDir();
 
         // 1. Generate Audio
-        const audio_paths = await Promise.all(script.lines.map(async (l, i) => {
+        const audio_paths = await Promise.all(script.lines.map(async (l: any, i: number) => {
             const speakerId = this.speakers[l.speaker];
             if (speakerId === undefined) throw new Error(`Unknown speaker: ${l.speaker}`);
             const q = await axios.post(`${this.ttsUrl}/audio_query`, null, { params: { text: l.text, speaker: speakerId } });
@@ -69,7 +65,8 @@ export class MediaAgent {
 
         // 3. Generate Visuals
         const thumbnail_path = path.join(this.store.runDir, "thumbnail.png");
-        await this.generateThumbnail(title, thumbnail_path);
+        const thumbPlan = await this.layout.createThumbnailRenderPlan();
+        await this.layout.renderThumbnail(thumbPlan, title, thumbnail_path);
 
         const video_path = path.join(this.store.videoDir(), "video.mp4");
         await this.generateVideo(fullAudio, thumbnail_path, subtitlePath, video_path, videoPlan);
@@ -80,24 +77,6 @@ export class MediaAgent {
 
     private getAudioDuration(p: string): Promise<number> {
         return new Promise((resolve, reject) => ffmpeg.ffprobe(p, (err, m) => err ? reject(err) : resolve(m.format.duration || 0)));
-    }
-
-    private async generateThumbnail(title: string, outputPath: string): Promise<void> {
-        const { width, height, title_font_size, palettes } = this.thumbConfig;
-        const palette = palettes[0];
-        const composites: sharp.OverlayOptions[] = [];
-
-        const plan = await this.layout.createThumbnailRenderPlan();
-
-        for (const ol of plan.overlays) {
-            const buf = await sharp(ol.resolvedPath).resize(ol.bounds.width, ol.bounds.height).toBuffer();
-            composites.push({ input: buf, top: ol.bounds.y, left: ol.bounds.x });
-        }
-
-        const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><style>.t{font-family:sans-serif;font-size:${title_font_size}px;font-weight:bold;fill:${palette.title_color};stroke:${palette.outline_outer_color};stroke-width:${palette.outline_outer_width}px;paint-order:stroke fill}</style><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="t">${title}</text></svg>`;
-        composites.push({ input: Buffer.from(svg), top: 0, left: 0 });
-
-        await sharp({ create: { width, height, channels: 4, background: palette.background_color } }).composite(composites).png().toFile(outputPath);
     }
 
     private generateVideo(audioPath: string, thumbPath: string, subtitlePath: string, outputPath: string, plan: RenderPlan): Promise<void> {

@@ -1,9 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import sharp from "sharp";
-import { loadConfig, ROOT } from "./config.js";
-
-const resolvePath = (p: string): string => path.isAbsolute(p) ? p : path.join(ROOT, p);
+import { loadConfig, resolvePath, ROOT } from "./core.js";
 
 export interface Rect {
     x: number;
@@ -255,5 +253,65 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         const sec = Math.floor(s % 60);
         const ms = Math.floor((s % 1) * 100);
         return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+    }
+
+    async renderThumbnail(plan: RenderPlan, title: string, outputFile: string): Promise<void> {
+        const { width, height, title_font_size, palettes } = this.config.steps.thumbnail;
+        const palette = palettes[0];
+        const composites: sharp.OverlayOptions[] = [];
+
+        // Background
+        composites.push({
+            input: { create: { width, height, channels: 4, background: palette.background_color } },
+            top: 0, left: 0
+        });
+
+        // Overlays
+        for (const ol of plan.overlays) {
+            const buf = await sharp(ol.resolvedPath).resize(ol.bounds.width, ol.bounds.height).toBuffer();
+            composites.push({ input: buf, top: ol.bounds.y, left: ol.bounds.x });
+        }
+
+        // Title text
+        const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><style>.t{font-family:sans-serif;font-size:${title_font_size}px;font-weight:bold;fill:${palette.title_color};stroke:${palette.outline_outer_color};stroke-width:${palette.outline_outer_width}px;paint-order:stroke fill}</style><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="t">${title}</text></svg>`;
+        composites.push({ input: Buffer.from(svg), top: 0, left: 0 });
+
+        await sharp({ create: { width, height, channels: 4, background: '#000000' } }) // Base canvas (ignored by bg overlay but good practice)
+            .composite(composites)
+            .png()
+            .toFile(outputFile);
+    }
+
+    async renderDebugVisuals(plan: RenderPlan, outputFile: string): Promise<void> {
+        const w = plan.canvas.width;
+        const h = plan.canvas.height;
+        const composites: sharp.OverlayOptions[] = [];
+
+        // Background (Generic Dark)
+        composites.push({
+            input: { create: { width: w, height: h, channels: 4, background: '#193d5a' } },
+            top: 0, left: 0
+        });
+
+        // Overlays (Box + Faded Image)
+        for (const ol of plan.overlays) {
+            const box = Buffer.from(`<svg width="${ol.bounds.width}" height="${ol.bounds.height}"><rect x="0" y="0" width="${ol.bounds.width}" height="${ol.bounds.height}" fill="none" stroke="red" stroke-width="5"/></svg>`);
+            composites.push({ input: box, top: ol.bounds.y, left: ol.bounds.x });
+
+            const img = await sharp(ol.resolvedPath).resize(ol.bounds.width, ol.bounds.height).modulate({ brightness: 0.5 }).toBuffer();
+            composites.push({ input: img, top: ol.bounds.y, left: ol.bounds.x });
+        }
+
+        // Subtitle Safe Area (if applicable)
+        if (plan.subtitleArea) {
+            const sa = plan.subtitleArea;
+            const subBox = Buffer.from(`<svg width="${w}" height="${h}"><rect x="${sa.x}" y="${sa.y}" width="${sa.width}" height="${sa.height}" fill="rgba(0,255,0,0.3)" stroke="green" stroke-width="2"/></svg>`);
+            composites.push({ input: subBox, top: 0, left: 0 });
+        }
+
+        await sharp({ create: { width: w, height: h, channels: 4, background: '#000000' } })
+            .composite(composites)
+            .png()
+            .toFile(outputFile);
     }
 }

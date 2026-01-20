@@ -1,7 +1,6 @@
 import path from "path";
 import fs from "fs-extra";
-import { AssetStore } from "./asset.js";
-import { ROOT } from "./config.js";
+import { AssetStore, ROOT } from "./core.js";
 import { createGraph } from "./graph.js";
 import { ResearchAgent } from "./agents/research.js";
 import { ContentAgent } from "./agents/content.js";

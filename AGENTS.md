@@ -1,57 +1,37 @@
-# Repository Guidelines
+# 開発ガイドライン (Development Manifesto)
 
-**Strict Clean Architecture & Graph-Centric Design**
+**コードベースの最小化と「動く」ことへの執着。**
 
-コードベースの最小化と信頼性を最優先する。エラーハンドリング禁止。抜本的な課題を解決。コメント禁止。最小のコードにしつつ、目標を達成する。
-DRYの原則に準拠。configファイル (`config/default.yaml` および `prompts/*.yaml`) を変更するだけで、意図通りに全体の動作が変更できなければならない。
-ハードコーディング禁止。`src/config.ts`経由で設定を読み込むこと。
-ROOTにファイルを生成しない。適切なディレクトリに追加していく。使い捨てのコードを生成しない。無用なテストを削除する。
+## 鉄の掟 (Iron Rules)
 
-## Project Structure
+1.  **最小化 (Minimize)**: コード量は罪。機能を減らし、ファイルを減らし、依存を減らす。
+2.  **重複排除 (DRY)**: コピペ厳禁。共通ロジックは全て `src/core.ts` に集約せよ。
+3.  **設定駆動 (Config-Driven)**: ハードコーディング即死。全て `src/core.ts` 経由で `config/*.yaml` から読み込め。
+4.  **コメント禁止 (No Comments)**: コード自体がドキュメントだ。補足が必要なコードは書き直せ。
+5.  **エラーハンドリング禁止 (Fail Fast)**: `try-catch` で隠蔽するな。クラッシュさせてバグを直せ。
+6.  **継承 (Inheritance)**: 全てのAgentは `BaseAgent` (`src/core.ts`) を継承せよ。
+7.  **ドキュメント (Docs)**: 日本語のみ記述せよ (Write in Japanese only)。
 
-- **src/**: Core application logic.
-    - `index.ts`: Entry point.
-    - `graph.ts`: LangGraph `StateGraph` definition.
-    - `models.ts`: Zod schemas & Types.
-    - `state.ts`: `AgentState` interface.
-    - `config.ts`: Configuration, Prompt loader, LLM Factory.
-    - `utils.ts`: Parsers and helpers.
-    - **agents/**:
-        - `base.ts`: **BaseAgent** (Shared LLM logic).
-        - `director.ts`: **DirectorAgent** (Strategy/Research).
-        - `reporter.ts`: **ReporterAgent** (Web Search/News).
-        - `script.ts`: **ScriptAgent** (Content Generation).
-        - `audio.ts`, `video.ts`: Media processing.
+## アーキテクチャ (Structure)
 
-- **config/**: YAML configuration.
-    - `default.yaml`: Application settings.
+**Single Source of Truth**: `src/core.ts`
 
-- **prompts/**: Prompt templates (YAML).
-    - `director.yaml`: Strategy prompting.
-    - `reporter.yaml`: Search extraction.
-    - `script.yaml`: Script generation.
+-   **src/**
+    -   `index.ts`: Entry Point.
+    -   `graph.ts`: LangGraph Definition.
+    -   `core.ts`: **CORE** (Config, Utils, AssetStore, BaseAgent).
+    -   `types.ts`: **TYPES** (Models, State, Schemas).
+    -   `layout_engine.ts`: **LAYOUT** (Visual Composition).
+    -   **agents/**:
+        -   `research.ts` (Strategy & Research)
+        -   `content.ts` (Script & SEO)
+        -   `media.ts` (TTS & Video Assembly)
+        -   `publish.ts` (YouTube & X)
+        -   `memory.ts` (Index & Essence)
 
-- **scripts/**: Automation & Bots (TypeScript).
-    - `tasks.ts`: Task runner.
+## 技術スタック (Tech Stack)
 
-## Build & Run
-
-- `task bootstrap` — complete setup (npm install).
-- `task run` — run workflow: `task run -- "Topic"`
-- `task lint` — type check (`tsc`).
-- `task up/down` — start/stop services.
-
-## Coding Rules
-
-1. **No Comments**: Self-explanatory code only.
-2. **Config-Driven**: Use `loadPrompt()` and `loadConfig()`.
-3. **Fail Fast**: No redundant `try-catch` blocks. Let errors bubble up.
-4. **Inheritance**: All LLM agents MUST extend `BaseAgent` to reuse logic.
-5. **Pure Functions**: Graph nodes should be stateless wrappers around Agents.
-
-## Technologies
-
-- **LangGraph.js**: Workflow orchestration.
-- **Gemini**: LLM (Model: `gemini-3-flash-preview` REQUIRED).
-- **Voicevox**: TTS engine.
-- **FFmpeg**: Video rendering.
+-   **LangGraph.js**: Workflow Orchestration.
+-   **Gemini**: LLM Inference (`gemini-3.0-flash-preview` REQUIRED).
+-   **Voicevox**: Audio Synthesis.
+-   **FFmpeg / Sharp**: Media Rendering.
