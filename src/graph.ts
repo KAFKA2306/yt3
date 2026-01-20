@@ -1,4 +1,3 @@
-
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { AssetStore } from "./asset.js";
 import { ResearchAgent } from "./agents/research.js";
@@ -8,18 +7,19 @@ import { PublishAgent } from "./agents/publish.js";
 import { AgentState } from "./state.js";
 
 const channels: any = {
-    run_id: { reducer: (x: string, y: string) => y, default: () => "" },
-    bucket: { reducer: (x: string, y: string) => y, default: () => "General" },
-    limit: { reducer: (x: number, y: number) => y, default: () => 3 },
+    run_id: { reducer: (x: any, y: any) => y, default: () => "" },
+    bucket: { reducer: (x: any, y: any) => y, default: () => "General" },
+    limit: { reducer: (x: any, y: any) => y, default: () => 3 },
     director_data: { reducer: (x: any, y: any) => y, default: () => undefined },
     news: { reducer: (x: any, y: any) => y, default: () => [] },
     script: { reducer: (x: any, y: any) => y, default: () => undefined },
     metadata: { reducer: (x: any, y: any) => y, default: () => undefined },
-    audio_paths: { reducer: (x: string[], y: string[]) => y, default: () => [] },
-    video_path: { reducer: (x: string, y: string) => y, default: () => "" },
-    thumbnail_path: { reducer: (x: string, y: string) => y, default: () => "" },
-    status: { reducer: (x: string, y: string) => y, default: () => "idle" },
+    audio_paths: { reducer: (x: any, y: any) => y, default: () => [] },
+    video_path: { reducer: (x: any, y: any) => y, default: () => "" },
+    thumbnail_path: { reducer: (x: any, y: any) => y, default: () => "" },
+    status: { reducer: (x: any, y: any) => y, default: () => "idle" },
     publish_results: { reducer: (x: any, y: any) => y, default: () => undefined },
+    memory_context: { reducer: (x: any, y: any) => y, default: () => "" },
 };
 
 export function createGraph(store: AssetStore) {
@@ -27,32 +27,26 @@ export function createGraph(store: AssetStore) {
     const content = new ContentAgent(store);
     const media = new MediaAgent(store);
     const publish = new PublishAgent(store);
-
     const workflow = new StateGraph<AgentState>({ channels });
 
-    // Research: memory search + web search + angle selection
     workflow.addNode("research", async (state) => {
-        const result = await research.run(state.bucket, state.limit);
-        return { director_data: result.director_data, news: result.news };
+        const res = await research.run(state.bucket, state.limit);
+        return { director_data: res.director_data, news: res.news, memory_context: res.memory_context };
     });
 
-    // Content: script + metadata generation
     workflow.addNode("content", async (state) => {
-        const result = await content.run(state.news!, state.director_data!);
-        return { script: result.script, metadata: result.metadata };
+        const res = await content.run(state.news!, state.director_data!, state.memory_context!);
+        return { script: res.script, metadata: res.metadata };
     });
 
-    // Media: audio + thumbnail + video
     workflow.addNode("media", async (state) => {
-        const thumbTitle = state.metadata?.thumbnail_title || state.script!.title;
-        const result = await media.run(state.script!, thumbTitle);
-        return { audio_paths: result.audio_paths, thumbnail_path: result.thumbnail_path, video_path: result.video_path };
+        const res = await media.run(state.script!, state.metadata?.thumbnail_title || state.script!.title);
+        return { audio_paths: res.audio_paths, thumbnail_path: res.thumbnail_path, video_path: res.video_path };
     });
 
-    // Publish: YouTube + Twitter
     workflow.addNode("publish", async (state) => {
-        const results = await publish.run(state);
-        return { publish_results: results, status: "completed" };
+        const res = await publish.run(state);
+        return { publish_results: res, status: "completed" };
     });
 
     const g = workflow as any;

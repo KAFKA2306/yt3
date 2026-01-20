@@ -1,4 +1,3 @@
-
 import { NewsItem, Script } from "./models.js";
 
 export interface DirectorData {
@@ -33,4 +32,5 @@ export interface AgentState {
     director_data?: DirectorData;
     metadata?: Metadata;
     publish_results?: PublishResults;
+    memory_context?: string;
 }

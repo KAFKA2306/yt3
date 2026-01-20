@@ -22,48 +22,32 @@ tasks:
     aliases: [r]
     cmds: ["npx tsx scripts/tasks.ts run {{.CLI_ARGS}}"]
 
+  run:cached:
+    cmds: ["SKIP_LLM=true npx tsx scripts/tasks.ts run {{.CLI_ARGS}}"]
+    desc: "Run workflow using cached LLM outputs"
+
   lint:
     aliases: [l]
     cmds: [npx tsx scripts/tasks.ts lint]
 
-  hf:sync:
-    cmds: [npx tsx scripts/tasks.ts hf:sync]
+  research:
+    cmds: ["npx tsx src/step.ts research {{.CLI_ARGS}}"]
+  research:cached:
+    cmds: ["SKIP_LLM=true npx tsx src/step.ts research {{.CLI_ARGS}}"]
 
-  cron:
-    cmds: [npx tsx scripts/tasks.ts cron]
+  content:
+    cmds: ["npx tsx src/step.ts content {{.CLI_ARGS}}"]
+  content:cached:
+    cmds: ["SKIP_LLM=true npx tsx src/step.ts content {{.CLI_ARGS}}"]
 
-  director:
-    cmds: ["npx tsx src/step.ts director {{.CLI_ARGS}}"]
-    desc: "Run director agent. Args: [run_id|latest|new] [bucket]"
+  media:
+    cmds: ["npx tsx src/step.ts media {{.CLI_ARGS}}"]
+  media:cached:
+    cmds: ["SKIP_LLM=true npx tsx src/step.ts media {{.CLI_ARGS}}"]
 
-  reporter:
-    cmds: ["npx tsx src/step.ts reporter {{.CLI_ARGS}}"]
-    desc: "Run reporter agent. Args: [run_id|latest]"
-
-  script:
-    cmds: ["npx tsx src/step.ts script {{.CLI_ARGS}}"]
-    desc: "Run script agent. Args: [run_id|latest]"
-
-  metadata:
-    cmds: ["npx tsx src/step.ts metadata {{.CLI_ARGS}}"]
-    desc: "Run metadata agent. Args: [run_id|latest]"
-
-  thumbnail:
-    cmds: ["npx tsx src/step.ts thumbnail {{.CLI_ARGS}}"]
-    desc: "Run thumbnail agent. Args: [run_id|latest]"
-
-  audio:
-    cmds: ["npx tsx src/step.ts audio {{.CLI_ARGS}}"]
-    desc: "Run audio agent. Args: [run_id|latest]"
-
-  video:
-    cmds: ["npx tsx src/step.ts video {{.CLI_ARGS}}"]
-    desc: "Run video agent. Args: [run_id|latest]"
- 
   publish:
     cmds: ["npx tsx src/step.ts publish {{.CLI_ARGS}}"]
-    desc: "Run publish agent (YouTube/Twitter). Args: [run_id|latest]"
 
   memory:sync:
     cmds: ["npx tsx scripts/sync_memory.ts"]
-    desc: "Sync runs to memory/index.yaml for RAG"
+    desc: "Sync runs to memory/index.yaml and essences.yaml"
