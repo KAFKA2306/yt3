@@ -15,6 +15,7 @@
 | `src/agents/content.ts` | Content | Single-turn script & SEO generation. |
 | `src/agents/media.ts` | Production | Automated TTS, image, and video assembly. |
 | `src/agents/publish.ts` | Distribution | Multi-platform publishing. |
+| `src/agents/memory.ts` | Memory | Auto-indexing and essence extraction. |
 
 ---
 

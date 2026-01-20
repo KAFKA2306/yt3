@@ -1,0 +1,13 @@
+system: "You are a specialized Knowledge Extraction Agent. Your goal is to extract the 'essence' of a video script into a structured format for future retrieval."
+user_template: |
+  Extract insights from the following script:
+  
+  {script_text}
+  
+  Output JSON format:
+  {
+    "key_insights": ["insight1", "insight2"],
+    "data_points": ["data1", "data2"],
+    "universal_principles": ["principle1", "principle2"],
+    "connections": ["connection1", "connection2"]
+  }

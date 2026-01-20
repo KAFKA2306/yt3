@@ -3,6 +3,7 @@ import { AssetStore } from "./asset.js";
 import { ResearchAgent } from "./agents/research.js";
 import { ContentAgent } from "./agents/content.js";
 import { MediaAgent } from "./agents/media.js";
+import { MemoryAgent } from "./agents/memory.js";
 import { PublishAgent } from "./agents/publish.js";
 import { AgentState } from "./state.js";
 
@@ -27,6 +28,7 @@ export function createGraph(store: AssetStore) {
     const content = new ContentAgent(store);
     const media = new MediaAgent(store);
     const publish = new PublishAgent(store);
+    const memory = new MemoryAgent(store);
     const workflow = new StateGraph<AgentState>({ channels });
 
     workflow.addNode("research", async (state) => {
@@ -46,7 +48,12 @@ export function createGraph(store: AssetStore) {
 
     workflow.addNode("publish", async (state) => {
         const res = await publish.run(state);
-        return { publish_results: res, status: "completed" };
+        return { publish_results: res, status: "published" };
+    });
+
+    workflow.addNode("memory", async (state) => {
+        await memory.run(state);
+        return { status: "completed" };
     });
 
     const g = workflow as any;
@@ -54,7 +61,8 @@ export function createGraph(store: AssetStore) {
     g.addEdge("research", "content");
     g.addEdge("content", "media");
     g.addEdge("media", "publish");
-    g.addEdge("publish", END);
+    g.addEdge("publish", "memory");
+    g.addEdge("memory", END);
 
     return workflow.compile();
 }
