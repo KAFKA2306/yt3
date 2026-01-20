@@ -110,6 +110,10 @@ TASKS["cron"] = () => {
     runCmd("npx", ["tsx", "scripts/automation.ts", "--install-cron"]);
 };
 
+TASKS["audit:overlays"] = () => {
+    runCmd("npx", ["tsx", "scripts/audit_overlays.ts"]);
+};
+
 const cmd = ARGS[0];
 if (cmd && TASKS[cmd]) {
     TASKS[cmd]();

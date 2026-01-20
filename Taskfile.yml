@@ -47,3 +47,6 @@ tasks:
 
   publish:
     cmds: ["npx tsx src/step.ts publish {{.CLI_ARGS}}"]
+
+  audit:overlays:
+    cmds: ["npx tsx scripts/tasks.ts audit:overlays"]
