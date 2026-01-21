@@ -4,12 +4,15 @@ import { DirectorData, Metadata, NewsItem, Script } from "../types.js";
 export interface ContentResult { script: Script; metadata: Metadata; }
 
 export class ContentAgent extends BaseAgent {
-    constructor(store: AssetStore) { super(store, "content", { temperature: 0.7 }); }
+    constructor(store: AssetStore) { super(store, "content", { temperature: 0.4 }); }
 
     async run(news: NewsItem[], director: DirectorData, context: string): Promise<ContentResult> {
-        this.logInput({ news_count: news.length, angle: director.angle });
+        this.logInput({ news, director, context });
         const cfg = this.loadPrompt("content");
-        const user = `${cfg.user_template}\n\n[NEWS]\n${JSON.stringify(news)}\n\n[STRATEGY]\n${director.angle}\n\n[PAST]\n${context}`;
+
+        // Format news with URLs explicitly to help the LLM cite sources
+        const formattedNews = news.map(n => `Title: ${n.title}\nSource: ${n.url}\nSummary: ${n.summary}\nSnippet: ${n.snippet || "No snippet"}`).join("\n\n");
+        const user = cfg.user_template.replace("{news_items}", formattedNews).replace("{strategy}", director.angle);
 
         return this.runLlm(cfg.system, user, text => {
             const data = parseLlmYaml<any>(text);

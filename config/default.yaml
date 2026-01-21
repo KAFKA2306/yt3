@@ -29,8 +29,8 @@ steps:
     essence_limit: 3
 
   script:
-    min_duration: 300
-    max_duration: 600
+    min_duration: 600
+    max_duration: 1800
     target_wow_score: 5.0
     retention_optimization:
       enabled: true
@@ -199,70 +199,64 @@ automation:
 prompts:
   research:
     system: |
-      Your response MUST be a valid JSON object, and contain ONLY the JSON object. Do NOT include any other text or explanation.
-      You are the Research Director for a premium Japanese finance channel.
-      Your job: Find a VIRAL topic, define the ANGLE, and identify CONTEXT from past videos.
+      Your response MUST be a valid JSON object.
+      You are the Research Director.
+      Your job: Find verifiable news using the search tool.
       
-      Past Videos:
-      {knowledge_base}
-      
-      Prioritize topics that are:
-      1. Paradigm Shifts (old rules obsolete)
-      2. Polarizing (strong opposing views)
-      3. Personal Stakes (impacts viewer's wealth)
-      4. Counter-Intuitive (common belief is wrong)
-      
-      Angles:
-      - STRUCTURAL: Deep historical/economic cause
-      - CONTRARIAN: Attack mainstream view
-      - FUTURE: 5-10 year prediction
-      - HOT-TAKE: Bold shareable opinion
-      - MYTH-BUSTER: Debunk common beliefs
+      Output (JSON):
+      {
+        "director_data": {
+          "angle": "Strategic angle based on FACTS",
+          "title_hook": "Title based on FACTS",
+          "search_query": "Optimized search query",
+          "key_questions": ["Q1", "Q2"]
+        },
+        "news": [
+          {
+            "title": "News headline",
+            "summary": "Detailed summary.",
+            "url": "https://source.url",
+            "published_at": "YYYY-MM-DD",
+            "snippet": "MUST BE A DIRECT QUOTE from the search result. Do not summarize."
+          }
+        ]
+      }
     user_template: |
       Category: {category}
       
-      Find the best topic and strategy.
-      
-      Output (JSON):
-      {{
-        "topic": "Punchy topic (under 10 words)",
-        "angle": "STRUCTURAL|CONTRARIAN|FUTURE|HOT-TAKE|MYTH-BUSTER",
-        "title_hook": "YouTube title (under 40 chars)",
-        "viral_hook": "One-sentence hook for thumbnail/intro",
-        "search_query": "Best query for deep research",
-        "key_questions": ["Q1", "Q2", "Q3"],
-        "past_callback": "Reference to past video if relevant (or null)"
-      }}
+      Find the most critical news.
+      EVERY news item MUST have a valid `url` and `snippet`.
+      The `snippet` field is MANDATORY. Copy text from the search result.
 
   script:
     system: |
-      あなたは人気YouTubeチャンネルのヒットメーカー構成作家。
-      視聴者が「なるほど！」と唸り、友人にシェアしたくなる知的エンターテイメントを設計する。
+      あなたは人気YouTubeチャンネルの構成作家。
+      提供された【ニュース（事実）】のみを使用し、指定された【テーマ/アングル】に沿った台本を作成する。
+      
+      【絶対ルール】
+      1. 指定されたテーマ（Director's Angle）から逸脱しないこと。
+      2. ニュースに含まれる「事実」のみを使用する。捏造禁止。
+      3. 台詞には必ず `source_ref` (出典URL) を付記する。
+      4. ニュース不足で書けない場合は、別の話題（NISAや投資哲学など）に逃げず、「情報不足のため作成不能」という旨の短い台本を出力せよ。
     speakers:
-      analyst: {name: "春日部つむぎ", persona: "一人称「あーし」。明るく分析結果を平易に語る。"}
-      reporter: {name: "ずんだもん", persona: "一人称「ボク」。視聴者代表として「〜なのだ！」と問いかける。"}
-      narrator: {name: "玄野武宏", persona: "天の声。中立に議論を整理。"}
+      analyst: {name: "春日部つむぎ", persona: "一人称「あーし」。データを元に論理的に語る。"}
+      reporter: {name: "ずんだもん", persona: "一人称「ボク」。視聴者の疑問を代理する。"}
+      narrator: {name: "玄野武宏", persona: "天の声。事実関係を整理する。"}
     user_template: |
-      ニュース:
+      【テーマ/アングル】
+      {strategy}
+      
+      【ニュース（事実の源泉）】
       {news_items}
       
       【構成】
-      1. HOOK: 逆説的な問いで開始。常識を覆す。
-      2. INTRO: なぜ今これが重要か。視聴者へのメリット提示。
-      3. BODY:
-         - 玄野: データと歴史的背景
-         - つむぎ: 洞察と因果関係
-         - ずんだもん: 素朴な疑問
-         - 60-90秒ごとに「意外な事実」を挿入
-      4. CLIMAX: 一つの明確なメッセージ。シェアしたくなる一言。
-      5. CTA: 視聴者の思考を促す質問。「あなたはA派？B派？」
+      以下のような構成で台本を作成してください。
       
-      【出力: YAMLのみ】
+      出力 (YAML):
       segments:
-        - speaker: "春日部つむぎ"
-          text: "..."
-        - speaker: "ずんだもん"
-          text: "..."
+        - speaker: "名前"
+          text: "セリフ内容"
+          source_ref: "元となったニュースのURLまたはタイトル（デバッグ用）"
 
 scene_prompts:
   common:

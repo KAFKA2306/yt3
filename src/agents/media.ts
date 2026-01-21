@@ -36,7 +36,11 @@ export class MediaAgent {
         const audio_paths = await Promise.all(script.lines.map(async (l: { speaker: string; text: string }, i: number) => {
             const speakerId = this.speakers[l.speaker];
             if (speakerId === undefined) throw new Error(`Unknown speaker: ${l.speaker}`);
-            const q = await axios.post(`${this.ttsUrl}/audio_query`, null, { params: { text: l.text, speaker: speakerId } });
+
+            // Fundamental simplification: Strip URLs and complex metadata from speech
+            const cleanText = this.cleanScriptText(l.text);
+
+            const q = await axios.post(`${this.ttsUrl}/audio_query`, null, { params: { text: cleanText, speaker: speakerId } });
             const s = await axios.post(`${this.ttsUrl}/synthesis`, q.data, { params: { speaker: speakerId }, responseType: 'arraybuffer' });
             const p = path.join(audioDir, `${String(i).padStart(3, '0')}.wav`);
             fs.writeFileSync(p, Buffer.from(s.data));
@@ -109,5 +113,14 @@ export class MediaAgent {
             cmd.outputOptions(["-map", "[outv]", "-map", "1:a", "-shortest", "-c:v", this.videoConfig.codec || "libx264", "-pix_fmt", "yuv420p"]);
             cmd.save(outputPath).on("end", () => resolve()).on("error", reject);
         });
+    }
+
+    private cleanScriptText(text: string): string {
+        return text
+            .replace(/https?:\/\/[^\s]+/g, "")
+            .replace(/\[.*?\]\((.*?)\)/g, "$1")
+            .replace(/source_ref:.*$/gm, "")
+            .replace(/\s+/g, " ")
+            .trim();
     }
 }
