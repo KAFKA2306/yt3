@@ -50,3 +50,7 @@ tasks:
 
   audit:overlays:
     cmds: ["npx tsx scripts/tasks.ts audit:overlays"]
+  
+  dryrun:
+    desc: "Run the full workflow in dry-run mode using cached LLM outputs"
+    cmds: ["DRY_RUN=true SKIP_LLM=true npx tsx src/index.ts {{.CLI_ARGS}}"]

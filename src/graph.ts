@@ -5,22 +5,33 @@ import { ContentAgent } from "./agents/content.js";
 import { MediaAgent } from "./agents/media.js";
 import { MemoryAgent } from "./agents/memory.js";
 import { PublishAgent } from "./agents/publish.js";
-import { AgentState } from "./types.js";
+import { AgentState, DirectorData, Script, Metadata, PublishResults } from "./types.js";
 
-const channels: any = {
-    run_id: { reducer: (x: any, y: any) => y, default: () => "" },
-    bucket: { reducer: (x: any, y: any) => y, default: () => "General" },
-    limit: { reducer: (x: any, y: any) => y, default: () => 3 },
-    director_data: { reducer: (x: any, y: any) => y, default: () => undefined },
-    news: { reducer: (x: any, y: any) => y, default: () => [] },
-    script: { reducer: (x: any, y: any) => y, default: () => undefined },
-    metadata: { reducer: (x: any, y: any) => y, default: () => undefined },
-    audio_paths: { reducer: (x: any, y: any) => y, default: () => [] },
-    video_path: { reducer: (x: any, y: any) => y, default: () => "" },
-    thumbnail_path: { reducer: (x: any, y: any) => y, default: () => "" },
-    status: { reducer: (x: any, y: any) => y, default: () => "idle" },
-    publish_results: { reducer: (x: any, y: any) => y, default: () => undefined },
-    memory_context: { reducer: (x: any, y: any) => y, default: () => "" },
+type ChannelReducer<T> = {
+    reducer: (x: T, y: T) => T;
+    default: () => T;
+};
+
+type StateChannels = {
+    [K in keyof AgentState]: ChannelReducer<AgentState[K]>;
+};
+
+const reducer = <T>(x: T, y: T): T => y;
+
+const channels: StateChannels = {
+    run_id: { reducer, default: () => "" },
+    bucket: { reducer, default: () => "macro_economy" },
+    limit: { reducer, default: () => 3 },
+    director_data: { reducer, default: () => undefined } as ChannelReducer<DirectorData | undefined>,
+    news: { reducer, default: () => [] },
+    script: { reducer, default: () => undefined } as ChannelReducer<Script | undefined>,
+    metadata: { reducer, default: () => undefined } as ChannelReducer<Metadata | undefined>,
+    audio_paths: { reducer, default: () => [] },
+    video_path: { reducer, default: () => "" },
+    thumbnail_path: { reducer, default: () => "" },
+    status: { reducer, default: () => "idle" },
+    publish_results: { reducer, default: () => undefined } as ChannelReducer<PublishResults | undefined>,
+    memory_context: { reducer, default: () => "" },
 };
 
 export function createGraph(store: AssetStore) {
@@ -56,7 +67,7 @@ export function createGraph(store: AssetStore) {
         return { status: "completed" };
     });
 
-    const g = workflow as any;
+    const g = workflow as unknown as { addEdge: (from: string, to: string) => void };
     g.addEdge(START, "research");
     g.addEdge("research", "content");
     g.addEdge("content", "media");

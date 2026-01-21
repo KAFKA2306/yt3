@@ -4,7 +4,8 @@
   "description": "<div align=\"center\">",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src --ext .ts"
   },
   "repository": {
     "type": "git",
@@ -23,6 +24,9 @@
     "@types/fs-extra": "^11.0.4",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.0.9",
+    "@typescript-eslint/eslint-plugin": "^8.53.1",
+    "@typescript-eslint/parser": "^8.53.1",
+    "eslint": "^9.39.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {

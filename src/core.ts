@@ -4,56 +4,45 @@ import fs from "fs-extra";
 import yaml from "js-yaml";
 import dotenv from "dotenv";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { AgentState } from "./types.js";
+import { AgentState, AppConfig, PromptData } from "./types.js";
 
 dotenv.config({ path: path.join(process.cwd(), "config", ".env") });
 
 export const ROOT = process.cwd();
 
 export function readYamlFile<T>(filePath: string): T {
-    try {
-        if (!fs.existsSync(filePath)) return {} as T;
-        return yaml.load(fs.readFileSync(filePath, "utf8")) as T;
-    } catch (e) {
-        console.error(`Failed to load YAML: ${filePath}`, e);
-        return {} as T;
-    }
+    return yaml.load(fs.readFileSync(filePath, "utf8")) as T;
 }
 
-export function cleanCodeBlock(text: any): string {
+export function cleanCodeBlock(text: string | unknown): string {
     const s = typeof text === "string" ? text : JSON.stringify(text);
     const match = s.match(/```(?:json|yaml|)\s*([\s\S]*?)\s*```/i);
     return (match ? match[1] : s).trim();
 }
 
-export function parseLlmJson<T>(text: any): T {
-    try {
-        return JSON.parse(cleanCodeBlock(text)) as T;
-    } catch (e) {
-        console.error("JSON Parse Error:", e);
-        return {} as T;
-    }
+export function parseLlmJson<T>(text: string | unknown): T {
+    return JSON.parse(cleanCodeBlock(text)) as T;
 }
 
-export function parseLlmYaml<T>(text: any): T {
-    try {
-        return yaml.load(cleanCodeBlock(text)) as T;
-    } catch (e) {
-        console.error("YAML Parse Error:", e);
-        return {} as T;
-    }
+export function parseLlmYaml<T>(text: string | unknown): T {
+    return yaml.load(cleanCodeBlock(text)) as T;
 }
 
 export function resolvePath(p: string): string {
     return path.isAbsolute(p) ? p : path.join(ROOT, p);
 }
 
-export function loadConfig(): any {
-    return readYamlFile(path.join(ROOT, "config", "default.yaml"));
+export function loadConfig(): AppConfig {
+    const cfg = readYamlFile<AppConfig>(path.join(ROOT, "config", "default.yaml"));
+    if (process.env.DRY_RUN === "true") {
+        if (cfg.steps.youtube) cfg.steps.youtube.dry_run = true;
+        if (cfg.steps.twitter) cfg.steps.twitter.dry_run = true;
+    }
+    return cfg;
 }
 
-export function loadPrompt(name: string): any {
-    return readYamlFile(path.join(ROOT, "prompts", `${name}.yaml`));
+export function loadPrompt(name: string): PromptData {
+    return readYamlFile<PromptData>(path.join(ROOT, "prompts", `${name}.yaml`));
 }
 
 export function getSpeakers(): Record<string, number> {
@@ -66,7 +55,7 @@ export function getLlmModel(): string {
     return cfg.providers.llm.gemini.model;
 }
 
-export function createLlm(options: any = {}): ChatGoogleGenerativeAI {
+export function createLlm(options: { model?: string; temperature?: number; extra?: Record<string, unknown> } = {}): ChatGoogleGenerativeAI {
     return new ChatGoogleGenerativeAI({
         model: options.model || getLlmModel(),
         apiKey: process.env.GEMINI_API_KEY,
@@ -83,18 +72,24 @@ export class AssetStore {
         fs.ensureDirSync(this.runDir);
     }
 
-    loadState(): any {
-        const p = path.join(this.runDir, "state.json");
-        return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf-8")) : {};
+    loadState(): Partial<AgentState> {
+        let state: Partial<AgentState> = {};
+        const stateJson = path.join(this.runDir, "state.json");
+        if (fs.existsSync(stateJson)) state = JSON.parse(fs.readFileSync(stateJson, "utf-8"));
+        for (const step of ["research", "content", "media", "memory"]) {
+            const outputPath = path.join(this.runDir, step, "output.yaml");
+            if (fs.existsSync(outputPath)) Object.assign(state, yaml.load(fs.readFileSync(outputPath, "utf-8")));
+        }
+        return state;
     }
 
-    updateState(update: any): void {
+    updateState(update: Partial<AgentState>): void {
         const state = this.loadState();
         const newState = { ...state, ...update };
         fs.writeFileSync(path.join(this.runDir, "state.json"), JSON.stringify(newState, null, 2));
     }
 
-    save(stage: string, name: string, data: any): string {
+    save(stage: string, name: string, data: unknown): string {
         const stageDir = path.join(this.runDir, stage);
         fs.ensureDirSync(stageDir);
         const p = path.join(stageDir, `${name}.yaml`);
@@ -102,9 +97,9 @@ export class AssetStore {
         return p;
     }
 
-    load(stage: string, name: string): any {
+    load<T>(stage: string, name: string): T {
         const p = path.join(this.runDir, stage, `${name}.yaml`);
-        return yaml.load(fs.readFileSync(p, "utf8"));
+        return yaml.load(fs.readFileSync(p, "utf8")) as T;
     }
 
     saveBinary(stage: string, name: string, data: Buffer): string {
@@ -115,11 +110,11 @@ export class AssetStore {
         return p;
     }
 
-    logInput(stage: string, data: any): void {
+    logInput(stage: string, data: unknown): void {
         this.save(stage, "input", data);
     }
 
-    logOutput(stage: string, data: any): void {
+    logOutput(stage: string, data: unknown): void {
         this.save(stage, "output", data);
     }
 
@@ -139,24 +134,29 @@ export class AssetStore {
 export abstract class BaseAgent {
     store: AssetStore;
     name: string;
-    opts: any;
+    opts: Record<string, unknown>;
 
-    constructor(store: AssetStore, name: string, opts: any = {}) {
+    constructor(store: AssetStore, name: string, opts: Record<string, unknown> = {}) {
         this.store = store;
         this.name = name;
         this.opts = opts;
     }
 
-    async runLlm<T>(system: string, user: string, parser: (text: string) => T, callOpts: any = {}): Promise<T> {
-        if (process.env.SKIP_LLM === "true") return this.store.load(this.name, "output") as T;
+    async runLlm<T>(system: string, user: string, parser: (text: string) => T, callOpts: Record<string, unknown> = {}): Promise<T> {
+        if (process.env.SKIP_LLM === "true") return this.store.load<T>(this.name, "output");
         const llm = createLlm({ ...this.opts, ...callOpts });
         const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
-        const parsed = parser(res.content as string);
         this.store.save(this.name, "raw_response", { content: res.content });
-        this.store.logOutput(this.name, parsed);
-        return parsed;
+        try {
+            const parsed = parser(res.content as string);
+            this.store.logOutput(this.name, parsed);
+            return parsed;
+        } catch (e) {
+            console.error(`Failed to parse LLM response for ${this.name}:`, res.content);
+            throw e;
+        }
     }
 
     loadPrompt(name: string) { return loadPrompt(name); }
-    logInput(data: any) { this.store.logInput(this.name, data); }
+    logInput(data: unknown) { this.store.logInput(this.name, data); }
 }

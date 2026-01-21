@@ -1,0 +1,5 @@
+task: [dryrun] DRY_RUN=true SKIP_LLM=true npx tsx src/index.ts macro_economy
+[dotenv@17.2.3] injecting env (14) from config/.env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+Starting run: 2026-01-21 with bucket: macro_economy
+Run completed
+Video Path: /home/kafka/2511youtuber/v3/yt3/runs/2026-01-21/video/video.mp4
