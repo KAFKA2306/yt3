@@ -2,55 +2,81 @@ version: '3'
 
 tasks:
   default:
-    cmds: [npx tsx scripts/tasks.ts]
+    cmds: [task --list]
     silent: true
 
-  bootstrap:
-    cmds: [npx tsx scripts/tasks.ts bootstrap]
-
-  up:
-    cmds: [npx tsx scripts/tasks.ts up]
-
-  down:
-    cmds: [npx tsx scripts/tasks.ts down]
-
-  status:
-    aliases: [s]
-    cmds: [npx tsx scripts/tasks.ts status]
-
+  # ============================================================================
+  # MAIN WORKFLOW
+  # ============================================================================
   run:
+    desc: "Run the full workflow (Production Mode)"
     aliases: [r]
     cmds: ["npx tsx scripts/tasks.ts run {{.CLI_ARGS}}"]
 
-  run:cached:
-    cmds: ["SKIP_LLM=true npx tsx scripts/tasks.ts run {{.CLI_ARGS}}"]
-    desc: "Run workflow using cached LLM outputs"
+  dryrun:
+    desc: "Safe Run: Cached LLM & No Publishing (DRY_RUN=true SKIP_LLM=true)"
+    cmds: ["DRY_RUN=true SKIP_LLM=true npx tsx src/index.ts {{.CLI_ARGS}}"]
 
+  run:cached:
+    desc: "Run full workflow using cached LLM outputs (WARNING: May Publish)"
+    cmds: ["SKIP_LLM=true npx tsx scripts/tasks.ts run {{.CLI_ARGS}}"]
+
+  # ============================================================================
+  # UNIT STEPS
+  # ============================================================================
+  research:
+    desc: "Run research step only"
+    cmds: ["npx tsx src/step.ts research {{.CLI_ARGS}}"]
+
+  content:
+    desc: "Run content step only"
+    cmds: ["npx tsx src/step.ts content {{.CLI_ARGS}}"]
+
+  media:
+    desc: "Run media step only"
+    cmds: ["npx tsx src/step.ts media {{.CLI_ARGS}}"]
+
+  publish:
+    desc: "Run publish step only (REAL PUBLISH)"
+    cmds: ["npx tsx src/step.ts publish {{.CLI_ARGS}}"]
+
+  publish:dry:
+    desc: "Run publish step in Dry Run mode (No external API calls)"
+    cmds: ["DRY_RUN=true npx tsx src/step.ts publish {{.CLI_ARGS}}"]
+
+  # ============================================================================
+  # INFRASTRUCTURE
+  # ============================================================================
+  up:
+    desc: "Start background services (Voicevox, Aim, Discord Bot)"
+    cmds: [npx tsx scripts/tasks.ts up]
+
+  down:
+    desc: "Stop all background services"
+    cmds: [npx tsx scripts/tasks.ts down]
+
+  status:
+    desc: "Check status of background services"
+    aliases: [s]
+    cmds: [npx tsx scripts/tasks.ts status]
+
+  bootstrap:
+    desc: "Install dependencies and setup environment"
+    cmds: [npx tsx scripts/tasks.ts bootstrap]
+
+  # ============================================================================
+  # UTILITIES
+  # ============================================================================
   lint:
+    desc: "Run type checking (tsc --noEmit)"
     aliases: [l]
     cmds: [npx tsx scripts/tasks.ts lint]
 
-  research:
-    cmds: ["npx tsx src/step.ts research {{.CLI_ARGS}}"]
-  research:cached:
-    cmds: ["SKIP_LLM=true npx tsx src/step.ts research {{.CLI_ARGS}}"]
-
-  content:
-    cmds: ["npx tsx src/step.ts content {{.CLI_ARGS}}"]
-  content:cached:
-    cmds: ["SKIP_LLM=true npx tsx src/step.ts content {{.CLI_ARGS}}"]
-
-  media:
-    cmds: ["npx tsx src/step.ts media {{.CLI_ARGS}}"]
-  media:cached:
-    cmds: ["SKIP_LLM=true npx tsx src/step.ts media {{.CLI_ARGS}}"]
-
-  publish:
-    cmds: ["npx tsx src/step.ts publish {{.CLI_ARGS}}"]
+  test:
+    desc: "Run unit tests (node --test)"
+    aliases: [t]
+    cmds: [npx tsx scripts/tasks.ts test]
 
   audit:overlays:
+    desc: "Audit video overlays"
     cmds: ["npx tsx scripts/tasks.ts audit:overlays"]
-  
-  dryrun:
-    desc: "Run the full workflow in dry-run mode using cached LLM outputs"
-    cmds: ["DRY_RUN=true SKIP_LLM=true npx tsx src/index.ts {{.CLI_ARGS}}"]

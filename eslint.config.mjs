@@ -1,14 +1,13 @@
-import tsParser from "@typescript-eslint/parser";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
+import tseslint from "typescript-eslint";
 import js from "@eslint/js";
 import globals from "globals";
 
-export default [
+export default tseslint.config(
     js.configs.recommended,
+    ...tseslint.configs.recommended,
     {
         files: ["src/**/*.ts"],
         languageOptions: {
-            parser: tsParser,
             parserOptions: {
                 project: "./tsconfig.json",
             },
@@ -16,14 +15,10 @@ export default [
                 ...globals.node,
             },
         },
-        plugins: {
-            "@typescript-eslint": tsPlugin,
-        },
         rules: {
-            ...tsPlugin.configs.recommended.rules,
-            "no-undef": "off", // TypeScript already handles this
             "@typescript-eslint/no-explicit-any": "error",
             "@typescript-eslint/no-unused-vars": "off",
+            "no-undef": "off", // TypeScript already handles this
         },
-    },
-];
+    }
+);

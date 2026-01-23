@@ -16,6 +16,7 @@ secret/
 nohup.out
 runs/
 logs/
+tsc_output.txt
 
 # Assets & Media
 *.mp4

@@ -5,6 +5,17 @@ import { loadMemoryIndex, loadMemoryEssences } from "../agents/memory.js";
 
 export interface ResearchResult { director_data: DirectorData; news: NewsItem[]; memory_context: string; }
 
+interface ResearchLlmResponse {
+    director_data: {
+        angle: string;
+        topic: string;
+        title_hook: string;
+        search_query: string;
+        key_questions: string[];
+    };
+    news: NewsItem[];
+}
+
 export class ResearchAgent extends BaseAgent {
     constructor(store: AssetStore) { super(store, "research", { temperature: 0.5 }); }
 
@@ -31,22 +42,21 @@ export class ResearchAgent extends BaseAgent {
         this.logInput({ bucket, limit });
         const { recent, essences } = await this.loadMemory(bucket);
         const cfg = this.loadPrompt("research");
-        const raw = await this.runLlm<any>(
+        const raw = await this.runLlm<ResearchLlmResponse>(
             cfg.system.replace("{knowledge_base}", essences),
             `${cfg.user_template.replace("{category}", bucket)}`,
             t => parseLlmJson(t),
             { extra: { tools: [{ google_search: {} }] } }
         );
-        const director = raw.director_data || raw || {};
-        const news = raw.news || (Array.isArray(raw) ? raw : []);
+        const { director_data, news } = raw;
         return {
             director_data: {
-                angle: director.angle || director.topic || "",
-                title_hook: director.title_hook || "",
-                search_query: director.search_query || "",
-                key_questions: director.key_questions || []
+                angle: director_data.angle,
+                title_hook: director_data.title_hook,
+                search_query: director_data.search_query,
+                key_questions: director_data.key_questions
             },
-            news: news.filter((n: any) => n && n.title),
+            news: news.filter((n: NewsItem) => n && n.title),
             memory_context: essences
         };
     }

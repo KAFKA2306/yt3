@@ -1,6 +1,29 @@
 import { AssetStore, BaseAgent, parseLlmYaml } from "../core.js";
 import { DirectorData, Metadata, NewsItem, Script } from "../types.js";
 
+interface Segment {
+    speaker: string;
+    text: string;
+}
+
+interface LlmScript {
+    title: string;
+    description?: string;
+    segments: Segment[];
+}
+
+interface LlmMetadata {
+    title?: string;
+    thumbnail_title?: string;
+    description?: string;
+    tags?: string[];
+}
+
+interface ContentLlmResponse {
+    script: LlmScript;
+    metadata: LlmMetadata;
+}
+
 export interface ContentResult { script: Script; metadata: Metadata; }
 
 export class ContentAgent extends BaseAgent {
@@ -10,14 +33,12 @@ export class ContentAgent extends BaseAgent {
         this.logInput({ news, director, context });
         const cfg = this.loadPrompt("content");
 
-        // Format news with URLs explicitly to help the LLM cite sources
         const formattedNews = news.map(n => `Title: ${n.title}\nSource: ${n.url}\nSummary: ${n.summary}\nSnippet: ${n.snippet || "No snippet"}`).join("\n\n");
         const user = cfg.user_template.replace("{news_items}", formattedNews).replace("{strategy}", director.angle);
 
         return this.runLlm(cfg.system, user, text => {
-            const data = parseLlmYaml<any>(text);
-            const script = data.script || data;
-            const metadata = data.metadata || data;
+            const data = parseLlmYaml<ContentLlmResponse>(text);
+            const { script, metadata } = data;
 
             if (!script.title || !script.segments) {
                 console.error("Invalid LLM response for content:", data);
@@ -28,7 +49,7 @@ export class ContentAgent extends BaseAgent {
                 script: {
                     title: script.title,
                     description: script.description || "",
-                    lines: script.segments.map((s: any) => ({ speaker: s.speaker, text: s.text, duration: 0 })),
+                    lines: script.segments.map((s: Segment) => ({ speaker: s.speaker, text: s.text, duration: 0 })),
                     total_duration: 0
                 },
                 metadata: {

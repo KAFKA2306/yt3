@@ -23,7 +23,8 @@ TASKS["voicevox:start"] = () => {
 TASKS["voicevox:stop"] = () => { runCmd("docker", ["stop", "-t", "10", VV_CONTAINER]); };
 
 TASKS["aim:start"] = () => {
-    const out = fs.openSync("aim.log", "a");
+    fs.ensureDirSync("logs");
+    const out = fs.openSync("logs/aim.log", "a");
     const child = spawn("aim", ["up", "--host", "127.0.0.1", "--port", "43800"], { detached: true, stdio: ['ignore', out, out] });
     child.unref();
 };
@@ -37,7 +38,8 @@ TASKS["bootstrap"] = () => {
 TASKS["up"] = () => {
     TASKS["aim:start"]();
     TASKS["voicevox:start"]();
-    const out = fs.openSync("discord_bot.log", "a");
+    fs.ensureDirSync("logs");
+    const out = fs.openSync("logs/discord_bot.log", "a");
     const child = spawn("npx", ["tsx", "scripts/discord_news_bot.ts"], { detached: true, stdio: ['ignore', out, out] });
     child.unref();
 };
@@ -61,7 +63,12 @@ TASKS["run"] = () => {
 };
 
 TASKS["lint"] = () => { runCmd("npx", ["tsc", "--noEmit"]); };
-TASKS["test"] = () => { runCmd("npx", ["tsx", "--test", "tests/*.test.ts"]); };
+TASKS["test"] = () => {
+    // Force env vars in the command itself for safety, though tests/setup.ts also handles it
+    runCmd("npx", ["tsx", "--test", "tests/*.test.ts"], {
+        env: { ...process.env, SKIP_LLM: 'true', DRY_RUN: 'true' }
+    });
+};
 
 TASKS["hf:sync"] = () => {
     runCmd("task", ["-d", "external/hf-cache-hub", "hf:sync"], {

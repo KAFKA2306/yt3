@@ -30,6 +30,27 @@ task down     │ Stop services
 task status   │ Check status
 ```
 
+## 🧪 Testing & CI
+
+**"Containment" Strategy**:
+Tests are designed to be strictly **contained** to prevent any accidental costs or publishing.
+- **No LLM**: `SKIP_LLM=true` is enforced. Tests use cached fixtures instead of hitting Gemini API.
+- **No Publish**: `DRY_RUN=true` is enforced. No API calls to YouTube/Twitter.
+
+### Local Usage
+```bash
+task test    # Run all tests (fast, no cost)
+```
+
+### What is tested?
+1.  **Core Utilities** (`src/core.ts`):
+    *   Configuration loading and defaults.
+    *   LLM response parsing (JSON/Markdown cleanup).
+    *   Fail-fast file reading.
+2.  **Agents** (`src/agents/research.ts`):
+    *   **Research Step**: mock-execution using fixture data to ensure correct output structure and state updates without external API dependency.
+
+
 ## 📁 Structure
 
 ```

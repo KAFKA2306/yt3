@@ -19,6 +19,7 @@ export const NewsItemSchema = z.object({
     summary: z.string(),
     url: z.string(),
     published_at: z.string().optional().default(() => new Date().toISOString()),
+    snippet: z.string().optional(),
 });
 export type NewsItem = z.infer<typeof NewsItemSchema>;
 
