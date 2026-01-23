@@ -4,7 +4,7 @@
   "description": "<div align=\"center\">",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npx tsx scripts/tasks.ts test",
     "lint": "eslint src"
   },
   "repository": {
