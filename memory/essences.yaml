@@ -363,3 +363,51 @@ essences:
       - >-
         Tool vs. Mindset: The New NISA is a powerful 'weapon,' but it requires
         'Asset Formation Thinking' to be used effectively.
+  - video_id: '2026-01-27'
+    topic: 【決定版】AIバブル論破！OpenAI「o1」が変えたNVIDIAの宿命と、国家が争奪するソブリンAIの衝撃
+    key_insights:
+      - >-
+        The AI industry is undergoing a fundamental paradigm shift from
+        'Training-centric' to 'Inference-centric' compute demand, triggered by
+        OpenAI's 'o1' model.
+      - >-
+        OpenAI's 'o1' utilizes 'Inference-time compute scaling' (Chain of
+        Thought), meaning the more the AI 'thinks' to provide a better answer,
+        the more GPU resources it consumes.
+      - >-
+        The emergence of 'Sovereign AI'—nations building their own AI
+        infrastructure for security and cultural preservation—is creating a
+        massive, non-commercial demand floor for hardware.
+      - >-
+        The AI market is transitioning from a speculative 'Learning Phase' into
+        a 'Social Implementation Phase,' suggesting long-term sustainability
+        rather than a short-term bubble.
+    data_points:
+      - 'OpenAI ''o1'' release date: September 2024.'
+      - >-
+        NVIDIA's government-related (Sovereign AI) demand: $10 billion (approx.
+        1.5 trillion JPY).
+      - 'NVIDIA CEO Jensen Huang''s description of Blackwell demand: ''Insane''.'
+      - 'Key nations investing in Sovereign AI: Japan, France, and Singapore.'
+    universal_principles:
+      - >-
+        Inference-time Scaling Law: Intelligence gains can be achieved by
+        increasing computational power during the reasoning process, not just
+        during initial training.
+      - >-
+        Technological Sovereignty: Critical infrastructure (like AI) eventually
+        shifts from private enterprise control to national security priority.
+      - >-
+        Structural Demand Shift: When a technology moves from development
+        (training) to utility (inference), the scale of required resources
+        expands exponentially.
+    connections:
+      - >-
+        Technological Innovation (o1/Chain of Thought) → Increased GPU
+        utilization per query → Sustained NVIDIA revenue growth.
+      - >-
+        National Security Concerns → Sovereign AI → Diversification of the AI
+        customer base beyond Big Tech (Google/Microsoft).
+      - >-
+        Shift in Compute Focus → Move from 'Learning' to 'Thinking' → Validation
+        of Blackwell's 'insane' market demand.

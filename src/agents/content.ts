@@ -37,8 +37,9 @@ export class ContentAgent extends BaseAgent {
         const user = cfg.user_template.replace("{news_items}", formattedNews).replace("{strategy}", director.angle);
 
         return this.runLlm(cfg.system, user, text => {
-            const data = parseLlmYaml<ContentLlmResponse>(text);
-            const { script, metadata } = data;
+            const data = parseLlmYaml<ContentLlmResponse>(text) || {};
+            const script = data.script || {};
+            const metadata = data.metadata || {};
 
             if (!script.title || !script.segments) {
                 console.error("Invalid LLM response for content:", data);

@@ -25,7 +25,7 @@ export function parseLlmJson<T>(text: string | unknown): T {
 }
 
 export function parseLlmYaml<T>(text: string | unknown): T {
-    return yaml.load(cleanCodeBlock(text)) as T;
+    return (yaml.load(cleanCodeBlock(text)) || {}) as T;
 }
 
 export function resolvePath(p: string): string {
