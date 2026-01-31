@@ -2,7 +2,7 @@
 import "dotenv/config";
 import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, TextChannel } from "discord.js";
 import { spawn } from "child_process";
-import { loadConfig } from "../src/config.js";
+import { loadConfig } from "../src/core.js";
 
 async function main() {
     const config = loadConfig();

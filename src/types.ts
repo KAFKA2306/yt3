@@ -110,6 +110,11 @@ export interface AppConfig {
             preset?: string;
             encoder_options?: Record<string, unknown>;
             encoder_global_args?: string[];
+            thumbnail_overlay?: {
+                enabled: boolean;
+                duration_seconds?: number;
+                source_key?: string;
+            };
             effects: OverlayConfig[];
             subtitles?: {
                 font_path?: string;

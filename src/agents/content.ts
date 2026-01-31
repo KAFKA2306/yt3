@@ -37,11 +37,11 @@ export class ContentAgent extends BaseAgent {
         const user = cfg.user_template.replace("{news_items}", formattedNews).replace("{strategy}", director.angle);
 
         return this.runLlm(cfg.system, user, text => {
-            const data = parseLlmYaml<ContentLlmResponse>(text) || {};
-            const script = data.script || {};
+            const data = parseLlmYaml<ContentLlmResponse>(text);
+            const script = data.script;
             const metadata = data.metadata || {};
 
-            if (!script.title || !script.segments) {
+            if (!script || !script.title || !script.segments) {
                 console.error("Invalid LLM response for content:", data);
                 throw new Error("Missing script title or segments in LLM response");
             }
@@ -54,10 +54,10 @@ export class ContentAgent extends BaseAgent {
                     total_duration: 0
                 },
                 metadata: {
-                    title: metadata.title || "",
-                    thumbnail_title: metadata.thumbnail_title || "",
-                    description: metadata.description || "",
-                    tags: metadata.tags || []
+                    title: metadata?.title || "",
+                    thumbnail_title: metadata?.thumbnail_title || "",
+                    description: metadata?.description || "",
+                    tags: metadata?.tags || []
                 }
             };
         });

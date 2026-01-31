@@ -73,12 +73,12 @@ steps:
       intro_path: "assets/video/おはようございます。今日も世界の動きを見てみましょう.mp4"
       outro_path: "assets/video/チャンネル登録と通知オンをお願いします.mp4"
       twitter_outro_path: "assets/video/続きはYoutube.mp4"
-      thumbnail_clip: {enabled: true, duration_seconds: 0.1, source_key: "generate_thumbnail"}
+      thumbnail_clip: {enabled: false, duration_seconds: 0.1, source_key: "generate_thumbnail"}
     effects:
       - {type: "ken_burns", enabled: true, zoom_speed: 0.0015, max_zoom: 1.2, hold_frame_factor: 1.0, pan_mode: "center"}
       - {type: "overlay", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.85, offset: {right: 20, bottom: 0}}
       - {type: "overlay", enabled: true, image_path: "assets/zundamon.webp", anchor: "bottom_left", height_ratio: 0.51, offset: {left: 20, bottom: 0}}
-    thumbnail_overlay: {enabled: true, duration_seconds: 0.1, source_key: "generate_thumbnail"}
+    thumbnail_overlay: {enabled: false, duration_seconds: 0.1, source_key: "generate_thumbnail"}
     subtitles:
       font_path: "assets/fonts/ZenMaruGothic-Bold.ttf"
       font_name: "Zen Maru Gothic"
@@ -121,7 +121,7 @@ steps:
       - {background_color: "#0A0F1F", title_color: "#E31C23", outline_inner_color: "#FFFFFF", outline_inner_width: 20, outline_outer_color: "#000000", outline_outer_width: 15, subtitle_color: "#FFD166"}
     overlays:
       - {name: "character", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.95, offset: {right: 0, bottom: 0}}
-      - {name: "logo", enabled: true, image_path: "assets/icon2510youtuber-mini.png", anchor: "top_right", height: 120, offset: {right: 20, top: 20}}
+      - {name: "logo", enabled: false, image_path: "assets/icon2510youtuber-mini.png", anchor: "top_right", height: 120, offset: {right: 20, top: 20}}
 
   thumbnail_ai: {enabled: true, width: 1920, height: 1080, num_steps: 6}
 

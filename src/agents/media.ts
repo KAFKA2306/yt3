@@ -65,9 +65,12 @@ export class MediaAgent {
 
         await new Promise<void>((res, rej) => audioCmd.on('error', rej).on('end', () => res()).mergeToFile(fullAudio, os.tmpdir()));
 
-        const thumbnail_path = path.join(this.store.runDir, "thumbnail.png");
-        const thumbPlan = await this.layout.createThumbnailRenderPlan();
-        await this.layout.renderThumbnail(thumbPlan, title, thumbnail_path);
+        let thumbnail_path = "";
+        if (this.thumbConfig.enabled) {
+            thumbnail_path = path.join(this.store.runDir, "thumbnail.png");
+            const thumbPlan = await this.layout.createThumbnailRenderPlan();
+            await this.layout.renderThumbnail(thumbPlan, title, thumbnail_path);
+        }
 
         const video_path = path.join(this.store.videoDir(), "video.mp4");
         await this.generateVideo(fullAudio, thumbnail_path, subtitlePath, video_path, videoPlan);
@@ -102,9 +105,12 @@ export class MediaAgent {
                 idx++;
             }
 
-            cmd.input(thumbPath);
-            filters.push(`[${idx}:v]scale=${w}:${h}[thumb]`, `[${lastStream}][thumb]overlay=0:0:enable='lte(t,${introSec})'[v_thumb]`);
-            lastStream = `v_thumb`;
+            if (this.videoConfig.thumbnail_overlay?.enabled && thumbPath && fs.existsSync(thumbPath)) {
+                cmd.input(thumbPath);
+                filters.push(`[${idx}:v]scale=${w}:${h}[thumb]`, `[${lastStream}][thumb]overlay=0:0:enable='lte(t,${introSec})'[v_thumb]`);
+                lastStream = `v_thumb`;
+                idx++;
+            }
 
             const fontsDir = this.videoConfig.subtitles?.font_path ? path.dirname(path.resolve(this.videoConfig.subtitles.font_path)) : '';
             filters.push(`[${lastStream}]subtitles=${subtitlePath}${fontsDir ? `:fontsdir=${fontsDir}` : ''}[outv]`);
