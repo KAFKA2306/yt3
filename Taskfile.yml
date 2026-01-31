@@ -80,3 +80,7 @@ tasks:
   audit:overlays:
     desc: "Audit video overlays"
     cmds: ["npx tsx scripts/tasks.ts audit:overlays"]
+
+  cron:
+    desc: "Install cron jobs based on config"
+    cmds: ["npx tsx scripts/tasks.ts cron"]
