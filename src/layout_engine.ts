@@ -212,9 +212,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
 <defs><clipPath id="safe"><rect x="0" y="0" width="${textMaxX}" height="${height}"/></clipPath></defs>
 <style>
-text { font-family: sans-serif; font-size: ${title_font_size || 120}px; font-weight: bold; text-anchor: start; dominant-baseline: middle; }
-.outline { fill: none; stroke: ${palette.outline_outer_color || '#000'}; stroke-width: ${(palette.outline_outer_width || 15) * 2}px; }
-.fill { fill: ${palette.title_color || '#FFF'}; stroke: ${palette.outline_inner_color || '#FFF'}; stroke-width: ${palette.outline_inner_width || 5}px; paint-order: stroke fill; }
+text { font-family: "Noto Sans JP", sans-serif; font-size: ${title_font_size || 120}px; font-weight: 800; text-anchor: start; dominant-baseline: middle; }
+.outline { fill: none; stroke: ${palette.outline_outer_color || '#05050A'}; stroke-width: ${(palette.outline_outer_width || 12) * 2}px; }
+.fill { fill: ${palette.title_color || '#FFFFFF'}; stroke: ${palette.outline_inner_color || '#00A3AF'}; stroke-width: ${palette.outline_inner_width || 4}px; paint-order: stroke fill; }
 </style>
 <g clip-path="url(#safe)">${textElements}</g>
 </svg>`;
