@@ -62,7 +62,6 @@ TASKS["run"] = () => {
     runCmd("npx", ["tsx", "src/index.ts", ...ARGS.slice(idx + 1)]);
 };
 
-TASKS["lint"] = () => { runCmd("npx", ["tsc", "--noEmit"]); };
 TASKS["test"] = () => {
     // Force env vars in the command itself for safety, though tests/setup.ts also handles it
     runCmd("npx", ["tsx", "--test", "tests/*.test.ts"], {
@@ -78,6 +77,8 @@ TASKS["hf:sync"] = () => {
 
 TASKS["cron"] = () => { runCmd("npx", ["tsx", "scripts/automation.ts", "--install-cron"]); };
 TASKS["audit:overlays"] = () => { runCmd("npx", ["tsx", "scripts/audit_overlays.ts"]); };
+TASKS["setup:systemd"] = () => { runCmd("npx", ["tsx", "scripts/setup_systemd.ts"]); };
+TASKS["watcher"] = () => { runCmd("npx", ["tsx", "src/agents/watcher.ts", ...process.argv.slice(3)]); };
 
 const cmd = ARGS[0];
 if (cmd && TASKS[cmd]) TASKS[cmd]();

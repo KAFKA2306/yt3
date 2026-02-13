@@ -17,22 +17,18 @@ export class MemoryAgent extends BaseAgent {
 
     async run(state: AgentState): Promise<void> {
         this.logInput({ run_id: state.run_id, title: state.metadata?.title });
-
         if (!state.metadata || !state.script) return;
 
         const indexPath = path.join(ROOT, "memory", "index.yaml");
         const idx = loadMemoryIndex();
-
-        const newEntry = {
+        idx.videos.push({
             id: state.run_id,
             date: new Date().toISOString().split("T")[0],
             topic: state.director_data?.title_hook || state.metadata!.title,
             angle: state.director_data?.angle || "Standard",
             title: state.metadata!.title,
             keywords: state.metadata!.tags
-        };
-
-        idx.videos.push(newEntry);
+        });
         fs.writeFileSync(indexPath, yaml.dump(idx));
 
         const essencesPath = path.join(ROOT, "memory", "essences.yaml");

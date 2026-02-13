@@ -1,65 +1,77 @@
-import { AssetStore, BaseAgent, parseLlmYaml } from "../core.js";
-import { DirectorData, Metadata, NewsItem, Script } from "../types.js";
+import { AssetStore, BaseAgent, parseLlmJson, readYamlFile, ROOT, loadConfig } from "../core.js";
+import path from "path";
+import { DirectorData, EvaluationReport, Metadata, NewsItem, Script } from "../types.js";
 
 interface Segment {
     speaker: string;
     text: string;
 }
 
-interface LlmScript {
-    title: string;
-    description?: string;
-    segments: Segment[];
-}
-
-interface LlmMetadata {
-    title?: string;
-    thumbnail_title?: string;
-    description?: string;
-    tags?: string[];
-}
-
-interface ContentLlmResponse {
-    script: LlmScript;
-    metadata: LlmMetadata;
-}
-
 export interface ContentResult { script: Script; metadata: Metadata; }
 
-export class ContentAgent extends BaseAgent {
+interface PromptSection {
+    system: string;
+    user_template: string;
+}
+
+export class ScriptSmith extends BaseAgent {
     constructor(store: AssetStore) { super(store, "content", { temperature: 0.4 }); }
 
-    async run(news: NewsItem[], director: DirectorData, context: string): Promise<ContentResult> {
-        this.logInput({ news, director, context });
-        const cfg = this.loadPrompt("content");
+    async run(news: NewsItem[], director: DirectorData, context: string, evaluation?: EvaluationReport): Promise<ContentResult> {
+        this.logInput({ news, director, context, evaluation });
 
-        const formattedNews = news.map(n => `Title: ${n.title}\nSource: ${n.url}\nSummary: ${n.summary}\nSnippet: ${n.snippet || "No snippet"}`).join("\n\n");
-        const user = cfg.user_template.replace("{news_items}", formattedNews).replace("{strategy}", director.angle);
+        const appCfg = loadConfig();
+        const scriptCfg = appCfg.steps.script!;
+        const contentAndPrompts = this.loadPrompt<{ outline: PromptSection; segment: PromptSection; script: PromptSection }>("content");
 
-        return this.runLlm(cfg.system, user, text => {
-            const data = parseLlmYaml<ContentLlmResponse>(text);
-            const script = data.script;
-            const metadata = data.metadata || {};
+        const outlineCfg = contentAndPrompts.outline;
+        const newsContext = news.map(n =>
+            `Title: ${n.title}\nSource: ${n.url}\nSummary: ${n.summary}\nOriginal English Text: ${n.original_english_text || "N/A"}`
+        ).join("\n\n");
 
-            if (!script || !script.title || !script.segments) {
-                console.error("Invalid LLM response for content:", data);
-                throw new Error("Missing script title or segments in LLM response");
+        const outline = await this.runLlm<{ title: string; sections: { id: number; title: string; key_points: string[]; estimated_duration: number }[] }>(
+            outlineCfg.system,
+            outlineCfg.user_template.replace("{angle}", director.angle).replace("{news_context}", newsContext),
+            text => parseLlmJson(text)
+        );
+
+        const segmentCfg = contentAndPrompts.segment;
+        let allLines: Segment[] = [];
+        let previousContext = "None (Start of video)";
+
+        for (const section of outline.sections) {
+            const segmentRes = await this.runLlm<{ lines: Segment[] }>(
+                segmentCfg.system,
+                segmentCfg.user_template
+                    .replace("{angle}", director.angle)
+                    .replace("{section_title}", section.title)
+                    .replace("{key_points}", section.key_points.join(", "))
+                    .replace("{duration}", section.estimated_duration.toString())
+                    .replace("{previous_context}", previousContext)
+                    .replace("{news_context}", newsContext),
+                text => parseLlmJson(text)
+            );
+
+            if (segmentRes.lines && segmentRes.lines.length > 0) {
+                allLines = allLines.concat(segmentRes.lines);
+                const lastLines = segmentRes.lines.slice(-(scriptCfg.context_overlap_lines || 3));
+                previousContext = lastLines.map(l => `${l.speaker}: ${l.text}`).join("\n");
             }
+        }
 
-            return {
-                script: {
-                    title: script.title,
-                    description: script.description || "",
-                    lines: script.segments.map((s: Segment) => ({ speaker: s.speaker, text: s.text, duration: 0 })),
-                    total_duration: 0
-                },
-                metadata: {
-                    title: metadata?.title || "",
-                    thumbnail_title: metadata?.thumbnail_title || "",
-                    description: metadata?.description || "",
-                    tags: metadata?.tags || []
-                }
-            };
-        });
+        return {
+            script: {
+                title: outline.title || director.title_hook,
+                description: director.angle,
+                lines: allLines.map(l => ({ speaker: l.speaker, text: l.text, duration: 0 })),
+                total_duration: 0
+            },
+            metadata: {
+                title: outline.title || director.title_hook,
+                thumbnail_title: director.title_hook,
+                description: director.angle,
+                tags: appCfg.steps.script?.default_tags || []
+            }
+        };
     }
 }

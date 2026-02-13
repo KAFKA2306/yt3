@@ -2,7 +2,11 @@ version: '3'
 
 tasks:
   default:
-    cmds: [task --list]
+    cmds: 
+      - task --list
+      - task up
+      - task lint
+      - task test
     silent: true
 
   # ============================================================================
@@ -32,6 +36,10 @@ tasks:
     desc: "Run content step only"
     cmds: ["npx tsx src/step.ts content {{.CLI_ARGS}}"]
 
+  content:fix:
+    desc: "Run content step with feedback from The Critic"
+    cmds: ["npx tsx src/step.ts content:fix {{.CLI_ARGS}}"]
+
   media:
     desc: "Run media step only"
     cmds: ["npx tsx src/step.ts media {{.CLI_ARGS}}"]
@@ -43,6 +51,10 @@ tasks:
   publish:dry:
     desc: "Run publish step in Dry Run mode (No external API calls)"
     cmds: ["DRY_RUN=true npx tsx src/step.ts publish {{.CLI_ARGS}}"]
+
+  evaluate:
+    desc: "Run content evaluation (The Critic)"
+    cmds: ["npx tsx src/step.ts evaluate {{.CLI_ARGS}}"]
 
   # ============================================================================
   # INFRASTRUCTURE
@@ -68,9 +80,11 @@ tasks:
   # UTILITIES
   # ============================================================================
   lint:
-    desc: "Run type checking (tsc --noEmit)"
+    desc: "Type-check and Lint"
     aliases: [l]
-    cmds: [npx tsx scripts/tasks.ts lint]
+    cmds:
+      - npx tsc --noEmit
+      - npx eslint src
 
   test:
     desc: "Run unit tests (node --test)"
@@ -82,5 +96,13 @@ tasks:
     cmds: ["npx tsx scripts/tasks.ts audit:overlays"]
 
   cron:
-    desc: "Install cron jobs based on config"
+    desc: "Install cron jobs based on config (Legacy)"
     cmds: ["npx tsx scripts/tasks.ts cron"]
+
+  systemd:setup:
+    desc: "Install Systemd service and timer"
+    cmds: ["npx tsx scripts/tasks.ts setup:systemd"]
+
+  monitor:watch:
+    desc: "Run the watcher agent manually"
+    cmds: ["npx tsx scripts/tasks.ts watcher {{.CLI_ARGS}}"]

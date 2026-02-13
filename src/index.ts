@@ -1,9 +1,8 @@
-
 import "./core.js";
-import { randomUUID } from "crypto";
-import { AssetStore } from "./core.js";
+import { AssetStore, createLlm } from "./core.js";
 import { createGraph } from "./graph.js";
 import { AgentState } from "./types.js";
+import { sendAlert } from "./utils/discord.js";
 
 async function main() {
     const runId = process.env.RUN_ID || new Date().toISOString().split("T")[0];
@@ -11,18 +10,16 @@ async function main() {
     const graph = createGraph(store);
     const bucket = process.argv[2] || "Financial News";
 
-    console.log(`Starting run: ${runId} with bucket: ${bucket}`);
+    console.log(`Starting: ${runId} (${bucket})`);
 
-    const inputs = {
+    const finalState = await graph.invoke({
         run_id: runId,
         bucket: bucket,
         limit: 3
-    };
+    }) as unknown as AgentState;
 
-    const finalState = await graph.invoke(inputs) as unknown as AgentState;
-
-    console.log("Run completed");
-    console.log("Video Path:", finalState.video_path);
+    console.log(`Completed: ${finalState.video_path}`);
+    await sendAlert(`Workflow COMPLETED: ${bucket}\nVideo: ${finalState.video_path}`, "success");
 }
 
-main().catch(console.error);
+main();

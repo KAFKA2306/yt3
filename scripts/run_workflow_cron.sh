@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure correct Node version is used (Cron default might be old)
+export PATH="/root/.nvm/versions/node/v22.17.1/bin:$PATH"
+
 readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_dir="$(cd "${script_dir}/.." && pwd)"
 readonly log_dir="${repo_dir}/logs"

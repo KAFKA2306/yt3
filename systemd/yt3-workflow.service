@@ -1,0 +1,17 @@
+[Unit]
+Description=2511 YouTuber Workflow Daily Run
+Wants=yt3-workflow.timer
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
+ExecStart=/bin/bash scripts/run_workflow_cron.sh
+Nice=10
+# Load environment if strictly necessary, though the script usually handles it
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:/home/kafka/.nvm/versions/node/v22.17.1/bin
+
+# Monitoring Agent on Failure (and Success if desired)
+ExecStopPost=/home/kafka/.nvm/versions/node/v22.17.1/bin/npx tsx src/agents/watcher.ts --trigger systemd --service-result %n:%r
+
+[Install]
+WantedBy=default.target

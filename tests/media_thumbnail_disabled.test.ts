@@ -5,10 +5,10 @@ import path from 'path';
 import fs from 'fs-extra';
 // @ts-ignore
 import axios from 'axios';
-import { MediaAgent } from '../src/agents/media.js';
+import { VisualDirector } from '../src/agents/media.js';
 import { AssetStore } from '../src/core.js';
 
-describe('MediaAgent Thumbnail Disabled', () => {
+describe('VisualDirector Thumbnail Disabled', () => {
     let store: AssetStore;
     let runId: string;
     const testRunDir = path.join(process.cwd(), 'runs', 'test-media-disabled');
@@ -27,7 +27,7 @@ describe('MediaAgent Thumbnail Disabled', () => {
     });
 
     it('should GENERATE thumbnail but NOT use it in video overlay if disabled in video config', async () => {
-        const agent = new MediaAgent(store);
+        const agent = new VisualDirector(store);
 
         // ENABLE THUMBNAIL GENERATION
         agent.thumbConfig.enabled = true;

@@ -3,50 +3,58 @@ import fs from "fs-extra";
 import { AssetStore, ROOT } from "./core.js";
 import { createGraph } from "./graph.js";
 import { AgentState } from "./types.js";
-import { ResearchAgent } from "./agents/research.js";
-import { ContentAgent } from "./agents/content.js";
-import { MediaAgent } from "./agents/media.js";
+import { TrendScout } from "./agents/research.js";
+import { ScriptSmith } from "./agents/content.js";
+import { VisualDirector } from "./agents/media.js";
 import { PublishAgent } from "./agents/publish.js";
+import { CriticAgent } from "./agents/critic.js";
+import { sendAlert } from "./utils/discord.js";
 
-async function main() {
-    const [step, runIdArg] = process.argv.slice(2);
-    let runId = runIdArg || new Date().toISOString().split("T")[0];
+const MAX_CONTENT_RETRIES = 3;
 
-    if (runId === "latest") {
+const MAX_RETRIES = 3;
+
+function resolveRunId(arg?: string): string {
+    if (!arg || arg === "latest") {
         const d = path.join(ROOT, "runs");
         const dirs = fs.readdirSync(d).map(n => ({ n, p: path.join(d, n) })).filter(d => fs.statSync(d.p).isDirectory()).sort((a, b) => fs.statSync(b.p).mtimeMs - fs.statSync(a.p).mtimeMs);
-        runId = dirs[0].n;
+        return dirs[0]?.n || new Date().toISOString().split("T")[0];
     }
-
-    const store = new AssetStore(runId);
-    const state = store.loadState();
-
-    if (step === "all") {
-        await createGraph(store).invoke({ run_id: runId, bucket: state.bucket });
-        return;
-    }
-
-    const agents = {
-        research: new ResearchAgent(store),
-        content: new ContentAgent(store),
-        media: new MediaAgent(store),
-        publish: new PublishAgent(store)
-    };
-    const stepName = step as keyof typeof agents;
-    const agent = agents[stepName];
-    if (!agent) throw new Error(`Unknown step: ${step}`);
-
-    let res: Partial<AgentState> = {};
-    if (step === "research") res = await agents.research.run(state.bucket || "macro_economy", state.limit || 3);
-    if (step === "content") res = await agents.content.run(state.news || [], state.director_data!, state.memory_context || "");
-    if (step === "media") {
-        const script = state.script!;
-        const mediaRes = await agents.media.run(script, state.metadata?.thumbnail_title || script.title);
-        res = { audio_paths: mediaRes.audio_paths, thumbnail_path: mediaRes.thumbnail_path, video_path: mediaRes.video_path };
-    }
-    if (step === "publish") res = { publish_results: await agents.publish.run(state as AgentState) };
-
-    store.updateState(res);
+    return arg;
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+async function runStep(step: string, bucket: string, store: AssetStore, state: Partial<AgentState>): Promise<Partial<AgentState>> {
+    const agents: Record<string, () => Promise<Partial<AgentState>>> = {
+        research: () => new TrendScout(store).run(bucket || state.bucket || "global_macro", state.limit || 3),
+        content: () => new ScriptSmith(store).run(state.news || [], state.director_data!, state.memory_context || ""),
+        "content:fix": async () => {
+            if (!state.evaluation) throw new Error("No evaluation report");
+            if ((state.retries || 0) >= MAX_RETRIES) throw new Error(`Max retries (${MAX_RETRIES})`);
+            const res = await new ScriptSmith(store).run(state.news || [], state.director_data!, state.memory_context || "", state.evaluation);
+            return { ...res, retries: (state.retries || 0) + 1 };
+        },
+        evaluate: async () => ({ evaluation: await new CriticAgent(store).run(state.script!) }),
+        media: async () => {
+            const res = await new VisualDirector(store).run(state.script!, state.metadata?.thumbnail_title || state.script!.title);
+            return { audio_paths: res.audio_paths, thumbnail_path: res.thumbnail_path, video_path: res.video_path };
+        },
+        publish: async () => ({ publish_results: await new PublishAgent(store).run(state as AgentState) }),
+        all: async () => {
+            await createGraph(store).invoke({ run_id: store.runDir.split("/").pop(), bucket: state.bucket || bucket });
+            await sendAlert(`Workflow finished: ${state.bucket}`, "success");
+            return {};
+        }
+    };
+    const fn = agents[step];
+    if (!fn) throw new Error(`Unknown step: ${step}`);
+    return fn();
+}
+
+async function main() {
+    const [step, runIdArg, bucketArg] = process.argv.slice(2);
+    const store = new AssetStore(resolveRunId(runIdArg));
+    const res = await runStep(step, bucketArg, store, store.loadState());
+    if (res) store.updateState(res);
+}
+
+main();

@@ -11,6 +11,7 @@
 5.  **エラーハンドリング禁止 (Fail Fast)**: `try-catch` で隠蔽するな。クラッシュさせてバグを直せ。
 6.  **継承 (Inheritance)**: 全てのAgentは `BaseAgent` (`src/core.ts`) を継承せよ。
 7.  **ドキュメント (Docs)**: 日本語のみ記述せよ (Write in Japanese only)。
+8.  **any禁止 (No any)**: `any`型は技術負債。厳密に型定義せよ。
 
 ## アーキテクチャ (Structure)
 

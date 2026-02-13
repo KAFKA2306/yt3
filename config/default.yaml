@@ -9,36 +9,44 @@ workflow:
 steps:
   news:
     query_buckets:
-      macro_economy: "GDP CPI 雇用統計 金融政策 日銀 FRB インフレ デフレ 景気動向"
-      japanese_stock: "日経平均 TOPIX 日本株 決算 上方修正 自社株買い 株式分割 プライム市場 グロース市場"
-      us_stock: "米国株 NYダウ S&P500 NASDAQ GAFA M7 決算 米国経済"
-      forex_rates: "ドル円 為替 円安 円高 金利差 為替介入 FX"
-      commodities: "原油価格 金相場 商品先物 エネルギー価格 天然ガス 穀物相場"
-      crypto_web3: "ビットコイン 暗号資産 仮想通貨 イーサリアム ブロックチェーン Web3 NFT"
-      tech_semicon: "半導体 生成AI 人工知能 テクノロジー DX スタートアップ"
-    fetch_count: 10
-    final_count: 3
-    cooldown_hours: 24
+      us_market_movers: "S&P500 Nasdaq Dow Jones Earnings Reports Guidance AI Stocks Mag7"
+      global_macro: "Fed FOMC ECB Rates Inflation CPI Jobs Report Unemployment US Economy"
+      tech_giants: "NVIDIA Microsoft Google Apple Tesla Amazon Meta TSMC ASML"
+      crypto_global: "Bitcoin Ethereum ETF SEC Regulation Crypto Markets Global Adoption"
+      geopolitics_money: "Oil Prices Gold Geopolitics Trade War US-China Relations Supply Chain"
+    fetch_count: 20
+    final_count: 5
+    cooldown_hours: 12
     count: 3
     recent_topics_runs: 5
     recent_topics_max_chars: 500
     recent_topics_min_token_length: 2
     recent_topics_stopwords: ["が", "の", "を", "に", "は", "で", "と", "も", "から", "まで", "より", "など"]
   research:
-    recent_days: 14
-    essence_limit: 3
+    recent_days: 3
+    essence_limit: 10
+    regions:
+      - { lang: "English (US/UK)", code: "en" }
+      - { lang: "Chinese (China/Taiwan)", code: "zh" }
+      - { lang: "Russian", code: "ru" }
+    request_cooldown_ms: 30000
+    angles:
+      - { name: "Global Narrative", lang: "English", suffix: "news analysis" }
+      - { name: "Contrast/Dissent", lang: "Chinese/Russian", suffix: "opinion blog" }
 
   script:
-    min_duration: 600
-    max_duration: 1800
-    target_wow_score: 5.0
+    min_duration: 1200
+    max_duration: 3000
+    target_wow_score: 8.0
     retention_optimization:
       enabled: true
-      opening_duration_seconds: 30
+      opening_duration_seconds: 60
       bridge_interval_seconds: 90
       engagement_prompt_interval_seconds: 120
       cta_timing: "after_climax"
       max_topic_duration_seconds: 90
+    context_overlap_lines: 3
+    default_tags: ["Finance", "Economy"]
     speakers:
       analyst:
         name: "春日部つむぎ"
@@ -184,6 +192,10 @@ providers:
 
 logging: {level: "INFO", format: "json"}
 
+discord:
+  notification_channel_id: "YOUR_DISCORD_CHANNEL_ID_HERE"
+
+
 automation:
   enabled: true
   venv_activate: ".venv/bin/activate"
@@ -193,7 +205,6 @@ automation:
     - {name: "voicevox", command: ["bash", "scripts/voicevox_manager.sh", "start"]}
     - {name: "discord_news_bot", command: ["npx", "tsx", "scripts/discord_news_bot.ts"]}
   schedules:
-    - {name: "workflow_twice_daily", command: ["bash", "scripts/run_workflow_cron.sh"], cron: "0 6,18 * * *"}
     - {name: "workflow_daily_0700", command: ["bash", "scripts/run_workflow_cron.sh"], cron: "0 7 * * *"}
     - {name: "trend_workflow_hourly", command: ["npx", "tsx", "src/index.ts"], args: ["--trend-mode"], cron: "0 * * * *"}
 

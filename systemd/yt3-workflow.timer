@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer for 2511 YouTuber Daily Workflow
+
+[Timer]
+# Run daily at 07:00 JST (Localtime)
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+Unit=yt3-workflow.service
+
+[Install]
+WantedBy=timers.target

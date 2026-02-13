@@ -3,14 +3,13 @@ import os from "os";
 import fs from "fs-extra";
 import axios from "axios";
 import ffmpeg from "fluent-ffmpeg";
-import { AssetStore, loadConfig, getSpeakers, resolvePath } from "../core.js";
+import { AssetStore, loadConfig, getSpeakers, BaseAgent } from "../core.js";
 import { Script, AppConfig } from "../types.js";
 import { LayoutEngine, RenderPlan } from "../layout_engine.js";
 
 export interface MediaResult { audio_paths: string[]; thumbnail_path: string; video_path: string; subtitle_path: string; }
 
-export class MediaAgent {
-    store: AssetStore;
+export class VisualDirector extends BaseAgent {
     ttsUrl: string;
     speakers: Record<string, number>;
     videoConfig: AppConfig["steps"]["video"];
@@ -19,8 +18,8 @@ export class MediaAgent {
     layout: LayoutEngine;
 
     constructor(store: AssetStore) {
+        super(store, "media", { temperature: 0.1 });
         const cfg = loadConfig();
-        this.store = store;
         this.ttsUrl = cfg.providers.tts.voicevox.url;
         this.speakers = getSpeakers();
         this.videoConfig = cfg.steps.video;
@@ -37,9 +36,7 @@ export class MediaAgent {
             const speakerId = this.speakers[l.speaker];
             if (speakerId === undefined) throw new Error(`Unknown speaker: ${l.speaker}`);
 
-            // Fundamental simplification: Strip URLs and complex metadata from speech
             const cleanText = this.cleanScriptText(l.text);
-
             const q = await axios.post(`${this.ttsUrl}/audio_query`, null, { params: { text: cleanText, speaker: speakerId } });
             const s = await axios.post(`${this.ttsUrl}/synthesis`, q.data, { params: { speaker: speakerId }, responseType: 'arraybuffer' });
             const p = path.join(audioDir, `${String(i).padStart(3, '0')}.wav`);
@@ -48,15 +45,13 @@ export class MediaAgent {
         }));
 
         const fullAudio = path.join(audioDir, "full.wav");
-
         const videoPlan = await this.layout.createVideoRenderPlan();
-
-        const durations = [];
+        const durations: number[] = [];
         const audioCmd = ffmpeg();
 
-        for (let i = 0; i < audio_paths.length; i++) {
-            audioCmd.input(audio_paths[i]);
-            durations.push(await this.getAudioDuration(audio_paths[i]));
+        for (const p of audio_paths) {
+            audioCmd.input(p);
+            durations.push(await this.getAudioDuration(p));
         }
 
         const assContent = this.layout.generateASS(script, durations, videoPlan);
@@ -91,8 +86,7 @@ export class MediaAgent {
 
         return new Promise((resolve, reject) => {
             const cmd = ffmpeg();
-            cmd.input(`color=c=${bgColor}:s=${w}x${h}:r=${fps}`).inputFormat("lavfi");
-            cmd.input(audioPath);
+            cmd.input(`color=c=${bgColor}:s=${w}x${h}:r=${fps}`).inputFormat("lavfi").input(audioPath);
 
             const filters: string[] = [];
             let lastStream = "0:v", idx = 2;
@@ -122,11 +116,6 @@ export class MediaAgent {
     }
 
     private cleanScriptText(text: string): string {
-        return text
-            .replace(/https?:\/\/[^\s]+/g, "")
-            .replace(/\[.*?\]\((.*?)\)/g, "$1")
-            .replace(/source_ref:.*$/gm, "")
-            .replace(/\s+/g, " ")
-            .trim();
+        return text.replace(/https?:\/\/[^\s]+/g, "").replace(/\[.*?\]\((.*?)\)/g, "$1").replace(/source_ref:.*$/gm, "").replace(/\s+/g, " ").trim();
     }
 }

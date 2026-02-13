@@ -1,8 +1,8 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { AssetStore } from "./core.js";
-import { ResearchAgent } from "./agents/research.js";
-import { ContentAgent } from "./agents/content.js";
-import { MediaAgent } from "./agents/media.js";
+import { TrendScout } from "./agents/research.js";
+import { ScriptSmith } from "./agents/content.js";
+import { VisualDirector } from "./agents/media.js";
 import { MemoryAgent } from "./agents/memory.js";
 import { PublishAgent } from "./agents/publish.js";
 import { AgentState, DirectorData, Script, Metadata, PublishResults } from "./types.js";
@@ -35,9 +35,9 @@ const channels: StateChannels = {
 };
 
 export function createGraph(store: AssetStore) {
-    const research = new ResearchAgent(store);
-    const content = new ContentAgent(store);
-    const media = new MediaAgent(store);
+    const research = new TrendScout(store);
+    const content = new ScriptSmith(store);
+    const media = new VisualDirector(store);
     const publish = new PublishAgent(store);
     const memory = new MemoryAgent(store);
     const workflow = new StateGraph<AgentState>({ channels });
@@ -67,13 +67,13 @@ export function createGraph(store: AssetStore) {
         return { status: "completed" };
     });
 
-    const g = workflow as unknown as { addEdge: (from: string, to: string) => void };
-    g.addEdge(START, "research");
-    g.addEdge("research", "content");
-    g.addEdge("content", "media");
-    g.addEdge("media", "publish");
-    g.addEdge("publish", "memory");
-    g.addEdge("memory", END);
+    const graph = workflow as unknown as { addEdge: (from: string, to: string) => void };
+    graph.addEdge(START, "research");
+    graph.addEdge("research", "content");
+    graph.addEdge("content", "media");
+    graph.addEdge("media", "publish");
+    graph.addEdge("publish", "memory");
+    graph.addEdge("memory", END);
 
     return workflow.compile();
 }

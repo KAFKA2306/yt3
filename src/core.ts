@@ -28,17 +28,25 @@ export function parseLlmYaml<T>(text: string | unknown): T {
     return (yaml.load(cleanCodeBlock(text)) || {}) as T;
 }
 
+export function parseCriticScore(text: string | unknown): { score: number; critique: string } {
+    const json = parseLlmJson<{ score: number; critique: string }>(text);
+    return {
+        score: typeof json.score === 'number' ? json.score : 0,
+        critique: json.critique || ""
+    };
+}
+
 export function resolvePath(p: string): string {
     return path.isAbsolute(p) ? p : path.join(ROOT, p);
 }
 
-export function loadConfig(): AppConfig {
-    const cfg = readYamlFile<AppConfig>(path.join(ROOT, "config", "default.yaml"));
+export function loadConfig(): AppConfig & { regions: string[] } {
+    const cfg = readYamlFile<AppConfig & { workflow: { trend_settings: { regions: string[] } } }>(path.join(ROOT, "config", "default.yaml"));
     if (process.env.DRY_RUN === "true") {
         if (cfg.steps.youtube) cfg.steps.youtube.dry_run = true;
         if (cfg.steps.twitter) cfg.steps.twitter.dry_run = true;
     }
-    return cfg;
+    return { ...cfg, regions: cfg.workflow.trend_settings.regions };
 }
 
 export function loadPrompt(name: string): PromptData {
@@ -131,7 +139,7 @@ export class AssetStore {
     }
 }
 
-export abstract class BaseAgent {
+export class BaseAgent {
     store: AssetStore;
     name: string;
     opts: Record<string, unknown>;
@@ -147,16 +155,14 @@ export abstract class BaseAgent {
         const llm = createLlm({ ...this.opts, ...callOpts });
         const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
         this.store.save(this.name, "raw_response", { content: res.content });
-        try {
-            const parsed = parser(res.content as string);
-            this.store.logOutput(this.name, parsed);
-            return parsed;
-        } catch (e) {
-            console.error(`Failed to parse LLM response for ${this.name}:`, res.content);
-            throw e;
-        }
+        const parsed = parser(res.content as string);
+        this.store.logOutput(this.name, parsed);
+        return parsed;
     }
 
-    loadPrompt(name: string) { return loadPrompt(name); }
+    loadPrompt<T = PromptData>(name: string): T { return loadPrompt(name) as T; }
+
     logInput(data: unknown) { this.store.logInput(this.name, data); }
+
+    logOutput(data: unknown) { this.store.logOutput(this.name, data); }
 }
