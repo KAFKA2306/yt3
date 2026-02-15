@@ -21,14 +21,14 @@ export class ScriptSmith extends BaseAgent {
     async run(news: NewsItem[], director: DirectorData, context: string, evaluation?: EvaluationReport): Promise<ContentResult> {
         const outputPath = path.join(this.store.runDir, "content", "output.yaml");
         if (fs.existsSync(outputPath)) {
-            // @ts-ignore
             return readYamlFile<ContentResult>(outputPath);
         }
 
         this.logInput({ news, director, context, evaluation });
 
         const appCfg = loadConfig();
-        const scriptCfg = appCfg.steps.script!;
+        const scriptCfg = appCfg.steps.script;
+        if (!scriptCfg) throw new Error("Script config missing");
         const contentAndPrompts = this.loadPrompt<{ outline: PromptSection; segment: PromptSection; script: PromptSection }>("content");
 
         const outlineCfg = contentAndPrompts.outline;
@@ -64,7 +64,7 @@ export class ScriptSmith extends BaseAgent {
                 const lastLines = segmentRes.lines.slice(-(scriptCfg.context_overlap_lines || 3));
                 previousContext = lastLines.map(l => `${l.speaker}: ${l.text}`).join("\n");
             }
-            await new Promise(resolve => setTimeout(resolve, 15000));
+            await new Promise(resolve => setTimeout(resolve, scriptCfg.segment_sleep_ms || 15000));
         }
 
         return {

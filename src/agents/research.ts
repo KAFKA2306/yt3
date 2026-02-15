@@ -32,7 +32,9 @@ export class TrendScout extends BaseAgent {
     constructor(store: AssetStore) { super(store, "research", { temperature: 0.5 }); }
 
     async loadMemory(query: string): Promise<{ recent: string; essences: string }> {
-        const cfg = loadConfig().steps.research!;
+        const cfg = loadConfig().steps.research;
+        if (!cfg) throw new Error("Research config missing");
+
         const idx = loadMemoryIndex();
         const ess = loadMemoryEssences();
         const recent = idx.videos.filter((v: { topic: string; date: string }) => (Date.now() - new Date(v.date).getTime()) / 86400000 <= cfg.recent_days);
@@ -55,14 +57,15 @@ export class TrendScout extends BaseAgent {
     async run(bucket: string, limit: number = 3): Promise<ResearchResult> {
         const outputPath = path.join(this.store.runDir, "research", "output.yaml");
         if (fs.existsSync(outputPath)) {
-            // @ts-ignore
             return readYamlFile<ResearchResult>(outputPath);
         }
 
         this.logInput({ bucket, limit });
         const { recent, essences } = await this.loadMemory("Global Trends");
         const appCfg = loadConfig();
-        const researchCfg = appCfg.steps.research!;
+        const researchCfg = appCfg.steps.research;
+        if (!researchCfg) throw new Error("Research config missing");
+
         const promptCfg = this.loadPrompt<TrendConfig>("research");
 
         const trendReports = await this.gatherTrendReports(researchCfg, promptCfg);

@@ -1,6 +1,9 @@
 workflow:
   default_run_dir: "runs"
   checkpoint_enabled: true
+  memory:
+    index_file: "data/memory/index.json"
+    essence_file: "data/memory/essences.json"
   trend_settings:
     enabled: true
     regions: ["JP", "US"]
@@ -45,6 +48,7 @@ steps:
       engagement_prompt_interval_seconds: 120
       cta_timing: "after_climax"
       max_topic_duration_seconds: 90
+    segment_sleep_ms: 15000
     context_overlap_lines: 3
     default_tags: ["Finance", "Economy"]
     speakers:
@@ -190,7 +194,15 @@ providers:
     perplexity: {enabled: false, model: "sonar", temperature: 0.2, max_tokens: 2048, search_recency_filter: "week"}
   cloudflare_ai: {account_id: "dc1aa018702e10045b00865b63f144d0", model: "@cf/black-forest-labs/flux-1-schnell"}
 
-logging: {level: "INFO", format: "json"}
+  manager:
+    check_interval_ms: 300000
+    stale_lock_timeout_seconds: 3600
+    start_hour: 7
+
+logging:
+  level: "INFO"
+  format: "json"
+  activity_log_file: "logs/agent_activity.jsonl"
 
 discord:
   notification_channel_id: "YOUR_DISCORD_CHANNEL_ID_HERE"

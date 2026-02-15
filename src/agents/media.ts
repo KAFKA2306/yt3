@@ -3,7 +3,7 @@ import os from "os";
 import fs from "fs-extra";
 import axios from "axios";
 import ffmpeg from "fluent-ffmpeg";
-import { AssetStore, loadConfig, getSpeakers, BaseAgent } from "../core.js";
+import { AssetStore, loadConfig, getSpeakers, BaseAgent, ROOT } from "../core.js";
 import { Script, AppConfig } from "../types.js";
 import { LayoutEngine, RenderPlan } from "../layout_engine.js";
 
@@ -14,7 +14,6 @@ export class VisualDirector extends BaseAgent {
     speakers: Record<string, number>;
     videoConfig: AppConfig["steps"]["video"];
     thumbConfig: AppConfig["steps"]["thumbnail"];
-    subtitleConfig: AppConfig["steps"]["subtitle"];
     layout: LayoutEngine;
 
     constructor(store: AssetStore) {
@@ -24,12 +23,11 @@ export class VisualDirector extends BaseAgent {
         this.speakers = getSpeakers();
         this.videoConfig = cfg.steps.video;
         this.thumbConfig = cfg.steps.thumbnail;
-        this.subtitleConfig = cfg.steps.subtitle;
         this.layout = new LayoutEngine();
     }
 
     async run(script: Script, title: string): Promise<MediaResult> {
-        this.store.logInput("media", { lines: script.lines.length });
+        this.logInput({ lines: script.lines.length });
         const audioDir = this.store.audioDir();
 
         const audio_paths = await Promise.all(script.lines.map(async (l: { speaker: string; text: string }, i: number) => {
@@ -75,7 +73,7 @@ export class VisualDirector extends BaseAgent {
     }
 
     private getAudioDuration(p: string): Promise<number> {
-        return new Promise((resolve, reject) => ffmpeg.ffprobe(p, (err, m) => err ? reject(err) : resolve(m.format.duration || 0)));
+        return new Promise((resolve, reject) => ffmpeg.ffprobe(p, (err, m) => err ? reject(err) : resolve(m?.format?.duration || 0)));
     }
 
     private generateVideo(audioPath: string, thumbPath: string, subtitlePath: string, outputPath: string, plan: RenderPlan): Promise<void> {

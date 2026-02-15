@@ -17,16 +17,19 @@ export class PublishAgent extends BaseAgent {
         const results: PublishResults = {};
         if (this.config.steps.youtube?.enabled) results.youtube = await this.uploadToYouTube(state);
         if (this.config.steps.twitter?.enabled) results.twitter = await this.postToTwitter(state);
-        this.store.logOutput(this.name, results);
+        this.logOutput(results);
         return results;
     }
 
     private async uploadToYouTube(state: AgentState): Promise<PublishResults["youtube"]> {
-        const ytCfg = this.config.steps.youtube!;
+        const ytCfg = this.config.steps.youtube;
+        if (!ytCfg) throw new Error("YouTube config missing");
         if (ytCfg.dry_run) return { status: "dry_run", video_id: "dry_run_id" };
 
         const youtube = google.youtube({ version: "v3", auth: this.createYouTubeClient() });
         const { video_path: videoPath, thumbnail_path: thumbnailPath } = state;
+
+        if (!videoPath) throw new Error("Video path missing");
 
         if (this.config.steps.thumbnail.enabled && (!thumbnailPath || !fs.existsSync(thumbnailPath))) {
             throw new Error(`[PublishAgent] Thumbnail missing: ${thumbnailPath}`);
@@ -71,7 +74,8 @@ export class PublishAgent extends BaseAgent {
     }
 
     private async postToTwitter(state: AgentState): Promise<PublishResults["twitter"]> {
-        const twCfg = this.config.steps.twitter!;
+        const twCfg = this.config.steps.twitter;
+        if (!twCfg) throw new Error("Twitter config missing");
         if (twCfg.dry_run) return { status: "dry_run", tweet_id: "dry_run_id" };
 
         const client = this.createTwitterClient();

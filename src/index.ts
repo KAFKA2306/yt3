@@ -1,25 +1,26 @@
-import "./core.js";
-import { AssetStore, createLlm } from "./core.js";
+import "dotenv/config";
+import { AssetStore, loadConfig } from "./core.js";
 import { createGraph } from "./graph.js";
-import { AgentState } from "./types.js";
-import { sendAlert } from "./utils/discord.js";
+import { AgentLogger } from "./utils/logger.js";
 
 async function main() {
-    const runId = process.env.RUN_ID || new Date().toISOString().split("T")[0];
+    const runId = process.env.RUN_ID || `run_${Date.now()}`;
     const store = new AssetStore(runId);
+    const cfg = loadConfig();
+
+    AgentLogger.init();
+    AgentLogger.info("SYSTEM", "MAIN", "START", `Starting YouTuber Pipeline (RunID: ${runId})`);
+
     const graph = createGraph(store);
-    const bucket = process.argv[2] || "Financial News";
-
-    console.log(`Starting: ${runId} (${bucket})`);
-
-    const finalState = await graph.invoke({
+    const initialState = {
         run_id: runId,
-        bucket: bucket,
-        limit: 3
-    }) as unknown as AgentState;
+        bucket: process.env.BUCKET || "macro_economy",
+        limit: parseInt(process.env.LIMIT || "3"),
+        status: "starting"
+    };
 
-    console.log(`Completed: ${finalState.video_path}`);
-    await sendAlert(`Workflow COMPLETED: ${bucket}\nVideo: ${finalState.video_path}`, "success");
+    const finalState = await graph.invoke(initialState);
+    AgentLogger.info("SYSTEM", "MAIN", "SUCCESS", `Pipeline finished with status: ${finalState.status}`);
 }
 
 main();

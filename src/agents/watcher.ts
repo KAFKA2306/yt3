@@ -1,81 +1,46 @@
-import "dotenv/config";
-import { Client, GatewayIntentBits, TextChannel, Colors, EmbedBuilder } from "discord.js";
+import { Client, GatewayIntentBits, TextChannel, EmbedBuilder } from "discord.js";
 import { AssetStore, BaseAgent, loadConfig } from "../core.js";
-import fs from "fs-extra";
-import path from "path";
-
-interface LastRun {
-    status?: string;
-    duration_seconds?: number;
-    exit_code?: number;
-}
+import { AgentState } from "../types.js";
 
 export class WatcherAgent extends BaseAgent {
+    private client: Client;
+    private channelId: string;
+
     constructor(store: AssetStore) {
         super(store, "watcher");
+        const cfg = loadConfig();
+        this.channelId = cfg.discord?.notification_channel_id || process.env.DISCORD_NOTIFICATION_CHANNEL_ID || "";
+        this.client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
     }
 
-    async run(serviceResult: string = "unknown") {
-        const config = loadConfig();
-        const discordConfig = config.discord;
-        const token = process.env.DISCORD_TOKEN;
-        const channelId = process.env.DISCORD_NOTIFICATION_CHANNEL_ID || discordConfig?.notification_channel_id;
-
-        if (!token || !channelId) return;
-
-        const logDir = path.join(process.cwd(), "logs");
-        const lastRunFile = path.join(logDir, "last_run.json");
-        let lastRun: LastRun = {};
-        if (fs.existsSync(lastRunFile)) {
-            lastRun = JSON.parse(fs.readFileSync(lastRunFile, "utf-8"));
+    async run(state: AgentState): Promise<void> {
+        this.logInput(state);
+        if (!process.env.DISCORD_TOKEN || !this.channelId) {
+            this.logOutput({ status: "skipped", reason: "Discord credentials missing" });
+            return;
         }
 
-        const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+        await this.client.login(process.env.DISCORD_TOKEN);
+        const channel = await this.client.channels.fetch(this.channelId) as TextChannel;
+        if (!channel) throw new Error(`Could not find Discord channel: ${this.channelId}`);
 
-        client.once("ready", async () => {
-            const channel = await client.channels.fetch(channelId);
-            if (!channel || !channel.isTextBased()) throw new Error(`Channel ${channelId} invalid`);
-
-            const isSuccess = serviceResult.includes("success") || (lastRun.status === "success" && serviceResult === "unknown");
-            const embed = this.createStatusEmbed(isSuccess, lastRun, serviceResult, logDir);
-
-            await (channel as TextChannel).send({ embeds: [embed] });
-            client.destroy();
-        });
-
-        await client.login(token);
-    }
-
-    private createStatusEmbed(isSuccess: boolean, lastRun: LastRun, serviceResult: string, logDir: string): EmbedBuilder {
-        const color = isSuccess ? Colors.Green : Colors.Red;
-        const title = isSuccess ? "✅ Success" : "🚨 Failure";
         const embed = new EmbedBuilder()
-            .setTitle(title)
-            .setColor(color)
-            .setTimestamp()
+            .setTitle(`🚀 Run Completed: ${state.metadata?.title || "Unknown"}`)
+            .setColor(0x00AE86)
             .addFields(
-                { name: "Status", value: lastRun.status || "Unknown", inline: true },
-                { name: "Duration", value: `${lastRun.duration_seconds || 0}s`, inline: true },
-                { name: "Exit Code", value: `${lastRun.exit_code ?? "N/A"}`, inline: true }
-            );
+                { name: "Run ID", value: state.run_id, inline: true },
+                { name: "Status", value: state.status || "succeeded", inline: true },
+                { name: "Bucket", value: state.bucket, inline: true },
+                { name: "YouTube", value: state.publish_results?.youtube?.status || "Skipped", inline: true },
+                { name: "X (Twitter)", value: state.publish_results?.twitter?.status || "Skipped", inline: true }
+            )
+            .setTimestamp();
 
-        if (serviceResult !== "unknown") embed.addFields({ name: "Result", value: serviceResult, inline: false });
+        if (state.video_path) embed.addFields({ name: "Video", value: state.video_path });
+        if (state.thumbnail_path) embed.setThumbnail(`attachment://${state.thumbnail_path.split("/").pop()}`);
 
-        if (!isSuccess) {
-            const logFile = path.join(logDir, "cron.log");
-            if (fs.existsSync(logFile)) {
-                const logContent = fs.readFileSync(logFile, "utf-8").trim().split("\n").slice(-5).join("\n");
-                embed.addFields({ name: "Logs", value: `\`\`\`\n${logContent}\n\`\`\`` });
-            }
-        }
-        return embed;
+        await channel.send({ embeds: [embed] });
+        await this.client.destroy();
+        this.logOutput({ status: "notified" });
     }
-}
-
-if (typeof require !== 'undefined' && require.main === module) {
-    const ARGS = process.argv.slice(2);
-    const serviceResultArg = ARGS.find(a => a.startsWith("--service-result="));
-    const serviceResult = serviceResultArg ? serviceResultArg.split("=")[1] : "unknown";
-    const store = new AssetStore("watcher");
-    new WatcherAgent(store).run(serviceResult);
 }

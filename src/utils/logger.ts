@@ -1,7 +1,6 @@
 import fs from "fs-extra";
 import path from "path";
-
-const ROOT = process.cwd();
+import { loadConfig, ROOT } from "../core.js";
 
 export type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
 
@@ -23,18 +22,21 @@ export interface AgentLogEntry {
 }
 
 export class AgentLogger {
-    private static logFile = path.join(ROOT, "logs", "agent_activity.jsonl");
+    private static logFile: string;
 
     static init() {
-        fs.ensureDirSync(path.join(ROOT, "logs"));
+        const cfg = loadConfig();
+        this.logFile = path.isAbsolute(cfg.logging.activity_log_file)
+            ? cfg.logging.activity_log_file
+            : path.join(ROOT, cfg.logging.activity_log_file);
+        fs.ensureDirSync(path.dirname(this.logFile));
     }
 
     private static log(entry: AgentLogEntry) {
-        this.init();
+        if (!this.logFile) this.init();
         const line = JSON.stringify(entry) + "\n";
         fs.appendFileSync(this.logFile, line);
 
-        // Console output for human observability in a structured way
         const consoleMsg = `[${entry.timestamp}] [${entry.level}] [${entry.agent}:${entry.stage}] ${entry.event}: ${entry.message}`;
         if (entry.level === "ERROR") {
             console.error(consoleMsg);
@@ -80,7 +82,7 @@ export class AgentLogger {
             error: error ? {
                 message: error.message,
                 stack: error.stack,
-                code: (error as any).code
+                code: (error as { code?: string | number }).code
             } : undefined,
             ...extra
         });

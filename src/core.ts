@@ -1,4 +1,3 @@
-
 import path from "path";
 import fs from "fs-extra";
 import yaml from "js-yaml";
@@ -159,25 +158,18 @@ export class BaseAgent {
             return this.store.load<T>(this.name, "output");
         }
 
-        try {
-            const llm = createLlm({ ...this.opts, ...callOpts });
-            const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
+        const llm = createLlm({ ...this.opts, ...callOpts });
+        const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
 
-            this.store.save(this.name, "raw_response", { content: res.content });
-            const parsed = parser(res.content as string);
-            this.store.logOutput(this.name, parsed);
+        this.store.save(this.name, "raw_response", { content: res.content });
+        const parsed = parser(res.content as string);
+        this.store.logOutput(this.name, parsed);
 
-            AgentLogger.decision(this.name, "RUN", "LLM_SUCCESS", `Successfully parsed response for ${this.name}`, {
-                model: getLlmModel()
-            });
+        AgentLogger.decision(this.name, "RUN", "LLM_SUCCESS", `Successfully parsed response for ${this.name}`, {
+            model: getLlmModel()
+        });
 
-            return parsed;
-        } catch (error) {
-            AgentLogger.error(this.name, "RUN", "LLM_FAILURE", `Failed LLM call for ${this.name}`, error as Error, {
-                recovery_hint: "Check API availability or rate limits. The Manager Agent will attempt retry."
-            });
-            throw error;
-        }
+        return parsed;
     }
 
     loadPrompt<T = PromptData>(name: string): T { return loadPrompt(name) as T; }

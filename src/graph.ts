@@ -33,6 +33,8 @@ const channels: StateChannels = {
     status: { reducer, default: () => "idle" },
     publish_results: { reducer, default: () => undefined } as ChannelReducer<PublishResults | undefined>,
     memory_context: { reducer, default: () => "" },
+    evaluation: { reducer, default: () => undefined },
+    retries: { reducer, default: () => 0 },
 };
 
 export function createGraph(store: AssetStore) {
@@ -73,7 +75,7 @@ export function createGraph(store: AssetStore) {
         return { status: "completed" };
     });
 
-    const graph = workflow as unknown as { addEdge: (from: string, to: string) => void };
+    const graph = workflow as { addEdge: (from: string, to: string) => void; compile: () => unknown };
     graph.addEdge(START, "research");
     graph.addEdge("research", "content");
     graph.addEdge("content", "media");

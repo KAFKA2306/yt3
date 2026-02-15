@@ -19,9 +19,11 @@ export class LayoutEngine {
 
     constructor() {
         this.config = loadConfig();
-        const [vw, vh] = ((this.config.steps.video?.resolution || "1920x1080")).split("x").map(Number);
+        const videoCfg = this.config.steps.video;
+        const thumbCfg = this.config.steps.thumbnail;
+        const [vw, vh] = (videoCfg.resolution || "1920x1080").split("x").map(Number);
         this.videoRes = { width: vw, height: vh };
-        const [tw, th] = ((this.config.steps.thumbnail?.resolution || "1280x720") as string).split("x").map(Number);
+        const [tw, th] = (thumbCfg.resolution || "1280x720").split("x").map(Number);
         this.thumbRes = { width: tw, height: th };
     }
 
@@ -126,7 +128,7 @@ export class LayoutEngine {
 
     generateASS(script: { lines: { text: string }[] }, durations: number[], plan: RenderPlan): string {
         const { safeMarginL: sL, safeMarginR: sR } = plan;
-        const [w, h] = (this.config.steps.video?.resolution || "1920x1080").split("x");
+        const [w, h] = (this.config.steps.video.resolution || "1920x1080").split("x");
         const cfg = this.getSubtitlesStyle(sL, sR);
         const header = `[Script Info]\nScriptType: v4.00+\nPlayResX: ${w}\nPlayResY: ${h}\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,${cfg.font},${cfg.size},${cfg.color},&H000000FF,${cfg.outlineColor},&H00000080,0,0,0,0,100,100,0,0,1,${cfg.outline},${cfg.shadow},${cfg.align},${cfg.mL},${cfg.mR},${cfg.mV},1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
 
@@ -142,7 +144,7 @@ export class LayoutEngine {
     private getSubtitleBaseStyle(subtitlesConfig: AppConfig["steps"]["video"]["subtitles"]) {
         const s = subtitlesConfig || {};
         return {
-            font: s.font_name === undefined ? 'Arial' : s.font_name,
+            font: s.font_name === undefined ? 'Noto Sans JP' : s.font_name,
             size: s.font_size === undefined ? 72 : s.font_size,
             color: s.primary_colour === undefined ? '&HFFFFFF&' : s.primary_colour,
             outlineColor: s.outline_colour === undefined ? '&H000000&' : s.outline_colour,

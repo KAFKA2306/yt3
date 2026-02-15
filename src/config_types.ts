@@ -16,6 +16,7 @@ export interface AppConfig {
     workflow: {
         default_run_dir: string;
         checkpoint_enabled: boolean;
+        memory: { index_file: string; essence_file: string };
         trend_settings: { enabled: boolean; regions: string[]; sources: string[] };
     };
     steps: {
@@ -31,6 +32,7 @@ export interface AppConfig {
             target_wow_score: number;
             speakers: Record<string, { name: string; aliases: string[] }>;
             context_overlap_lines?: number;
+            segment_sleep_ms?: number;
             default_tags?: string[];
         };
         audio: { sample_rate: number; format: string };
@@ -82,6 +84,12 @@ export interface AppConfig {
     providers: {
         llm: { gemini: { model: string; fallback_model: string | null; temperature: number; max_tokens: number } };
         tts: { voicevox: { enabled: boolean; url: string; speakers: Record<string, number> } };
+        manager: { check_interval_ms: number; stale_lock_timeout_seconds: number; start_hour: number };
+    };
+    logging: {
+        level: string;
+        format: string;
+        activity_log_file: string;
     };
     discord?: { notification_channel_id: string };
 }

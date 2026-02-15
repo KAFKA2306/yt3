@@ -1,43 +1,40 @@
-import path from "path";
 import fs from "fs-extra";
-import yaml from "js-yaml";
-import { AssetStore, BaseAgent, ROOT, readYamlFile, parseLlmJson } from "../core.js";
+import path from "path";
+import { AssetStore, BaseAgent, loadConfig, ROOT } from "../core.js";
 import { AgentState } from "../types.js";
 
-export function loadMemoryIndex(): { videos: Array<{ id: string; date: string; topic: string; angle: string; title: string; keywords: string[] }> } {
-    return readYamlFile(path.join(ROOT, "memory", "index.yaml"));
+export function loadMemoryIndex() {
+    const cfg = loadConfig().workflow.memory;
+    const p = path.isAbsolute(cfg.index_file) ? cfg.index_file : path.join(ROOT, cfg.index_file);
+    if (!fs.existsSync(p)) return { videos: [] };
+    return JSON.parse(fs.readFileSync(p, "utf-8"));
 }
 
-export function loadMemoryEssences(): { essences: Array<{ video_id: string; topic: string; key_insights: string[] }> } {
-    return readYamlFile(path.join(ROOT, "memory", "essences.yaml"));
+export function loadMemoryEssences() {
+    const cfg = loadConfig().workflow.memory;
+    const p = path.isAbsolute(cfg.essence_file) ? cfg.essence_file : path.join(ROOT, cfg.essence_file);
+    if (!fs.existsSync(p)) return { essences: [] };
+    return JSON.parse(fs.readFileSync(p, "utf-8"));
 }
 
 export class MemoryAgent extends BaseAgent {
-    constructor(store: AssetStore) { super(store, "memory", { temperature: 0.2 }); }
+    constructor(store: AssetStore) { super(store, "memory"); }
 
     async run(state: AgentState): Promise<void> {
-        this.logInput({ run_id: state.run_id, title: state.metadata?.title });
-        if (!state.metadata || !state.script) return;
+        this.logInput(state);
+        const cfg = loadConfig().workflow.memory;
+        const idxPath = path.isAbsolute(cfg.index_file) ? cfg.index_file : path.join(ROOT, cfg.index_file);
 
-        const indexPath = path.join(ROOT, "memory", "index.yaml");
-        const idx = loadMemoryIndex();
-        idx.videos.push({
-            id: state.run_id,
-            date: new Date().toISOString().split("T")[0],
-            topic: state.director_data?.title_hook || state.metadata!.title,
-            angle: state.director_data?.angle || "Standard",
-            title: state.metadata!.title,
-            keywords: state.metadata!.tags
+        const index = fs.existsSync(idxPath) ? JSON.parse(fs.readFileSync(idxPath, "utf-8")) : { videos: [] };
+        index.videos.push({
+            run_id: state.run_id,
+            topic: state.metadata?.title || "Unknown",
+            date: new Date().toISOString(),
+            url: state.publish_results?.youtube?.video_id ? `https://youtube.com/watch?v=${state.publish_results.youtube.video_id}` : ""
         });
-        fs.writeFileSync(indexPath, yaml.dump(idx));
 
-        const essencesPath = path.join(ROOT, "memory", "essences.yaml");
-        const ess = loadMemoryEssences();
-        const cfg = this.loadPrompt("memory");
-        const scriptText = state.script!.lines.map(l => l.text).join(" ");
-
-        const raw = await this.runLlm<{ key_insights: string[] }>(cfg.system, cfg.user_template.replace("{script_text}", scriptText), text => parseLlmJson(text));
-        ess.essences.push({ video_id: state.run_id, topic: state.metadata!.title, ...raw });
-        fs.writeFileSync(essencesPath, yaml.dump(ess));
+        fs.ensureDirSync(path.dirname(idxPath));
+        fs.writeFileSync(idxPath, JSON.stringify(index, null, 2));
+        this.logOutput({ status: "updated", index_size: index.videos.length });
     }
 }
