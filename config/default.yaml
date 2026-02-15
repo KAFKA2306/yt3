@@ -174,7 +174,7 @@ steps:
 
 providers:
   llm:
-    gemini: {model: "gemini-3-flash-preview", fallback_model: null, temperature: 0.35, max_tokens: 32768}
+    gemini: {model: "gemini-3-flash-preview", fallback_model: "gemini-2.0-flash", temperature: 0.35, max_tokens: 32768}
   tts:
     voicevox:
       enabled: true

@@ -78,6 +78,7 @@ TASKS["hf:sync"] = () => {
 TASKS["cron"] = () => { runCmd("npx", ["tsx", "scripts/automation.ts", "--install-cron"]); };
 TASKS["audit:overlays"] = () => { runCmd("npx", ["tsx", "scripts/audit_overlays.ts"]); };
 TASKS["setup:systemd"] = () => { runCmd("npx", ["tsx", "scripts/setup_systemd.ts"]); };
+TASKS["manager"] = () => { runCmd("npx", ["tsx", "src/agents/manager.ts"]); };
 TASKS["watcher"] = () => { runCmd("npx", ["tsx", "src/agents/watcher.ts", ...process.argv.slice(3)]); };
 
 const cmd = ARGS[0];

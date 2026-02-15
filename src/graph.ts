@@ -5,6 +5,7 @@ import { ScriptSmith } from "./agents/content.js";
 import { VisualDirector } from "./agents/media.js";
 import { MemoryAgent } from "./agents/memory.js";
 import { PublishAgent } from "./agents/publish.js";
+import { AgentLogger } from "./utils/logger.js";
 import { AgentState, DirectorData, Script, Metadata, PublishResults } from "./types.js";
 
 type ChannelReducer<T> = {
@@ -43,26 +44,31 @@ export function createGraph(store: AssetStore) {
     const workflow = new StateGraph<AgentState>({ channels });
 
     workflow.addNode("research", async (state) => {
+        AgentLogger.transition("SYSTEM", "START", "RESEARCH", "Starting trend discovery");
         const res = await research.run(state.bucket, state.limit);
         return { director_data: res.director_data, news: res.news, memory_context: res.memory_context };
     });
 
     workflow.addNode("content", async (state) => {
+        AgentLogger.transition("SYSTEM", "RESEARCH", "CONTENT", "Synthesizing script and metadata");
         const res = await content.run(state.news!, state.director_data!, state.memory_context!);
         return { script: res.script, metadata: res.metadata };
     });
 
     workflow.addNode("media", async (state) => {
+        AgentLogger.transition("SYSTEM", "CONTENT", "MEDIA", "Generating audio and video assets");
         const res = await media.run(state.script!, state.metadata?.thumbnail_title || state.script!.title);
         return { audio_paths: res.audio_paths, thumbnail_path: res.thumbnail_path, video_path: res.video_path };
     });
 
     workflow.addNode("publish", async (state) => {
+        AgentLogger.transition("SYSTEM", "MEDIA", "PUBLISH", "Uploading video to YouTube and social channels");
         const res = await publish.run(state);
         return { publish_results: res, status: "published" };
     });
 
     workflow.addNode("memory", async (state) => {
+        AgentLogger.transition("SYSTEM", "PUBLISH", "MEMORY", "Updating memory with run results");
         await memory.run(state);
         return { status: "completed" };
     });

@@ -1,4 +1,5 @@
 import { AssetStore, BaseAgent, parseLlmJson, readYamlFile, ROOT, loadConfig } from "../core.js";
+import fs from "fs-extra";
 import path from "path";
 import { DirectorData, EvaluationReport, Metadata, NewsItem, Script } from "../types.js";
 
@@ -18,6 +19,12 @@ export class ScriptSmith extends BaseAgent {
     constructor(store: AssetStore) { super(store, "content", { temperature: 0.4 }); }
 
     async run(news: NewsItem[], director: DirectorData, context: string, evaluation?: EvaluationReport): Promise<ContentResult> {
+        const outputPath = path.join(this.store.runDir, "content", "output.yaml");
+        if (fs.existsSync(outputPath)) {
+            // @ts-ignore
+            return readYamlFile<ContentResult>(outputPath);
+        }
+
         this.logInput({ news, director, context, evaluation });
 
         const appCfg = loadConfig();
@@ -57,6 +64,7 @@ export class ScriptSmith extends BaseAgent {
                 const lastLines = segmentRes.lines.slice(-(scriptCfg.context_overlap_lines || 3));
                 previousContext = lastLines.map(l => `${l.speaker}: ${l.text}`).join("\n");
             }
+            await new Promise(resolve => setTimeout(resolve, 15000));
         }
 
         return {

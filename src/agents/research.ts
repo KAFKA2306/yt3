@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs-extra";
 import { AssetStore, ROOT, BaseAgent, parseLlmJson, loadConfig, readYamlFile } from "../core.js";
 import { AppConfig, DirectorData, NewsItem } from "../types.js";
 import { loadMemoryIndex, loadMemoryEssences } from "../agents/memory.js";
@@ -52,6 +53,12 @@ export class TrendScout extends BaseAgent {
     }
 
     async run(bucket: string, limit: number = 3): Promise<ResearchResult> {
+        const outputPath = path.join(this.store.runDir, "research", "output.yaml");
+        if (fs.existsSync(outputPath)) {
+            // @ts-ignore
+            return readYamlFile<ResearchResult>(outputPath);
+        }
+
         this.logInput({ bucket, limit });
         const { recent, essences } = await this.loadMemory("Global Trends");
         const appCfg = loadConfig();

@@ -5,8 +5,10 @@ import yaml from "js-yaml";
 import dotenv from "dotenv";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { AgentState, AppConfig, PromptData } from "./types.js";
+import { AgentLogger } from "./utils/logger.js";
 
 dotenv.config({ path: path.join(process.cwd(), "config", ".env") });
+AgentLogger.init();
 
 export const ROOT = process.cwd();
 
@@ -151,18 +153,42 @@ export class BaseAgent {
     }
 
     async runLlm<T>(system: string, user: string, parser: (text: string) => T, callOpts: Record<string, unknown> = {}): Promise<T> {
-        if (process.env.SKIP_LLM === "true") return this.store.load<T>(this.name, "output");
-        const llm = createLlm({ ...this.opts, ...callOpts });
-        const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
-        this.store.save(this.name, "raw_response", { content: res.content });
-        const parsed = parser(res.content as string);
-        this.store.logOutput(this.name, parsed);
-        return parsed;
+        AgentLogger.info(this.name, "RUN", "START_LLM", `Invoking LLM for ${this.name}`);
+        if (process.env.SKIP_LLM === "true") {
+            AgentLogger.info(this.name, "RUN", "SKIP_LLM", "Reading output from cache due to SKIP_LLM=true");
+            return this.store.load<T>(this.name, "output");
+        }
+
+        try {
+            const llm = createLlm({ ...this.opts, ...callOpts });
+            const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
+
+            this.store.save(this.name, "raw_response", { content: res.content });
+            const parsed = parser(res.content as string);
+            this.store.logOutput(this.name, parsed);
+
+            AgentLogger.decision(this.name, "RUN", "LLM_SUCCESS", `Successfully parsed response for ${this.name}`, {
+                model: getLlmModel()
+            });
+
+            return parsed;
+        } catch (error) {
+            AgentLogger.error(this.name, "RUN", "LLM_FAILURE", `Failed LLM call for ${this.name}`, error as Error, {
+                recovery_hint: "Check API availability or rate limits. The Manager Agent will attempt retry."
+            });
+            throw error;
+        }
     }
 
     loadPrompt<T = PromptData>(name: string): T { return loadPrompt(name) as T; }
 
-    logInput(data: unknown) { this.store.logInput(this.name, data); }
+    logInput(data: unknown) {
+        this.store.logInput(this.name, data);
+        AgentLogger.info(this.name, "IO", "LOG_INPUT", "Stored agent input data");
+    }
 
-    logOutput(data: unknown) { this.store.logOutput(this.name, data); }
+    logOutput(data: unknown) {
+        this.store.logOutput(this.name, data);
+        AgentLogger.info(this.name, "IO", "LOG_OUTPUT", "Stored agent output data");
+    }
 }

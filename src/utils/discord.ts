@@ -1,12 +1,13 @@
 import { WebhookClient, EmbedBuilder } from "discord.js";
 import { loadConfig } from "../core.js";
+import { AgentLogger } from "./logger.js";
 
 const config = loadConfig();
 
 export async function sendAlert(message: string, level: "info" | "error" | "success" = "info") {
+    AgentLogger.info("SYSTEM", "DISCORD", "SEND_ALERT", `Alert: ${message}`, { context: { level } });
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
     if (!webhookUrl) {
-        console.log(`[Alert] ${level.toUpperCase()}: ${message}`);
         return;
     }
 
