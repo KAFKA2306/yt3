@@ -32,7 +32,7 @@ export class ScriptSmith extends BaseAgent {
         const appCfg = loadConfig();
         const scriptCfg = appCfg.steps.script;
         if (!scriptCfg) throw new Error("Script config missing");
-        const contentAndPrompts = this.loadPrompt<{ outline: PromptSection; segment: PromptSection; script: PromptSection }>("content");
+        const contentAndPrompts = this.loadPrompt<{ outline: PromptSection; segment: PromptSection; metadata: PromptSection }>("content");
 
         const outlineCfg = contentAndPrompts.outline;
         const newsContext = news.map(n =>
@@ -70,18 +70,27 @@ export class ScriptSmith extends BaseAgent {
             await new Promise(resolve => setTimeout(resolve, scriptCfg.segment_sleep_ms || 15000));
         }
 
+        const scriptText = allLines.map(l => `${l.speaker}: ${l.text}`).join("\n");
+        const metadataRes = await this.runLlm<Metadata>(
+            contentAndPrompts.metadata.system,
+            contentAndPrompts.metadata.user_template
+                .replace("{script_text}", scriptText)
+                .replace("{news_sources}", newsContext),
+            text => parseLlmJson(text)
+        );
+
         const result = {
             script: {
-                title: outline.title || director.title_hook,
-                description: director.angle,
+                title: metadataRes.title || outline.title || director.title_hook,
+                description: metadataRes.description || director.angle,
                 lines: allLines.map(l => ({ speaker: l.speaker, text: l.text, duration: 0 })),
                 total_duration: 0
             },
             metadata: {
-                title: outline.title || director.title_hook,
-                thumbnail_title: director.title_hook,
-                description: director.angle,
-                tags: appCfg.steps.script?.default_tags || []
+                title: metadataRes.title || outline.title || director.title_hook,
+                thumbnail_title: metadataRes.thumbnail_title || director.title_hook,
+                description: metadataRes.description || director.angle,
+                tags: metadataRes.tags || appCfg.steps.script?.default_tags || []
             }
         };
 

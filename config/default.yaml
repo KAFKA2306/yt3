@@ -171,6 +171,13 @@ steps:
       replacements: {闇: "課題", 陰謀: "構造的課題", 激震: "急変", 衝撃: "注目", ショック: "変化", 暴露: "解説", 暴走: "過熱", やばい: "注意", 暴落: "下落", 警告: "注意喚起", 危機: "リスク"}
 
   youtube: {enabled: true, dry_run: false, default_visibility: "public", category_id: 24, max_title_length: 100, max_description_length: 5000, default_tags: ["金融", "ニュース"]}
+
+defaults:
+  retries: 3
+  media:
+    background_color: "0x193d5a"
+    intro_seconds: 5
+
   twitter: {enabled: false, dry_run: false, clip_duration_seconds: 60, start_offset_seconds: 0}
   linkedin: {enabled: false, dry_run: true, access_token: "linkedin_access_token", author_urn: "urn:li:person:YOUR_ID"}
   hatena: {enabled: false, dry_run: true, hatena_id: "your_hatena_id", blog_id: "your_blog_id.hatenablog.com", api_key: "hatena_api_key"}

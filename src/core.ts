@@ -163,7 +163,6 @@ export class BaseAgent {
 
         this.store.save(this.name, "raw_response", { content: res.content });
         const parsed = parser(res.content as string);
-        // Skip automatic logOutput here to prevent overwriting stage output with partial LLM results
 
         AgentLogger.decision(this.name, "RUN", "LLM_SUCCESS", `Successfully parsed response for ${this.name}`, {
             model: getLlmModel()

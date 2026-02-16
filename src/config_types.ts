@@ -97,6 +97,13 @@ export interface AppConfig {
         activity_log_file: string;
     };
     discord?: { notification_channel_id: string };
+    defaults?: {
+        retries?: number;
+        media?: {
+            background_color?: string;
+            intro_seconds?: number;
+        };
+    };
 }
 
 export interface PromptData {

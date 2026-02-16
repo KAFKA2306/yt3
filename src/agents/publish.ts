@@ -60,8 +60,7 @@ export class PublishAgent extends BaseAgent {
     }
 
     private createYouTubeClient() {
-        const s = "/";
-        const client = new google.auth.OAuth2(process.env.YOUTUBE_CLIENT_ID, process.env.YOUTUBE_CLIENT_SECRET, process.env.YOUTUBE_REDIRECT_URI || `http:${s}${s}localhost`);
+        const client = new google.auth.OAuth2(process.env.YOUTUBE_CLIENT_ID, process.env.YOUTUBE_CLIENT_SECRET, process.env.YOUTUBE_REDIRECT_URI || `http://localhost`);
         client.setCredentials({ refresh_token: process.env.YOUTUBE_REFRESH_TOKEN });
         return client;
     }

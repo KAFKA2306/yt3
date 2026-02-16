@@ -8,8 +8,6 @@ yarn-error.log*
 # Environment
 *.env
 secret/
-*lock*
-!package-lock.json
 *.pickle
 
 # Logs & Output

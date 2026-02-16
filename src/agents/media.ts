@@ -79,8 +79,9 @@ export class VisualDirector extends BaseAgent {
     private generateVideo(audioPath: string, thumbPath: string, subtitlePath: string, outputPath: string, plan: RenderPlan): Promise<void> {
         const [w, h] = this.videoConfig.resolution.split("x");
         const fps = this.videoConfig.fps;
-        const bgColor = this.videoConfig.background_color || "0x193d5a";
-        const introSec = this.videoConfig.intro_seconds || 5;
+        const cfg = loadConfig();
+        const bgColor = this.videoConfig.background_color || cfg.defaults?.media?.background_color;
+        const introSec = this.videoConfig.intro_seconds || cfg.defaults?.media?.intro_seconds;
 
         return new Promise((resolve, reject) => {
             const cmd = ffmpeg();

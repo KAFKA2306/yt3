@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs-extra";
-import { AssetStore, ROOT } from "./core.js";
+import { AssetStore, ROOT, loadConfig } from "./core.js";
 import { createGraph } from "./graph.js";
 import { AgentState } from "./types.js";
 import { TrendScout } from "./agents/research.js";
@@ -12,7 +12,8 @@ import { sendAlert } from "./utils/discord.js";
 
 const MAX_CONTENT_RETRIES = 3;
 
-const MAX_RETRIES = 3;
+const cfg = loadConfig();
+const MAX_RETRIES = cfg.defaults?.retries || 3;
 
 function resolveRunId(arg?: string): string {
     if (!arg || arg === "latest") {
