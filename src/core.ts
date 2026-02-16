@@ -6,10 +6,10 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { AgentState, AppConfig, PromptData } from "./types.js";
 import { AgentLogger } from "./utils/logger.js";
 
-dotenv.config({ path: path.join(process.cwd(), "config", ".env") });
-AgentLogger.init();
-
 export const ROOT = process.cwd();
+
+dotenv.config({ path: path.join(ROOT, "config", ".env") });
+AgentLogger.init();
 
 export function readYamlFile<T>(filePath: string): T {
     return yaml.load(fs.readFileSync(filePath, "utf8")) as T;
@@ -163,7 +163,7 @@ export class BaseAgent {
 
         this.store.save(this.name, "raw_response", { content: res.content });
         const parsed = parser(res.content as string);
-        this.store.logOutput(this.name, parsed);
+        // Skip automatic logOutput here to prevent overwriting stage output with partial LLM results
 
         AgentLogger.decision(this.name, "RUN", "LLM_SUCCESS", `Successfully parsed response for ${this.name}`, {
             model: getLlmModel()

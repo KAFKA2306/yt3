@@ -1,4 +1,4 @@
-import * as fs from "fs-extra";
+import fs from "fs-extra";
 import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
 import { AssetStore, loadConfig, BaseAgent } from "../core.js";
@@ -61,7 +61,7 @@ export class PublishAgent extends BaseAgent {
 
     private createYouTubeClient() {
         const s = "/";
-        const client = new google.auth.OAuth2(process.env.YOUTUBE_CLIENT_ID, process.env.YOUTUBE_CLIENT_SECRET, `http:${s}${s}localhost`);
+        const client = new google.auth.OAuth2(process.env.YOUTUBE_CLIENT_ID, process.env.YOUTUBE_CLIENT_SECRET, process.env.YOUTUBE_REDIRECT_URI || `http:${s}${s}localhost`);
         client.setCredentials({ refresh_token: process.env.YOUTUBE_REFRESH_TOKEN });
         return client;
     }

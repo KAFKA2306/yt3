@@ -82,7 +82,12 @@ export interface AppConfig {
         twitter?: { enabled: boolean; dry_run: boolean };
     };
     providers: {
-        llm: { gemini: { model: string; fallback_model: string | null; temperature: number; max_tokens: number } };
+        llm: {
+            gemini: { model: string; fallback_model: string | null; temperature: number; max_tokens: number };
+            content?: { temperature: number };
+            media?: { temperature: number };
+            research?: { temperature: number; selection_temperature: number; relevance_temperature: number };
+        };
         tts: { voicevox: { enabled: boolean; url: string; speakers: Record<string, number> } };
         manager: { check_interval_ms: number; stale_lock_timeout_seconds: number; start_hour: number };
     };

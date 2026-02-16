@@ -98,6 +98,7 @@ steps:
       primary_colour: "&HFFFFFF&"
       outline_colour: "&H000000&"
       outline: 2
+      shadow: 0
       alignment: 2
       margin_l: 200
       margin_r: 200
@@ -179,6 +180,9 @@ steps:
 providers:
   llm:
     gemini: {model: "gemini-3-flash-preview", fallback_model: "gemini-2.0-flash", temperature: 0.35, max_tokens: 32768}
+    content: {temperature: 0.4}
+    media: {temperature: 0.1}
+    research: {temperature: 0.5, selection_temperature: 0.4, relevance_temperature: 0.0}
   tts:
     voicevox:
       enabled: true

@@ -16,7 +16,10 @@ interface PromptSection {
 }
 
 export class ScriptSmith extends BaseAgent {
-    constructor(store: AssetStore) { super(store, "content", { temperature: 0.4 }); }
+    constructor(store: AssetStore) {
+        const cfg = loadConfig();
+        super(store, "content", { temperature: cfg.providers.llm.content?.temperature || 0.4 });
+    }
 
     async run(news: NewsItem[], director: DirectorData, context: string, evaluation?: EvaluationReport): Promise<ContentResult> {
         const outputPath = path.join(this.store.runDir, "content", "output.yaml");
@@ -67,7 +70,7 @@ export class ScriptSmith extends BaseAgent {
             await new Promise(resolve => setTimeout(resolve, scriptCfg.segment_sleep_ms || 15000));
         }
 
-        return {
+        const result = {
             script: {
                 title: outline.title || director.title_hook,
                 description: director.angle,
@@ -81,5 +84,8 @@ export class ScriptSmith extends BaseAgent {
                 tags: appCfg.steps.script?.default_tags || []
             }
         };
+
+        this.logOutput(result);
+        return result;
     }
 }

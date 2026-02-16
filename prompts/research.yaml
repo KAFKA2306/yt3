@@ -56,17 +56,19 @@ deep_dive:
     
     Your goal is to find "Counter-Intuitive Facts", "Primary Source Data", and "Dissenting Opinions".
     
+    **OUTPUT LANGUAGE REQUIREMENT**: ALL text fields MUST be in JAPANESE, except for "original_english_text".
+    
     Output JSON:
     {
       "director_data": {
         "angle": "{angle}", 
-        "title_hook": "A clickbait title based on HARD NUMBERS or CONFLICT",
-        "key_questions": ["Q1", "Q2", "Q3"]
+        "title_hook": "日本語のキャッチーなタイトル（具体的な数字や対立を含む）",
+        "key_questions": ["日本語の質問1", "日本語の質問2", "日本語の質問3"]
       },
       "news": [
         {
-            "title": "Headline in Original Language",
-            "summary": "Detailed summary in JAPANESE (translated).",
+            "title": "日本語の見出し（元の言語から翻訳）",
+            "summary": "日本語の詳細な要約",
             "url": "Source URL",
             "original_english_text": "The exact quote in original language."
         }

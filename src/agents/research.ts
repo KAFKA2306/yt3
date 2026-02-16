@@ -29,7 +29,10 @@ interface ResearchLlmResponse {
 }
 
 export class TrendScout extends BaseAgent {
-    constructor(store: AssetStore) { super(store, "research", { temperature: 0.5 }); }
+    constructor(store: AssetStore) {
+        const cfg = loadConfig();
+        super(store, "research", { temperature: cfg.providers.llm.research?.temperature || 0.5 });
+    }
 
     async loadMemory(query: string): Promise<{ recent: string; essences: string }> {
         const cfg = loadConfig().steps.research;
@@ -42,7 +45,8 @@ export class TrendScout extends BaseAgent {
         let relevant = ess.essences;
         if (ess.essences.length > 5) {
             const candidates = ess.essences.map((e: { topic: string }) => e.topic).join("\n");
-            const selected = await this.runLlm("Select topics relevant to query. Return JSON array of strings.", `Query: ${query}\nCandidates:\n${candidates}`, t => parseLlmJson<string[]>(t), { temperature: 0 });
+            const appCfg = loadConfig();
+            const selected = await this.runLlm("Select topics relevant to query. Return JSON array of strings.", `Query: ${query}\nCandidates:\n${candidates}`, t => parseLlmJson<string[]>(t), { temperature: appCfg.providers.llm.research?.relevance_temperature || 0 });
             if (Array.isArray(selected) && selected.length) {
                 relevant = ess.essences.filter((e: { topic: string }) => selected.includes(e.topic));
             }
@@ -54,7 +58,7 @@ export class TrendScout extends BaseAgent {
         };
     }
 
-    async run(bucket: string, limit: number = 3): Promise<ResearchResult> {
+    async run(bucket: string, limit?: number): Promise<ResearchResult> {
         const outputPath = path.join(this.store.runDir, "research", "output.yaml");
         if (fs.existsSync(outputPath)) {
             return readYamlFile<ResearchResult>(outputPath);
@@ -76,13 +80,13 @@ export class TrendScout extends BaseAgent {
             promptCfg.editor_selection.system,
             promptCfg.editor_selection.user_template.replace("{trends}", combinedTrends).replace("{recent_topics}", recent),
             t => parseLlmJson(t),
-            { temperature: 0.4 }
+            { temperature: appCfg.providers.llm.research?.selection_temperature || 0.4 }
         );
 
         const validResults = await this.performDeepDives(selection, researchCfg, promptCfg);
         if (validResults.length === 0) throw new Error("Deep dive failed to return any valid news.");
 
-        return {
+        const result = {
             director_data: {
                 angle: selection.angle,
                 title_hook: validResults[0]?.director_data.title_hook || selection.selected_topic,
@@ -92,6 +96,9 @@ export class TrendScout extends BaseAgent {
             news: validResults.flatMap(r => r.news).filter(n => n && n.title),
             memory_context: essences
         };
+
+        this.logOutput(result);
+        return result;
     }
 
     private async gatherTrendReports(cfg: NonNullable<AppConfig["steps"]["research"]>, prompt: TrendConfig): Promise<string[]> {

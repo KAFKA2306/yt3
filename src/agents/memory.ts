@@ -3,18 +3,19 @@ import path from "path";
 import { AssetStore, BaseAgent, loadConfig, ROOT } from "../core.js";
 import { AgentState } from "../types.js";
 
-export function loadMemoryIndex() {
+function loadMemoryFile<T>(fileKey: 'index_file' | 'essence_file', fallback: T): T {
     const cfg = loadConfig().workflow.memory;
-    const p = path.isAbsolute(cfg.index_file) ? cfg.index_file : path.join(ROOT, cfg.index_file);
-    if (!fs.existsSync(p)) return { videos: [] };
+    const p = path.isAbsolute(cfg[fileKey]) ? cfg[fileKey] : path.join(ROOT, cfg[fileKey]);
+    if (!fs.existsSync(p)) return fallback;
     return JSON.parse(fs.readFileSync(p, "utf-8"));
 }
 
+export function loadMemoryIndex() {
+    return loadMemoryFile<{ videos: { run_id: string; topic: string; date: string; url: string }[] }>("index_file", { videos: [] });
+}
+
 export function loadMemoryEssences() {
-    const cfg = loadConfig().workflow.memory;
-    const p = path.isAbsolute(cfg.essence_file) ? cfg.essence_file : path.join(ROOT, cfg.essence_file);
-    if (!fs.existsSync(p)) return { essences: [] };
-    return JSON.parse(fs.readFileSync(p, "utf-8"));
+    return loadMemoryFile<{ essences: { topic: string; key_insights: string[] }[] }>("essence_file", { essences: [] });
 }
 
 export class MemoryAgent extends BaseAgent {

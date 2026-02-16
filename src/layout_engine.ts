@@ -143,11 +143,13 @@ export class LayoutEngine {
 
     private getSubtitleBaseStyle(subtitlesConfig: AppConfig["steps"]["video"]["subtitles"]) {
         const s = subtitlesConfig || {};
+        if (!s.font_name) throw new Error("Subtitle font_name config missing");
+        if (!s.font_size) throw new Error("Subtitle font_size config missing");
         return {
-            font: s.font_name === undefined ? 'Noto Sans JP' : s.font_name,
-            size: s.font_size === undefined ? 72 : s.font_size,
-            color: s.primary_colour === undefined ? '&HFFFFFF&' : s.primary_colour,
-            outlineColor: s.outline_colour === undefined ? '&H000000&' : s.outline_colour,
+            font: s.font_name,
+            size: s.font_size,
+            color: s.primary_colour || '&HFFFFFF&',
+            outlineColor: s.outline_colour || '&H000000&',
         };
     }
 

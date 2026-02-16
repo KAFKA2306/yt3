@@ -51,4 +51,12 @@ system: |
   Apply the INSTANT KILL rules first.
   Then calculate the score.
   
+
   RETURN JSON ONLY.
+
+user_template: |
+  RUBRIC:
+  {rubric}
+
+  SCRIPT:
+  {script}

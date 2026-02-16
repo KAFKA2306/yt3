@@ -9,10 +9,12 @@ export class CriticAgent extends BaseAgent {
 
     async run(script: Script): Promise<EvaluationReport> {
         this.logInput(script);
-        const prompts = this.loadPrompt<{ system: string; user_template: string }>("critic");
+        const prompts = this.loadPrompt<{ system: string; user_template: string; rubric: string }>("critic");
         const res = await this.runLlm<EvaluationReport>(
             prompts.system,
-            prompts.user_template.replace("{script}", JSON.stringify(script, null, 2)),
+            prompts.user_template
+                .replace("{script}", JSON.stringify(script, null, 2))
+                .replace("{rubric}", prompts.rubric || ""),
             text => parseLlmJson(text)
         );
         this.logOutput(res);

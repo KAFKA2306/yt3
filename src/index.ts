@@ -13,6 +13,7 @@ async function main() {
 
     const graph = createGraph(store);
     const initialState = {
+        ...store.loadState(),
         run_id: runId,
         bucket: process.env.BUCKET || "macro_economy",
         limit: parseInt(process.env.LIMIT || "3"),

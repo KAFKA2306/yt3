@@ -17,8 +17,8 @@ export class VisualDirector extends BaseAgent {
     layout: LayoutEngine;
 
     constructor(store: AssetStore) {
-        super(store, "media", { temperature: 0.1 });
         const cfg = loadConfig();
+        super(store, "media", { temperature: cfg.providers.llm.media?.temperature || 0.1 });
         this.ttsUrl = cfg.providers.tts.voicevox.url;
         this.speakers = getSpeakers();
         this.videoConfig = cfg.steps.video;
