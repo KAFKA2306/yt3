@@ -25,21 +25,24 @@ describe('TrendScout Step', () => {
         const agent = new TrendScout(store);
 
         mock.method(agent, 'runLlm', async (sys: string) => {
-            if (sys.includes("Select topics")) return ["Topic A"];
-            if (sys.includes("Global Trend Scout")) return "Trend Report";
-            if (sys.includes("Editor-in-Chief")) return {
+            // "グローバル・インテリジェンス・オフィサー" in sys identifies the deep dive call
+            if (sys.includes("インテリジェンス")) {
+                return {
+                    results: [{
+                        angle: "Angle",
+                        title_hook: "Title",
+                        key_questions: ["Q1"],
+                        news: [{ title: "News", url: "http://test.com", summary: "Sum" }]
+                    }]
+                };
+            }
+            // Assume first call (Trend Scout / Editor-in-Chief)
+            return {
                 selected_topic: "Interest Rates",
                 reason: "Crucial",
                 search_query: "rates",
-                angle: "The inverse relationship between rates and growth stocks"
-            };
-            return {
-                director_data: {
-                    angle: "Angle",
-                    title_hook: "Title",
-                    key_questions: ["Q1"]
-                },
-                news: [{ title: "News", url: "http://test.com", summary: "Sum" }]
+                angle: "The inverse relationship between rates and growth stocks",
+                trends: []
             };
         });
 

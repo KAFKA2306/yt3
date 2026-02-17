@@ -1,38 +1,22 @@
----
-name: Design System Strategy
-description: Rules for applying the Human-Centric & Borderless Design System (Digital Agency x Serendie).
----
+# Design System (VisualDirector)
 
-# Design System Guidelines (鉄の掟)
+**目的**: デジタル庁および Serendie の人間中心デザインシステムをメディア合成に適用し、プロフェッショナルかつ「脳に刺さる」視覚体験を最小のコードで実現する。
 
-**Reference**: `file:///home/kafka/projects/DESIGN_SYSTEM.md`
+## 1. 視覚的アイデンティティ (Tokens)
+*   **カラーパレット**: 
+    *   `var(--color-primary)` (#005CB9): 信頼・公式情報のテロップ
+    *   `var(--color-accent)` (#00A3AF): 強調・ずんだもんの驚き・新情報
+    *   `var(--color-background)` (#0A0A12): 深い紺・プロフェッショナルな空気感
+*   **タイポグラフィ**: `"Noto Sans JP"` を基本とし、ウェイトで階層を表現せよ。装飾過多なフォントは禁止。
 
-## 1. Core Philosophy (Human-Centric & Borderless)
-*   **Accessibility First**: WCAG 2.1 AA compliance is mandatory.
-*   **Adaptability**: Components must work in both Light and Dark modes.
-*   **Zero-Fat**: No decorative CSS, no unused classes.
+## 2. レイアウトと安全圏 (Safe Zones)
+*   **90% Rule**: すべての重要な文字情報、アイコン、キャラクターの顔は、画面中央90%のセーフゾーン内に配置せよ。
+*   **衝突回避 (Collision)**: 字幕（Subtitles）とキャラクターの立ち絵、あるいは重要な図解が重ならないよう、`src/layout_engine.ts` で動的にマージンを計算せよ。
 
-## 2. Design Tokens (The Immutable Truth)
-Do NOT hardcode colors. Map existing vars to these tokens.
+## 3. 字幕とタイミング (Synchronization)
+*   **高精度タイミング**: 音声の長さ ($T_{audio}$) だけでなく、文字数と読み上げ速度を考慮した最適なデュレーションを算出せよ。
+*   **視認性**: すべてのテキストには、背景色に応じた適切な縁取り（Outline）またはシャドウを適用し、どんな背景画像の上でも可読性を保証せよ。
 
-*   **Primary**: `#005CB9` (Digital Blue) -> `var(--color-primary)`
-*   **Accent**: `#00A3AF` (Serendie Teal) -> `var(--color-accent)`
-*   **Text**: `#FFFFFF` -> `var(--color-text)`
-*   **Typography**: `"Noto Sans JP", sans-serif`
-
-## 3. Platform Standards
-### Web (TS/JS)
-*   **Semantic HTML**: No `div` soup.
-*   **Focus**: Visible focus state (Teal).
-
-### Data & Plots (Python)
-*   **Series**: Use `Serendie Teal`.
-*   **Background**: Match `--color-background` (`#0A0A12`) or transparent.
-
-### Media (Sharp/FFmpeg)
-*   **Safe Zone**: Critical info within 90% center.
-*   **Contrast**: Outlined text for thumbnails.
-
-## 4. Coding Tone
-*   **Zero-Fat**: No comments, minimal branching.
-*   **Protocols**: Follow `.claude/rules/` (Silent Operator).
+## 4. 鉄の掟の適用
+*   **最小化**: 装飾用CSSや未使用のレンダリング命令はすべて削除せよ。
+*   **設定駆動**: 全てのアセットパス、カラー、サイズは `config/*.yaml` から動的に取得せよ。

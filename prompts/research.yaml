@@ -25,7 +25,7 @@ consolidated_trend_scout:
     }
 
   user_template: |
-    以下の地域について、過去24時間の「一線を超えた」ニュースを調査し、最高のトピックを1つ選んでください。
+    以下の地域について、過去24時間の「構造的転換を象徴する」ニュースを調査し、最高のトピックを1つ選んでください。
     リージョン: {regions}
 
     [最近のトピック（重複回避）]:
@@ -46,7 +46,7 @@ consolidated_deep_dive:
       "results": [
         {
           "angle": "アングル名",
-          "title_hook": "煽りの効いた日本語仮タイトル",
+          "title_hook": "論理的で洞察に満ちた日本語仮タイトル",
           "key_questions": ["Q1", "Q2"],
           "news": [
             {
@@ -65,7 +65,7 @@ consolidated_deep_dive:
     選定理由: {reason}
     深掘りアングル: {angles}
 
-    各アングルについて調査を実行し、証拠（Smoking Gun）を集めてください。
+    各アングルについて調査を実行し、決定的な裏付けとなるデータ（Smoking Gun）を集めてください。
 
 legacy_research:
   system: |

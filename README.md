@@ -2,7 +2,7 @@
 
 # 🎬 yt3
 
-**AI-Powered Japanese Finance Video Generator**
+**AI を活用した金融系動画の自動生成システム**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Workflow-00a67e?style=flat-square)](https://langchain-ai.github.io/langgraphjs/)
@@ -12,11 +12,13 @@
 
 ---
 
-## ⚡ Quick Start
+## ⚡ クイックスタート
+
+以下のコマンドで環境構築と動画生成を開始できます。
 
 ```bash
-task bootstrap            # Install dependencies & sync
-task run -- "FOMC 金利"   # Generate video
+task bootstrap            # 依存関係のインストールと同期
+task run -- "FOMC 金利"   # 指定したテーマで動画を生成
 ```
 
 ## 🛠️ Commands
