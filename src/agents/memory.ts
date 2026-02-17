@@ -13,7 +13,6 @@ export class MemoryAgent extends BaseAgent {
         const idxPath = path.join(memPath, "index.json");
         const essPath = path.join(memPath, "essences.json");
 
-        // Update Index
         const index = fs.existsSync(idxPath) ? fs.readJsonSync(idxPath) : { videos: [] };
         index.videos.push({
             run_id: state.run_id,
@@ -24,7 +23,6 @@ export class MemoryAgent extends BaseAgent {
         fs.ensureDirSync(memPath);
         fs.writeJsonSync(idxPath, index, { spaces: 2 });
 
-        // Update Essences
         if (state.evaluation?.essence) {
             const ess = fs.existsSync(essPath) ? fs.readJsonSync(essPath) : { essences: [] };
             ess.essences.push(state.evaluation.essence);

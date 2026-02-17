@@ -25,18 +25,16 @@ export function readYamlFile<T>(filePath: string): T {
 }
 
 export function cleanCodeBlock(text: string | unknown): string {
-    const s = typeof text === "string" ? text : JSON.stringify(text);
+    const s = (typeof text === "string" ? text : JSON.stringify(text)).trim();
     const match = s.match(/```(?:json|yaml|)\s*([\s\S]*?)\s*```/i);
-    return (match ? match[1] : s).trim();
+    return (match ? match[1] : s.replace(/^```(?:json|yaml|)/i, "").replace(/```$/i, "")).trim();
 }
 
 export function parseLlmJson<T>(text: string | unknown): T {
     return JSON.parse(cleanCodeBlock(text)) as T;
 }
 
-export function parseLlmYaml<T>(text: string | unknown): T {
-    return (yaml.load(cleanCodeBlock(text)) || {}) as T;
-}
+export function parseLlmYaml<T>(text: string | unknown): T { return (yaml.load(cleanCodeBlock(text)) || {}) as T; }
 
 export function parseCriticScore(text: string | unknown): { score: number; critique: string } {
     const json = parseLlmJson<{ score: number; critique: string }>(text);
@@ -52,16 +50,11 @@ export function resolvePath(p: string): string {
 
 export function loadConfig(): AppConfig & { regions: string[] } {
     const cfg = readYamlFile<AppConfig & { workflow: { trend_settings: { regions: string[] } } }>(path.join(ROOT, "config", "default.yaml"));
-    if (process.env.DRY_RUN === "true") {
-        if (cfg.steps.youtube) cfg.steps.youtube.dry_run = true;
-        if (cfg.steps.twitter) cfg.steps.twitter.dry_run = true;
-    }
+    if (process.env.DRY_RUN === "true") { if (cfg.steps.youtube) cfg.steps.youtube.dry_run = true; if (cfg.steps.twitter) cfg.steps.twitter.dry_run = true; }
     return { ...cfg, regions: cfg.workflow.trend_settings.regions };
 }
 
-export function loadPrompt(name: string): PromptData {
-    return readYamlFile<PromptData>(path.join(ROOT, "prompts", `${name}.yaml`));
-}
+export function loadPrompt(name: string): PromptData { return readYamlFile<PromptData>(path.join(ROOT, "prompts", `${name}.yaml`)); }
 
 export function getSpeakers(): Record<string, number> {
     const cfg = loadConfig();
@@ -94,7 +87,7 @@ export function fitText(text: string, baseSize: number, maxW: number, minFz: num
     return { formattedText: wrapText(text, finalSafe), fontSize: size };
 }
 
-export function createLlm(options: { model?: string; temperature?: number; extra?: Record<string, any> } = {}): ChatGoogleGenerativeAI {
+export function createLlm(options: { model?: string; temperature?: number; extra?: Record<string, unknown> } = {}): ChatGoogleGenerativeAI {
     const { extra = {}, ...rest } = options;
     return new ChatGoogleGenerativeAI({
         model: options.model || getLlmModel(),
@@ -129,40 +122,16 @@ export class AssetStore {
         const newState = { ...state, ...update };
         fs.writeFileSync(path.join(this.runDir, this.cfg.workflow.filenames.state), JSON.stringify(newState, null, 2));
     }
-    save(stage: string, name: string, data: unknown): string {
-        const stageDir = path.join(this.runDir, stage);
-        fs.ensureDirSync(stageDir);
-        const p = path.join(stageDir, `${name}.yaml`);
-        fs.writeFileSync(p, yaml.dump(data));
-        return p;
-    }
+    save(stage: string, name: string, data: unknown): string { const stageDir = path.join(this.runDir, stage); fs.ensureDirSync(stageDir); const p = path.join(stageDir, `${name}.yaml`); fs.writeFileSync(p, yaml.dump(data)); return p; }
     load<T>(stage: string, name: string): T {
         const p = path.join(this.runDir, stage, `${name}.yaml`);
         return readYamlFile<T>(p);
     }
-    saveBinary(stage: string, name: string, data: Buffer): string {
-        const stageDir = path.join(this.runDir, stage);
-        fs.ensureDirSync(stageDir);
-        const p = path.join(stageDir, name);
-        fs.writeFileSync(p, data);
-        return p;
-    }
-    logInput(stage: string, data: unknown): void {
-        this.save(stage, "input", data);
-    }
-    logOutput(stage: string, data: unknown): void {
-        this.save(stage, this.cfg.workflow.filenames.output.replace(".yaml", ""), data);
-    }
-    audioDir(): string {
-        const d = path.join(this.runDir, this.cfg.workflow.filenames.audio_dir || "audio");
-        fs.ensureDirSync(d);
-        return d;
-    }
-    videoDir(): string {
-        const d = path.join(this.runDir, this.cfg.workflow.filenames.video_dir || "video");
-        fs.ensureDirSync(d);
-        return d;
-    }
+    saveBinary(stage: string, name: string, data: Buffer): string { const stageDir = path.join(this.runDir, stage); fs.ensureDirSync(stageDir); const p = path.join(stageDir, name); fs.writeFileSync(p, data); return p; }
+    logInput(stage: string, data: unknown): void { this.save(stage, "input", data); }
+    logOutput(stage: string, data: unknown): void { this.save(stage, this.cfg.workflow.filenames.output.replace(".yaml", ""), data); }
+    audioDir(): string { const d = path.join(this.runDir, this.cfg.workflow.filenames.audio_dir || "audio"); fs.ensureDirSync(d); return d; }
+    videoDir(): string { const d = path.join(this.runDir, this.cfg.workflow.filenames.video_dir || "video"); fs.ensureDirSync(d); return d; }
 }
 
 export class BaseAgent {
@@ -193,36 +162,25 @@ export class BaseAgent {
         return parsed;
     }
     loadPrompt<T = PromptData>(name: string): T { return loadPrompt(name) as T; }
-    logInput(data: unknown) {
-        this.store.logInput(this.name, data);
-        AgentLogger.info(this.name, "IO", "LOG_INPUT", "Stored agent input data");
-    }
-    logOutput(data: unknown) {
-        this.store.logOutput(this.name, data);
-        AgentLogger.info(this.name, "IO", "LOG_OUTPUT", "Stored agent output data");
-    }
+    logInput(data: unknown) { this.store.logInput(this.name, data); AgentLogger.info(this.name, "IO", "LOG_INPUT", "Stored agent input data"); }
+    logOutput(data: unknown) { this.store.logOutput(this.name, data); AgentLogger.info(this.name, "IO", "LOG_OUTPUT", "Stored agent output data"); }
 }
 
 export async function loadMemoryContext(agent: BaseAgent, query: string): Promise<{ recent: string; essences: string }> {
     const cfg = loadConfig();
-    const researchCfg = cfg.steps.research;
-    if (!researchCfg) throw new Error("Research config missing");
-    const memDir = cfg.workflow.paths.memory_dir;
-    const idxPath = path.join(ROOT, memDir, "index.json");
-    const essPath = path.join(ROOT, memDir, "essences.json");
-    const idx = fs.existsSync(idxPath) ? fs.readJsonSync(idxPath) : { videos: [] };
-    const ess = fs.existsSync(essPath) ? fs.readJsonSync(essPath) : { essences: [] };
-    const recent = idx.videos.filter((v: { topic: string; date: string }) => (Date.now() - new Date(v.date).getTime()) / 86400000 <= researchCfg.recent_days);
+    const rCfg = cfg.steps.research;
+    if (!rCfg) throw new Error("Research config missing");
+    const mDir = cfg.workflow.paths.memory_dir;
+    const idx = fs.existsSync(path.join(ROOT, mDir, "index.json")) ? fs.readJsonSync(path.join(ROOT, mDir, "index.json")) : { videos: [] };
+    const ess = fs.existsSync(path.join(ROOT, mDir, "essences.json")) ? fs.readJsonSync(path.join(ROOT, mDir, "essences.json")) : { essences: [] };
+    const recent = idx.videos.filter((v: { topic: string; date: string }) => (Date.now() - new Date(v.date).getTime()) / 86400000 <= rCfg.recent_days);
     let relevant = ess.essences;
     if (ess.essences.length > 5) {
-        const candidates = ess.essences.map((e: { topic: string }) => e.topic).join("\n");
-        const selected = await agent.runLlm("Select topics relevant to query. Return JSON array of strings.", `Query: ${query}\nCandidates:\n${candidates}`, t => parseLlmJson<string[]>(t), { temperature: cfg.providers.llm.research?.relevance_temperature || 0 });
-        if (Array.isArray(selected) && selected.length) {
-            relevant = ess.essences.filter((e: { topic: string }) => selected.includes(e.topic));
-        }
+        const selected = await agent.runLlm("Select topics relevant to query. Return JSON array of strings.", `Query: ${query}\nCandidates:\n${ess.essences.map((e: { topic: string }) => e.topic).join("\n")}`, t => parseLlmJson<string[]>(t), { temperature: cfg.providers.llm.research?.relevance_temperature || 0 });
+        if (Array.isArray(selected) && selected.length) relevant = ess.essences.filter((e: { topic: string }) => selected.includes(e.topic));
     }
     return {
         recent: recent.map((v: { topic: string }) => `- ${v.topic}`).join("\n"),
-        essences: relevant.slice(0, researchCfg.essence_limit).map((e: { topic: string; key_insights: string[] }) => `【${e.topic}】\n${e.key_insights.join("\n")}`).join("\n")
+        essences: relevant.slice(0, rCfg.essence_limit).map((e: { topic: string; key_insights: string[] }) => `【${e.topic}】\n${e.key_insights.join("\n")}`).join("\n")
     };
 }
