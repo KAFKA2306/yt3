@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs-extra";
-import { AssetStore, BaseAgent, parseLlmJson, loadConfig, loadMemoryContext, RunStage } from "../core.js";
+import { AssetStore, BaseAgent, parseLlmJson, loadConfig, loadMemoryContext, RunStage, getCurrentDateString } from "../core.js";
 import { NewsItem } from "../types.js";
 
 export interface ResearchResult {
@@ -32,6 +32,8 @@ export class TrendScout extends BaseAgent {
             consolidated_deep_dive: { system: string; user_template: string }
         }>(this.name);
 
+        const currentDate = getCurrentDateString();
+
         const selection = await this.runLlm<{
             selected_topic: string;
             reason: string;
@@ -39,12 +41,15 @@ export class TrendScout extends BaseAgent {
             angle: string;
             trends: { region: string; headline: string; summary: string }[];
         }>(
-            promptCfg.consolidated_trend_scout.system.replace("{regions}", researchCfg.regions.map((r: { lang: string }) => r.lang).join(", ")),
+            promptCfg.consolidated_trend_scout.system
+                .replace("{regions}", researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "))
+                .replace("{current_date}", currentDate),
             promptCfg.consolidated_trend_scout.user_template
                 .replace("{regions}", researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "))
-                .replace("{recent_topics}", recent),
+                .replace("{recent_topics}", recent)
+                .replace("{current_date}", currentDate),
             t => parseLlmJson(t),
-            { extra: { tools: [{ google_search: {} }] } }
+            { extra: { tools: [{ googleSearchRetrieval: {} }] } }
         );
 
         const deepDive = await this.runLlm<{
@@ -55,13 +60,16 @@ export class TrendScout extends BaseAgent {
                 news: NewsItem[];
             }[];
         }>(
-            promptCfg.consolidated_deep_dive.system.replace("{angles}", researchCfg.angles.map((a: { name: string }) => a.name).join(", ")),
+            promptCfg.consolidated_deep_dive.system
+                .replace("{angles}", researchCfg.angles.map((a: { name: string }) => a.name).join(", "))
+                .replace("{current_date}", currentDate),
             promptCfg.consolidated_deep_dive.user_template
                 .replace("{topic}", selection.selected_topic)
                 .replace("{reason}", selection.reason)
-                .replace("{angles}", researchCfg.angles.map((a: { name: string }) => a.name).join(", ")),
+                .replace("{angles}", researchCfg.angles.map((a: { name: string }) => a.name).join(", "))
+                .replace("{current_date}", currentDate),
             t => parseLlmJson(t),
-            { extra: { tools: [{ google_search: {} }] } }
+            { extra: { tools: [{ googleSearchRetrieval: {} }] } }
         );
 
         const result: ResearchResult = {

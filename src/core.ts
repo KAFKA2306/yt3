@@ -73,6 +73,15 @@ export function getLlmModel(): string {
     return cfg.providers.llm.gemini.model;
 }
 
+export function getCurrentDateString(): string {
+    return new Intl.DateTimeFormat("ja-JP", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        timeZone: "Asia/Tokyo"
+    }).format(new Date()).replace(/\//g, "-");
+}
+
 export function wrapText(text: string, max: number): string {
     return text.match(new RegExp(`.{1,${max}}`, 'g'))?.join('\n') || text;
 }
@@ -85,12 +94,14 @@ export function fitText(text: string, baseSize: number, maxW: number, minFz: num
     return { formattedText: wrapText(text, finalSafe), fontSize: size };
 }
 
-export function createLlm(options: { model?: string; temperature?: number; extra?: Record<string, unknown> } = {}): ChatGoogleGenerativeAI {
+export function createLlm(options: { model?: string; temperature?: number; extra?: Record<string, any> } = {}): ChatGoogleGenerativeAI {
+    const { extra = {}, ...rest } = options;
     return new ChatGoogleGenerativeAI({
         model: options.model || getLlmModel(),
         apiKey: process.env.GEMINI_API_KEY,
         temperature: options.temperature,
-        ...options.extra
+        ...extra,
+        ...rest
     });
 }
 

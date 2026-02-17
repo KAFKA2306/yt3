@@ -5,7 +5,7 @@ export const NewsItemSchema = z.object({
     title: z.string(),
     summary: z.string(),
     url: z.string(),
-    published_at: z.string().optional().default(() => new Date().toISOString()),
+    published_at: z.string().optional(),
     snippet: z.string().optional(),
     original_english_text: z.string().optional(),
 });
