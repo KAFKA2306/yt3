@@ -13,4 +13,4 @@ description: Git操作（ステータス確認、追加、コミット、プッ�
 2. `git add -A` で全変更をステージング。
 3. `git commit -m "feat: [概要]"` でコミット。
 4. `git push` を実行。
-5. `gh runs list` でCIの状態を確認。
+5. `gh run list` でCIの状態を確認。
