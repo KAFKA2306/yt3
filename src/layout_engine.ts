@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import sharp from "sharp";
-import { loadConfig, resolvePath } from "./core.js";
+import { loadConfig, resolvePath, fitText, wrapText } from "./core.js";
 import { AppConfig, Rect, Size, OverlayConfig } from "./types.js";
 
 export interface RenderPlan {
@@ -113,18 +113,6 @@ export class LayoutEngine {
         return { sL, sR };
     }
 
-    fitText(text: string, baseSize: number, maxW: number): { formattedText: string, fontSize: number } {
-        const subCfg = this.config.steps.video.subtitles || {};
-        const safeChars = Math.floor(maxW / baseSize);
-        const tooLong = text.length > safeChars * 2;
-        const size = tooLong ? (subCfg.min_font_size || 40) : baseSize;
-        const finalSafe = tooLong ? Math.floor(maxW / size) : safeChars;
-        return { formattedText: this.wrapText(text, finalSafe), fontSize: size };
-    }
-
-    private wrapText(text: string, max: number): string {
-        return text.match(new RegExp(`.{1,${max}}`, 'g'))?.join('\n') || text;
-    }
 
     generateASS(script: { lines: { text: string }[] }, durations: number[], plan: RenderPlan): string {
         const { safeMarginL: sL, safeMarginR: sR } = plan;
@@ -167,8 +155,10 @@ export class LayoutEngine {
 
     private generateASSDialogLines(script: { lines: { text: string }[] }, durations: number[], maxW: number, baseFz: number): string {
         let events = "", time = 0;
+        const subCfg = this.config.steps.video.subtitles || {};
+        const minFz = subCfg.min_font_size || 40;
         for (let i = 0; i < script.lines.length; i++) {
-            const { formattedText: txt, fontSize: fz } = this.fitText(script.lines[i].text, baseFz, maxW);
+            const { formattedText: txt, fontSize: fz } = fitText(script.lines[i].text, baseFz, maxW, minFz);
             const content = fz !== baseFz ? `{\\fs${fz}}${txt}` : txt;
             events += `Dialogue: 0,${this.formatAssTime(time)},${this.formatAssTime(time + durations[i])},Default,,0,0,0,,${content.replace(/\n/g, "\\N")}\n`;
             time += durations[i];

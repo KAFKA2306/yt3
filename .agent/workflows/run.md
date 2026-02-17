@@ -1,30 +1,34 @@
 ---
-description: run the daily production pipeline, or resume a failed run
+description: 日次本番パイプラインの実行・レジューム
 ---
-# Production Run / Resume
 
-## Fresh Run
+# /run — 本番実行・再開
+
+毎日最高品質の動画を生成・投稿する。
+
+## 新規実行
 // turbo
-1. Start services:
+1. サービス起動:
 ```bash
-task up
+npx tsx scripts/tasks.ts up
 ```
 // turbo
-2. Execute full pipeline:
+2. パイプライン実行:
 ```bash
-task run
+npx tsx scripts/tasks.ts run
 ```
-3. Monitor progress in `logs/agent_activity.jsonl`.
 
-## Resume a Failed Run
-1. Identify the failed `RUN_ID` (usually today's date `YYYY-MM-DD`). Check `logs/agent_activity.jsonl` for the failed stage.
-2. If the failure was in `MEDIA`, delete partial output to avoid ffmpeg conflicts:
+## 失敗からの再開
+1. `RUN_ID`(YYYY-MM-DD)を特定。 `logs/agent_activity.jsonl` を確認。
+2. `MEDIA` 失敗時は中間ファイルを削除:
 ```bash
 rm -rf runs/[RUN_ID]/media
 ```
-3. Resume. The "Smart Resume" logic skips completed stages automatically:
 // turbo
+3. 再開（レジューム）:
 ```bash
 RUN_ID=[RUN_ID] npx tsx src/index.ts
 ```
-4. If hitting 429 rate limits, wait and retry. Do NOT switch away from **Gemini 3 Flash** without explicit user permission.
+
+> [!IMPORTANT]
+> **Gemini 3 Flash** を厳守。429エラー時は今日はもう実行しない。

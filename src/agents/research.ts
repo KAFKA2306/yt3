@@ -1,131 +1,81 @@
 import path from "path";
 import fs from "fs-extra";
-import { AssetStore, ROOT, BaseAgent, parseLlmJson, loadConfig, readYamlFile } from "../core.js";
-import { AppConfig, DirectorData, NewsItem } from "../types.js";
-import { loadMemoryIndex, loadMemoryEssences } from "../agents/memory.js";
+import { AssetStore, BaseAgent, parseLlmJson, loadConfig, loadMemoryContext, RunStage } from "../core.js";
+import { NewsItem } from "../types.js";
 
-export interface ResearchResult { director_data: DirectorData; news: NewsItem[]; memory_context: string; }
-
-interface TrendConfig {
-    trend_scout: { system: string; user_template: string };
-    editor_selection: { system: string; user_template: string };
-    deep_dive: { system: string; user_template: string };
-}
-
-interface EditorSelection {
-    selected_topic: string;
-    reason: string;
-    search_query: string;
-    angle: string;
-}
-
-interface ResearchLlmResponse {
-    director_data: {
-        angle: string;
-        title_hook: string;
-        key_questions: string[];
-    };
+export interface ResearchResult {
+    director_data: { angle: string; title_hook: string; search_query: string; key_questions: string[] };
     news: NewsItem[];
+    memory_context: string;
 }
 
 export class TrendScout extends BaseAgent {
     constructor(store: AssetStore) {
         const cfg = loadConfig();
-        super(store, "research", { temperature: cfg.providers.llm.research?.temperature || 0.5 });
-    }
-
-    async loadMemory(query: string): Promise<{ recent: string; essences: string }> {
-        const cfg = loadConfig().steps.research;
-        if (!cfg) throw new Error("Research config missing");
-
-        const idx = loadMemoryIndex();
-        const ess = loadMemoryEssences();
-        const recent = idx.videos.filter((v: { topic: string; date: string }) => (Date.now() - new Date(v.date).getTime()) / 86400000 <= cfg.recent_days);
-
-        let relevant = ess.essences;
-        if (ess.essences.length > 5) {
-            const candidates = ess.essences.map((e: { topic: string }) => e.topic).join("\n");
-            const appCfg = loadConfig();
-            const selected = await this.runLlm("Select topics relevant to query. Return JSON array of strings.", `Query: ${query}\nCandidates:\n${candidates}`, t => parseLlmJson<string[]>(t), { temperature: appCfg.providers.llm.research?.relevance_temperature || 0 });
-            if (Array.isArray(selected) && selected.length) {
-                relevant = ess.essences.filter((e: { topic: string }) => selected.includes(e.topic));
-            }
-        }
-
-        return {
-            recent: recent.map((v: { topic: string }) => `- ${v.topic}`).join("\n"),
-            essences: relevant.slice(0, cfg.essence_limit).map((e: { topic: string; key_insights: string[] }) => `【${e.topic}】\n${e.key_insights.join("\n")}`).join("\n")
-        };
+        super(store, RunStage.RESEARCH, { temperature: cfg.steps.research?.temperature || 0.5 });
     }
 
     async run(bucket: string, limit?: number): Promise<ResearchResult> {
-        const outputPath = path.join(this.store.runDir, "research", "output.yaml");
+        const outputPath = path.join(this.store.runDir, this.name, this.store.cfg.workflow.filenames.output);
         if (fs.existsSync(outputPath)) {
-            return readYamlFile<ResearchResult>(outputPath);
+            return this.store.load<ResearchResult>(this.name, this.store.cfg.workflow.filenames.output.replace(".yaml", ""));
         }
 
-        this.logInput({ bucket, limit });
-        const { recent, essences } = await this.loadMemory("Global Trends");
-        const appCfg = loadConfig();
-        const researchCfg = appCfg.steps.research;
+        const researchCfg = this.config.steps.research;
         if (!researchCfg) throw new Error("Research config missing");
 
-        const promptCfg = this.loadPrompt<TrendConfig>("research");
+        this.logInput({ bucket, limit: limit || researchCfg.default_limit || 3 });
+        const { recent, essences } = await loadMemoryContext(this, "Global Trends");
 
-        const trendReports = await this.gatherTrendReports(researchCfg, promptCfg);
-        const combinedTrends = trendReports.join("\n\n");
-        if (!combinedTrends) throw new Error("Global Trend Scout failed to find any news.");
+        const promptCfg = this.loadPrompt<{
+            consolidated_trend_scout: { system: string; user_template: string };
+            consolidated_deep_dive: { system: string; user_template: string }
+        }>(this.name);
 
-        const selection = await this.runLlm<EditorSelection>(
-            promptCfg.editor_selection.system,
-            promptCfg.editor_selection.user_template.replace("{trends}", combinedTrends).replace("{recent_topics}", recent),
+        const selection = await this.runLlm<{
+            selected_topic: string;
+            reason: string;
+            search_query: string;
+            angle: string;
+            trends: { region: string; headline: string; summary: string }[];
+        }>(
+            promptCfg.consolidated_trend_scout.system.replace("{regions}", researchCfg.regions.map((r: { lang: string }) => r.lang).join(", ")),
+            promptCfg.consolidated_trend_scout.user_template
+                .replace("{regions}", researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "))
+                .replace("{recent_topics}", recent),
             t => parseLlmJson(t),
-            { temperature: appCfg.providers.llm.research?.selection_temperature || 0.4 }
+            { extra: { tools: [{ google_search: {} }] } }
         );
 
-        const validResults = await this.performDeepDives(selection, researchCfg, promptCfg);
-        if (validResults.length === 0) throw new Error("Deep dive failed to return any valid news.");
+        const deepDive = await this.runLlm<{
+            results: {
+                angle: string;
+                title_hook: string;
+                key_questions: string[];
+                news: NewsItem[];
+            }[];
+        }>(
+            promptCfg.consolidated_deep_dive.system.replace("{angles}", researchCfg.angles.map((a: { name: string }) => a.name).join(", ")),
+            promptCfg.consolidated_deep_dive.user_template
+                .replace("{topic}", selection.selected_topic)
+                .replace("{reason}", selection.reason)
+                .replace("{angles}", researchCfg.angles.map((a: { name: string }) => a.name).join(", ")),
+            t => parseLlmJson(t),
+            { extra: { tools: [{ google_search: {} }] } }
+        );
 
-        const result = {
+        const result: ResearchResult = {
             director_data: {
                 angle: selection.angle,
-                title_hook: validResults[0]?.director_data.title_hook || selection.selected_topic,
+                title_hook: deepDive.results[0]?.title_hook || selection.selected_topic,
                 search_query: selection.search_query,
-                key_questions: validResults.flatMap(r => r.director_data.key_questions).slice(0, 5)
+                key_questions: deepDive.results.flatMap((r: { key_questions: string[] }) => r.key_questions).slice(0, 5)
             },
-            news: validResults.flatMap(r => r.news).filter(n => n && n.title),
+            news: deepDive.results.flatMap((r: { news: NewsItem[] }) => r.news).filter((n: NewsItem) => n && n.title),
             memory_context: essences
         };
 
         this.logOutput(result);
         return result;
-    }
-
-    private async gatherTrendReports(cfg: NonNullable<AppConfig["steps"]["research"]>, prompt: TrendConfig): Promise<string[]> {
-        const reports: string[] = [];
-        for (let i = 0; i < cfg.regions.length; i++) {
-            const region = cfg.regions[i];
-            if (i > 0) await new Promise(r => setTimeout(r, cfg.request_cooldown_ms || 30000));
-            const report = await this.runLlm<string>(
-                prompt.trend_scout.system.replace("{language}", region.lang),
-                prompt.trend_scout.user_template.replace("{language}", region.lang),
-                t => t,
-                { extra: { tools: [{ google_search: {} }] } }
-            );
-            if (report) reports.push(`### Report from ${region.lang}\n${report}`);
-        }
-        return reports;
-    }
-
-    private async performDeepDives(sel: EditorSelection, cfg: NonNullable<AppConfig["steps"]["research"]>, prompt: TrendConfig): Promise<ResearchLlmResponse[]> {
-        const results = await Promise.all(cfg.angles.map(async (angle: { name: string; lang: string }) => {
-            return this.runLlm<ResearchLlmResponse>(
-                prompt.deep_dive.system.replace("{topic}", sel.selected_topic).replace("{angle}", sel.angle),
-                prompt.deep_dive.user_template.replace("{topic}", sel.selected_topic).replace("{reason}", sel.reason).replace("{angle}", angle.name) + `\n\n[Search Scope]: ${angle.lang} sources.`,
-                t => parseLlmJson(t),
-                { extra: { tools: [{ google_search: {} }] } }
-            );
-        }));
-        return results.filter((r: ResearchLlmResponse | null): r is ResearchLlmResponse => r !== null);
     }
 }

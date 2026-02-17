@@ -1,5 +1,6 @@
 workflow:
   default_run_dir: "runs"
+  default_bucket: "global_macro"
   checkpoint_enabled: true
   memory:
     index_file: "data/memory/index.json"
@@ -8,6 +9,20 @@ workflow:
     enabled: true
     regions: ["JP", "US"]
     sources: ["Google Trends", "Twitter"]
+  paths:
+    lock_file: "logs/cron.lock"
+    runs_dir: "runs"
+    prompts_dir: "prompts"
+    memory_dir: "data/memory"
+  filenames:
+    output: "output.yaml"
+    state: "state.json"
+    audio_dir: "audio"
+    video_dir: "video"
+    audio_full: "full.wav"
+    subtitles: "subtitles.ass"
+    thumbnail: "thumbnail.png"
+    video: "video.mp4"
 
 steps:
   news:
@@ -33,6 +48,10 @@ steps:
       - { lang: "Chinese (China/Taiwan)", code: "zh" }
       - { lang: "Russian", code: "ru" }
     request_cooldown_ms: 30000
+    temperature: 0.5
+    selection_temperature: 0.4
+    relevance_temperature: 0.0
+    default_limit: 3
     angles:
       - { name: "Global Narrative", lang: "English", suffix: "news analysis" }
       - { name: "Contrast/Dissent", lang: "Chinese/Russian", suffix: "opinion blog" }
@@ -209,6 +228,7 @@ providers:
     check_interval_ms: 300000
     stale_lock_timeout_seconds: 3600
     start_hour: 7
+    user: "root"
 
 logging:
   level: "INFO"

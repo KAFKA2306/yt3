@@ -1,28 +1,25 @@
 import fs from "fs-extra";
 import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
-import { AssetStore, loadConfig, BaseAgent } from "../core.js";
+import { AssetStore, BaseAgent, RunStage } from "../core.js";
 import { AgentState, AppConfig, PublishResults } from "../types.js";
 
 export class PublishAgent extends BaseAgent {
-    config: AppConfig;
-
     constructor(store: AssetStore) {
-        super(store, "publish");
-        this.config = loadConfig();
+        super(store, RunStage.PUBLISH);
     }
 
     async run(state: AgentState): Promise<PublishResults> {
         this.logInput({ video_path: state.video_path, metadata: state.metadata });
         const results: PublishResults = {};
-        if (this.config.steps.youtube?.enabled) results.youtube = await this.uploadToYouTube(state);
-        if (this.config.steps.twitter?.enabled) results.twitter = await this.postToTwitter(state);
+        if (this.config.steps.youtube?.enabled) results.youtube = await this.uploadToYouTube(state, this.config);
+        if (this.config.steps.twitter?.enabled) results.twitter = await this.postToTwitter(state, this.config);
         this.logOutput(results);
         return results;
     }
 
-    private async uploadToYouTube(state: AgentState): Promise<PublishResults["youtube"]> {
-        const ytCfg = this.config.steps.youtube;
+    private async uploadToYouTube(state: AgentState, cfg: AppConfig): Promise<PublishResults["youtube"]> {
+        const ytCfg = cfg.steps.youtube;
         if (!ytCfg) throw new Error("YouTube config missing");
         if (ytCfg.dry_run) return { status: "dry_run", video_id: "dry_run_id" };
 
@@ -30,9 +27,8 @@ export class PublishAgent extends BaseAgent {
         const { video_path: videoPath, thumbnail_path: thumbnailPath } = state;
 
         if (!videoPath) throw new Error("Video path missing");
-
-        if (this.config.steps.thumbnail.enabled && (!thumbnailPath || !fs.existsSync(thumbnailPath))) {
-            throw new Error(`[PublishAgent] Thumbnail missing: ${thumbnailPath}`);
+        if (cfg.steps.thumbnail.enabled && (!thumbnailPath || !fs.existsSync(thumbnailPath))) {
+            throw new Error(`Thumbnail missing: ${thumbnailPath}`);
         }
 
         const res = await youtube.videos.insert({
@@ -72,8 +68,8 @@ export class PublishAgent extends BaseAgent {
         });
     }
 
-    private async postToTwitter(state: AgentState): Promise<PublishResults["twitter"]> {
-        const twCfg = this.config.steps.twitter;
+    private async postToTwitter(state: AgentState, cfg: AppConfig): Promise<PublishResults["twitter"]> {
+        const twCfg = cfg.steps.twitter;
         if (!twCfg) throw new Error("Twitter config missing");
         if (twCfg.dry_run) return { status: "dry_run", tweet_id: "dry_run_id" };
 

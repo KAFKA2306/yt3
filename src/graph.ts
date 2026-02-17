@@ -19,25 +19,26 @@ type StateChannels = {
 
 const reducer = <T>(x: T, y: T): T => y;
 
-const channels: StateChannels = {
-    run_id: { reducer, default: () => "" },
-    bucket: { reducer, default: () => "macro_economy" },
-    limit: { reducer, default: () => 3 },
-    director_data: { reducer, default: () => undefined } as ChannelReducer<DirectorData | undefined>,
-    news: { reducer, default: () => [] },
-    script: { reducer, default: () => undefined } as ChannelReducer<Script | undefined>,
-    metadata: { reducer, default: () => undefined } as ChannelReducer<Metadata | undefined>,
-    audio_paths: { reducer, default: () => [] },
-    video_path: { reducer, default: () => "" },
-    thumbnail_path: { reducer, default: () => "" },
-    status: { reducer, default: () => "idle" },
-    publish_results: { reducer, default: () => undefined } as ChannelReducer<PublishResults | undefined>,
-    memory_context: { reducer, default: () => "" },
-    evaluation: { reducer, default: () => undefined },
-    retries: { reducer, default: () => 0 },
-};
-
 export function createGraph(store: AssetStore) {
+    const cfg = store.cfg;
+    const channels: StateChannels = {
+        run_id: { reducer, default: () => "" },
+        bucket: { reducer, default: () => cfg.workflow.default_bucket || "global_macro" },
+        limit: { reducer, default: () => cfg.steps.research?.default_limit || 3 },
+        director_data: { reducer, default: () => undefined } as ChannelReducer<DirectorData | undefined>,
+        news: { reducer, default: () => [] },
+        script: { reducer, default: () => undefined } as ChannelReducer<Script | undefined>,
+        metadata: { reducer, default: () => undefined } as ChannelReducer<Metadata | undefined>,
+        audio_paths: { reducer, default: () => [] },
+        video_path: { reducer, default: () => "" },
+        thumbnail_path: { reducer, default: () => "" },
+        status: { reducer, default: () => "idle" },
+        publish_results: { reducer, default: () => undefined } as ChannelReducer<PublishResults | undefined>,
+        memory_context: { reducer, default: () => "" },
+        evaluation: { reducer, default: () => undefined },
+        retries: { reducer, default: () => 0 },
+    };
+
     const research = new TrendScout(store);
     const content = new ScriptSmith(store);
     const media = new VisualDirector(store);

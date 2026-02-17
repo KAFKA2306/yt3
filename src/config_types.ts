@@ -15,9 +15,12 @@ export interface OverlayConfig {
 export interface AppConfig {
     workflow: {
         default_run_dir: string;
+        default_bucket: string;
         checkpoint_enabled: boolean;
         memory: { index_file: string; essence_file: string };
         trend_settings: { enabled: boolean; regions: string[]; sources: string[] };
+        paths: { lock_file: string; runs_dir: string; prompts_dir: string; memory_dir: string };
+        filenames: { output: string; state: string; audio_full: string; subtitles: string; thumbnail: string; video: string; audio_dir?: string; video_dir?: string };
     };
     steps: {
         news: { query_buckets: Record<string, string>; fetch_count: number; cooldown_hours: number };
@@ -27,6 +30,10 @@ export interface AppConfig {
             regions: { lang: string; code: string }[];
             request_cooldown_ms?: number;
             angles: { name: string; lang: string; suffix: string }[];
+            temperature?: number;
+            selection_temperature?: number;
+            relevance_temperature?: number;
+            default_limit?: number;
         };
         script: {
             target_wow_score: number;
@@ -89,7 +96,7 @@ export interface AppConfig {
             research?: { temperature: number; selection_temperature: number; relevance_temperature: number };
         };
         tts: { voicevox: { enabled: boolean; url: string; speakers: Record<string, number> } };
-        manager: { check_interval_ms: number; stale_lock_timeout_seconds: number; start_hour: number };
+        manager: { check_interval_ms: number; stale_lock_timeout_seconds: number; start_hour: number; user: string };
     };
     logging: {
         level: string;

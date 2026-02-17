@@ -66,6 +66,14 @@ prompts/       → Prompt templates (YAML)
 runs/          → Outputs
 ```
 
+## 📐 Technical Design
+
+For a deeper dive into the system architecture and logic:
+
+- [**System Architecture**](docs/diagrams/architecture.md): Overview of components, environment, and external service integrations.
+- [**System Workflow**](docs/diagrams/workflow.md): Detailed execution pipeline, agent interactions, and media synthesis logic.
+- [**Domain Model**](docs/diagrams/domain_model.md): Core data structures and state definitions.
+
 ## ⚙️ Config
 
 | File | Purpose |

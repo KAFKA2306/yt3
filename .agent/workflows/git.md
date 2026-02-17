@@ -1,51 +1,16 @@
 ---
-description: git add, commit, push, and gh runs
+description: Git操作（ステータス確認、追加、コミット、プッシュ）
 ---
-# Git ワークフロー (Git Workflow)
+# /git — Git操作
 
-## 1. 状態確認・履歴 (Status & Log)
-// turbo
-1. リポジトリの状態を確認:
-```bash
-git status
-```
-// turbo
-2. 直近のコミット履歴を確認:
-```bash
-git log -n 5 --oneline
-```
+変更をリポジトリへ一括反映する儀式。
 
-## 2. 変更の検証 (Ship / Verify)
-// turbo
-1. 型チェックと Lint を実行:
-```bash
-task lint
-```
+## 手順
 
-## 3. 保存と同期 (Save & Sync)
-// turbo
-1. すべての変更をステージング:
-```bash
-git add -A
-```
-// turbo
-2. コミットを実行:
-```bash
-git commit -m "[type]: [description]"
-```
-// turbo
-3. リモートへプッシュ:
-```bash
-git push origin $(git branch --show-current)
-```
+// turbo-all
 
-## 4. GitHub Actions 確認 (CI Status)
-// turbo
-1. CI 実行状況の監視:
-```bash
-gh runs list -L 5 --watch
-```
-
-## 5. 管理ツール (Maintenance)
-- `git branch -v`: ブランチ一覧
-- `git pull origin $(git branch --show-current)`: 最新情報の取得
+1. `git status` で変更を確認。
+2. `git add -A` で全変更をステージング。
+3. `git commit -m "feat: [概要]"` でコミット。
+4. `git push` を実行。
+5. `gh runs list` でCIの状態を確認。

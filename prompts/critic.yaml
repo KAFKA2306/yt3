@@ -41,7 +41,11 @@ rubric: |
   Example Output:
   {
     "score": 45,
-    "critique": "FAILED: First line 'Hello' triggers Instant Kill. FAILED: No number in first sentence. FAILED: No Open Loop found."
+    "critique": "FAILED: First line 'Hello' triggers Instant Kill...",
+    "essence": {
+      "topic": "今回の動画の主題",
+      "key_insights": ["インサイト1", "インサイト2"]
+    }
   }
 
 system: |

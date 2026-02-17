@@ -10,14 +10,12 @@ import { PublishAgent } from "./agents/publish.js";
 import { CriticAgent } from "./agents/critic.js";
 import { sendAlert } from "./utils/discord.js";
 
-const MAX_CONTENT_RETRIES = 3;
-
 const cfg = loadConfig();
 const MAX_RETRIES = cfg.defaults?.retries || 3;
 
 function resolveRunId(arg?: string): string {
     if (!arg || arg === "latest") {
-        const d = path.join(ROOT, "runs");
+        const d = path.join(ROOT, cfg.workflow.paths.runs_dir);
         const dirs = fs.readdirSync(d).map(n => ({ n, p: path.join(d, n) })).filter(d => fs.statSync(d.p).isDirectory()).sort((a, b) => fs.statSync(b.p).mtimeMs - fs.statSync(a.p).mtimeMs);
         return dirs[0]?.n || new Date().toISOString().split("T")[0];
     }
@@ -25,13 +23,14 @@ function resolveRunId(arg?: string): string {
 }
 
 async function runStep(step: string, bucket: string, store: AssetStore, state: Partial<AgentState>): Promise<Partial<AgentState>> {
+    const researchCfg = store.cfg.steps.research;
     const agents: Record<string, () => Promise<Partial<AgentState>>> = {
-        research: () => new TrendScout(store).run(bucket || state.bucket || "global_macro", state.limit || 3),
+        research: () => new TrendScout(store).run(bucket || state.bucket || store.cfg.workflow.default_bucket, state.limit || researchCfg?.default_limit || 3),
         content: () => new ScriptSmith(store).run(state.news || [], state.director_data!, state.memory_context || ""),
         "content:fix": async () => {
             if (!state.evaluation) throw new Error("No evaluation report");
             if ((state.retries || 0) >= MAX_RETRIES) throw new Error(`Max retries (${MAX_RETRIES})`);
-            const res = await new ScriptSmith(store).run(state.news || [], state.director_data!, state.memory_context || "", state.evaluation);
+            const res = await new ScriptSmith(store).run(state.news || [], state.director_data!, state.memory_context || "");
             return { ...res, retries: (state.retries || 0) + 1 };
         },
         evaluate: async () => ({ evaluation: await new CriticAgent(store).run(state.script!) }),

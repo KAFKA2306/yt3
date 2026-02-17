@@ -33,6 +33,8 @@ export interface DirectorData {
     key_questions: string[];
 }
 
+export interface ContentResult { script: Script; metadata: Metadata; }
+
 export interface Metadata {
     title: string;
     thumbnail_title: string;
@@ -48,6 +50,43 @@ export interface PublishResults {
 export interface EvaluationReport {
     score: number;
     critique: string;
+    essence?: {
+        topic: string;
+        key_insights: string[];
+    };
+}
+
+export interface ResearchLlmResponse {
+    director_data: {
+        angle: string;
+        title_hook: string;
+        key_questions: string[];
+    };
+    news: NewsItem[];
+}
+
+export interface EditorSelection {
+    selected_topic: string;
+    reason: string;
+    search_query: string;
+    angle: string;
+}
+
+export interface ContentOutline {
+    title: string;
+    sections: {
+        id: number;
+        title: string;
+        key_points: string[];
+        estimated_duration: number;
+    }[];
+}
+
+export interface ContentSegment {
+    lines: {
+        speaker: string;
+        text: string;
+    }[];
 }
 
 export interface AgentState {

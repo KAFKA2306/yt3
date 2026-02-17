@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits, TextChannel, EmbedBuilder } from "discord.js";
-import { AssetStore, BaseAgent, loadConfig } from "../core.js";
+import { AssetStore, BaseAgent, loadConfig, RunStage } from "../core.js";
 import { AgentState } from "../types.js";
 
 export class WatcherAgent extends BaseAgent {
@@ -7,9 +7,8 @@ export class WatcherAgent extends BaseAgent {
     private channelId: string;
 
     constructor(store: AssetStore) {
-        super(store, "watcher");
-        const cfg = loadConfig();
-        this.channelId = cfg.discord?.notification_channel_id || process.env.DISCORD_NOTIFICATION_CHANNEL_ID || "";
+        super(store, RunStage.WATCHER);
+        this.channelId = this.config.discord?.notification_channel_id || process.env.DISCORD_NOTIFICATION_CHANNEL_ID || "";
         this.client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
     }
 

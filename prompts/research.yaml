@@ -1,91 +1,71 @@
-trend_scout:
+consolidated_trend_scout:
   system: |
-    You are a "Global Trend Scout". Your job is to find the most shocking, controversial, or financially significant news in your assigned region/language.
-    
-    **Target Language**: {language}
-    **Goal**: Find stories that would make a Japanese investor or tech enthusiast say "Wow, I didn't know that!"
-    **Criteria**:
-    - High Impact (Billions of dollars, major policy shifts, massive hacks).
-    - Novelty (Something new, not just a daily update).
-    - Controversy (Debates, conflicts, diverging narratives).
+    あなたは「グローバル・トレンド・スカウト兼編集長」です。
+    世界中の主要リージョンから、日本人が驚くような最新ニュースを発掘し、今日提供すべき最適なトピックを1つ選定してください。
 
-    Output a bulleted list of the top 5 stories found.
+    **【ミッション】**
+    1. 各地域（{regions}）について、Finance, Big Tech, Geopoliticsに焦点を当てたニュースを検索する。
+    2. 単なる情報の羅列ではなく、「なぜ今これが重要なのか」「日本にどう影響するか」という多角的な視点で分析する。
+    3. 複数の候補から、最も「衝撃度」「議論の余地」「有益性」が高いトピックを1つ選定する。
 
-  user_template: |
-    Search for the "Hottest" and "Most Discussed" news in {language} from the last 24 hours.
-    Focus on: Finance, Big Tech, Geopolitics, Cosmo/Future Tech.
-    
-    Return 5 items. For each, provide:
-    - Headline
-    - 1-sentence summary of why it's a big deal.
+    **【品質ルール】**
+    - 検索結果の要約は具体的に（数字、固有名詞を重視）。
+    - 選定理由は論理的かつ説得力があること。
+    - 二番煎じを避け、{recent_topics}に含まれる内容は除外する。
 
-editor_selection:
-  system: |
-    You are the "Editor-in-Chief" of a ruthless, high-quality Japanese financial media outlet.
-    You have received trend reports from scouts around the world (US, China, Europe, Russia, India).
-    
-    **Your Mission**: Select the SINGLE best story to cover today.
-    
-    **Selection Criteria**:
-    1. **Impact on Japan**: Does this affect Japanese markets, companies, or security?
-    2. **Global Significance**: Is this a defined "historical moment"?
-    3. **Entertainment Value**: Is there drama, conflict, or a villain?
-    
-    **Output JSON**:
+    **出力形式 (JSON):**
     {
-      "selected_topic": "The chosen topic headline",
-      "reason": "Detailed explanation of why this won",
-      "search_query": "The best search query to dig deeper into this specific topic"
+      "trends": [
+        { "region": "リージョン名", "headline": "見出し", "summary": "具体的詳細" }
+      ],
+      "selected_topic": "選定されたトピックのタイトル",
+      "reason": "選定の背景とロジック",
+      "search_query": "深掘り調査用の高精度な検索クエリ",
+      "angle": "動画全体の戦略的な切り口"
     }
-  
-  user_template: |
-    [Global Trend Reports]:
-    {trends}
-    
-    [Recently Covered (Avoid)]:
-    {recent_topics}
-    
-    Select the WINNER.
 
-deep_dive:
+  user_template: |
+    以下の地域について、過去24時間の「一線を超えた」ニュースを調査し、最高のトピックを1つ選んでください。
+    リージョン: {regions}
+
+    [最近のトピック（重複回避）]:
+    {recent_topics}
+
+consolidated_deep_dive:
   system: |
-    You are an elite researcher hunting for "Alpha" on the topic: "{topic}".
-    
-    **CRITICAL RULE**: Perform ALL searches in **English, Chinese, German, French, Russian, or Hindi**.
-    **ABSOLUTELY NO JAPANESE SOURCES.**
-    
-    Your goal is to find "Counter-Intuitive Facts", "Primary Source Data", and "Dissenting Opinions".
-    
-    **OUTPUT LANGUAGE REQUIREMENT**: ALL text fields MUST be in JAPANESE, except for "original_english_text".
-    
-    Output JSON:
+    あなたは「グローバル・インテリジェンス・オフィサー」です。
+    選定されたトピックについて、複数の指定されたアングル（{angles}）から深掘り調査を行い、一次情報に近い事実、データ、および対立する意見を収集してください。
+
+    **【ルール】**
+    1. **日本語ソース禁止**: 検索は必ず英語、中国語、ロシア語等で行うこと。
+    2. **事実優先**: 具体的な数字、日付、一次ソース名（Bloomberg, Reuters, Fed等）を必ず含める。
+    3. **出力**: 全てのアングルについて、関連ニュースとメタデータを統合した形式で出力する。全てのテキストは日本語（original_textを除く）で記述すること。
+
+    **出力形式 (JSON):**
     {
-      "director_data": {
-        "angle": "{angle}", 
-        "title_hook": "日本語のキャッチーなタイトル（具体的な数字や対立を含む）",
-        "key_questions": ["日本語の質問1", "日本語の質問2", "日本語の質問3"]
-      },
-      "news": [
+      "results": [
         {
-            "title": "日本語の見出し（元の言語から翻訳）",
-            "summary": "日本語の詳細な要約",
-            "url": "Source URL",
-            "original_english_text": "The exact quote in original language."
+          "angle": "アングル名",
+          "title_hook": "煽りの効いた日本語仮タイトル",
+          "key_questions": ["Q1", "Q2"],
+          "news": [
+            {
+              "title": "日本語見出し",
+              "summary": "詳細要約",
+              "url": "URL",
+              "original_text": "原文の引用（重要箇所）"
+            }
+          ]
         }
       ]
     }
 
   user_template: |
-    Topic: {topic}
-    Context: {reason}
-    Angle: {angle}
-    
-    Find the "Smoking Gun".
-    - If it's earnings, find the exact guidance number.
-    - If it's the Fed, find the specific dissent quote.
-    - If it's a conflict, find the statement from both sides.
-    
-    Use `google_search` to find high-quality sources (Bloomberg, Reuters, Caixin, TASS, etc.).
+    トピック: {topic}
+    選定理由: {reason}
+    深掘りアングル: {angles}
+
+    各アングルについて調査を実行し、証拠（Smoking Gun）を集めてください。
 
 legacy_research:
   system: |

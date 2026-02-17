@@ -3,7 +3,7 @@ import os from "os";
 import fs from "fs-extra";
 import axios from "axios";
 import ffmpeg from "fluent-ffmpeg";
-import { AssetStore, loadConfig, getSpeakers, BaseAgent, ROOT } from "../core.js";
+import { AssetStore, loadConfig, getSpeakers, BaseAgent, RunStage } from "../core.js";
 import { Script, AppConfig } from "../types.js";
 import { LayoutEngine, RenderPlan } from "../layout_engine.js";
 
@@ -18,7 +18,7 @@ export class VisualDirector extends BaseAgent {
 
     constructor(store: AssetStore) {
         const cfg = loadConfig();
-        super(store, "media", { temperature: cfg.providers.llm.media?.temperature || 0.1 });
+        super(store, RunStage.MEDIA, { temperature: cfg.providers.llm.media?.temperature || 0.1 });
         this.ttsUrl = cfg.providers.tts.voicevox.url;
         this.speakers = getSpeakers();
         this.videoConfig = cfg.steps.video;
@@ -42,7 +42,7 @@ export class VisualDirector extends BaseAgent {
             return p;
         }));
 
-        const fullAudio = path.join(audioDir, "full.wav");
+        const fullAudio = path.join(audioDir, this.store.cfg.workflow.filenames.audio_full);
         const videoPlan = await this.layout.createVideoRenderPlan();
         const durations: number[] = [];
         const audioCmd = ffmpeg();
@@ -53,22 +53,22 @@ export class VisualDirector extends BaseAgent {
         }
 
         const assContent = this.layout.generateASS(script, durations, videoPlan);
-        const subtitlePath = path.join(this.store.runDir, "subtitles.ass");
+        const subtitlePath = path.join(this.store.runDir, this.store.cfg.workflow.filenames.subtitles);
         fs.writeFileSync(subtitlePath, assContent);
 
         await new Promise<void>((res, rej) => audioCmd.on('error', rej).on('end', () => res()).mergeToFile(fullAudio, os.tmpdir()));
 
         let thumbnail_path = "";
         if (this.thumbConfig.enabled) {
-            thumbnail_path = path.join(this.store.runDir, "thumbnail.png");
+            thumbnail_path = path.join(this.store.runDir, this.store.cfg.workflow.filenames.thumbnail);
             const thumbPlan = await this.layout.createThumbnailRenderPlan();
             await this.layout.renderThumbnail(thumbPlan, title, thumbnail_path);
         }
 
-        const video_path = path.join(this.store.videoDir(), "video.mp4");
+        const video_path = path.join(this.store.videoDir(), this.store.cfg.workflow.filenames.video);
         await this.generateVideo(fullAudio, thumbnail_path, subtitlePath, video_path, videoPlan);
 
-        this.store.logOutput("media", { audio_paths, thumbnail_path, video_path, subtitle_path: subtitlePath });
+        this.store.logOutput(this.name, { audio_paths, thumbnail_path, video_path, subtitle_path: subtitlePath });
         return { audio_paths, thumbnail_path, video_path, subtitle_path: subtitlePath };
     }
 
@@ -79,9 +79,8 @@ export class VisualDirector extends BaseAgent {
     private generateVideo(audioPath: string, thumbPath: string, subtitlePath: string, outputPath: string, plan: RenderPlan): Promise<void> {
         const [w, h] = this.videoConfig.resolution.split("x");
         const fps = this.videoConfig.fps;
-        const cfg = loadConfig();
-        const bgColor = this.videoConfig.background_color || cfg.defaults?.media?.background_color;
-        const introSec = this.videoConfig.intro_seconds || cfg.defaults?.media?.intro_seconds;
+        const bgColor = this.videoConfig.background_color || this.config.defaults?.media?.background_color;
+        const introSec = this.videoConfig.intro_seconds || this.config.defaults?.media?.intro_seconds;
 
         return new Promise((resolve, reject) => {
             const cmd = ffmpeg();
