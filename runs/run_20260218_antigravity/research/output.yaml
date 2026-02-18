@@ -1,0 +1,42 @@
+director_data:
+  angle: |
+    「静寂なる亀裂」
+    米国がインフレ抑制に成功し、AIブームが市場を牽引する一方で、日本経済は消費低迷と円安の泥沼から抜け出せない。
+    この「日米の温度差」こそが、次の危機の震源地になるのではないか？
+    表面的な株高の裏で進行する、構造的な乖離（ダイバージェンス）を冷徹に解剖する。
+  title_hook: "2026年2月、世界は二つに割れた。"
+  search_query: "Japan GDP Q4 2025 final, US CPI January 2026, NVIDIA outlook Feb 2026"
+  key_questions: 
+    - "なぜ米国が2.4%のインフレで『勝利』を宣言する中、日本は0.1%の成長で喘ぐのか？"
+    - "NVIDIAの決算（2月25日）は、本当に世界経済を支えきれるのか？"
+    - "153円台の円安は、もはや『日本売り』のシグナルではないのか？"
+news:
+  - title: "日本経済、薄氷のプラス成長：Q4 GDPは前期比+0.1%"
+    url: "https://www.cabinet-office.go.jp/qd/2025q4.html"
+    summary: |
+      2025年10-12月期の実質GDPは前期比0.1%増（年率0.2%増）と、2四半期ぶりのプラス成長を確保したものの、市場予想（年率1.6%増）を大きく下回った。
+      特に個人消費は+0.1%と力強さを欠き、在庫の減少が足を引っ張った。
+      この結果を受け、日銀の早期利上げ観測は後退。円相場は再び1ドル=153円台へと下落した。
+    snippet: "Japan's economy grew by a largely expected 0.1% quarter-on-quarter... failing to meet the market forecast of 0.4%."
+    verified_date: "2026-02-18"
+  - title: "米国インフレ、沈静化の兆し：1月CPIは2.4%へ低下"
+    url: "https://www.bls.gov/cpi/2026/january.htm"
+    summary: |
+      米労働省が発表した2026年1月の消費者物価指数（CPI）は、前年同月比2.4%上昇となり、2025年12月の2.7%から鈍化した。
+      これは2025年5月以来の低水準。コアCPIも2.5%に低下。
+      FRBにとっては「ソフトランディング」のシナリオを補強するデータとなったが、サービス価格の粘着性は依然として懸念材料である。
+    snippet: "Headline CPI slowed to 2.4%... annual core inflation eased to 2.5%, its lowest reading since March 2021."
+    verified_date: "2026-02-13"
+  - title: "AIの王者は止まらない：NVIDIA決算への期待と不安"
+    url: "https://nvidianews.nvidia.com/"
+    summary: |
+      2月25日の決算発表を控え、NVIDIAの株価は依然として高値圏を維持。
+      アナリストの94%以上が「買い」を推奨し、2026年度の売上高は3500億ドル規模に達すると予測されている。
+      AIバブル崩壊の懸念は根強いものの、ハイパースケーラー（Amazon, Google等）の設備投資意欲は衰えず、実需が株価を裏付けている構図だ。
+    snippet: "Consensus among analysts is overwhelmingly positive... expected to report another strong performance."
+    verified_date: "2026-02-18"
+memory_context: |
+  現在の状況は、1990年代後半の「ITバブル」前夜と、日本の「失われた30年」の入り口が重なったような不気味さがある。
+  米国（当時はドットコム）が熱狂し、日本が金融危機（1997年）に向かっていた時代。
+  今回も、米国（AI）の熱狂の陰で、日本のファンダメンタルズ（基礎的条件）が静かに蝕まれているのではないか。
+  特に、為替（153円）が企業の「稼ぐ力」ではなく「安売り」の結果であるならば、それは通貨危機の予兆かもしれない。
