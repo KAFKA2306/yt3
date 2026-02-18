@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/KAFKA2306/yt3#readme",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/fs-extra": "^11.0.4",
     "@types/js-yaml": "^4.0.9",
@@ -30,9 +31,15 @@
     "typescript-eslint": "^8.53.1"
   },
   "dependencies": {
+    "@types/serve-index": "^1.9.4",
     "@types/sharp": "^0.31.1",
     "discord.js": "^14.25.1",
+    "express": "^5.2.1",
+    "express-handlebars": "^8.0.3",
     "googleapis": "^170.1.0",
+    "htmx.org": "^2.0.8",
+    "js-yaml": "^4.1.1",
+    "serve-index": "^1.9.2",
     "sharp": "^0.34.5",
     "twitter-api-v2": "^1.29.0"
   }

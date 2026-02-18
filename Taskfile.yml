@@ -76,6 +76,10 @@ tasks:
     desc: "Install dependencies and setup environment"
     cmds: [npx tsx scripts/tasks.ts bootstrap]
 
+  serve:
+    desc: "Start the HTMX Dashboard to monitor runs"
+    cmds: ["npx tsx scripts/dashboard/server.ts"]
+
   # ============================================================================
   # UTILITIES
   # ============================================================================

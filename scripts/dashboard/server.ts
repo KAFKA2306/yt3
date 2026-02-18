@@ -1,0 +1,141 @@
+import express from 'express';
+import path from 'path';
+import fs from 'fs-extra';
+import { fileURLToPath } from 'url';
+import yaml from 'js-yaml';
+import serveIndex from 'serve-index';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, '../../');
+const RUNS_DIR = path.join(ROOT_DIR, 'runs');
+
+const app = express();
+const PORT = 3000;
+
+app.use(express.static(path.join(__dirname, 'public')));
+// 実行ディレクトリ以下の全ファイルをサーブ (インデックス表示付き)
+app.use('/runs', express.static(RUNS_DIR), serveIndex(RUNS_DIR, { 'icons': true }));
+
+app.get('/api/runs', async (req: express.Request, res: express.Response) => {
+    try {
+        const dirs = await fs.readdir(RUNS_DIR);
+        const runs = dirs.filter(d => d.match(/^\d{4}-\d{2}-\d{2}/) || d.startsWith('run_')).sort().reverse();
+
+        let html = '';
+        for (const runId of runs) {
+            html += `
+                <div class="run-item" hx-get="/api/runs/${runId}" hx-target="#main-content" hx-push-url="true">
+                    <span class="run-status-dot"></span>
+                    <span class="run-id">${runId}</span>
+                </div>
+            `;
+        }
+        res.send(html);
+    } catch (e) {
+        res.status(500).send('Error loading runs');
+    }
+});
+
+app.get('/api/runs/:id', async (req: express.Request, res: express.Response) => {
+    const runId = req.params.id as string;
+    const runPath = path.join(RUNS_DIR, runId);
+    const contentPath = path.join(runPath, 'content', 'output.yaml');
+
+    try {
+        const thumbPath = `/runs/${runId}/thumbnail.png`;
+        const videoPath = `/runs/${runId}/video/final_video.mp4`; // 仮定。ディレクトリ構成に合わせる
+        const hasThumb = await fs.pathExists(path.join(runPath, 'thumbnail.png'));
+
+        // 実際のビデオファイル名を探す
+        let actualVideoLink = `/runs/${runId}/video`;
+        if (await fs.pathExists(path.join(runPath, 'video'))) {
+            const videoFiles = await fs.readdir(path.join(runPath, 'video'));
+            const mp4 = videoFiles.find(f => f.endsWith('.mp4'));
+            if (mp4) actualVideoLink = `/runs/${runId}/video/${mp4}`;
+        }
+
+        let metadataHtml = '';
+        let scriptHtml = '';
+
+        if (await fs.pathExists(contentPath)) {
+            const contentFile = await fs.readFile(contentPath, 'utf8');
+            const data = yaml.load(contentFile) as any;
+
+            if (data?.metadata) {
+                metadataHtml = `
+                    <div class="card metadata-card">
+                        <h3>Metadata</h3>
+                        <p class="meta-title">${data.metadata.title || ''}</p>
+                        <p class="meta-desc">${data.metadata.description || ''}</p>
+                        <div class="meta-tags">
+                            ${(data.metadata.tags || []).map((t: string) => `<span class="tag">#${t}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (data?.script?.lines) {
+                scriptHtml = `
+                    <div class="card script-card">
+                        <h3>Script Content</h3>
+                        <div class="script-lines">
+                            ${data.script.lines.map((l: any) => `
+                                <div class="script-line">
+                                    <span class="speaker">${l.speaker}:</span>
+                                    <span class="text">${l.text}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        let html = `
+            <div class="run-detail">
+                <div class="content-header" style="animation: none; opacity: 1;">
+                    <h2>Run Details</h2>
+                    <p class="sub">Identifier: <code>${runId}</code></p>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <div class="main-column">
+                        <div class="card media-card" style="padding: 10px; overflow: hidden;">
+                            <div class="media-preview">
+                                ${hasThumb ? `<img src="${thumbPath}" alt="Thumbnail">` : '<div style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-dim);">No preview available</div>'}
+                            </div>
+                        </div>
+                        ${metadataHtml}
+                        ${scriptHtml}
+                    </div>
+                    
+                    <div class="side-column">
+                        <div class="card">
+                            <h3>Asset Hub</h3>
+                            <div class="btn-group" style="flex-direction: column; display: flex;">
+                                <a href="/runs/${runId}/research" target="_blank" class="btn btn-outline">
+                                    <span>🔍</span> Research Data (Browse)
+                                </a>
+                                <a href="/runs/${runId}/content" target="_blank" class="btn btn-outline">
+                                    <span>📝</span> Content Data (Browse)
+                                </a>
+                                <a href="${actualVideoLink}" target="_blank" class="btn btn-primary">
+                                    <span>🎬</span> Watch Production
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        res.send(html);
+    } catch (e) {
+        console.error(e);
+        res.status(404).send('Run not found');
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`✨ Dashboard hub refined at http://localhost:${PORT}`);
+});
