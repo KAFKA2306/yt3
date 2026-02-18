@@ -290,6 +290,35 @@
             <p class="sub" style="color: var(--text-dim);">Select a run to inspect metadata, scripts, and media assets.
             </p>
         </div>
+
+        <div class="dashboard-grid">
+            <div class="main-column">
+                <div class="card stats-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3
+                            style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin: 0;">
+                            Daily LLM Stats
+                        </h3>
+                        <span style="font-size: 0.8rem; color: var(--text-dim);">Actual Usage</span>
+                    </div>
+                    <div id="daily-stats" hx-get="/api/stats/daily" hx-trigger="load">
+                        <p style="color: var(--text-dim);">Loading stats...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-column">
+                <div class="card">
+                    <h3>Quick Actions</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-outline" onclick="location.reload()">
+                            <span>🔄</span> Refresh Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 </body>
 

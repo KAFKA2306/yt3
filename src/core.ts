@@ -155,6 +155,17 @@ export class BaseAgent {
         const llm = createLlm({ ...this.opts, ...callOpts });
         const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
         this.store.save(this.name, "raw_response", { content: res.content });
+        const usage = (res as any).usage_metadata;
+        if (usage) {
+            AgentLogger.info(this.name, "RUN", "LLM_USAGE", "Captured LLM token usage", {
+                context: {
+                    input_tokens: usage.input_tokens || 0,
+                    output_tokens: usage.output_tokens || 0,
+                    total_tokens: usage.total_tokens || 0,
+                    model: llm.model
+                }
+            });
+        }
         const parsed = parser(res.content as string);
         AgentLogger.decision(this.name, "RUN", "LLM_SUCCESS", `Successfully parsed response for ${this.name}`, {
             model: getLlmModel()

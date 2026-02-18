@@ -136,6 +136,68 @@ app.get('/api/runs/:id', async (req: express.Request, res: express.Response) => 
     }
 });
 
+app.get('/api/stats/daily', async (req: express.Request, res: express.Response) => {
+    try {
+        const logFilePath = path.join(ROOT_DIR, 'logs', 'agent_activity.jsonl');
+        if (!await fs.pathExists(logFilePath)) {
+            return res.send('<p>No logs available yet.</p>');
+        }
+
+        const lines = (await fs.readFile(logFilePath, 'utf8')).split('\n').filter(l => l.trim());
+        const stats: Record<string, { calls: number, input: number, output: number }> = {};
+
+        for (const line of lines) {
+            try {
+                const entry = JSON.parse(line);
+                if (entry.event === 'LLM_USAGE' && entry.context) {
+                    const date = entry.timestamp.split('T')[0];
+                    if (!stats[date]) stats[date] = { calls: 0, input: 0, output: 0 };
+                    stats[date].calls++;
+                    stats[date].input += entry.context.input_tokens || 0;
+                    stats[date].output += entry.context.output_tokens || 0;
+                }
+            } catch (e) {
+                // Ignore malformed JSON lines
+            }
+        }
+
+        const sortedDates = Object.keys(stats).sort().reverse();
+        if (sortedDates.length === 0) {
+            return res.send('<p style="color: var(--text-dim); padding: 20px;">No usage data recorded yet.</p>');
+        }
+
+        let html = `
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 1px solid var(--border); color: var(--accent);">
+                        <th style="padding: 12px 8px;">Date</th>
+                        <th style="padding: 12px 8px;">Calls</th>
+                        <th style="padding: 12px 8px;">Input</th>
+                        <th style="padding: 12px 8px;">Output</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        for (const date of sortedDates) {
+            html += `
+                <tr style="border-bottom: 1px solid var(--border); font-size: 0.9rem;">
+                    <td style="padding: 12px 8px; font-family: 'JetBrains Mono';">${date}</td>
+                    <td style="padding: 12px 8px;">${stats[date].calls}</td>
+                    <td style="padding: 12px 8px;">${stats[date].input.toLocaleString()}</td>
+                    <td style="padding: 12px 8px;">${stats[date].output.toLocaleString()}</td>
+                </tr>
+            `;
+        }
+
+        html += `</tbody></table>`;
+        res.send(html);
+    } catch (e) {
+        console.error(e);
+        res.status(500).send('Error loading stats');
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`✨ Dashboard hub refined at http://localhost:${PORT}`);
 });

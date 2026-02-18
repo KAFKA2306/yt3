@@ -172,7 +172,6 @@ steps:
     enabled: true
     use_llm: true
     llm_model: null
-    fallback_llm_model: null
     target_keywords: ["金融", "経済", "投資", "株"]
     max_title_length: 50
     max_description_length: 5000
@@ -205,7 +204,7 @@ defaults:
 
 providers:
   llm:
-    gemini: {model: "gemini-3-flash-preview", fallback_model: "gemini-2.0-flash", temperature: 0.35, max_tokens: 32768}
+    gemini: {model: "gemini-3-flash-preview", temperature: 0.35, max_tokens: 32768}
     content: {temperature: 0.4}
     media: {temperature: 0.1}
     research: {temperature: 0.5, selection_temperature: 0.4, relevance_temperature: 0.0}
