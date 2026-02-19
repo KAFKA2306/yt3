@@ -131,11 +131,10 @@ export class LayoutEngine {
 
     private getSubtitleBaseStyle(subtitlesConfig: AppConfig["steps"]["video"]["subtitles"]) {
         const s = subtitlesConfig || {};
-        if (!s.font_name) throw new Error("Subtitle font_name config missing");
-        if (!s.font_size) throw new Error("Subtitle font_size config missing");
+        const g = this.config.global_style;
         return {
-            font: s.font_name,
-            size: s.font_size,
+            font: s.font_name || g.font_name,
+            size: s.font_size || g.video.subtitle_size,
             color: s.primary_colour || '&HFFFFFF&',
             outlineColor: s.outline_colour || '&H000000&',
         };
@@ -189,12 +188,13 @@ export class LayoutEngine {
 
     private createThumbnailSvg(title: string, maxX: number, cfg: AppConfig["steps"]["thumbnail"], pal: AppConfig["steps"]["thumbnail"]["palettes"][number]): string {
         const lines = title.split('\n').filter(l => l.trim());
-        const fz = cfg.title_font_size || 120, lh = fz * 1.2;
+        const g = this.config.global_style;
+        const fz = cfg.title_font_size || g.thumbnail.title_size, lh = fz * 1.2;
         const startY = (cfg.height - lines.length * lh) / 2 + lh / 2;
         const txt = lines.map((l, i) => {
             const y = startY + i * lh, escaped = l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return `<text x="${cfg.padding || 40}" y="${y}" class="outline">${escaped}</text><text x="${cfg.padding || 40}" y="${y}" class="fill">${escaped}</text>`;
         }).join('');
-        return `<svg width="${cfg.width}" height="${cfg.height}" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="s"><rect x="0" y="0" width="${maxX}" height="${cfg.height}"/></clipPath></defs><style>text { font-family: sans-serif; font-size: ${fz}px; font-weight: bold; text-anchor: start; dominant-baseline: middle; } .outline { fill: none; stroke: ${pal.outline_outer_color || '#000'}; stroke-width: ${(pal.outline_outer_width || 15) * 2}px; } .fill { fill: ${pal.title_color || '#FFF'}; stroke: ${pal.outline_inner_color || '#FFF'}; stroke-width: ${pal.outline_inner_width || 5}px; paint-order: stroke fill; }</style><g clip-path="url(#s)">${txt}</g></svg>`;
+        return `<svg width="${cfg.width}" height="${cfg.height}" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="s"><rect x="0" y="0" width="${maxX}" height="${cfg.height}"/></clipPath></defs><style>text { font-family: '${g.font_name}', sans-serif; font-size: ${fz}px; font-weight: bold; text-anchor: start; dominant-baseline: middle; } .outline { fill: none; stroke: ${pal.outline_outer_color || '#000'}; stroke-width: ${(pal.outline_outer_width || 15) * 2}px; } .fill { fill: ${pal.title_color || '#FFF'}; stroke: ${pal.outline_inner_color || '#FFF'}; stroke-width: ${pal.outline_inner_width || 5}px; paint-order: stroke fill; }</style><g clip-path="url(#s)">${txt}</g></svg>`;
     }
 }

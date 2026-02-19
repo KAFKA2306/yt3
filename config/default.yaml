@@ -1,3 +1,12 @@
+global_style:
+  font_path: "assets/fonts/ZenMaruGothic-Bold.ttf"
+  font_name: "Zen Maru Gothic"
+  thumbnail:
+    title_size: 60
+    subtitle_size: 48
+  video:
+    subtitle_size: 64
+
 workflow:
   default_run_dir: "runs"
   default_bucket: "global_macro"
@@ -111,9 +120,6 @@ steps:
       - {type: "overlay", enabled: true, image_path: "assets/zundamon.webp", anchor: "bottom_left", height_ratio: 0.51, offset: {left: 20, bottom: 0}}
     thumbnail_overlay: {enabled: false, duration_seconds: 0.1, source_key: "generate_thumbnail"}
     subtitles:
-      font_path: "assets/fonts/ZenMaruGothic-Bold.ttf"
-      font_name: "Zen Maru Gothic"
-      font_size: 64
       primary_colour: "&HFFFFFF&"
       outline_colour: "&H000000&"
       outline: 2
@@ -137,9 +143,6 @@ steps:
     padding: 80
     max_lines: 4
     max_chars_per_line: 5
-    title_font_size: 80
-    subtitle_font_size: 56
-    font_path: "assets/fonts/ZenMaruGothic-Bold.ttf"
     right_guard_band_px: 850
     outline_inner_color: "#FFFFFF"
     outline_inner_width: 20

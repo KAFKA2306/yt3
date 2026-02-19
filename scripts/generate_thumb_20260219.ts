@@ -6,17 +6,12 @@ import { loadConfig, resolvePath, AssetStore, RunStage } from "../src/core.js";
 import { OverlayConfig, Rect } from "../src/types.js";
 
 async function main() {
-    const runId = process.argv[2] || "run_20260218_antigravity";
+    const runId = "run_20260219_antigravity";
     const store = new AssetStore(runId);
 
     // Load content for title
-    const content = store.load<any>(RunStage.CONTENT, "output");
-    const title = content.thumbnail_title ||
-        content.thumbnail_text ||
-        content.metadata?.thumbnail_title ||
-        content.metadata?.title ||
-        content.script?.title ||
-        content.title;
+    const content = store.load<{ metadata: { thumbnail_title: string; title: string } }>(RunStage.CONTENT, "output");
+    const title = content.metadata.thumbnail_title || content.metadata.title;
 
     console.log(`Generating thumbnail for run: ${runId}`);
     console.log(`Title: ${title}`);
@@ -46,7 +41,7 @@ async function main() {
             width: 1280,
             height: 720,
             offset: { top: 0, left: 0, right: 0, bottom: 0 }
-        } as any,
+        },
         resolvedPath: bgPath,
         bounds: { x: 0, y: 0, width: 1280, height: 720 }
     };

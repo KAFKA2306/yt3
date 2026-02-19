@@ -12,7 +12,20 @@ export interface OverlayConfig {
     width_ratio?: number;
 }
 
+export interface GlobalStyle {
+    font_path: string;
+    font_name: string;
+    thumbnail: {
+        title_size: number;
+        subtitle_size: number;
+    };
+    video: {
+        subtitle_size: number;
+    };
+}
+
 export interface AppConfig {
+    global_style: GlobalStyle;
     workflow: {
         default_run_dir: string;
         default_bucket: string;
@@ -65,13 +78,15 @@ export interface AppConfig {
                 margin_r?: number;
                 margin_v?: number;
                 min_font_size?: number;
+                overlay_padding?: number;
             };
         };
         thumbnail: {
             enabled: boolean;
             width: number;
             height: number;
-            title_font_size: number;
+            title_font_size?: number;
+            subtitle_font_size?: number;
             palettes: Array<{ background_color: string; title_color: string; outline_inner_color: string; outline_inner_width: number; outline_outer_color: string; outline_outer_width: number; }>;
             overlays: OverlayConfig[];
             padding: number;
