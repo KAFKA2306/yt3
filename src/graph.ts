@@ -50,13 +50,13 @@ export function createGraph(store: AssetStore) {
   const memory = new MemoryAgent(store);
   const workflow = new StateGraph<AgentState>({ channels });
 
-  workflow.addNode("research", async (state) => {
+  workflow.addNode("research", async (state: AgentState) => {
     AgentLogger.transition("SYSTEM", "START", "RESEARCH", "Starting trend discovery");
     const res = await research.run(state.bucket, state.limit);
     return { director_data: res.director_data, news: res.news, memory_context: res.memory_context };
   });
 
-  workflow.addNode("content", async (state) => {
+  workflow.addNode("content", async (state: AgentState) => {
     AgentLogger.transition("SYSTEM", "RESEARCH", "CONTENT", "Synthesizing script and metadata");
     if (!state.director_data) throw new Error("director_data is required for content stage");
     const res = await content.run(
@@ -67,7 +67,7 @@ export function createGraph(store: AssetStore) {
     return { script: res.script, metadata: res.metadata };
   });
 
-  workflow.addNode("media", async (state) => {
+  workflow.addNode("media", async (state: AgentState) => {
     AgentLogger.transition("SYSTEM", "CONTENT", "MEDIA", "Generating audio and video assets");
     if (!state.script) throw new Error("script is required for media stage");
     const res = await media.run(
@@ -81,7 +81,7 @@ export function createGraph(store: AssetStore) {
     };
   });
 
-  workflow.addNode("publish", async (state) => {
+  workflow.addNode("publish", async (state: AgentState) => {
     AgentLogger.transition(
       "SYSTEM",
       "MEDIA",
@@ -92,7 +92,7 @@ export function createGraph(store: AssetStore) {
     return { publish_results: res, status: "published" };
   });
 
-  workflow.addNode("memory", async (state) => {
+  workflow.addNode("memory", async (state: AgentState) => {
     AgentLogger.transition("SYSTEM", "PUBLISH", "MEMORY", "Updating memory with run results");
     await memory.run(state);
     return { status: "completed" };
