@@ -1,0 +1,62 @@
+src/index.ts:30:39 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected any. Specify a different type.
+  
+    29 │   AgentLogger.info("SYSTEM", "MAIN", "FINISH", "Pipeline finished", {
+  > 30 │     context: { status: (finalState as any).status },
+       │                                       ^^^
+    31 │   });
+    32 │ }
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+src/agents/publish.ts:108:25 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected any. Specify a different type.
+  
+    107 │     const tweetText = this.createTweetText(metadata);
+  > 108 │     const tweetPayload: any = { text: tweetText };
+        │                         ^^^
+    109 │     if (mediaId) tweetPayload.media = { media_ids: [mediaId] };
+    110 │     const res = await client.v2.tweet(tweetPayload);
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+src/core.ts:115:17 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected any. Specify a different type.
+  
+    113 │ ): ChatGoogleGenerativeAI {
+    114 │   const { extra = {}, ...rest } = options;
+  > 115 │   const config: any = {
+        │                 ^^^
+    116 │     model: options.model || getLlmModel(),
+    117 │     apiKey: process.env.GEMINI_API_KEY,
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+src/core.ts:223:27 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected any. Specify a different type.
+  
+    221 │     ]);
+    222 │     this.store.save(this.name, "raw_response", { content: res.content });
+  > 223 │     const usage = (res as any).usage_metadata;
+        │                           ^^^
+    224 │     if (usage) {
+    225 │       AgentLogger.info(this.name, "RUN", "LLM_USAGE", "Captured LLM token usage", {
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+Checked 21 files in 11ms. No fixes applied.
+Found 4 errors.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+error: "biome" exited with code 1

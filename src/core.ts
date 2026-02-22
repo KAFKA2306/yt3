@@ -3,28 +3,18 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import type { z } from "zod";
+import { ROOT, loadConfig as baseLoadConfig } from "./base.js";
 import { type AgentState, type AppConfig, RunStage } from "./types.js";
 import { AgentLogger as Logger } from "./utils/logger.js";
 
 export { Logger as AgentLogger };
 export { RunStage };
-export const ROOT = process.cwd();
+export const loadConfig = baseLoadConfig;
+export { ROOT };
 
-function readYamlFile<T>(p: string): T {
+export function readYamlFile<T>(p: string): T {
   if (!fs.existsSync(p)) throw new Error(`File not found: ${p}`);
   return yaml.load(fs.readFileSync(p, "utf-8")) as T;
-}
-
-export function loadConfig(): AppConfig {
-  const configPath = path.join(ROOT, "config", "default.yaml");
-  const cfg = readYamlFile<AppConfig & { workflow: { trend_settings: { regions: string[] } } }>(
-    configPath,
-  );
-  if (process.env["DRY_RUN"] === "true") {
-    if (cfg.steps.youtube) cfg.steps.youtube.dry_run = true;
-    if (cfg.steps.twitter) cfg.steps.twitter.dry_run = true;
-  }
-  return cfg;
 }
 
 export function getSpeakers(): Record<string, number> {
@@ -52,7 +42,7 @@ export function createLlm(options: LlmOptions = {}): ChatGoogleGenerativeAI {
     ...extra,
     ...rest,
   };
-  return new ChatGoogleGenerativeAI(config as any);
+  return new ChatGoogleGenerativeAI(config as { model: string } & Record<string, unknown>);
 }
 
 export class AssetStore {
@@ -67,7 +57,7 @@ export class AssetStore {
   loadState(): Partial<AgentState> {
     let state: Partial<AgentState> = {};
     const stateJson = path.join(this.runDir, this.cfg.workflow.filenames.state);
-    if (fs.existsSync(stateJson)) state = JSON.parse(fs.readFileSync(stateJson, "utf-8"));
+    if (fs.existsSync(stateJson)) state = fs.readJsonSync(stateJson);
     const stages = [RunStage.RESEARCH, RunStage.CONTENT, RunStage.MEDIA, RunStage.MEMORY];
     for (const step of stages) {
       const outputPath = path.join(this.runDir, step, this.cfg.workflow.filenames.output);
@@ -85,7 +75,8 @@ export class AssetStore {
   load<T>(stage: string, type: "input" | "output" | "prompt"): T | null {
     const f =
       type === "input"
-        ? (this.cfg.workflow.filenames as any)["input"] || "input.yaml"
+        ? (this.cfg.workflow.filenames as Record<string, string | undefined>)["input"] ||
+          "input.yaml"
         : type === "output"
           ? this.cfg.workflow.filenames.output
           : `${stage}_prompt.yaml`;
@@ -93,10 +84,11 @@ export class AssetStore {
     if (!fs.existsSync(p)) return null;
     return (p.endsWith(".json") ? fs.readJsonSync(p) : yaml.load(fs.readFileSync(p, "utf-8"))) as T;
   }
-  save(stage: string, type: "input" | "output", data: any) {
+  save(stage: string, type: "input" | "output", data: unknown) {
     const f =
       type === "input"
-        ? (this.cfg.workflow.filenames as any)["input"] || "input.yaml"
+        ? (this.cfg.workflow.filenames as Record<string, string | undefined>)["input"] ||
+          "input.yaml"
         : this.cfg.workflow.filenames.output;
     const p = path.join(this.runDir, stage, f);
     fs.ensureDirSync(path.dirname(p));
@@ -119,17 +111,17 @@ export abstract class BaseAgent {
   store: AssetStore;
   name: string;
   config: AppConfig;
-  opts: Record<string, any>;
-  constructor(store: AssetStore, name: string, opts: Record<string, any> = {}) {
+  opts: Record<string, unknown>;
+  constructor(store: AssetStore, name: string, opts: Record<string, unknown> = {}) {
     this.store = store;
     this.name = name;
     this.config = store.cfg;
     this.opts = opts;
   }
-  logInput(data: any) {
+  logInput(data: unknown) {
     this.store.save(this.name, "input", data);
   }
-  logOutput(data: any) {
+  logOutput(data: unknown) {
     this.store.save(this.name, "output", data);
   }
   loadPrompt<T>(name: string): T {
@@ -145,22 +137,19 @@ export abstract class BaseAgent {
     Logger.info(this.name, "RUN", "START_LLM", `Invoking LLM for ${this.name}`);
     if (process.env["SKIP_LLM"] === "true") {
       Logger.info(this.name, "RUN", "LLM_SKIP", "LLM bypass enabled. Loading mock/previous data.");
-      const prev = this.store.load<any>(this.name, "output");
+      const prev = this.store.load<unknown>(this.name, "output");
       if (prev) return prev as T;
       throw new Error("No previous data for LLM bypass");
     }
     const llm = createLlm(this.opts);
-    const res = await llm.generate(
+    const res = await llm.invoke(
       [
-        [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ],
-      callOpts,
+      callOpts as Record<string, unknown>,
     );
-    const text = res.generations[0]?.[0]?.text || "";
-    return parser(text);
+    return parser(res.content as string);
   }
 }
 
@@ -171,11 +160,14 @@ export function parseLlmJson<T>(text: string, schema: z.ZodSchema<T>): T {
   return schema.parse(json);
 }
 
-export class McpClient {
-  static async runTool(serverName: string, _config: any, toolName: string, _args: any) {
-    Logger.info("MCP", "CALL", serverName, `Calling tool ${toolName}`);
-    return { data: {} };
-  }
+export async function runMcpTool(
+  serverName: string,
+  _config: unknown,
+  toolName: string,
+  _args: unknown,
+) {
+  Logger.info("McpClient", "CALL", serverName, `Calling tool ${toolName}`);
+  return { data: {} };
 }
 
 export function fitText(

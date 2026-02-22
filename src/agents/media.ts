@@ -7,10 +7,10 @@ import {
   AgentLogger,
   type AssetStore,
   BaseAgent,
-  McpClient,
   RunStage,
   getSpeakers,
   loadConfig,
+  runMcpTool,
 } from "../core.js";
 import { LayoutEngine, type RenderPlan } from "../layout_engine.js";
 import type { AppConfig, Script } from "../types.js";
@@ -105,7 +105,7 @@ export class VisualDirector extends BaseAgent {
       };
       const mcp = this.config.mcp;
       if (mcp?.servers.context7) {
-        const result = (await McpClient.runTool(
+        const result = (await runMcpTool(
           "context7",
           mcp.servers.context7,
           "get_finance_color_trends",

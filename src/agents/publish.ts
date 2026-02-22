@@ -108,7 +108,7 @@ export class PublishAgent extends BaseAgent {
     const tweetText = this.createTweetText(metadata);
     const tweetPayload = { text: tweetText } as { text: string; media?: { media_ids: string[] } };
     if (mediaId) tweetPayload.media = { media_ids: [mediaId] };
-    const res = await client.v2.tweet(tweetPayload as any);
+    const res = await client.v2.tweet(tweetPayload as { text: string });
     return { status: "posted", tweet_id: res.data.id || "" };
   }
 
