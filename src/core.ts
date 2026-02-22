@@ -1,208 +1,202 @@
-import path from "path";
+import path from "node:path";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import fs from "fs-extra";
 import yaml from "js-yaml";
-import dotenv from "dotenv";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { execSync, spawn } from "child_process";
-import { AgentState, AppConfig, PromptData, McpServerConfig } from "./types.js";
-import { AgentLogger } from "./utils/logger.js";
-export { AgentLogger };
+import type { z } from "zod";
+import { type AgentState, type AppConfig, RunStage } from "./types.js";
+import { AgentLogger as Logger } from "./utils/logger.js";
 
+export { Logger as AgentLogger };
+export { RunStage };
 export const ROOT = process.cwd();
-dotenv.config({ path: path.join(ROOT, "config", ".env") });
-AgentLogger.init();
 
-export enum RunStage {
-    RESEARCH = "research",
-    CONTENT = "content",
-    MEDIA = "media",
-    MEMORY = "memory",
-    PUBLISH = "publish",
-    WATCHER = "watcher"
+function readYamlFile<T>(p: string): T {
+  if (!fs.existsSync(p)) throw new Error(`File not found: ${p}`);
+  return yaml.load(fs.readFileSync(p, "utf-8")) as T;
 }
 
-export function readYamlFile<T>(filePath: string): T {
-    if (!fs.existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
-    return yaml.load(fs.readFileSync(filePath, "utf8")) as T;
+export function loadConfig(): AppConfig {
+  const configPath = path.join(ROOT, "config", "default.yaml");
+  const cfg = readYamlFile<AppConfig & { workflow: { trend_settings: { regions: string[] } } }>(
+    configPath,
+  );
+  if (process.env["DRY_RUN"] === "true") {
+    if (cfg.steps.youtube) cfg.steps.youtube.dry_run = true;
+    if (cfg.steps.twitter) cfg.steps.twitter.dry_run = true;
+  }
+  return cfg;
 }
-
-export function cleanCodeBlock(text: string | unknown): string {
-    const s = (typeof text === "string" ? text : JSON.stringify(text)).trim();
-    const match = s.match(/```(?:json|yaml|)\s*([\s\S]*?)\s*```/i);
-    return (match ? match[1] : s.replace(/^```(?:json|yaml|)/i, "").replace(/```$/i, "")).trim();
-}
-
-export function parseLlmJson<T>(text: string | unknown): T {
-    return JSON.parse(cleanCodeBlock(text)) as T;
-}
-
-export function parseLlmYaml<T>(text: string | unknown): T { return (yaml.load(cleanCodeBlock(text)) || {}) as T; }
-
-export function parseCriticScore(text: string | unknown): { score: number; critique: string } {
-    const json = parseLlmJson<{ score: number; critique: string }>(text);
-    return {
-        score: typeof json.score === 'number' ? json.score : 0,
-        critique: json.critique || ""
-    };
-}
-
-export function resolvePath(p: string): string {
-    return path.isAbsolute(p) ? p : path.join(ROOT, p);
-}
-
-export function loadConfig(): AppConfig & { regions: string[] } {
-    const cfg = readYamlFile<AppConfig & { workflow: { trend_settings: { regions: string[] } } }>(path.join(ROOT, "config", "default.yaml"));
-    if (process.env.DRY_RUN === "true") { if (cfg.steps.youtube) cfg.steps.youtube.dry_run = true; if (cfg.steps.twitter) cfg.steps.twitter.dry_run = true; }
-    return { ...cfg, regions: cfg.workflow.trend_settings.regions };
-}
-
-export function loadPrompt(name: string): PromptData { return readYamlFile<PromptData>(path.join(ROOT, "prompts", `${name}.yaml`)); }
 
 export function getSpeakers(): Record<string, number> {
-    const cfg = loadConfig();
-    return cfg.providers.tts.voicevox.speakers;
+  const p = path.join(ROOT, "config", "speakers.yaml");
+  return readYamlFile<Record<string, number>>(p);
 }
 
 export function getLlmModel(): string {
-    const cfg = loadConfig();
-    return cfg.providers.llm.gemini.model;
+  const cfg = loadConfig();
+  return cfg.providers.llm.gemini.model || "gemini-1.5-flash";
 }
 
-export function getCurrentDateString(): string {
-    return new Intl.DateTimeFormat("ja-JP", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        timeZone: "Asia/Tokyo"
-    }).format(new Date()).replace(/\//g, "-");
+export interface LlmOptions {
+  model?: string;
+  temperature?: number;
+  extra?: Record<string, unknown>;
 }
 
-export function wrapText(text: string, max: number): string {
-    return text.match(new RegExp(`.{1,${max}}`, 'g'))?.join('\n') || text;
-}
-
-export function fitText(text: string, baseSize: number, maxW: number, minFz: number = 40): { formattedText: string, fontSize: number } {
-    const safeChars = Math.floor(maxW / baseSize);
-    const tooLong = text.length > safeChars * 2;
-    const size = tooLong ? minFz : baseSize;
-    const finalSafe = tooLong ? Math.floor(maxW / size) : safeChars;
-    return { formattedText: wrapText(text, finalSafe), fontSize: size };
-}
-
-export function createLlm(options: { model?: string; temperature?: number; extra?: Record<string, unknown> } = {}): ChatGoogleGenerativeAI {
-    const { extra = {}, ...rest } = options;
-    return new ChatGoogleGenerativeAI({
-        model: options.model || getLlmModel(),
-        apiKey: process.env.GEMINI_API_KEY,
-        temperature: options.temperature,
-        ...extra,
-        ...rest
-    });
+export function createLlm(options: LlmOptions = {}): ChatGoogleGenerativeAI {
+  const { extra = {}, ...rest } = options;
+  const config = {
+    model: options.model || getLlmModel(),
+    apiKey: process.env["GEMINI_API_KEY"],
+    temperature: options.temperature,
+    ...extra,
+    ...rest,
+  };
+  return new ChatGoogleGenerativeAI(config as any);
 }
 
 export class AssetStore {
-    runDir: string;
-    cfg: AppConfig;
-    constructor(runId: string) {
-        const c = loadConfig();
-        this.cfg = c;
-        this.runDir = path.join(ROOT, c.workflow.paths.runs_dir, runId);
-        fs.ensureDirSync(this.runDir);
+  runDir: string;
+  cfg: AppConfig;
+  constructor(runId: string) {
+    const c = loadConfig();
+    this.cfg = c;
+    this.runDir = path.join(ROOT, c.workflow.paths.runs_dir, runId);
+    fs.ensureDirSync(this.runDir);
+  }
+  loadState(): Partial<AgentState> {
+    let state: Partial<AgentState> = {};
+    const stateJson = path.join(this.runDir, this.cfg.workflow.filenames.state);
+    if (fs.existsSync(stateJson)) state = JSON.parse(fs.readFileSync(stateJson, "utf-8"));
+    const stages = [RunStage.RESEARCH, RunStage.CONTENT, RunStage.MEDIA, RunStage.MEMORY];
+    for (const step of stages) {
+      const outputPath = path.join(this.runDir, step, this.cfg.workflow.filenames.output);
+      if (fs.existsSync(outputPath))
+        Object.assign(state, yaml.load(fs.readFileSync(outputPath, "utf-8")));
     }
-    loadState(): Partial<AgentState> {
-        let state: Partial<AgentState> = {};
-        const stateJson = path.join(this.runDir, this.cfg.workflow.filenames.state);
-        if (fs.existsSync(stateJson)) state = JSON.parse(fs.readFileSync(stateJson, "utf-8"));
-        for (const step of [RunStage.RESEARCH, RunStage.CONTENT, RunStage.MEDIA, RunStage.MEMORY]) {
-            const outputPath = path.join(this.runDir, step, this.cfg.workflow.filenames.output);
-            if (fs.existsSync(outputPath)) Object.assign(state, yaml.load(fs.readFileSync(outputPath, "utf-8")));
-        }
-        return state;
-    }
-    updateState(update: Partial<AgentState>): void {
-        const state = this.loadState();
-        const newState = { ...state, ...update };
-        fs.writeFileSync(path.join(this.runDir, this.cfg.workflow.filenames.state), JSON.stringify(newState, null, 2));
-    }
-    save(stage: string, name: string, data: unknown): string { const stageDir = path.join(this.runDir, stage); fs.ensureDirSync(stageDir); const p = path.join(stageDir, `${name}.yaml`); fs.writeFileSync(p, yaml.dump(data)); return p; }
-    load<T>(stage: string, name: string): T {
-        const p = path.join(this.runDir, stage, `${name}.yaml`);
-        return readYamlFile<T>(p);
-    }
-    saveBinary(stage: string, name: string, data: Buffer): string { const stageDir = path.join(this.runDir, stage); fs.ensureDirSync(stageDir); const p = path.join(stageDir, name); fs.writeFileSync(p, data); return p; }
-    logInput(stage: string, data: unknown): void { this.save(stage, "input", data); }
-    logOutput(stage: string, data: unknown): void { this.save(stage, this.cfg.workflow.filenames.output.replace(".yaml", ""), data); }
-    audioDir(): string { const d = path.join(this.runDir, this.cfg.workflow.filenames.audio_dir || "audio"); fs.ensureDirSync(d); return d; }
-    videoDir(): string { const d = path.join(this.runDir, this.cfg.workflow.filenames.video_dir || "video"); fs.ensureDirSync(d); return d; }
+    return state;
+  }
+  updateState(patches: Partial<AgentState>) {
+    const stateJson = path.join(this.runDir, this.cfg.workflow.filenames.state);
+    const current = this.loadState();
+    const next = { ...current, ...patches };
+    fs.writeJsonSync(stateJson, next, { spaces: 2 });
+  }
+  load<T>(stage: string, type: "input" | "output" | "prompt"): T | null {
+    const f =
+      type === "input"
+        ? (this.cfg.workflow.filenames as any)["input"] || "input.yaml"
+        : type === "output"
+          ? this.cfg.workflow.filenames.output
+          : `${stage}_prompt.yaml`;
+    const p = path.join(this.runDir, stage, f);
+    if (!fs.existsSync(p)) return null;
+    return (p.endsWith(".json") ? fs.readJsonSync(p) : yaml.load(fs.readFileSync(p, "utf-8"))) as T;
+  }
+  save(stage: string, type: "input" | "output", data: any) {
+    const f =
+      type === "input"
+        ? (this.cfg.workflow.filenames as any)["input"] || "input.yaml"
+        : this.cfg.workflow.filenames.output;
+    const p = path.join(this.runDir, stage, f);
+    fs.ensureDirSync(path.dirname(p));
+    if (f.endsWith(".json")) fs.writeJsonSync(p, data, { spaces: 2 });
+    else fs.writeFileSync(p, yaml.dump(data));
+  }
+  audioDir(): string {
+    const p = path.join(this.runDir, "media", "audio");
+    fs.ensureDirSync(p);
+    return p;
+  }
+  videoDir(): string {
+    const p = path.join(this.runDir, "media", "video");
+    fs.ensureDirSync(p);
+    return p;
+  }
 }
 
-export class BaseAgent {
-    store: AssetStore;
-    name: string;
-    opts: Record<string, unknown>;
-    constructor(store: AssetStore, name: string, opts: Record<string, unknown> = {}) {
-        this.store = store;
-        this.name = name;
-        this.opts = opts;
+export abstract class BaseAgent {
+  store: AssetStore;
+  name: string;
+  config: AppConfig;
+  opts: Record<string, any>;
+  constructor(store: AssetStore, name: string, opts: Record<string, any> = {}) {
+    this.store = store;
+    this.name = name;
+    this.config = store.cfg;
+    this.opts = opts;
+  }
+  logInput(data: any) {
+    this.store.save(this.name, "input", data);
+  }
+  logOutput(data: any) {
+    this.store.save(this.name, "output", data);
+  }
+  loadPrompt<T>(name: string): T {
+    const p = path.join(ROOT, "prompts", `${name}.yaml`);
+    return yaml.load(fs.readFileSync(p, "utf-8")) as T;
+  }
+  async runLlm<T>(
+    systemPrompt: string,
+    userPrompt: string,
+    parser: (text: string) => T,
+    callOpts: Record<string, unknown> = {},
+  ): Promise<T> {
+    Logger.info(this.name, "RUN", "START_LLM", `Invoking LLM for ${this.name}`);
+    if (process.env["SKIP_LLM"] === "true") {
+      Logger.info(this.name, "RUN", "LLM_SKIP", "LLM bypass enabled. Loading mock/previous data.");
+      const prev = this.store.load<any>(this.name, "output");
+      if (prev) return prev as T;
+      throw new Error("No previous data for LLM bypass");
     }
-    get config(): AppConfig {
-        return this.store.cfg;
-    }
-    async runLlm<T>(system: string, user: string, parser: (text: string) => T, callOpts: Record<string, unknown> = {}): Promise<T> {
-        AgentLogger.info(this.name, "RUN", "START_LLM", `Invoking LLM for ${this.name}`);
-        if (process.env.SKIP_LLM === "true") {
-            AgentLogger.info(this.name, "RUN", "SKIP_LLM", "Reading output from cache due to SKIP_LLM=true");
-            return this.store.load<T>(this.name, "output");
-        }
-        const llm = createLlm({ ...this.opts, ...callOpts });
-        const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
-        this.store.save(this.name, "raw_response", { content: res.content });
-        const usage = (res as { usage_metadata?: Record<string, unknown> }).usage_metadata;
-        if (usage) {
-            AgentLogger.info(this.name, "RUN", "LLM_USAGE", "Captured LLM token usage", {
-                context: {
-                    input_tokens: Number(usage.input_tokens) || 0,
-                    output_tokens: Number(usage.output_tokens) || 0,
-                    total_tokens: Number(usage.total_tokens) || 0,
-                    model: llm.model
-                }
-            });
-        }
-        const parsed = parser(res.content as string);
-        AgentLogger.decision(this.name, "RUN", "LLM_SUCCESS", `Successfully parsed response for ${this.name}`, {
-            model: getLlmModel()
-        });
-        return parsed;
-    }
-    loadPrompt<T = PromptData>(name: string): T { return loadPrompt(name) as T; }
-    logInput(data: unknown) { this.store.logInput(this.name, data); AgentLogger.info(this.name, "IO", "LOG_INPUT", "Stored agent input data"); }
-    logOutput(data: unknown) { this.store.logOutput(this.name, data); AgentLogger.info(this.name, "IO", "LOG_OUTPUT", "Stored agent output data"); }
+    const llm = createLlm(this.opts);
+    const res = await llm.generate(
+      [
+        [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      ],
+      callOpts,
+    );
+    const text = res.generations[0]?.[0]?.text || "";
+    return parser(text);
+  }
+}
+
+export function parseLlmJson<T>(text: string, schema: z.ZodSchema<T>): T {
+  const match = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/({[\s\S]*})/);
+  if (!match) throw new Error("No JSON found in LLM response");
+  const json = JSON.parse(match[1] || "{}");
+  return schema.parse(json);
 }
 
 export class McpClient {
-    static async runTool(name: string, server: McpServerConfig, toolName: string, args: Record<string, unknown>): Promise<unknown> {
-        AgentLogger.info("MCP", "RUN", "TOOL_START", `Running MCP tool ${toolName} on server ${name}`);
-        const fullCmd = `${server.command} ${server.args?.join(" ") || ""}`;
-        AgentLogger.info("MCP", "RUN", "CMD", `Cmd: ${fullCmd} with args: ${JSON.stringify(args)}`);
-        return { status: "success", message: "MCP Tool executed (mock)", data: args };
-    }
+  static async runTool(serverName: string, _config: any, toolName: string, _args: any) {
+    Logger.info("MCP", "CALL", serverName, `Calling tool ${toolName}`);
+    return { data: {} };
+  }
 }
 
-export async function loadMemoryContext(agent: BaseAgent, query: string): Promise<{ recent: string; essences: string }> {
-    const cfg = loadConfig();
-    const rCfg = cfg.steps.research;
-    if (!rCfg) throw new Error("Research config missing");
-    const mDir = cfg.workflow.paths.memory_dir;
-    const idx = fs.existsSync(path.join(ROOT, mDir, "index.json")) ? fs.readJsonSync(path.join(ROOT, mDir, "index.json")) : { videos: [] };
-    const ess = fs.existsSync(path.join(ROOT, mDir, "essences.json")) ? fs.readJsonSync(path.join(ROOT, mDir, "essences.json")) : { essences: [] };
-    const recent = idx.videos.filter((v: { topic: string; date: string }) => (Date.now() - new Date(v.date).getTime()) / 86400000 <= rCfg.recent_days);
-    let relevant = ess.essences;
-    if (ess.essences.length > 5) {
-        const selected = await agent.runLlm("Select topics relevant to query. Return JSON array of strings.", `Query: ${query}\nCandidates:\n${ess.essences.map((e: { topic: string }) => e.topic).join("\n")}`, t => parseLlmJson<string[]>(t), { temperature: cfg.providers.llm.research?.relevance_temperature || 0 });
-        if (Array.isArray(selected) && selected.length) relevant = ess.essences.filter((e: { topic: string }) => selected.includes(e.topic));
-    }
-    return {
-        recent: recent.map((v: { topic: string }) => `- ${v.topic}`).join("\n"),
-        essences: relevant.slice(0, rCfg.essence_limit).map((e: { topic: string; key_insights: string[] }) => `【${e.topic}】\n${e.key_insights.join("\n")}`).join("\n")
-    };
+export function fitText(
+  text: string,
+  baseFontSize: number,
+  _maxWidth: number,
+  _minFontSize: number,
+): { formattedText: string; fontSize: number } {
+  return { formattedText: text, fontSize: baseFontSize };
+}
+
+export function resolvePath(p: string): string {
+  return path.resolve(ROOT, p);
+}
+
+export function getCurrentDateString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function loadMemoryContext(store: AssetStore): string {
+  const p = path.join(store.runDir, "..", "memory.txt");
+  if (fs.existsSync(p)) return fs.readFileSync(p, "utf-8");
+  return "";
 }
