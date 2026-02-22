@@ -30,9 +30,14 @@
         -   `publish.ts` (YouTube & X)
         -   `memory.ts` (Index & Essence)
 
-## 技術スタック (Tech Stack)
+## 技術スタック (Tech Stack 2026)
 
--   **LangGraph.js**: Workflow Orchestration.
--   **Gemini**: LLM Inference (`gemini-3.0-flash-preview` REQUIRED).
--   **Voicevox**: Audio Synthesis.
--   **FFmpeg / Sharp**: Media Rendering.
+1.  **Bun**: ランタイム、パッケージ管理、テストランナーを一本化。Node.jsと比較してシステムコールを大幅に削減し、極限のパフォーマンスを追求。
+2.  **Biome**: Rust製の統合ツールチェーン。ESLint/Prettierを廃止し、高速な静的解析とフォーマットを単一バイナリで提供。
+3.  **Zod (v4)**: スキーマ・ファーストのバリデーション。外部データ境界での厳格な検証と型推論を統合。
+4.  **Strict TypeScript**: `@tsconfig/strictest` を継承。`bunx tsc --noEmit` をCIの最終関門として運用し、`any` を完全に排除。
+5.  **Gemini**: メインLLM推論エンジン (`gemini-3.1-flash` 推奨)。
+6.  **Voicevox / FFmpeg / Sharp**: 高品質な音声合成およびメディアレンダリング。
+
+---
+*本ガイドラインは、2026年の統合型ツールチェーン（The Modern Stack）のベストプラクティスに基づき、開発効率と堅牢性を最大化することを目的としています。*

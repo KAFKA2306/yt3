@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Modern Stack: 次世代開発ツールチェーン 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f3f0e9;
+            color: #2d3748;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .active-card {
+            border-left: 5px solid #d97706;
+            background-color: #fffbeb;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50 border-b border-stone-200">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-stone-800 tracking-tight flex items-center">
+                <span class="mr-2">⚡</span> The Modern Stack
+            </h1>
+            <div class="flex items-center space-x-4">
+                <a href="/" class="text-sm font-medium text-stone-500 hover:text-stone-800 transition-colors">← Back to
+                    Hub</a>
+                <span
+                    class="text-xs font-bold text-stone-400 bg-stone-100 px-3 py-1 rounded-full uppercase tracking-widest">2026
+                    Paradigm</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8 space-y-10">
+
+        <section class="max-w-4xl mx-auto text-center space-y-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-stone-800">「段階的導入」から「標準」へ</h2>
+            <p class="text-lg text-stone-600 leading-relaxed">
+                JavaScriptエコシステムは、断片化された構成から、パフォーマンスと安全性を両立する<br class="hidden md:inline">
+                「単一バイナリによる垂直統合」のパラダイムへと急速にシフトしています。
+            </p>
+        </section>
+
+        <!-- Metrics Overview -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            <div class="metric-card p-4 rounded-xl text-center">
+                <p class="text-xs font-bold text-stone-400 uppercase mb-1">Runtime Start</p>
+                <p class="text-2xl font-bold text-stone-800">40ms</p>
+                <p class="text-[10px] text-green-600 font-bold">~3.7x Faster</p>
+            </div>
+            <div class="metric-card p-4 rounded-xl text-center">
+                <p class="text-xs font-bold text-stone-400 uppercase mb-1">Lint/Format</p>
+                <p class="text-2xl font-bold text-stone-800">200ms</p>
+                <p class="text-[10px] text-green-600 font-bold">~25x Faster</p>
+            </div>
+            <div class="metric-card p-4 rounded-xl text-center">
+                <p class="text-xs font-bold text-stone-400 uppercase mb-1">Type Instantiation</p>
+                <p class="text-2xl font-bold text-stone-800">1/140</p>
+                <p class="text-[10px] text-green-600 font-bold">Over Zod 3</p>
+            </div>
+            <div class="metric-card p-4 rounded-xl text-center">
+                <p class="text-xs font-bold text-stone-400 uppercase mb-1">Cloud Cost</p>
+                <p class="text-2xl font-bold text-stone-800">-35%</p>
+                <p class="text-[10px] text-green-600 font-bold">Efficiency Goal</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-5 space-y-4">
+                <div id="stack-list" class="space-y-3">
+                    <!-- Cards will be injected here via JS -->
+                </div>
+            </div>
+
+            <div class="lg:col-span-7 space-y-6">
+                <div id="detail-panel"
+                    class="bg-white rounded-xl shadow-md border border-stone-200 p-6 md:p-8 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 id="detail-title" class="text-2xl font-bold text-stone-800">ツールを選択</h2>
+                        <span id="detail-badge"
+                            class="hidden px-3 py-1 text-xs font-bold uppercase tracking-wide rounded text-white bg-stone-500">Category</span>
+                    </div>
+
+                    <div class="prose prose-stone max-w-none">
+                        <p id="detail-desc" class="text-stone-600 mb-6 leading-relaxed whitespace-pre-wrap"></p>
+                    </div>
+
+                    <div class="bg-stone-50 rounded-xl p-6 mb-8 border border-stone-100">
+                        <h4 class="text-xs font-bold text-stone-400 uppercase mb-3">Evolutionary Path</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-3 rounded-lg border border-red-50">
+                                <span class="block text-[10px] font-bold text-red-300 uppercase mb-1">Legacy /
+                                    Fragmented</span>
+                                <div id="detail-legacy" class="font-mono text-xs text-red-700 font-medium">---</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-green-50">
+                                <span class="block text-[10px] font-bold text-green-300 uppercase mb-1">Modern /
+                                    Unified</span>
+                                <div id="detail-modern" class="font-mono text-xs text-green-700 font-bold">---</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-stone-100 pt-8">
+                        <div class="chart-container">
+                            <canvas id="impactChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="max-w-4xl mx-auto bg-stone-50 rounded-xl border border-stone-200 p-8">
+            <h3 class="text-xl font-bold text-stone-800 mb-4 flex items-center">
+                <span class="mr-2">🚀</span> アクション・チェックリスト
+            </h3>
+            <div id="checklist-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Checkboxes injected via JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-800 text-stone-400 py-8 mt-12 text-center text-sm border-t border-stone-700">
+        <p class="mb-2">&copy; 2026 Modern Stack Intelligence Report</p>
+        <p class="text-stone-500 italic">"Simplicity is the ultimate sophistication."</p>
+    </footer>
+
+    <script>
+        const stackData = [
+            {
+                id: 'bun',
+                title: 'Bun',
+                role: 'Runtime / Manager',
+                color: '#f97316',
+                summary: 'Zig実装による極限のシステムコール最適化',
+                details: 'Zig言語による低レイヤからの最適化により、Node.jsと比較してシステムコールを大幅に削減（100万回 → 16.5万回）。\n\nAppleのJavaScriptCore（JSC）を採用し、サーバーレス環境でのコールドスタート（40ms）とメモリ効率を最大化します。パッケージ管理、テストランナー、バンドラーを単一バイナリに統合します。',
+                legacyRef: 'Node.js, npm, Jest, Babel',
+                modernRef: 'Bun (v1.3+)',
+                chartType: 'bar',
+                chartLabel: 'システムコール発行数 (少ないほど高速)',
+                chartData: {
+                    labels: ['npm (Node.js)', 'Bun'],
+                    datasets: [{
+                        label: 'Syscalls (x1000)',
+                        data: [1000, 165],
+                        backgroundColor: ['#cbd5e1', '#f97316'],
+                        borderRadius: 6
+                    }]
+                }
+            },
+            {
+                id: 'biome',
+                title: 'Biome',
+                role: 'Lint / Format',
+                color: '#eab308',
+                summary: 'Rust製CST解析による瞬時の静的解析',
+                details: 'rowanライブラリをベースとしたConcrete Syntax Tree (CST) を採用。不完全な構文でも解析を中断せず、エラー箇所を「Bogus nodes」として安全に処理します。\n\nESLint + Prettierの複雑な依存関係（15以上のパッケージ）を排除。1万行のコードをわずか200msで処理する圧倒的な速度を誇ります。',
+                legacyRef: 'ESLint, Prettier + plugins',
+                modernRef: 'Biome (Rust-based)',
+                chartType: 'bar',
+                chartLabel: '処理時間 (ms) / 10,000 Lines',
+                chartData: {
+                    indexAxis: 'y',
+                    labels: ['ESLint+Prettier', 'Biome'],
+                    datasets: [{
+                        label: 'Execution Time (ms)',
+                        data: [4000, 200],
+                        backgroundColor: ['#cbd5e1', '#eab308'],
+                        borderRadius: 6
+                    }]
+                }
+            },
+            {
+                id: 'zod',
+                title: 'Zod',
+                role: 'Validation',
+                color: '#3b82f6',
+                summary: 'Zod 4: 型推論の劇的な軽量化と高速パース',
+                details: 'Zod 4では型定義の内部実装を刷新し、コンパイル時の型インスタンス化数を最大140分の1（25,000 → 175）に削減しました。\n\nランタイムパース速度も劇的に向上（文字列: 14x, 配列: 7x）。スキーマ・ファーストのアプローチにより、バリデーションと型定義の「単一ソースの真実」を実現します。',
+                legacyRef: 'Pydantic (Python equiv), Manual Types',
+                modernRef: 'Zod v4 (@zod/mini)',
+                chartType: 'doughnut',
+                chartLabel: '型インスタンス化負荷 (Zod 3 vs 4)',
+                chartData: {
+                    labels: ['Zod 3 Load', 'Zod 4 Load'],
+                    datasets: [{
+                        data: [25000, 175],
+                        backgroundColor: ['#cbd5e1', '#3b82f6'],
+                        borderWidth: 0
+                    }]
+                }
+            },
+            {
+                id: 'ts',
+                title: 'Strict TypeScript',
+                role: 'Type Check',
+                color: '#3178c6',
+                summary: 'Strict Modeによる「any」の完全排除',
+                details: 'noImplicitAny, strictNullChecksを標準化。CI環境では `bun x tsc --noEmit` を使用し、ビルド出力を生成せずに数秒で全ファイルの型整合性を検証します。\n\n@tsconfig/strictest プリセットを採用し、潜在的なランタイムエラーをコンパイル時に冷酷に摘出する「Fail Fast」の文化を根付かせます。',
+                legacyRef: 'Loose TS, tsc (Node)',
+                modernRef: 'TSC Strict + Bun x',
+                chartType: 'line',
+                chartLabel: '潜在的バグ混入率の推移',
+                chartData: {
+                    labels: ['Any/JS', 'Loose TS', 'Strict TS'],
+                    datasets: [{
+                        label: 'Bug Density',
+                        data: [100, 35, 3],
+                        borderColor: '#3178c6',
+                        backgroundColor: 'rgba(49, 120, 198, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#fff'
+                    }]
+                }
+            }
+        ];
+
+        const checklistItems = [
+            "Bunによるパッケージ管理への移行 (100万syscalls削減)",
+            "Biomeによる単一バイナリでの静的解析の統合",
+            "Zod 4へのアップグレードによる型チェックの高速化",
+            "tsconfig.json で @tsconfig/strictest を継承",
+            "CIパイプラインへの `bun x tsc --noEmit` の組み込み"
+        ];
+
+        let currentChart = null;
+        let selectedIndex = 0;
+
+        const stackListEl = document.getElementById('stack-list');
+        const detailTitleEl = document.getElementById('detail-title');
+        const detailDescEl = document.getElementById('detail-desc');
+        const detailBadgeEl = document.getElementById('detail-badge');
+        const detailLegacyEl = document.getElementById('detail-legacy');
+        const detailModernEl = document.getElementById('detail-modern');
+        const chartCtx = document.getElementById('impactChart').getContext('2d');
+        const checklistContainerEl = document.getElementById('checklist-container');
+
+        function init() {
+            renderStackList();
+            renderChecklist();
+            updateDetailView(0);
+        }
+
+        function renderStackList() {
+            stackListEl.innerHTML = '';
+            stackData.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border border-stone-200 cursor-pointer transition-all duration-200 card-hover bg-white ${index === selectedIndex ? 'active-card shadow-lg shadow-stone-100' : ''}`;
+                card.onclick = () => updateDetailView(index);
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-lg text-stone-800">${item.title}</h4>
+                            <p class="text-[10px] font-bold text-stone-400 border border-stone-100 px-2 py-0.5 rounded uppercase tracking-wider inline-block mt-1">${item.role}</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-inner" style="background-color: ${item.color}">
+                            ${item.title[0]}
+                        </div>
+                    </div>
+                `;
+                stackListEl.appendChild(card);
+            });
+        }
+
+        function updateDetailView(index) {
+            selectedIndex = index;
+            const data = stackData[index];
+
+            Array.from(stackListEl.children).forEach((el, idx) => {
+                if (idx === index) {
+                    el.classList.add('active-card', 'shadow-lg', 'shadow-stone-100');
+                } else {
+                    el.classList.remove('active-card', 'shadow-lg', 'shadow-stone-100');
+                }
+            });
+
+            detailTitleEl.textContent = data.title;
+            detailDescEl.textContent = data.details;
+
+            detailBadgeEl.textContent = data.role;
+            detailBadgeEl.classList.remove('hidden');
+            detailBadgeEl.style.backgroundColor = data.color;
+
+            detailLegacyEl.textContent = data.legacyRef;
+            detailModernEl.textContent = data.modernRef;
+            detailModernEl.style.color = data.color;
+
+            updateChart(data);
+        }
+
+        function updateChart(data) {
+            if (currentChart) currentChart.destroy();
+
+            const config = {
+                type: data.chartType,
+                data: data.chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 800, easing: 'easeOutQuart' },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 20, font: { family: "'Noto Sans JP', sans-serif", size: 10 } } },
+                        title: { display: true, text: data.chartLabel, font: { size: 14, weight: 'bold', family: "'Noto Sans JP', sans-serif" }, padding: { bottom: 20 }, color: '#444' }
+                    },
+                    scales: data.chartType === 'doughnut' ? {} : {
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            };
+            currentChart = new Chart(chartCtx, config);
+        }
+
+        function renderChecklist() {
+            checklistContainerEl.innerHTML = '';
+            checklistItems.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-3 p-4 bg-white rounded-xl border border-stone-200 hover:bg-white hover:border-amber-200 transition-all cursor-pointer select-none';
+                div.onclick = function () {
+                    const cb = this.querySelector('input');
+                    cb.checked = !cb.checked;
+                    this.classList.toggle('opacity-50', cb.checked);
+                    this.classList.toggle('bg-stone-100', cb.checked);
+                };
+                div.innerHTML = `
+                    <input type="checkbox" class="h-5 w-5 rounded border-stone-300 text-amber-600 focus:ring-amber-600 pointer-events-none">
+                    <span class="text-sm font-medium text-stone-700">${item}</span>
+                `;
+                checklistContainerEl.appendChild(div);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
