@@ -187,13 +187,13 @@ describe('IqaValidator', () => {
             const result = await validator.validate(wrongSizePath, '#FFFFFF', '#103766', 'テスト');
             assert.strictEqual(result.metrics.isResolutionCorrect, false, 'Should fail resolution check');
             assert.ok(!result.passed, 'Should not pass IQA');
-            assert.ok(result.reason?.includes('Res mismatch'), `Expected res mismatch reason, got: ${result.reason}`);
+            assert.ok(result.reason?.includes('解像度不一致'), `Expected resolution mismatch reason, got: ${result.reason}`);
         });
 
         it('should FAIL with reason when file does not exist', async () => {
             const result = await validator.validate('/nonexistent/file.png', '#FFFFFF', '#000000');
             assert.strictEqual(result.passed, false);
-            assert.ok(result.reason?.includes('does not exist') || result.reason?.includes('empty'));
+            assert.ok(result.reason?.includes('存在しない') || result.reason?.includes('空です'));
         });
 
         it('should include mobileEdgeStrength in metrics', async () => {

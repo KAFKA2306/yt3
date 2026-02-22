@@ -1,20 +1,10 @@
 import sharp from "sharp";
-import { AppConfig } from "./types.js";
+import { AppConfig } from "./config_types.js";
 import { RenderPlan } from "./layout_engine.js";
 import { IqaValidator } from "./utils/iqa_validator.js";
 
 type Palette = AppConfig["steps"]["thumbnail"]["palettes"][number];
 
-/**
- * ThumbnailRenderer - スマートパレット選択付き
- *
- * palettes[0] を盲目的に使う代わりに、各パレットの背景輝度と
- * テキストコントラストをスコアリングし、IQAが通りやすいパレットを選ぶ。
- *
- * スコアリング基準:
- *   - コントラスト比が高いほど有利 (重み 60%)
- *   - 背景輝度が低い（暗い）ほど有利 (重み 40%) → モバイルエッジ強度と相関
- */
 export class ThumbnailRenderer {
     private validator: IqaValidator;
 
