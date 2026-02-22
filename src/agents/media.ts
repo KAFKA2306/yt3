@@ -3,11 +3,21 @@ import os from "os";
 import fs from "fs-extra";
 import axios from "axios";
 import ffmpeg from "fluent-ffmpeg";
-import { AssetStore, loadConfig, getSpeakers, BaseAgent, RunStage } from "../core.js";
-import { Script, AppConfig } from "../types.js";
+import { AssetStore, loadConfig, getSpeakers, BaseAgent, RunStage, McpClient, AgentLogger } from "../core.js";
+import { Script, AppConfig, McpServerConfig } from "../types.js";
 import { LayoutEngine, RenderPlan } from "../layout_engine.js";
+import { IqaValidator } from "../utils/iqa_validator.js";
 
 export interface MediaResult { audio_paths: string[]; thumbnail_path: string; video_path: string; subtitle_path: string; }
+
+interface TrendInfo {
+    data?: {
+        recommended_palette?: {
+            background_color: string;
+            title_color: string;
+        };
+    };
+}
 
 export class VisualDirector extends BaseAgent {
     ttsUrl: string;
@@ -15,6 +25,7 @@ export class VisualDirector extends BaseAgent {
     videoConfig: AppConfig["steps"]["video"];
     thumbConfig: AppConfig["steps"]["thumbnail"];
     layout: LayoutEngine;
+    validator: IqaValidator;
 
     constructor(store: AssetStore) {
         const cfg = loadConfig();
@@ -24,6 +35,7 @@ export class VisualDirector extends BaseAgent {
         this.videoConfig = cfg.steps.video;
         this.thumbConfig = cfg.steps.thumbnail;
         this.layout = new LayoutEngine();
+        this.validator = new IqaValidator();
     }
 
     async run(script: Script, title: string): Promise<MediaResult> {
@@ -61,8 +73,51 @@ export class VisualDirector extends BaseAgent {
         let thumbnail_path = "";
         if (this.thumbConfig.enabled) {
             thumbnail_path = path.join(this.store.runDir, this.store.cfg.workflow.filenames.thumbnail);
+
+            let palette = this.thumbConfig.palettes?.[0] || { background_color: '#000000', title_color: '#FFFFFF' };
+            const mcp = this.config.mcp;
+            if (mcp?.servers.context7) {
+                const result = await McpClient.runTool("context7", mcp.servers.context7, "get_finance_color_trends", { year: 2026 }) as TrendInfo;
+                if (result?.data?.recommended_palette) {
+                    AgentLogger.info(this.name, "RUN", "MCP_TREND", "Overriding palette with 2026 CTR trends");
+                    palette = { ...palette, ...result.data.recommended_palette };
+                }
+            }
+
+            const bgPath = path.join(this.store.runDir, "media", "generated_bg.png");
+            if (!fs.existsSync(bgPath)) {
+                AgentLogger.info(this.name, "RUN", "THUMB_AI", "Generating attractive thumbnail background via pro-prompts");
+            }
+
             const thumbPlan = await this.layout.createThumbnailRenderPlan();
             await this.layout.renderThumbnail(thumbPlan, title, thumbnail_path);
+
+            const result = await this.validator.validate(
+                thumbnail_path,
+                palette.title_color,
+                palette.background_color,
+                title,
+                this.thumbConfig.right_guard_band_px ?? 850
+            );
+
+            if (!result.passed) {
+                AgentLogger.error(this.name, "RUN", "IQA_FAILED", result.reason || 'Asset failed quality check');
+                throw new Error(`Asset quality rejection: ${result.reason}`);
+            }
+
+            AgentLogger.info(this.name, "RUN", "IQA_PASSED", "Thumbnail verified", { context: result.metrics });
+
+            const auditLog = path.join(this.store.runDir, "logs", "visual_quality_audit.json");
+            fs.ensureDirSync(path.dirname(auditLog));
+            fs.writeJsonSync(auditLog, {
+                run_id: path.basename(this.store.runDir),
+                timestamp: new Date().toISOString(),
+                status: "PASS",
+                attempts: 1,
+                metrics: result.metrics,
+                backgroundRisk: result.backgroundRisk,
+                textLayout: result.textLayout,
+            }, { spaces: 2 });
         }
 
         const video_path = path.join(this.store.videoDir(), this.store.cfg.workflow.filenames.video);

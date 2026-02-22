@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import sharp from "sharp";
 import { loadConfig, resolvePath, fitText, wrapText } from "./core.js";
 import { AppConfig, Rect, Size, OverlayConfig } from "./types.js";
+import { ThumbnailRenderer } from "./thumbnail_renderer.js";
 
 export interface RenderPlan {
     canvas: Size;
@@ -16,9 +17,11 @@ export class LayoutEngine {
     config: AppConfig;
     videoRes: Size;
     thumbRes: Size;
+    thumbRenderer: ThumbnailRenderer;
 
     constructor() {
         this.config = loadConfig();
+        this.thumbRenderer = new ThumbnailRenderer(this.config);
         const videoCfg = this.config.steps.video;
         const thumbCfg = this.config.steps.thumbnail;
         const [vw, vh] = (videoCfg.resolution || "1920x1080").split("x").map(Number);
@@ -113,7 +116,6 @@ export class LayoutEngine {
         return { sL, sR };
     }
 
-
     generateASS(script: { lines: { text: string }[] }, durations: number[], plan: RenderPlan): string {
         const { safeMarginL: sL, safeMarginR: sR } = plan;
         const [w, h] = (this.config.steps.video.resolution || "1920x1080").split("x");
@@ -171,30 +173,6 @@ export class LayoutEngine {
     }
 
     async renderThumbnail(plan: RenderPlan, title: string, output: string): Promise<void> {
-        const cfg = this.config.steps.thumbnail;
-        const palette = cfg.palettes?.[0];
-        if (!palette) throw new Error("No palette");
-        const backdrop = { create: { width: cfg.width, height: cfg.height, channels: 4 as const, background: palette.background_color } };
-        const layers: sharp.OverlayOptions[] = [{ input: backdrop, top: 0, left: 0 }];
-
-        for (const ol of plan.overlays) {
-            layers.push({ input: await sharp(ol.resolvedPath).resize(ol.bounds.width, ol.bounds.height).toBuffer(), top: ol.bounds.y, left: ol.bounds.x });
-        }
-
-        const textMaxX = (plan.overlays.length ? Math.min(...plan.overlays.map(o => o.bounds.x)) : cfg.width) - 20;
-        layers.push({ input: Buffer.from(this.createThumbnailSvg(title, textMaxX, cfg, palette)), top: 0, left: 0 });
-        await sharp({ create: { width: cfg.width, height: cfg.height, channels: 4 as const, background: '#000' } }).composite(layers).png().toFile(output);
-    }
-
-    private createThumbnailSvg(title: string, maxX: number, cfg: AppConfig["steps"]["thumbnail"], pal: AppConfig["steps"]["thumbnail"]["palettes"][number]): string {
-        const lines = title.split('\n').filter(l => l.trim());
-        const g = this.config.global_style;
-        const fz = cfg.title_font_size || g.thumbnail.title_size, lh = fz * 1.2;
-        const startY = (cfg.height - lines.length * lh) / 2 + lh / 2;
-        const txt = lines.map((l, i) => {
-            const y = startY + i * lh, escaped = l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return `<text x="${cfg.padding || 40}" y="${y}" class="outline">${escaped}</text><text x="${cfg.padding || 40}" y="${y}" class="fill">${escaped}</text>`;
-        }).join('');
-        return `<svg width="${cfg.width}" height="${cfg.height}" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="s"><rect x="0" y="0" width="${maxX}" height="${cfg.height}"/></clipPath></defs><style>text { font-family: '${g.font_name}', sans-serif; font-size: ${fz}px; font-weight: bold; text-anchor: start; dominant-baseline: middle; } .outline { fill: none; stroke: ${pal.outline_outer_color || '#000'}; stroke-width: ${(pal.outline_outer_width || 15) * 2}px; } .fill { fill: ${pal.title_color || '#FFF'}; stroke: ${pal.outline_inner_color || '#FFF'}; stroke-width: ${pal.outline_inner_width || 5}px; paint-order: stroke fill; }</style><g clip-path="url(#s)">${txt}</g></svg>`;
+        await this.thumbRenderer.render(plan, title, output);
     }
 }

@@ -2,13 +2,18 @@
  * IQA Batch Check - 全サムネイル破壊的品質審査
  * Visual Automation Workflow v2 - Programmatic IQA
  *
- * Usage: npx tsx scripts/iqa_batch_check.ts [--run-id <id>]
+ * Usage:
+ *   npx tsx scripts/iqa_batch_check.ts [--run-id <id>]
+ *   npx tsx scripts/iqa_batch_check.ts --palette-audit
  */
 
 import sharp from 'sharp';
 import fs from 'fs-extra';
 import path from 'path';
 import { glob } from 'glob';
+import { IqaValidator, IQA_THRESHOLDS, BackgroundRisk } from '../src/utils/iqa_validator.js';
+
+const iqaValidator = new IqaValidator();
 
 // ============================================================
 // 型定義
@@ -20,6 +25,7 @@ interface IqaMetrics {
     cognitiveRecognitionScore: number;
     mobileEdgeStrength: number;
     colorSpace: string | undefined;
+    backgroundRisk: BackgroundRisk;
 }
 
 interface IqaResult {
@@ -29,6 +35,10 @@ interface IqaResult {
     score: number;
     metrics: IqaMetrics;
     failReasons: string[];
+    textClipped?: boolean;
+    textOverlap?: boolean;
+    clipBoundaryRatio?: number;
+    overlapRatio?: number;
 }
 
 interface AuditLog {
@@ -54,11 +64,11 @@ interface DesignTokenCheck {
 // 閾値定義
 // ============================================================
 const THRESHOLDS = {
-    SHARPNESS_MIN: 100,     // Variance-of-Laplacian (corrected implementation)
-    CONTRAST_GOAL: 7.0,   // WCAG AAA
-    CONTRAST_MIN: 5.0,     // Minimum acceptable
-    COGNITIVE_MIN: 0.6,    // 300ms recognition score
-    MOBILE_EDGE_MIN: 30,   // Mobile edge strength mean at 150px
+    SHARPNESS_MIN: IQA_THRESHOLDS.SHARPNESS_MIN,
+    CONTRAST_GOAL: IQA_THRESHOLDS.CONTRAST_GOAL,
+    CONTRAST_MIN: IQA_THRESHOLDS.CONTRAST_MIN,
+    COGNITIVE_MIN: IQA_THRESHOLDS.COGNITIVE_MIN,
+    MOBILE_EDGE_MIN: IQA_THRESHOLDS.MOBILE_EDGE_MIN,
     TARGET_WIDTH: 1280,
     TARGET_HEIGHT: 720,
 };
@@ -185,6 +195,78 @@ function calculateCognitiveScore(contrastRatio: number): number {
     return contrastFactor * 0.7 + 0.3; // ベース0.3
 }
 
+// ============================================================
+// パレット監査
+// ============================================================
+interface PaletteAuditEntry {
+    index: number;
+    background_color: string;
+    title_color: string;
+    contrastRatio: number;
+    passesWcagAaa: boolean;
+    passesWcagAa: boolean;
+    backgroundRisk: BackgroundRisk;
+    mobileEdgePrediction: string;
+    overallRating: string;
+}
+
+function auditPalettes(): void {
+    // config/default.yaml のパレット定義を直接参照
+    const PALETTES: Array<{ background_color: string; title_color: string }> = [
+        { background_color: '#103766', title_color: '#FFFFFF' },
+        { background_color: '#FFE14A', title_color: '#0A0A12' },
+        { background_color: '#0B0F19', title_color: '#E5FCF4' },
+        { background_color: '#0D1D40', title_color: '#FACC15' },
+        { background_color: '#0A0F1F', title_color: '#E31C23' },
+    ];
+
+    console.log(`\n${COLORS.bold}${COLORS.cyan}パレット監査レポート${COLORS.reset}`);
+    console.log('═'.repeat(80));
+    console.log(
+        `  ${'#'.padEnd(3)}  ${'Background'.padEnd(12)}  ${'Title'.padEnd(12)}` +
+        `  ${'Contrast'.padEnd(10)}  ${'WCAG'.padEnd(8)}  ${'BgRisk'.padEnd(8)}  ${'MobileEdge'.padEnd(12)}  Rating`
+    );
+    console.log('─'.repeat(80));
+
+    const entries: PaletteAuditEntry[] = PALETTES.map((p, i) => {
+        const contrast = calculateContrastRatio(p.title_color, p.background_color);
+        const bgRisk = iqaValidator.analyzeBackgroundRisk(p.background_color);
+        const mobileEdgePrediction = bgRisk === 'low' ? '≥ 35 (Safe)' : bgRisk === 'medium' ? '~25-35 (Marginal)' : '< 25 (RISKY)';
+        const passesAAA = contrast >= 7.0;
+        const passesAA = contrast >= 4.5;
+        const overallRating = (passesAAA && bgRisk === 'low') ? '✅ BEST'
+            : (passesAA && bgRisk !== 'high') ? '⚠ OK'
+                : '❌ RISKY';
+        return { index: i, ...p, contrastRatio: contrast, passesWcagAaa: passesAAA, passesWcagAa: passesAA, backgroundRisk: bgRisk, mobileEdgePrediction, overallRating };
+    });
+
+    entries.sort((a, b) => {
+        const ratingOrder = { '✅ BEST': 0, '⚠ OK': 1, '❌ RISKY': 2 };
+        return (ratingOrder[a.overallRating as keyof typeof ratingOrder] ?? 3) -
+            (ratingOrder[b.overallRating as keyof typeof ratingOrder] ?? 3);
+    });
+
+    for (const e of entries) {
+        const riskColor = e.backgroundRisk === 'low' ? COLORS.green : e.backgroundRisk === 'medium' ? COLORS.yellow : COLORS.red;
+        console.log(
+            `  ${String(e.index + 1).padEnd(3)}` +
+            `  ${e.background_color.padEnd(12)}` +
+            `  ${e.title_color.padEnd(12)}` +
+            `  ${(e.contrastRatio.toFixed(2) + ':1').padEnd(10)}` +
+            `  ${e.passesWcagAaa ? COLORS.green + 'AAA ✓' + COLORS.reset : e.passesWcagAa ? COLORS.yellow + 'AA  ✓' + COLORS.reset : COLORS.red + 'FAIL' + COLORS.reset}`.padEnd(8 + 10) +
+            `  ${riskColor}${e.backgroundRisk.padEnd(8)}${COLORS.reset}` +
+            `  ${e.mobileEdgePrediction.padEnd(18)}` +
+            `  ${e.overallRating}`
+        );
+    }
+
+    console.log('─'.repeat(80));
+    const bestCount = entries.filter(e => e.overallRating === '✅ BEST').length;
+    const riskyCount = entries.filter(e => e.overallRating === '❌ RISKY').length;
+    console.log(`\n  推奨: ${bestCount} パレット、要注意: ${riskyCount} パレット`);
+    console.log(`\n  ${COLORS.dim}ThumbnailRenderer は selectBestPalette() で自動的に最良パレットを選択します。${COLORS.reset}`);
+}
+
 function extractRunId(imagePath: string): string {
     const parts = imagePath.split(path.sep);
     const runsIdx = parts.findIndex(p => p === 'runs');
@@ -201,7 +283,7 @@ async function runIqa(imagePath: string): Promise<IqaResult> {
     if (!fs.existsSync(imagePath) || fs.statSync(imagePath).size === 0) {
         return {
             imagePath, runId, passed: false, score: 0,
-            metrics: { sharpness: 0, contrastRatio: 0, isResolutionCorrect: false, cognitiveRecognitionScore: 0, mobileEdgeStrength: 0, colorSpace: undefined },
+            metrics: { sharpness: 0, contrastRatio: 0, isResolutionCorrect: false, cognitiveRecognitionScore: 0, mobileEdgeStrength: 0, colorSpace: undefined, backgroundRisk: 'low' as BackgroundRisk },
             failReasons: ['FILE_NOT_FOUND_OR_EMPTY']
         };
     }
@@ -210,6 +292,7 @@ async function runIqa(imagePath: string): Promise<IqaResult> {
     const metadata = await sharp(imagePath).metadata();
     const isResolutionCorrect = metadata.width === THRESHOLDS.TARGET_WIDTH && metadata.height === THRESHOLDS.TARGET_HEIGHT;
     const colorSpace = metadata.space;
+    const backgroundRisk: BackgroundRisk = iqaValidator.analyzeBackgroundRisk(DESIGN_TOKENS.primary);
 
     if (!isResolutionCorrect) {
         failReasons.push(`RESOLUTION_MISMATCH: ${metadata.width}x${metadata.height} (expected ${THRESHOLDS.TARGET_WIDTH}x${THRESHOLDS.TARGET_HEIGHT})`);
@@ -249,6 +332,27 @@ async function runIqa(imagePath: string): Promise<IqaResult> {
         failReasons.push(`MOBILE_EDGE_ERROR: ${e}`);
     }
 
+    // テキストレイアウト分析 (見切れ・重なり)
+    let textClipped: boolean | undefined;
+    let textOverlap: boolean | undefined;
+    let clipBoundaryRatio: number | undefined;
+    let overlapRatio: number | undefined;
+    try {
+        const layout = await iqaValidator.analyzeTextLayout(imagePath);
+        textClipped = layout.isTextClipped;
+        textOverlap = layout.isTextOverlappingCharacter;
+        clipBoundaryRatio = layout.clipBoundaryRatio;
+        overlapRatio = layout.overlapRatio;
+        if (layout.isTextClipped) {
+            failReasons.push(`TEXT_CLIPPED: boundary ratio ${(layout.clipBoundaryRatio * 100).toFixed(1)}%`);
+        }
+        if (layout.isTextOverlappingCharacter) {
+            failReasons.push(`TEXT_OVERLAPS_CHARACTER: overlap ratio ${(layout.overlapRatio * 100).toFixed(1)}%`);
+        }
+    } catch (e) {
+        failReasons.push(`TEXT_LAYOUT_ERROR: ${e}`);
+    }
+
     const passed = failReasons.length === 0;
     const score =
         (isResolutionCorrect ? 0.1 : 0) +
@@ -259,8 +363,9 @@ async function runIqa(imagePath: string): Promise<IqaResult> {
 
     return {
         imagePath, runId, passed, score,
-        metrics: { sharpness, contrastRatio, isResolutionCorrect, cognitiveRecognitionScore, mobileEdgeStrength, colorSpace },
+        metrics: { sharpness, contrastRatio, isResolutionCorrect, cognitiveRecognitionScore, mobileEdgeStrength, colorSpace, backgroundRisk },
         failReasons,
+        textClipped, textOverlap, clipBoundaryRatio, overlapRatio,
     };
 }
 
@@ -280,12 +385,19 @@ function printResult(r: IqaResult, index: number, total: number): void {
     const score = (r.score * 100).toFixed(1);
     const m = r.metrics;
 
+    const riskColor = m.backgroundRisk === 'low' ? COLORS.green : m.backgroundRisk === 'medium' ? COLORS.yellow : COLORS.red;
+    const riskLabel = `${riskColor}bg:${m.backgroundRisk}${COLORS.reset}`;
+    const textStatus = r.textClipped === undefined ? ''
+        : (r.textClipped ? `${COLORS.red}✗CLIP${COLORS.reset}` : `${COLORS.green}✓txt${COLORS.reset}`) +
+        (r.textOverlap ? ` ${COLORS.red}✗OVR${COLORS.reset}` : ` ${COLORS.green}✓pos${COLORS.reset}`);
     console.log(`\n[${index + 1}/${total}] ${status}  ${COLORS.cyan}${shortPath}${COLORS.reset}`);
     console.log(
         `  ${COLORS.dim}Score:${COLORS.reset} ${score}%  ` +
         `Sharp: ${m.sharpness.toFixed(1)}  ` +
         `Contrast: ${m.contrastRatio.toFixed(2)}:1  ` +
         `Mobile: ${m.mobileEdgeStrength.toFixed(1)}  ` +
+        `${riskLabel}  ` +
+        `${textStatus}  ` +
         `${m.isResolutionCorrect ? '✓ 1280×720' : '✗ Wrong Res'}`
     );
     if (!r.passed) {
@@ -354,6 +466,18 @@ function checkDesignTokens(): DesignTokenCheck {
 // ============================================================
 async function main() {
     const args = process.argv.slice(2);
+
+    // パレット監査モード
+    if (args.includes('--palette-audit')) {
+        console.log(`${COLORS.bold}${COLORS.cyan}`);
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║         IQA PALETTE AUDIT  - パレット品質評価              ║');
+        console.log('╚════════════════════════════════════════════════════════════╝');
+        console.log(COLORS.reset);
+        auditPalettes();
+        return;
+    }
+
     const runIdFilter = args.includes('--run-id') ? args[args.indexOf('--run-id') + 1] : null;
 
     console.log(`${COLORS.bold}${COLORS.cyan}`);

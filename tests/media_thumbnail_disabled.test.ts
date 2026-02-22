@@ -39,9 +39,24 @@ describe('VisualDirector Thumbnail Disabled', () => {
 
         // Mock dependencies
         const renderThumbnailMock = mock.fn(async (plan, title, outPath) => {
-            fs.writeFileSync(outPath, "DUMMY PNG CONTENT");
+            const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+            fs.writeFileSync(outPath, tinyPng);
         });
         agent.layout.renderThumbnail = renderThumbnailMock;
+
+        agent.validator.validate = mock.fn(async () => {
+            return {
+                passed: true,
+                score: 1.0,
+                metrics: {
+                    sharpness: 150,
+                    contrastRatio: 10,
+                    isResolutionCorrect: true,
+                    cognitiveRecognitionScore: 1.0,
+                    xHeightLegibilityScore: 0.95
+                }
+            };
+        });
 
         // Mock generateVideo
         const generateVideoMock = mock.fn(async () => { return; });

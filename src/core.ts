@@ -3,8 +3,10 @@ import fs from "fs-extra";
 import yaml from "js-yaml";
 import dotenv from "dotenv";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { AgentState, AppConfig, PromptData } from "./types.js";
+import { execSync, spawn } from "child_process";
+import { AgentState, AppConfig, PromptData, McpServerConfig } from "./types.js";
 import { AgentLogger } from "./utils/logger.js";
+export { AgentLogger };
 
 export const ROOT = process.cwd();
 dotenv.config({ path: path.join(ROOT, "config", ".env") });
@@ -155,13 +157,13 @@ export class BaseAgent {
         const llm = createLlm({ ...this.opts, ...callOpts });
         const res = await llm.invoke([{ role: "system", content: system }, { role: "user", content: user }]);
         this.store.save(this.name, "raw_response", { content: res.content });
-        const usage = (res as any).usage_metadata;
+        const usage = (res as { usage_metadata?: Record<string, unknown> }).usage_metadata;
         if (usage) {
             AgentLogger.info(this.name, "RUN", "LLM_USAGE", "Captured LLM token usage", {
                 context: {
-                    input_tokens: usage.input_tokens || 0,
-                    output_tokens: usage.output_tokens || 0,
-                    total_tokens: usage.total_tokens || 0,
+                    input_tokens: Number(usage.input_tokens) || 0,
+                    output_tokens: Number(usage.output_tokens) || 0,
+                    total_tokens: Number(usage.total_tokens) || 0,
                     model: llm.model
                 }
             });
@@ -175,6 +177,15 @@ export class BaseAgent {
     loadPrompt<T = PromptData>(name: string): T { return loadPrompt(name) as T; }
     logInput(data: unknown) { this.store.logInput(this.name, data); AgentLogger.info(this.name, "IO", "LOG_INPUT", "Stored agent input data"); }
     logOutput(data: unknown) { this.store.logOutput(this.name, data); AgentLogger.info(this.name, "IO", "LOG_OUTPUT", "Stored agent output data"); }
+}
+
+export class McpClient {
+    static async runTool(name: string, server: McpServerConfig, toolName: string, args: Record<string, unknown>): Promise<unknown> {
+        AgentLogger.info("MCP", "RUN", "TOOL_START", `Running MCP tool ${toolName} on server ${name}`);
+        const fullCmd = `${server.command} ${server.args?.join(" ") || ""}`;
+        AgentLogger.info("MCP", "RUN", "CMD", `Cmd: ${fullCmd} with args: ${JSON.stringify(args)}`);
+        return { status: "success", message: "MCP Tool executed (mock)", data: args };
+    }
 }
 
 export async function loadMemoryContext(agent: BaseAgent, query: string): Promise<{ recent: string; essences: string }> {

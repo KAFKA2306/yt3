@@ -1,6 +1,6 @@
 global_style:
-  font_path: "assets/fonts/ZenMaruGothic-Bold.ttf"
-  font_name: "Zen Maru Gothic"
+  font_path: "assets/fonts/Atkinson-Hyperlegible-Regular.ttf"
+  font_name: "Atkinson Hyperlegible"
   thumbnail:
     title_size: 60
     subtitle_size: 48
@@ -102,7 +102,7 @@ steps:
   video:
     resolution: "1920x1080"
     fps: 25
-    background_color: "0x193d5a"
+    background_color: "#103766" # 2026 Financial Protocol Base
     intro_seconds: 5
     codec: "h264_nvenc"
     preset: "p5"
@@ -136,9 +136,9 @@ steps:
     enabled: true
     width: 1280
     height: 720
-    background_color: "#FFE14A"
-    title_color: "#C62828"
-    subtitle_color: "#FFD166"
+    background_color: "#103766" # 2026 Financial Protocol Base
+    title_color: "#FFFFFF"       # Supporting Color
+    subtitle_color: "#288CFA"    # Accent Color
     show_subtitle: true
     padding: 80
     max_lines: 4
@@ -148,9 +148,14 @@ steps:
     outline_inner_width: 20
     outline_outer_color: "#000000"
     outline_outer_width: 20
+    guidelines:
+      - "300ms Recognition: Use Atkinson Hyperlegible with high x-height"
+      - "60-30-10 Principle: Base #103766 (60%), White/Text (30%), Accent #288CFA (10%)"
+      - "Broadcast Framing: Eye-level perspective, cinematic 8k look"
+      - "Center important elements within 90% of the canvas"
     palettes:
-      - {background_color: "#FFE14A", title_color: "#C62828", outline_inner_color: "#FFFFFF", outline_inner_width: 20, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#B71C1C"}
-      - {background_color: "#B71C1C", title_color: "#FFC107", outline_inner_color: "#000000", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 10, subtitle_color: "#FFFFFF"}
+      - {background_color: "#103766", title_color: "#FFFFFF", outline_inner_color: "#288CFA", outline_inner_width: 10, outline_outer_color: "#000000", outline_outer_width: 15, subtitle_color: "#288CFA"} # 2026 Financial Gold Standard
+      - {background_color: "#FFE14A", title_color: "#0A0A12", outline_inner_color: "#FFFFFF", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#C62828"}
       - {background_color: "#0B0F19", title_color: "#E5FCF4", outline_inner_color: "#000000", outline_inner_width: 10, outline_outer_color: "#FFFFFF", outline_outer_width: 5, subtitle_color: "#00D4FF"}
       - {background_color: "#0D1D40", title_color: "#FACC15", outline_inner_color: "#000000", outline_inner_width: 0, outline_outer_color: "#0B0F19", outline_outer_width: 25, subtitle_color: "#FFFFFF"}
       - {background_color: "#0A0F1F", title_color: "#E31C23", outline_inner_color: "#FFFFFF", outline_inner_width: 20, outline_outer_color: "#000000", outline_outer_width: 15, subtitle_color: "#FFD166"}
@@ -317,9 +322,9 @@ prompts:
 
 scene_prompts:
   common:
-    quality: "cinematic 16:9, professional grade, ultra sharp"
-    youtube_appeal: "bold composition, saturated color palette, instant visual impact"
-    composition_techniques: ["rule of thirds framing", "leading lines perspective", "symmetrical balance", "dynamic diagonal composition", "golden ratio layout"]
+    quality: "extreme cinematic 8k quality, anamorphic lens, professional color grading, high dynamic range, sharp focus"
+    youtube_appeal: "bold 2026 financial composition, saturated color palette, 300ms instant visual impact"
+    composition_techniques: ["broadcast-standard eye-level framing", "rule of thirds", "architectural symmetry", "corporate safe zones", "cinematic depth of field"]
     negative_base: "text, watermark, people, faces, low quality, blurry, VRChat, virtual, metaverse"
   literal:
     description: "Concrete financial and business scenes"
@@ -370,3 +375,26 @@ scene_prompts:
       neutral: {color: "pearl gray, powder blue, corporate neutral", effect: "balanced bokeh, professional gradient, clean blur"}
     negative_extra: "sharp details, busy composition, complex patterns"
   youtube_boosters: ["award-winning cinematography", "professional photography standard", "editorial quality composition", "visually striking", "immediately captivating", "scroll-stopping imagery", "masterful lighting", "perfect color harmony"]
+
+mcp:
+  servers:
+    context7:
+      command: "npx"
+      args: ["-y", "@upstash/mcp-server-context7"]
+    figma:
+      command: "npx"
+      args: ["-y", "@figma/mcp-server-figma"]
+    pptx:
+      command: "npx"
+      args: ["-y", "mcp-server-pptx"] # Assuming a standard package name or placeholder
+    arxiv:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-arxiv"]
+
+design_tokens:
+  primary_brand_color: "#103766" # 2026 Deep Blue
+  accent_brand_color: "#288CFA"  # High Energy Blue
+  contrast_text_color: "#0A0A12"
+  alert_color: "#C62828"
+  success_color: "#00A3AF"
+  font_bold: "Zen Maru Gothic"

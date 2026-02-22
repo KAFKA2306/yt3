@@ -12,6 +12,21 @@ export interface OverlayConfig {
     width_ratio?: number;
 }
 
+export interface McpServerConfig {
+    command: string;
+    args?: string[];
+    env?: Record<string, string>;
+}
+
+export interface McpConfig {
+    servers: {
+        context7?: McpServerConfig;
+        figma?: McpServerConfig;
+        pptx?: McpServerConfig;
+        arxiv?: McpServerConfig;
+    };
+}
+
 export interface GlobalStyle {
     font_path: string;
     font_name: string;
@@ -22,6 +37,15 @@ export interface GlobalStyle {
     video: {
         subtitle_size: number;
     };
+}
+
+export interface DesignTokens {
+    primary_brand_color: string;
+    accent_brand_color: string;
+    contrast_text_color: string;
+    alert_color: string;
+    success_color: string;
+    font_bold: string;
 }
 
 export interface AppConfig {
@@ -87,10 +111,29 @@ export interface AppConfig {
             height: number;
             title_font_size?: number;
             subtitle_font_size?: number;
-            palettes: Array<{ background_color: string; title_color: string; outline_inner_color: string; outline_inner_width: number; outline_outer_color: string; outline_outer_width: number; }>;
+            palettes: Array<{
+                background_color: string;
+                title_color: string;
+                outline_inner_color: string;
+                outline_inner_width: number;
+                outline_outer_color: string;
+                outline_outer_width: number;
+                subtitle_color?: string;
+            }>;
             overlays: OverlayConfig[];
             padding: number;
             resolution?: string;
+            /** キャラクター配置の左端X座標 (テキストクリップ境界に使用) */
+            right_guard_band_px?: number;
+            subtitle_color?: string;
+            title_color?: string;
+            show_subtitle?: boolean;
+            max_lines?: number;
+            max_chars_per_line?: number;
+            outline_inner_color?: string;
+            outline_inner_width?: number;
+            outline_outer_color?: string;
+            outline_outer_width?: number;
         };
         youtube?: {
             enabled: boolean;
@@ -126,6 +169,8 @@ export interface AppConfig {
             intro_seconds?: number;
         };
     };
+    mcp?: McpConfig;
+    design_tokens?: DesignTokens;
 }
 
 export interface PromptData {
