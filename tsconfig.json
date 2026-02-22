@@ -1,15 +1,17 @@
 {
+  "extends": ["@tsconfig/bun", "@tsconfig/strictest"],
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "strict": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "types": ["bun"],
     "skipLibCheck": true,
     "outDir": "./dist"
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }

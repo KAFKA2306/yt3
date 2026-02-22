@@ -1,0 +1,10 @@
+[install]
+# Prefer frozen lockfile in CI, but allow updates locally
+# frozen-lockfile = true
+
+[test]
+# Enable detailed test reporting
+# preload = ["./tests/setup.ts"]
+
+[run]
+# Environment variable handling or other run-time settings
