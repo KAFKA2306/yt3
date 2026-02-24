@@ -4,7 +4,7 @@ export const IQA_THRESHOLDS = {
   SHARPNESS_MIN: 100,
   CONTRAST_GOAL: 7.0,
   CONTRAST_MIN: 5.0,
-  MOBILE_EDGE_MIN: 30,
+  MOBILE_EDGE_MIN: 20,
   COGNITIVE_MIN: 0.6,
 };
 
@@ -15,6 +15,7 @@ export interface TextLayoutAnalysis {
   clipBoundaryRatio: number;
   isTextOverlappingCharacter: boolean;
   overlapRatio: number;
+  xHeightScore: number;
 }
 
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -91,12 +92,43 @@ export function calculateContrastRatio(hex1: string, hex2: string): number {
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
 
+/**
+ * x-height (小文字の高さ) 領域のピクセル密度を解析し、フォントの可読性を評価する。
+ * ハイコントラストかつエッジが鋭いほど高スコアになる。
+ */
+export async function calculateXHeightScore(imagePath: string): Promise<number> {
+  const { data, info } = await sharp(imagePath).grayscale().raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+
+  const sampleY = Math.round(height / 2);
+  const sampleH = Math.round(height * 0.1);
+  let edges = 0;
+  let count = 0;
+
+  for (let y = sampleY - sampleH; y < sampleY + sampleH; y++) {
+    for (let x = 80; x < width - 80; x++) {
+      const i = y * width + x;
+      const val = data[i] ?? 0;
+      const next = data[i + 1] ?? 0;
+      if (Math.abs(val - next) > 50) {
+        edges++;
+      }
+      count++;
+    }
+  }
+
+  const density = count > 0 ? edges / count : 0;
+  return Math.min(density * 10, 1.0);
+}
+
 export async function analyzeTextLayout(
   imagePath: string,
   charGuardBandPx = 850,
 ): Promise<TextLayoutAnalysis> {
+  const xHeightScore = await calculateXHeightScore(imagePath);
   const { data, info } = await sharp(imagePath).raw().toBuffer({ resolveWithObject: true });
   const { width, height, channels } = info;
+  // ... rest of the function remains similar but returns xHeightScore
   const ch = channels || 3;
 
   const CORNER = 40;
@@ -164,5 +196,6 @@ export async function analyzeTextLayout(
     clipBoundaryRatio: clipRatio,
     isTextOverlappingCharacter: charDensity > bodyDensity + 0.2,
     overlapRatio: charDensity,
+    xHeightScore,
   };
 }

@@ -71,6 +71,7 @@ export class IqaValidator {
     const textLayout = await analyzeTextLayout(imagePath, charGuardBandPx).catch(
       (): undefined => undefined,
     );
+    const xHeightLegibilityScore = textLayout?.xHeightScore ?? 0;
 
     const reasons: string[] = [];
     if (!isResolutionCorrect) reasons.push(`解像度不一致: ${metadata.width}x${metadata.height}`);
@@ -82,6 +83,8 @@ export class IqaValidator {
       reasons.push(`認知スコア不足: ${cognitiveRecognitionScore.toFixed(2)}`);
     if (mobileEdgeStrength < IQA_THRESHOLDS.MOBILE_EDGE_MIN)
       reasons.push(`Mobile edge weak: ${mobileEdgeStrength.toFixed(2)}`);
+    if (xHeightLegibilityScore < 0.3)
+      reasons.push(`フォント可読性(x-height)不足: ${xHeightLegibilityScore.toFixed(2)}`);
     if (textLayout?.isTextClipped)
       reasons.push(`テキスト見切れ: ${(textLayout.clipBoundaryRatio * 100).toFixed(1)}%`);
     if (textLayout?.isTextOverlappingCharacter)
@@ -93,10 +96,11 @@ export class IqaValidator {
     return {
       passed,
       score:
-        (sharpness / 200) * 0.2 +
+        (sharpness / 200) * 0.15 +
         (mobileEdgeStrength / 60) * 0.1 +
-        (contrastRatio / 21) * 0.25 +
-        cognitiveRecognitionScore * 0.25 +
+        (contrastRatio / 21) * 0.2 +
+        cognitiveRecognitionScore * 0.2 +
+        xHeightLegibilityScore * 0.15 +
         (textLayout && !textLayout.isTextClipped ? 0.1 : 0) +
         (textLayout && !textLayout.isTextOverlappingCharacter ? 0.1 : 0),
       metrics: {
@@ -104,7 +108,7 @@ export class IqaValidator {
         contrastRatio,
         isResolutionCorrect,
         cognitiveRecognitionScore,
-        xHeightLegibilityScore: 0.85,
+        xHeightLegibilityScore,
         mobileEdgeStrength,
       },
       backgroundRisk,

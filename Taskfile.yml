@@ -107,6 +107,17 @@ tasks:
     desc: "Install Systemd service and timer"
     cmds: ["npx tsx scripts/tasks.ts setup:systemd"]
 
+  # ============================================================================
+  # ACE Intelligence (OpenCE)
+  # ============================================================================
+  ace:evaluate:
+    desc: "Analyze logs and evolve playbook (Closed-Loop)"
+    cmds: ["npx tsx --env-file=config/.env scripts/ace_ops.ts evaluate"]
+
+  ace:acquire:
+    desc: "Acquire new orthogonal strategic hypotheses"
+    cmds: ["npx tsx --env-file=config/.env scripts/ace_ops.ts acquire"]
+
   monitor:watch:
     desc: "Run the watcher agent manually"
     cmds: ["npx tsx scripts/tasks.ts watcher {{.CLI_ARGS}}"]

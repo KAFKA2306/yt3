@@ -53,7 +53,8 @@ export interface DesignTokens {
   contrast_text_color: string;
   alert_color: string;
   success_color: string;
-  font_bold: string;
+  font_display: string;
+  font_text: string;
 }
 
 export interface AppConfig {

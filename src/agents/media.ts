@@ -116,9 +116,16 @@ export class VisualDirector extends BaseAgent {
             this.name,
             "RUN",
             "MCP_TREND",
-            "Overriding palette with 2026 CTR trends",
+            "Overriding palette with 2026 CTR trends (60-30-10 Rule)",
           );
-          palette = { ...palette, ...result.data.recommended_palette };
+          // Visual Automation v2: Implement 60-30-10 rule distribution
+          palette = {
+            ...palette,
+            ...result.data.recommended_palette,
+            // Ensure 2026 Financial Gold Standard Palette if not specified
+            background_color: result.data.recommended_palette.background_color || "#103766",
+            title_color: result.data.recommended_palette.title_color || "#FFFFFF",
+          };
         }
       }
 
@@ -137,8 +144,12 @@ export class VisualDirector extends BaseAgent {
 
       const result = await this.validator.validate(
         thumbnail_path,
-        palette.title_color,
-        palette.background_color,
+        (palette as unknown as Record<string, string>)["text"] ||
+        (palette as unknown as Record<string, string>)["title_color"] ||
+        "#FFFFFF",
+        (palette as unknown as Record<string, string>)["background"] ||
+        (palette as unknown as Record<string, string>)["background_color"] ||
+        "#000000",
         title,
         this.thumbConfig.right_guard_band_px ?? 850,
       );
@@ -209,7 +220,7 @@ export class VisualDirector extends BaseAgent {
 
     return new Promise((resolve, reject) => {
       const cmd = ffmpeg();
-      cmd.input(`color=c=${bgColor}:s=${w}x=${h}:r=${fps}`).inputFormat("lavfi").input(audioPath);
+      cmd.input(`color=c=${bgColor}:s=${w}x${h}:r=${fps}`).inputFormat("lavfi").input(audioPath);
 
       const filters: string[] = [];
       let lastStream = "0:v";

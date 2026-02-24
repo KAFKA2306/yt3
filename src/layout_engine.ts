@@ -153,8 +153,9 @@ export class LayoutEngine {
   private getSubtitleBaseStyle(subtitlesConfig: AppConfig["steps"]["video"]["subtitles"]) {
     const s = subtitlesConfig || {};
     const g = this.config.global_style;
+    const tokens = this.config.design_tokens;
     return {
-      font: s.font_name || g.font_name,
+      font: s.font_name || `${tokens?.font_text || "Atkinson Hyperlegible"}, IBM Plex Sans JP`,
       size: s.font_size || g.video.subtitle_size,
       color: s.primary_colour || "&HFFFFFF&",
       outlineColor: s.outline_colour || "&H000000&",

@@ -6,11 +6,18 @@ import type { z } from "zod";
 import { ROOT, loadConfig as baseLoadConfig } from "./base.js";
 import { type AgentState, type AppConfig, RunStage } from "./types.js";
 import { AgentLogger as Logger } from "./utils/logger.js";
+import { ContextPlaybook } from "./ace/context_playbook.js";
 
 export { Logger as AgentLogger };
 export { RunStage };
 export const loadConfig = baseLoadConfig;
 export { ROOT };
+
+export function validateContrast(hex1: string, hex2: string, minRatio = 7.0): boolean {
+  const { calculateContrastRatio } = require("./utils/iqa_metrics.js");
+  const ratio = calculateContrastRatio(hex1, hex2);
+  return ratio >= minRatio;
+}
 
 export function readYamlFile<T>(p: string): T {
   if (!fs.existsSync(p)) throw new Error(`File not found: ${p}`);
@@ -30,6 +37,7 @@ export function getLlmModel(): string {
 export interface LlmOptions {
   model?: string;
   temperature?: number;
+  response_mime_type?: string;
   extra?: Record<string, unknown>;
 }
 
@@ -76,7 +84,7 @@ export class AssetStore {
     const f =
       type === "input"
         ? (this.cfg.workflow.filenames as Record<string, string | undefined>)["input"] ||
-          "input.yaml"
+        "input.yaml"
         : type === "output"
           ? this.cfg.workflow.filenames.output
           : `${stage}_prompt.yaml`;
@@ -88,7 +96,7 @@ export class AssetStore {
     const f =
       type === "input"
         ? (this.cfg.workflow.filenames as Record<string, string | undefined>)["input"] ||
-          "input.yaml"
+        "input.yaml"
         : this.cfg.workflow.filenames.output;
     const p = path.join(this.runDir, stage, f);
     fs.ensureDirSync(path.dirname(p));
@@ -134,6 +142,14 @@ export abstract class BaseAgent {
     parser: (text: string) => T,
     callOpts: Record<string, unknown> = {},
   ): Promise<T> {
+    const playbook = new ContextPlaybook();
+    const bullets = playbook.getRankedBullets(5);
+    const aceContext = bullets.length > 0
+      ? `\n\n[ACE Intelligence - Strategic Instructions]\n${bullets.map(b => `- ${b.content} (ID: ${b.id})`).join("\n")}`
+      : "";
+
+    const finalSystemPrompt = systemPrompt + aceContext;
+
     Logger.info(this.name, "RUN", "START_LLM", `Invoking LLM for ${this.name}`);
     if (process.env["SKIP_LLM"] === "true") {
       Logger.info(this.name, "RUN", "LLM_SKIP", "LLM bypass enabled. Loading mock/previous data.");
@@ -144,7 +160,7 @@ export abstract class BaseAgent {
     const llm = createLlm(this.opts);
     const res = await llm.invoke(
       [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: finalSystemPrompt },
         { role: "user", content: userPrompt },
       ],
       callOpts as Record<string, unknown>,
@@ -153,11 +169,15 @@ export abstract class BaseAgent {
   }
 }
 
-export function parseLlmJson<T>(text: string, schema: z.ZodSchema<T>): T {
-  const match = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/({[\s\S]*})/);
-  if (!match) throw new Error("No JSON found in LLM response");
-  const json = JSON.parse(match[1] || "{}");
-  return schema.parse(json);
+export function cleanCodeBlock(text: string): string {
+  const match = text.match(/```(?:json)?\n([\s\S]*?)\n```/) || text.match(/([{\[][\s\S]*[}\]])/);
+  return match ? (match[1] || match[0]).trim() : text.trim();
+}
+
+export function parseLlmJson<T>(text: string, schema?: z.ZodSchema<T>): T {
+  const cleaned = cleanCodeBlock(text);
+  const json = JSON.parse(cleaned);
+  return schema ? schema.parse(json) : (json as T);
 }
 
 export async function runMcpTool(
@@ -185,6 +205,17 @@ export function resolvePath(p: string): string {
 
 export function getCurrentDateString(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Returns the current date in YYYYMMDD format for Run ID.
+ */
+export function getRunIdDateString(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export function loadMemoryContext(store: AssetStore): string {

@@ -149,7 +149,7 @@ steps:
     outline_outer_color: "#000000"
     outline_outer_width: 20
     guidelines:
-      - "300ms Recognition: Use Atkinson Hyperlegible with high x-height"
+      - "300ms Recognition: Use Geist for Display, Atkinson Hyperlegible for readability"
       - "60-30-10 Principle: Base #103766 (60%), White/Text (30%), Accent #288CFA (10%)"
       - "Broadcast Framing: Eye-level perspective, cinematic 8k look"
       - "Center important elements within 90% of the canvas"
@@ -397,4 +397,5 @@ design_tokens:
   contrast_text_color: "#0A0A12"
   alert_color: "#C62828"
   success_color: "#00A3AF"
-  font_bold: "Zen Maru Gothic"
+  font_display: "Geist"
+  font_text: "Atkinson Hyperlegible"

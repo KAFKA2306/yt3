@@ -140,6 +140,22 @@ export const ContentSegmentSchema = z.object({
 });
 export type ContentSegment = z.infer<typeof ContentSegmentSchema>;
 
+export interface Palette {
+  background: string;
+  support: string;
+  accent: string;
+  text: string;
+}
+
+export interface DesignTokens {
+  palettes: Palette[];
+  typography: {
+    primary_font: string;
+    bold_weight: number;
+    min_contrast: number;
+  };
+}
+
 export const AgentStateSchema = z.object({
   run_id: z.string(),
   bucket: z.string(),
