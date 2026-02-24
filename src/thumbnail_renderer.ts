@@ -131,7 +131,7 @@ export class ThumbnailRenderer {
                 </clipPath>
             </defs>
             <style>
-                text { font-family: '${fontName}', sans-serif; font-size: ${fz}px; font-weight: 900; text-anchor: start; dominant-baseline: middle; letter-spacing: 0px; } 
+                text { font-family: '${fontName}', sans-serif; font-size: ${fz}px; font-weight: 900; text-anchor: start; dominant-baseline: middle; letter-spacing: 2px; text-rendering: geometricPrecision; } 
                 .outline { fill: none; stroke: ${pal.outline_outer_color || "#000000"}; stroke-width: ${(pal.outline_outer_width || 20) * 2}px; stroke-linejoin: round; } 
                 .fill { fill: ${pal.title_color || "#FFFFFF"}; stroke: ${pal.outline_inner_color || "#FFFFFF"}; stroke-width: ${pal.outline_inner_width || 10}px; paint-order: stroke fill; stroke-linejoin: round; }
             </style>

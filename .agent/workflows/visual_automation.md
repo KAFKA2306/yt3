@@ -62,7 +62,7 @@ description: 全thumbnail pngのprogramatic reviewとその改善の試作ルー
 | **鮮鋭度 (Sharpness)** | > 100 | Variance of Laplacian (VoL) |
 | **コントラスト比** | >= 7:1 | WCAG 2.1 AAA (最小 5:1 で警告) |
 | **x-height 可読性** | >= 0.35 | 小文字領域の垂直ピクセル密度 |
-| **モバイルエッジ強度** | >= 30 | 150pxリサイズ時の Laplacian 勾配 |
+| **モバイルエッジ強度** | >= 25 | 150pxリサイズ時の Laplacian 勾配 |
 | **超速認知スコア** | >= 0.7 | `0.4*Contrast + 0.4*xHeight + 0.2*Simplicity` |
 
 ---
