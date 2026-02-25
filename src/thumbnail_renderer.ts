@@ -77,8 +77,11 @@ export class ThumbnailRenderer {
       });
     }
 
+    const rightSideOverlays = plan.overlays.filter((o) => o.bounds.x > cfg.width / 2);
     const textMaxX =
-      (plan.overlays.length ? Math.min(...plan.overlays.map((o) => o.bounds.x)) : cfg.width) - 20;
+      (rightSideOverlays.length
+        ? Math.min(...rightSideOverlays.map((o) => o.bounds.x))
+        : cfg.width) - 20;
     layers.push({
       input: Buffer.from(this.createSvg(title, textMaxX, cfg, palette)),
       top: 0,
@@ -114,10 +117,10 @@ export class ThumbnailRenderer {
       .map((l, i) => {
         const y = startY + i * lh;
         const escaped = l
+          .toUpperCase()
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .toUpperCase();
+          .replace(/>/g, "&gt;");
         return `<text x="${padding}" y="${y}" class="outline">${escaped}</text>
                     <text x="${padding}" y="${y}" class="fill">${escaped}</text>`;
       })

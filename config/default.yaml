@@ -2,7 +2,7 @@ global_style:
   font_path: "assets/fonts/Atkinson-Hyperlegible-Regular.ttf"
   font_name: "Atkinson Hyperlegible"
   thumbnail:
-    title_size: 60
+    title_size: 80
     subtitle_size: 48
   video:
     subtitle_size: 64
@@ -154,7 +154,7 @@ steps:
       - "Broadcast Framing: Eye-level perspective, cinematic 8k look"
       - "Center important elements within 90% of the canvas"
     palettes:
-      - {background_color: "#103766", title_color: "#FFFFFF", outline_inner_color: "#288CFA", outline_inner_width: 10, outline_outer_color: "#000000", outline_outer_width: 15, subtitle_color: "#288CFA"} # 2026 Financial Gold Standard
+      - {background_color: "#103766", title_color: "#FFFFFF", outline_inner_color: "#288CFA", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#288CFA"} # 2026 Financial Gold Standard
       - {background_color: "#FFE14A", title_color: "#0A0A12", outline_inner_color: "#FFFFFF", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#C62828"}
       - {background_color: "#0B0F19", title_color: "#E5FCF4", outline_inner_color: "#000000", outline_inner_width: 10, outline_outer_color: "#FFFFFF", outline_outer_width: 5, subtitle_color: "#00D4FF"}
       - {background_color: "#0D1D40", title_color: "#FACC15", outline_inner_color: "#000000", outline_inner_width: 0, outline_outer_color: "#0B0F19", outline_outer_width: 25, subtitle_color: "#FFFFFF"}
@@ -180,36 +180,6 @@ steps:
     enabled: true
     use_llm: true
     llm_model: null
-    target_keywords: ["金融", "経済", "投資", "株"]
-    max_title_length: 50
-    max_description_length: 5000
-    default_tags: ["金融", "経済", "投資"]
-    tone:
-      guidelines:
-        - "タイトルと説明文は事実を端的に伝える落ち着いた専門家の語調に統一する"
-        - "誇張や陰謀論を想起させる語彙を避け、投資家が安心して共有できる表現にする"
-        - "タイトルの冒頭で対象となる企業名や指数などの主語を明示する"
-        - "タイトルには終値や決算数値など確定した金額・指標を通貨や単位付きで記載する"
-        - "タイトルで変化幅だけに触れず、いつの時点でいくらになったのかを具体的に記述する"
-        - "タイトルは必要最小限の語で構成し、冗長な枕詞や情緒的な形容を避ける"
-      title_disallowed_terms: ["闇", "陰謀", "激震", "暴露", "暴走", "やばい", "ショック", "衝撃", "暴落", "警告", "危機"]
-      description_disallowed_terms: ["闇", "陰謀", "激震", "暴露", "暴走", "やばい", "ショック", "衝撃", "暴落", "警告", "危機"]
-      replacements: {闇: "課題", 陰謀: "構造的課題", 激震: "急変", 衝撃: "注目", ショック: "変化", 暴露: "解説", 暴走: "過熱", やばい: "注意", 暴落: "下落", 警告: "注意喚起", 危機: "リスク"}
-
-  youtube: {enabled: true, dry_run: false, default_visibility: "public", category_id: 24, max_title_length: 100, max_description_length: 5000, default_tags: ["金融", "ニュース"]}
-
-defaults:
-  retries: 3
-  media:
-    background_color: "0x193d5a"
-    intro_seconds: 5
-
-  twitter: {enabled: false, dry_run: false, clip_duration_seconds: 60, start_offset_seconds: 0}
-  linkedin: {enabled: false, dry_run: true, access_token: "linkedin_access_token", author_urn: "urn:li:person:YOUR_ID"}
-  hatena: {enabled: false, dry_run: true, hatena_id: "your_hatena_id", blog_id: "your_blog_id.hatenablog.com", api_key: "hatena_api_key"}
-  podcast: {enabled: false, feed_title: "金融ニュース解説ポッドキャスト", feed_description: "AI生成の日本経済・金融ニュース解説", feed_author: "2510 YouTuber AI", feed_url: "https://example.com/podcast"}
-  buzzsprout: {enabled: false, podcast_id: null, token_key: "buzzsprout_api_token", podcast_id_key: "buzzsprout_podcast_id", title_template: "金融ニュース解説 Episode {run_id}", publish_immediately: true}
-
 providers:
   llm:
     gemini: {model: "gemini-3-flash-preview", temperature: 0.35, max_tokens: 32768}
@@ -258,123 +228,7 @@ automation:
     - {name: "workflow_daily_0700", command: ["bash", "scripts/run_workflow_cron.sh"], cron: "0 7 * * *"}
     - {name: "trend_workflow_hourly", command: ["npx", "tsx", "src/index.ts"], args: ["--trend-mode"], cron: "0 * * * *"}
 
-prompts:
-  research:
-    system: |
-      Your response MUST be a valid JSON object.
-      You are the Research Director.
-      Your job: Find verifiable news using the search tool.
-      
-      Output (JSON):
-      {
-        "director_data": {
-          "angle": "Strategic angle based on FACTS",
-          "title_hook": "Title based on FACTS",
-          "search_query": "Optimized search query",
-          "key_questions": ["Q1", "Q2"]
-        },
-        "news": [
-          {
-            "title": "News headline",
-            "summary": "Detailed summary.",
-            "url": "https://source.url",
-            "published_at": "YYYY-MM-DD",
-            "snippet": "MUST BE A DIRECT QUOTE from the search result. Do not summarize."
-          }
-        ]
-      }
-    user_template: |
-      Category: {category}
-      
-      Find the most critical news.
-      EVERY news item MUST have a valid `url` and `snippet`.
-      The `snippet` field is MANDATORY. Copy text from the search result.
-
-  script:
-    system: |
-      あなたは人気YouTubeチャンネルの構成作家。
-      提供された【ニュース（事実）】のみを使用し、指定された【テーマ/アングル】に沿った台本を作成する。
-      
-      【絶対ルール】
-      1. 指定されたテーマ（Director's Angle）から逸脱しないこと。
-      2. ニュースに含まれる「事実」のみを使用する。捏造禁止。
-      3. 台詞には必ず `source_ref` (出典URL) を付記する。
-      4. ニュース不足で書けない場合は、別の話題（NISAや投資哲学など）に逃げず、「情報不足のため作成不能」という旨の短い台本を出力せよ。
-    speakers:
-      analyst: {name: "春日部つむぎ", persona: "一人称「あーし」。データを元に論理的に語る。"}
-      reporter: {name: "ずんだもん", persona: "一人称「ボク」。視聴者の疑問を代理する。"}
-      narrator: {name: "玄野武宏", persona: "天の声。事実関係を整理する。"}
-    user_template: |
-      【テーマ/アングル】
-      {strategy}
-      
-      【ニュース（事実の源泉）】
-      {news_items}
-      
-      【構成】
-      以下のような構成で台本を作成してください。
-      
-      出力 (YAML):
-      segments:
-        - speaker: "名前"
-          text: "セリフ内容"
-          source_ref: "元となったニュースのURLまたはタイトル（デバッグ用）"
-
-scene_prompts:
-  common:
-    quality: "extreme cinematic 8k quality, anamorphic lens, professional color grading, high dynamic range, sharp focus"
-    youtube_appeal: "bold 2026 financial composition, saturated color palette, 300ms instant visual impact"
-    composition_techniques: ["broadcast-standard eye-level framing", "rule of thirds", "architectural symmetry", "corporate safe zones", "cinematic depth of field"]
-    negative_base: "text, watermark, people, faces, low quality, blurry, VRChat, virtual, metaverse"
-  literal:
-    description: "Concrete financial and business scenes"
-    core_elements:
-      - "metropolitan financial district, glass architecture, reflective surfaces"
-      - "trading floor environment, multiple digital displays, data visualization"
-      - "currency and financial symbols, holographic projection, digital space"
-      - "executive office interior, panoramic windows, urban skyline"
-      - "technology infrastructure, server systems, data flow visualization"
-      - "iconic financial landmark, monumental scale, dramatic perspective"
-      - "stock exchange architecture, LED information displays, modern design"
-      - "secure vault environment, precious metal storage, institutional setting"
-    mood_modifiers:
-      crisis: {lighting: "high contrast chiaroscuro, dramatic shadows, red key light", atmosphere: "tension, storm clouds, ominous sky", color: "crimson red, midnight blue, stark contrast"}
-      opportunity: {lighting: "golden hour glow, rim lighting, warm highlights", atmosphere: "optimism, clear skies, energetic", color: "emerald green, amber gold, azure blue"}
-      neutral: {lighting: "three-point lighting, balanced exposure, professional", atmosphere: "stability, neutral weather, corporate", color: "slate gray, steel blue, charcoal"}
-    negative_extra: "anime, cartoon, cluttered, messy"
-  abstract:
-    description: "Abstract metaphors for emotions and market sentiment"
-    core_elements:
-      - "ocean dynamics, wave motion, water energy"
-      - "mountain landscape, cloud formations, atmospheric drama"
-      - "liquid metal flow, reflective surface, fluid motion"
-      - "crystalline structures, light refraction, geometric patterns"
-      - "cosmic phenomena, nebula, stellar formations"
-      - "particle dynamics, organized flow, systematic movement"
-      - "atmospheric light, volumetric rays, ethereal glow"
-      - "organic growth, time-lapse transformation, natural expansion"
-    mood_modifiers:
-      crisis: {atmosphere: "turbulence, storm energy, electrical discharge", color: "deep violet, charcoal gray, electric cyan, blood red", motion: "chaos, vortex spiral, explosive force"}
-      opportunity: {atmosphere: "dawn light, natural bloom, ascending energy", color: "sunrise orange, spring green, sky blue, rose pink", motion: "upward trajectory, expansion, harmonic flow"}
-      neutral: {atmosphere: "stillness, symmetry, gentle undulation", color: "ocean blue, dove gray, seafoam teal, balanced palette", motion: "steady pulse, gentle wave, calm rhythm"}
-    negative_extra: "buildings, cities, finance symbols, charts, literal objects"
-  atmospheric:
-    description: "Soft unobtrusive backgrounds for text/character overlays"
-    core_elements:
-      - "defocused urban lights, bokeh orbs, night ambiance"
-      - "gradient color field, smooth transition, minimal texture"
-      - "out-of-focus workspace, depth of field, soft environment"
-      - "abstract color wash, subtle grain, clean backdrop"
-      - "frosted glass effect, diffused cityscape, translucent layer"
-      - "lens flare elements, light leak, gradient overlay"
-      - "natural bokeh, leaf patterns, organic blur"
-      - "color gradient, seamless blend, minimalist aesthetic"
-    mood_modifiers:
-      crisis: {color: "arctic blue, deep purple, high contrast gradient", effect: "strong bokeh, aggressive depth of field, sharp blur"}
-      opportunity: {color: "honey gold, mint green, warm gradient", effect: "soft glow, gentle bokeh, luminous haze"}
-      neutral: {color: "pearl gray, powder blue, corporate neutral", effect: "balanced bokeh, professional gradient, clean blur"}
-    negative_extra: "sharp details, busy composition, complex patterns"
-  youtube_boosters: ["award-winning cinematography", "professional photography standard", "editorial quality composition", "visually striking", "immediately captivating", "scroll-stopping imagery", "masterful lighting", "perfect color harmony"]
+  youtube_boosters: ["award-winning cinematography", "professional photography standard", "editorial quality composition", "visually striking", "captivating", "scroll-stopping imagery", "masterful lighting", "perfect color harmony"]
 
 mcp:
   servers:
