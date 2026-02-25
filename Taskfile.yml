@@ -58,7 +58,7 @@ tasks:
       - docker run -d --name voicevox-nemo --restart unless-stopped -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest
       - mkdir -p logs
       - nohup aim up --host 127.0.0.1 --port 43800 > logs/aim.log 2>&1 &
-      - nohup bun scripts/discord_news_bot.ts > logs/discord_bot.log 2>&1 &
+      - nohup bun src/agents/standalone/discord_bot.ts > logs/discord_bot.log 2>&1 &
 
   down:
     desc: "Stop all background services"
@@ -82,7 +82,7 @@ tasks:
 
   serve:
     desc: "Start the HTMX Dashboard to monitor runs"
-    cmds: ["bun scripts/dashboard/server.ts"]
+    cmds: ["bun src/dashboard/server.ts"]
 
   # ============================================================================
   # UTILITIES
@@ -101,26 +101,26 @@ tasks:
 
   audit:overlays:
     desc: "Audit video overlays"
-    cmds: ["bun scripts/audit_overlays.ts"]
+    cmds: ["bun src/utils/qa/audit_overlays.ts"]
 
   cron:
     desc: "Install cron jobs based on config (Legacy)"
-    cmds: ["bun scripts/automation.ts --install-cron"]
+    cmds: ["bun src/utils/infra/automation.ts --install-cron"]
 
   systemd:setup:
     desc: "Install Systemd service and timer"
-    cmds: ["bun scripts/setup_systemd.ts"]
+    cmds: ["bun src/utils/infra/setup_systemd.ts"]
 
   # ============================================================================
   # ACE Intelligence (OpenCE)
   # ============================================================================
   ace:evaluate:
     desc: "Analyze logs and evolve playbook (Closed-Loop)"
-    cmds: ["npx tsx --env-file=config/.env scripts/ace_ops.ts evaluate"]
+    cmds: ["bun --env-file=config/.env src/ace/ops.ts evaluate"]
 
   ace:acquire:
     desc: "Acquire new orthogonal strategic hypotheses"
-    cmds: ["npx tsx --env-file=config/.env scripts/ace_ops.ts acquire"]
+    cmds: ["bun --env-file=config/.env src/ace/ops.ts acquire"]
 
   monitor:watch:
     desc: "Run the watcher agent manually"

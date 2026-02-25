@@ -157,8 +157,7 @@ app.get(
 						stats[date].input += entry.context.input_tokens || 0;
 						stats[date].output += entry.context.output_tokens || 0;
 					}
-				} catch (e) {
-				}
+				} catch (e) {}
 			}
 			const sortedDates = Object.keys(stats).sort().reverse();
 			if (sortedDates.length === 0) {
@@ -197,5 +196,5 @@ app.get(
 	},
 );
 app.listen(PORT, () => {
-	console.log(`✨ Dashboard hub refined at http:
+	console.log(`✨ Dashboard hub refined at http://localhost:${PORT}`);
 });

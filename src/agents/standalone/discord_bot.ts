@@ -63,7 +63,7 @@ async function main() {
 		if (!interaction.isChatInputCommand()) return;
 
 		if (interaction.commandName === commandName) {
-			const query = interaction.options.getString("query")!;
+			const query = interaction.options.getString("query") || "";
 
 			await interaction.deferReply({ ephemeral: true });
 

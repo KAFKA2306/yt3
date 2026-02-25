@@ -11,6 +11,7 @@ async function main() {
 		console.error(`Publish output not found at ${publishPath}`);
 		return;
 	}
+	// biome-ignore lint/suspicious/noExplicitAny: yaml parsing response
 	const publishData = yaml.load(fs.readFileSync(publishPath, "utf-8")) as any;
 	const videoId = publishData.youtube?.video_id;
 	if (!videoId) {
@@ -21,7 +22,7 @@ async function main() {
 	const auth = new google.auth.OAuth2(
 		process.env.YOUTUBE_CLIENT_ID,
 		process.env.YOUTUBE_CLIENT_SECRET,
-		process.env.YOUTUBE_REDIRECT_URI || "http:
+		process.env.YOUTUBE_REDIRECT_URI || "http://localhost:3000/oauth2callback",
 	);
 	auth.setCredentials({ refresh_token: process.env.YOUTUBE_REFRESH_TOKEN });
 	const youtube = google.youtube({ version: "v3", auth });

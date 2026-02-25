@@ -149,9 +149,9 @@ automation:
   services:
     - {name: "aim_dashboard", command: ["aim", "up", "--host", "127.0.0.1", "--port", "43800"]}
     - {name: "voicevox", command: ["bash", "scripts/voicevox_manager.sh", "start"]}
-    - {name: "discord_news_bot", command: ["bun", "scripts/discord_news_bot.ts"]}
+    - {name: "discord_news_bot", command: ["bun", "src/agents/standalone/discord_bot.ts"]}
   schedules:
-    - {name: "workflow_daily_0700", command: ["bash", "scripts/run_workflow_cron.sh"], cron: "0 7 * * *"}
+    - {name: "workflow_daily_0700", command: ["bash", "src/utils/infra/run_workflow_cron.sh"], cron: "0 7 * * *"}
     - {name: "trend_workflow_hourly", command: ["npx", "tsx", "src/index.ts"], args: ["--trend-mode"], cron: "0 * * * *"}
 
 mcp:
