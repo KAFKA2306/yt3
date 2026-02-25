@@ -15,20 +15,20 @@
 
 ## アーキテクチャ (Structure)
 
-**Single Source of Truth**: `src/core.ts`
+**Single Source of Truth（唯一の真実のソース）**: `src/core.ts`
 
 -   **src/**
-    -   `index.ts`: Entry Point.
-    -   `graph.ts`: LangGraph Definition.
-    -   `core.ts`: **CORE** (Config, Utils, AssetStore, BaseAgent).
-    -   `types.ts`: **TYPES** (Models, State, Schemas).
-    -   `layout_engine.ts`: **LAYOUT** (Visual Composition).
+    -   `index.ts`: エントリーポイント
+    -   `graph.ts`: LangGraph 定義
+    -   `core.ts`: **コア** (設定, ユーティリティ, アセットストア, BaseAgent)
+    -   `types.ts`: **型定義** (モデル, ステート, スキーマ)
+    -   `layout_engine.ts`: **レイアウトエンジン** (視覚的構成)
     -   **agents/**:
-        -   `research.ts` (Strategy & Research)
-        -   `content.ts` (Script & SEO)
-        -   `media.ts` (TTS & Video Assembly)
-        -   `publish.ts` (YouTube & X)
-        -   `memory.ts` (Index & Essence)
+        -   `research.ts` (戦略 & リサーチ)
+        -   `content.ts` (台本 & SEO)
+        -   `media.ts` (音声合成 & 動画アセンブリ)
+        -   `publish.ts` (YouTube & X への投稿)
+        -   `memory.ts` (インデックス & 本質抽出)
 
 ## 技術スタック (Tech Stack 2026)
 

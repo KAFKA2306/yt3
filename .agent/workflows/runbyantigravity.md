@@ -78,7 +78,7 @@ df -h # 空き 2GB以上
 
 ### 4-1. サービス起動
 ```bash
-npx tsx scripts/tasks.ts up
+task up
 ```
 
 ### 4-2. プロダクション起動 (LLM Bypass)

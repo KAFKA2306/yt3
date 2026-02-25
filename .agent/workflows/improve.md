@@ -60,19 +60,19 @@ npx eslint src
 // turbo
 #### ② 論理検証（ユニットテスト）
 ```bash
-npx tsx scripts/tasks.ts test
+task test
 ```
 
 // turbo
 #### ③ 動作検証（ドライラン）
 ```bash
-npx tsx scripts/tasks.ts run --dry-run
+task run -- DRY_RUN=true
 ```
 
 // turbo
 #### ④ 品質評価（評価エージェント）
 ```bash
-npx tsx scripts/tasks.ts evaluate
+task ace:evaluate
 ```
 
 ---

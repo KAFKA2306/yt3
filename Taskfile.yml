@@ -15,7 +15,7 @@ tasks:
   run:
     desc: "Run the full workflow (Production Mode)"
     aliases: [r]
-    cmds: ["npx tsx scripts/tasks.ts run {{.CLI_ARGS}}"]
+    cmds: ["bun src/index.ts {{.CLI_ARGS}}"]
 
   dryrun:
     desc: "Safe Run: Cached LLM & No Publishing (DRY_RUN=true SKIP_LLM=true)"
@@ -23,62 +23,66 @@ tasks:
 
   run:cached:
     desc: "Run full workflow using cached LLM outputs (WARNING: May Publish)"
-    cmds: ["SKIP_LLM=true npx tsx scripts/tasks.ts run {{.CLI_ARGS}}"]
+    cmds: ["SKIP_LLM=true bun src/index.ts {{.CLI_ARGS}}"]
 
   # ============================================================================
   # UNIT STEPS
   # ============================================================================
   research:
     desc: "Run research step only"
-    cmds: ["npx tsx src/step.ts research {{.CLI_ARGS}}"]
+    cmds: ["bun src/step.ts research {{.CLI_ARGS}}"]
 
   content:
     desc: "Run content step only"
-    cmds: ["npx tsx src/step.ts content {{.CLI_ARGS}}"]
-
-  content:fix:
-    desc: "Run content step with feedback from The Critic"
-    cmds: ["npx tsx src/step.ts content:fix {{.CLI_ARGS}}"]
+    cmds: ["bun src/step.ts content {{.CLI_ARGS}}"]
 
   media:
     desc: "Run media step only"
-    cmds: ["npx tsx src/step.ts media {{.CLI_ARGS}}"]
+    cmds: ["bun src/step.ts media {{.CLI_ARGS}}"]
 
   publish:
     desc: "Run publish step only (REAL PUBLISH)"
-    cmds: ["npx tsx src/step.ts publish {{.CLI_ARGS}}"]
+    cmds: ["bun src/step.ts publish {{.CLI_ARGS}}"]
 
   publish:dry:
     desc: "Run publish step in Dry Run mode (No external API calls)"
-    cmds: ["DRY_RUN=true npx tsx src/step.ts publish {{.CLI_ARGS}}"]
-
-  evaluate:
-    desc: "Run content evaluation (The Critic)"
-    cmds: ["npx tsx src/step.ts evaluate {{.CLI_ARGS}}"]
+    cmds: ["DRY_RUN=true bun src/step.ts publish {{.CLI_ARGS}}"]
 
   # ============================================================================
   # INFRASTRUCTURE
   # ============================================================================
   up:
     desc: "Start background services (Voicevox, Aim, Discord Bot)"
-    cmds: [npx tsx scripts/tasks.ts up]
+    cmds:
+      - docker rm -f voicevox-nemo || true
+      - docker run -d --name voicevox-nemo --restart unless-stopped -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+      - mkdir -p logs
+      - nohup aim up --host 127.0.0.1 --port 43800 > logs/aim.log 2>&1 &
+      - nohup bun scripts/discord_news_bot.ts > logs/discord_bot.log 2>&1 &
 
   down:
     desc: "Stop all background services"
-    cmds: [npx tsx scripts/tasks.ts down]
+    cmds:
+      - docker stop voicevox-nemo || true
+      - pkill -f "aim up" || true
+      - pkill -f "discord_news_bot" || true
 
   status:
     desc: "Check status of background services"
     aliases: [s]
-    cmds: [npx tsx scripts/tasks.ts status]
+    cmds:
+      - ps aux | grep -E "(aim|discord_news_bot)" | grep -v grep || true
+      - docker ps | grep voicevox-nemo || true
 
   bootstrap:
     desc: "Install dependencies and setup environment"
-    cmds: [npx tsx scripts/tasks.ts bootstrap]
+    cmds:
+      - bun install
+      - task up
 
   serve:
     desc: "Start the HTMX Dashboard to monitor runs"
-    cmds: ["npx tsx scripts/dashboard/server.ts"]
+    cmds: ["bun scripts/dashboard/server.ts"]
 
   # ============================================================================
   # UTILITIES
@@ -91,21 +95,21 @@ tasks:
       - npx eslint src
 
   test:
-    desc: "Run unit tests (node --test)"
+    desc: "Run unit tests (bun test)"
     aliases: [t]
-    cmds: [npx tsx scripts/tasks.ts test]
+    cmds: ["SKIP_LLM=true DRY_RUN=true bun test"]
 
   audit:overlays:
     desc: "Audit video overlays"
-    cmds: ["npx tsx scripts/tasks.ts audit:overlays"]
+    cmds: ["bun scripts/audit_overlays.ts"]
 
   cron:
     desc: "Install cron jobs based on config (Legacy)"
-    cmds: ["npx tsx scripts/tasks.ts cron"]
+    cmds: ["bun scripts/automation.ts --install-cron"]
 
   systemd:setup:
     desc: "Install Systemd service and timer"
-    cmds: ["npx tsx scripts/tasks.ts setup:systemd"]
+    cmds: ["bun scripts/setup_systemd.ts"]
 
   # ============================================================================
   # ACE Intelligence (OpenCE)
@@ -120,4 +124,4 @@ tasks:
 
   monitor:watch:
     desc: "Run the watcher agent manually"
-    cmds: ["npx tsx scripts/tasks.ts watcher {{.CLI_ARGS}}"]
+    cmds: ["bun src/agents/watcher.ts {{.CLI_ARGS}}"]

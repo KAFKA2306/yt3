@@ -1,0 +1,31 @@
+{
+  "bullets": [
+    {
+      "id": "cc8c8969-c82b-4f54-beb6-d1c0ed26d256",
+      "content": "Adopt a 'Financial Horror' narrative framework by utilizing low-frequency ambient drones and a 'countdown to impact' visual overlay that tracks the time remaining until a predicted market event occurs.",
+      "source": "Acquisition",
+      "confidence": 0.5,
+      "runs": 0,
+      "successes": 0,
+      "category": "Emotion"
+    },
+    {
+      "id": "e9c34cd6-0821-4767-95d1-a428600345bd",
+      "content": "Implement a 'Hostile Debate' structure where the two characters (Tsumugi and Zundamon) do not cooperate, but instead actively attempt to debunk each other's data points with 'Counter-Evidence Interruptions'.",
+      "source": "Acquisition",
+      "confidence": 0.5,
+      "runs": 0,
+      "successes": 0,
+      "category": "Retention"
+    },
+    {
+      "id": "237530f2-e103-479b-aa1d-160970a87d38",
+      "content": "Integrate 'Personal Survival Stress Tests' every 4 minutes, where the macro-analysis is paused to ask the viewer a specific 'What would you do?' question with a 5-second visual timer.",
+      "source": "Acquisition",
+      "confidence": 0.5,
+      "runs": 0,
+      "successes": 0,
+      "category": "Structural"
+    }
+  ]
+}

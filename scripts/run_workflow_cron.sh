@@ -6,10 +6,10 @@ export PATH="/root/.nvm/versions/node/v22.17.1/bin:$PATH"
 
 readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_dir="$(cd "${script_dir}/.." && pwd)"
-readonly log_dir="${repo_dir}/logs"
-readonly log_file="${log_dir}/cron.log"
+readonly log_dir="${repo_dir}/data/state"
+readonly log_file="${repo_dir}/logs/cron.log"
 readonly status_file="${log_dir}/last_run.json"
-readonly lock_file="${log_dir}/cron.lock"
+readonly lock_file="${repo_dir}/logs/cron.lock"
 readonly uv_bin="${UV_BIN:-/home/kafka/.local/bin/uv}"
 
 mkdir -p "${log_dir}"

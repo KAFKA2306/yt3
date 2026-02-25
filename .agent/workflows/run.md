@@ -15,13 +15,13 @@ description: 日次本番パイプラインの実行・監視・再開の手順�
 ### ステップ 1：環境の準備
 依存サービス（Voicevox, Discord Bot 等）を起動します。
 ```bash
-npx tsx scripts/tasks.ts up
+task up
 ```
 
 ### ステップ 2：パイプラインの実行
 メインエンジンを起動します。`RUN_ID` が指定されない場合は自動生成されます。
 ```bash
-npx tsx scripts/tasks.ts run
+task run
 ```
 
 ### ステップ 3：実行結果の検証
@@ -33,7 +33,7 @@ grep "SUCCESS" logs/agent_activity.jsonl | tail -n 1
 ### ステップ 4：後片付け
 すべての検証が完了したら、バックグラウンドプロセスを停止します。
 ```bash
-npx tsx scripts/tasks.ts down
+task down
 ```
 
 ---
