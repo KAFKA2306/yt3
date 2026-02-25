@@ -66,7 +66,7 @@ steps:
       - { name: "Contrast/Dissent", lang: "Chinese/Russian", suffix: "opinion blog" }
 
   script:
-    min_duration: 1200
+    min_duration: 2400
     max_duration: 3000
     target_wow_score: 8.0
     retention_optimization:
