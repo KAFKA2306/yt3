@@ -15,7 +15,7 @@ tasks:
   run:
     desc: "Run the full workflow (Production Mode)"
     aliases: [r]
-    cmds: ["bun src/index.ts {{.CLI_ARGS}}"]
+    cmds: ["bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
 
   dryrun:
     desc: "Safe Run: Cached LLM & No Publishing (DRY_RUN=true SKIP_LLM=true)"
@@ -23,30 +23,30 @@ tasks:
 
   run:cached:
     desc: "Run full workflow using cached LLM outputs (WARNING: May Publish)"
-    cmds: ["SKIP_LLM=true bun src/index.ts {{.CLI_ARGS}}"]
+    cmds: ["SKIP_LLM=true bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
 
   # ============================================================================
   # UNIT STEPS
   # ============================================================================
   research:
     desc: "Run research step only"
-    cmds: ["bun src/step.ts research {{.CLI_ARGS}}"]
+    cmds: ["bun --env-file=config/.env src/step.ts research {{.CLI_ARGS}}"]
 
   content:
     desc: "Run content step only"
-    cmds: ["bun src/step.ts content {{.CLI_ARGS}}"]
+    cmds: ["bun --env-file=config/.env src/step.ts content {{.CLI_ARGS}}"]
 
   media:
     desc: "Run media step only"
-    cmds: ["bun src/step.ts media {{.CLI_ARGS}}"]
+    cmds: ["bun --env-file=config/.env src/step.ts media {{.CLI_ARGS}}"]
 
   publish:
     desc: "Run publish step only (REAL PUBLISH)"
-    cmds: ["bun src/step.ts publish {{.CLI_ARGS}}"]
+    cmds: ["bun --env-file=config/.env src/step.ts publish {{.CLI_ARGS}}"]
 
   publish:dry:
     desc: "Run publish step in Dry Run mode (No external API calls)"
-    cmds: ["DRY_RUN=true bun src/step.ts publish {{.CLI_ARGS}}"]
+    cmds: ["DRY_RUN=true bun --env-file=config/.env src/step.ts publish {{.CLI_ARGS}}"]
 
   # ============================================================================
   # INFRASTRUCTURE

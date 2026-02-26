@@ -3,6 +3,7 @@ import path from "node:path";
 import axios from "axios";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
+
 import {
 	AgentLogger,
 	type AssetStore,
@@ -53,9 +54,11 @@ export class VisualDirector extends BaseAgent {
 		const audio_paths = await Promise.all(
 			script.lines.map(
 				async (l: { speaker: string; text: string }, i: number) => {
-					const speakerId = this.speakers[l.speaker];
-					if (speakerId === undefined)
-						throw new Error(`Unknown speaker: ${l.speaker}`);
+					let speakerId = this.speakers[l.speaker];
+					if (speakerId === undefined) {
+						AgentLogger.warn(this.name, "RUN", "UNKNOWN_SPEAKER", `Fallback to narrator for unknown speaker: ${l.speaker}`);
+						speakerId = 11;
+					}
 					const cleanText = this.cleanScriptText(l.text);
 					const q = await axios.post(`${this.ttsUrl}/audio_query`, null, {
 						params: { text: cleanText, speaker: speakerId },
@@ -136,11 +139,11 @@ export class VisualDirector extends BaseAgent {
 			const result = await this.validator.validate(
 				thumbnail_path,
 				(palette as unknown as Record<string, string>).text ||
-					(palette as unknown as Record<string, string>).title_color ||
-					"#FFFFFF",
+				(palette as unknown as Record<string, string>).title_color ||
+				"#FFFFFF",
 				(palette as unknown as Record<string, string>).background ||
-					(palette as unknown as Record<string, string>).background_color ||
-					"#000000",
+				(palette as unknown as Record<string, string>).background_color ||
+				"#000000",
 				title,
 				this.thumbConfig.right_guard_band_px ?? 850,
 			);

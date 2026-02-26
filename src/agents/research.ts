@@ -37,8 +37,7 @@ export class TrendScout extends BaseAgent {
 		const researchCfg = this.config.steps.research;
 		if (!researchCfg) throw new Error("Research config missing");
 		this.logInput({ bucket, limit: limit || researchCfg.default_limit || 3 });
-		const essences = loadMemoryContext(this.store);
-		const recent = "";
+		const recent = loadMemoryContext(this.store);
 		const promptCfg = this.loadPrompt<{
 			consolidated_trend_scout: { system: string; user_template: string };
 			consolidated_deep_dive: { system: string; user_template: string };
@@ -91,7 +90,7 @@ export class TrendScout extends BaseAgent {
 			news: deepDive.results
 				.flatMap((r: { news: NewsItem[] }) => r.news)
 				.filter((n: NewsItem) => n?.title),
-			memory_context: essences,
+			memory_context: recent,
 		};
 		this.logOutput(result);
 		return result;

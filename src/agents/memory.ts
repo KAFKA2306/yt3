@@ -9,34 +9,24 @@ export class MemoryAgent extends BaseAgent {
 	async run(state: AgentState): Promise<void> {
 		this.logInput(state);
 		const cfg = this.config.workflow.memory;
-		const memPath = path.dirname(
-			path.isAbsolute(cfg.index_file)
-				? cfg.index_file
-				: path.join(ROOT, cfg.index_file),
-		);
-		const idxPath = path.join(memPath, "index.json");
-		const essPath = path.join(memPath, "essences.json");
+		const memPath = path.isAbsolute(cfg.index_file)
+			? cfg.index_file
+			: path.join(ROOT, cfg.index_file);
+		const dir = path.dirname(memPath);
+		const idxPath = path.join(dir, "index.json");
 		const index = fs.existsSync(idxPath)
 			? fs.readJsonSync(idxPath)
 			: { videos: [] };
 		index.videos.push({
 			run_id: state.run_id,
-			topic:
-				state.metadata?.title || state.evaluation?.essence?.topic || "Unknown",
+			topic: state.metadata?.title || state.script?.title || "Unknown",
 			date: new Date().toISOString(),
 			url: state.publish_results?.youtube?.video_id
 				? `https://youtube.com/watch?v=${state.publish_results.youtube.video_id}`
 				: "",
 		});
-		fs.ensureDirSync(memPath);
+		fs.ensureDirSync(dir);
 		fs.writeJsonSync(idxPath, index, { spaces: 2 });
-		if (state.evaluation?.essence) {
-			const ess = fs.existsSync(essPath)
-				? fs.readJsonSync(essPath)
-				: { essences: [] };
-			ess.essences.push(state.evaluation.essence);
-			fs.writeJsonSync(essPath, ess, { spaces: 2 });
-		}
 		this.logOutput({ status: "updated", index_size: index.videos.length });
 	}
 }

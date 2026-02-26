@@ -69,7 +69,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-						.input || "input.yaml"
+					.input || "input.yaml"
 				: type === "output"
 					? this.cfg.workflow.filenames.output
 					: `${stage}_prompt.yaml`;
@@ -85,7 +85,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-						.input || "input.yaml"
+					.input || "input.yaml"
 				: this.cfg.workflow.filenames.output;
 		const p = path.join(this.runDir, stage, f);
 		fs.ensureDirSync(path.dirname(p));
@@ -201,7 +201,26 @@ export function getRunIdDateString(): string {
 	return `${y}-${m}-${day}`;
 }
 export function loadMemoryContext(store: AssetStore): string {
-	const p = path.join(store.runDir, "..", "memory.txt");
-	if (fs.existsSync(p)) return fs.readFileSync(p, "utf-8");
+	const cfg = store.cfg.workflow.memory;
+	const memPath = path.isAbsolute(cfg.index_file)
+		? cfg.index_file
+		: path.join(ROOT, cfg.index_file);
+	const dir = path.dirname(memPath);
+	const idxPath = path.join(dir, "index.json");
+
+	if (fs.existsSync(idxPath)) {
+		try {
+			const index = fs.readJsonSync(idxPath);
+			if (index.videos && Array.isArray(index.videos)) {
+				// Get last 10 topics to keep prompt slim
+				return index.videos
+					.slice(-20)
+					.map((v: { topic: string }) => v.topic)
+					.join(", ");
+			}
+		} catch (e) {
+			Logger.warn("SYSTEM", "MEMORY", "LOAD_ERROR", "Failed to parse memory index");
+		}
+	}
 	return "";
 }

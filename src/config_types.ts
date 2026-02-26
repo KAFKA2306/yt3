@@ -206,6 +206,16 @@ export interface AppConfig {
 	};
 	mcp: McpConfig;
 	design_tokens: DesignTokens;
+	news_bot?: {
+		token_env: string;
+		command_name: string;
+		command_description: string;
+		starter_template: string;
+		response_template: string;
+		thread_prefix: string;
+		thread_message: string;
+	};
+	public_url?: string;
 	// biome-ignore lint/suspicious/noExplicitAny: generic context
 	prompts: Record<string, any>;
 }

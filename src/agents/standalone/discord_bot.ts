@@ -8,11 +8,11 @@ import {
 	SlashCommandBuilder,
 	type TextChannel,
 } from "discord.js";
-import { loadConfig } from "../src/core.js";
+import { loadConfig } from "../../core.js";
 
 async function main() {
 	const config = loadConfig();
-	const settings = config.news_bot || {};
+	const settings = config.news_bot;
 	if (!settings) {
 		console.log("No news_bot settings found.");
 		return;

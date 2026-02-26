@@ -2,7 +2,7 @@ import "dotenv/config";
 import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
-import { loadConfig } from "../src/core.js";
+import { loadConfig } from "../../core.js";
 
 const ROOT = process.cwd();
 

@@ -111,7 +111,7 @@ export class ThumbnailRenderer {
 			})
 			.join("");
 		return `
-        <svg width="${cfg.width}" height="${cfg.height}" xmlns="http:
+        <svg width="${cfg.width}" height="${cfg.height}" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <clipPath id="s">
                     <rect x="0" y="0" width="${maxX}" height="${cfg.height}"/>

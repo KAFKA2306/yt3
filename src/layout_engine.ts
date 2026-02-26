@@ -251,4 +251,26 @@ export class LayoutEngine {
 	): Promise<void> {
 		await this.thumbRenderer.render(plan, title, output);
 	}
+	async renderDebugVisuals(plan: RenderPlan, output: string) {
+		const canvas = sharp({
+			create: {
+				width: plan.canvas.width,
+				height: plan.canvas.height,
+				channels: 4,
+				background: { r: 30, g: 30, b: 30, alpha: 1 },
+			},
+		});
+		const svg = `<svg width="${plan.canvas.width}" height="${plan.canvas.height}">
+            ${plan.overlays
+				.map(
+					(o) =>
+						`<rect x="${o.bounds.x}" y="${o.bounds.y}" width="${o.bounds.width}" height="${o.bounds.height}" fill="none" stroke="red" stroke-width="2"/>`,
+				)
+				.join("")}
+            ${plan.subtitleArea ? `<rect x="${plan.subtitleArea.x}" y="${plan.subtitleArea.y}" width="${plan.subtitleArea.width}" height="${plan.subtitleArea.height}" fill="none" stroke="green" stroke-width="2"/>` : ""}
+        </svg>`;
+		await canvas
+			.composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
+			.toFile(output);
+	}
 }

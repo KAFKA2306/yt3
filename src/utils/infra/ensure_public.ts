@@ -36,6 +36,7 @@ async function main() {
 			return;
 		}
 		const video = res.data.items[0];
+		if (!video) return;
 		const currentPrivacy = video.status?.privacyStatus;
 		const title = video.snippet?.title;
 		console.log(`Current Privacy: ${currentPrivacy}`);

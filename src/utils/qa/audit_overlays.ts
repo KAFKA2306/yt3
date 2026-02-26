@@ -1,8 +1,8 @@
 import path from "node:path";
 import fs from "fs-extra";
 import sharp from "sharp";
-import { loadConfig } from "../src/config.js";
-import { LayoutEngine } from "../src/layout_engine.js";
+import { loadConfig } from "../../core.js";
+import { LayoutEngine } from "../../layout_engine.js";
 async function main() {
 	console.log("Starting Layout Audit...");
 	const layout = new LayoutEngine();

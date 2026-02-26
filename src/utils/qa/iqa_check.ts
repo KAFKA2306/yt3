@@ -9,12 +9,12 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { glob } from "glob";
-import { loadConfig } from "../src/core.js";
+import { loadConfig } from "../../core.js";
 import {
 	type BackgroundRisk,
 	IQA_THRESHOLDS,
 	IqaValidator,
-} from "../src/utils/iqa_validator.js";
+} from "../../utils/iqa_validator.js";
 
 const cfg = loadConfig();
 const thumbCfg = cfg.steps.thumbnail;
@@ -48,13 +48,15 @@ interface BatchResult {
 function extractRunId(imagePath: string): string {
 	const parts = imagePath.split(path.sep);
 	const i = parts.findIndex((p) => p === "runs");
-	return i >= 0 && parts[i + 1] ? parts[i + 1] : "unknown";
+	const runId = i >= 0 && parts[i + 1] ? parts[i + 1] : "unknown";
+	return runId as string;
 }
 
 async function auditImage(imagePath: string): Promise<BatchResult> {
 	const runId = extractRunId(imagePath);
 	const failReasons: string[] = [];
 	const palette = thumbCfg.palettes[0];
+	if (!palette) throw new Error("No palette found");
 	const textHex = palette.title_color;
 	const bgHex = palette.background_color;
 	const guardBand = thumbCfg.right_guard_band_px ?? 850;
@@ -138,23 +140,23 @@ function printResult(r: BatchResult, index: number, total: number): void {
 		r.textClipped === undefined
 			? ""
 			: (r.textClipped
-					? `${COLORS.red}✗CLIP${COLORS.reset}`
-					: `${COLORS.green}✓txt${COLORS.reset}`) +
-				(r.textOverlap
-					? ` ${COLORS.red}✗OVR${COLORS.reset}`
-					: ` ${COLORS.green}✓pos${COLORS.reset}`);
+				? `${COLORS.red}✗CLIP${COLORS.reset}`
+				: `${COLORS.green}✓txt${COLORS.reset}`) +
+			(r.textOverlap
+				? ` ${COLORS.red}✗OVR${COLORS.reset}`
+				: ` ${COLORS.green}✓pos${COLORS.reset}`);
 
 	console.log(
 		`\n[${index + 1}/${total}] ${status}  ${COLORS.cyan}${shortPath}${COLORS.reset}`,
 	);
 	console.log(
 		`  ${COLORS.dim}Score:${COLORS.reset} ${(r.score * 100).toFixed(1)}%  ` +
-			`Sharp: ${r.sharpness.toFixed(1)}  Contrast: ${r.contrastRatio.toFixed(2)}:1  ` +
-			`Mobile: ${r.mobileEdgeStrength.toFixed(1)}  ` +
-			`${riskColor}bg:${r.backgroundRisk}${COLORS.reset}  ${textStatus}  ` +
-			`${r.isResolutionCorrect ? "✓ 1280×720" : "✗ Wrong Res"}`,
+		`Sharp: ${r.sharpness.toFixed(1)}  Contrast: ${r.contrastRatio.toFixed(2)}:1  ` +
+		`Mobile: ${r.mobileEdgeStrength.toFixed(1)}  ` +
+		`${riskColor}bg:${r.backgroundRisk}${COLORS.reset}  ${textStatus}  ` +
+		`${r.isResolutionCorrect ? "✓ 1280×720" : "✗ Wrong Res"}`,
 	);
-	r.failReasons.forEach((reason) =>
+	r.failReasons.forEach((reason: string) =>
 		console.log(`  ${COLORS.yellow}⚠ ${reason}${COLORS.reset}`),
 	);
 }
@@ -173,10 +175,10 @@ function printSummary(results: BatchResult[]): void {
 	if (failed > 0) {
 		console.log(`\n${COLORS.red}${COLORS.bold}不合格一覧:${COLORS.reset}`);
 		results
-			.filter((r) => !r.passed)
-			.forEach((r) => {
+			.filter((r: BatchResult) => !r.passed)
+			.forEach((r: BatchResult) => {
 				console.log(`  ✗ ${r.imagePath.replace(`${process.cwd()}/`, "")}`);
-				r.failReasons.forEach((f) => console.log(`     └─ ${f}`));
+				r.failReasons.forEach((f: string) => console.log(`     └─ ${f}`));
 			});
 	}
 
@@ -246,14 +248,14 @@ function auditPalettes(): void {
 					: `${COLORS.red}FAIL${COLORS.reset}`;
 		console.log(
 			`  ${String(i + 1).padEnd(2)} ${p.background_color.padEnd(13)}${p.title_color.padEnd(13)}` +
-				`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
-				`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
+			`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
+			`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
 		);
 	}
 
 	console.log("─".repeat(76));
 	console.log(
-		`  推奨: ${entries.filter((e) => e.rating === "✅ BEST").length} パレット  要注意: ${entries.filter((e) => e.rating === "❌ RISKY").length} パレット`,
+		`  推奨: ${entries.filter((e: any) => e.rating === "✅ BEST").length} パレット  要注意: ${entries.filter((e: any) => e.rating === "❌ RISKY").length} パレット`,
 	);
 }
 
@@ -281,7 +283,9 @@ async function main(): Promise<void> {
 
 	const results: BatchResult[] = [];
 	for (let i = 0; i < imagePaths.length; i++) {
-		const result = await auditImage(imagePaths[i]);
+		const p = imagePaths[i];
+		if (!p) continue;
+		const result = await auditImage(p);
 		results.push(result);
 		printResult(result, i, imagePaths.length);
 	}

@@ -76,15 +76,15 @@ app.get(
                         <h3>Script Content</h3>
                         <div class="script-lines">
                             ${data.script.lines
-															.map(
-																(l: any) => `
+							.map(
+								(l: any) => `
                                 <div class="script-line">
                                     <span class="speaker">${l.speaker}:</span>
                                     <span class="text">${l.text}</span>
                                 </div>
                             `,
-															)
-															.join("")}
+							)
+							.join("")}
                         </div>
                     </div>
                 `;
@@ -157,7 +157,7 @@ app.get(
 						stats[date].input += entry.context.input_tokens || 0;
 						stats[date].output += entry.context.output_tokens || 0;
 					}
-				} catch (e) {}
+				} catch (e) { }
 			}
 			const sortedDates = Object.keys(stats).sort().reverse();
 			if (sortedDates.length === 0) {
@@ -178,12 +178,14 @@ app.get(
                 <tbody>
         `;
 			for (const date of sortedDates) {
+				const s = stats[date];
+				if (!s) continue;
 				html += `
                 <tr style="border-bottom: 1px solid var(--border); font-size: 0.9rem;">
                     <td style="padding: 12px 8px; font-family: 'JetBrains Mono';">${date}</td>
-                    <td style="padding: 12px 8px;">${stats[date].calls}</td>
-                    <td style="padding: 12px 8px;">${stats[date].input.toLocaleString()}</td>
-                    <td style="padding: 12px 8px;">${stats[date].output.toLocaleString()}</td>
+                    <td style="padding: 12px 8px;">${s.calls}</td>
+                    <td style="padding: 12px 8px;">${s.input.toLocaleString()}</td>
+                    <td style="padding: 12px 8px;">${s.output.toLocaleString()}</td>
                 </tr>
             `;
 			}
