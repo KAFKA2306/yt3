@@ -103,7 +103,7 @@ export const ContentOutlineSchema = z.object({
 			id: z.number(),
 			title: z.string(),
 			key_points: z.array(z.string()),
-			estimated_duration: z.number(),
+			estimated_duration: z.coerce.number(),
 		}),
 	),
 });
