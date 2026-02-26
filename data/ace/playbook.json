@@ -44,6 +44,24 @@
       "runs": 0,
       "successes": 0,
       "category": "Reach"
+    },
+    {
+      "id": "b2c3d4e5-f6g7-h8i9-j0k1-l2m3n4o5p6q7",
+      "content": "Apply the 'Corporate Anchor' hook (mimicking the Yamae model) to all videos, starting with a specific company and massive data points to ensure >60% retention at the 0:30 mark.",
+      "source": "Analytics_DeepDive_2026_02",
+      "confidence": 0.9,
+      "runs": 0,
+      "successes": 0,
+      "category": "Retention"
+    },
+    {
+      "id": "c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8",
+      "content": "Aggressively optimize thumbnails for 'Related Video' traffic (56% source) by limiting text to <5 words and utilizing high-contrast visual cues to break the 1.8% CTR bottleneck.",
+      "source": "Analytics_DeepDive_2026_02",
+      "confidence": 0.85,
+      "runs": 0,
+      "successes": 0,
+      "category": "Conversion"
     }
   ]
 }
