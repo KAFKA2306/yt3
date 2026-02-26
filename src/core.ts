@@ -9,7 +9,16 @@ import { type AgentState, type AppConfig, RunStage } from "./types.js";
 import { AgentLogger as Logger } from "./utils/logger.js";
 export { Logger as AgentLogger };
 export { RunStage };
-export const loadConfig = baseLoadConfig;
+export const MANDATORY_MODEL = "gemini-3-flash-preview" as const;
+
+export function loadConfig(): AppConfig {
+	const cfg = baseLoadConfig() as AppConfig;
+	// Fundamental Enforcement: Override any config-level model setting at runtime
+	if (cfg.providers?.llm?.gemini) {
+		cfg.providers.llm.gemini.model = MANDATORY_MODEL;
+	}
+	return cfg;
+}
 export { ROOT };
 export interface LlmOptions {
 	model?: string;
@@ -18,11 +27,19 @@ export interface LlmOptions {
 	extra?: Record<string, unknown>;
 }
 export function createLlm(options: LlmOptions = {}): ChatGoogleGenerativeAI {
+	const MANDATORY_MODEL = "gemini-3-flash-preview";
 	const { extra = {}, ...rest } = options;
 	const cfg = loadConfig();
+
+	const requestedModel = options.model || cfg.providers.llm.gemini.model;
+	if (requestedModel && requestedModel !== MANDATORY_MODEL) {
+		Logger.warn("SYSTEM", "CORE", "MODEL_POLICY_OVERRIDE",
+			`Requested model ${requestedModel} ignored per strict policy. Using ${MANDATORY_MODEL}.`
+		);
+	}
+
 	return new ChatGoogleGenerativeAI({
-		model:
-			options.model || cfg.providers.llm.gemini.model || "gemini-1.5-flash",
+		model: MANDATORY_MODEL,
 		apiKey: process.env.GEMINI_API_KEY,
 		temperature: options.temperature,
 		...extra,
@@ -167,8 +184,18 @@ export function cleanCodeBlock(text: string): string {
 }
 export function parseLlmJson<T>(text: string, schema?: z.ZodSchema<T>): T {
 	const cleaned = cleanCodeBlock(text);
-	const json = JSON.parse(cleaned);
-	return schema ? schema.parse(json) : (json as T);
+	try {
+		const json = JSON.parse(cleaned);
+		return schema ? schema.parse(json) : (json as T);
+	} catch (e) {
+		Logger.error("SYSTEM", "JSON", "PARSE_ERROR", (e as Error).message, e as Error, {
+			context: {
+				raw_text: text.slice(0, 1000) + (text.length > 1000 ? "..." : ""),
+				cleaned_text: cleaned.slice(0, 1000) + (cleaned.length > 1000 ? "..." : ""),
+			},
+		});
+		throw e;
+	}
 }
 export async function runMcpTool(
 	serverName: string,
