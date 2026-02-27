@@ -8,12 +8,12 @@ import {
 	parseLlmJson,
 } from "../core.js";
 import {
-	ContentOutlineSchema,
-	ContentSegmentSchema,
-	MetadataSchema,
 	type ContentOutline,
+	ContentOutlineSchema,
 	type ContentResult,
+	ContentSegmentSchema,
 	type Metadata,
+	MetadataSchema,
 	type NewsItem,
 	type ScriptLine,
 } from "../types.js";
@@ -65,7 +65,9 @@ export class ScriptSmith extends BaseAgent {
 		}
 
 		// 3. Generate Metadata
-		const scriptText = allLines.map((l) => `${l.speaker}: ${l.text}`).join("\n");
+		const scriptText = allLines
+			.map((l) => `${l.speaker}: ${l.text}`)
+			.join("\n");
 		const metadata = await this.generateMetadata(scriptText, newsContext);
 
 		const result: ContentResult = {

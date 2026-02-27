@@ -2,7 +2,7 @@ import { z } from "zod";
 export const AceBulletSchema = z.object({
 	id: z.string(),
 	content: z.string(),
-	source: z.enum(["Acquisition", "Evolution"]),
+	source: z.enum(["Acquisition", "Evolution", "Analytics"]),
 	confidence: z.number().min(0).max(1),
 	runs: z.number().default(0),
 	successes: z.number().default(0),

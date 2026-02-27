@@ -33,8 +33,11 @@ export function createLlm(options: LlmOptions = {}): ChatGoogleGenerativeAI {
 
 	const requestedModel = options.model || cfg.providers.llm.gemini.model;
 	if (requestedModel && requestedModel !== MANDATORY_MODEL) {
-		Logger.warn("SYSTEM", "CORE", "MODEL_POLICY_OVERRIDE",
-			`Requested model ${requestedModel} ignored per strict policy. Using ${MANDATORY_MODEL}.`
+		Logger.warn(
+			"SYSTEM",
+			"CORE",
+			"MODEL_POLICY_OVERRIDE",
+			`Requested model ${requestedModel} ignored per strict policy. Using ${MANDATORY_MODEL}.`,
 		);
 	}
 
@@ -86,7 +89,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-					.input || "input.yaml"
+						.input || "input.yaml"
 				: type === "output"
 					? this.cfg.workflow.filenames.output
 					: `${stage}_prompt.yaml`;
@@ -102,7 +105,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-					.input || "input.yaml"
+						.input || "input.yaml"
 				: this.cfg.workflow.filenames.output;
 		const p = path.join(this.runDir, stage, f);
 		fs.ensureDirSync(path.dirname(p));
@@ -142,7 +145,7 @@ export abstract class BaseAgent {
 		this.store.save(this.name, "output", data);
 	}
 	loadPrompt<T>(name: string): T {
-		const prompts = this.config.prompts;
+		const prompts = this.config.prompts as Record<string, unknown>;
 		if (!prompts || !prompts[name])
 			throw new Error(`Prompt not found: ${name}`);
 		return prompts[name] as T;
@@ -188,12 +191,20 @@ export function parseLlmJson<T>(text: string, schema?: z.ZodSchema<T>): T {
 		const json = JSON.parse(cleaned);
 		return schema ? schema.parse(json) : (json as T);
 	} catch (e) {
-		Logger.error("SYSTEM", "JSON", "PARSE_ERROR", (e as Error).message, e as Error, {
-			context: {
-				raw_text: text.slice(0, 1000) + (text.length > 1000 ? "..." : ""),
-				cleaned_text: cleaned.slice(0, 1000) + (cleaned.length > 1000 ? "..." : ""),
+		Logger.error(
+			"SYSTEM",
+			"JSON",
+			"PARSE_ERROR",
+			(e as Error).message,
+			e as Error,
+			{
+				context: {
+					raw_text: text.slice(0, 1000) + (text.length > 1000 ? "..." : ""),
+					cleaned_text:
+						cleaned.slice(0, 1000) + (cleaned.length > 1000 ? "..." : ""),
+				},
 			},
-		});
+		);
 		throw e;
 	}
 }
@@ -246,7 +257,12 @@ export function loadMemoryContext(store: AssetStore): string {
 					.join(", ");
 			}
 		} catch (e) {
-			Logger.warn("SYSTEM", "MEMORY", "LOAD_ERROR", "Failed to parse memory index");
+			Logger.warn(
+				"SYSTEM",
+				"MEMORY",
+				"LOAD_ERROR",
+				"Failed to parse memory index",
+			);
 		}
 	}
 	return "";

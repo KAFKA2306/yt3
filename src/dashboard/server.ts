@@ -57,6 +57,7 @@ app.get(
 			let scriptHtml = "";
 			if (await fs.pathExists(contentPath)) {
 				const contentFile = await fs.readFile(contentPath, "utf8");
+				// biome-ignore lint/suspicious/noExplicitAny: complex dynamic object
 				const data = yaml.load(contentFile) as any;
 				if (data?.metadata) {
 					metadataHtml = `
@@ -77,7 +78,7 @@ app.get(
                         <div class="script-lines">
                             ${data.script.lines
 							.map(
-								(l: any) => `
+								(l: { speaker: string; text: string }) => `
                                 <div class="script-line">
                                     <span class="speaker">${l.speaker}:</span>
                                     <span class="text">${l.text}</span>

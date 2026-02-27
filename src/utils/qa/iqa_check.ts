@@ -140,25 +140,25 @@ function printResult(r: BatchResult, index: number, total: number): void {
 		r.textClipped === undefined
 			? ""
 			: (r.textClipped
-				? `${COLORS.red}✗CLIP${COLORS.reset}`
-				: `${COLORS.green}✓txt${COLORS.reset}`) +
-			(r.textOverlap
-				? ` ${COLORS.red}✗OVR${COLORS.reset}`
-				: ` ${COLORS.green}✓pos${COLORS.reset}`);
+					? `${COLORS.red}✗CLIP${COLORS.reset}`
+					: `${COLORS.green}✓txt${COLORS.reset}`) +
+				(r.textOverlap
+					? ` ${COLORS.red}✗OVR${COLORS.reset}`
+					: ` ${COLORS.green}✓pos${COLORS.reset}`);
 
 	console.log(
 		`\n[${index + 1}/${total}] ${status}  ${COLORS.cyan}${shortPath}${COLORS.reset}`,
 	);
 	console.log(
 		`  ${COLORS.dim}Score:${COLORS.reset} ${(r.score * 100).toFixed(1)}%  ` +
-		`Sharp: ${r.sharpness.toFixed(1)}  Contrast: ${r.contrastRatio.toFixed(2)}:1  ` +
-		`Mobile: ${r.mobileEdgeStrength.toFixed(1)}  ` +
-		`${riskColor}bg:${r.backgroundRisk}${COLORS.reset}  ${textStatus}  ` +
-		`${r.isResolutionCorrect ? "✓ 1280×720" : "✗ Wrong Res"}`,
+			`Sharp: ${r.sharpness.toFixed(1)}  Contrast: ${r.contrastRatio.toFixed(2)}:1  ` +
+			`Mobile: ${r.mobileEdgeStrength.toFixed(1)}  ` +
+			`${riskColor}bg:${r.backgroundRisk}${COLORS.reset}  ${textStatus}  ` +
+			`${r.isResolutionCorrect ? "✓ 1280×720" : "✗ Wrong Res"}`,
 	);
-	r.failReasons.forEach((reason: string) =>
-		console.log(`  ${COLORS.yellow}⚠ ${reason}${COLORS.reset}`),
-	);
+	for (const reason of r.failReasons) {
+		console.log(`  ${COLORS.yellow}⚠ ${reason}${COLORS.reset}`);
+	}
 }
 
 function printSummary(results: BatchResult[]): void {
@@ -174,12 +174,12 @@ function printSummary(results: BatchResult[]): void {
 
 	if (failed > 0) {
 		console.log(`\n${COLORS.red}${COLORS.bold}不合格一覧:${COLORS.reset}`);
-		results
-			.filter((r: BatchResult) => !r.passed)
-			.forEach((r: BatchResult) => {
-				console.log(`  ✗ ${r.imagePath.replace(`${process.cwd()}/`, "")}`);
-				r.failReasons.forEach((f: string) => console.log(`     └─ ${f}`));
-			});
+		for (const r of results.filter((r) => !r.passed)) {
+			console.log(`  ✗ ${r.imagePath.replace(`${process.cwd()}/`, "")}`);
+			for (const f of r.failReasons) {
+				console.log(`     └─ ${f}`);
+			}
+		}
 	}
 
 	const top5 = [...results].sort((a, b) => b.score - a.score).slice(0, 5);
@@ -248,14 +248,14 @@ function auditPalettes(): void {
 					: `${COLORS.red}FAIL${COLORS.reset}`;
 		console.log(
 			`  ${String(i + 1).padEnd(2)} ${p.background_color.padEnd(13)}${p.title_color.padEnd(13)}` +
-			`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
-			`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
+				`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
+				`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
 		);
 	}
 
 	console.log("─".repeat(76));
 	console.log(
-		`  推奨: ${entries.filter((e: any) => e.rating === "✅ BEST").length} パレット  要注意: ${entries.filter((e: any) => e.rating === "❌ RISKY").length} パレット`,
+		`  推奨: ${entries.filter((e) => e.rating === "✅ BEST").length} パレット  要注意: ${entries.filter((e) => e.rating === "❌ RISKY").length} パレット`,
 	);
 }
 
