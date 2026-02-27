@@ -3,8 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 const SYSTEMD_USER_DIR = path.join(os.homedir(), ".config/systemd/user");
-const SERVICE_FILE = "yt3-workflow.service";
-const TIMER_FILE = "yt3-workflow.timer";
+const SERVICE_FILE = "yt3-automation.service";
+const TIMER_FILE = "yt3-automation.timer";
 async function main() {
 	console.log("🚀 Setting up Systemd for Youtuber Workflow...");
 	fs.ensureDirSync(SYSTEMD_USER_DIR);

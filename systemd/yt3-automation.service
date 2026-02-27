@@ -1,0 +1,12 @@
+[Unit]
+Description=YT3 Daily Automation (Workflow & Sentinel)
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
+ExecStart=/bin/bash src/utils/infra/run_workflow_cron.sh
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target

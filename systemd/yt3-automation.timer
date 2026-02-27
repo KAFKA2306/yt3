@@ -1,0 +1,12 @@
+[Unit]
+Description=Timer for YT3 Daily Automation
+
+[Timer]
+# Run at 07:00 (Workflow) and 08:00 (Sentinel Check)
+OnCalendar=*-*-* 07:00:00
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+Unit=yt3-automation.service
+
+[Install]
+WantedBy=timers.target
