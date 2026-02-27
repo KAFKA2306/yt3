@@ -18,6 +18,12 @@ import {
 	type ScriptLine,
 } from "../types.js";
 
+interface ContentPrompts {
+	outline: { system: string; user_template: string };
+	segment: { system: string; user_template: string };
+	metadata: { system: string; user_template: string };
+}
+
 export class ScriptSmith extends BaseAgent {
 	constructor(store: AssetStore) {
 		const cfg = loadConfig();
@@ -88,7 +94,7 @@ export class ScriptSmith extends BaseAgent {
 		angle: string,
 		newsContext: string,
 	): Promise<ContentOutline> {
-		const prompts = this.loadPrompt<any>(this.name);
+		const prompts = this.loadPrompt<ContentPrompts>(this.name);
 		return this.runLlm(
 			prompts.outline.system,
 			prompts.outline.user_template
@@ -104,7 +110,7 @@ export class ScriptSmith extends BaseAgent {
 		prevLines: ScriptLine[],
 		newsContext: string,
 	): Promise<ScriptLine[]> {
-		const prompts = this.loadPrompt<any>(this.name);
+		const prompts = this.loadPrompt<ContentPrompts>(this.name);
 		const prevContext =
 			prevLines.length > 0
 				? prevLines.map((l) => `${l.speaker}: ${l.text}`).join("\n")
@@ -133,7 +139,7 @@ export class ScriptSmith extends BaseAgent {
 		scriptText: string,
 		newsSources: string,
 	): Promise<Metadata> {
-		const prompts = this.loadPrompt<any>(this.name);
+		const prompts = this.loadPrompt<ContentPrompts>(this.name);
 		return this.runLlm(
 			prompts.metadata.system,
 			prompts.metadata.user_template

@@ -77,15 +77,15 @@ app.get(
                         <h3>Script Content</h3>
                         <div class="script-lines">
                             ${data.script.lines
-							.map(
-								(l: { speaker: string; text: string }) => `
+															.map(
+																(l: { speaker: string; text: string }) => `
                                 <div class="script-line">
                                     <span class="speaker">${l.speaker}:</span>
                                     <span class="text">${l.text}</span>
                                 </div>
                             `,
-							)
-							.join("")}
+															)
+															.join("")}
                         </div>
                     </div>
                 `;
@@ -158,7 +158,7 @@ app.get(
 						stats[date].input += entry.context.input_tokens || 0;
 						stats[date].output += entry.context.output_tokens || 0;
 					}
-				} catch (e) { }
+				} catch (e) {}
 			}
 			const sortedDates = Object.keys(stats).sort().reverse();
 			if (sortedDates.length === 0) {

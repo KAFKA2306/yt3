@@ -1,67 +1,67 @@
 {
-  "bullets": [
-    {
-      "id": "cc8c8969-c82b-4f54-beb6-d1c0ed26d256",
-      "content": "Adopt a 'Financial Horror' narrative framework by utilizing low-frequency ambient drones and a 'countdown to impact' visual overlay that tracks the time remaining until a predicted market event occurs.",
-      "source": "Acquisition",
-      "confidence": 0.5,
-      "runs": 0,
-      "successes": 0,
-      "category": "Emotion"
-    },
-    {
-      "id": "e9c34cd6-0821-4767-95d1-a428600345bd",
-      "content": "Implement a 'Hostile Debate' structure where the two characters (Tsumugi and Zundamon) do not cooperate, but instead actively attempt to debunk each other's data points with 'Counter-Evidence Interruptions'.",
-      "source": "Acquisition",
-      "confidence": 0.5,
-      "runs": 0,
-      "successes": 0,
-      "category": "Retention"
-    },
-    {
-      "id": "237530f2-e103-479b-aa1d-160970a87d38",
-      "content": "Integrate 'Personal Survival Stress Tests' every 4 minutes, where the macro-analysis is paused to ask the viewer a specific 'What would you do?' question with a 5-second visual timer.",
-      "source": "Acquisition",
-      "confidence": 0.5,
-      "runs": 0,
-      "successes": 0,
-      "category": "Structural"
-    },
-    {
-      "id": "9d3c5e6f-a1b2-4c3d-be4f-5g6h7i8j9k0l",
-      "content": "Execute 'Silver & Rare Commodity Deep Dives' as the primary Retention Engine. These topics consistently achieve >45% maintenance and establish the channel's authority among core finance enthusiasts.",
-      "source": "Analytics",
-      "confidence": 0.95,
-      "runs": 0,
-      "successes": 0,
-      "category": "Retention"
-    },
-    {
-      "id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-      "content": "Systematically link technical infrastructure deadlines (e.g., Windows 10/PC 2026) to the Narrative of General Economic Collapse to maximize reach among general tech-literate audiences.",
-      "source": "Analytics",
-      "confidence": 0.8,
-      "runs": 0,
-      "successes": 0,
-      "category": "Reach"
-    },
-    {
-      "id": "b2c3d4e5-f6g7-h8i9-j0k1-l2m3n4o5p6q7",
-      "content": "Apply the 'Corporate Anchor' hook (mimicking the Yamae model) to all videos, starting with a specific company and massive data points to ensure >60% retention at the 0:30 mark.",
-      "source": "Analytics",
-      "confidence": 0.9,
-      "runs": 0,
-      "successes": 0,
-      "category": "Retention"
-    },
-    {
-      "id": "c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8",
-      "content": "Aggressively optimize thumbnails for 'Related Video' traffic (56% source) by limiting text to <5 words and utilizing high-contrast visual cues to break the 1.8% CTR bottleneck.",
-      "source": "Analytics",
-      "confidence": 0.85,
-      "runs": 0,
-      "successes": 0,
-      "category": "Conversion"
-    }
-  ]
+	"bullets": [
+		{
+			"id": "cc8c8969-c82b-4f54-beb6-d1c0ed26d256",
+			"content": "Adopt a 'Financial Horror' narrative framework by utilizing low-frequency ambient drones and a 'countdown to impact' visual overlay that tracks the time remaining until a predicted market event occurs.",
+			"source": "Acquisition",
+			"confidence": 0.5,
+			"runs": 0,
+			"successes": 0,
+			"category": "Emotion"
+		},
+		{
+			"id": "e9c34cd6-0821-4767-95d1-a428600345bd",
+			"content": "Implement a 'Hostile Debate' structure where the two characters (Tsumugi and Zundamon) do not cooperate, but instead actively attempt to debunk each other's data points with 'Counter-Evidence Interruptions'.",
+			"source": "Acquisition",
+			"confidence": 0.5,
+			"runs": 0,
+			"successes": 0,
+			"category": "Retention"
+		},
+		{
+			"id": "237530f2-e103-479b-aa1d-160970a87d38",
+			"content": "Integrate 'Personal Survival Stress Tests' every 4 minutes, where the macro-analysis is paused to ask the viewer a specific 'What would you do?' question with a 5-second visual timer.",
+			"source": "Acquisition",
+			"confidence": 0.5,
+			"runs": 0,
+			"successes": 0,
+			"category": "Structural"
+		},
+		{
+			"id": "9d3c5e6f-a1b2-4c3d-be4f-5g6h7i8j9k0l",
+			"content": "Execute 'Silver & Rare Commodity Deep Dives' as the primary Retention Engine. These topics consistently achieve >45% maintenance and establish the channel's authority among core finance enthusiasts.",
+			"source": "Analytics",
+			"confidence": 0.95,
+			"runs": 0,
+			"successes": 0,
+			"category": "Retention"
+		},
+		{
+			"id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+			"content": "Systematically link technical infrastructure deadlines (e.g., Windows 10/PC 2026) to the Narrative of General Economic Collapse to maximize reach among general tech-literate audiences.",
+			"source": "Analytics",
+			"confidence": 0.8,
+			"runs": 0,
+			"successes": 0,
+			"category": "Reach"
+		},
+		{
+			"id": "b2c3d4e5-f6g7-h8i9-j0k1-l2m3n4o5p6q7",
+			"content": "Apply the 'Corporate Anchor' hook (mimicking the Yamae model) to all videos, starting with a specific company and massive data points to ensure >60% retention at the 0:30 mark.",
+			"source": "Analytics",
+			"confidence": 0.9,
+			"runs": 0,
+			"successes": 0,
+			"category": "Retention"
+		},
+		{
+			"id": "c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8",
+			"content": "Aggressively optimize thumbnails for 'Related Video' traffic (56% source) by limiting text to <5 words and utilizing high-contrast visual cues to break the 1.8% CTR bottleneck.",
+			"source": "Analytics",
+			"confidence": 0.85,
+			"runs": 0,
+			"successes": 0,
+			"category": "Conversion"
+		}
+	]
 }
