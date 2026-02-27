@@ -45,6 +45,7 @@ export function createLlm(options: LlmOptions = {}): ChatGoogleGenerativeAI {
 		model: MANDATORY_MODEL,
 		apiKey: process.env.GEMINI_API_KEY,
 		temperature: options.temperature,
+		maxOutputTokens: cfg.providers.llm.gemini.max_tokens as number,
 		...extra,
 		...rest,
 	} as { model: string } & Record<string, unknown>);
@@ -169,14 +170,33 @@ export abstract class BaseAgent {
 			throw new Error("No previous data for LLM bypass");
 		}
 		const llm = createLlm(this.opts);
-		const res = await llm.invoke(
-			[
-				{ role: "system", content: finalSystemPrompt },
-				{ role: "user", content: userPrompt },
-			],
-			callOpts as Record<string, unknown>,
-		);
-		return parser(res.content as string);
+
+		let lastError: Error | null = null;
+		for (let attempt = 1; attempt <= 2; attempt++) {
+			try {
+				const res = await llm.invoke(
+					[
+						{ role: "system", content: finalSystemPrompt },
+						{ role: "user", content: userPrompt },
+					],
+					callOpts as Record<string, unknown>,
+				);
+				return parser(res.content as string);
+			} catch (e) {
+				lastError = e as Error;
+				if (e instanceof SyntaxError && attempt === 1) {
+					Logger.warn(
+						this.name,
+						"LLM",
+						"RETRY",
+						"JSON parse failed, retrying once...",
+					);
+					continue;
+				}
+				throw e;
+			}
+		}
+		throw lastError;
 	}
 }
 export function cleanCodeBlock(text: string): string {
