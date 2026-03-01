@@ -101,6 +101,36 @@ export interface AppConfig {
 		};
 		audio: { sample_rate: number; format: string };
 		subtitle: { width_per_char_pixels: number };
+		thumbnail: {
+			enabled: boolean;
+			width: number;
+			height: number;
+			padding: number;
+			max_lines?: number;
+			max_chars_per_line?: number;
+			right_guard_band_px?: number;
+			show_subtitle?: boolean;
+			title_font_size?: number;
+			subtitle_font_size?: number;
+			palettes: Array<{
+				background_color: string;
+				title_color: string;
+				outline_inner_color: string;
+				outline_inner_width: number;
+				outline_outer_color: string;
+				outline_outer_width: number;
+				subtitle_color?: string;
+			}>;
+			overlays: OverlayConfig[];
+			resolution?: string;
+			iqa_thresholds?: {
+				sharpness_min: number;
+				contrast_goal: number;
+				contrast_min: number;
+				mobile_edge_min: number;
+				cognitive_min: number;
+			};
+		};
 		video: {
 			resolution: string;
 			fps: number;
@@ -124,33 +154,14 @@ export interface AppConfig {
 				min_font_size?: number;
 				overlay_padding?: number;
 			};
-		};
-		thumbnail: {
-			enabled: boolean;
-			width: number;
-			height: number;
-			padding: number;
-			max_lines?: number;
-			max_chars_per_line?: number;
-			right_guard_band_px?: number;
-			show_subtitle?: boolean;
-			title_font_size?: number;
-			subtitle_font_size?: number;
-			palettes: Array<{
-				background_color: string;
-				title_color: string;
-				outline_inner_color: string;
-				outline_inner_width: number;
-				outline_outer_color: string;
-				outline_outer_width: number;
-				subtitle_color?: string;
-			}>;
-			overlays: OverlayConfig[];
-			resolution?: string;
+			layout_constants?: {
+				subtitle_zone_ratio: number;
+				subtitle_height: number;
+				default_max_w_ratio: number;
+			};
 		};
 		youtube?: {
 			enabled: boolean;
-			dry_run: boolean;
 			max_title_length: number;
 			max_description_length: number;
 			default_tags: string[];
@@ -159,7 +170,6 @@ export interface AppConfig {
 		};
 		twitter?: {
 			enabled: boolean;
-			dry_run: boolean;
 		};
 	};
 	providers: {

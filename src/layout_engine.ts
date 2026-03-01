@@ -121,12 +121,22 @@ export class LayoutEngine {
 		const { width: W, height: H } = canvas;
 		const subCfg = this.config.steps.video.subtitles || {};
 		let [sL, sR] = [subCfg.margin_l || 0, subCfg.margin_r || 0];
+		const lc = this.config.steps.video.layout_constants || {
+			subtitle_zone_ratio: 0.15,
+			subtitle_height: 300,
+			default_max_w_ratio: 0.5,
+		};
 		if (sL === 0 && sR === 0) {
-			const result = this.calculateAutomaticMargins(overlays, W, H);
+			const result = this.calculateAutomaticMargins(
+				overlays,
+				W,
+				H,
+				lc.subtitle_zone_ratio,
+			);
 			sL = result.sL;
 			sR = result.sR;
 		}
-		const minW = W * 0.5;
+		const minW = W * (lc.default_max_w_ratio ?? 0.5);
 		if (W - sL - sR < minW) {
 			const excess = (minW - (W - sL - sR)) / 2;
 			sL = Math.max(0, sL - excess);
@@ -135,9 +145,9 @@ export class LayoutEngine {
 		return {
 			subtitleArea: {
 				x: sL,
-				y: H - 300,
+				y: H - (lc.subtitle_height ?? 300),
 				width: W - sL - sR,
-				height: 300 - (subCfg.margin_v || 10),
+				height: (lc.subtitle_height ?? 300) - (subCfg.margin_v || 10),
 			},
 			safeMarginL: Math.round(sL),
 			safeMarginR: Math.round(sR),
@@ -147,9 +157,10 @@ export class LayoutEngine {
 		overlays: { bounds: Rect }[],
 		W: number,
 		H: number,
+		zoneRatio = 0.15,
 	) {
 		let [sL, sR] = [0, 0];
-		const zone = H * 0.15;
+		const zone = H * zoneRatio;
 		for (const ol of overlays) {
 			if (ol.bounds.y + ol.bounds.height <= H - zone) continue;
 			if (ol.bounds.x < W / 2)
@@ -190,7 +201,7 @@ export class LayoutEngine {
 		return {
 			font:
 				s.font_name ||
-				`${tokens?.font_text || "Atkinson Hyperlegible"}, IBM Plex Sans JP`,
+				"IBM Plex Sans JP",
 			size: s.font_size || g.video.subtitle_size,
 			color: s.primary_colour || "&HFFFFFF&",
 			outlineColor: s.outline_colour || "&H000000&",
@@ -262,11 +273,11 @@ export class LayoutEngine {
 		});
 		const svg = `<svg width="${plan.canvas.width}" height="${plan.canvas.height}">
             ${plan.overlays
-							.map(
-								(o) =>
-									`<rect x="${o.bounds.x}" y="${o.bounds.y}" width="${o.bounds.width}" height="${o.bounds.height}" fill="none" stroke="red" stroke-width="2"/>`,
-							)
-							.join("")}
+				.map(
+					(o) =>
+						`<rect x="${o.bounds.x}" y="${o.bounds.y}" width="${o.bounds.width}" height="${o.bounds.height}" fill="none" stroke="red" stroke-width="2"/>`,
+				)
+				.join("")}
             ${plan.subtitleArea ? `<rect x="${plan.subtitleArea.x}" y="${plan.subtitleArea.y}" width="${plan.subtitleArea.width}" height="${plan.subtitleArea.height}" fill="none" stroke="green" stroke-width="2"/>` : ""}
         </svg>`;
 		await canvas

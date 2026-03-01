@@ -6,7 +6,7 @@ type Palette = AppConfig["steps"]["thumbnail"]["palettes"][number];
 export class ThumbnailRenderer {
 	private validator: IqaValidator;
 	constructor(private config: AppConfig) {
-		this.validator = new IqaValidator();
+		this.validator = new IqaValidator(this.config);
 	}
 	selectBestPalette(palettes: Palette[]): Palette {
 		if (!palettes || palettes.length === 0) {

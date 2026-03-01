@@ -13,11 +13,13 @@ async function main() {
 		`Starting AI YouTuber Pipeline (RunID: ${runId})`,
 	);
 	const BUCKET = process.env.BUCKET || loadConfig().workflow.default_bucket;
+	const MISSION_FILE = process.env.MISSION_FILE;
 	const { createGraph } = await import("./graph.js");
 	const graph = createGraph(store);
 	const initialState = {
 		run_id: runId,
 		bucket: BUCKET,
+		mission_file: MISSION_FILE,
 	};
 	const finalState = await graph.invoke(initialState);
 	AgentLogger.info(

@@ -12,13 +12,19 @@ import { glob } from "glob";
 import { loadConfig } from "../../core.js";
 import {
 	type BackgroundRisk,
-	IQA_THRESHOLDS,
 	IqaValidator,
 } from "../../utils/iqa_validator.js";
 
 const cfg = loadConfig();
 const thumbCfg = cfg.steps.thumbnail;
-const validator = new IqaValidator();
+const validator = new IqaValidator(cfg);
+const thresholds = cfg.steps.thumbnail.iqa_thresholds || {
+	sharpness_min: 100,
+	contrast_goal: 7.0,
+	contrast_min: 5.0,
+	mobile_edge_min: 18,
+	cognitive_min: 0.6,
+};
 
 const COLORS = {
 	reset: "\x1b[0m",
@@ -86,11 +92,11 @@ async function auditImage(imagePath: string): Promise<BatchResult> {
 	const m = result.metrics;
 
 	if (!m.isResolutionCorrect) failReasons.push("RESOLUTION_MISMATCH");
-	if (m.sharpness < IQA_THRESHOLDS.SHARPNESS_MIN)
+	if (m.sharpness < (thresholds.sharpness_min ?? 100))
 		failReasons.push(`SHARPNESS_LOW: ${m.sharpness.toFixed(2)}`);
-	if (m.contrastRatio < IQA_THRESHOLDS.CONTRAST_MIN)
+	if (m.contrastRatio < (thresholds.contrast_min ?? 5.0))
 		failReasons.push(`CONTRAST_LOW: ${m.contrastRatio.toFixed(2)}`);
-	if ((m.mobileEdgeStrength ?? 0) < IQA_THRESHOLDS.MOBILE_EDGE_MIN)
+	if ((m.mobileEdgeStrength ?? 0) < (thresholds.mobile_edge_min ?? 18))
 		failReasons.push(`MOBILE_EDGE_WEAK: ${m.mobileEdgeStrength?.toFixed(2)}`);
 	if (result.textLayout?.isTextClipped)
 		failReasons.push(
@@ -140,21 +146,21 @@ function printResult(r: BatchResult, index: number, total: number): void {
 		r.textClipped === undefined
 			? ""
 			: (r.textClipped
-					? `${COLORS.red}✗CLIP${COLORS.reset}`
-					: `${COLORS.green}✓txt${COLORS.reset}`) +
-				(r.textOverlap
-					? ` ${COLORS.red}✗OVR${COLORS.reset}`
-					: ` ${COLORS.green}✓pos${COLORS.reset}`);
+				? `${COLORS.red}✗CLIP${COLORS.reset}`
+				: `${COLORS.green}✓txt${COLORS.reset}`) +
+			(r.textOverlap
+				? ` ${COLORS.red}✗OVR${COLORS.reset}`
+				: ` ${COLORS.green}✓pos${COLORS.reset}`);
 
 	console.log(
 		`\n[${index + 1}/${total}] ${status}  ${COLORS.cyan}${shortPath}${COLORS.reset}`,
 	);
 	console.log(
 		`  ${COLORS.dim}Score:${COLORS.reset} ${(r.score * 100).toFixed(1)}%  ` +
-			`Sharp: ${r.sharpness.toFixed(1)}  Contrast: ${r.contrastRatio.toFixed(2)}:1  ` +
-			`Mobile: ${r.mobileEdgeStrength.toFixed(1)}  ` +
-			`${riskColor}bg:${r.backgroundRisk}${COLORS.reset}  ${textStatus}  ` +
-			`${r.isResolutionCorrect ? "✓ 1280×720" : "✗ Wrong Res"}`,
+		`Sharp: ${r.sharpness.toFixed(1)}  Contrast: ${r.contrastRatio.toFixed(2)}:1  ` +
+		`Mobile: ${r.mobileEdgeStrength.toFixed(1)}  ` +
+		`${riskColor}bg:${r.backgroundRisk}${COLORS.reset}  ${textStatus}  ` +
+		`${r.isResolutionCorrect ? "✓ 1280×720" : "✗ Wrong Res"}`,
 	);
 	for (const reason of r.failReasons) {
 		console.log(`  ${COLORS.yellow}⚠ ${reason}${COLORS.reset}`);
@@ -194,7 +200,7 @@ function printSummary(results: BatchResult[]): void {
 function auditPalettes(): void {
 	const palettes = thumbCfg.palettes;
 	const ratingOf = (contrast: number, risk: BackgroundRisk) =>
-		contrast >= IQA_THRESHOLDS.CONTRAST_GOAL && risk === "low"
+		contrast >= (thresholds.contrast_goal ?? 7.0) && risk === "low"
 			? "✅ BEST"
 			: contrast >= 4.5 && risk !== "high"
 				? "⚠ OK"
@@ -248,8 +254,8 @@ function auditPalettes(): void {
 					: `${COLORS.red}FAIL${COLORS.reset}`;
 		console.log(
 			`  ${String(i + 1).padEnd(2)} ${p.background_color.padEnd(13)}${p.title_color.padEnd(13)}` +
-				`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
-				`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
+			`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
+			`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
 		);
 	}
 

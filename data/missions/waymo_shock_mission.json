@@ -1,0 +1,29 @@
+{
+    "mission_id": "waymo-shock-2026-001",
+    "topic": "Waymo Shock: Japan Taxi Reorganization & Value Chain Alpha",
+    "target_tickers": [
+        "9082.T",
+        "9035.T",
+        "336A.T"
+    ],
+    "angles": [
+        {
+            "name": "Structural Displacement",
+            "focus": "Legacy operators (9082, 9035) vs. Asset-light platforms (GO)"
+        },
+        {
+            "name": "Infra Resilience",
+            "focus": "High-precision mapping requirements (336A/DMP) as an unavoidable toll-road"
+        },
+        {
+            "name": "UI Layer Ownership",
+            "focus": "GO (App) as the customer gatekeeper in an autonomous world"
+        }
+    ],
+    "search_queries": [
+        "Waymo 日本 展開 規制 道路運送法",
+        "ダイナミックマッププラットフォーム 336A 自動運転 提携",
+        "GO タクシー 上場 申請 内容 ウェイモ",
+        "自動運転タクシー 日本 採算性 人件費"
+    ]
+}

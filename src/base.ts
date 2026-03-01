@@ -10,9 +10,6 @@ export function readYamlFile<T>(p: string): T {
 export function loadConfig(): AppConfig {
 	const configPath = path.join(ROOT, "config", "default.yaml");
 	const cfg = readYamlFile<AppConfig>(configPath);
-	if (process.env.DRY_RUN === "true") {
-		if (cfg.steps.youtube) cfg.steps.youtube.dry_run = true;
-		if (cfg.steps.twitter) cfg.steps.twitter.dry_run = true;
-	}
+
 	return cfg;
 }

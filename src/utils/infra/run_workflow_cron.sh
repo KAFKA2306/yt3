@@ -5,8 +5,8 @@ readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_dir="$(cd "${script_dir}/../../.." && pwd)"
 
 # Ensure correct runtime paths
-export PATH="/usr/local/bin:/root/.nvm/versions/node/v22.17.1/bin:$PATH"
-readonly bun_bin=$(which bun || echo "/usr/local/bin/bun")
+export PATH="/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+readonly bun_bin=$(which bun || echo "/home/kafka/.bun/bin/bun")
 
 # Load environment variables for Discord notifications from bash
 if [ -f "${repo_dir}/config/.env" ]; then

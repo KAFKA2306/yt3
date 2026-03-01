@@ -1,11 +1,11 @@
 import sharp from "sharp";
-export const IQA_THRESHOLDS = {
-	SHARPNESS_MIN: 100,
-	CONTRAST_GOAL: 7.0,
-	CONTRAST_MIN: 5.0,
-	MOBILE_EDGE_MIN: 18,
-	COGNITIVE_MIN: 0.6,
-};
+export interface IqaThresholds {
+	sharpness_min: number;
+	contrast_goal: number;
+	contrast_min: number;
+	mobile_edge_min: number;
+	cognitive_min: number;
+}
 export type BackgroundRisk = "low" | "medium" | "high";
 export interface TextLayoutAnalysis {
 	isTextClipped: boolean;

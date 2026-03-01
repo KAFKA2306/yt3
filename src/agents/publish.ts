@@ -25,7 +25,7 @@ export class PublishAgent extends BaseAgent {
 	): Promise<PublishResults["youtube"]> {
 		const ytCfg = cfg.steps.youtube;
 		if (!ytCfg) throw new Error("YouTube config missing");
-		if (ytCfg.dry_run) return { status: "dry_run", video_id: "dry_run_id" };
+
 		const youtube = google.youtube({
 			version: "v3",
 			auth: this.createYouTubeClient(),
@@ -100,7 +100,7 @@ export class PublishAgent extends BaseAgent {
 	): Promise<PublishResults["twitter"]> {
 		const twCfg = cfg.steps.twitter;
 		if (!twCfg) throw new Error("Twitter config missing");
-		if (twCfg.dry_run) return { status: "dry_run", tweet_id: "dry_run_id" };
+
 		const client = this.createTwitterClient();
 		const { metadata, video_path: videoPath } = state;
 		let mediaId: string | undefined;

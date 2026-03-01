@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { AgentLogger } from "../core.js";
 import {
 	type BackgroundRisk,
-	IQA_THRESHOLDS,
+	type IqaThresholds,
 	analyzeTextLayout,
 	calculateContrastRatio,
 	calculateMobileEdgeStrength,
@@ -12,8 +12,19 @@ import {
 	hexToRgb,
 } from "./iqa_metrics.js";
 import type { IqaResult } from "./schemas.js";
-export { IQA_THRESHOLDS, type BackgroundRisk, type IqaResult };
+export { type BackgroundRisk, type IqaResult };
 export class IqaValidator {
+	private thresholds: IqaThresholds;
+	constructor(config: { steps: { thumbnail: { iqa_thresholds?: Partial<IqaThresholds> } } }) {
+		const t = config.steps.thumbnail.iqa_thresholds || {};
+		this.thresholds = {
+			sharpness_min: t.sharpness_min ?? 100,
+			contrast_goal: t.contrast_goal ?? 7.0,
+			contrast_min: t.contrast_min ?? 5.0,
+			mobile_edge_min: t.mobile_edge_min ?? 18,
+			cognitive_min: t.cognitive_min ?? 0.6,
+		};
+	}
 	analyzeBackgroundRisk(bgHex: string): BackgroundRisk {
 		const { r, g, b } = hexToRgb(bgHex);
 		const lum = getLuminance(r, g, b);
@@ -24,7 +35,7 @@ export class IqaValidator {
 	}
 	calculateCognitiveScore(contrastRatio: number, textLength: number): number {
 		const contrastFactor = Math.min(
-			contrastRatio / IQA_THRESHOLDS.CONTRAST_GOAL,
+			contrastRatio / this.thresholds.contrast_goal,
 			1.0,
 		);
 		const densityFactor = textLength <= 5 ? 1.0 : textLength <= 8 ? 0.7 : 0.4;
@@ -73,13 +84,13 @@ export class IqaValidator {
 		const reasons: string[] = [];
 		if (!isResolutionCorrect)
 			reasons.push(`解像度不一致: ${metadata.width}x${metadata.height}`);
-		if (sharpness < IQA_THRESHOLDS.SHARPNESS_MIN)
+		if (sharpness < this.thresholds.sharpness_min)
 			reasons.push(`鮮鋭度不足: ${sharpness.toFixed(2)}`);
-		if (contrastRatio < IQA_THRESHOLDS.CONTRAST_MIN)
+		if (contrastRatio < this.thresholds.contrast_min)
 			reasons.push(`コントラスト不足: ${contrastRatio.toFixed(2)}`);
-		if (cognitiveRecognitionScore < IQA_THRESHOLDS.COGNITIVE_MIN)
+		if (cognitiveRecognitionScore < this.thresholds.cognitive_min)
 			reasons.push(`認知スコア不足: ${cognitiveRecognitionScore.toFixed(2)}`);
-		if (mobileEdgeStrength < IQA_THRESHOLDS.MOBILE_EDGE_MIN)
+		if (mobileEdgeStrength < this.thresholds.mobile_edge_min)
 			reasons.push(`Mobile edge weak: ${mobileEdgeStrength.toFixed(2)}`);
 		if (xHeightLegibilityScore < 0.3)
 			reasons.push(

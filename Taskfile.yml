@@ -17,10 +17,6 @@ tasks:
     aliases: [r]
     cmds: ["bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
 
-  dryrun:
-    desc: "Safe Run: Cached LLM & No Publishing (DRY_RUN=true SKIP_LLM=true)"
-    cmds: ["DRY_RUN=true SKIP_LLM=true npx tsx src/index.ts {{.CLI_ARGS}}"]
-
   run:cached:
     desc: "Run full workflow using cached LLM outputs (WARNING: May Publish)"
     cmds: ["SKIP_LLM=true bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
@@ -43,10 +39,6 @@ tasks:
   publish:
     desc: "Run publish step only (REAL PUBLISH)"
     cmds: ["bun --env-file=config/.env src/step.ts publish {{.CLI_ARGS}}"]
-
-  publish:dry:
-    desc: "Run publish step in Dry Run mode (No external API calls)"
-    cmds: ["DRY_RUN=true bun --env-file=config/.env src/step.ts publish {{.CLI_ARGS}}"]
 
   # ============================================================================
   # INFRASTRUCTURE
@@ -97,7 +89,7 @@ tasks:
   test:
     desc: "Run unit tests (bun test)"
     aliases: [t]
-    cmds: ["SKIP_LLM=true DRY_RUN=true bun test"]
+    cmds: ["SKIP_LLM=true bun test"]
 
   audit:overlays:
     desc: "Audit video overlays"

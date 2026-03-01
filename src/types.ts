@@ -145,5 +145,6 @@ export const AgentStateSchema = z.object({
 	metadata: MetadataSchema.optional(),
 	publish_results: PublishResultsSchema.optional(),
 	memory_context: z.string().optional(),
+	mission_file: z.string().optional(),
 });
 export type AgentState = z.infer<typeof AgentStateSchema>;

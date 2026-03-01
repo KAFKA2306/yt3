@@ -48,6 +48,9 @@ export function createGraph(store: AssetStore) {
 			PublishResults | undefined
 		>,
 		memory_context: { reducer, default: () => "" },
+		mission_file: { reducer, default: () => undefined } as ChannelReducer<
+			string | undefined
+		>,
 	};
 	const research = new TrendScout(store);
 	const content = new ScriptSmith(store);
@@ -62,7 +65,7 @@ export function createGraph(store: AssetStore) {
 			"RESEARCH",
 			"Starting trend discovery",
 		);
-		const res = await research.run(state.bucket, state.limit);
+		const res = await research.run(state.bucket, state.limit, state.mission_file);
 		return {
 			director_data: res.director_data,
 			news: res.news,
