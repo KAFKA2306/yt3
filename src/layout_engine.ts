@@ -199,9 +199,7 @@ export class LayoutEngine {
 		const g = this.config.global_style;
 		const tokens = this.config.design_tokens;
 		return {
-			font:
-				s.font_name ||
-				"IBM Plex Sans JP",
+			font: s.font_name || "IBM Plex Sans JP",
 			size: s.font_size || g.video.subtitle_size,
 			color: s.primary_colour || "&HFFFFFF&",
 			outlineColor: s.outline_colour || "&H000000&",
@@ -273,11 +271,11 @@ export class LayoutEngine {
 		});
 		const svg = `<svg width="${plan.canvas.width}" height="${plan.canvas.height}">
             ${plan.overlays
-				.map(
-					(o) =>
-						`<rect x="${o.bounds.x}" y="${o.bounds.y}" width="${o.bounds.width}" height="${o.bounds.height}" fill="none" stroke="red" stroke-width="2"/>`,
-				)
-				.join("")}
+							.map(
+								(o) =>
+									`<rect x="${o.bounds.x}" y="${o.bounds.y}" width="${o.bounds.width}" height="${o.bounds.height}" fill="none" stroke="red" stroke-width="2"/>`,
+							)
+							.join("")}
             ${plan.subtitleArea ? `<rect x="${plan.subtitleArea.x}" y="${plan.subtitleArea.y}" width="${plan.subtitleArea.width}" height="${plan.subtitleArea.height}" fill="none" stroke="green" stroke-width="2"/>` : ""}
         </svg>`;
 		await canvas

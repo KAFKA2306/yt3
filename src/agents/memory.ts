@@ -3,6 +3,13 @@ import fs from "fs-extra";
 import { type AssetStore, BaseAgent, ROOT, parseLlmJson } from "../core.js";
 import type { AgentState } from "../types.js";
 
+interface Essence {
+	key_insights: string[];
+	data_points: string[];
+	universal_principles: string[];
+	connections: string[];
+}
+
 export class MemoryAgent extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, "memory");
@@ -17,7 +24,9 @@ export class MemoryAgent extends BaseAgent {
 			? cfg.index_file
 			: path.join(ROOT, cfg.index_file);
 		const indexDir = path.dirname(indexFile);
-		const index = fs.existsSync(indexFile) ? fs.readJsonSync(indexFile) : { videos: [] };
+		const index = fs.existsSync(indexFile)
+			? fs.readJsonSync(indexFile)
+			: { videos: [] };
 
 		index.videos.push({
 			run_id: state.run_id,
@@ -34,14 +43,18 @@ export class MemoryAgent extends BaseAgent {
 		// 2. Extract and Update Essences (Knowledge Distillation)
 		const scriptLines = state.script?.lines || [];
 		if (scriptLines.length > 0) {
-			const prompt = this.loadPrompt<{ system: string; user_template: string }>("memory");
-			const scriptText = scriptLines.map((l) => `${l.speaker}: ${l.text}`).join("\n");
+			const prompt = this.loadPrompt<{ system: string; user_template: string }>(
+				"memory",
+			);
+			const scriptText = scriptLines
+				.map((l) => `${l.speaker}: ${l.text}`)
+				.join("\n");
 
 			try {
 				const essence = await this.runLlm(
 					prompt.system,
 					prompt.user_template.replace("{script_text}", scriptText),
-					(text) => parseLlmJson<any>(text),
+					(text) => parseLlmJson<Essence>(text),
 				);
 
 				const essenceFile = path.isAbsolute(cfg.essence_file)
@@ -61,12 +74,23 @@ export class MemoryAgent extends BaseAgent {
 
 				fs.ensureDirSync(essenceDir);
 				fs.writeJsonSync(essenceFile, essencesData, { spaces: 2 });
-				this.logOutput({ status: "updated", index_size: index.videos.length, essence_added: true });
+				this.logOutput({
+					status: "updated",
+					index_size: index.videos.length,
+					essence_added: true,
+				});
 			} catch (e) {
-				this.logOutput({ status: "partial_update", error: (e as Error).message });
+				this.logOutput({
+					status: "partial_update",
+					error: (e as Error).message,
+				});
 			}
 		} else {
-			this.logOutput({ status: "updated", index_size: index.videos.length, essence_added: false });
+			this.logOutput({
+				status: "updated",
+				index_size: index.videos.length,
+				essence_added: false,
+			});
 		}
 	}
 }

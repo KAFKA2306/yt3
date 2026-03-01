@@ -90,7 +90,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-					.input || "input.yaml"
+						.input || "input.yaml"
 				: type === "output"
 					? this.cfg.workflow.filenames.output
 					: `${stage}_prompt.yaml`;
@@ -106,7 +106,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-					.input || "input.yaml"
+						.input || "input.yaml"
 				: this.cfg.workflow.filenames.output;
 		const p = path.join(this.runDir, stage, f);
 		fs.ensureDirSync(path.dirname(p));
@@ -243,7 +243,7 @@ export function fitText(
 	maxWidth: number,
 	_minFontSize: number,
 ): { formattedText: string; fontSize: number } {
-	// Heuristic: Japanese characters are roughly square. 
+	// Heuristic: Japanese characters are roughly square.
 	// In ASS, FontSize is usually the height in pixels.
 	// We'll assume width is approximately the same as height for CJK.
 	const charWidth = baseFontSize * 0.9;

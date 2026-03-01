@@ -12,10 +12,12 @@ import {
 	hexToRgb,
 } from "./iqa_metrics.js";
 import type { IqaResult } from "./schemas.js";
-export { type BackgroundRisk, type IqaResult };
+export type { BackgroundRisk, IqaResult };
 export class IqaValidator {
 	private thresholds: IqaThresholds;
-	constructor(config: { steps: { thumbnail: { iqa_thresholds?: Partial<IqaThresholds> } } }) {
+	constructor(config: {
+		steps: { thumbnail: { iqa_thresholds?: Partial<IqaThresholds> } };
+	}) {
 		const t = config.steps.thumbnail.iqa_thresholds || {};
 		this.thresholds = {
 			sharpness_min: t.sharpness_min ?? 100,

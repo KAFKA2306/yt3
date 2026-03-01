@@ -1,15 +1,15 @@
+import fs from "fs-extra";
+import { z } from "zod";
 import {
 	type AssetStore,
 	BaseAgent,
+	AgentLogger as Logger,
 	RunStage,
 	getCurrentDateString,
 	loadConfig,
 	loadMemoryContext,
 	parseLlmJson,
-	AgentLogger as Logger,
 } from "../core.js";
-import fs from "fs-extra";
-import { z } from "zod";
 import {
 	type EditorSelection,
 	EditorSelectionSchema,
@@ -28,6 +28,12 @@ export interface ResearchResult {
 	news: NewsItem[];
 	memory_context: string;
 }
+interface Mission {
+	topic: string;
+	search_queries: string[];
+	angles: Array<{ name: string; focus: string }>;
+}
+
 export class TrendScout extends BaseAgent {
 	constructor(store: AssetStore) {
 		const cfg = loadConfig();
@@ -35,23 +41,36 @@ export class TrendScout extends BaseAgent {
 			temperature: cfg.steps.research?.temperature || 0.5,
 		});
 	}
-	async run(bucket: string, limit?: number, missionFile?: string): Promise<ResearchResult> {
+	async run(
+		bucket: string,
+		limit?: number,
+		missionFile?: string,
+	): Promise<ResearchResult> {
 		const cached = this.store.load<ResearchResult>(this.name, "output");
 		if (cached) return cached;
 		const researchCfg = this.config.steps.research;
 		if (!researchCfg) throw new Error("Research config missing");
-		this.logInput({ bucket, limit: limit || researchCfg.default_limit || 3, missionFile });
+		this.logInput({
+			bucket,
+			limit: limit || researchCfg.default_limit || 3,
+			missionFile,
+		});
 		const recent = loadMemoryContext(this.store);
 
 		if (missionFile && fs.existsSync(missionFile)) {
-			Logger.info("TrendScout", "RESEARCH", "MISSION", `Using mission from ${missionFile}`);
-			const mission = fs.readJsonSync(missionFile);
+			Logger.info(
+				"TrendScout",
+				"RESEARCH",
+				"MISSION",
+				`Using mission from ${missionFile}`,
+			);
+			const mission: Mission = fs.readJsonSync(missionFile);
 			return {
 				director_data: {
-					angle: mission.angles[0].focus,
+					angle: mission.angles[0]?.focus || "Default Angle",
 					title_hook: mission.topic,
 					search_query: mission.search_queries.join(", "),
-					key_questions: mission.angles.map((a: any) => a.name),
+					key_questions: mission.angles.map((a) => a.name),
 				},
 				news: [], // Will be filled by subsequent search if needed, or we can just proceed with mission data
 				memory_context: recent,
@@ -117,8 +136,7 @@ export class TrendScout extends BaseAgent {
 		const result: ResearchResult = {
 			director_data: {
 				angle: research.angle,
-				title_hook:
-					research.results[0]?.title_hook || research.selected_topic,
+				title_hook: research.results[0]?.title_hook || research.selected_topic,
 				search_query: research.search_query,
 				key_questions: research.results
 					.flatMap((r) => r.key_questions)

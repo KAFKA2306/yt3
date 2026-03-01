@@ -146,21 +146,21 @@ function printResult(r: BatchResult, index: number, total: number): void {
 		r.textClipped === undefined
 			? ""
 			: (r.textClipped
-				? `${COLORS.red}✗CLIP${COLORS.reset}`
-				: `${COLORS.green}✓txt${COLORS.reset}`) +
-			(r.textOverlap
-				? ` ${COLORS.red}✗OVR${COLORS.reset}`
-				: ` ${COLORS.green}✓pos${COLORS.reset}`);
+					? `${COLORS.red}✗CLIP${COLORS.reset}`
+					: `${COLORS.green}✓txt${COLORS.reset}`) +
+				(r.textOverlap
+					? ` ${COLORS.red}✗OVR${COLORS.reset}`
+					: ` ${COLORS.green}✓pos${COLORS.reset}`);
 
 	console.log(
 		`\n[${index + 1}/${total}] ${status}  ${COLORS.cyan}${shortPath}${COLORS.reset}`,
 	);
 	console.log(
 		`  ${COLORS.dim}Score:${COLORS.reset} ${(r.score * 100).toFixed(1)}%  ` +
-		`Sharp: ${r.sharpness.toFixed(1)}  Contrast: ${r.contrastRatio.toFixed(2)}:1  ` +
-		`Mobile: ${r.mobileEdgeStrength.toFixed(1)}  ` +
-		`${riskColor}bg:${r.backgroundRisk}${COLORS.reset}  ${textStatus}  ` +
-		`${r.isResolutionCorrect ? "✓ 1280×720" : "✗ Wrong Res"}`,
+			`Sharp: ${r.sharpness.toFixed(1)}  Contrast: ${r.contrastRatio.toFixed(2)}:1  ` +
+			`Mobile: ${r.mobileEdgeStrength.toFixed(1)}  ` +
+			`${riskColor}bg:${r.backgroundRisk}${COLORS.reset}  ${textStatus}  ` +
+			`${r.isResolutionCorrect ? "✓ 1280×720" : "✗ Wrong Res"}`,
 	);
 	for (const reason of r.failReasons) {
 		console.log(`  ${COLORS.yellow}⚠ ${reason}${COLORS.reset}`);
@@ -254,8 +254,8 @@ function auditPalettes(): void {
 					: `${COLORS.red}FAIL${COLORS.reset}`;
 		console.log(
 			`  ${String(i + 1).padEnd(2)} ${p.background_color.padEnd(13)}${p.title_color.padEnd(13)}` +
-			`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
-			`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
+				`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
+				`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
 		);
 	}
 

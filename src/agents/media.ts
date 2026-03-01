@@ -159,11 +159,11 @@ export class VisualDirector extends BaseAgent {
 			const result = await this.validator.validate(
 				thumbnail_path,
 				(palette as unknown as Record<string, string>).text ||
-				(palette as unknown as Record<string, string>).title_color ||
-				"#FFFFFF",
+					(palette as unknown as Record<string, string>).title_color ||
+					"#FFFFFF",
 				(palette as unknown as Record<string, string>).background ||
-				(palette as unknown as Record<string, string>).background_color ||
-				"#000000",
+					(palette as unknown as Record<string, string>).background_color ||
+					"#000000",
 				title,
 				this.thumbConfig.right_guard_band_px ?? 850,
 			);
