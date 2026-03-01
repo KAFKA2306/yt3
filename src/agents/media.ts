@@ -46,38 +46,53 @@ export class VisualDirector extends BaseAgent {
 		this.videoConfig = cfg.steps.video;
 		this.thumbConfig = cfg.steps.thumbnail;
 		this.layout = new LayoutEngine();
-		this.validator = new IqaValidator();
+		this.validator = new IqaValidator(cfg);
 	}
 	async run(script: Script, title: string): Promise<MediaResult> {
 		this.logInput({ lines: script.lines.length });
 		const audioDir = this.store.audioDir();
-		const audio_paths = await Promise.all(
-			script.lines.map(
-				async (l: { speaker: string; text: string }, i: number) => {
-					let speakerId = this.speakers[l.speaker];
-					if (speakerId === undefined) {
-						AgentLogger.warn(
-							this.name,
-							"RUN",
-							"UNKNOWN_SPEAKER",
-							`Fallback to narrator for unknown speaker: ${l.speaker}`,
-						);
-						speakerId = 11;
-					}
-					const cleanText = this.cleanScriptText(l.text);
-					const q = await axios.post(`${this.ttsUrl}/audio_query`, null, {
-						params: { text: cleanText, speaker: speakerId },
-					});
-					const s = await axios.post(`${this.ttsUrl}/synthesis`, q.data, {
-						params: { speaker: speakerId },
-						responseType: "arraybuffer",
-					});
-					const p = path.join(audioDir, `${String(i).padStart(3, "0")}.wav`);
-					fs.writeFileSync(p, Buffer.from(s.data));
-					return p;
-				},
-			),
-		);
+		const audio_paths: string[] = [];
+
+		for (let i = 0; i < script.lines.length; i++) {
+			const l = script.lines[i];
+			if (!l) continue;
+			const p = path.join(audioDir, `${String(i).padStart(3, "0")}.wav`);
+
+			if (fs.existsSync(p)) {
+				audio_paths.push(p);
+				continue;
+			}
+
+			let speakerId = this.speakers[l.speaker];
+			if (speakerId === undefined) {
+				AgentLogger.warn(
+					this.name,
+					"RUN",
+					"UNKNOWN_SPEAKER",
+					`Fallback to narrator for unknown speaker: ${l.speaker}`,
+				);
+				speakerId = 11;
+			}
+
+			const cleanText = this.cleanScriptText(l.text);
+			AgentLogger.info(
+				this.name,
+				"TTS",
+				"GENERATE",
+				`[${i + 1}/${script.lines.length}] ${l.speaker}: ${cleanText.slice(0, 30)}...`,
+			);
+
+			const q = await axios.post(`${this.ttsUrl}/audio_query`, null, {
+				params: { text: cleanText, speaker: speakerId },
+			});
+			const s = await axios.post(`${this.ttsUrl}/synthesis`, q.data, {
+				params: { speaker: speakerId },
+				responseType: "arraybuffer",
+			});
+
+			fs.writeFileSync(p, Buffer.from(s.data));
+			audio_paths.push(p);
+		}
 		const fullAudio = path.join(
 			audioDir,
 			this.store.cfg.workflow.filenames.audio_full,
@@ -144,11 +159,11 @@ export class VisualDirector extends BaseAgent {
 			const result = await this.validator.validate(
 				thumbnail_path,
 				(palette as unknown as Record<string, string>).text ||
-					(palette as unknown as Record<string, string>).title_color ||
-					"#FFFFFF",
+				(palette as unknown as Record<string, string>).title_color ||
+				"#FFFFFF",
 				(palette as unknown as Record<string, string>).background ||
-					(palette as unknown as Record<string, string>).background_color ||
-					"#000000",
+				(palette as unknown as Record<string, string>).background_color ||
+				"#000000",
 				title,
 				this.thumbConfig.right_guard_band_px ?? 850,
 			);
