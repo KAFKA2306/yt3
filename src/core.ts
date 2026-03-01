@@ -90,7 +90,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-						.input || "input.yaml"
+					.input || "input.yaml"
 				: type === "output"
 					? this.cfg.workflow.filenames.output
 					: `${stage}_prompt.yaml`;
@@ -106,7 +106,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-						.input || "input.yaml"
+					.input || "input.yaml"
 				: this.cfg.workflow.filenames.output;
 		const p = path.join(this.runDir, stage, f);
 		fs.ensureDirSync(path.dirname(p));
@@ -240,10 +240,25 @@ export async function runMcpTool(
 export function fitText(
 	text: string,
 	baseFontSize: number,
-	_maxWidth: number,
+	maxWidth: number,
 	_minFontSize: number,
 ): { formattedText: string; fontSize: number } {
-	return { formattedText: text, fontSize: baseFontSize };
+	// Heuristic: Japanese characters are roughly square. 
+	// In ASS, FontSize is usually the height in pixels.
+	// We'll assume width is approximately the same as height for CJK.
+	const charWidth = baseFontSize * 0.9;
+	const maxChars = Math.floor(maxWidth / charWidth);
+
+	if (text.length <= maxChars) {
+		return { formattedText: text, fontSize: baseFontSize };
+	}
+
+	const lines = [];
+	for (let i = 0; i < text.length; i += maxChars) {
+		lines.push(text.slice(i, i + maxChars));
+	}
+
+	return { formattedText: lines.join("\n"), fontSize: baseFontSize };
 }
 export function resolvePath(p: string): string {
 	return path.resolve(ROOT, p);
