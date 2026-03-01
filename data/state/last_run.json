@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-03-01T07:04:04+0900",
-  "status": "failure",
-  "exit_code": 1,
-  "duration_seconds": 209
+	"timestamp": "2026-03-01T07:04:04+0900",
+	"status": "failure",
+	"exit_code": 1,
+	"duration_seconds": 209
 }
