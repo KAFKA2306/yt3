@@ -1,21 +1,28 @@
+---
+name: viral-narrative
+description: Transforms complex financial topics into addictive entertainment via character-driven dialogue (Kakeai) to maximize audience retention and structural understanding.
+---
+
 # Viral Narrative (ScriptSmith)
 
-**目的**: 複雑な金融トピックを、春日部つむぎとずんだもんの掛け合い（Kakeai）を通じて、中毒性のあるエンターテインメントへと昇華させ、視聴維持率を最大化する。
+**Objective**: Elevate raw financial data into a compelling narrative through the dynamic interaction of specialized characters, ensuring maximum viewer engagement and information stickiness.
 
-## 1. キャラクターの役割とダイナミクス
-*   **春日部つむぎ (冷静・博識)**: 冷徹な事実、グローバルな視点、厳しい現実を突きつける。権威あるソースを引用し、理論武装せよ。
-*   **ずんだもん (感情・無知・欲望)**: 視聴者の代弁者。数字の大きさに驚き、安易な解決を求め、損をすることを極端に恐れよ。「〜なのだ！」の語尾を崩すな。
+## 1. Character Dynamics & Archetypes
+*   **Kasukabe Tsumugi (The Hyper Saitama Gyaru)**: Precise, objective, yet warm. Uses "Aashi" (あーし) as a first-person pronoun. Speaks in a friendly, lighthearted gyaru-influenced tone while maintaining her role as a senior analyst. An "Otaku-friendly gyaru" who is supportive and accepting. Uses standard polite Japanese (`です・ます`) but with a unique, younger sister-like (or elder cousin-like) charm.
+*   **Zundamon (The Zunda Fairy)**: Enthusiastic and inquisitive. Uses "Boku" (ボク) as a first-person pronoun. Slightly boastful and prone to get carried away, but ultimately helpful and positive. Represents the viewer's voice. Mandatory use of "なのだ" (nanoda) for sentence endings with natural variations (`～なのだ`, `～のだ！`, `～なのだ？`). Does NOT use `～なのだよ` or `～なのだぞ`. 
+*   **Dialogue Synergy (Joint Investigation)**: Structure character interactions as 'Joint Investigations' where Tsumugi and Zundamon combine their unique skills to solve a complex puzzle, explicitly banning 'Debunking' or 'Hostile' tones. Ensure an 80/20 balance between information (Tsumugi) and reflection/reaction (Zundamon). Tsumugi leads with "Aashi-style" friendliness, and Zundamon follows with "Boku/Nanoda" excitement.
 
-## 2. ライティングのテクニック
-*   **核心への最短距離**: 導入10秒で結論または情報の希少性と重要性を提示せよ（フック）。無駄な挨拶やチャンネル登録の促しは排除せよ。
-*   **比喩とメタファー**: 「借金の付け替え」「鎮痛剤か手術か」「氷山の一角」など、視覚的にイメージしやすい比喩を多用し、難解な概念を直感的に理解させよ。
-*   **情報の鮮度と驚き**: 視聴者が「初めて聞いた」「そんな見方があるのか」と発見する一次情報の差分を、ずんだもんのリアクションで強調せよ。
+## 2. Narrative Engineering Techniques
+*   **Hook Primacy**: Deliver the core thesis or information scarcity within the first 10 seconds. Eliminate generic greetings or engagement CTA fluff.
+*   **Metaphor Concentration**: Use high-impact yet calm metaphors (e.g., "Economic Ecosystem," "Navigational Chart," "Building Blocks") to make abstract concepts intuitive without inducing fear.
+*   **Insight Delta (Empathetic Structural Insight)**: Prioritize scripts that demonstrate empathy by explaining how these changes impact daily life (e.g., grocery prices, energy bills) alongside technical analysis. Use Zundamon's reactions to emphasize the value of the deeper truth discovered by Tsumugi for the viewer's future.
 
-## 3. タイトルとメタデータ (Professional Authority & Allure)
-*   **知的な深さと誘引力 (Insightful Allure)**: 「【緊急】」や衝撃的な言葉で煽るのではなく、情報の核心や独自の洞察（インサイト）を提示し、「これを知らないと時代の本質を見失う」という知的好奇心を最大限に刺激せよ。思わずクリックしたくなる「情報の希少性と必然性」を言語化せよ。
-*   **客観性と期待感**: 「〜の正体」などのミステリー形式ではなく、「〜の構造的課題と今後の展望」「〜が日本市場に与える実質的影響」など、視聴者が「価値ある情報を得られる」と論理的に確信し、かつその深淵を覗きたくなる表現を選べ。
-*   **タグ戦略**: 関連性の高い金融・技術用語を正確に使用し、検索意図に適合させよ。
+## 3. Metadata & Allure (Authority & Hope)
+*   **Discovery Depth (Optimistic Resilience)**: Avoid clickbait "Emergency" or "Identity" tags. Trigger intellectual curiosity by presenting the structural essence of potential growth, resilience, or "The Joy of Knowing."
+*   **Adaptive Strategy Integration**: Every script must conclude with a "Future-Proofing Brainstorm" — a positive action or adaptive strategy the viewer can take. Replace "Doom" with "Empowered Adaptation."
+*   **Structural Value**: Titles must promise actionable value and positive discovery (e.g., "The Architecture of Potential" vs. "Collapse"). 
+*   **Tag Optimization**: Use high-authority financial and technical terminology to align with professional search intent.
 
-## 4. 鉄の掟の適用
-*   **Fail Fast**: 台本の論理矛盾や、キャラクター崩壊が発生した場合は、生成を中断しリトライせよ。
-*   **コメント禁止**: プロンプトや出力に言い訳のような説明を加えるな。内容ですべてを語れ。
+## 4. Iron Rule Compliance
+*   **Fail Fast (Logic)**: If character archetypes collapse or logical contradictions emerge, terminate generation and retry immediately.
+*   **Zero-Comment Policy**: Do not explain the prompt or output. Let the narrative quality speak for itself.

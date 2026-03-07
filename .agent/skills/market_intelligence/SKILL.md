@@ -1,18 +1,27 @@
+---
+name: market-intelligence
+description: Identifies "Information Asymmetry" from global financial, political, and tech news that significantly impacts the Japanese market, extracting sharp insights that form the core of video content.
+---
+
 # Market Intelligence (TrendScout)
 
-**目的**: 世界中の金融・政治・テックニュースから、日本市場に大きな影響を与える「情報の非対称性」を特定し、動画の核となる鋭いインサイトを抽出する。
+**Objective**: Uncover critical, overlooked insights from global Tier 1 and Tier 2 sources to provide viewers with an analytical edge and update their intellectual paradigms.
 
-## 1. 情報源の多角化 (Multi-Lingual Strategy)
-*   **一次情報の追求**: 日本メディアの二次情報ではなく、ロイター (Reuters), ブルームバーグ (Bloomberg), Caixin, FT, Kommersant などの海外一次情報を正規ソースとして扱え。
-*   **非対称性の抽出**: 「日本人が知らないが、知っておくべき重大な事実」を特定せよ。英語・ロシア語・中国語のソースを活用し、日本独自の視点を加えよ。
+## 1. Information Tiering & Source Diversification
+*   **Tier 1 Primacy**: Prioritize primary sources from governments, central banks (Fed, ECB, BoJ), and regulatory bodies (SEC).
+*   **Global Cross-Verification**: Bypass domestic echo chambers. Mandate the use of Reuters, Bloomberg, Caixin, FT, and Kommersant to identify global narrative shifts, but filter for relevance to people's actual lives.
+*   **Insight Identification (Curiosity First)**: Focus on "what is overlooked but beneficial to know." Select topics that are genuinely interesting, surprising, or intellectually stimulating.
+*   **Frontier Exploration (Mandatory)**: Mandate research into 'Emerging Frontiers' (e.g., Biotech, Agri-tech, Space economy, breakthrough research) to maintain long-term audience curiosity and sense of discovery.
+*   **Macro-Collapse Prohibition**: Explicitly ban "Macro-Collapse" (マクロ崩壊論) or excessively sensationalist narratives that focus solely on "The End of Japan" or "Systemic Ruin." Shift from "Doom" to "Dynamic Adaptation."
 
-## 2. リサーチの精度 (Precision Search)
-*   **具体的な問い**: `key_questions` には、表面的な要約ではなく「誰が損をして、誰が得をするのか」「資金の流れの歪みはどこか」といった本質的な問いを記述せよ。
-*   **データの裏付け**: 感情的な意見ではなく、数値（10兆元、IMF推計60兆元、関税60%など）を軸にした事実確認を徹底せよ。
+## 2. Analytical Precision
+*   **Hard Data Enforcement**: Abandon vague "sentiments." Every claim MUST be backed by specific numbers (e.g., "10 trillion CNY stimulus," "60% tariff impact," "IMF 60tn debt estimate").
+*   **Structural Questioning (Winner's Perspective)**: Shift from "what happened" to "who wins, who loses, and where is the structural distortion of capital?" When analyzing a 'Disruptive Shock', specifically shift focus from the 'Losers' (legacy operators) to the 'Infrastructural Winners' (e.g., networks, platform owners) and 'Resilient Layers'.
 
-## 3. トレンドのフック (Trend Hooks)
-*   **タイトル・フック**: 視聴者が「価値ある洞察を得られる」と確信できる、知的な深みと多角的な視点を象徴するメタファー（ダモクレスの剣、借金の付け替え、デフレの輸出など）を選定せよ。
+## 3. Narrative Architecture
+*   **Hook Selection**: Identify constructive metaphors (e.g., "Seeds of Growth," "Economic Compass," "Structural Foundation") that represent the potential for positive change or understanding.
+*   **Insight Density**: Eliminate redundant background. Every sentence must contribute to a clear, actionable understanding of the topic being presented.
 
-## 4. 鉄の掟の適用 (Iron Rules)
-*   **最小化**: 冗長な背景説明は不要。核心を突く事実のみを抽出せよ。
-*   **ドキュメント**: 解析結果および指示はすべて日本語で記述せよ。
+## 4. Iron Rule Compliance
+*   **Fact Validation**: ISO8601 timestamps are mandatory for all news items. Discard any data that cannot be chronologically verified against the current system date.
+*   **Integrity**: Categorize all claims strictly into `fact`, `forecast`, or `opinion` to maintain absolute transparency and viewer trust.

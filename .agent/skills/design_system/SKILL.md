@@ -1,22 +1,30 @@
 # Design System (VisualDirector)
 
 **目的**: デジタル庁および Serendie の人間中心デザインシステムをメディア合成に適用し、プロフェッショナルかつ「脳に刺さる」視覚体験を最小のコードで実現する。
+---
+name: design-system
+description: Standards and guidelines for creating premium, high-density visual content for the 2026 Financial Protocol. Ensures consistency in typography, color palettes, and layout across all video and thumbnail assets.
+---
 
-## 1. 視覚的アイデンティティ (Tokens)
-*   **カラーパレット**: 
-    *   `var(--color-primary)` (#005CB9): 信頼・公式情報のテロップ
-    *   `var(--color-accent)` (#00A3AF): 強調・ずんだもんの驚き・新情報
-    *   `var(--color-background)` (#0A0A12): 深い紺・プロフェッショナルな空気感
-*   **タイポグラフィ**: `"Noto Sans JP"` を基本とし、ウェイトで階層を表現せよ。装飾過多なフォントは禁止。
+# Design System (2026 Financial Protocol)
 
-## 2. レイアウトと安全圏 (Safe Zones)
-*   **90% Rule**: すべての重要な文字情報、アイコン、キャラクターの顔は、画面中央90%のセーフゾーン内に配置せよ。
-*   **衝突回避 (Collision)**: 字幕（Subtitles）とキャラクターの立ち絵、あるいは重要な図解が重ならないよう、`src/layout_engine.ts` で動的にマージンを計算せよ。
+**Objective**: Guarantee the production of premium, high-density visual assets that adhere to the 2026 Financial Protocol standards, maximizing viewer trust and authority through aesthetic excellence.
 
-## 3. 字幕とタイミング (Synchronization)
-*   **高精度タイミング**: 音声の長さ ($T_{audio}$) だけでなく、文字数と読み上げ速度を考慮した最適なデュレーションを算出せよ。
-*   **視認性**: すべてのテキストには、背景色に応じた適切な縁取り（Outline）またはシャドウを適用し、どんな背景画像の上でも可読性を保証せよ。
+## 1. Typography & Readability
+*   **Primary Typeface**: Use "Atkinson Hyperlegible" for all UI and informational text. It provides maximum clarity for complex financial data.
+*   **Hierarchy**: Maintain a strict scale for titles (90px), subtitles (48px-64px), and body text to guide the viewer's eye through the most critical information first.
+*   **Legibility Standard**: Ensure minimum x-height and contrast are met before final rendering. Text Must be readable on small mobile screens.
 
-## 4. 鉄の掟の適用
-*   **最小化**: 装飾用CSSや未使用のレンダリング命令はすべて削除せよ。
-*   **設定駆動**: 全てのアセットパス、カラー、サイズは `config/*.yaml` から動的に取得せよ。
+## 2. Color Palette (Auth & Trust)
+*   **Base Color (#103766)**: Deep Navy representing stability and institutional trust. 
+*   **Accent & Discovery Colors**: Use vibrant and clear accents (e.g., #288CFA, #00FFC2) to represent "Discovery" and "Intellectual Excitement." Avoid muddy or dark tones that induce fear.
+*   **Contrast Layer**: Use sharp white (#FFFFFF) for primary text to ensure maximum legibility and a "Clean & Intelligent" aesthetic.
+
+## 3. Visual Density & Layout
+*   **Information Density**: Avoid empty space. Populate the screen with meaningful charts, ticker tapes, and real-time data feeds.
+*   **Character Integration**: Position characters (Tsumugi, Zundamon) strategically to overlap with the UI, creating a sense of depth and interaction with the data.
+*   **Thumbnail Optimization (5-Word Rule)**: Aggressively optimize thumbnails for 'Related Video' traffic by limiting prominent text to <5 words and utilizing high-contrast visual cues.
+
+## 4. Performance & Execution
+*   **Reliability**: All assets must be verified for contrast and sharpness (IQA thresholds) before final rendering.
+*   **Efficiency**: Reuse predefined components from the `assets/` directory to minimize latency and ensure pixel-perfect consistency.

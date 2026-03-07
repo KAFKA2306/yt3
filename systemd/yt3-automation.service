@@ -4,9 +4,12 @@ After=network.target
 
 [Service]
 Type=oneshot
+User=kafka
+Group=kafka
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
-ExecStart=/bin/bash src/utils/infra/run_workflow_cron.sh
-Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/bash /home/kafka/2511youtuber/v3/yt3/src/io/utils/infra/run_workflow_cron.sh
+Environment=PATH=/home/kafka/.bun/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/kafka
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

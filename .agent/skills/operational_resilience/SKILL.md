@@ -1,20 +1,29 @@
+---
+name: operational-resilience
+description: Guarantees stable system operation, efficient resource consumption, and strict adherence to the project's "Iron Rules" using LangGraph and Gemini 3 Flash.
+---
+
 # Operational Resilience (Core Infrastructure)
 
-**目的**: LangGraph と Gemini 3 Flash を核としたシステムの安定稼働、効率的なリソース消費、および「鉄の掟」に準拠した開発を保証する。
+**Objective**: Ensure high availability and rigorous execution standards by leveraging the full capabilities of the Gemini 3 Flash model and maintaining a robust workflow architecture.
 
-## 1. LLM 運用 (Gemini Strategy)
-*   **Gemini 3 Flash 専念**: モデルの変更は原則禁止。コンテキストウィンドウの広さを活かし、膨大な一次情報を一度に処理せよ。
-*   **キャッシュ最適化**: システムプロンプトや知識ベースを先頭に配置し、暗黙的キャッシュを最大限活用してレイテンシとコストを削減せよ。
-*   **JSON モード**: 構造化データ出力には必ず `responseMimeType: "application/json"` を使用し、`src/core.ts` の `parseLlmJson` で安全にパースせよ。
+## 1. LLM Operations (Gemini Strategy)
+*   **Gemini 3 Flash Exclusive**: Prohibition of model switching. Explosive context window utilization is mandatory for processing vast T1/T2 information sources simultaneously.
+*   **Prompt Caching**: Strategically place system instructions and knowledge bases at the prefix to maximize implicit caching, drastically reducing latency and operational costs.
+*   **JSON Enforcement**: All structured outputs must use `responseMimeType: "application/json"`. Verify parsing via `src/io/core.ts` to prevent runtime failures.
 
-## 2. ワークフロー制御 (LangGraph Strategy)
-*   **最小ステート**: 全チャット履歴を保持せず、`summary` や `essence` に圧縮してリレーせよ。
-*   **Resume ロジック**: 途中で失敗した実行を、チェックポイントから正確に再開（Resume）できる設計を維持せよ。副作用のある操作は冪等性を担保せly。
+## 2. Workflow Control (LangGraph Strategy)
+*   **State Minimization**: Do not persist full chat histories. Compress context into `summary` or `essence` before relaying to the next node.
+*   **Safe Resume Logic**: Maintain deterministic checkpoints. All operations with side effects MUST be idempotent to allow flawless resumption after interruption.
 
-## 3. エラーと安定性 (Fail Fast & Throttling)
-*   **Fail Fast (掟5)**: `try-catch` でエラーを飲み込むな。予期せぬ状態は即座にクラッシュさせ、問題を表面化させよ。
-*   **スマート・スロットリング**: 指数関数的バックオフとジッターを使用し、APIレート制限を賢く回避せよ。
+## 3. Stability & Failure Management
+*   **Fail Fast Protocol**: Absolute ban on defensive `try-catch` blocks that swallow errors. Force immediate crashes on unexpected states to expose root causes.
+*   **Infrastructure Essentials (Anti-Regression)**:
+    *   **Absolute Paths Only**: All scripts and unit files MUST use absolute paths. Relative path reliance is a fatal flaw in automated environments (Systemd/Cron).
+    *   **Standardized Environments**: Explicitly define `User`, `Group`, `WorkingDirectory`, and `Environment (PATH, HOME)` in every service unit to prevent permission and environment mismatches.
+    *   **Pre-flight Checks**: Implement logic to verify write permissions for `runs/` and `logs/` before starting the main workflow loop.
+*   **Intelligent Throttling**: Use exponential backoff with jitter to navigate API rate limits.
 
-## 4. 鉄の掟の適用
-*   **最小化 (掟1)**: コード量は罪。冗長なロジックは `src/core.ts` に集約し、各エージェントは機能を最小限に絞れ。
-*   **any禁止 (掟8)**: 型安全性はシステムの命。`Record<string, unknown>` を活用し、厳密な型定義を徹底せよ。
+## 4. Adherence to Iron Rules
+*   **Minimization**: Code redundancy is a failure. Consolidate logic into `src/io/core.ts` and keep agent specialized functions skeletal.
+*   **Intellectual Honesty**: Do not settle for "Macro-Collapse" (マクロ崩壊論) as a default narrative. Prioritize "The Joy of Discovery" and "Structural Adaptive Strategy" to maintain high-quality, non-sensationalist output.
