@@ -40,6 +40,10 @@ tasks:
     desc: "Run publish step only (REAL PUBLISH)"
     cmds: ["bun --env-file=config/.env src/step.ts publish {{.CLI_ARGS}}"]
 
+  report:
+    desc: "Generate full executive report (Macro, Fundamental, Risk, Event, Whale)"
+    cmds: ["bun --env-file=config/.env src/report_workflow.ts {{.CLI_ARGS}}"]
+
   # ============================================================================
   # INFRASTRUCTURE
   # ============================================================================
@@ -84,7 +88,7 @@ tasks:
     aliases: [l]
     cmds:
       - npx tsc --noEmit
-      - npx eslint src
+      - bun biome check src
 
   test:
     desc: "Run unit tests (bun test)"
@@ -93,26 +97,26 @@ tasks:
 
   audit:overlays:
     desc: "Audit video overlays"
-    cmds: ["bun src/utils/qa/audit_overlays.ts"]
+    cmds: ["bun src/io/utils/qa/audit_overlays.ts"]
 
   cron:
     desc: "Install cron jobs based on config (Legacy)"
-    cmds: ["bun src/utils/infra/automation.ts --install-cron"]
+    cmds: ["bun src/io/utils/infra/automation.ts --install-cron"]
 
   systemd:setup:
     desc: "Install Systemd service and timer"
-    cmds: ["bun src/utils/infra/setup_systemd.ts"]
+    cmds: ["bun src/io/utils/infra/setup_systemd.ts"]
 
   # ============================================================================
   # ACE Intelligence (OpenCE)
   # ============================================================================
   ace:evaluate:
     desc: "Analyze logs and evolve playbook (Closed-Loop)"
-    cmds: ["bun --env-file=config/.env src/ace/ops.ts evaluate"]
+    cmds: ["bun --env-file=config/.env src/domain/ace/ops.ts evaluate"]
 
   ace:acquire:
     desc: "Acquire new orthogonal strategic hypotheses"
-    cmds: ["bun --env-file=config/.env src/ace/ops.ts acquire"]
+    cmds: ["bun --env-file=config/.env src/domain/ace/ops.ts acquire"]
 
   monitor:watch:
     desc: "Run the watcher agent manually"
