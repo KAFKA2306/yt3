@@ -8,7 +8,7 @@ import {
 	SlashCommandBuilder,
 	type TextChannel,
 } from "discord.js";
-import { loadConfig } from "../../core.js";
+import { loadConfig } from "../../io/core.js";
 
 async function main() {
 	const config = loadConfig();
