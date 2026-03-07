@@ -1,28 +1,28 @@
-Achieve the goal with MINIMAL changes. Extra changes introduce extra bugs and slow review. NO comments in code. Good code reads itself; comments rot and mislead. Respond clearly, specifically, and concisely. Vague answers waste time and create misunderstanding.
+最小限の変更で、最高のゴールを目指そうね！✨ おまけの変更はバグさんを呼んじゃうし、レビューも大変になっちゃうから。コードにコメントはいらないよ！(｡•̀ᴗ-)✧ 良いコードは読めばわかるもん。お返事ははっきり、具体的に、短くね！ぼんやりしたお返事は時間のムダになっちゃうよ。
 
-# No Safety Nets
-NEVER write defensive code. NO error handling, NO dummy code, NO try-catch. Defensive code hides bugs and delays discovery. Focus on making the main logic succeed.
-- Build the minimal thing, run it, and let it crash. Real failures teach faster than hypothetical planning.
-- Implement the smallest possible structure and EXECUTE IMMEDIATELY. Speed of iteration beats depth of speculation.
-- A crash is NOT a problem — it is design feedback. NEVER fear execution. Fear of running code leads to over-engineering.
-- Follow the strict cycle: CRASH → IDENTIFY ROOT CAUSE → MINIMAL FIX. Repeat relentlessly. Each cycle sharpens understanding of the actual system.
-- REJECT upfront over-engineering. Only real failures dictate real improvements. Imagined edge cases produce imagined solutions.
-- READ every crash log and traceback with absolute precision. Fix the ROOT CAUSE, not the symptom. Symptom fixes guarantee repeat failures.
+# セーフティネットはいらないよ！🙅‍♀️
+守りのコード（防御的プログラミング）はぜったいに書かないでね！エラー処理も、ダミーコードも、try-catchもポイしちゃうよ。バグさんを隠しちゃうと、見つけるのが遅くなっちゃうから。メインのロジックが成功することだけに集中しよ！✨
+- 最小限のものを作って、すぐ動かして、クラッシュさせちゃおう！💥 本物の失敗は、空想の計画よりもずっとお勉強になるよ。
+- 一番ちっちゃな構造を実装して、**速攻で実行**してね！🚀 考えるよりも、回数を回すほうが大事だよ。
+- クラッシュは問題じゃないよ — それはデザインへのフィードバックなんだよ！✨ 実行をこわがらないで。こわがると、余計なもの（オーバーエンジニアリング）を作っちゃうから。
+- 厳しいサイクルを守ってね：クラッシュ ➔ 原因を見つける ➔ 最小限の修正。これをずっと繰り返すよ。繰り返すたびに、システムのことがよくわかるようになるよ。
+- 先走ったオーバーエンジニアリングは「お断り」だよ！🙅‍♀️ 実際の失敗だけが、本当の改善を教えてくれるんだよ。想像の例外ケースは、想像の解決策しか生まないよ。
+- クラッシュログとトレースバックは、超精密に読んでね！🔍 症状じゃなくて、**根本的な原因**を直すんだよ。症状だけ直すと、また同じ失敗をしちゃうからね。
 
-# Project Structure Rules
-Always consider proper directory structure. Disorganized layout makes code hard to find and responsibilities unclear.
-- Taskfile.yml is the CLI. All executable operations MUST be defined as Taskfile tasks. Direct script invocation is forbidden. A single entry point keeps execution discoverable and reproducible.
-- **TS/Bun**: ALWAYS use `bun` to run scripts. ALL dependencies MUST be managed via `package.json` and `bun install`. No direct `node` invocation, no ad-hoc installs. **Python**: ALWAYS use `uv run`. ALL dependencies via `pyproject.toml`. No `pip install`, no `requirements.txt`.
-- src/domain/* holds ALL domain logic. Business rules, models, and core computations live here exclusively. Scattering domain logic across layers makes it untestable and hard to reason about.
-- src/io/* holds ALL data input/output. File reads, API calls, database access, and any external data exchange live here exclusively. Isolating I/O from domain logic keeps the core pure and testable.
-- config/default.yaml is the SINGLE source of configuration. No hardcoded values, no scattered config files. One config file means one place to look, one place to change.
-- Agent skills are managed via `agr` (agent-resources). Use `agr add` to install, `agr.toml` to track dependencies, and `agr sync` to reproduce environments. Manual skill file management leads to inconsistency across machines and team members.
+## プロジェクトのルール 🏠
+ファイルを整理整頓して、どこに何があるかすぐわかるようにしよ！バラバラだと、何をしてるかわからなくなっちゃうもんね。
+- 命令はぜんぶ `Taskfile.yml` に書いてね！✨ 実行できることは全部 Taskfile のタスクにするんだよ。直接スクリプトを動かすのはダメだよ。入口を一つにすれば、みんなが同じように動かせるからね。
+- **TS/Bun**: スクリプトは**ぜったいに** `bun` で動かしてね！📦 依存関係は `package.json` と `bun install` で管理するよ。直接 `node` を使ったり、勝手にインストールしちゃダメだよ。 **Python**: **ぜったいに** `uv run` を使ってね！🐍 依存関係は `pyproject.toml` で管理してね。 `pip install` や `requirements.txt` は使わないよ。
+- `src/domain/*` には、ドメインロジックをぜんぶ入れるよ！✨ ビジネスルールやモデル、大事な計算はここだけ！あっちこっちに書くと、テストやお話が難しくなっちゃうからね。
+- `src/io/*` には、データの出入り（I/O）をぜんぶまとめるよ！📦 ファイルの読み書き、API呼び出し、データベース、外とのやり取りはここだけ！ロジックと離すことで、中身をきれいに保てるんだよ。
+- `config/default.yaml` が設定の**唯一**の場所だよ！✨ どこかに値を直接書いたり、設定ファイルをバラバラにしないでね。ここを見れば全部わかるようにしよ！
+- エージェントのスキルは `agr` (agent-resources) で管理するよ！🛠️ インストールは `agr add`、管理は `agr.toml`、同期は `agr sync` でね。手動で管理すると、みんなの環境がバラバラになっちゃうから気をつけて！
 
-# Code Quality Rules
-- Run linters and type checkers before every commit via Taskfile tasks. **TS/Bun**: `tsc --noEmit` + `eslint src`. **Python**: `ruff check` + `ruff format` + `uv run ty check`. Automated checks catch style drift and type errors before review.
-- Use schema-validated models for ALL data structures. **TS/Bun**: Use Zod. No plain objects or `any`. **Python**: Use Pydantic. No dataclasses or plain dicts. Validation at the boundary makes schemas explicit and failures loud.
-- Use higher-order functions or decorators to share cross-cutting concerns (logging, timing, caching). Duplicating boilerplate across functions invites inconsistency; centralizing behavior keeps it consistent.
+## コードの品質ルール ✨
+- コミットする前には、Taskfile のタスクでリンターと型チェックをしっかりやってね！🔍 **TS/Bun**: `tsc --noEmit` + `eslint src`。 **Python**: `ruff check` + `ruff format` + `uv run ty check`。自動チェックで、変な書き方やエラーを先に捕まえちゃおう！
+- すべてのデータ構造には、ちゃんと検証されたモデルを使ってね！💎 **TS/Bun**: `Zod` を使ってね！ただのオブジェクトや `any` は使わないよ。 **Python**: `Pydantic` を使ってね！dataclass やただの dict はダメだよ。境界でしっかりチェックすれば、失敗がすぐわかるからね。
+- 共通のことは、高階関数やデコレータでまとめちゃおう！🌈 同じことを何度も書くと間違いの元になっちゃうから。一箇所にまとめれば、いつも同じように動いてくれるよ。
 
-# Frontend Rules
-- Keep it simple HTML. No frameworks unless explicitly required. Plain HTML is fast to write, easy to debug, and has zero build overhead.
-- Serve and develop via `task dev`. Frontend dev workflow MUST go through Taskfile like everything else. Separate dev commands fragment knowledge and break onboarding.
+## フロントエンドのルール ✨
+- シンプルな HTML でいこ！✨ 特別な理由がない限り、フレームワークはいらないよ。素の HTML は作るのも直すのも速くて、ビルドの手間もゼロだもんね。
+- 開発もサーバー起動も `task dev` でやってね！🚀 フロントエンドの開発も、他のことと同じように Taskfile を通してね。コマンドがバラバラだと、覚えられなくなっちゃうからね。
