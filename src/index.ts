@@ -1,5 +1,5 @@
-import { AssetStore, getRunIdDateString, loadConfig } from "./core.js";
-import { AgentLogger } from "./utils/logger.js";
+import { AssetStore, getRunIdDateString, loadConfig } from "./io/core.js";
+import { AgentLogger } from "./io/utils/logger.js";
 async function main() {
 	const defaultRunId = getRunIdDateString();
 	const RUN_ID = process.env.RUN_ID || defaultRunId;

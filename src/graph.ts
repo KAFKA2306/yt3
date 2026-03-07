@@ -1,18 +1,18 @@
 import { END, START, StateGraph } from "@langchain/langgraph";
-import { ScriptSmith } from "./agents/content.js";
-import { VisualDirector } from "./agents/media.js";
-import { MemoryAgent } from "./agents/memory.js";
-import { PublishAgent } from "./agents/publish.js";
-import { TrendScout } from "./agents/research.js";
-import type { AssetStore } from "./core.js";
+import { ScriptSmith } from "./domain/agents/content.js";
+import { VisualDirector } from "./domain/agents/media.js";
+import { MemoryAgent } from "./domain/agents/memory.js";
+import { PublishAgent } from "./domain/agents/publish.js";
+import { TrendScout } from "./domain/agents/research.js";
 import type {
 	AgentState,
 	DirectorData,
 	Metadata,
 	PublishResults,
 	Script,
-} from "./types.js";
-import { AgentLogger } from "./utils/logger.js";
+} from "./domain/types.js";
+import type { AssetStore } from "./io/core.js";
+import { AgentLogger } from "./io/utils/logger.js";
 type ChannelReducer<T> = {
 	reducer: (x: T, y: T) => T;
 	default: () => T;

@@ -1,8 +1,8 @@
+# 🎬 きらきら動画メーカー yt3 ✨
+
 <div align="center">
 
-# 🎬 yt3
-
-**AI を活用した金融系動画の自動生成システム**
+**AIさんたちが がんばって おかねの動画を つくってくれるよ！💰✨**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Workflow-00a67e?style=flat-square)](https://langchain-ai.github.io/langgraphjs/)
@@ -12,80 +12,71 @@
 
 ---
 
-## ⚡ クイックスタート
+## ⚡ はじめかた (｡•̀ᴗ-)✧
 
-以下のコマンドで環境構築と動画生成を開始できます。
+これだけで、きれいな動画が できちゃうよ！
 
 ```bash
-task bootstrap            # 依存関係のインストールと同期
-task run -- "FOMC 金利"   # 指定したテーマで動画を生成
+task bootstrap            # おともだち（依存関係）を よんでくるよ！
+task run -- "FOMC 金利"   # すきなテーマで 動画をつくろう！🚀
 ```
 
-## 🛠️ Commands
+## 🛠️ まほうのコマンド ✨
 
 ```
-task run      │ Run workflow
-task lint     │ Type check (tsc)
-task test     │ Run unit tests
-task up       │ Start services (Discord Bot, Voicevox)
-task down     │ Stop services
-task status   │ Check status
+task run      │ ワークフローを しゅっぱつ！
+task lint     │ おかしなところが ないかチェック！
+task test     │ ちゃんと動くか テストするよ！
+task up       │ みんなを 起こしてあげるよ！ (Voicevoxとか)
+task down     │ おやすみなさいの じかん！
+task status   │ みんな 元気かな？
 ```
 
-## 🧪 Testing & CI
+## 🧪 テストとルール (๑•̀ㅂ•́)و✧
 
-**"Containment" Strategy**:
-Tests are designed to be strictly **contained** to prevent any accidental costs or publishing.
-- **No LLM**: `SKIP_LLM=true` is enforced. Tests use cached fixtures instead of hitting Gemini API.
-- **No Publish**: `DRY_RUN=true` is enforced. No API calls to YouTube/Twitter.
+**「ぜったいあんぜん」せんりゃく！**:
+へんな お金が かかったりしないように、しっかり がーど してるよ！
+- **LLMは おやすみ**: `SKIP_LLM=true` で、むかしのデータを つかって テストするよ！
+- **かってに投稿しない**: `DRY_RUN=true` だから、YouTubeとかには 内緒だよ！🤫
 
-### Local Usage
+### ローカルでの つかいかた
 ```bash
-task test    # Run all tests (fast, no cost)
+task test    # はやく、あんぜんに テスト！✨
 ```
 
-### What is tested?
-1.  **Core Utilities** (`src/core.ts`):
-    *   Configuration loading and defaults.
-    *   LLM response parsing (JSON/Markdown cleanup).
-    *   Fail-fast file reading.
-2.  **Agents** (`src/agents/research.ts`):
-    *   **Research Step**: mock-execution using fixture data to ensure correct output structure and state updates without external API dependency.
+### なにを テストしてるの？
+1.  **だいじなところ** (`src/core.ts`):
+    *   せっていが ちゃんと よみこめるかな？
+    *   AIの おへんじが きれいかな？
+    *   ファイルが ちゃんと よめるかな？
+2.  **エージェントさん** (`src/agents/research.ts`):
+    *   **リサーチ**: ほんものの データがなくても、ちゃんと 動くか かくにんするよ！
 
-
-## 📁 Structure
+## 📁 おへやの 紹介 🏠
 
 ```
 src/
-├── agents/    → LangGraph agents (Research, Audio, etc.)
-├── graph.ts   → Workflow definition (StateGraph)
-├── state.ts   → State interfaces
-└── index.ts   → Entry point
+├── agents/    → はたらきものの エージェントさんたち！
+├── graph.ts   → どういう順番で すすむかな？
+├── state.ts   → みんなの 今の状態だよ！
+└── index.ts   → ぜんぶの はじまり！✨
 
-scripts/       → Automation & Bots
-config/        → YAML settings
-prompts/       → Prompt templates (YAML)
-runs/          → Outputs
+scripts/       → じどうくんたち！
+config/        → だいじな 設定ファイル！
+prompts/       → AIさんへの おねがいごと！
+runs/          → できたもの！🎁
 ```
 
-## 📐 Technical Design
+## 📐 なかの しくみ ⚙️
 
-For a deeper dive into the system architecture and logic:
+もっと くわしく しりたいときは、ここを みてね！
 
-- [**System Architecture**](docs/diagrams/architecture.md): Overview of components, environment, and external service integrations.
-- [**System Workflow**](docs/diagrams/workflow.md): Detailed execution pipeline, agent interactions, and media synthesis logic.
-- [**Domain Model**](docs/diagrams/domain_model.md): Core data structures and state definitions.
-
-## ⚙️ Config
-
-| File | Purpose |
-|:-----|:--------|
-| `config/default.yaml` | System & Provider settings |
-| `prompts/*.yaml` | Agent Prompts |
-| `.env` | API Keys |
+- [**しくみ図**](docs/diagrams/architecture.md): 全体の つながりだよ！
+- [**ながれ図**](docs/diagrams/workflow.md): どうやって 動画に なるのかな？
+- [**モデル図**](docs/diagrams/domain_model.md): データの かたちだよ！
 
 ---
 
 <div align="center">
-<sub>Built with LangGraph.js • Gemini • Voicevox • FFmpeg</sub>
+<sub>LangGraph.js • Gemini • Voicevox • FFmpeg で つくったよ！🎀</sub>
 </div>

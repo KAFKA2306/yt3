@@ -11,7 +11,11 @@ description: 全thumbnail pngのprogramatic reviewとその改善の試作ルー
 
 ## 1. 知覚・トレンド解析 (Global Intel)
 
-1. **コンテキストの強制抽出**:
+1. **基準スキル**: 
+   - 総合デザイン: `.agent/skills/design_system/SKILL.md`
+   - UI/実装レベル: `.agent/skills/frontend-design/SKILL.md`
+
+2. **コンテキストの強制抽出**:
    - `runs/${RUN_ID}/research/output.yaml` から `director_data.angle` を取得。
    - 感情トーン（Fear/Greed/Neutral）に基づき、パレットのコントラスト比を動的に調整せよ。
 

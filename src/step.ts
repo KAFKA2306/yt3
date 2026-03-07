@@ -1,13 +1,13 @@
 import path from "node:path";
 import fs from "fs-extra";
-import { ScriptSmith } from "./agents/content.js";
-import { VisualDirector } from "./agents/media.js";
-import { PublishAgent } from "./agents/publish.js";
-import { TrendScout } from "./agents/research.js";
-import { AssetStore, ROOT, loadConfig } from "./core.js";
+import { ScriptSmith } from "./domain/agents/content.js";
+import { VisualDirector } from "./domain/agents/media.js";
+import { PublishAgent } from "./domain/agents/publish.js";
+import { TrendScout } from "./domain/agents/research.js";
+import type { AgentState } from "./domain/types.js";
 import { createGraph } from "./graph.js";
-import type { AgentState } from "./types.js";
-import { sendAlert } from "./utils/discord.js";
+import { AssetStore, ROOT, loadConfig } from "./io/core.js";
+import { sendAlert } from "./io/utils/discord.js";
 const cfg = loadConfig();
 function resolveRunId(arg?: string): string {
 	if (!arg || arg === "latest") {

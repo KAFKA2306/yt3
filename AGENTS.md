@@ -1,43 +1,28 @@
-# 開発ガイドライン (Development Manifesto)
+Achieve the goal with MINIMAL changes. Extra changes introduce extra bugs and slow review. NO comments in code. Good code reads itself; comments rot and mislead. Respond clearly, specifically, and concisely. Vague answers waste time and create misunderstanding.
 
-**コードベースの最小化と確実な動作の追求。**
+# No Safety Nets
+NEVER write defensive code. NO error handling, NO dummy code, NO try-catch. Defensive code hides bugs and delays discovery. Focus on making the main logic succeed.
+- Build the minimal thing, run it, and let it crash. Real failures teach faster than hypothetical planning.
+- Implement the smallest possible structure and EXECUTE IMMEDIATELY. Speed of iteration beats depth of speculation.
+- A crash is NOT a problem — it is design feedback. NEVER fear execution. Fear of running code leads to over-engineering.
+- Follow the strict cycle: CRASH → IDENTIFY ROOT CAUSE → MINIMAL FIX. Repeat relentlessly. Each cycle sharpens understanding of the actual system.
+- REJECT upfront over-engineering. Only real failures dictate real improvements. Imagined edge cases produce imagined solutions.
+- READ every crash log and traceback with absolute precision. Fix the ROOT CAUSE, not the symptom. Symptom fixes guarantee repeat failures.
 
-## 開発の基本指針 (Core Guidelines)
+# Project Structure Rules
+Always consider proper directory structure. Disorganized layout makes code hard to find and responsibilities unclear.
+- Taskfile.yml is the CLI. All executable operations MUST be defined as Taskfile tasks. Direct script invocation is forbidden. A single entry point keeps execution discoverable and reproducible.
+- **TS/Bun**: ALWAYS use `bun` to run scripts. ALL dependencies MUST be managed via `package.json` and `bun install`. No direct `node` invocation, no ad-hoc installs. **Python**: ALWAYS use `uv run`. ALL dependencies via `pyproject.toml`. No `pip install`, no `requirements.txt`.
+- src/domain/* holds ALL domain logic. Business rules, models, and core computations live here exclusively. Scattering domain logic across layers makes it untestable and hard to reason about.
+- src/io/* holds ALL data input/output. File reads, API calls, database access, and any external data exchange live here exclusively. Isolating I/O from domain logic keeps the core pure and testable.
+- config/default.yaml is the SINGLE source of configuration. No hardcoded values, no scattered config files. One config file means one place to look, one place to change.
+- Agent skills are managed via `agr` (agent-resources). Use `agr add` to install, `agr.toml` to track dependencies, and `agr sync` to reproduce environments. Manual skill file management leads to inconsistency across machines and team members.
 
-1.  **最小化 (Minimize)**: コード量は少ないほどメンテナンス性が高まります。不要な機能、ファイル、依存関係を極限まで排除してください。
-2.  **重複排除 (DRY)**: コードの複製は保守の妨げとなります。共通のロジックはすべて `src/core.ts` に集約してください。
-3.  **設定駆動 (Config-Driven)**: コード内に直接値を記述することは避けてください。すべてのパラメータは `src/core.ts` を介して `config/*.yaml` から読み込むようにします。
-4.  **コメントの最小化 (Self-Documenting)**: コード自体がその意図を明確に伝えるドキュメントであるべきです。補足が必要な場合は、ロジックをより分かりやすく書き直してください。
-5.  **Fail Fast (迅速な失敗)**: エラーを隠蔽せず、問題が発生した時点で速やかに停止し、原因を特定しやすくしてください。
-6.  **継承 (Inheritance)**: エージェントの一貫した振る舞いを保証するため、すべてのエージェントクラスは `BaseAgent` (`src/core.ts`) を継承してください。
-7.  **ドキュメント規定 (Docs)**: 透明性を維持するため、すべての公式な記述は「日本語のみ」で行ってください。
-8.  **厳格な型定義 (No any)**: `any` 型の使用は技術的負債となります。TypeScript の恩恵を最大限に受けるため、厳密な型定義を心がけてください。
+# Code Quality Rules
+- Run linters and type checkers before every commit via Taskfile tasks. **TS/Bun**: `tsc --noEmit` + `eslint src`. **Python**: `ruff check` + `ruff format` + `uv run ty check`. Automated checks catch style drift and type errors before review.
+- Use schema-validated models for ALL data structures. **TS/Bun**: Use Zod. No plain objects or `any`. **Python**: Use Pydantic. No dataclasses or plain dicts. Validation at the boundary makes schemas explicit and failures loud.
+- Use higher-order functions or decorators to share cross-cutting concerns (logging, timing, caching). Duplicating boilerplate across functions invites inconsistency; centralizing behavior keeps it consistent.
 
-## アーキテクチャ (Structure)
-
-**Single Source of Truth（唯一の真実のソース）**: `src/core.ts`
-
--   **src/**
-    -   `index.ts`: エントリーポイント
-    -   `graph.ts`: LangGraph 定義
-    -   `core.ts`: **コア** (設定, ユーティリティ, アセットストア, BaseAgent)
-    -   `types.ts`: **型定義** (モデル, ステート, スキーマ)
-    -   `layout_engine.ts`: **レイアウトエンジン** (視覚的構成)
-    -   **agents/**:
-        -   `research.ts` (戦略 & リサーチ)
-        -   `content.ts` (台本 & SEO)
-        -   `media.ts` (音声合成 & 動画アセンブリ)
-        -   `publish.ts` (YouTube & X への投稿)
-        -   `memory.ts` (インデックス & 本質抽出)
-
-## 技術スタック (Tech Stack 2026)
-
-1.  **Bun**: ランタイム、パッケージ管理、テストランナーを一本化。Node.jsと比較してシステムコールを大幅に削減し、極限のパフォーマンスを追求。
-2.  **Biome**: Rust製の統合ツールチェーン。ESLint/Prettierを廃止し、高速な静的解析とフォーマットを単一バイナリで提供。
-3.  **Zod (v4)**: スキーマ・ファーストのバリデーション。外部データ境界での厳格な検証と型推論を統合。
-4.  **Strict TypeScript**: `@tsconfig/strictest` を継承。`bunx tsc --noEmit` をCIの最終関門として運用し、`any` を完全に排除。
-5.  **Gemini**: メインLLM推論エンジン (`gemini-3.1-flash` 推奨)。
-6.  **Voicevox / FFmpeg / Sharp**: 高品質な音声合成およびメディアレンダリング。
-
----
-*本ガイドラインは、2026年の統合型ツールチェーン（The Modern Stack）のベストプラクティスに基づき、開発効率と堅牢性を最大化することを目的としています。*
+# Frontend Rules
+- Keep it simple HTML. No frameworks unless explicitly required. Plain HTML is fast to write, easy to debug, and has zero build overhead.
+- Serve and develop via `task dev`. Frontend dev workflow MUST go through Taskfile like everything else. Separate dev commands fragment knowledge and break onboarding.
