@@ -11,7 +11,6 @@ async function main() {
 		console.error(`Publish output not found at ${publishPath}`);
 		return;
 	}
-	// biome-ignore lint/suspicious/noExplicitAny: yaml parsing response
 	const publishData = yaml.load(fs.readFileSync(publishPath, "utf-8")) as any;
 	const videoId = publishData.youtube?.video_id;
 	if (!videoId) {

@@ -57,7 +57,6 @@ app.get(
 			let scriptHtml = "";
 			if (await fs.pathExists(contentPath)) {
 				const contentFile = await fs.readFile(contentPath, "utf8");
-				// biome-ignore lint/suspicious/noExplicitAny: complex dynamic object
 				const data = yaml.load(contentFile) as any;
 				if (data?.metadata) {
 					metadataHtml = `

@@ -15,7 +15,6 @@ function logPath(
 	return path.join(dir, `${name}.log`);
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: dynamic config
 async function startServices(automation: any) {
 	const logDir = automation.log_dir || "logs/automation";
 	for (const service of automation.services || []) {
@@ -45,7 +44,6 @@ async function startServices(automation: any) {
 	}
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: dynamic config
 function buildSchedule(automation: any): string[] {
 	const lines: string[] = [];
 	const logDir = automation.log_dir || "logs/automation";

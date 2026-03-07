@@ -226,6 +226,5 @@ export interface AppConfig {
 		thread_message: string;
 	};
 	public_url?: string;
-	// biome-ignore lint/suspicious/noExplicitAny: generic context
 	prompts: Record<string, any>;
 }
