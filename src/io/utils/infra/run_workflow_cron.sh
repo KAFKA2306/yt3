@@ -61,19 +61,22 @@ notify_failure() {
 
 notify_success() {
   local duration=$1
-  local state_file=$2
+  local latest_run=$2
   local title="Unknown Title"
   local video_url=""
-  
-  if [ -f "${state_file}" ]; then
-    title=$(grep -oP '"title":\s*"\K[^"]+' "${state_file}" | head -n 1 || echo "Unknown Title")
-    video_id=$(grep -oP '"video_id":\s*"\K[^"]+' "${state_file}" | head -n 1 || echo "")
-    if [ -n "${video_id}" ] && [ "${video_id}" != "dry_run_id" ]; then
+
+  if [ -f "${latest_run}content/output.yaml" ]; then
+    title=$(grep -oP 'title:\s*\K.+' "${latest_run}content/output.yaml" | head -n 1 || echo "Unknown Title")
+  fi
+  if [ -f "${latest_run}publish/output.yaml" ]; then
+    local video_id
+    video_id=$(grep -oP 'video_id:\s*\K.+' "${latest_run}publish/output.yaml" | head -n 1 || echo "")
+    if [ -n "${video_id}" ]; then
       video_url="https://youtu.be/${video_id}"
     fi
   fi
 
-  local msg="✅ **YT3 Automation SUCCESS**\n🎬 **Title**: ${title}\n🔗 **URL**: ${video_url:-"Dry Run / Pending"}\n⏱️ **Duration**: ${duration}s"
+  local msg="✅ **YT3 Automation SUCCESS**\n🎬 **Title**: ${title}\n🔗 **URL**: ${video_url:-"(no URL)"}\n⏱️ **Duration**: ${duration}s"
   printf '[%s] INFO  %s\n' "$(timestamp)" "${msg}"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
     curl -s -H "Content-Type: application/json" -d "{\"content\": \"${msg}\"}" "${DISCORD_WEBHOOK_URL}" > /dev/null || true
@@ -151,11 +154,8 @@ printf '[%s] INFO  starting workflow run (pid=%s)\n' "$(timestamp)" "$$"
 if (cd "${repo_dir}" && "${bun_bin}" --env-file=config/.env src/index.ts); then
   run_exit=0
   
-  # Find latest run state for notification
   latest_run=$(ls -td "${repo_dir}/runs/"*/ | head -n 1 || echo "")
-  state_file="${latest_run}state.json"
-  
-  notify_success "${SECONDS}" "${state_file}"
+  notify_success "${SECONDS}" "${latest_run}"
 else
   run_exit=$?
   notify_failure "${run_exit}" "${SECONDS}"

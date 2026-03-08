@@ -52,22 +52,22 @@ tasks:
     cmds:
       - docker rm -f voicevox-nemo || true
       - docker run -d --name voicevox-nemo --restart unless-stopped -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest
-      - mkdir -p logs
-      - nohup aim up --host 127.0.0.1 --port 43800 > logs/aim.log 2>&1 &
-      - nohup bun src/agents/standalone/discord_bot.ts > logs/discord_bot.log 2>&1 &
+      - systemctl --user start yt3-aim.service
+      - systemctl --user start yt3-discord.service
 
   down:
     desc: "Stop all background services"
     cmds:
       - docker stop voicevox-nemo || true
-      - pkill -f "aim up" || true
-      - pkill -f "discord_news_bot" || true
+      - systemctl --user stop yt3-aim.service || true
+      - systemctl --user stop yt3-discord.service || true
 
   status:
     desc: "Check status of background services"
     aliases: [s]
     cmds:
-      - ps aux | grep -E "(aim|discord_news_bot)" | grep -v grep || true
+      - systemctl --user status yt3-aim.service --no-pager || true
+      - systemctl --user status yt3-discord.service --no-pager || true
       - docker ps | grep voicevox-nemo || true
 
   bootstrap:
@@ -121,3 +121,12 @@ tasks:
   monitor:watch:
     desc: "Run the watcher agent manually"
     cmds: ["bun src/agents/watcher.ts {{.CLI_ARGS}}"]
+
+  # ============================================================================
+  # CONTEXT
+  # ============================================================================
+  copcon:
+    desc: "Generate codebase context report with copcon (output: copcon/context.md)"
+    cmds:
+      - mkdir -p copcon
+      - uv run copcon . --output-file copcon/context.md {{.CLI_ARGS}}

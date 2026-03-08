@@ -3,32 +3,28 @@ import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 const SYSTEMD_USER_DIR = path.join(os.homedir(), ".config/systemd/user");
-const SERVICE_FILE = "yt3-automation.service";
-const TIMER_FILE = "yt3-automation.timer";
+const UNITS = [
+	{ file: "yt3-automation.service", enable: false },
+	{ file: "yt3-automation.timer", enable: true },
+	{ file: "yt3-aim.service", enable: true },
+	{ file: "yt3-discord.service", enable: true },
+];
 async function main() {
-	console.log("🚀 Setting up Systemd for Youtuber Workflow...");
 	fs.ensureDirSync(SYSTEMD_USER_DIR);
 	const sourceDir = path.join(process.cwd(), "systemd");
-	console.log(`📂 Copying unit files to ${SYSTEMD_USER_DIR}...`);
-	fs.copySync(
-		path.join(sourceDir, SERVICE_FILE),
-		path.join(SYSTEMD_USER_DIR, SERVICE_FILE),
-	);
-	fs.copySync(
-		path.join(sourceDir, TIMER_FILE),
-		path.join(SYSTEMD_USER_DIR, TIMER_FILE),
-	);
-	console.log("🔄 Reloading systemd daemon...");
+	for (const unit of UNITS) {
+		fs.copySync(
+			path.join(sourceDir, unit.file),
+			path.join(SYSTEMD_USER_DIR, unit.file),
+		);
+	}
 	spawnSync("systemctl", ["--user", "daemon-reload"], { stdio: "inherit" });
-	console.log("⏰ Enabling and starting timer...");
-	spawnSync("systemctl", ["--user", "enable", TIMER_FILE], {
-		stdio: "inherit",
-	});
-	spawnSync("systemctl", ["--user", "start", TIMER_FILE], { stdio: "inherit" });
-	console.log("✅ Setup Complete! Status:");
-	spawnSync("systemctl", ["--user", "status", TIMER_FILE], {
-		stdio: "inherit",
-	});
+	for (const unit of UNITS.filter((u) => u.enable)) {
+		spawnSync("systemctl", ["--user", "enable", "--now", unit.file], {
+			stdio: "inherit",
+		});
+	}
+	console.log("✅ Setup Complete!");
 	console.log(
 		"\n⚠️  NOTE: Ensure 'loginctl enable-linger <user>' is run if you want this to run when not logged in.",
 	);
