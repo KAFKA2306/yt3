@@ -21,15 +21,34 @@ async function main() {
 		bucket: BUCKET,
 		mission_file: MISSION_FILE,
 	};
-	const finalState = await graph.invoke(initialState);
+	const finalState = (await graph.invoke(initialState)) as any;
+
+	// Extract Mandatory Finality Reporting (operational-resilience Skill)
+	const finalTitle = finalState.metadata?.title || "Unknown Title";
+	const finalVideoId = finalState.youtube?.video_id;
+	const finalUrl = finalVideoId
+		? `https://www.youtube.com/watch?v=${finalVideoId}`
+		: "(No URL Available)";
+
 	AgentLogger.info(
 		"SYSTEM",
 		"PIPE",
 		"SUCCESS",
 		"Pipeline execution completed successfully",
 		{
-			context: { status: (finalState as Record<string, unknown>).status },
+			context: {
+				status: finalState.status,
+				title: finalTitle,
+				url: finalUrl,
+			},
 		},
 	);
+
+	// Mandatory Console output for terminal users
+	console.log(`\n${"=".repeat(80)}`);
+	console.log("🚀 PIPELINE SUCCESSFUL");
+	console.log(`🎬 TITLE: ${finalTitle}`);
+	console.log(`🔗 URL:   ${finalUrl}`);
+	console.log(`${"=".repeat(80)}\n`);
 }
 main();

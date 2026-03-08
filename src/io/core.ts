@@ -1,5 +1,7 @@
 import path from "node:path";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenAI } from "@langchain/openai";
 import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import yaml from "js-yaml";
@@ -9,73 +11,80 @@ import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 import { ROOT, loadConfig as baseLoadConfig } from "./base.js";
 import { AgentLogger as Logger } from "./utils/logger.js";
 
+import { QuotaManager } from "./utils/quota_manager.js";
+
 dotenv.config({ path: path.join(ROOT, "config/.env"), override: true });
 
 export { Logger as AgentLogger };
 export { RunStage };
-export const MANDATORY_MODEL = "gemini-3-flash-preview" as const;
 
 export function loadConfig(): AppConfig {
-	const cfg = baseLoadConfig() as AppConfig;
-	// Fundamental Enforcement: Override any config-level model setting at runtime
-	if (cfg.providers?.llm?.gemini) {
-		cfg.providers.llm.gemini.model = MANDATORY_MODEL;
-	}
-	return cfg;
+	return baseLoadConfig() as AppConfig;
 }
 export { ROOT };
 export interface LlmOptions {
 	model?: string;
 	temperature?: number;
 	response_mime_type?: string;
+	provider?: "gemini" | "local";
+	sessionId?: string; // Support for Sticky Sessions
 	extra?: Record<string, unknown>;
 }
-export function createLlm(options: LlmOptions = {}): ChatGoogleGenerativeAI {
-	const MANDATORY_MODEL = "gemini-3-flash-preview";
+export function createLlm(
+	options: LlmOptions = {},
+): BaseChatModel & { keyName?: string } {
 	const { extra = {}, ...rest } = options;
 	const cfg = loadConfig();
+	const provider = options.provider || cfg.providers.llm.provider || "gemini";
 
-	const requestedModel = options.model || cfg.providers.llm.gemini.model;
-	if (requestedModel && requestedModel !== MANDATORY_MODEL) {
-		Logger.warn(
+	if (provider === "local") {
+		const localCfg = cfg.providers.llm.local;
+		if (!localCfg) throw new Error("providers.llm.local is not configured");
+		Logger.info(
 			"SYSTEM",
 			"CORE",
-			"MODEL_POLICY_OVERRIDE",
-			`Requested model ${requestedModel} ignored per strict policy. Using ${MANDATORY_MODEL}.`,
+			"API_CHECK",
+			`Using local provider: ${localCfg.model} @ ${localCfg.base_url}`,
 		);
+		return new ChatOpenAI({
+			model: options.model ?? localCfg.model,
+			temperature: options.temperature ?? localCfg.temperature,
+			maxTokens: localCfg.max_tokens,
+			apiKey: "local",
+			configuration: { baseURL: `${localCfg.base_url}/v1` },
+			modelKwargs: { chat_template_kwargs: { enable_thinking: false } },
+			...extra,
+			...rest,
+		} as ConstructorParameters<typeof ChatOpenAI>[0]);
 	}
 
-	const rawGemini = process.env.GEMINI_API_KEY;
-	const rawGoogle = process.env.GOOGLE_API_KEY;
-
-	const apiKey =
-		(rawGemini?.startsWith("AIza") ? rawGemini : null) ||
-		(rawGoogle?.startsWith("AIza") ? rawGoogle : null) ||
-		(rawGemini && !rawGemini.includes("$") ? rawGemini : null) ||
-		(rawGoogle && !rawGoogle.includes("$") ? rawGoogle : null) ||
-		rawGemini;
-
-	if (!apiKey || apiKey === "your_api_key_here" || apiKey.includes("$")) {
-		throw new Error(
-			`🎀 GEMINI_API_KEY is missing or invalid (found: ${apiKey})! お部屋の鍵が 見つからないよ！😥 🎀`,
-		);
-	}
+	// -------------------------------------------------------------------------
+	// GEMINI CLUSTER ORCHESTRATION
+	// -------------------------------------------------------------------------
+	const { name: keyName, key: apiKey } = QuotaManager.acquireKey(
+		options.sessionId,
+	);
 
 	Logger.info(
 		"SYSTEM",
 		"CORE",
 		"API_CHECK",
-		`Using key starting with: ${apiKey.slice(0, 8)}...`,
+		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}...`,
 	);
 
-	return new ChatGoogleGenerativeAI({
-		model: MANDATORY_MODEL,
-		apiKey: apiKey,
+	const llm = new ChatGoogleGenerativeAI({
+		model: options.model ?? cfg.providers.llm.gemini.model,
+		apiKey,
 		temperature: options.temperature,
-		maxOutputTokens: cfg.providers.llm.gemini.max_tokens as number,
+		maxOutputTokens: cfg.providers.llm.gemini.max_tokens,
 		...extra,
 		...rest,
-	} as { model: string } & Record<string, unknown>);
+	} as ConstructorParameters<
+		typeof ChatGoogleGenerativeAI
+	>[0]) as BaseChatModel & { keyName?: string };
+
+	llm.keyName = keyName; // Attach for header update later
+	return llm;
 }
 export class AssetStore {
 	runDir: string;
@@ -191,15 +200,28 @@ export abstract class BaseAgent {
 				? `\n\n[ACE Intelligence - Strategic Instructions]\n${bullets.map((b) => `- ${b.content} (ID: ${b.id})`).join("\n")}`
 				: "";
 		const finalSystemPrompt = systemPrompt + aceContext;
+
 		if (process.env.SKIP_LLM === "true") {
 			const prev = this.store.load<unknown>(this.name, "output");
 			if (prev) return prev as T;
 			throw new Error("No previous data for LLM bypass");
 		}
-		const llm = createLlm(this.opts);
 
-		let lastError: Error | null = null;
-		for (let attempt = 1; attempt <= 2; attempt++) {
+		const executeWithRetry = async (retryCount = 0): Promise<T> => {
+			// Use runDir as sessionId to ensure sticky sessions per run
+			const provider: "gemini" | "local" =
+				retryCount >= 5 ? "local" : (this.opts.provider as any) || "gemini";
+			const llm = createLlm({
+				...this.opts,
+				provider,
+				sessionId: this.store.runDir,
+			});
+			const keyName = llm.keyName || "local";
+
+			// Inject Quota Context for Agent Situation Awareness
+			const quotaContext = QuotaManager.getQuotaContext(keyName, provider);
+			const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
+
 			try {
 				const res = await llm.invoke(
 					[
@@ -208,29 +230,67 @@ export abstract class BaseAgent {
 					],
 					callOpts as Record<string, unknown>,
 				);
-				return parser(res.content as string);
-			} catch (e) {
-				lastError = e as Error;
-				if (e instanceof SyntaxError && attempt === 1) {
-					Logger.warn(
-						this.name,
-						"LLM",
-						"RETRY",
-						"JSON parse failed, retrying once...",
-					);
-					continue;
+
+				// Update Quota Ledger from headers (Safe cast for LangChain metadata)
+				const metadata = res.response_metadata as any;
+				if (keyName && metadata?.headers) {
+					QuotaManager.updateFromHeaders(keyName, metadata.headers);
 				}
+
+				return parser(res.content as string);
+			} catch (e: any) {
+				const errorMsg = e.message || "";
+				const isQuotaError =
+					errorMsg.includes("429") || errorMsg.includes("Quota exceeded");
+
+				if (isQuotaError && keyName) {
+					QuotaManager.markCooldown(keyName);
+
+					// Retry within Gemini Cluster if we haven't tried too many times
+					// QuotaManager.acquireKey will naturally pick a DIFFERENT healthy key next time
+					if (retryCount < 5) {
+						Logger.warn(
+							this.name,
+							"CORE",
+							"ROTATION",
+							`Gemini 429 on ${keyName}. Rotating to another cluster node (Attempt ${retryCount + 1})...`,
+						);
+						return executeWithRetry(retryCount + 1);
+					}
+				}
+
+				// Final Fallback to Local LLM (vLLM)
+				if (isQuotaError) {
+					Logger.error(
+						this.name,
+						"CORE",
+						"FALLBACK",
+						"Gemini cluster exhausted. Falling back to local vLLM...",
+					);
+					const fallbackLlm = createLlm({ ...this.opts, provider: "local" });
+					const res = await fallbackLlm.invoke(
+						[
+							{ role: "system", content: finalSystemPrompt },
+							{ role: "user", content: userPrompt },
+						],
+						callOpts as Record<string, unknown>,
+					);
+					return parser(res.content as string);
+				}
+
 				throw e;
 			}
-		}
-		throw lastError;
+		};
+
+		return executeWithRetry();
 	}
 }
 export function cleanCodeBlock(text: string): string {
+	const stripped = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 	const match =
-		text.match(/```(?:json)?\n([\s\S]*?)\n```/) ||
-		text.match(/([{\[][\s\S]*[}\]])/);
-	return match ? (match[1] || match[0]).trim() : text.trim();
+		stripped.match(/```(?:json)?\n([\s\S]*?)\n```/) ||
+		stripped.match(/([{\[][\s\S]*[}\]])/);
+	return match ? (match[1] || match[0]).trim() : stripped;
 }
 export function parseLlmJson<T>(text: string, schema?: z.ZodSchema<T>): T {
 	const cleaned = cleanCodeBlock(text);
