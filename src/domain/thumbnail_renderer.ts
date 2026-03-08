@@ -101,7 +101,7 @@ export class ThumbnailRenderer {
 		const g = this.config.global_style;
 		const tokens = this.config.design_tokens;
 		const fz = cfg.title_font_size || g.thumbnail.title_size;
-		const fontName = `${tokens?.font_display || "Geist"}, "IBM Plex Sans JP", sans-serif`;
+		const fontName = `${tokens?.font_display || "Geist"}, "${tokens?.font_japanese || "Noto Sans JP"}", sans-serif`;
 		const lh = fz * 1.1;
 		const padding = cfg.padding || 80;
 		const startY = (cfg.height - lines.length * lh) / 2 + lh / 2;

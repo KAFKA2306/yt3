@@ -11,9 +11,10 @@ description: 全thumbnail pngのprogramatic reviewとその改善の試作ルー
 
 ## 1. 知覚・トレンド解析 (Global Intel)
 
-1. **基準スキル**: 
+1. **基準スキル**:
    - 総合デザイン: `.agent/skills/design_system/SKILL.md`
    - UI/実装レベル: `.agent/skills/frontend-design/SKILL.md`
+   - 日本語タイポグラフィ: `.agent/skills/japanese_typography/SKILL.md`
 
 2. **コンテキストの強制抽出**:
    - `runs/${RUN_ID}/research/output.yaml` から `director_data.angle` を取得。
@@ -32,13 +33,13 @@ description: 全thumbnail pngのprogramatic reviewとその改善の試作ルー
 
 1. **Display (タイトル・見出し用)**:
    - **Latin**: `Geist` (Weight: 900/Black) — 幾何学的で鋭利な美学。
-   - **Japanese**: `IBM Plex Sans JP` (Weight: Bold/Black) — 低重心で力強いプロフェッショナリズム。
-   - **Naming**: `font-family: 'Geist', 'IBM Plex Sans JP', sans-serif;`
+   - **Japanese**: `Noto Sans JP` (Weight: Bold/Black) — 低重心で力強いプロフェッショナリズム。
+   - **Naming**: `font-family: 'Geist', 'Noto Sans JP', sans-serif;`
 
 2. **Readability (本文・字幕用)**:
    - **Latin**: `Atkinson Hyperlegible` — 誤認を防ぐための究極の可視性。
-   - **Japanese**: `IBM Plex Sans JP` (Regular) — 長文でも疲れないモダンな空間設計。
-   - **Naming**: `font-family: 'Atkinson Hyperlegible', 'IBM Plex Sans JP', sans-serif;`
+   - **Japanese**: `Noto Sans JP` (Regular) — 長文でも疲れないモダンな空間設計。
+   - **Naming**: `font-family: 'Atkinson Hyperlegible', 'Noto Sans JP', sans-serif;`
 
 3. **厳格ルール**:
    - **Weight**: サムネイル上のタイトルは 700(Bold) 以上必須。900(Black) を推奨。

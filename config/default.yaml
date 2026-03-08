@@ -196,6 +196,7 @@ design_tokens:
   success_color: "#00A3AF"
   font_display: "Geist"
   font_text: "Atkinson Hyperlegible"
+  font_japanese: "Noto Sans JP"
 
 prompts:
   research:

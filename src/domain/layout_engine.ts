@@ -199,7 +199,10 @@ export class LayoutEngine {
 		const g = this.config.global_style;
 		const tokens = this.config.design_tokens;
 		return {
-			font: s.font_name || "IBM Plex Sans JP",
+			font:
+				s.font_name ||
+				this.config.design_tokens?.font_japanese ||
+				"Noto Sans JP",
 			size: s.font_size || g.video.subtitle_size,
 			color: s.primary_colour || "&HFFFFFF&",
 			outlineColor: s.outline_colour || "&H000000&",

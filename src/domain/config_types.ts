@@ -51,6 +51,7 @@ export interface DesignTokens {
 	success_color: string;
 	font_display: string;
 	font_text: string;
+	font_japanese: string;
 }
 export interface AppConfig {
 	global_style: GlobalStyle;
