@@ -127,7 +127,7 @@ export class ManagerAgent extends BaseAgent {
 			"SPAWN",
 			`Spawning workflow for runId: ${runId}`,
 		);
-		spawn("npx", ["tsx", "src/index.ts"], {
+		spawn("bun", ["--env-file=config/.env", "src/index.ts"], {
 			cwd: ROOT,
 			env: { ...process.env, RUN_ID: runId },
 			detached: true,

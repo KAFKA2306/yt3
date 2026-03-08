@@ -174,9 +174,16 @@ export interface AppConfig {
 	};
 	providers: {
 		llm: {
+			provider?: "gemini" | "local";
 			gemini: {
 				model: string;
 				primary_llm?: string;
+				temperature: number;
+				max_tokens: number;
+			};
+			local?: {
+				base_url: string;
+				model: string;
 				temperature: number;
 				max_tokens: number;
 			};

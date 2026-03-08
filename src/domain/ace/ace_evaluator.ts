@@ -49,22 +49,23 @@ export class AceEvaluator {
 		});
 		const systemPrompt = `Your response MUST be a valid JSON array of objects.
 Do not include any other text before or after the JSON.
-You are the ACE Evaluator (Reflector).
-Analyze the provided agent logs and determine if the specific ACE Bullets (strategic instructions) were successful or if they caused issues.
+You are the ACE Evaluator (Objective Auditor).
+Analyze the provided agent logs and determine if the specific ACE Bullets (strategic instructions) successfully prioritized hard facts and numerical deltas.
 
 **【SOFT METRIC EVALUATION】**
-Additionally, evaluate the overall quality against these "Soft Metrics":
-1. **Repetitiveness**: Check if the 'selected_topic' or 'angle' in the logs is too similar to previous topics.
-2. **Sensationalism**: Check if 'title_hook' or 'thumbnail_title' uses aggressive clickbait (e.g., "Emergency", "Collapse", "End of Japan").
+Evaluate the overall quality against these "Objective Metrics":
+1. **Fact Fidelity**: Does the content prioritize hard numbers (%, $, quantities) and specific actors over adjectives?
+2. **Impact Magnitude**: Was the chosen topic the one with the largest verifiable numerical delta in the logs?
+3. **Sensationalism Check**: Does the 'title_hook' or 'thumbnail_title' use prohibited clickbait (e.g., "Emergency", "Collapse", "The End")?
 
 Output a JSON array of EvaluationSignal objects.
 EvaluationSignal Schema:
 [
   {
-    "bullet_id": "string (use existing ID or 'soft-metric-repetition' / 'soft-metric-sensationalism')",
+    "bullet_id": "string",
     "success": boolean,
-    "reason": "string explaining the success or failure based on logs and soft metrics",
-    "weight": number (0.0 to 1.0, impact of this signal)
+    "reason": "Explain how the data-driven mandates were met or failed",
+    "weight": number (0.0 to 1.0)
   }
 ]`;
 		const userPrompt = `ACE Bullets being evaluated:

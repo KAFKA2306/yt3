@@ -41,11 +41,7 @@ export class TrendScout extends BaseAgent {
 			temperature: cfg.steps.research?.temperature || 0.5,
 		});
 	}
-	async run(
-		bucket: string,
-		limit?: number,
-		missionFile?: string,
-	): Promise<ResearchResult> {
+	async run(bucket: string, limit?: number): Promise<ResearchResult> {
 		const cached = this.store.load<ResearchResult>(this.name, "output");
 		if (cached) return cached;
 		const researchCfg = this.config.steps.research;
@@ -53,29 +49,9 @@ export class TrendScout extends BaseAgent {
 		this.logInput({
 			bucket,
 			limit: limit || researchCfg.default_limit || 3,
-			missionFile,
 		});
 		const recent = loadMemoryContext(this.store);
 
-		if (missionFile && fs.existsSync(missionFile)) {
-			Logger.info(
-				"TrendScout",
-				"RESEARCH",
-				"MISSION",
-				`Using mission from ${missionFile}`,
-			);
-			const mission: Mission = fs.readJsonSync(missionFile);
-			return {
-				director_data: {
-					angle: mission.angles[0]?.focus || "Default Angle",
-					title_hook: mission.topic,
-					search_query: mission.search_queries.join(", "),
-					key_questions: mission.angles.map((a) => a.name),
-				},
-				news: [], // Will be filled by subsequent search if needed, or we can just proceed with mission data
-				memory_context: recent,
-			};
-		}
 		const promptCfg = this.loadPrompt<{
 			consolidated_research: { system: string; user_template: string };
 		}>(this.name);
@@ -97,10 +73,6 @@ export class TrendScout extends BaseAgent {
 					"{regions}",
 					researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
 				)
-				.replace(
-					"{angles}",
-					researchCfg.angles.map((a: { name: string }) => a.name).join(", "),
-				)
 				.replace("{current_date}", currentDate),
 			promptCfg.consolidated_research.user_template
 				.replace(
@@ -108,10 +80,6 @@ export class TrendScout extends BaseAgent {
 					researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
 				)
 				.replace("{recent_topics}", recent)
-				.replace(
-					"{angles}",
-					researchCfg.angles.map((a: { name: string }) => a.name).join(", "),
-				)
 				.replace("{current_date}", currentDate),
 			(t) =>
 				parseLlmJson(

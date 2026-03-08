@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YT3 | Analytics & Runs</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono&display=swap"
@@ -269,6 +270,56 @@
             padding: 2px 6px;
             border-radius: 4px;
         }
+
+        /* Chatbot UI */
+        .chat-card {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(16, 55, 102, 0.3); /* Deep Navy Tint */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #chat-output {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            background: rgba(0, 0, 0, 0.1);
+            white-space: pre-wrap;
+        }
+
+        .chat-input-container {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .chat-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent);
+        }
     </style>
 </head>
 
@@ -311,6 +362,20 @@
             </div>
 
             <div class="side-column">
+                <div class="card chat-card">
+                    <div class="chat-header">
+                        <h3 style="margin:0; font-size: 0.8rem; color: var(--accent);">Gemini 3 Flash | Hybrid Cluster</h3>
+                        <span style="font-size: 0.7rem; color: var(--text-dim);">SSE Stream</span>
+                    </div>
+                    <div id="chat-output">
+                        <p style="color: var(--text-dim); margin:0;">Ask anything about the project...</p>
+                    </div>
+                    <form class="chat-input-container" hx-post="/api/chat" hx-target="#chat-output" hx-swap="outerHTML"
+                        hx-on::after-request="this.reset()">
+                        <input name="prompt" type="text" class="chat-input" placeholder="Enter command..." required>
+                    </form>
+                </div>
+
                 <div class="card">
                     <h3>Quick Actions</h3>
                     <div class="btn-group">
