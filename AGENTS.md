@@ -1,28 +1,30 @@
-Achieve the goal with MINIMAL changes. Extra changes introduce extra bugs and slow review. NO comments in code. Good code reads itself; comments rot and mislead. Respond clearly, specifically, and concisely. Vague answers waste time and create misunderstanding.
+# 🤖 YT3 エージェント・システム構成（Daily Pulse 観測モード）
 
-# No Safety Nets
-NEVER write defensive code. NO error handling, NO dummy code, NO try-catch. Defensive code hides bugs and delays discovery. Focus on making the main logic succeed.
-- Build the minimal thing, run it, and let it crash. Real failures teach faster than hypothetical planning.
-- Implement the smallest possible structure and EXECUTE IMMEDIATELY. Speed of iteration beats depth of speculation.
-- A crash is NOT a problem — it is design feedback. NEVER fear execution. Fear of running code leads to over-engineering.
-- Follow the strict cycle: CRASH → IDENTIFY ROOT CAUSE → MINIMAL FIX. Repeat relentlessly. Each cycle sharpens understanding of the actual system.
-- REJECT upfront over-engineering. Only real failures dictate real improvements. Imagined edge cases produce imagined solutions.
-- READ every crash log and traceback with absolute precision. Fix the ROOT CAUSE, not the symptom. Symptom fixes guarantee repeat failures.
+YT3システムは、特定のバイアスを排した「生の事実（Daily Pulse）」を観測し、そこから強力なフック（Hook Triggers）を抽出して動画化する自律型システムなのだっ！
 
-# Project Structure Rules
-Always consider proper directory structure. Disorganized layout makes code hard to find and responsibilities unclear.
-- Taskfile.yml is the CLI. All executable operations MUST be defined as Taskfile tasks. Direct script invocation is forbidden. A single entry point keeps execution discoverable and reproducible.
-- **TS/Bun**: ALWAYS use `bun` to run scripts. ALL dependencies MUST be managed via `package.json` and `bun install`. No direct `node` invocation, no ad-hoc installs. **Python**: ALWAYS use `uv run`. ALL dependencies via `pyproject.toml`. No `pip install`, no `requirements.txt`.
-- src/domain/* holds ALL domain logic. Business rules, models, and core computations live here exclusively. Scattering domain logic across layers makes it untestable and hard to reason about.
-- src/io/* holds ALL data input/output. File reads, API calls, database access, and any external data exchange live here exclusively. Isolating I/O from domain logic keeps the core pure and testable.
-- config/default.yaml is the SINGLE source of configuration. No hardcoded values, no scattered config files. One config file means one place to look, one place to change.
-- Agent skills are managed via `agr` (agent-resources). Use `agr add` to install, `agr.toml` to track dependencies, and `agr sync` to reproduce environments. Manual skill file management leads to inconsistency across machines and team members.
+## 1. 🔍 TrendScout (リサーチ・エージェント)
+**役割**: 世界中の主要ドメイン（Investing.com, Bloomberg等）からヘッドラインをスキャンし、事実と数値を収集する。
+- **Daily Pulse 観測**: キーワードに縛られず、今日一番のインパクトを自律的に特定する。
+- **多言語スカウト**: EN, ZH, RU のソースをそのまま受け取り、地域ごとの視点を保持する。
+- **ミッション・レンズ**: 進行中のミッションを「発見のヒント」として活用する。
 
-# Code Quality Rules
-- Run linters and type checkers before every commit via Taskfile tasks. **TS/Bun**: `tsc --noEmit` + `eslint src`. **Python**: `ruff check` + `ruff format` + `uv run ty check`. Automated checks catch style drift and type errors before review.
-- Use schema-validated models for ALL data structures. **TS/Bun**: Use Zod. No plain objects or `any`. **Python**: Use Pydantic. No dataclasses or plain dicts. Validation at the boundary makes schemas explicit and failures loud.
-- Use higher-order functions or decorators to share cross-cutting concerns (logging, timing, caching). Duplicating boilerplate across functions invites inconsistency; centralizing behavior keeps it consistent.
+## 2. ✍️ ScriptSmith (台本執筆エージェント)
+**役割**: 収集された事実（Pulse）とフック（Triggers）を、キャラクター対話形式の物語に変換する。
+- **共同探求**: 春日部つむぎ（冷静な専門家）とずんだもん（前向きな学習者）の対話を通じて、複雑な事象を解きほぐす。
+- **生活への接続**: 巨大な経済データが、視聴者の「電気代」や「財布」にどう直結するかを具体化する。
+- **誠実な解説**: 煽りや恐怖を排し、データに基づく信頼性の高いコンテンツを執筆する。
 
-# Frontend Rules
-- Keep it simple HTML. No frameworks unless explicitly required. Plain HTML is fast to write, easy to debug, and has zero build overhead.
-- Serve and develop via `task dev`. Frontend dev workflow MUST go through Taskfile like everything else. Separate dev commands fragment knowledge and break onboarding.
+## 3. 🎬 VisualDirector (メディア制作エージェント)
+**役割**: 台本から音声合成（TTS）、字幕生成、動画編集を自動で行う。
+- **TTS 連携**: VOICEVOX（つむぎ：8, ずんだもん：1）を活用した豊かな表現力。
+- **ビジュアル・アセット**: 埼玉ギャルとずんだもんの立ち絵を、感情に合わせて動的に配置。
+- **IQA バリデーション**: サムネイルや映像の品質を自動でチェックし、視聴維持率を最大化する。
+
+## 4. 📢 PublishAgent (配信エージェント)
+**役割**: 完成した動画とメタデータをプラットフォームに最適化して配信する。
+- **メタデータ生成**: 事実に基づく誠実なタイトルと概要欄を生成。
+- **YouTube 連携**: YouTube Data API を通じた自動アップロードとタグ設定。
+
+---
+
+このエージェントたちは、すべて `Taskfile.yml` を通じて統括され、`agr`（agent-resources）によって管理されているのだっ！(๑>◡<๑)

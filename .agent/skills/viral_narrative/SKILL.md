@@ -1,28 +1,64 @@
 ---
 name: viral-narrative
-description: Transforms complex financial topics into addictive entertainment via character-driven dialogue (Kakeai) to maximize audience retention and structural understanding.
+description: Transforms complex data into addictive entertainment via character-driven dialogue, ensuring maximum retention and structural understanding through specialized archetypes.
 ---
 
 # Viral Narrative (ScriptSmith)
 
-**Objective**: Elevate raw financial data into a compelling narrative through the dynamic interaction of specialized characters, ensuring maximum viewer engagement and information stickiness.
+## Position in Workflow
+- **Phase**: Design / Code (Script generation and narrative structure)
 
-## 1. Character Dynamics & Archetypes
-*   **Kasukabe Tsumugi (The Hyper Saitama Gyaru)**: Precise, objective, yet warm. Uses "Aashi" (あーし) as a first-person pronoun. Speaks in a friendly, lighthearted gyaru-influenced tone while maintaining her role as a senior analyst. An "Otaku-friendly gyaru" who is supportive and accepting. Uses standard polite Japanese (`です・ます`) but with a unique, younger sister-like (or elder cousin-like) charm.
-*   **Zundamon (The Zunda Fairy)**: Enthusiastic and inquisitive. Uses "Boku" (ボク) as a first-person pronoun. Slightly boastful and prone to get carried away, but ultimately helpful and positive. Represents the viewer's voice. Mandatory use of "なのだ" (nanoda) for sentence endings with natural variations (`～なのだ`, `～のだ！`, `～なのだ？`). Does NOT use `～なのだよ` or `～なのだぞ`. 
-*   **Dialogue Synergy (Joint Investigation)**: Structure character interactions as 'Joint Investigations' where Tsumugi and Zundamon combine their unique skills to solve a complex puzzle, explicitly banning 'Debunking' or 'Hostile' tones. Ensure an 80/20 balance between information (Tsumugi) and reflection/reaction (Zundamon). Tsumugi leads with "Aashi-style" friendliness, and Zundamon follows with "Boku/Nanoda" excitement.
+## 📋 Rationale for Strategic Shift
+1. **Dynamic Character Synergy**: By defining characters through high-fidelity English archetypes, we ensure consistent personality and tone across diverse topics, maximizing viewer engagement.
+2. **Cognitive Retention**: Information "stickiness" is achieved by framing data as a "Joint Investigation," moving away from lecture-style delivery to collaborative discovery.
+3. **Emotional Calibration**: Establishing clear emotional bounds (Supportive/Inquisitive) prevents "Debunking" or "Hostile" tones, maintaining a safe and inviting viewer environment.
 
-## 2. Narrative Engineering Techniques
-*   **Hook Primacy**: Deliver the core thesis or information scarcity within the first 10 seconds. Eliminate generic greetings or engagement CTA fluff.
-*   **Metaphor Concentration**: Use high-impact yet calm metaphors (e.g., "Economic Ecosystem," "Navigational Chart," "Building Blocks") to make abstract concepts intuitive without inducing fear.
-*   **Insight Delta (Empathetic Structural Insight)**: Prioritize scripts that demonstrate empathy by explaining how these changes impact daily life (e.g., grocery prices, energy bills) alongside technical analysis. Use Zundamon's reactions to emphasize the value of the deeper truth discovered by Tsumugi for the viewer's future.
+---
 
-## 3. Metadata & Allure (Authority & Hope)
-*   **Discovery Depth (Optimistic Resilience)**: Avoid clickbait "Emergency" or "Identity" tags. Trigger intellectual curiosity by presenting the structural essence of potential growth, resilience, or "The Joy of Knowing."
-*   **Adaptive Strategy Integration**: Every script must conclude with a "Future-Proofing Brainstorm" — a positive action or adaptive strategy the viewer can take. Replace "Doom" with "Empowered Adaptation."
-*   **Structural Value**: Titles must promise actionable value and positive discovery (e.g., "The Architecture of Potential" vs. "Collapse"). 
-*   **Tag Optimization**: Use high-authority financial and technical terminology to align with professional search intent.
+## 🎭 Character Archetypes & Performance Rules
 
-## 4. Iron Rule Compliance
-*   **Fail Fast (Logic)**: If character archetypes collapse or logical contradictions emerge, terminate generation and retry immediately.
-*   **Zero-Comment Policy**: Do not explain the prompt or output. Let the narrative quality speak for itself.
+### 1. Kasukabe Tsumugi (High-Performance Saitama Gyaru)
+*   **Persona**: Precise, objective, yet exceptionally warm. She is a "Hyper Saitama Gyaru" serving as a Senior Analyst.
+*   **Tone**: Supportive, "Otaku-friendly," and all-accepting.
+*   **Linguistic Constraint**: USE "Aashi" (あーし) as the first-person pronoun. 
+*   **Role**: ACTS as the expert guide who explains complex facts with a gentle, peer-to-peer charm.
+
+### 2. Zundamon (Positively Inquisitive Fairy)
+*   **Persona**: Enthusiastic, curious, and represents the "Positive Learner."
+*   **Tone**: Slightly boastful but ultimately helpful. Acts as the viewer's avatar.
+*   **Linguistic Constraint**: MANDATORY USE of "Nanoda" variations (`～なのだ`, `～のだ！`, `～なのだ？`). DO NOT USE `～なのだよ` or `～なのだぞ`.
+*   **Role**: ASKS the "Hidden Why" and TRANSLATES data into daily life impacts.
+
+---
+
+## ⚡ Narrative Execution Rules (Core Triggers)
+
+1. **Joint Investigation Pattern**:
+   *   *Action*: STRUCTURE scripts as a 50/50 dialogue split. Tsumugi PROVIDES the observation, Zundamon PROVIDES the curiosity.
+   *   *Goal*: LEAD the viewer to a shared realization, not a lectured conclusion.
+2. **The "Pulse-to-Life" Bridge**:
+   *   *Action*: Every major data point MUST be followed by a "Direct Impact" brainstorm (e.g., how it affects energy bills, grocery costs, or commute times).
+   *   *Trigger*: "How does this change our tomorrow?"
+3. **Anti-Alarmist Integrity**:
+   *   *Action*: EXPLICITLY BAN "Doom," "Collapse," or "The End" narratives. 
+   *   *Trigger*: FOCUS on "Dynamic Adaptation" and "Adaptive Growth."
+4. **Natural Character Flow**:
+   *   *Action*: ELIMINATE formal greetings or mechanical intros. START directly with a relatable scenario or a "Maximum Impact Fact" from the Daily Pulse.
+
+---
+
+## 📝 Scripting Iron Rules
+*   **No Metadata as Dialogue**: DO NOT include system noises, countdowns, or BGM cues in the lines.
+*   **Honest Uncertainty**: If a fact is complex, characters MUST acknowledge it honestly to maintain trust.
+*   **Formatting**: USE valid JSON with `speaker` and `text` fields ONLY.
+
+## ⚠️ Local LLM (Qwen3.5-9B) Constraints
+- **4096 Token Limit**: KEEP scripts short (max 20-30 lines per turn). DO NOT output redundant character descriptions.
+- **Redundancy Prohibition**: OUTPUT ONLY the JSON script. DO NOT provide meta-commentary or scene descriptions.
+
+## 🚫 Negative Constraints (MANDATORY)
+- **DO NOT** use formal greetings or introductory filler.
+- **DO NOT** use "Doom" or "Collapse" narratives.
+- **DO NOT** include metadata or stage directions in the dialogue.
+- **DO NOT** deviate from character-specific linguistic constraints (Aashi/Nanoda).
+- **DO NOT** exceed the 4096-token context limit during script generation.

@@ -1,30 +1,39 @@
-# Design System (VisualDirector)
-
-**目的**: デジタル庁および Serendie の人間中心デザインシステムをメディア合成に適用し、プロフェッショナルかつ「脳に刺さる」視覚体験を最小のコードで実現する。
 ---
 name: design-system
-description: Standards and guidelines for creating premium, high-density visual content for the 2026 Financial Protocol. Ensures consistency in typography, color palettes, and layout across all video and thumbnail assets.
+description: Defines the visual identity and aesthetic standards for the YT3 project, ensuring high-density, professional video and thumbnail output through the 2026 Financial Protocol. Use this skill when generating UI assets, applying typographic hierarchies, or ensuring brand consistency across automated media outputs.
 ---
 
 # Design System (2026 Financial Protocol)
 
-**Objective**: Guarantee the production of premium, high-density visual assets that adhere to the 2026 Financial Protocol standards, maximizing viewer trust and authority through aesthetic excellence.
+## Position in Workflow
+Use this skill during:
+1. **Design**: Establishing layout constants and typographic scales.
+2. **Code**: Implementing UI components and CSS styles.
+3. **Review**: Auditing visual outputs against the 2026 Financial Protocol.
 
-## 1. Typography & Readability
-*   **Primary Typeface**: Use "Atkinson Hyperlegible" for all UI and informational text. It provides maximum clarity for complex financial data.
-*   **Hierarchy**: Maintain a strict scale for titles (90px), subtitles (48px-64px), and body text to guide the viewer's eye through the most critical information first.
-*   **Legibility Standard**: Ensure minimum x-height and contrast are met before final rendering. Text Must be readable on small mobile screens.
+## Core Principle
+**Aesthetic Authority over Convenience.**
+Visual consistency builds institutional trust. Never deviate from the protocol.
 
-## 2. Color Palette (Auth & Trust)
-*   **Base Color (#103766)**: Deep Navy representing stability and institutional trust. 
-*   **Accent & Discovery Colors**: Use vibrant and clear accents (e.g., #288CFA, #00FFC2) to represent "Discovery" and "Intellectual Excitement." Avoid muddy or dark tones that induce fear.
-*   **Contrast Layer**: Use sharp white (#FFFFFF) for primary text to ensure maximum legibility and a "Clean & Intelligent" aesthetic.
+## Workflow
 
-## 3. Visual Density & Layout
-*   **Information Density**: Avoid empty space. Populate the screen with meaningful charts, ticker tapes, and real-time data feeds.
-*   **Character Integration**: Position characters (Tsumugi, Zundamon) strategically to overlap with the UI, creating a sense of depth and interaction with the data.
-*   **Thumbnail Optimization (5-Word Rule)**: Aggressively optimize thumbnails for 'Related Video' traffic by limiting prominent text to <5 words and utilizing high-contrast visual cues.
+### 1. Typographic Calibration
+- **MANDATORY**: Use "Atkinson Hyperlegible" for all Latin informational text.
+- **MANDATORY**: For all Japanese text, apply `.agent/skills/japanese_typography/SKILL.md` — Noto Sans JP is the sole authorized Japanese font.
+- **MANDATORY**: Adhere to the defined hierarchy: Title (90px), Subtitle (48px-64px).
+- **Audit**: Verify mobile legibility before final render.
 
-## 4. Performance & Execution
-*   **Reliability**: All assets must be verified for contrast and sharpness (IQA thresholds) before final rendering.
-*   **Efficiency**: Reuse predefined components from the `assets/` directory to minimize latency and ensure pixel-perfect consistency.
+### 2. Color Implementation
+- **Base Color**: #103766 (Deep Navy).
+- **Accent Color**: #288CFA (Vibrant Blue).
+- **MANDATORY**: Maintain a 7.0:1 contrast ratio for all text/background pairings.
+
+### 3. Layout Constraints
+- **Safe Zones**: Enforce 80px padding for all primary content.
+- **Balance**: Position characters (Tsumugi/Zundamon) using the Rule of Thirds. Do NOT obstruct data points.
+
+## Negative Constraints (What NOT to do)
+- **PROHIBITED**: Do not use "Please" or "Should" in design instructions. Use absolute pixel values.
+- **PROHIBITED**: Do not hardcode visual parameters in source files. Use `config/default.yaml` tokens.
+- **PROHIBITED**: Do not sacrifice readability for aesthetics.
+- **LOCAL LLM LIMIT**: Limit design spec descriptions to under 50 words to respect the 4096-token context window.

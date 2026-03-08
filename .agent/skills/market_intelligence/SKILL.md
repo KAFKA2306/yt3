@@ -1,27 +1,51 @@
 ---
 name: market-intelligence
-description: Identifies "Information Asymmetry" from global financial, political, and tech news that significantly impacts the Japanese market, extracting sharp insights that form the core of video content.
+description: Analyzes global financial, economic, and tech news to observe the "Daily Pulse" without bias, extracting hard facts and numerical data to identify the day's most significant events.
 ---
 
-# Market Intelligence (TrendScout)
+# Market Intelligence (Daily Pulse & Observation Mode)
 
-**Objective**: Uncover critical, overlooked insights from global Tier 1 and Tier 2 sources to provide viewers with an analytical edge and update their intellectual paradigms.
+## Position in Workflow
+- **Phase**: Research (Continuous global monitoring)
 
-## 1. Information Tiering & Source Diversification
-*   **Tier 1 Primacy**: Prioritize primary sources from governments, central banks (Fed, ECB, BoJ), and regulatory bodies (SEC).
-*   **Global Cross-Verification**: Bypass domestic echo chambers. Mandate the use of Reuters, Bloomberg, Caixin, FT, and Kommersant to identify global narrative shifts, but filter for relevance to people's actual lives.
-*   **Insight Identification (Curiosity First)**: Focus on "what is overlooked but beneficial to know." Select topics that are genuinely interesting, surprising, or intellectually stimulating.
-*   **Frontier Exploration (Mandatory)**: Mandate research into 'Emerging Frontiers' (e.g., Biotech, Agri-tech, Space economy, breakthrough research) to maintain long-term audience curiosity and sense of discovery.
-*   **Macro-Collapse Prohibition**: Explicitly ban "Macro-Collapse" (マクロ崩壊論) or excessively sensationalist narratives that focus solely on "The End of Japan" or "Systemic Ruin." Shift from "Doom" to "Dynamic Adaptation."
+## 📋 Rationale for Strategic Shift
+1. **Elimination of Predefined Narrative**: Any predefined mission, bucket, or archetype forces news into a predetermined shape. The **Daily Pulse** mode lets the facts dictate the story, ensuring absolute variety and raw authenticity.
+2. **Pulse Sovereignty**: The agent functions as a neutral sensor. The "Daily Pulse"—the raw stream of global events—is the sole and primary source for all research and content generation.
+3. **Fact Primacy**: By removing interpretive templates, we ensure that content is driven by what actually happened today, capturing high-impact anomalies that would be missed by traditional category-based research.
 
-## 2. Analytical Precision
-*   **Hard Data Enforcement**: Abandon vague "sentiments." Every claim MUST be backed by specific numbers (e.g., "10 trillion CNY stimulus," "60% tariff impact," "IMF 60tn debt estimate").
-*   **Structural Questioning (Winner's Perspective)**: Shift from "what happened" to "who wins, who loses, and where is the structural distortion of capital?" When analyzing a 'Disruptive Shock', specifically shift focus from the 'Losers' (legacy operators) to the 'Infrastructural Winners' (e.g., networks, platform owners) and 'Resilient Layers'.
+---
 
-## 3. Narrative Architecture
-*   **Hook Selection**: Identify constructive metaphors (e.g., "Seeds of Growth," "Economic Compass," "Structural Foundation") that represent the potential for positive change or understanding.
-*   **Insight Density**: Eliminate redundant background. Every sentence must contribute to a clear, actionable understanding of the topic being presented.
+## ⚡ Fact-First Extraction (Core Pulse)
+Instead of searching for a specific "story type," the agent MUST identify the **Maximum Impact Fact** from the raw data based on:
 
-## 4. Iron Rule Compliance
-*   **Fact Validation**: ISO8601 timestamps are mandatory for all news items. Discard any data that cannot be chronologically verified against the current system date.
-*   **Integrity**: Categorize all claims strictly into `fact`, `forecast`, or `opinion` to maintain absolute transparency and viewer trust.
+1. **The Delta (What changed?)**: IDENTIFY the most significant deviation from the status quo (e.g., a specific price move, a new regulation, a major discovery).
+2. **The Magnitude (How much?)**: PRIORITIZE facts with the largest verifiable numerical impact or the broadest reach.
+3. **The Actors (Who is involved?)**: IDENTIFY the primary entities directly responsible for or affected by this change.
+
+---
+
+## 1. 🌐 Bias-Free Global Observation (Daily Pulse)
+*   **Blank Slate Observation**: START every search without a target narrative. The objective is to see "What happened today," not to "Find evidence for X."
+*   **Broad Domain Scanning**: SCAN top headlines from `investing.com`, `bloomberg.com`, `reuters.com`, `nikkei.com`, and `finance.yahoo.com` without keyword filters.
+*   **Multi-Lingual Fact Gathering**: COLLECT raw evidence from EN, ZH, and RU sources. **Maintain the distinctness of each source.** DO NOT homogenize differing viewpoints; present them as a multifaceted pulse of the world.
+
+## 2. 📊 Hard Fact & Data Enforcement
+*   **Numerical Evidence**: Every report MUST be anchored in hard numbers (percentages, currency, quantities).
+*   **No Adjectives**: REMOVE all interpretive adjectives (e.g., "shocking," "ominous," "revolutionary"). LET THE NUMBERS SPEAK FOR THEMSELVES.
+*   **Source Fidelity**: A claim is ONLY valid if it is directly linked to a source URL and a specific timestamp.
+
+## 3. 📝 Observational Iron Rules
+*   **Temporal Validation**: Every news item MUST include an ISO8601 timestamp verified against the current system date (`getCurrentDateString()`).
+*   **Source Attribution**: MAINTAIN a 1:1 mapping between every claim and its source URL. NO CITATION, NO INCLUSION.
+
+## ⚠️ Local LLM (Qwen3.5-9B) Constraints
+- **4096 Token Limit**: PRUNE news snippets to the essential facts ONLY. DO NOT output full article text.
+- **Redundancy Prohibition**: OUTPUT ONLY the extracted facts. DO NOT provide meta-narratives or "Daily Pulse" introductory text.
+
+## 🚫 Negative Constraints (MANDATORY)
+- **DO NOT** use adjectives or subjective descriptions.
+- **DO NOT** follow a predefined mission or narrative.
+- **DO NOT** include facts without a verifiable source URL.
+- **DO NOT** include facts without a verified timestamp.
+- **DO NOT** group facts into categories like "Tech" or "Finance" unless they naturally emerge from the pulse.
+- **DO NOT** exceed the 4096-token context limit during research.

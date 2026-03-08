@@ -5,6 +5,9 @@ description: Enforce strict environment variable management rules for .env and p
 
 # Environment Management Skill (MANDATORY HOOK)
 
+## Position in Workflow
+- **Phase**: Research / Plan (Pre-flight configuration audit)
+
 ## 📋 Rationale for Strategic Shift
 1. **Zero-Leakage Security**: Prohibiting placeholders and mandating strict `.env` auditing prevents accidental exposure of sensitive API keys (e.g., GEMINI_API_KEY) in logs or source control.
 2. **Reliable Initialization**: By enforcing mandatory variable presence at startup, we eliminate runtime failures caused by missing configuration, ensuring the system fails fast and loud.
@@ -29,3 +32,13 @@ description: Enforce strict environment variable management rules for .env and p
 ## 🔐 Security Integrity
 - Ensure `.env` is never committed to git by maintaining its entry in `.gitignore`.
 - Treat environment variables as highly sensitive and never log their literal values.
+
+## ⚠️ Local LLM (Qwen3.5-9B) Constraints
+- **4096 Token Limit**: Prune environment audit logs to the minimum required for verification. DO NOT output full `.env` content.
+- **Redundancy Prohibition**: Output ONLY the status of missing/invalid keys. DO NOT repeat successfully verified keys.
+
+## 🚫 Negative Constraints (MANDATORY)
+- **DO NOT** commit `.env` files to version control.
+- **DO NOT** use placeholder values (e.g., `TODO`, `FIXME`, `REPLACE_ME`).
+- **DO NOT** fallback to default keys if environment-specific keys are missing.
+- **DO NOT** log plain-text secret values.

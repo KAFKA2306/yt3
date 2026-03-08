@@ -5,6 +5,9 @@ description: MANDATORY FRAMEWORK to guarantee stable system operation, resource 
 
 # Operational Resilience (Core Infrastructure)
 
+## Position in Workflow
+- **Phase**: Design / Plan / Review (Continuous operational standards)
+
 ## 📋 Rationale for Strategic Shift
 1. **Deterministic Execution**: Mandate "Fail Fast" protocols. Defensive coding is prohibited to ensure failures are loud and diagnosable, preventing silent data corruption.
 2. **Context Efficiency**: Utilize Gemini 3 Flash's context window with strategic prompt caching to minimize latency and operational costs while maximizing information density.
@@ -43,3 +46,15 @@ description: MANDATORY FRAMEWORK to guarantee stable system operation, resource 
     - **Source**: Extract the **Final Video Title** from `{runDir}/content/output.yaml` and the **Public Video URL/ID** from `{runDir}/publish/output.yaml`.
     - **Presentation**: Display these details clearly to the user immediately upon completion.
 *   **Rationale**: Ensures operational transparency and immediate verification of the production output, closing the feedback loop between the agent and the user.
+
+## ⚠️ Local LLM (Qwen3.5-9B) Constraints
+- **The 4096 Trap**: DO NOT assign long-form generation to the local model. Limit tasks to research/audit/evaluation.
+- **Redundancy Prohibition**: DO NOT repeat chat history. Prune context aggressively before invoking Qwen.
+- **JSON Only**: Qwen MUST NOT use XML/HTML tags. Force JSON-only outputs.
+
+## 🚫 Negative Constraints (MANDATORY)
+- **DO NOT** use defensive `try-catch` blocks in business logic.
+- **DO NOT** use relative paths for production scripts or units.
+- **DO NOT** allow application-level retries for quota exhaustion.
+- **DO NOT** switch models mid-workflow unless 429 occurs.
+- **DO NOT** output redundant summaries during multi-stage processing.

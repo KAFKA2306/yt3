@@ -5,6 +5,9 @@ description: UNIVERSAL PATTERN for high-availability LLM clusters. Implements Qu
 
 # Universal LLM Quota Orchestration (The Cluster Pattern)
 
+## Position in Workflow
+- **Phase**: Design / Plan / Review (Continuous resource management)
+
 ## 📋 Core Architectural Principles
 
 ### 1. Quota Observation (Real-time Feedback Loop)
@@ -42,6 +45,13 @@ description: UNIVERSAL PATTERN for high-availability LLM clusters. Implements Qu
 * **Audit Trails**: Log every key rotation and fallback event with latency and success/failure metrics.
 * **Strategic Pruning**: Utilize evaluation cycles (e.g., ACE Intelligence) to prune consistently failing nodes from the cluster.
 
-## 🔐 Integrity & Security
-* **No Secret Exposure**: Log ONLY non-sensitive identifiers (indices, aliases, or truncated hashes). Raw keys must NEVER be persisted in logs or state files.
-* **Strict Configuration**: Enforce standardized naming conventions for API resources to ensure seamless discovery and validation.
+## ⚠️ Local LLM (Qwen3.5-9B) Constraints
+- **4096 Token Limit**: Prune ledger updates and system status injections to the absolute minimum. DO NOT inject full history.
+- **Redundancy Prohibition**: Output ONLY the selected node index and quota status. DO NOT repeat the selection logic.
+
+## 🚫 Negative Constraints (MANDATORY)
+- **DO NOT** expose raw API keys in logs or state files.
+- **DO NOT** allow silent 429 failures; update the ledger IMMEDIATELY.
+- **DO NOT** migrate sessions unless health is compromised (Maintain Sticky Affinity).
+- **DO NOT** ignore rate-limit headers.
+- **DO NOT** use default retry logic that bypasses the orchestration ledger.
