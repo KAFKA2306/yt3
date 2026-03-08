@@ -1,0 +1,12 @@
+default_source = "github"
+tools = ["claude", "antigravity"]
+dependencies = [
+    {handle = "kasperjunge/skills/research-codebase", type = "skill"},
+    {handle = "kasperjunge/skills/design-solution", type = "skill"},
+    {handle = "kasperjunge/skills/create-plan", type = "skill"},
+]
+
+[[source]]
+name = "github"
+type = "git"
+url = "https://github.com/{owner}/{repo}.git"

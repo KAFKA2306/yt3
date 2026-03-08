@@ -1,0 +1,14 @@
+runs/
+logs/
+node_modules/
+.git/
+*.otf
+*.ttf
+*.wav
+*.mp4
+*.png
+*.webp
+*.psd
+*.pickle
+*.zip
+bun.lock

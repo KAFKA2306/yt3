@@ -1,0 +1,13 @@
+[Unit]
+Description=YT3 Aim Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
+ExecStart=aim up --host 127.0.0.1 --port 43800
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
