@@ -3,15 +3,17 @@
  * Verifies the QuotaManager logic and its integration.
  */
 
-import { QuotaManager } from "../src/io/utils/quota_manager.js";
 import { AgentLogger as Logger } from "../src/io/utils/logger.js";
+import { QuotaManager } from "../src/io/utils/quota_manager.js";
 
 async function test() {
 	console.log("--- Starting Quota Orchestration Test ---");
 
 	// 1. Mock environment variables if not present
-	if (!process.env.GEMINI_API_KEY_1) process.env.GEMINI_API_KEY_1 = "mock_key_1_AIza...";
-	if (!process.env.GEMINI_API_KEY_2) process.env.GEMINI_API_KEY_2 = "mock_key_2_AIza...";
+	if (!process.env.GEMINI_API_KEY_1)
+		process.env.GEMINI_API_KEY_1 = "mock_key_1_AIza...";
+	if (!process.env.GEMINI_API_KEY_2)
+		process.env.GEMINI_API_KEY_2 = "mock_key_2_AIza...";
 
 	// 2. Test Acquisition & Stickiness
 	console.log("\n[Test 1] Initial Acquisition & Stickiness");
@@ -25,13 +27,15 @@ async function test() {
 	console.log(`Session A second key (should be same): ${keyA2.name}`);
 
 	const keyB1 = QuotaManager.acquireKey(sessionB);
-	console.log(`Session B first key (should be different or healthy): ${keyB1.name}`);
+	console.log(
+		`Session B first key (should be different or healthy): ${keyB1.name}`,
+	);
 
 	// 3. Test Header Updates
 	console.log("\n[Test 2] Header Updates");
 	QuotaManager.updateFromHeaders(keyA1.name, {
 		"x-ratelimit-remaining-requests": "10",
-		"x-ratelimit-reset-requests": "30s"
+		"x-ratelimit-reset-requests": "30s",
 	});
 	console.log(`Updated ${keyA1.name} quota via headers.`);
 
@@ -45,7 +49,9 @@ async function test() {
 
 	// 5. Verify Ledger File
 	console.log("\n[Test 4] Ledger Persistence");
-	const ledger = JSON.parse(require("fs").readFileSync("data/state/llm_quotas.json", "utf-8"));
+	const ledger = JSON.parse(
+		require("node:fs").readFileSync("data/state/llm_quotas.json", "utf-8"),
+	);
 	console.log("Current Ledger State:", JSON.stringify(ledger, null, 2));
 
 	console.log("\n--- Quota Orchestration Test Complete ---");

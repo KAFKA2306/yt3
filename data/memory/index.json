@@ -1,16 +1,16 @@
 {
-  "videos": [
-    {
-      "run_id": "2026-03-08",
-      "topic": "最新スマホは出るのに、なぜ住宅ローンは下がらないのか？2nm技術と金利6%の正体",
-      "date": "2026-03-08T02:55:28.092Z",
-      "url": "https://youtube.com/watch?v=sIy02YvWkcA"
-    },
-    {
-      "run_id": "2026-03-08",
-      "topic": "ガソリン代も電気代も下がらない本当の理由。原油92ドル時代の「賢いお金の守り方」",
-      "date": "2026-03-08T04:08:59.010Z",
-      "url": "https://youtube.com/watch?v=zgzTo9uNKtM"
-    }
-  ]
+	"videos": [
+		{
+			"run_id": "2026-03-08",
+			"topic": "最新スマホは出るのに、なぜ住宅ローンは下がらないのか？2nm技術と金利6%の正体",
+			"date": "2026-03-08T02:55:28.092Z",
+			"url": "https://youtube.com/watch?v=sIy02YvWkcA"
+		},
+		{
+			"run_id": "2026-03-08",
+			"topic": "ガソリン代も電気代も下がらない本当の理由。原油92ドル時代の「賢いお金の守り方」",
+			"date": "2026-03-08T04:08:59.010Z",
+			"url": "https://youtube.com/watch?v=zgzTo9uNKtM"
+		}
+	]
 }

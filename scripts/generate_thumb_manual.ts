@@ -1,1 +1,1 @@
-console.log('Placeholder thumbnail generation - no actual image created.');
+console.log("Placeholder thumbnail generation - no actual image created.");

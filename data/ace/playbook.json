@@ -1,48 +1,48 @@
 {
-  "bullets": [
-    {
-      "id": "fact-first-observation-2026",
-      "content": "Prioritize the highest-magnitude delta in numerical data (e.g., price, growth, capacity) as the primary lead for any script. Let the raw facts dictate the core topic.",
-      "source": "Evolution",
-      "confidence": 0.98,
-      "runs": 1,
-      "successes": 1,
-      "category": "Structural",
-      "alpha": 4.0,
-      "beta": 1
-    },
-    {
-      "id": "multi-lingual-raw-integrity",
-      "content": "When using EN, ZH, and RU sources, present their unique perspectives as distinct evidence. Do not homogenize differing viewpoints; instead, show them as a multifaceted pulse of the world.",
-      "source": "Evolution",
-      "confidence": 0.95,
-      "runs": 1,
-      "successes": 1,
-      "category": "Structural",
-      "alpha": 3.5,
-      "beta": 1
-    },
-    {
-      "id": "empathetic-impact-analysis",
-      "content": "Explain how global economic data points directly impact daily life (energy bills, food prices, mortgage rates) without assuming a specific narrative outcome.",
-      "source": "Analytics",
-      "confidence": 0.92,
-      "runs": 1,
-      "successes": 1,
-      "category": "Retention",
-      "alpha": 3.0,
-      "beta": 1
-    },
-    {
-      "id": "collaborative-knowledge-discovery",
-      "content": "Structure character interactions as 'Joint Investigations' where Tsumugi and Zundamon combine their unique skills to solve a complex puzzle, explicitly banning 'Debunking' or 'Hostile' tones.",
-      "source": "Acquisition",
-      "confidence": 0.9,
-      "runs": 10,
-      "successes": 10,
-      "category": "Retention",
-      "alpha": 3.4,
-      "beta": 1
-    }
-  ]
+	"bullets": [
+		{
+			"id": "fact-first-observation-2026",
+			"content": "Prioritize the highest-magnitude delta in numerical data (e.g., price, growth, capacity) as the primary lead for any script. Let the raw facts dictate the core topic.",
+			"source": "Evolution",
+			"confidence": 0.98,
+			"runs": 1,
+			"successes": 1,
+			"category": "Structural",
+			"alpha": 4.0,
+			"beta": 1
+		},
+		{
+			"id": "multi-lingual-raw-integrity",
+			"content": "When using EN, ZH, and RU sources, present their unique perspectives as distinct evidence. Do not homogenize differing viewpoints; instead, show them as a multifaceted pulse of the world.",
+			"source": "Evolution",
+			"confidence": 0.95,
+			"runs": 1,
+			"successes": 1,
+			"category": "Structural",
+			"alpha": 3.5,
+			"beta": 1
+		},
+		{
+			"id": "empathetic-impact-analysis",
+			"content": "Explain how global economic data points directly impact daily life (energy bills, food prices, mortgage rates) without assuming a specific narrative outcome.",
+			"source": "Analytics",
+			"confidence": 0.92,
+			"runs": 1,
+			"successes": 1,
+			"category": "Retention",
+			"alpha": 3.0,
+			"beta": 1
+		},
+		{
+			"id": "collaborative-knowledge-discovery",
+			"content": "Structure character interactions as 'Joint Investigations' where Tsumugi and Zundamon combine their unique skills to solve a complex puzzle, explicitly banning 'Debunking' or 'Hostile' tones.",
+			"source": "Acquisition",
+			"confidence": 0.9,
+			"runs": 10,
+			"successes": 10,
+			"category": "Retention",
+			"alpha": 3.4,
+			"beta": 1
+		}
+	]
 }
