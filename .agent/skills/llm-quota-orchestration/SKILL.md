@@ -1,57 +1,44 @@
 ---
 name: llm-quota-orchestration
-description: UNIVERSAL PATTERN for high-availability LLM clusters. Implements Quota Observation, Sticky Affinity, and Tiered Resilience to optimize throughput, latency (via caching), and reliability across multiple API providers or local models.
+description: Manage API key rotation, sticky sessions, and tiered fallback across multiple Gemini keys and local models. Use when configuring multi-key LLM clusters, debugging quota exhaustion, optimizing prefix caching, or deciding which model tier to use. Triggers on "quota", "429", "key rotation", "sticky session", "rate limit", "LLM cluster", or "which model to use".
 ---
 
-# Universal LLM Quota Orchestration (The Cluster Pattern)
+# LLM Quota Orchestration
 
-## Position in Workflow
-- **Phase**: Design / Plan / Review (Continuous resource management)
+## Why Sticky Sessions Matter
 
-## 📋 Core Architectural Principles
+Prefix caching only works when the same API key receives the same system prompt prefix repeatedly. Rotating keys mid-session destroys cache hits and increases latency. Pin each workflow to one key for the duration — only break affinity on 429.
 
-### 1. Quota Observation (Real-time Feedback Loop)
-* **Reactive Scaling**: Systems MUST intercept rate-limit metadata (e.g., `x-ratelimit-remaining`, `x-ratelimit-reset`) from every API response.
-* **State Ledger**: Maintain a centralized, persistent state (The Ledger) to track health, remaining capacity, and cooldown windows for all nodes in the cluster.
-* **Proactive Isolation**: Immediately isolate nodes hitting 429 errors or low-quota thresholds to protect the overall system's stability.
+## Tiered Resilience
 
-### 2. Sticky Affinity (Cache Optimization)
-* **Session Persistence**: Pin specific workflows or long-running tasks to a single cluster node (Sticky Session) to maximize **Prefix/Prompt Caching** benefits.
-* **Affinity Breach**: Only migrate a session to a new node if the current node's health degrades (e.g., 429 error), prioritizing availability over cache efficiency in critical failures.
+```
+Tier 1: Gemini Cloud Cluster (multiple GEMINI_API_KEY_N)
+  → parallel across keys, full context window
+Tier 2: Local vLLM (Qwen3.5-9B)
+  → see local-llm-orchestration for constraints
+Tier 3: Fail Fast
+  → terminate, preserve state, let Systemd handle restart
+```
 
-### 3. Tiered Resilience Hierarchy
-* **Tier 1 (Cloud Cluster)**: Parallel execution across multiple API keys/projects for maximum performance and context window.
-* **Tier 2 (Local Fallback)**: Automated transition to self-hosted models (vLLM/Ollama) when cloud quotas are exhausted.
-* **Tier 3 (Fail Fast)**: Immediate termination with diagnostic state preservation if all tiers are depleted, allowing external supervisors (Systemd/Cron) to manage recovery.
+## Node Selection (Pre-flight)
 
-### 4. Situation Awareness (Agent-Centric Guidance)
-* **Contextual Injection**: Inject `[LLM System Status]` into the final system prompt. This MUST include current provider, remaining quota, and strategic guidance.
-* **Adaptive Reasoning**: Sub-agents MUST adjust their output verbosity and reasoning depth based on the injected status (e.g., "Standard" for Cloud vs. "Extreme Conciseness" for Local 4k-context models).
+1. Check for existing session affinity → use same key
+2. No affinity → pick key with highest remaining quota
+3. Equal quota → Least Recently Used
 
-## 🚀 Execution Standards
+## Ledger Update (Post-flight)
 
-### 1. The Pre-flight Protocol (Acquisition)
-* Before invocation, the orchestrator MUST select the "Healthiest" node:
-  - **Match Affinity**: Check for an existing session-to-node mapping.
-  - **Highest Capacity**: If no affinity exists, select the node with the highest remaining quota.
-  - **Load Balancing**: If quotas are equal, utilize a "Least Recently Used" (LRU) selection.
+After every API call, update the ledger immediately:
+- Parse `x-ratelimit-remaining` and `x-ratelimit-reset` from response headers
+- Mark exhausted keys with cooldown = `reset_time + 30s`
+- Log key index, latency, and success/failure — never log key values
 
-### 2. The Post-flight Protocol (ledger Update)
-* After invocation, the orchestrator MUST update the ledger:
-  - **Metadata Extraction**: Parse headers or error messages for quota reset times.
-  - **Cooling Down**: Mark exhausted nodes with a mandatory wait period (e.g., Reset Time + Buffer).
+## Status Injection
 
-### 3. Monitoring & Evolution
-* **Audit Trails**: Log every key rotation and fallback event with latency and success/failure metrics.
-* **Strategic Pruning**: Utilize evaluation cycles (e.g., ACE Intelligence) to prune consistently failing nodes from the cluster.
+Inject current cluster state into sub-agent system prompts:
 
-## ⚠️ Local LLM (Qwen3.5-9B) Constraints
-- **4096 Token Limit**: Prune ledger updates and system status injections to the absolute minimum. DO NOT inject full history.
-- **Redundancy Prohibition**: Output ONLY the selected node index and quota status. DO NOT repeat the selection logic.
+```
+[LLM Status] Provider: GEMINI_KEY_2 | Quota: 847/1000 | Mode: Standard
+```
 
-## 🚫 Negative Constraints (MANDATORY)
-- **DO NOT** expose raw API keys in logs or state files.
-- **DO NOT** allow silent 429 failures; update the ledger IMMEDIATELY.
-- **DO NOT** migrate sessions unless health is compromised (Maintain Sticky Affinity).
-- **DO NOT** ignore rate-limit headers.
-- **DO NOT** use default retry logic that bypasses the orchestration ledger.
+Sub-agents adjust verbosity based on mode — Standard (cloud) vs. Concise (local 4k context).

@@ -1,44 +1,35 @@
 ---
 name: env-management
-description: Enforce strict environment variable management rules for .env and project configurations. Requires mandatory invocation before all env-related tasks.
+description: Audit and enforce environment variable rules before any task that touches API keys or config. Use before running pipelines, debugging auth failures, or setting up a new environment. Triggers on "check env", "missing key", "API key", ".env", "GEMINI_API_KEY", or any config-related pre-flight check.
 ---
 
-# Environment Management Skill (MANDATORY HOOK)
+# Environment Management
 
-## Position in Workflow
-- **Phase**: Research / Plan (Pre-flight configuration audit)
+## Why This Matters
 
-## 📋 Rationale for Strategic Shift
-1. **Zero-Leakage Security**: Prohibiting placeholders and mandating strict `.env` auditing prevents accidental exposure of sensitive API keys (e.g., GEMINI_API_KEY) in logs or source control.
-2. **Reliable Initialization**: By enforcing mandatory variable presence at startup, we eliminate runtime failures caused by missing configuration, ensuring the system fails fast and loud.
-3. **Canonical Configuration**: Establishing a single source of truth for all environment variables prevents shadowing and conflicts between different providers (e.g., Google vs. Gemini keys).
+Missing or misconfigured env vars cause silent failures deep in pipelines — hours of debugging tracing back to a typo in `.env`. Catching them at the boundary, before execution, is the only reliable approach.
 
----
+## Key Naming Convention
 
-## 📝 Governance Rules
-1.  **NO Placeholders**: Never use `your_key_here` or similar strings in `.env` files. If a key is missing, the system MUST fail immediately.
-2.  **Strict Loading**: Always use `bun --env-file=config/.env` or explicit `dotenv` loading for all entry points.
-3.  **Variable Shadowing Prohibition**: Prohibit shadowing critical variables. Use a single source of truth (e.g., `GEMINI_API_KEY` for all Gemini-related tasks).
-4.  **Round-Robin Pool Convention**: 
-    - Multiple Gemini keys MUST be named `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, ..., `GEMINI_API_KEY_[N]`.
-    - `GEMINI_API_KEY` (no index) is treated as an alias for `GEMINI_API_KEY_1`.
-5.  **Audit Before Execution**: Before any logic execution, verify that all mandatory variables defined in `src/domain/types.ts` are present.
+```
+GEMINI_API_KEY_1, GEMINI_API_KEY_2, ..., GEMINI_API_KEY_N
+```
 
-## 🚀 Execution Protocol
-- **Audit**: Run `cat config/.env` to verify keys exist without actually exposing their full values in logs (use `grep` for keys).
-- **Verify**: Use a diagnostic script (e.g., `src/io/utils/check_env.ts` or `llm-round-robin/scripts/check_keys.ts`) to confirm API connectivity before starting heavy pipelines.
-- **Fail Fast**: If a key is invalid or missing, do NOT attempt to fallback. Terminate the process with a clear error message.
+`GEMINI_API_KEY` (no index) is an alias for `GEMINI_API_KEY_1`. This supports round-robin rotation in `llm-quota-orchestration` without ambiguity.
 
-## 🔐 Security Integrity
-- Ensure `.env` is never committed to git by maintaining its entry in `.gitignore`.
-- Treat environment variables as highly sensitive and never log their literal values.
+## Pre-flight Audit
 
-## ⚠️ Local LLM (Qwen3.5-9B) Constraints
-- **4096 Token Limit**: Prune environment audit logs to the minimum required for verification. DO NOT output full `.env` content.
-- **Redundancy Prohibition**: Output ONLY the status of missing/invalid keys. DO NOT repeat successfully verified keys.
+```bash
+grep -c "GEMINI_API_KEY_" config/.env   # count keys
+bun run src/io/utils/check_env.ts       # verify connectivity
+```
 
-## 🚫 Negative Constraints (MANDATORY)
-- **DO NOT** commit `.env` files to version control.
-- **DO NOT** use placeholder values (e.g., `TODO`, `FIXME`, `REPLACE_ME`).
-- **DO NOT** fallback to default keys if environment-specific keys are missing.
-- **DO NOT** log plain-text secret values.
+Never `cat config/.env` in logs — use `grep` for key names only, never values.
+
+## Rules
+
+- Load via `bun --env-file=config/.env` or explicit `dotenv` at every entry point. No implicit env inheritance.
+- Source of truth is `src/domain/types.ts`. Every variable defined there must be present at startup or the process crashes — no fallbacks.
+- Placeholder values (`your_key_here`, `TODO`, `REPLACE_ME`) are treated as missing. The process must crash with a clear message pointing to the missing key name.
+- `.env` stays in `.gitignore`. If it's committed, treat it as a credential leak and rotate immediately.
+- Never log key values — log key names and status only (present/missing/invalid).
