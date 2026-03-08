@@ -197,7 +197,6 @@ export class LayoutEngine {
 	) {
 		const s = subtitlesConfig || {};
 		const g = this.config.global_style;
-		const tokens = this.config.design_tokens;
 		return {
 			font:
 				s.font_name ||
