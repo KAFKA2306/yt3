@@ -1,5 +1,6 @@
 import { END, START, StateGraph } from "@langchain/langgraph";
 import { ScriptSmith } from "./domain/agents/content.js";
+import { MacroRegimeAnalystAgent } from "./domain/agents/macro_regime_analyst_agent.js";
 import { VisualDirector } from "./domain/agents/media.js";
 import { MemoryAgent } from "./domain/agents/memory.js";
 import { PublishAgent } from "./domain/agents/publish.js";
@@ -10,6 +11,7 @@ import type {
 	Metadata,
 	PublishResults,
 	Script,
+	StrategicAnalysis,
 } from "./domain/types.js";
 import type { AssetStore } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
@@ -27,7 +29,7 @@ export function createGraph(store: AssetStore) {
 		run_id: { reducer, default: () => "" },
 		bucket: {
 			reducer,
-			default: () => cfg.workflow.default_bucket || "global_macro",
+			default: () => cfg.workflow.default_bucket || "daily_pulse",
 		},
 		limit: { reducer, default: () => cfg.steps.research?.default_limit || 3 },
 		director_data: { reducer, default: () => undefined } as ChannelReducer<
@@ -51,8 +53,12 @@ export function createGraph(store: AssetStore) {
 		mission_file: { reducer, default: () => undefined } as ChannelReducer<
 			string | undefined
 		>,
+		strategic_insight: { reducer, default: () => undefined } as ChannelReducer<
+			StrategicAnalysis | undefined
+		>,
 	};
 	const research = new TrendScout(store);
+	const strategy = new MacroRegimeAnalystAgent(store);
 	const content = new ScriptSmith(store);
 	const media = new VisualDirector(store);
 	const publish = new PublishAgent(store);
@@ -65,21 +71,27 @@ export function createGraph(store: AssetStore) {
 			"RESEARCH",
 			"Starting trend discovery",
 		);
-		const res = await research.run(
-			state.bucket,
-			state.limit,
-			state.mission_file,
-		);
+		const res = await research.run(state.bucket, state.limit);
 		return {
 			director_data: res.director_data,
 			news: res.news,
 			memory_context: res.memory_context,
 		};
 	});
-	workflow.addNode("content", async (state: AgentState) => {
+	workflow.addNode("strategy", async (state: AgentState) => {
 		AgentLogger.transition(
 			"SYSTEM",
 			"RESEARCH",
+			"STRATEGY",
+			"Extracting strategic insights from news",
+		);
+		const res = await strategy.run(state.news || []);
+		return { strategic_insight: res };
+	});
+	workflow.addNode("content", async (state: AgentState) => {
+		AgentLogger.transition(
+			"SYSTEM",
+			"STRATEGY",
 			"CONTENT",
 			"Synthesizing script and metadata",
 		);
@@ -89,6 +101,7 @@ export function createGraph(store: AssetStore) {
 			state.news || [],
 			state.director_data,
 			state.memory_context || "",
+			state.strategic_insight,
 		);
 		return { script: res.script, metadata: res.metadata };
 	});
@@ -132,7 +145,8 @@ export function createGraph(store: AssetStore) {
 	});
 	const graph = workflow as any;
 	graph.addEdge(START, "research");
-	graph.addEdge("research", "content");
+	graph.addEdge("research", "strategy");
+	graph.addEdge("strategy", "content");
 	graph.addEdge("content", "media");
 	graph.addEdge("media", "publish");
 	graph.addEdge("publish", "memory");

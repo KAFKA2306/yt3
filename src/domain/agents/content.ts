@@ -36,6 +36,7 @@ export class ScriptSmith extends BaseAgent {
 		news: NewsItem[],
 		director: { angle: string; title_hook: string },
 		context: string,
+		strategic_insight?: any,
 	): Promise<ContentResult> {
 		const outputPath = path.join(
 			this.store.runDir,
@@ -49,14 +50,20 @@ export class ScriptSmith extends BaseAgent {
 			return res;
 		}
 
-		this.logInput({ news, director, context });
+		this.logInput({ news, director, context, strategic_insight });
 
 		const newsContext = news
 			.map((n) => `Title: ${n.title}\nSource: ${n.url}\nSummary: ${n.summary}`)
 			.join("\n\n");
 
+		const insightContext = strategic_insight
+			? `\n\n**【投資戦略的示唆 (Chief Strategist's Insight)】**\n戦略要約: ${strategic_insight.strategic_summary}\n主要な知恵:\n${strategic_insight.insights.map((i: any) => `- ${i.wisdom}`).join("\n")}`
+			: "";
+
+		const fullContext = newsContext + insightContext;
+
 		// 1. Generate Outline
-		const outline = await this.generateOutline(director.angle, newsContext);
+		const outline = await this.generateOutline(director.angle, fullContext);
 
 		// 2. Generate Segments
 		const allLines: ScriptLine[] = [];
@@ -65,7 +72,7 @@ export class ScriptSmith extends BaseAgent {
 				director.angle,
 				section,
 				allLines.slice(-10), // Context for flow
-				newsContext,
+				fullContext,
 			);
 			allLines.push(...segmentLines);
 		}
@@ -74,7 +81,7 @@ export class ScriptSmith extends BaseAgent {
 		const scriptText = allLines
 			.map((l) => `${l.speaker}: ${l.text}`)
 			.join("\n");
-		const metadata = await this.generateMetadata(scriptText, newsContext);
+		const metadata = await this.generateMetadata(scriptText, fullContext);
 
 		const result: ContentResult = {
 			script: {

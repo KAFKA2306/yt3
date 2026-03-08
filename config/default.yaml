@@ -136,9 +136,8 @@ steps:
 
 providers:
   llm:
-    provider: "gemini"  # switched to local LLM to avoid Gemini quota
+    provider: "gemini"
     gemini: {model: "gemini-3-flash-preview", primary_llm: "gemini-3-flash-preview", temperature: 0.35, max_tokens: 32768}
-    local: {base_url: "http://localhost:8000", model: "Qwen/Qwen3.5-9B", temperature: 0.35, max_tokens: 2048}
     content: {temperature: 0.4}
     media: {temperature: 0.1}
     research: {temperature: 0.5, selection_temperature: 0.4, relevance_temperature: 0.0}
@@ -178,7 +177,7 @@ mcp:
   servers:
     context7:
       command: "npx"
-      args: ["-y", "@upstash/mcp-server-context7"]
+      args: ["-y", "@upstash/context7-mcp"]
     figma:
       command: "npx"
       args: ["-y", "@figma/mcp-server-figma"]
@@ -477,19 +476,24 @@ prompts:
       現在の日付: {current_date}
 
   macro_regime_analyst:
-    system: "あなたは高度な金融分析を行うクオンツ・アナリストです。提供された指示に従い、正確で洞察に満ちた分析をJSON形式で提供してください。"
+    system: "あなたはヘッジファンドのチーフ・投資ストラテジストです。提供された生データから、市場のコンセンサスを超えた『投資家のための知恵・アイデア・情報・示唆』を抽出してください。一般論への逃げを厳禁し、具体的かつ予見的な分析をJSON形式で提供せよ。"
     user_template: |
-      あなたは専属のクオンツ・アナリストです。現在のグローバル・マクロ環境を分析し、投資戦略を提示してください。
+      あなたは投資のプロフェッショナルです。以下の最新データ（物理的・技術的な変化）を直視し、投資家がアップデートすべき『新しい現実のルール』を導き出してください。
 
-      **【分析タスク】**
-      1. 最新のマクロデータ（FRB/ECBの動向、インフレ、金利、GDP、雇用）を調査し、現在の経済環境を要約してください。
-      2. この環境で歴史的にアウトパフォームしてきたセクターや資産を特定してください。
-      3. 類似する過去の事例を3つ提示してください。
-      4. 通常とは異なる相関関係（例：金と株の同時上昇、株と債券の同時下落）を調査し、その歴史的示唆と正常化に向けたトレードアイデアを3つ提示してください。
+      **【最新ニュース・データ】**
+      {news_context}
+
+      **【分析の規律（Flowの決定はデータに任せる）】**
+      1. **情報の特定（Information/Delta）**: 今日の事実の中で、投資家が最も無視してはならない「不可逆的な変化（Delta）」を1つ特定せよ。
+      2. **波及する示唆（Implication）**: その変化が、今後数ヶ月〜1年以内に「どの業界のコスト構造や需要」を劇的に変えるか、二次的・三次的な波及効果を論理的に示唆せよ。
+      3. **投資アイデア（Investment Idea）**: その変化から導き出される、投資家が注目すべき「具体的な資産やセクター」とその「投資根拠（Rationale）」を提案せよ。
+      4. **本質的な知恵（Wisdom）**: この事象が教えてくれる、時代を生き抜くための『本質的な知恵』を定義せよ。
 
       **【遵守事項】**
+      - 「インフレが〜」「金利が〜」といったマクロの定型文から始めないこと。物理的事実（スペック、数値、事件）から始めよ。
       - 情報ソース（URL等）を必ず含めること。
-      - 想定される投資期間を明示すること。
+      - 必ず有効なJSON形式のみを出力し、説明文を含めないこと。
+      - キー名は以下の通りにすること：primary_delta (event, magnitude, structural_shift), insights (observation, implication, wisdom), investment_ideas (asset, rationale), strategic_summary, sources
       - 日本語で回答すること。
 
       現在の日付: {current_date}

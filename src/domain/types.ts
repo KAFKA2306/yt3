@@ -131,6 +131,31 @@ export interface DesignTokens {
 		min_contrast: number;
 	};
 }
+export const StrategicInsightSchema = z.object({
+	primary_delta: z.object({
+		event: z.string(),
+		magnitude: z.string(),
+		structural_shift: z.string(),
+	}),
+	insights: z.array(
+		z.object({
+			observation: z.string(),
+			implication: z.string(),
+			wisdom: z.string(),
+		}),
+	),
+	investment_ideas: z.array(
+		z.object({
+			asset: z.string(),
+			rationale: z.string(),
+			backdoor_opportunity: z.string(),
+		}),
+	),
+	strategic_summary: z.string(),
+	sources: z.array(z.string()),
+});
+export type StrategicAnalysis = z.infer<typeof StrategicInsightSchema>;
+
 export const AgentStateSchema = z.object({
 	run_id: z.string(),
 	bucket: z.string(),
@@ -146,5 +171,6 @@ export const AgentStateSchema = z.object({
 	publish_results: PublishResultsSchema.optional(),
 	memory_context: z.string().optional(),
 	mission_file: z.string().optional(),
+	strategic_insight: StrategicInsightSchema.optional(),
 });
 export type AgentState = z.infer<typeof AgentStateSchema>;
