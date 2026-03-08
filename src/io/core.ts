@@ -1,7 +1,6 @@
 import path from "node:path";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { ChatOpenAI } from "@langchain/openai";
 import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import yaml from "js-yaml";
@@ -35,28 +34,6 @@ export function createLlm(
 ): BaseChatModel & { keyName?: string } {
 	const { extra = {}, ...rest } = options;
 	const cfg = loadConfig();
-	const provider = options.provider || cfg.providers.llm.provider || "gemini";
-
-	if (provider === "local") {
-		const localCfg = cfg.providers.llm.local;
-		if (!localCfg) throw new Error("providers.llm.local is not configured");
-		Logger.info(
-			"SYSTEM",
-			"CORE",
-			"API_CHECK",
-			`Using local provider: ${localCfg.model} @ ${localCfg.base_url}`,
-		);
-		return new ChatOpenAI({
-			model: options.model ?? localCfg.model,
-			temperature: options.temperature ?? localCfg.temperature,
-			maxTokens: localCfg.max_tokens,
-			apiKey: "local",
-			configuration: { baseURL: `${localCfg.base_url}/v1` },
-			modelKwargs: { chat_template_kwargs: { enable_thinking: false } },
-			...extra,
-			...rest,
-		} as ConstructorParameters<typeof ChatOpenAI>[0]);
-	}
 
 	// -------------------------------------------------------------------------
 	// GEMINI CLUSTER ORCHESTRATION
@@ -209,17 +186,14 @@ export abstract class BaseAgent {
 
 		const executeWithRetry = async (retryCount = 0): Promise<T> => {
 			// Use runDir as sessionId to ensure sticky sessions per run
-			const provider: "gemini" | "local" =
-				retryCount >= 5 ? "local" : (this.opts.provider as any) || "gemini";
 			const llm = createLlm({
 				...this.opts,
-				provider,
 				sessionId: this.store.runDir,
 			});
-			const keyName = llm.keyName || "local";
+			const keyName = llm.keyName || "unknown";
 
 			// Inject Quota Context for Agent Situation Awareness
-			const quotaContext = QuotaManager.getQuotaContext(keyName, provider);
+			const quotaContext = QuotaManager.getQuotaContext(keyName, "gemini");
 			const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
 
 			try {
@@ -247,7 +221,6 @@ export abstract class BaseAgent {
 					QuotaManager.markCooldown(keyName);
 
 					// Retry within Gemini Cluster if we haven't tried too many times
-					// QuotaManager.acquireKey will naturally pick a DIFFERENT healthy key next time
 					if (retryCount < 5) {
 						Logger.warn(
 							this.name,
@@ -259,25 +232,6 @@ export abstract class BaseAgent {
 					}
 				}
 
-				// Final Fallback to Local LLM (vLLM)
-				if (isQuotaError) {
-					Logger.error(
-						this.name,
-						"CORE",
-						"FALLBACK",
-						"Gemini cluster exhausted. Falling back to local vLLM...",
-					);
-					const fallbackLlm = createLlm({ ...this.opts, provider: "local" });
-					const res = await fallbackLlm.invoke(
-						[
-							{ role: "system", content: finalSystemPrompt },
-							{ role: "user", content: userPrompt },
-						],
-						callOpts as Record<string, unknown>,
-					);
-					return parser(res.content as string);
-				}
-
 				throw e;
 			}
 		};
@@ -287,15 +241,40 @@ export abstract class BaseAgent {
 }
 export function cleanCodeBlock(text: string): string {
 	const stripped = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-	const match =
-		stripped.match(/```(?:json)?\n([\s\S]*?)\n```/) ||
-		stripped.match(/([{\[][\s\S]*[}\]])/);
+	const match = stripped.match(/([{\[][\s\S]*[}\]])/);
 	return match ? (match[1] || match[0]).trim() : stripped;
 }
+
+/**
+ * Robust JSON Repair for LLM responses
+ * Handles common issues like truncation or extra/missing braces
+ */
+function repairJson(text: string): string {
+	let cleaned = cleanCodeBlock(text);
+	const openBraces = (cleaned.match(/{/g) || []).length;
+	const closeBraces = (cleaned.match(/}/g) || []).length;
+	if (openBraces > closeBraces) cleaned += "}".repeat(openBraces - closeBraces);
+	const openBrackets = (cleaned.match(/\[/g) || []).length;
+	const closeBrackets = (cleaned.match(/\]/g) || []).length;
+	if (openBrackets > closeBrackets)
+		cleaned += "]".repeat(openBrackets - closeBrackets);
+	return cleaned;
+}
+
 export function parseLlmJson<T>(text: string, schema?: z.ZodSchema<T>): T {
-	const cleaned = cleanCodeBlock(text);
-	const json = JSON.parse(cleaned);
-	return schema ? schema.parse(json) : (json as T);
+	const repaired = repairJson(text);
+	try {
+		const json = JSON.parse(repaired);
+		return schema ? schema.parse(json) : (json as T);
+	} catch (e) {
+		Logger.error(
+			"SYSTEM",
+			"CORE",
+			"PARSE_FAILURE",
+			`JSON Parse Failure even after repair: ${repaired.slice(-100)}`,
+		);
+		throw e;
+	}
 }
 export async function runMcpTool(
 	serverName: string,

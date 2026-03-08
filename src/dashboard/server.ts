@@ -4,13 +4,66 @@ import express from "express";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import serveIndex from "serve-index";
+import {
+	AssetStore,
+	BaseAgent,
+	createLlm,
+	getCurrentDateString,
+	loadConfig,
+} from "../io/core.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "../../");
 const RUNS_DIR = path.join(ROOT_DIR, "runs");
 const app = express();
 const PORT = 3000;
+
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+class ChatAgent extends BaseAgent {
+	constructor() {
+		super(new AssetStore("chat_session"), "chat");
+	}
+}
+
+let lastPrompt = "";
+
+app.post("/api/chat", (req, res) => {
+	lastPrompt = req.body.prompt;
+	res.send(
+		'<div id="chat-output" hx-ext="sse" sse-connect="/api/chat/sse" sse-swap="message">Waiting for Gemini...</div>',
+	);
+});
+
+app.get("/api/chat/sse", async (req, res) => {
+	res.setHeader("Content-Type", "text/event-stream");
+	res.setHeader("Cache-Control", "no-cache");
+	res.setHeader("Connection", "keep-alive");
+
+	const agent = new ChatAgent();
+	const llm = createLlm({ temperature: 0.7 });
+	const stream = await llm.stream([
+		{
+			role: "system",
+			content:
+				"You are a helpful assistant in the YT3 project. Answer concisely.",
+		},
+		{ role: "user", content: lastPrompt },
+	]);
+
+	let fullText = "";
+	for await (const chunk of stream) {
+		fullText += (chunk.content as string) || "";
+		// Clean <think> tags for UI
+		const display = fullText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+		res.write(`data: ${display}\n\n`);
+	}
+	res.write("event: close\ndata: \n\n");
+	res.end();
+});
+
 app.use(
 	"/runs",
 	express.static(RUNS_DIR),

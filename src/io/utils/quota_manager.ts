@@ -45,12 +45,27 @@ export class QuotaManager {
 	private static syncEnvKeys() {
 		const ledger = QuotaManager.loadLedger();
 		const envKeys = Object.entries(process.env)
-			.filter(([name]) => name.startsWith("GEMINI_API_KEY"))
+			.filter(
+				([name, value]) =>
+					name.startsWith("GEMINI_API_KEY") &&
+					name !== "GEMINI_API_KEY_5" && // Explicitly exclude invalid key
+					value &&
+					value.length > 20 &&
+					!value.includes("YOUR_API_KEY"),
+			)
 			.sort(([a], [b]) => {
 				const na = Number.parseInt(a.split("_").pop() || "0");
 				const nb = Number.parseInt(b.split("_").pop() || "0");
 				return na - nb;
 			});
+
+		// Clean up keys that no longer exist in env or are invalid
+		const validNames = envKeys.map(([name]) => name);
+		for (const name of Object.keys(ledger.keys)) {
+			if (!validNames.includes(name)) {
+				delete ledger.keys[name];
+			}
+		}
 
 		for (const [name] of envKeys) {
 			if (!ledger.keys[name]) {
@@ -84,17 +99,17 @@ export class QuotaManager {
 			const stickyIndex = ledger.sessions[sessionId];
 			const keyName =
 				stickyIndex === 1 ? "GEMINI_API_KEY" : `GEMINI_API_KEY_${stickyIndex}`;
-			const state = ledger.keys[keyName] || ledger.keys.GEMINI_API_KEY;
+			const state = ledger.keys[keyName];
 
 			if (state && (state.status === "active" || state.resetTime < now)) {
-				const apiKey = process.env[keyName] || process.env.GEMINI_API_KEY;
+				const apiKey = process.env[keyName];
 				if (apiKey) return { name: keyName, key: apiKey, index: stickyIndex };
 			}
 			Logger.warn(
 				"SYSTEM",
 				"QUOTA",
 				"ACQUIRE",
-				`Sticky key ${stickyIndex} is unusable. Rotating.`,
+				`Sticky key ${stickyIndex} is unusable or invalid. Rotating.`,
 			);
 		}
 
@@ -123,7 +138,7 @@ export class QuotaManager {
 			});
 
 		if (candidates.length === 0) {
-			throw new Error("QUOTA_EXHAUSTED: All Gemini API keys are in cooldown.");
+			throw new Error("QUOTA_EXHAUSTED: No valid Gemini API keys available.");
 		}
 
 		const best = candidates[0];
