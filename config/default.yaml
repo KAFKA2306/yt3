@@ -51,14 +51,15 @@ steps:
     regions:
       - { lang: "English (US/UK)", code: "en" }
       - { lang: "Chinese (China/Taiwan)", code: "zh" }
-      - { lang: "Russian", code: "ru" }
+      - { lang: "Russian (Russia/CIS)", code: "ru" }
+      - { lang: "German (Germany/EU)", code: "de" }
     temperature: 0.5
     selection_temperature: 0.4
     relevance_temperature: 0.0
     default_limit: 3
     angles:
       - { name: "Direct Observation", lang: "English", suffix: "top headlines" }
-      - { name: "Local Perspective", lang: "Chinese/Russian", suffix: "major news" }
+      - { name: "Local Perspective", lang: "Chinese/Russian/German", suffix: "major news" }
 
   script:
     context_overlap_lines: 3
@@ -212,7 +213,7 @@ prompts:
         **【遵守事項】**
         - **バイアスの排除**: 「地政学リスク」「パラダイムシフト」といった、特定の方向に誘導する言葉は使用しないでください。
         - **事実と数値の優先**: 可能な限り具体的な数値（株価、成長率、日付、統計データ）を収集してください。
-        - **多言語ソースの尊重**: 各言語（英語、中国語、ロシア語）のソースが伝える「事実」をそのまま受け取り、不必要に統合・平均化しないでください。
+        - **多言語ソースの尊重**: 各言語（英語、中国語、ロシア語、ドイツ語）のソースが伝える「事実」をそのまま受け取り、不必要に統合・平均化しないでください。
         - **予測の分離**: 予測や推計を「事実」として扱わず、必ず `claim_type: forecast` と分類すること。
 
         **出力形式 (JSON):**

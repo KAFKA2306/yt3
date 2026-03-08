@@ -1,0 +1,8 @@
+{
+	"id": "remote:github:kasperjunge/skills/create-plan",
+	"tool": "claude",
+	"installed_name": "create-plan",
+	"type": "remote",
+	"handle": "kasperjunge/skills/create-plan",
+	"source": "github"
+}

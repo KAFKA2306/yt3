@@ -15,8 +15,8 @@ secret/
 nohup.out
 runs/
 logs/
-copcon/
 tsc_output.txt
+copcon/context.md
 
 # Assets & Media
 *.mp4
@@ -37,5 +37,4 @@ models/
 # Tools
 .aim/
 aim/
-skills/
 data/state/
