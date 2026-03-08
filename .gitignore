@@ -15,6 +15,7 @@ secret/
 nohup.out
 runs/
 logs/
+copcon/
 tsc_output.txt
 
 # Assets & Media
