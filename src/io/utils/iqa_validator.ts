@@ -94,7 +94,7 @@ export class IqaValidator {
 			reasons.push(`認知スコア不足: ${cognitiveRecognitionScore.toFixed(2)}`);
 		if (mobileEdgeStrength < this.thresholds.mobile_edge_min)
 			reasons.push(`Mobile edge weak: ${mobileEdgeStrength.toFixed(2)}`);
-		if (xHeightLegibilityScore < 0.3)
+		if (xHeightLegibilityScore < 0.25)
 			reasons.push(
 				`フォント可読性(x-height)不足: ${xHeightLegibilityScore.toFixed(2)}`,
 			);

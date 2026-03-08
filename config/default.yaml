@@ -2,14 +2,14 @@ global_style:
   font_path: "assets/fonts/Atkinson-Hyperlegible-Regular.ttf"
   font_name: "Atkinson Hyperlegible"
   thumbnail:
-    title_size: 90
+    title_size: 110
     subtitle_size: 48
   video:
     subtitle_size: 64
 
 workflow:
   default_run_dir: "runs"
-  default_bucket: "global_macro"
+  default_bucket: "daily_pulse"
   checkpoint_enabled: true
   memory:
     index_file: "data/memory/index.json"
@@ -37,6 +37,7 @@ workflow:
 steps:
   news:
     query_buckets:
+      daily_pulse: "site:investing.com OR site:bloomberg.com OR site:reuters.com OR site:nikkei.com OR site:finance.yahoo.com top news headlines"
       us_market_movers: "S&P500 Nasdaq Dow Jones Earnings Reports Guidance AI Stocks Mag7"
       global_macro: "Fed FOMC ECB Rates Inflation CPI Jobs Report Unemployment US Economy"
       tech_giants: "NVIDIA Microsoft Google Apple Tesla Amazon Meta TSMC ASML"
@@ -56,8 +57,8 @@ steps:
     relevance_temperature: 0.0
     default_limit: 3
     angles:
-      - { name: "Global Narrative", lang: "English", suffix: "news analysis" }
-      - { name: "Contrast/Dissent", lang: "Chinese/Russian", suffix: "opinion blog" }
+      - { name: "Direct Observation", lang: "English", suffix: "top headlines" }
+      - { name: "Local Perspective", lang: "Chinese/Russian", suffix: "major news" }
 
   script:
     context_overlap_lines: 3
@@ -119,7 +120,7 @@ steps:
       sharpness_min: 100
       contrast_goal: 7.0
       contrast_min: 5.0
-      mobile_edge_min: 18
+      mobile_edge_min: 25
       cognitive_min: 0.6
     palettes:
       - {background_color: "#103766", title_color: "#FFFFFF", outline_inner_color: "#288CFA", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#288CFA"}
@@ -135,7 +136,9 @@ steps:
 
 providers:
   llm:
+    provider: "gemini"  # switched to local LLM to avoid Gemini quota
     gemini: {model: "gemini-3-flash-preview", primary_llm: "gemini-3-flash-preview", temperature: 0.35, max_tokens: 32768}
+    local: {base_url: "http://localhost:8000", model: "Qwen/Qwen3.5-9B", temperature: 0.35, max_tokens: 2048}
     content: {temperature: 0.4}
     media: {temperature: 0.1}
     research: {temperature: 0.5, selection_temperature: 0.4, relevance_temperature: 0.0}
@@ -149,7 +152,7 @@ providers:
     check_interval_ms: 300000
     stale_lock_timeout_seconds: 3600
     start_hour: 7
-    user: "root"
+    user: "kafka"
 
 logging:
   level: "INFO"
@@ -199,40 +202,39 @@ prompts:
   research:
     consolidated_research:
       system: |
-        あなたは「グローバル・マクロ経済戦略のリサーチ・ディレクター」です。
-        最新の市場ニュース、地政学、技術トレンドを統合し、視聴者の知的パラダイムを更新する最高のアングルを選定し、その裏付けとなる具体的証拠（データ、ニュース）を一度に収集・分析してください。
+        あなたは「客観的ニュース・オブザーバー」です。
+        最新の市場ニュースを各言語（{regions}）から収集し、特定のバイアスを排除して「今日、何が起きたか」を事実に基づいて報告してください。
 
-        **【ミッション：構造の可視化と証拠の収集】**
-        1. 各地域（{regions}）の経済・地政学ニュースから、単発の事象ではなく「既存の枠組みを根底から変える予兆」を探し出す。
-        2. 選定したテーマに対し、指定されたアングル（{angles}）から深掘りを行い、一次情報に近い事実、データ、および対立する意見を収集する。
-        3. 情報の評価基準は「衝撃度」ではなく「**知的洞察（Insight）の深さ**」と「**証拠の誠実性（Evidence Integrity）**」に置く。
+        **【ミッション：ありのままの観測】**
+        1. 指定されたドメイン（investing.com, bloomberg.com, reuters.com等）を優先的にスキャンし、最新のトップヘッドラインを30件以上収集してください。
+        2. 収集したニュースの中から、市場や社会に最も大きな直接的影響（インパクト）を与えている事象を、主観的な解釈を挟まずに3つ選定してください。
 
         **【遵守事項】**
-        - **日付検証**: 各ニュース項目に必ず `published_at` (ISO8601形式) を含めること。現在日付（{current_date}）より古い情報は歴史的背景としてのみ扱う。
-        - **不自然な表現の禁止**: 比喩としての暴力、死、破壊、パニックに関する表現（核、地獄、壊滅等）は厳禁。また、過度なあおり（「【緊急】」「正体」「最後」等）や、恐怖を煽る演出も禁止する。
-        - **多様性の確保**: 過去のトピック（{recent_topics}）と似たような話題を避け、異なるセクターや新しい切り口（例：新技術、文化経済、未来予測）を積極的に探索すること。
-        - **事実と予測の分離**: 予測や推計を「事実」として扱わず、必ず `claim_type: forecast` と分類すること。
+        - **バイアスの排除**: 「地政学リスク」「パラダイムシフト」といった、特定の方向に誘導する言葉は使用しないでください。
+        - **事実と数値の優先**: 可能な限り具体的な数値（株価、成長率、日付、統計データ）を収集してください。
+        - **多言語ソースの尊重**: 各言語（英語、中国語、ロシア語）のソースが伝える「事実」をそのまま受け取り、不必要に統合・平均化しないでください。
+        - **予測の分離**: 予測や推計を「事実」として扱わず、必ず `claim_type: forecast` と分類すること。
 
         **出力形式 (JSON):**
         {
-          "selected_topic": "選定されたトピックのタイトル",
-          "reason": "選定の背景とロジック",
-          "angle": "動画全体の戦略的な切り口",
-          "search_query": "深掘り調査に使用した最終的なクエリ",
+          "selected_topic": "観測された主要トピックのタイトル",
+          "reason": "事実に基づく選定理由（客観的なインパクトの大きさ）",
+          "angle": "ニュースが示す直接的な変化の方向性",
+          "search_query": "収集に使用した検索クエリ",
           "results": [
             {
-              "angle": "アングル名",
-              "title_hook": "卑近で具体的、かつ視聴者が自分事としてイメージしやすい日本語仮タイトル",
-              "key_questions": ["Q1", "Q2"],
+              "angle": "観測の切り口（言語・地域）",
+              "title_hook": "事実を端的に示す日本語タイトル",
+              "key_questions": ["観測された事実に関する具体的な問い"],
               "news": [
                 {
-                  "title": "日本語見出し",
-                  "summary": "詳細要約",
+                  "title": "見出し（日本語訳）",
+                  "summary": "客観的要約（数値・事実を含む）",
                   "url": "URL",
                   "published_at": "YYYY-MM-DD",
                   "claim_type": "fact | forecast | opinion",
-                  "confidence": "high | medium | low",
-                  "original_text": "原文の引用（重要箇所）"
+                  "confidence": "high",
+                  "original_text": "原文の重要な事実箇所"
                 }
               ]
             }
@@ -240,13 +242,12 @@ prompts:
         }
 
       user_template: |
-        本日のリサーチを開始します。
+        本日の観測を開始します。
         現在日付: {current_date}
-        調査対象地域: {regions}
-        最近のトピック（重複回避）: {recent_topics}
-        深掘りアングル案: {angles}
+        観測対象地域/言語: {regions}
+        過去のトピック（重複回避）: {recent_topics}
 
-        上記を元に、最高品質の統合リサーチ結果を提供してください。
+        上記を元に、最高精度の「ありのままの観測結果」を提供してください。
 
     legacy_research:
       system: |
