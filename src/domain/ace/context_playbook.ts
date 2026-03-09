@@ -6,7 +6,8 @@ export class ContextPlaybook {
 	private playbookPath: string;
 	constructor(playbookPath?: string) {
 		const cfg = ROOT
-			? (globalThis as any)._config || loadConfig()
+			? // biome-ignore lint/suspicious/noExplicitAny: global config access
+				(globalThis as any)._config || loadConfig()
 			: loadConfig();
 		const aceDir = cfg.workflow.paths.ace_dir || "data/ace";
 		this.playbookPath =

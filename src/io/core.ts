@@ -15,6 +15,7 @@ import { QuotaManager } from "./utils/quota_manager.js";
 dotenv.config({ path: path.join(ROOT, "config/.env"), override: true });
 
 export { Logger as AgentLogger };
+export type { AgentState, AppConfig };
 export { RunStage };
 
 export function loadConfig(): AppConfig {
@@ -206,14 +207,17 @@ export abstract class BaseAgent {
 				);
 
 				// Update Quota Ledger from headers (Safe cast for LangChain metadata)
-				const metadata = res.response_metadata as any;
+				const metadata = res.response_metadata as Record<string, unknown>;
 				if (keyName && metadata?.headers) {
-					QuotaManager.updateFromHeaders(keyName, metadata.headers);
+					QuotaManager.updateFromHeaders(
+						keyName,
+						metadata.headers as Record<string, unknown>,
+					);
 				}
 
 				return parser(res.content as string);
-			} catch (e: any) {
-				const errorMsg = e.message || "";
+			} catch (e: unknown) {
+				const errorMsg = (e as Error).message || "";
 				const isQuotaError =
 					errorMsg.includes("429") || errorMsg.includes("Quota exceeded");
 

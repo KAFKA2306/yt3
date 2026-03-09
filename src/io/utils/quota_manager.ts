@@ -160,7 +160,7 @@ export class QuotaManager {
 
 	public static updateFromHeaders(
 		keyName: string,
-		headers: Record<string, any>,
+		headers: Record<string, unknown>,
 	) {
 		const ledger = QuotaManager.loadLedger();
 		const state = ledger.keys[keyName];

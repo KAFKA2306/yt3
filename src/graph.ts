@@ -143,6 +143,7 @@ export function createGraph(store: AssetStore) {
 		await memory.run(state);
 		return { status: "completed" };
 	});
+	// biome-ignore lint/suspicious/noExplicitAny: StateGraph type complexity
 	const graph = workflow as any;
 	graph.addEdge(START, "research");
 	graph.addEdge("research", "strategy");

@@ -96,10 +96,19 @@ Include 'soft-metric-repetition' and 'soft-metric-sensationalism' if metrics are
 		return signals;
 	}
 
-	private calculateRepetitionScore(logs: any[]): number {
+	private calculateRepetitionScore(logs: Record<string, unknown>[]): number {
 		const topics = logs
-			.filter((l) => l.event === "TOPIC_SELECTED" || l.payload?.selected_topic)
-			.map((l) => l.payload?.selected_topic || l.message);
+			.filter(
+				(l) =>
+					l.event === "TOPIC_SELECTED" ||
+					(l.payload &&
+						typeof l.payload === "object" &&
+						"selected_topic" in l.payload),
+			)
+			.map((l) => {
+				const payload = l.payload as Record<string, unknown> | undefined;
+				return (payload?.selected_topic as string) || (l.message as string);
+			});
 		if (topics.length < 2) return 0;
 
 		// Improved similarity for Japanese (character-based if no spaces)
@@ -118,14 +127,16 @@ Include 'soft-metric-repetition' and 'soft-metric-sensationalism' if metrics are
 			return biGrams.length > 0 ? biGrams : chars;
 		};
 
-		const setA = new Set(tokenize(topics[0]));
-		const setB = new Set(tokenize(topics[topics.length - 1]));
+		const setA = new Set(tokenize(topics[0] || ""));
+		const setB = new Set(tokenize(topics[topics.length - 1] || ""));
 		const intersection = new Set([...setA].filter((x) => setB.has(x)));
 		const union = new Set([...setA, ...setB]);
 		return intersection.size / union.size;
 	}
 
-	private calculateSensationalismScore(logs: any[]): number {
+	private calculateSensationalismScore(
+		logs: Record<string, unknown>[],
+	): number {
 		const texts = JSON.stringify(logs).toLowerCase();
 		const ngWords = [
 			"emergency",

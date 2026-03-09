@@ -13,7 +13,7 @@ import type { NewsItem } from "../types.js";
  * Robust Schema with Preprocessing to handle LLM structure variations.
  */
 
-const ensureArray = (val: any) => (Array.isArray(val) ? val : [val]);
+const ensureArray = (val: unknown) => (Array.isArray(val) ? val : [val]);
 
 const StrategicInsightSchema = z.object({
 	primary_delta: z.object({

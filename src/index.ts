@@ -1,4 +1,9 @@
-import { AssetStore, getRunIdDateString, loadConfig } from "./io/core.js";
+import {
+	type AgentState,
+	AssetStore,
+	getRunIdDateString,
+	loadConfig,
+} from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
 async function main() {
 	const defaultRunId = getRunIdDateString();
@@ -21,11 +26,13 @@ async function main() {
 		bucket: BUCKET,
 		mission_file: MISSION_FILE,
 	};
-	const finalState = (await graph.invoke(initialState)) as any;
+	const finalState = (await graph.invoke(
+		initialState,
+	)) as unknown as AgentState;
 
 	// Extract Mandatory Finality Reporting (operational-resilience Skill)
 	const finalTitle = finalState.metadata?.title || "Unknown Title";
-	const finalVideoId = finalState.youtube?.video_id;
+	const finalVideoId = finalState.publish_results?.youtube?.video_id;
 	const finalUrl = finalVideoId
 		? `https://www.youtube.com/watch?v=${finalVideoId}`
 		: "(No URL Available)";

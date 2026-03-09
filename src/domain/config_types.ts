@@ -234,5 +234,5 @@ export interface AppConfig {
 		thread_message: string;
 	};
 	public_url?: string;
-	prompts: Record<string, any>;
+	prompts: Record<string, unknown>;
 }

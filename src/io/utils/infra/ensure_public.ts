@@ -11,8 +11,11 @@ async function main() {
 		console.error(`Publish output not found at ${publishPath}`);
 		return;
 	}
-	const publishData = yaml.load(fs.readFileSync(publishPath, "utf-8")) as any;
-	const videoId = publishData.youtube?.video_id;
+	const publishData = yaml.load(
+		fs.readFileSync(publishPath, "utf-8"),
+	) as Record<string, unknown>;
+	// biome-ignore lint/suspicious/noExplicitAny: YAML data access
+	const videoId = (publishData as Record<string, any>).youtube?.video_id;
 	if (!videoId) {
 		console.error("No video ID found in publish output");
 		return;

@@ -15,9 +15,11 @@ function logPath(
 	return path.join(dir, `${name}.log`);
 }
 
-async function startServices(automation: any) {
-	const logDir = automation.log_dir || "logs/automation";
-	for (const service of automation.services || []) {
+async function startServices(automation: Record<string, unknown>) {
+	// biome-ignore lint/suspicious/noExplicitAny: automation config is dynamic
+	const logDir = (automation as any).log_dir || "logs/automation";
+	// biome-ignore lint/suspicious/noExplicitAny: automation config is dynamic
+	for (const service of (automation as any).services || []) {
 		if (service.enabled === false) continue;
 		const cmdList = service.command || [];
 		if (cmdList.length === 0) continue;
@@ -44,10 +46,12 @@ async function startServices(automation: any) {
 	}
 }
 
-function buildSchedule(automation: any): string[] {
+function buildSchedule(automation: Record<string, unknown>): string[] {
 	const lines: string[] = [];
-	const logDir = automation.log_dir || "logs/automation";
-	for (const schedule of automation.schedules || []) {
+	// biome-ignore lint/suspicious/noExplicitAny: automation config is dynamic
+	const logDir = (automation as any).log_dir || "logs/automation";
+	// biome-ignore lint/suspicious/noExplicitAny: automation config is dynamic
+	for (const schedule of (automation as any).schedules || []) {
 		if (schedule.enabled === false) continue;
 		const cwd = schedule.cwd ? path.resolve(schedule.cwd) : ROOT;
 		const lp = logPath(logDir, schedule.log_file, schedule.name || "job");

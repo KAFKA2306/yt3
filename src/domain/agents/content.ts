@@ -16,6 +16,7 @@ import {
 	MetadataSchema,
 	type NewsItem,
 	type ScriptLine,
+	type StrategicAnalysis,
 } from "../types.js";
 
 interface ContentPrompts {
@@ -36,7 +37,7 @@ export class ScriptSmith extends BaseAgent {
 		news: NewsItem[],
 		director: { angle: string; title_hook: string },
 		context: string,
-		strategic_insight?: any,
+		strategic_insight?: StrategicAnalysis,
 	): Promise<ContentResult> {
 		const outputPath = path.join(
 			this.store.runDir,
@@ -44,6 +45,8 @@ export class ScriptSmith extends BaseAgent {
 			this.store.cfg.workflow.filenames.output,
 		);
 		if (fs.existsSync(outputPath)) {
+			// biome-ignore lint/suspicious/noExplicitAny: Config is dynamic
+			const cfg: any = this.store.cfg;
 			const res = this.store.load<ContentResult>(this.name, "output");
 			if (!res) throw new Error("No content output found");
 			this.logOutput(res);
@@ -57,7 +60,7 @@ export class ScriptSmith extends BaseAgent {
 			.join("\n\n");
 
 		const insightContext = strategic_insight
-			? `\n\n**【投資戦略的示唆 (Chief Strategist's Insight)】**\n戦略要約: ${strategic_insight.strategic_summary}\n主要な知恵:\n${strategic_insight.insights.map((i: any) => `- ${i.wisdom}`).join("\n")}`
+			? `\n\n**【投資戦略的示唆 (Chief Strategist's Insight)】**\n戦略要約: ${strategic_insight.strategic_summary}\n主要な知恵:\n${strategic_insight.insights.map((i: { wisdom: string }) => `- ${i.wisdom}`).join("\n")}`
 			: "";
 
 		const fullContext = newsContext + insightContext;
