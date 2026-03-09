@@ -1,16 +1,34 @@
 {
-	"videos": [
-		{
-			"run_id": "2026-03-08",
-			"topic": "最新スマホは出るのに、なぜ住宅ローンは下がらないのか？2nm技術と金利6%の正体",
-			"date": "2026-03-08T02:55:28.092Z",
-			"url": "https://youtube.com/watch?v=sIy02YvWkcA"
-		},
-		{
-			"run_id": "2026-03-08",
-			"topic": "ガソリン代も電気代も下がらない本当の理由。原油92ドル時代の「賢いお金の守り方」",
-			"date": "2026-03-08T04:08:59.010Z",
-			"url": "https://youtube.com/watch?v=zgzTo9uNKtM"
-		}
-	]
+  "videos": [
+    {
+      "run_id": "2026-03-08",
+      "topic": "最新スマホは出るのに、なぜ住宅ローンは下がらないのか？2nm技術と金利6%の正体",
+      "date": "2026-03-08T02:55:28.092Z",
+      "url": "https://youtube.com/watch?v=sIy02YvWkcA"
+    },
+    {
+      "run_id": "2026-03-08",
+      "topic": "ガソリン代も電気代も下がらない本当の理由。原油92ドル時代の「賢いお金の守り方」",
+      "date": "2026-03-08T04:08:59.010Z",
+      "url": "https://youtube.com/watch?v=zgzTo9uNKtM"
+    },
+    {
+      "run_id": "2026-03-08",
+      "topic": "ガソリン代も電気代も下がらない本当の理由。原油92ドル時代の「賢いお金の守り方」",
+      "date": "2026-03-08T06:12:58.888Z",
+      "url": "https://youtube.com/watch?v=qCa4zt_LDTs"
+    },
+    {
+      "run_id": "2026-03-09",
+      "topic": "給料は上がるのに、なぜ生活は楽にならないのか？2026年3月、世界経済が「効率」を捨てた構造的理由",
+      "date": "2026-03-09T02:31:15.678Z",
+      "url": "https://youtube.com/watch?v=1azUwdxdnNc"
+    },
+    {
+      "run_id": "2026-03-09",
+      "topic": "給料は上がるのに、なぜ生活は楽にならないのか？2026年3月、世界経済が「効率」を捨てた構造的理由",
+      "date": "2026-03-09T03:28:07.466Z",
+      "url": "https://youtube.com/watch?v=pxVjJeKEvZE"
+    }
+  ]
 }
