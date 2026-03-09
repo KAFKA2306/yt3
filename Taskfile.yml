@@ -123,6 +123,17 @@ tasks:
     cmds: ["bun src/agents/watcher.ts {{.CLI_ARGS}}"]
 
   # ============================================================================
+  # HARNESS MAINTENANCE
+  # ============================================================================
+  adr:new:
+    desc: "Create a new ADR"
+    cmds: ["bun scripts/adr_new.ts {{.title}}"]
+
+  harness:doctor:
+    desc: "Scan for repository rot (stale docs, dummy tests)"
+    cmds: ["bun scripts/harness_doctor.ts"]
+
+  # ============================================================================
   # CONTEXT
   # ============================================================================
   copcon:
