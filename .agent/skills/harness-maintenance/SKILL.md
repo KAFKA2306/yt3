@@ -1,37 +1,43 @@
 ---
 name: harness-maintenance
-description: Enforce and maintain the autonomous harness infrastructure (ADRs, Hooks, Doctor). Use whenever making architectural decisions, modifying repository guardrails, or completing a task session. Triggers on "ADR", "hook", "linter config", "harness", "repository rot", or task completion.
+description: Enforce and maintain the autonomous harness infrastructure. Make sure to use this skill whenever the user mentions ADRs, hooks, linter config, repository rot, or when making any structural decision or completing a task session, even if they don't explicitly ask for 'harness maintenance'. You must trigger this skill to validate repository health.
 ---
 
 # Harness Maintenance Protocol
 
-## Why Harness Maintenance
+## Directives
 
-A self-autonomous repository must defend itself against documentation rot, configuration drift, and test decay. The harness is the agent's "training wheels" and "safety net." Investing in harness integrity is a compounding benefit for every future session.
+Execute repository defense mechanisms to prevent documentation rot, configuration drift, and test decay. You must enforce these rules strictly.
 
 ## Iron Rules
 
-**ADR First.** No architectural decisions, major dependency changes, or pattern shifts without creating a new ADR in `docs/adr/`. If it isn't in an ADR, it didn't happen.
+**ADR Strict Enforcement**
+Create a new ADR in `docs/adr/` for ALL architectural decisions, dependency changes, or pattern shifts. Do not proceed without an ADR.
 
-**Hook Integrity.** Never disable, bypass, or weaken local hooks defined in `.claude/settings.json`. If a hook fails, fix the code, not the hook.
+**Hook Integrity**
+Never disable, bypass, or weaken local hooks defined in `.claude/settings.json`. Fix the code. Never fix the hook to accommodate broken code.
 
-**Doctor Validation.** Always run `task harness:doctor` at the end of every task or session. Resolve all reported "rot" (stale links, dummy tests) immediately.
+**Doctor Validation**
+Run `task harness:doctor` at the end of every task or session. Resolve all reported issues immediately. Do not ignore doctor warnings.
 
-**Linter Primacy.** Strict Biome rules (especially `noExplicitAny: error`) are non-negotiable. Do not use `// biome-ignore` to hide architectural violations.
+**Linter Primacy**
+Enforce strict Biome rules (`noExplicitAny: error`). Do not use `// biome-ignore` to hide architectural violations. Fix the underlying type errors.
 
-## Patterns
+## Execution Patterns
 
-**The "Doctor" Loop:**
+### The "Doctor" Loop
+
 1. Complete task implementation.
-2. Run `task harness:doctor`.
-3. If rot detected (e.g., stale README links from renamed files), fix it.
-4. Commit with a descriptive message.
+2. Execute `task harness:doctor`.
+3. Fix all detected rot immediately.
+4. Commit with a strict English semantic message.
 
-**ADR Life Cycle:**
-1. Identify a need for a design decision.
-2. Run `task adr:new -- title="Detailed Decision Name"`.
-3. Populate the generated template in `docs/adr/`.
-4. Reference the ADR ID in code comments if absolutely necessary for context (though zero-fat is preferred).
+### ADR Life Cycle
 
-**Config Protection:**
-Treat `biome.json`, `Taskfile.yml`, and `.claude/settings.json` as immutable unless the task explicitly requires harness evolution.
+1. Execute `task adr:new -- title="Detailed Decision Name"`.
+2. Populate the generated template in `docs/adr/`.
+3. Do not reference ADR IDs in code comments. Maintain zero-fat code.
+
+### Config Protection
+
+Treat `biome.json`, `Taskfile.yml`, and `.claude/settings.json` as completely immutable unless the specific task is to evolve the harness.
