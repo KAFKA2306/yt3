@@ -215,7 +215,20 @@ export abstract class BaseAgent {
 					);
 				}
 
-				return parser(res.content as string);
+				try {
+					return parser(res.content as string);
+				} catch (e) {
+					if (retryCount < 3) {
+						Logger.warn(
+							this.name,
+							"CORE",
+							"PARSE_RETRY",
+							`JSON Parse Failure. Retrying (Attempt ${retryCount + 1})...`,
+						);
+						return executeWithRetry(retryCount + 1);
+					}
+					throw e;
+				}
 			} catch (e: unknown) {
 				const errorMsg = (e as Error).message || "";
 				const isQuotaError =
@@ -245,7 +258,7 @@ export abstract class BaseAgent {
 }
 export function cleanCodeBlock(text: string): string {
 	const stripped = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-	const match = stripped.match(/([{\[][\s\S]*[}\]])/);
+	const match = stripped.match(/([{[][\s\S]*[}\]])/);
 	return match ? (match[1] || match[0]).trim() : stripped;
 }
 
@@ -326,20 +339,5 @@ export function getRunIdDateString(): string {
 	return `${y}-${m}-${day}`;
 }
 export function loadMemoryContext(store: AssetStore): string {
-	const cfg = store.cfg.workflow.memory;
-	const memPath = path.isAbsolute(cfg.index_file)
-		? cfg.index_file
-		: path.join(ROOT, cfg.index_file);
-	const dir = path.dirname(memPath);
-	const idxPath = path.join(dir, "index.json");
-
-	if (!fs.existsSync(idxPath)) return "";
-	const index = fs.readJsonSync(idxPath);
-	if (index.videos && Array.isArray(index.videos)) {
-		return index.videos
-			.slice(-20)
-			.map((v: { topic: string }) => v.topic)
-			.join(", ");
-	}
 	return "";
 }
