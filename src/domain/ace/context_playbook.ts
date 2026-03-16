@@ -1,13 +1,12 @@
 import path from "node:path";
 import fs from "fs-extra";
-import { ROOT, loadConfig } from "../../io/core.ts";
+import { ROOT, loadConfig } from "../../io/core.js";
 import { type AceBullet, type Playbook, PlaybookSchema } from "./types.js";
 export class ContextPlaybook {
 	private playbookPath: string;
 	constructor(playbookPath?: string) {
 		const cfg = ROOT
-			? // biome-ignore lint/suspicious/noExplicitAny: global config access
-				(globalThis as any)._config || loadConfig()
+			? (globalThis as any)._config || loadConfig()
 			: loadConfig();
 		const aceDir = cfg.workflow.paths.ace_dir || "data/ace";
 		this.playbookPath =

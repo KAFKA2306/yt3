@@ -41,7 +41,11 @@ export class TrendScout extends BaseAgent {
 			temperature: cfg.steps.research?.temperature || 0.5,
 		});
 	}
-	async run(bucket: string, limit?: number): Promise<ResearchResult> {
+	async run(
+		bucket: string,
+		limit?: number,
+		missionFile?: string,
+	): Promise<ResearchResult> {
 		const cached = this.store.load<ResearchResult>(this.name, "output");
 		if (cached) return cached;
 		const researchCfg = this.config.steps.research;
@@ -56,6 +60,19 @@ export class TrendScout extends BaseAgent {
 			consolidated_research: { system: string; user_template: string };
 		}>(this.name);
 		const currentDate = getCurrentDateString();
+		let userPrompt = promptCfg.consolidated_research.user_template
+			.replace(
+				"{regions}",
+				researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
+			)
+			.replace("{recent_topics}", recent)
+			.replace("{current_date}", currentDate);
+
+		if (missionFile && fs.existsSync(missionFile)) {
+			const customNewsContext = fs.readFileSync(missionFile, "utf8");
+			userPrompt += `\n\n[USER PROVIDED PULSE DATA]\n${customNewsContext}\n(Analyze this data as the primary source of truth. You still need to format it according to the requested JSON schema.)`;
+		}
+
 		const research = await this.runLlm<{
 			selected_topic: string;
 			reason: string;
@@ -74,13 +91,7 @@ export class TrendScout extends BaseAgent {
 					researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
 				)
 				.replace("{current_date}", currentDate),
-			promptCfg.consolidated_research.user_template
-				.replace(
-					"{regions}",
-					researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
-				)
-				.replace("{recent_topics}", recent)
-				.replace("{current_date}", currentDate),
+			userPrompt,
 			(t) =>
 				parseLlmJson(
 					t,

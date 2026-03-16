@@ -71,7 +71,11 @@ export function createGraph(store: AssetStore) {
 			"RESEARCH",
 			"Starting trend discovery",
 		);
-		const res = await research.run(state.bucket, state.limit);
+		const res = await research.run(
+			state.bucket,
+			state.limit,
+			state.mission_file,
+		);
 		return {
 			director_data: res.director_data,
 			news: res.news,
