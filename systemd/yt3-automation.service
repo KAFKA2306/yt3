@@ -7,7 +7,7 @@ Type=oneshot
 User=kafka
 Group=kafka
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
-ExecStartPre=+/bin/chown -R kafka:kafka /home/kafka/2511youtuber/v3/yt3/runs/
+ExecStartPre=+/bin/chown -R kafka:kafka /home/kafka/2511youtuber/v3/yt3/
 ExecStart=/usr/bin/bash /home/kafka/2511youtuber/v3/yt3/src/io/utils/infra/run_workflow_cron.sh
 Environment=PATH=/home/kafka/.bun/bin:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka

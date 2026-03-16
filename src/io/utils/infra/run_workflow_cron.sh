@@ -91,9 +91,13 @@ check_voicevox() {
 ensure_voicevox_running() {
   if ! check_voicevox; then
     printf '[%s] ERROR Voicevox is not responding. Starting Voicevox...\n' "$(timestamp)"
-    # Try to start it using the task up command
-    (cd "${repo_dir}" && task up > /dev/null 2>&1) || true
+    # Try to start it using the task up command (Removing silent mode to log errors)
+    (cd "${repo_dir}" && task up)
     
+    # Log docker state for debugging
+    printf '[%s] INFO  Current Docker state for Voicevox:\n' "$(timestamp)"
+    docker ps -a --filter name=voicevox-nemo --format "table {{.Names}}\t{{.Status}}\t{{.ID}}" || true
+
     # Wait for it to become ready (up to 30s)
     for i in {1..6}; do
       printf '[%s] INFO  Waiting for Voicevox (attempt %s/6)...\n' "$(timestamp)" "$i"

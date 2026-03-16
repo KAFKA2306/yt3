@@ -3,26 +3,20 @@ import fs from "fs-extra";
 import { ROOT } from "../base.js";
 import { AgentLogger as Logger } from "./logger.js";
 
-/**
- * QuotaManager (The Central Nervous System for Gemini Cluster)
- * Implements Quota Observation and Sticky Sessions as per 'Universal LLM Quota Orchestration' skill.
- */
-
 interface QuotaState {
 	remaining: number;
-	resetTime: number; // ms timestamp
+	resetTime: number;
 	status: "active" | "cooldown";
-	lastUsed: number; // ms timestamp
+	lastUsed: number;
 }
 
 interface QuotaLedger {
 	keys: Record<string, QuotaState>;
-	sessions: Record<string, number>; // sessionId -> keyIndex
+	sessions: Record<string, number>;
 }
 
 const LEDGER_PATH = path.join(ROOT, "data/state/llm_quotas.json");
 
-// biome-ignore lint/complexity/noStaticOnlyClass: Centralized singleton state for Quota Management
 export class QuotaManager {
 	private static ledger: QuotaLedger | null = null;
 
@@ -48,7 +42,7 @@ export class QuotaManager {
 			.filter(
 				([name, value]) =>
 					name.startsWith("GEMINI_API_KEY") &&
-					name !== "GEMINI_API_KEY_5" && // Explicitly exclude invalid key
+					name !== "GEMINI_API_KEY_5" &&
 					value &&
 					value.length > 20 &&
 					!value.includes("YOUR_API_KEY"),
@@ -59,7 +53,6 @@ export class QuotaManager {
 				return na - nb;
 			});
 
-		// Clean up keys that no longer exist in env or are invalid
 		const validNames = envKeys.map(([name]) => name);
 		for (const name of Object.keys(ledger.keys)) {
 			if (!validNames.includes(name)) {
