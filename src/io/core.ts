@@ -9,7 +9,6 @@ import { ContextPlaybook } from "../domain/ace/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 import { ROOT, loadConfig as baseLoadConfig } from "./base.js";
 import { AgentLogger as Logger } from "./utils/logger.js";
-
 import { QuotaManager } from "./utils/quota_manager.js";
 
 dotenv.config({ path: path.join(ROOT, "config/.env"), override: true });
@@ -27,7 +26,7 @@ export interface LlmOptions {
 	temperature?: number;
 	response_mime_type?: string;
 	provider?: "gemini" | "local";
-	sessionId?: string; // Support for Sticky Sessions
+	sessionId?: string;
 	extra?: Record<string, unknown>;
 }
 export function createLlm(
@@ -36,9 +35,6 @@ export function createLlm(
 	const { extra = {}, ...rest } = options;
 	const cfg = loadConfig();
 
-	// -------------------------------------------------------------------------
-	// GEMINI CLUSTER ORCHESTRATION
-	// -------------------------------------------------------------------------
 	const { name: keyName, key: apiKey } = QuotaManager.acquireKey(
 		options.sessionId,
 	);
@@ -61,7 +57,7 @@ export function createLlm(
 		typeof ChatGoogleGenerativeAI
 	>[0]) as BaseChatModel & { keyName?: string };
 
-	llm.keyName = keyName; // Attach for header update later
+	llm.keyName = keyName;
 	return llm;
 }
 export class AssetStore {
@@ -177,7 +173,6 @@ export abstract class BaseAgent {
 			bullets.length > 0
 				? `\n\n[ACE Intelligence - Strategic Instructions]\n${bullets.map((b) => `- ${b.content} (ID: ${b.id})`).join("\n")}`
 				: "";
-		const finalSystemPrompt = systemPrompt + aceContext;
 
 		if (process.env.SKIP_LLM === "true") {
 			const prev = this.store.load<unknown>(this.name, "output");
@@ -185,87 +180,39 @@ export abstract class BaseAgent {
 			throw new Error("No previous data for LLM bypass");
 		}
 
-		const executeWithRetry = async (retryCount = 0): Promise<T> => {
-			// Use runDir as sessionId to ensure sticky sessions per run
-			const llm = createLlm({
-				...this.opts,
-				sessionId: this.store.runDir,
-			});
-			const keyName = llm.keyName || "unknown";
+		const llm = createLlm({
+			...this.opts,
+			sessionId: this.store.runDir,
+		});
+		const keyName = llm.keyName || "unknown";
+		const quotaContext = QuotaManager.getQuotaContext(keyName, "gemini");
+		const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
 
-			// Inject Quota Context for Agent Situation Awareness
-			const quotaContext = QuotaManager.getQuotaContext(keyName, "gemini");
-			const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
+		const res = await llm.invoke(
+			[
+				{ role: "system", content: finalSystemPrompt },
+				{ role: "user", content: userPrompt },
+			],
+			callOpts as Record<string, unknown>,
+		);
 
-			try {
-				const res = await llm.invoke(
-					[
-						{ role: "system", content: finalSystemPrompt },
-						{ role: "user", content: userPrompt },
-					],
-					callOpts as Record<string, unknown>,
-				);
+		const metadata = res.response_metadata as Record<string, unknown>;
+		if (keyName && metadata?.headers) {
+			QuotaManager.updateFromHeaders(
+				keyName,
+				metadata.headers as Record<string, unknown>,
+			);
+		}
 
-				// Update Quota Ledger from headers (Safe cast for LangChain metadata)
-				const metadata = res.response_metadata as Record<string, unknown>;
-				if (keyName && metadata?.headers) {
-					QuotaManager.updateFromHeaders(
-						keyName,
-						metadata.headers as Record<string, unknown>,
-					);
-				}
-
-				try {
-					return parser(res.content as string);
-				} catch (e) {
-					if (retryCount < 3) {
-						Logger.warn(
-							this.name,
-							"CORE",
-							"PARSE_RETRY",
-							`JSON Parse Failure. Retrying (Attempt ${retryCount + 1})...`,
-						);
-						return executeWithRetry(retryCount + 1);
-					}
-					throw e;
-				}
-			} catch (e: unknown) {
-				const errorMsg = (e as Error).message || "";
-				const isQuotaError =
-					errorMsg.includes("429") || errorMsg.includes("Quota exceeded");
-
-				if (isQuotaError && keyName) {
-					QuotaManager.markCooldown(keyName);
-
-					// Retry within Gemini Cluster if we haven't tried too many times
-					if (retryCount < 5) {
-						Logger.warn(
-							this.name,
-							"CORE",
-							"ROTATION",
-							`Gemini 429 on ${keyName}. Rotating to another cluster node (Attempt ${retryCount + 1})...`,
-						);
-						return executeWithRetry(retryCount + 1);
-					}
-				}
-
-				throw e;
-			}
-		};
-
-		return executeWithRetry();
+		return parser(res.content as string);
 	}
 }
 export function cleanCodeBlock(text: string): string {
-	const stripped = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+	const stripped = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 	const match = stripped.match(/([{[][\s\S]*[}\]])/);
 	return match ? (match[1] || match[0]).trim() : stripped;
 }
 
-/**
- * Robust JSON Repair for LLM responses
- * Handles common issues like truncation or extra/missing braces
- */
 function repairJson(text: string): string {
 	let cleaned = cleanCodeBlock(text);
 	const openBraces = (cleaned.match(/{/g) || []).length;
@@ -280,18 +227,8 @@ function repairJson(text: string): string {
 
 export function parseLlmJson<T>(text: string, schema?: z.ZodSchema<T>): T {
 	const repaired = repairJson(text);
-	try {
-		const json = JSON.parse(repaired);
-		return schema ? schema.parse(json) : (json as T);
-	} catch (e) {
-		Logger.error(
-			"SYSTEM",
-			"CORE",
-			"PARSE_FAILURE",
-			`JSON Parse Failure even after repair: ${repaired.slice(-100)}`,
-		);
-		throw e;
-	}
+	const json = JSON.parse(repaired);
+	return schema ? schema.parse(json) : (json as T);
 }
 export async function runMcpTool(
 	serverName: string,
@@ -308,9 +245,6 @@ export function fitText(
 	maxWidth: number,
 	_minFontSize: number,
 ): { formattedText: string; fontSize: number } {
-	// Heuristic: Japanese characters are roughly square.
-	// In ASS, FontSize is usually the height in pixels.
-	// We'll assume width is approximately the same as height for CJK.
 	const charWidth = baseFontSize * 0.9;
 	const maxChars = Math.floor(maxWidth / charWidth);
 

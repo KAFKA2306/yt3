@@ -1,11 +1,3 @@
-/**
- * IQA バッチ審査スクリプト
- *
- * 使用方法:
- *   npx tsx scripts/iqa_batch_check.ts [--run-id <id>]
- *   npx tsx scripts/iqa_batch_check.ts --palette-audit
- */
-
 import path from "node:path";
 import fs from "fs-extra";
 import { glob } from "glob";
@@ -215,15 +207,10 @@ function auditPalettes(): void {
 	const entries = palettes
 		.map((p: Record<string, unknown>, i: number) => {
 			const contrast = validator.calculateContrastRatio(
-				// biome-ignore lint/suspicious/noExplicitAny: palette property access
 				(p as any).title_color,
-				// biome-ignore lint/suspicious/noExplicitAny: palette property access
 				(p as any).background_color,
 			);
-			const risk = validator.analyzeBackgroundRisk(
-				// biome-ignore lint/suspicious/noExplicitAny: palette property access
-				(p as any).background_color,
-			);
+			const risk = validator.analyzeBackgroundRisk((p as any).background_color);
 			const mobilePred =
 				risk === "low"
 					? "≥ 35 (安全)"
@@ -255,7 +242,6 @@ function auditPalettes(): void {
 					? `${COLORS.yellow}AA✓${COLORS.reset}`
 					: `${COLORS.red}FAIL${COLORS.reset}`;
 		console.log(
-			// biome-ignore lint/suspicious/noExplicitAny: palette property access
 			`  ${String(i + 1).padEnd(2)} ${`${(p as any).background_color} / ${(p as any).title_color}`.padEnd(26)}` +
 				`${(`${contrast.toFixed(2)}:1`).padEnd(13)} ${wcag.padEnd(15)} ` +
 				`${riskColor}${risk.padEnd(9)}${COLORS.reset}${mobilePred.padEnd(19)} ${rating}`,
@@ -332,7 +318,4 @@ async function main(): Promise<void> {
 	);
 }
 
-main().catch((err) => {
-	console.error("致命的エラー:", err);
-	process.exit(1);
-});
+main();
