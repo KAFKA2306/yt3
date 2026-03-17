@@ -1,40 +1,36 @@
-# Node.js
+# Dependencies & Build
 node_modules/
 dist/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Environment
+.env
 *.env
 secret/
-*.pickle
 
-# Logs & Output
+# Logs & Runtime
 *.log
 nohup.out
 runs/
 logs/
 tsc_output.txt
-copcon/context.md
 
-# Assets & Media
+# Media & Assets
+assets/
+models/
 *.mp4
 *.wav
 *.png
 *.jpg
 *.srt
-assets/
-models/
 
-# Editor/System
-.DS_Store
+# Development & Tools
 .vscode/
 .idea/
+.DS_Store
 *.swp
 *~
-
-# Tools
-.aim/
 aim/
+.aim/
+copcon/context.md
 data/state/
+*.pickle
