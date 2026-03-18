@@ -8,6 +8,7 @@ import {
 	SlashCommandBuilder,
 	type TextChannel,
 } from "discord.js";
+import { validateQuery } from "../../domain/validation.js";
 import { loadConfig } from "../../io/core.js";
 
 async function main() {
@@ -63,37 +64,45 @@ async function main() {
 		if (!interaction.isChatInputCommand()) return;
 
 		if (interaction.commandName === commandName) {
-			const query = interaction.options.getString("query") || "";
+			const rawQuery = interaction.options.getString("query") || "";
 
 			await interaction.deferReply({ ephemeral: true });
 
-			const channel = interaction.channel as TextChannel;
-			if (!channel) {
-				await interaction.editReply("Can only be used in a text channel.");
-				return;
+			try {
+				const query = validateQuery(rawQuery);
+
+				const channel = interaction.channel as TextChannel;
+				if (!channel) {
+					await interaction.editReply("Can only be used in a text channel.");
+					return;
+				}
+
+				const starterMsg = await channel.send(
+					strTemplate.replace("{query}", query),
+				);
+
+				const threadName = `${threadPrefix}${query}`.substring(0, 50);
+				const thread = await starterMsg.startThread({
+					name: threadName,
+					autoArchiveDuration: 60,
+				});
+
+				await thread.send(threadMsg.replace("{query}", query));
+
+				console.log(`Spawning workflow for: ${query}`);
+				const child = spawn("npx", ["tsx", "src/index.ts", query], {
+					cwd: process.cwd(),
+					stdio: "ignore",
+					detached: true,
+				});
+				child.unref();
+
+				await interaction.editReply(resTemplate.replace("{query}", query));
+			} catch (error) {
+				await interaction.editReply(
+					"Invalid query. Please use only letters, numbers, and basic punctuation.",
+				);
 			}
-
-			const starterMsg = await channel.send(
-				strTemplate.replace("{query}", query),
-			);
-
-			const threadName = `${threadPrefix}${query}`.substring(0, 50);
-			const thread = await starterMsg.startThread({
-				name: threadName,
-				autoArchiveDuration: 60,
-			});
-
-			await thread.send(threadMsg.replace("{query}", query));
-
-			console.log(`Spawning workflow for: ${query}`);
-			const child = spawn("npx", ["tsx", "src/index.ts", query], {
-				cwd: process.cwd(),
-				stdio: "ignore",
-				detached: true,
-			});
-			child.unref();
-
-			await interaction.editReply(resTemplate.replace("{query}", query));
 		}
 	});
 

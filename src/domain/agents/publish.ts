@@ -3,9 +3,27 @@ import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
 import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
 import type { AgentState, AppConfig, PublishResults } from "../types.js";
+import { validateCredentials } from "../validation.js";
 export class PublishAgent extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.PUBLISH);
+		this.validateInitialization();
+	}
+
+	private validateInitialization() {
+		const enabledProviders = {
+			youtube: !!this.config.steps.youtube?.enabled,
+			twitter: !!this.config.steps.twitter?.enabled,
+		};
+		if (enabledProviders.youtube || enabledProviders.twitter) {
+			try {
+				validateCredentials(enabledProviders);
+			} catch (error) {
+				throw new Error(
+					"Failed to initialize publish agent: required credentials are not configured",
+				);
+			}
+		}
 	}
 	async run(state: AgentState): Promise<PublishResults> {
 		this.logInput({ video_path: state.video_path, metadata: state.metadata });
@@ -66,19 +84,27 @@ export class PublishAgent extends BaseAgent {
 	private createYouTubeClient() {
 		const clientId = process.env.YOUTUBE_CLIENT_ID;
 		const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-		if (!clientId || !clientSecret)
-			throw new Error("YouTube credentials missing");
+		const redirectUri =
+			process.env.YOUTUBE_REDIRECT_URI ||
+			"http://localhost:3000/oauth2callback";
+
+		if (!clientId || !clientSecret) {
+			throw new Error(
+				"YouTube authentication failed: unable to initialize YouTube client",
+			);
+		}
+
 		const client = new google.auth.OAuth2({
 			clientId,
 			clientSecret,
-			redirectUri:
-				process.env.YOUTUBE_REDIRECT_URI ||
-				"http://localhost:3000/oauth2callback",
+			redirectUri,
 		});
+
 		const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
 		if (refreshToken) {
 			client.setCredentials({ refresh_token: refreshToken });
 		}
+
 		return client;
 	}
 	private async setYouTubeThumbnail(
@@ -116,16 +142,25 @@ export class PublishAgent extends BaseAgent {
 		return { status: "posted", tweet_id: res.data.id || "" };
 	}
 	private createTwitterClient() {
+		const appKey = process.env.X_API_KEY || process.env.TWITTER_API_KEY;
+		const appSecret =
+			process.env.X_API_SECRET || process.env.TWITTER_API_SECRET;
+		const accessToken =
+			process.env.X_ACCESS_TOKEN || process.env.TWITTER_ACCESS_TOKEN;
+		const accessSecret =
+			process.env.X_ACCESS_SECRET || process.env.TWITTER_ACCESS_TOKEN_SECRET;
+
+		if (!appKey || !appSecret || !accessToken || !accessSecret) {
+			throw new Error(
+				"Twitter authentication failed: unable to initialize Twitter client",
+			);
+		}
+
 		return new TwitterApi({
-			appKey: process.env.X_API_KEY || process.env.TWITTER_API_KEY || "",
-			appSecret:
-				process.env.X_API_SECRET || process.env.TWITTER_API_SECRET || "",
-			accessToken:
-				process.env.X_ACCESS_TOKEN || process.env.TWITTER_ACCESS_TOKEN || "",
-			accessSecret:
-				process.env.X_ACCESS_SECRET ||
-				process.env.TWITTER_ACCESS_TOKEN_SECRET ||
-				"",
+			appKey,
+			appSecret,
+			accessToken,
+			accessSecret,
 		});
 	}
 	private createTweetText(metadata?: AgentState["metadata"]) {
