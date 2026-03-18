@@ -311,7 +311,31 @@ export function getRunIdDateString(): string {
 	return `${y}-${m}-${day}`;
 }
 export function loadMemoryContext(store: AssetStore): string {
-	return "";
+	const cfg = store.cfg;
+	const essenceFile = path.isAbsolute(cfg.workflow.memory.essence_file)
+		? cfg.workflow.memory.essence_file
+		: path.join(ROOT, cfg.workflow.memory.essence_file);
+
+	if (!fs.existsSync(essenceFile)) return "";
+
+	const essencesData = fs.readJsonSync(essenceFile) as {
+		essences: Array<{
+			topic: string;
+			timestamp: string;
+			key_insights: string[];
+			universal_principles: string[];
+		}>;
+	};
+
+	if (!essencesData.essences || essencesData.essences.length === 0) return "";
+
+	const recent = essencesData.essences.slice(-5).reverse();
+	return recent
+		.map(
+			(e) =>
+				`【${e.topic}】\n${e.key_insights.slice(0, 2).join("\n")}\n原則: ${e.universal_principles[0] || ""}`,
+		)
+		.join("\n\n");
 }
 
 export function fetchRecentThemes(store: AssetStore, days = 7): string {

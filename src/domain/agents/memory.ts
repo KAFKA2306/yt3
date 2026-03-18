@@ -24,28 +24,7 @@ export class MemoryAgent extends BaseAgent {
 		this.logInput(state);
 		const cfg = this.config.workflow.memory;
 
-		// 1. Update Video Index
-		const indexFile = path.isAbsolute(cfg.index_file)
-			? cfg.index_file
-			: path.join(ROOT, cfg.index_file);
-		const indexDir = path.dirname(indexFile);
-		const index = fs.existsSync(indexFile)
-			? fs.readJsonSync(indexFile)
-			: { videos: [] };
-
-		index.videos.push({
-			run_id: state.run_id,
-			topic: state.metadata?.title || state.script?.title || "Unknown",
-			date: new Date().toISOString(),
-			url: state.publish_results?.youtube?.video_id
-				? `https://youtube.com/watch?v=${state.publish_results.youtube.video_id}`
-				: "",
-		});
-
-		fs.ensureDirSync(indexDir);
-		fs.writeJsonSync(indexFile, index, { spaces: 2 });
-
-		// 2. Extract and Update Essences (Knowledge Distillation)
+		// Extract and Update Essences (Knowledge Distillation)
 		const scriptLines = state.script?.lines || [];
 		if (scriptLines.length > 0) {
 			const prompt = this.loadPrompt<{ system: string; user_template: string }>(
@@ -78,15 +57,20 @@ export class MemoryAgent extends BaseAgent {
 
 			fs.ensureDirSync(essenceDir);
 			fs.writeJsonSync(essenceFile, essencesData, { spaces: 2 });
+
+			// Cleanup: keep only latest 10 essences
+			if (essencesData.essences.length > 10) {
+				essencesData.essences = essencesData.essences.slice(-10);
+				fs.writeJsonSync(essenceFile, essencesData, { spaces: 2 });
+			}
+
 			this.logOutput({
 				status: "updated",
-				index_size: index.videos.length,
 				essence_added: true,
 			});
 		} else {
 			this.logOutput({
 				status: "updated",
-				index_size: index.videos.length,
 				essence_added: false,
 			});
 		}
