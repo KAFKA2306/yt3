@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import {
 	type AssetStore,
 	BaseAgent,
+	AgentLogger as Logger,
 	RunStage,
 	loadConfig,
 	parseLlmJson,
@@ -67,6 +68,12 @@ export class ScriptSmith extends BaseAgent {
 
 		// 1. Generate Outline
 		const outline = await this.generateOutline(director.angle, fullContext);
+		Logger.info(
+			this.name,
+			"CONTENT",
+			"OUTLINE_GEN",
+			`Generated outline: ${outline.title}`,
+		);
 
 		// 2. Generate Segments
 		const allLines: ScriptLine[] = [];

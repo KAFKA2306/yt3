@@ -14,7 +14,7 @@ import { QuotaManager } from "./utils/quota_manager.js";
 dotenv.config({ path: path.join(ROOT, "config/.env"), override: true });
 
 export { Logger as AgentLogger };
-export type { AgentState, AppConfig };
+export type { AgentState };
 export { RunStage };
 
 export function loadConfig(): AppConfig {
@@ -100,7 +100,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-						.input || "input.yaml"
+					.input || "input.yaml"
 				: type === "output"
 					? this.cfg.workflow.filenames.output
 					: `${stage}_prompt.yaml`;
@@ -116,7 +116,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-						.input || "input.yaml"
+					.input || "input.yaml"
 				: this.cfg.workflow.filenames.output;
 		const p = path.join(this.runDir, stage, f);
 		fs.ensureDirSync(path.dirname(p));
@@ -188,6 +188,12 @@ export abstract class BaseAgent {
 		const quotaContext = QuotaManager.getQuotaContext(keyName, "gemini");
 		const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
 
+		Logger.info(
+			"SYSTEM",
+			"CORE",
+			"LLM_INVOKE",
+			`Invoking LLM with prompt: ${userPrompt.slice(0, 500)}...`,
+		);
 		const res = await llm.invoke(
 			[
 				{ role: "system", content: finalSystemPrompt },
@@ -207,7 +213,7 @@ export abstract class BaseAgent {
 		return parser(res.content as string);
 	}
 }
-export function cleanCodeBlock(text: string): string {
+function cleanCodeBlock(text: string): string {
 	const stripped = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 	const match = stripped.match(/([{[][\s\S]*[}\]])/);
 	return match ? (match[1] || match[0]).trim() : stripped;
@@ -215,13 +221,45 @@ export function cleanCodeBlock(text: string): string {
 
 function repairJson(text: string): string {
 	let cleaned = cleanCodeBlock(text);
-	const openBraces = (cleaned.match(/{/g) || []).length;
-	const closeBraces = (cleaned.match(/}/g) || []).length;
-	if (openBraces > closeBraces) cleaned += "}".repeat(openBraces - closeBraces);
-	const openBrackets = (cleaned.match(/\[/g) || []).length;
-	const closeBrackets = (cleaned.match(/\]/g) || []).length;
-	if (openBrackets > closeBrackets)
-		cleaned += "]".repeat(openBrackets - closeBrackets);
+
+	let inString = false;
+	let escaped = false;
+	for (let i = 0; i < cleaned.length; i++) {
+		const char = cleaned[i];
+		if (char === '"' && !escaped) inString = !inString;
+		escaped = char === "\\" && !escaped;
+	}
+	if (inString) cleaned += '"';
+
+	const stack: string[] = [];
+	inString = false;
+	escaped = false;
+	for (let i = 0; i < cleaned.length; i++) {
+		const char = cleaned[i];
+		if (char === '"' && !escaped) {
+			inString = !inString;
+			continue;
+		}
+		if (inString) {
+			escaped = char === "\\" && !escaped;
+			continue;
+		}
+
+		if (char === "{") stack.push("}");
+		else if (char === "[") stack.push("]");
+		else if (char === "}" || char === "]") {
+			if (stack.length > 0 && stack[stack.length - 1] === char) {
+				stack.pop();
+			}
+		}
+	}
+
+	while (stack.length > 0) {
+		cleaned += stack.pop();
+	}
+
+	cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*\]/g, "]");
+
 	return cleaned;
 }
 
@@ -274,4 +312,103 @@ export function getRunIdDateString(): string {
 }
 export function loadMemoryContext(store: AssetStore): string {
 	return "";
+}
+
+export function fetchRecentThemes(store: AssetStore, days = 7): string {
+	const cfg = loadConfig();
+	const runsDir = path.join(ROOT, cfg.workflow.paths.runs_dir);
+
+	if (!fs.existsSync(runsDir)) {
+		Logger.warn("SYSTEM", "CORE", "FETCH_THEMES", "Runs directory not found");
+		return "";
+	}
+
+	const runDirs = fs
+		.readdirSync(runsDir)
+		.filter((name) => /^\d{4}-\d{2}-\d{2}/.test(name))
+		.sort()
+		.reverse()
+		.slice(0, days);
+
+	const themes: Array<{ date: string; categories: string[] }> = [];
+
+	for (const dir of runDirs) {
+		const outputPath = path.join(runsDir, dir, "research", "output.yaml");
+		if (fs.existsSync(outputPath)) {
+			const content = fs.readFileSync(outputPath, "utf-8");
+			const output = yaml.load(content) as Record<string, unknown>;
+
+			if (Array.isArray(output.selected_topics)) {
+				const categories = output.selected_topics
+					.map((topic: Record<string, unknown>) => topic.category)
+					.filter(Boolean) as string[];
+
+				if (categories.length > 0) {
+					themes.push({ date: dir, categories });
+				}
+			} else if (output.selected_topic && output.angle) {
+				const angle = String(output.angle).toLowerCase();
+				const category = inferCategoryFromAngle(angle);
+				themes.push({ date: dir, categories: [category] });
+			}
+		}
+	}
+
+	if (themes.length === 0) {
+		return "(Recent theme history not available)";
+	}
+
+	return themes
+		.map(({ date, categories }) => `${date}: ${categories.join(", ")}`)
+		.join("\n");
+}
+
+function inferCategoryFromAngle(angle: string): string {
+	const lowerAngle = angle.toLowerCase();
+	if (
+		lowerAngle.includes("金利") ||
+		lowerAngle.includes("インフレ") ||
+		lowerAngle.includes("cpi") ||
+		lowerAngle.includes("gdp") ||
+		lowerAngle.includes("frb")
+	) {
+		return "マクロ経済";
+	}
+	if (
+		lowerAngle.includes("決算") ||
+		lowerAngle.includes("投資") ||
+		lowerAngle.includes("m&a") ||
+		lowerAngle.includes("配当") ||
+		lowerAngle.includes("earnings")
+	) {
+		return "企業財務";
+	}
+	if (
+		lowerAngle.includes("地政学") ||
+		lowerAngle.includes("戦争") ||
+		lowerAngle.includes("制裁") ||
+		lowerAngle.includes("国際") ||
+		lowerAngle.includes("geopolitics")
+	) {
+		return "地政学";
+	}
+	if (
+		lowerAngle.includes("技術") ||
+		lowerAngle.includes("ai") ||
+		lowerAngle.includes("半導体") ||
+		lowerAngle.includes("新製品") ||
+		lowerAngle.includes("technology")
+	) {
+		return "テクノロジー";
+	}
+	if (
+		lowerAngle.includes("投資家") ||
+		lowerAngle.includes("変動性") ||
+		lowerAngle.includes("トレンド") ||
+		lowerAngle.includes("心理") ||
+		lowerAngle.includes("sentiment")
+	) {
+		return "市場心理";
+	}
+	return "その他";
 }

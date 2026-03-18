@@ -5,7 +5,7 @@ readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_dir="$(cd "${script_dir}/../../../../" && pwd)"
 
 # Ensure correct runtime paths
-export PATH="/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
 readonly bun_bin=$(which bun || echo "/home/kafka/.bun/bin/bun")
 
 # Load environment variables for Discord notifications from bash
@@ -92,7 +92,7 @@ ensure_voicevox_running() {
   if ! check_voicevox; then
     printf '[%s] ERROR Voicevox is not responding. Starting Voicevox...\n' "$(timestamp)"
     # Try to start it using the task up command (Removing silent mode to log errors)
-    (cd "${repo_dir}" && task up)
+    (cd "${repo_dir}" && /root/.local/bin/task up)
     
     # Log docker state for debugging
     printf '[%s] INFO  Current Docker state for Voicevox:\n' "$(timestamp)"

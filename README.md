@@ -71,11 +71,7 @@ runs/          → できたもの！🎁
 
 もっと くわしく しりたいときは、ここを みてね！
 
-<!-- 
-- [**しくみ図**](docs/diagrams/architecture.md): 全体の つながりだよ！
-- [**ながれ図**](docs/diagrams/workflow.md): どうやって 動画に なるのかな？
-- [**モデル図**](docs/diagrams/domain_model.md): データの かたちだよ！
--->
+---
 
 ---
 
