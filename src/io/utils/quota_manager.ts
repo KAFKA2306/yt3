@@ -12,9 +12,11 @@ export class QuotaExhaustionError extends Error {
 
 interface QuotaState {
 	remaining: number;
+	remainingTokens: number;
 	resetTime: number;
 	status: "active" | "cooldown";
 	lastUsed: number;
+	backoffLevel: number;
 }
 
 interface QuotaLedger {
@@ -22,10 +24,22 @@ interface QuotaLedger {
 	sessions: Record<string, number>;
 }
 
+interface QuotaMetric {
+	timestamp: string;
+	keyName: string;
+	requestsRemaining: number;
+	tokensRemaining: number;
+	backoffLevel: number;
+	waited: number;
+}
+
 const LEDGER_PATH = path.join(ROOT, "data/state/llm_quotas.json");
+const METRICS_PATH = path.join(ROOT, "logs/quota_metrics.jsonl");
+const RATE_LIMIT_THRESHOLD = 0.3; // 30%
 
 export class QuotaManager {
 	private static ledger: QuotaLedger | null = null;
+	private static readonly quotaMutex = { locked: false };
 
 	private static loadLedger(): QuotaLedger {
 		if (QuotaManager.ledger) return QuotaManager.ledger;
@@ -40,7 +54,14 @@ export class QuotaManager {
 	private static saveLedger() {
 		if (!QuotaManager.ledger) return;
 		fs.ensureDirSync(path.dirname(LEDGER_PATH));
-		fs.writeJsonSync(LEDGER_PATH, QuotaManager.ledger, { spaces: 2 });
+		const tempPath = `${LEDGER_PATH}.tmp`;
+		fs.writeJsonSync(tempPath, QuotaManager.ledger, { spaces: 2 });
+		fs.renameSync(tempPath, LEDGER_PATH);
+	}
+
+	private static recordMetric(metric: QuotaMetric) {
+		fs.ensureDirSync(path.dirname(METRICS_PATH));
+		fs.appendFileSync(METRICS_PATH, JSON.stringify(metric) + "\n");
 	}
 
 	private static syncEnvKeys() {
@@ -71,13 +92,66 @@ export class QuotaManager {
 			if (!ledger.keys[name]) {
 				ledger.keys[name] = {
 					remaining: 15,
+					remainingTokens: 1000000,
 					resetTime: 0,
 					status: "active",
 					lastUsed: 0,
+					backoffLevel: 0,
 				};
 			}
 		}
 		QuotaManager.saveLedger();
+	}
+
+	private static calculateBackoffDelay(backoffLevel: number): number {
+		const baseDelay = 1000; // 1 second
+		const maxDelay = 60000; // 60 seconds
+		const exponentialDelay = Math.min(baseDelay * Math.pow(2, backoffLevel), maxDelay);
+		const jitter = Math.random() * exponentialDelay * 0.1;
+		return exponentialDelay + jitter;
+	}
+
+	public static async waitIfRateLimited(keyName: string): Promise<number> {
+		const ledger = QuotaManager.loadLedger();
+		const state = ledger.keys[keyName];
+		if (!state) return 0;
+
+		const now = Date.now();
+		let waited = 0;
+
+		// Check if key is in cooldown
+		if (state.status === "cooldown" && state.resetTime > now) {
+			const cooldownDuration = state.resetTime - now;
+			Logger.warn(
+				"SYSTEM",
+				"QUOTA",
+				"COOLDOWN",
+				`Key ${keyName} in cooldown. Waiting ${cooldownDuration}ms`,
+			);
+			await new Promise((resolve) => setTimeout(resolve, cooldownDuration));
+			waited = cooldownDuration;
+			state.status = "active";
+			state.backoffLevel = 0;
+			QuotaManager.saveLedger();
+		}
+
+		// Check if approaching rate limit (< 30% remaining)
+		const remainingPercent = state.remaining / 15; // Assuming 15 is max per minute
+		if (remainingPercent < RATE_LIMIT_THRESHOLD) {
+			const backoffDelay = QuotaManager.calculateBackoffDelay(state.backoffLevel);
+			Logger.info(
+				"SYSTEM",
+				"QUOTA",
+				"BACKOFF",
+				`Key ${keyName} at ${(remainingPercent * 100).toFixed(1)}%. Backing off for ${backoffDelay.toFixed(0)}ms (level=${state.backoffLevel})`,
+			);
+			await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+			waited += backoffDelay;
+			state.backoffLevel = Math.min(state.backoffLevel + 1, 6); // Cap at 6 (64 seconds)
+		}
+
+		QuotaManager.saveLedger();
+		return waited;
 	}
 
 	public static acquireKey(sessionId?: string): {
@@ -138,14 +212,15 @@ export class QuotaManager {
 			});
 
 		if (candidates.length === 0) {
-			const err = new QuotaExhaustionError("No valid Gemini API keys available. All keys are exhausted or in cooldown.");
+			const err = new QuotaExhaustionError(
+				"No valid Gemini API keys available. All keys are exhausted or in cooldown.",
+			);
 			Logger.error("SYSTEM", "QUOTA", "EXHAUSTION", err.message);
 			throw err;
 		}
 
 		const best = candidates[0];
-		if (!best)
-			throw new Error("CRITICAL: Failed to select best key from cluster.");
+		if (!best) throw new Error("CRITICAL: Failed to select best key from cluster.");
 
 		if (sessionId) ledger.sessions[sessionId] = best.index;
 		best.state.lastUsed = now;
@@ -155,7 +230,7 @@ export class QuotaManager {
 			"SYSTEM",
 			"QUOTA",
 			"ACQUIRE",
-			`Selected Key ${best.index} (Remaining: ${best.state.remaining})`,
+			`Selected Key ${best.index} (Remaining: ${best.state.remaining}/${best.state.remainingTokens} tokens)`,
 		);
 		return { name: best.name, key: best.key, index: best.index };
 	}
@@ -174,10 +249,17 @@ export class QuotaManager {
 		const reset =
 			headers["x-ratelimit-reset-requests"] ||
 			headers["X-RateLimit-Reset-Requests"];
+		const remainingTokens =
+			headers["x-ratelimit-remaining-tokens"] ||
+			headers["X-RateLimit-Remaining-Tokens"];
 
 		if (remaining) {
 			const remVal = Array.isArray(remaining) ? remaining[0] : remaining;
 			state.remaining = Number.parseInt(String(remVal));
+		}
+		if (remainingTokens) {
+			const tokVal = Array.isArray(remainingTokens) ? remainingTokens[0] : remainingTokens;
+			state.remainingTokens = Number.parseInt(String(tokVal));
 		}
 		if (reset) {
 			const resetStr = String(Array.isArray(reset) ? reset[0] : reset);
@@ -188,7 +270,32 @@ export class QuotaManager {
 			}
 		}
 
-		state.status = state.remaining === 0 ? "cooldown" : "active";
+		// Check if we should trigger rate limiting
+		const remainingPercent = state.remaining / 15;
+		const tokenPercent = state.remainingTokens / 1000000;
+		const threshold = Math.min(remainingPercent, tokenPercent);
+
+		if (threshold < RATE_LIMIT_THRESHOLD) {
+			state.status = "cooldown";
+			state.resetTime = Date.now() + QuotaManager.calculateBackoffDelay(state.backoffLevel);
+		} else if (state.remaining === 0 || state.remainingTokens === 0) {
+			state.status = "cooldown";
+			state.resetTime = Date.now() + 65000; // Default 65 second cooldown
+		} else {
+			state.status = "active";
+			state.backoffLevel = 0; // Reset backoff when quota recovers
+		}
+
+		// Record metric
+		QuotaManager.recordMetric({
+			timestamp: new Date().toISOString(),
+			keyName,
+			requestsRemaining: state.remaining,
+			tokensRemaining: state.remainingTokens,
+			backoffLevel: state.backoffLevel,
+			waited: 0,
+		});
+
 		QuotaManager.saveLedger();
 	}
 
@@ -199,12 +306,13 @@ export class QuotaManager {
 			state.status = "cooldown";
 			state.remaining = 0;
 			state.resetTime = Date.now() + durationMs;
+			state.backoffLevel = Math.min(state.backoffLevel + 1, 6);
 			QuotaManager.saveLedger();
 			Logger.error(
 				"SYSTEM",
 				"QUOTA",
 				"FAILURE",
-				`Key ${keyName} forced to cooldown for ${durationMs}ms`,
+				`Key ${keyName} forced to cooldown for ${durationMs}ms (backoff level ${state.backoffLevel})`,
 			);
 		}
 	}
@@ -217,19 +325,21 @@ export class QuotaManager {
 		const state = ledger.keys[keyName];
 
 		if (provider === "local") {
-			return "[LLM System Status]\nProvider: LOCAL FALLBACK (vLLM/Qwen3.5-9B)\nConstraint: Context window is strictly limited to 4096 tokens.\nStrategic Guidance: Prioritize core facts. Be extremely concise to avoid context truncation.";
+			return "[LLM System Status]\\nProvider: LOCAL FALLBACK (vLLM/Qwen3.5-9B)\\nConstraint: Context window is strictly limited to 4096 tokens.\\nStrategic Guidance: Prioritize core facts. Be extremely concise to avoid context truncation.";
 		}
 
 		if (!state)
-			return "[LLM System Status]\nProvider: Gemini 3 Flash\nStatus: Initializing cluster nodes.";
+			return "[LLM System Status]\\nProvider: Gemini 3 Flash\\nStatus: Initializing cluster nodes.";
 
 		const index = Number.parseInt(keyName.split("_").pop() || "1");
-		const status = state.remaining < 5 ? "LOW_QUOTA" : "OPTIMAL";
+		const requestPercent = (state.remaining / 15) * 100;
+		const tokenPercent = (state.remainingTokens / 1000000) * 100;
+		const status = requestPercent < 30 || tokenPercent < 30 ? "LOW_QUOTA" : "OPTIMAL";
 		const guidance =
 			status === "LOW_QUOTA"
-				? "Remaining quota is limited. Complete the current task efficiently."
+				? `Remaining quota is limited (${requestPercent.toFixed(0)}% requests, ${tokenPercent.toFixed(0)}% tokens). Complete the current task efficiently.`
 				: "Standard operational mode.";
 
-		return `[LLM System Status]\nProvider: Gemini 3 Flash (Cluster Node ${index})\nRemaining Quota: ${state.remaining} requests\nPerformance: ${status}\nStrategic Guidance: ${guidance}`;
+		return `[LLM System Status]\\nProvider: Gemini 3 Flash (Cluster Node ${index})\\nRemaining: ${state.remaining} requests, ${state.remainingTokens} tokens\\nPerformance: ${status}\\nBackoff Level: ${state.backoffLevel}\\nStrategic Guidance: ${guidance}`;
 	}
 }

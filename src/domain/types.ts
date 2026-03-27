@@ -148,7 +148,7 @@ export const StrategicInsightSchema = z.object({
 		z.object({
 			asset: z.string(),
 			rationale: z.string(),
-			backdoor_opportunity: z.string(),
+			backdoor_opportunity: z.string().optional(),
 		}),
 	),
 	strategic_summary: z.string(),

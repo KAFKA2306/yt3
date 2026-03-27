@@ -6,45 +6,8 @@ import {
 	loadConfig,
 	parseLlmJson,
 } from "../../io/core.js";
-import type { NewsItem } from "../types.js";
-
-/**
- * Chief Investment Strategist (formerly Macro Analyst)
- * Robust Schema with Preprocessing to handle LLM structure variations.
- */
-
-const ensureArray = (val: unknown) => (Array.isArray(val) ? val : [val]);
-
-const StrategicInsightSchema = z.object({
-	primary_delta: z.object({
-		event: z.string(),
-		magnitude: z.string(),
-		structural_shift: z.string(),
-	}),
-	insights: z.preprocess(
-		ensureArray,
-		z.array(
-			z.object({
-				observation: z.string(),
-				implication: z.string(),
-				wisdom: z.string(),
-			}),
-		),
-	),
-	investment_ideas: z.preprocess(
-		ensureArray,
-		z.array(
-			z.object({
-				asset: z.string(),
-				rationale: z.string(),
-			}),
-		),
-	),
-	strategic_summary: z.string(),
-	sources: z.array(z.string()),
-});
-
-export type StrategicAnalysis = z.infer<typeof StrategicInsightSchema>;
+import type { NewsItem, StrategicAnalysis } from "../types.js";
+import { StrategicInsightSchema } from "../types.js";
 
 export class MacroRegimeAnalystAgent extends BaseAgent {
 	constructor(store: AssetStore) {
