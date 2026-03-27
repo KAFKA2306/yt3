@@ -151,10 +151,11 @@ describe("NotebookLMAgent", () => {
 		const store = createMockStore();
 		const agent = new NotebookLMAgent(store);
 		
+		let error: Error | null = null;
 		try {
 			await agent.run(["abc123", "def456"]);
-		} catch {
-			// Expected to fail on fs check, but verify commands were executed
+		} catch (e) {
+			error = e as Error;
 		}
 
 		// Should have at least list, use, generate, and download commands
@@ -162,6 +163,13 @@ describe("NotebookLMAgent", () => {
 		const useCalls = execSyncCalls.filter(c => c.includes("use"));
 		const generateCalls = execSyncCalls.filter(c => c.includes("generate video"));
 		const downloadCalls = execSyncCalls.filter(c => c.includes("download video"));
+
+		console.log("execSyncCalls:", execSyncCalls);
+		console.log("Error:", error?.message);
+		console.log("listCalls:", listCalls.length);
+		console.log("useCalls:", useCalls.length, useCalls);
+		console.log("generateCalls:", generateCalls.length);
+		console.log("downloadCalls:", downloadCalls.length);
 
 		// Should call list once (it caches the result)
 		expect(listCalls.length).toBe(1);

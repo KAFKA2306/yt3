@@ -25,6 +25,7 @@ export interface NotebookLMResult {
 
 export class NotebookLMAgent extends BaseAgent {
 	override config: AppConfig;
+	private notebookCache: { id: string; title: string | null }[] | null = null;
 
 	constructor(store: AssetStore) {
 		const cfg = loadConfig();
@@ -127,13 +128,16 @@ export class NotebookLMAgent extends BaseAgent {
 	private getNotebookInfo(
 		notebookId: string,
 	): { id: string; title: string | null } {
-		const output = execSync("notebooklm list --json", {
-			encoding: "utf-8",
-		});
-		const data = JSON.parse(output);
+		// Use cached list if available
+		if (!this.notebookCache) {
+			const output = execSync("notebooklm list --json", {
+				encoding: "utf-8",
+			});
+			this.notebookCache = JSON.parse(output);
+		}
 
 		// Find notebook by ID (full or partial match)
-		const notebook = data.find(
+		const notebook = this.notebookCache.find(
 			(nb: { id: string; title?: string }) =>
 				nb.id === notebookId || nb.id.startsWith(notebookId),
 		);
@@ -150,8 +154,10 @@ export class NotebookLMAgent extends BaseAgent {
 
 	private sanitizeFileName(title: string): string {
 		return title
-			.replace(/[\/\\:*?"<>|]/g, "_")
-			.replace(/\s+/g, "_")
+			.replace(/[\\/\:*?"<>|]/g, "_") // Replace special characters
+			.replace(/\s+/g, "_") // Replace spaces
+			.replace(/_+/g, "_") // Collapse multiple underscores to single
+			.replace(/_+$/, "") // Remove trailing underscores
 			.toLowerCase()
 			.slice(0, 200);
 	}

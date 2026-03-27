@@ -161,6 +161,9 @@ providers:
     start_hour: 7
     user: "kafka"
 
+dashboard:
+  port: 3000
+
 logging:
   level: "INFO"
   format: "json"
