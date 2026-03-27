@@ -24,7 +24,7 @@ export interface NotebookLMResult {
 }
 
 export class NotebookLMAgent extends BaseAgent {
-	config: AppConfig;
+	override config: AppConfig;
 
 	constructor(store: AssetStore) {
 		const cfg = loadConfig();
