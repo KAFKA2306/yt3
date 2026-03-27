@@ -1,6 +1,17 @@
 # Quick Reference
 **詳細は AGENTS.md とメモリを参照**。ここは補足のみ。
 
+## 統一原則（全領域で共通）
+
+YT3 システム全体を駆動する 4つの基本原則。すべての設計・実装・運用判断はこれを根拠に行う。
+
+1. **Single Source of Truth** — 唯一の信頼できる源を各層で定義。config/default.yaml が全設定の源。ハードコード禁止。
+2. **Efficiency First** — リソース（CPU、メモリ、トークン）の無駄を排除。context compression、並列化、token optimization。
+3. **Fail-Fast Design** — 問題を早期に検出。防御的コード禁止。Zod で入力検証。エラーは即座に propagate。
+4. **Immutability & Functional Purity** — 状態変更を最小化。const、新しいコピー、pure function で副作用ゼロ。
+
+**詳細は `.claude/integration_findings.md` を参照。**
+
 ## ビルド・実行
 ```bash
 task build       # TypeScript コンパイル

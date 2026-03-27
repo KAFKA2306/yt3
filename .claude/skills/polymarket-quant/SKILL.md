@@ -1,6 +1,7 @@
 ---
 name: polymarket-quant
 description: Quant-grade automated trading pipeline for Prediction Markets (Polymarket). Use when evaluating trading strategies, scanning markets for edges, or executing automated trades. Triggers on "polymarket trade", "start quant bot", "scan prediction markets", "evaluate event probability", or "check betting edge".
+type: skill
 ---
 
 # Polymarket Quant Trading Bot Skill (2026 Protocol)
@@ -28,13 +29,3 @@ Quant-grade automated trading pipeline for Prediction Markets (Polymarket). This
 - **Full Kelly**: `f* = (p_model * b - (1 - p_model)) / b`
 - **Fractional Kelly**: `f = alpha * f*` (alpha = 0.25 to 0.5)
 - **VaR 95%**: `VaR = mu - 1.645 * sigma`
-- **Max Drawdown (MDD)**: Block all new trades if `MDD > 0.08`.
-
-## Strict Rules
-- NEVER use LLM for math or risk calculations.
-- Kelly Criterion MUST be verified by deterministic script before Execution.
-- All news sentiment MUST be quantified into probability deltas.
-- Cumulative exposure MUST NOT exceed `max_exposure` defined in config.
-
-## Triggers
-- "polymarket trade", "start quant bot", "scan prediction markets", "evaluate event probability", "check betting edge"

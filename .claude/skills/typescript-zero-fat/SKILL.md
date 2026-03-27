@@ -1,6 +1,7 @@
 ---
 name: typescript-zero-fat
 description: Enforce zero-fat TypeScript standards — no comments, no any, no try-catch in business logic, no hardcoded values. Use when writing or reviewing TypeScript code in this project. Triggers on any code generation, code review, "write a function", "implement", "refactor", or TypeScript file edits.
+type: skill
 ---
 
 # TypeScript Zero-Fat Protocol
@@ -27,20 +28,3 @@ Comments rot. `any` spreads. Defensive code hides bugs. The goal is a codebase w
 **No hardcoded values.** All parameters come from `config/*.yaml` via `src/io/core.ts`. Hardcodes scatter configuration across files and make environment switching fragile.
 
 **No relative imports.** Use absolute paths from project root to avoid breakage when files move.
-
-## Patterns
-
-**Guard-first logic** — use early returns to flatten nested branches:
-```typescript
-if (!config.enabled) return
-if (!data.length) throw new Error("Empty dataset")
-// success path continues here
-```
-
-**Zod at boundaries** — validate at entry, trust internally:
-```typescript
-const Config = z.object({ apiKey: z.string().min(1) })
-const config = Config.parse(raw)  // throws clearly if invalid
-```
-
-**Schema-validated models everywhere** — no plain objects at system boundaries.
