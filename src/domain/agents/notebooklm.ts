@@ -30,6 +30,13 @@ const ArtifactListSchema = z.object({
 	),
 });
 
+const NotebookCreateSchema = z.object({
+	notebook: z.object({
+		id: z.string(),
+		title: z.string(),
+	}),
+});
+
 export interface NotebookVideo {
 	notebook_id: string;
 	notebook_title: string;
@@ -68,6 +75,48 @@ export class NotebookLMAgent extends BaseAgent {
 			temperature: 0.1,
 		});
 		this.shell = shell;
+	}
+
+	/**
+	 * Create a new notebook
+	 */
+	async createNotebook(title: string): Promise<string> {
+		AgentLogger.info(this.name, "CREATE", "START", `Creating notebook: ${title}`);
+		const output = this.shell.execute(
+			`notebooklm create "${title}" --json`,
+			true,
+		);
+		if (!output) throw new Error("Failed to create notebook");
+		const parsed = NotebookCreateSchema.parse(JSON.parse(output));
+		AgentLogger.info(
+			this.name,
+			"CREATE",
+			"SUCCESS",
+			`Created notebook: ${parsed.notebook.title} (${parsed.notebook.id})`,
+		);
+		// Invalidate cache
+		this.notebookCache = null;
+		return parsed.notebook.id;
+	}
+
+	/**
+	 * Add a source to a notebook
+	 */
+	async addSource(
+		notebookId: string,
+		content: string,
+		type?: string,
+	): Promise<void> {
+		AgentLogger.info(
+			this.name,
+			"SOURCE",
+			"ADD",
+			`Adding source to ${notebookId}: ${content.slice(0, 50)}...`,
+		);
+		const typeArg = type ? `--type ${type}` : "";
+		this.shell.execute(
+			`notebooklm source add "${content}" -n ${notebookId} ${typeArg}`,
+		);
 	}
 
 	async run(
@@ -199,7 +248,7 @@ export class NotebookLMAgent extends BaseAgent {
 						new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
 				);
 
-			return videos.length > 0 ? videos[0].title : null;
+			return videos.length > 0 ? videos[0]?.title ?? null : null;
 		} catch (error) {
 			AgentLogger.warn(
 				this.name,
