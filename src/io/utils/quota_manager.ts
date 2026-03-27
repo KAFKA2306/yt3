@@ -106,7 +106,10 @@ export class QuotaManager {
 	private static calculateBackoffDelay(backoffLevel: number): number {
 		const baseDelay = 1000; // 1 second
 		const maxDelay = 60000; // 60 seconds
-		const exponentialDelay = Math.min(baseDelay * Math.pow(2, backoffLevel), maxDelay);
+		const exponentialDelay = Math.min(
+			baseDelay * Math.pow(2, backoffLevel),
+			maxDelay,
+		);
 		const jitter = Math.random() * exponentialDelay * 0.1;
 		return exponentialDelay + jitter;
 	}
@@ -138,7 +141,9 @@ export class QuotaManager {
 		// Check if approaching rate limit (< 30% remaining)
 		const remainingPercent = state.remaining / 15; // Assuming 15 is max per minute
 		if (remainingPercent < RATE_LIMIT_THRESHOLD) {
-			const backoffDelay = QuotaManager.calculateBackoffDelay(state.backoffLevel);
+			const backoffDelay = QuotaManager.calculateBackoffDelay(
+				state.backoffLevel,
+			);
 			Logger.info(
 				"SYSTEM",
 				"QUOTA",
@@ -220,7 +225,8 @@ export class QuotaManager {
 		}
 
 		const best = candidates[0];
-		if (!best) throw new Error("CRITICAL: Failed to select best key from cluster.");
+		if (!best)
+			throw new Error("CRITICAL: Failed to select best key from cluster.");
 
 		if (sessionId) ledger.sessions[sessionId] = best.index;
 		best.state.lastUsed = now;
@@ -258,7 +264,9 @@ export class QuotaManager {
 			state.remaining = Number.parseInt(String(remVal));
 		}
 		if (remainingTokens) {
-			const tokVal = Array.isArray(remainingTokens) ? remainingTokens[0] : remainingTokens;
+			const tokVal = Array.isArray(remainingTokens)
+				? remainingTokens[0]
+				: remainingTokens;
 			state.remainingTokens = Number.parseInt(String(tokVal));
 		}
 		if (reset) {
@@ -277,7 +285,8 @@ export class QuotaManager {
 
 		if (threshold < RATE_LIMIT_THRESHOLD) {
 			state.status = "cooldown";
-			state.resetTime = Date.now() + QuotaManager.calculateBackoffDelay(state.backoffLevel);
+			state.resetTime =
+				Date.now() + QuotaManager.calculateBackoffDelay(state.backoffLevel);
 		} else if (state.remaining === 0 || state.remainingTokens === 0) {
 			state.status = "cooldown";
 			state.resetTime = Date.now() + 65000; // Default 65 second cooldown
@@ -334,7 +343,8 @@ export class QuotaManager {
 		const index = Number.parseInt(keyName.split("_").pop() || "1");
 		const requestPercent = (state.remaining / 15) * 100;
 		const tokenPercent = (state.remainingTokens / 1000000) * 100;
-		const status = requestPercent < 30 || tokenPercent < 30 ? "LOW_QUOTA" : "OPTIMAL";
+		const status =
+			requestPercent < 30 || tokenPercent < 30 ? "LOW_QUOTA" : "OPTIMAL";
 		const guidance =
 			status === "LOW_QUOTA"
 				? `Remaining quota is limited (${requestPercent.toFixed(0)}% requests, ${tokenPercent.toFixed(0)}% tokens). Complete the current task efficiently.`
