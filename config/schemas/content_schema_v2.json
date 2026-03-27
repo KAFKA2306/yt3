@@ -1,61 +1,61 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ContentResult",
-  "description": "Output from content generation agent",
-  "type": "object",
-  "properties": {
-    "script": {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "lines": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "speaker": {
-                "type": "string"
-              },
-              "text": {
-                "type": "string"
-              }
-            },
-            "required": ["speaker", "text"]
-          }
-        },
-        "total_duration": {
-          "type": "number",
-          "default": 0
-        }
-      },
-      "required": ["title", "description", "lines"]
-    },
-    "metadata": {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "keywords": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "category": {
-          "type": "string"
-        }
-      },
-      "required": ["title", "description"]
-    }
-  },
-  "required": ["script", "metadata"]
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "ContentResult",
+	"description": "Output from content generation agent",
+	"type": "object",
+	"properties": {
+		"script": {
+			"type": "object",
+			"properties": {
+				"title": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				},
+				"lines": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"speaker": {
+								"type": "string"
+							},
+							"text": {
+								"type": "string"
+							}
+						},
+						"required": ["speaker", "text"]
+					}
+				},
+				"total_duration": {
+					"type": "number",
+					"default": 0
+				}
+			},
+			"required": ["title", "description", "lines"]
+		},
+		"metadata": {
+			"type": "object",
+			"properties": {
+				"title": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				},
+				"keywords": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"category": {
+					"type": "string"
+				}
+			},
+			"required": ["title", "description"]
+		}
+	},
+	"required": ["script", "metadata"]
 }

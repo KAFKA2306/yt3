@@ -1,5 +1,5 @@
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
 import type { RenderPlan } from "../layout_engine.js";
@@ -62,7 +62,8 @@ export class VideoComposer {
 				cmd.input(thumbnailPath);
 			}
 
-			cmd.complexFilter(filters)
+			cmd
+				.complexFilter(filters)
 				.outputOptions([
 					"-map",
 					"[outv]",
@@ -95,7 +96,7 @@ export class VideoComposer {
 	): string[] {
 		const filters: string[] = [];
 		let lastStream = "0:v";
-		let inputIndex = 2;
+		const inputIndex = 2;
 
 		// Process all overlays (from RenderPlan)
 		// Note: This is a placeholder - actual overlays would come from RenderPlan

@@ -44,10 +44,7 @@ export class TtsOrchestrator {
 
 	async synthesize(request: TtsRequest): Promise<Buffer> {
 		const speakerId = this.resolveSpeakerId(request.speaker);
-		const queryResponse = await this.getAudioQuery(
-			request.text,
-			speakerId,
-		);
+		const queryResponse = await this.getAudioQuery(request.text, speakerId);
 		const synthesisBuffer = await this.synthesizeAudio(
 			queryResponse,
 			speakerId,

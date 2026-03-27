@@ -241,7 +241,9 @@ export function createGraph(store: AssetStore) {
 	return workflow.compile();
 }
 
-export function getNodeMetadata(nodeName: string): GraphNodeMetadata | undefined {
+export function getNodeMetadata(
+	nodeName: string,
+): GraphNodeMetadata | undefined {
 	return NODE_METADATA[nodeName];
 }
 

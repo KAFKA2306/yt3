@@ -1,6 +1,6 @@
+import { execSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
-import { execSync } from "node:child_process";
 
 import {
 	AgentLogger,
@@ -37,7 +37,7 @@ export class NotebookLMAgent extends BaseAgent {
 
 	async run(
 		notebook_ids: string[],
-		videoStyle: string = "whiteboard",
+		videoStyle = "whiteboard",
 	): Promise<NotebookLMResult> {
 		this.logInput({ notebooks: notebook_ids.length, style: videoStyle });
 
@@ -68,11 +68,10 @@ export class NotebookLMAgent extends BaseAgent {
 				notebookInfo.title || notebookId.slice(0, 8),
 			);
 			const outputDir = path.join(
-				this.store.runDir,
-				"notebooklm",
-				dirName,
-				"videos",
-			);
+			this.store.runDir,
+			dirName,
+			"videos",
+		);
 			await fs.ensureDir(outputDir);
 
 			// 5. Download video to specified path
@@ -118,7 +117,7 @@ export class NotebookLMAgent extends BaseAgent {
 
 	private executeNotebooklmCommand(
 		command: string,
-		returnOutput: boolean = false,
+		returnOutput = false,
 	): string | undefined {
 		const fullCommand = `notebooklm ${command}`;
 		if (returnOutput) {
@@ -128,9 +127,10 @@ export class NotebookLMAgent extends BaseAgent {
 		return undefined;
 	}
 
-	private getNotebookInfo(
-		notebookId: string,
-	): { id: string; title: string | null } {
+	private getNotebookInfo(notebookId: string): {
+		id: string;
+		title: string | null;
+	} {
 		// Use cached list if available
 		if (!this.notebookCache) {
 			const output = execSync("notebooklm list --json", {

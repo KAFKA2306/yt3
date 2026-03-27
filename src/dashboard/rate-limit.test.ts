@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import fetch from "node-fetch";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Server } from "http";
+import fetch from "node-fetch";
 
 const BASE_URL = "http://localhost:3001";
 let server: Server;

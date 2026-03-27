@@ -20,12 +20,12 @@ export class AceEvolver {
 		);
 
 		const updatedBulletMap = new Map(
-			currentPlaybook.bullets.map((b) => [b.id, b])
+			currentPlaybook.bullets.map((b) => [b.id, b]),
 		);
 
 		for (const signal of signals) {
 			let bullet = updatedBulletMap.get(signal.bullet_id);
-			
+
 			if (!bullet) {
 				// Auto-create new bullet for discovered strategic signals
 				bullet = {
@@ -53,10 +53,15 @@ export class AceEvolver {
 				...bullet,
 				runs: bullet.runs + 1,
 				successes: signal.success ? bullet.successes + 1 : bullet.successes,
-				alpha: signal.success ? (bullet.alpha || 1.0) + weight : bullet.alpha || 1.0,
-				beta: !signal.success ? (bullet.beta || 1.0) + weight : bullet.beta || 1.0,
+				alpha: signal.success
+					? (bullet.alpha || 1.0) + weight
+					: bullet.alpha || 1.0,
+				beta: !signal.success
+					? (bullet.beta || 1.0) + weight
+					: bullet.beta || 1.0,
 			};
-			updatedBullet.confidence = updatedBullet.alpha / (updatedBullet.alpha + updatedBullet.beta);
+			updatedBullet.confidence =
+				updatedBullet.alpha / (updatedBullet.alpha + updatedBullet.beta);
 
 			updatedBulletMap.set(signal.bullet_id, updatedBullet);
 
@@ -80,7 +85,7 @@ export class AceEvolver {
 				`Pruned ${allBullets.length - prunedBullets.length} low-performing bullets`,
 			);
 		}
-		
+
 		const finalPlaybook = {
 			...currentPlaybook,
 			bullets: prunedBullets,

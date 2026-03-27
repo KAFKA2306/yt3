@@ -1,6 +1,6 @@
-import type { LayoutEngine, RenderPlan } from "../layout_engine.js";
-import { IqaValidator } from "../../io/utils/iqa_validator.js";
 import { AgentLogger, runMcpTool } from "../../io/core.js";
+import type { IqaValidator } from "../../io/utils/iqa_validator.js";
+import type { LayoutEngine, RenderPlan } from "../layout_engine.js";
 
 interface TrendInfo {
 	data?: {
@@ -45,10 +45,7 @@ export class ThumbnailGenerator {
 		this.agentName = cfg.agentName;
 	}
 
-	async generate(
-		title: string,
-		outputPath: string,
-	): Promise<string> {
+	async generate(title: string, outputPath: string): Promise<string> {
 		if (!this.config.enabled) {
 			return "";
 		}
@@ -56,12 +53,7 @@ export class ThumbnailGenerator {
 		const palette = await this.resolvePalette();
 		const plan = await this.layout.createThumbnailRenderPlan();
 
-		AgentLogger.info(
-			this.agentName,
-			"RUN",
-			"THUMB_AI",
-			"Generating thumbnail",
-		);
+		AgentLogger.info(this.agentName, "RUN", "THUMB_AI", "Generating thumbnail");
 
 		await this.layout.renderThumbnail(plan, title, outputPath);
 
@@ -74,27 +66,19 @@ export class ThumbnailGenerator {
 		);
 
 		if (!validation.passed) {
-			throw new Error(
-				`Asset quality rejection: ${validation.reason}`,
-			);
+			throw new Error(`Asset quality rejection: ${validation.reason}`);
 		}
 
-		AgentLogger.info(
-			this.agentName,
-			"RUN",
-			"IQA_PASSED",
-			"Thumbnail verified",
-		);
+		AgentLogger.info(this.agentName, "RUN", "IQA_PASSED", "Thumbnail verified");
 
 		return outputPath;
 	}
 
 	private async resolvePalette(): Promise<ThumbnailPalette> {
-		const defaultPalette: ThumbnailPalette =
-			this.config.palettes?.[0] || {
-				background_color: "#000000",
-				title_color: "#FFFFFF",
-			};
+		const defaultPalette: ThumbnailPalette = this.config.palettes?.[0] || {
+			background_color: "#000000",
+			title_color: "#FFFFFF",
+		};
 
 		if (!this.mcpServers?.context7) {
 			return defaultPalette;
@@ -121,11 +105,8 @@ export class ThumbnailGenerator {
 		return {
 			...defaultPalette,
 			background_color:
-				trendInfo.data.recommended_palette.background_color ||
-				"#103766",
-			title_color:
-				trendInfo.data.recommended_palette.title_color ||
-				"#FFFFFF",
+				trendInfo.data.recommended_palette.background_color || "#103766",
+			title_color: trendInfo.data.recommended_palette.title_color || "#FFFFFF",
 		};
 	}
 }

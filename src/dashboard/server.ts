@@ -1,10 +1,10 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import serveIndex from "serve-index";
-import rateLimit from "express-rate-limit";
 import {
 	AssetStore,
 	BaseAgent,
@@ -65,9 +65,11 @@ app.post("/api/chat", authMiddleware, (req, res) => {
 		);
 	} catch (error) {
 		console.error("Error in POST /api/chat:", error);
-		res.status(500).send(
-			'<div id="chat-output" style="color: var(--text-dim);">An error occurred. Please try again.</div>',
-		);
+		res
+			.status(500)
+			.send(
+				'<div id="chat-output" style="color: var(--text-dim);">An error occurred. Please try again.</div>',
+			);
 	}
 });
 
@@ -175,15 +177,15 @@ app.get(
                         <h3>Script Content</h3>
                         <div class="script-lines">
                             ${data.script.lines
-								.map(
-									(l: { speaker: string; text: string }) => `
+															.map(
+																(l: { speaker: string; text: string }) => `
                                 <div class="script-line">
                                     <span class="speaker">${escape(l.speaker)}:</span>
                                     <span class="text">${escape(l.text)}</span>
                                 </div>
                             `,
-								)
-								.join("")}
+															)
+															.join("")}
                         </div>
                     </div>
                 `;

@@ -48,17 +48,18 @@ export class ThumbnailRenderer {
 				background: palette.background_color,
 			},
 		};
-		let layers: sharp.OverlayOptions[] = [
-			{ input: backdrop, top: 0, left: 0 },
-		];
+		let layers: sharp.OverlayOptions[] = [{ input: backdrop, top: 0, left: 0 }];
 		for (const ol of plan.overlays) {
-			layers = [...layers, {
-				input: await sharp(ol.resolvedPath)
-					.resize(ol.bounds.width, ol.bounds.height)
-					.toBuffer(),
-				top: ol.bounds.y,
-				left: ol.bounds.x,
-			}];
+			layers = [
+				...layers,
+				{
+					input: await sharp(ol.resolvedPath)
+						.resize(ol.bounds.width, ol.bounds.height)
+						.toBuffer(),
+					top: ol.bounds.y,
+					left: ol.bounds.x,
+				},
+			];
 		}
 		const rightSideOverlays = plan.overlays.filter(
 			(o) => o.bounds.x > cfg.width / 2,
@@ -67,11 +68,14 @@ export class ThumbnailRenderer {
 			(rightSideOverlays.length
 				? Math.min(...rightSideOverlays.map((o) => o.bounds.x))
 				: cfg.width) - 20;
-		layers = [...layers, {
-			input: Buffer.from(this.createSvg(title, textMaxX, cfg, palette)),
-			top: 0,
-			left: 0,
-		}];
+		layers = [
+			...layers,
+			{
+				input: Buffer.from(this.createSvg(title, textMaxX, cfg, palette)),
+				top: 0,
+				left: 0,
+			},
+		];
 		await sharp({
 			create: {
 				width: cfg.width,

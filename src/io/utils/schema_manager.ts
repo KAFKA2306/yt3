@@ -35,7 +35,9 @@ export class SchemaManager {
 
 		const data = fs.readJsonSync(filePath);
 		const managed: ManagedSchema = {
-			schema: data.$schema ? data : { ...data, $schema: "http://json-schema.org/draft-07/schema#" },
+			schema: data.$schema
+				? data
+				: { ...data, $schema: "http://json-schema.org/draft-07/schema#" },
 			metadata: {
 				version: "v2",
 				description: data.description || "",
@@ -44,12 +46,7 @@ export class SchemaManager {
 		};
 
 		SchemaManager.cache.set(name, managed);
-		Logger.info(
-			"SYSTEM",
-			"SCHEMA",
-			"LOADED",
-			`Loaded schema: ${name}`,
-		);
+		Logger.info("SYSTEM", "SCHEMA", "LOADED", `Loaded schema: ${name}`);
 		return managed.schema;
 	}
 
@@ -75,12 +72,7 @@ export class SchemaManager {
 
 		fs.writeJsonSync(filePath, withMetadata, { spaces: 2 });
 		SchemaManager.cache.delete(name); // Invalidate cache
-		Logger.info(
-			"SYSTEM",
-			"SCHEMA",
-			"REGISTERED",
-			`Registered schema: ${name}`,
-		);
+		Logger.info("SYSTEM", "SCHEMA", "REGISTERED", `Registered schema: ${name}`);
 	}
 
 	static validateAgainstSchema(

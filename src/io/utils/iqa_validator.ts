@@ -80,10 +80,10 @@ export class IqaValidator {
 		);
 		const backgroundRisk = this.analyzeBackgroundRisk(bgHex);
 		const textLayout = await analyzeTextLayout(
-		imagePath,
-		charGuardBandPx,
-		this.thresholds,
-	).catch((): undefined => undefined);
+			imagePath,
+			charGuardBandPx,
+			this.thresholds,
+		).catch((): undefined => undefined);
 		const xHeightLegibilityScore = textLayout?.xHeightScore ?? 0;
 		const reasons: string[] = [];
 		if (!isResolutionCorrect)

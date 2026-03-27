@@ -9,7 +9,7 @@ import { ContextPlaybook } from "../domain/ace/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 import { ROOT, loadConfig as baseLoadConfig } from "./base.js";
 import { AgentLogger as Logger } from "./utils/logger.js";
-import { QuotaManager, QuotaExhaustionError } from "./utils/quota_manager.js";
+import { QuotaExhaustionError, QuotaManager } from "./utils/quota_manager.js";
 
 dotenv.config({ path: path.join(ROOT, "config/.env"), override: true });
 
@@ -101,7 +101,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-					.input || "input.yaml"
+						.input || "input.yaml"
 				: type === "output"
 					? this.cfg.workflow.filenames.output
 					: `${stage}_prompt.yaml`;
@@ -117,7 +117,7 @@ export class AssetStore {
 		const f =
 			type === "input"
 				? (this.cfg.workflow.filenames as Record<string, string | undefined>)
-					.input || "input.yaml"
+						.input || "input.yaml"
 				: this.cfg.workflow.filenames.output;
 		const p = path.join(this.runDir, stage, f);
 		fs.ensureDirSync(path.dirname(p));

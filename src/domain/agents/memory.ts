@@ -56,7 +56,8 @@ export class MemoryAgent extends BaseAgent {
 			};
 
 			const allEssences = [...essencesData.essences, newEssence];
-			const cleanedEssences = allEssences.length > 10 ? allEssences.slice(-10) : allEssences;
+			const cleanedEssences =
+				allEssences.length > 10 ? allEssences.slice(-10) : allEssences;
 			const finalEssencesData = {
 				...essencesData,
 				essences: cleanedEssences,

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 
 // Escape function from server.ts
 function escape(text: string): string {
@@ -20,19 +20,21 @@ describe("XSS Protection", () => {
 	it("should escape img tags with onerror", () => {
 		const input = '<img src=x onerror="alert(1)">';
 		const output = escape(input);
-		expect(output).toBe('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
+		expect(output).toBe("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
 	});
 
 	it("should escape svg onload events", () => {
 		const input = '<svg onload="alert(1)">';
 		const output = escape(input);
-		expect(output).toBe('&lt;svg onload=&quot;alert(1)&quot;&gt;');
+		expect(output).toBe("&lt;svg onload=&quot;alert(1)&quot;&gt;");
 	});
 
 	it("should escape onclick handlers", () => {
 		const input = '<span onclick="alert(1)">Hacker</span>';
 		const output = escape(input);
-		expect(output).toBe('&lt;span onclick=&quot;alert(1)&quot;&gt;Hacker&lt;/span&gt;');
+		expect(output).toBe(
+			"&lt;span onclick=&quot;alert(1)&quot;&gt;Hacker&lt;/span&gt;",
+		);
 	});
 
 	it("should escape all special characters", () => {

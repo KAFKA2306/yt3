@@ -10,11 +10,11 @@ import {
 	RunStage,
 	loadConfig,
 } from "../../io/core.js";
-import { TtsOrchestrator } from "../../io/utils/tts_orchestrator.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
+import { TtsOrchestrator } from "../../io/utils/tts_orchestrator.js";
 import { LayoutEngine, type RenderPlan } from "../layout_engine.js";
-import { VideoComposer } from "../media/video_composer.js";
 import { ThumbnailGenerator } from "../media/thumbnail_generator.js";
+import { VideoComposer } from "../media/video_composer.js";
 import type { AppConfig, Script } from "../types.js";
 export interface MediaResult {
 	audio_paths: string[];
@@ -88,10 +88,7 @@ export class VisualDirector extends BaseAgent {
 
 		const thumbnail_path = await this.thumbnailGenerator.generate(
 			title,
-			path.join(
-				this.store.runDir,
-				this.store.cfg.workflow.filenames.thumbnail,
-			),
+			path.join(this.store.runDir, this.store.cfg.workflow.filenames.thumbnail),
 		);
 
 		const video_path = path.join(
@@ -171,9 +168,7 @@ export class VisualDirector extends BaseAgent {
 		return audio_paths;
 	}
 
-	private async getAudioDurations(
-		audioPaths: string[],
-	): Promise<number[]> {
+	private async getAudioDurations(audioPaths: string[]): Promise<number[]> {
 		const durations: number[] = [];
 		for (const audioPath of audioPaths) {
 			const duration = await this.getAudioDuration(audioPath);
@@ -185,9 +180,7 @@ export class VisualDirector extends BaseAgent {
 	private getAudioDuration(audioPath: string): Promise<number> {
 		return new Promise((resolve, reject) =>
 			ffmpeg.ffprobe(audioPath, (err, metadata) =>
-				err
-					? reject(err)
-					: resolve(metadata?.format?.duration || 0),
+				err ? reject(err) : resolve(metadata?.format?.duration || 0),
 			),
 		);
 	}
@@ -197,11 +190,7 @@ export class VisualDirector extends BaseAgent {
 		durations: number[],
 		videoPlan: RenderPlan,
 	): Promise<string> {
-		const assContent = this.layout.generateASS(
-			script,
-			durations,
-			videoPlan,
-		);
+		const assContent = this.layout.generateASS(script, durations, videoPlan);
 		const subtitlePath = path.join(
 			this.store.runDir,
 			this.store.cfg.workflow.filenames.subtitles,
