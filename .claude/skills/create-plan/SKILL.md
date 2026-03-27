@@ -1,6 +1,6 @@
 ---
 name: create-plan
-description: Use when solution space exploration is complete and you're ready to create an implementation plan. Enforces "simple over easy" - the fundamentally right solution, not the path of least resistance. Triggers after /design-solution, when a solution has been chosen, or when asked to "make a plan" or "create a plan".
+description: Use when solution space exploration is complete and you're ready to create an implementation plan. Enforces "simple over easy" - the fundamentally right solution, not the path of least resistance. Triggers on "make a plan", "create a plan", "implement this", or after /design-solution when ready to start implementation.
 type: skill
 ---
 
