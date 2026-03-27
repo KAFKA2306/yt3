@@ -44,6 +44,14 @@ tasks:
     desc: "Generate full executive report (Macro, Fundamental, Risk, Event, Whale)"
     cmds: ["bun --env-file=config/.env src/report_workflow.ts {{.CLI_ARGS}}"]
 
+  notebooklm:
+    desc: "Run NotebookLM workflow: create, generate, download, and publish"
+    cmds: ["bun --env-file=config/.env src/notebooklm_workflow.ts {{.CLI_ARGS}}"]
+
+  publish:nlm:
+    desc: "Batch publish existing videos in runs-nlm/ to YouTube"
+    cmds: ["bun --env-file=config/.env src/scripts/post_nlm_videos.ts"]
+
   # ============================================================================
   # INFRASTRUCTURE
   # ============================================================================
