@@ -3,6 +3,7 @@ tools = ["claude", "antigravity"]
 dependencies = [
     {handle = "kasperjunge/skills/research-codebase", type = "skill"},
     {handle = "kasperjunge/skills/design-solution", type = "skill"},
+    {handle = "kasperjunge/skills/create-plan", type = "skill"},
     {handle = "harness-maintenance", type = "skill"},
 ]
 

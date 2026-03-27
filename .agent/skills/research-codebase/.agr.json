@@ -1,8 +1,0 @@
-{
-	"id": "remote:github:kasperjunge/skills/research-codebase",
-	"tool": "claude",
-	"installed_name": "research-codebase",
-	"type": "remote",
-	"handle": "kasperjunge/skills/research-codebase",
-	"source": "github"
-}

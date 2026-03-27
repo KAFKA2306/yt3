@@ -1,3 +1,8 @@
+---
+name: polymarket-quant
+description: Quant-grade automated trading pipeline for Prediction Markets (Polymarket). Use when evaluating trading strategies, scanning markets for edges, or executing automated trades. Triggers on "polymarket trade", "start quant bot", "scan prediction markets", "evaluate event probability", or "check betting edge".
+---
+
 # Polymarket Quant Trading Bot Skill (2026 Protocol)
 
 Quant-grade automated trading pipeline for Prediction Markets (Polymarket). This skill implements a sequential 6-step agent swarm controlled by deterministic risk logic and Bayesian probability updating.

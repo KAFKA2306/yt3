@@ -154,6 +154,11 @@ providers:
     start_hour: 7
     user: "kafka"
 
+logging:
+  level: "INFO"
+  format: "json"
+  activity_log_file: "logs/agent_activity.jsonl"
+
 news_bot:
   token_env: "DISCORD_TOKEN"
   command_name: "news"
@@ -177,6 +182,13 @@ automation:
   schedules:
     - {name: "workflow_daily_0700_systemd", command: ["# Managed by systemd timer"], cron: "0 7 * * *"}
     - {name: "trend_workflow_hourly", command: ["npx", "tsx", "src/index.ts"], args: ["--trend-mode"], cron: "0 * * * *"}
+
+agents:
+  notebooklm:
+    enabled: true
+    video_style: "whiteboard"
+    output_dir: "runs/notebooklm"
+    temperature: 0.1
 
 mcp:
   servers:

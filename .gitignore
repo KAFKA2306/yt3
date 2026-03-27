@@ -34,3 +34,8 @@ aim/
 copcon/context.md
 data/state/
 *.pickle
+
+# Experiment & Temporary
+sandbox/
+temp/
+*.generated

@@ -52,7 +52,32 @@ notify_critical() {
 }
 
 notify_failure() {
-  local msg="❌ **YT3 Automation ALERT**: Workflow failed with exit code $1 after ${2}s. Check logs/latest.log for details."
+  local exit_code=$1
+  local duration=$2
+  local error_type="Unknown Error"
+  
+  # Detect specific error patterns in the log
+  if grep -qiE "Permission denied|EACCES|operation not permitted" "${log_file}"; then
+    error_type="🚨 PERMISSION_ERROR (Root Escalation Issue)"
+  elif grep -qiE "SyntaxError: JSON Parse error|JSON\.parse" "${log_file}"; then
+    error_type="🧠 LLM_PARSE_ERROR (Logic/Formatting Issue)"
+  fi
+
+  local msg="❌ **YT3 Automation ALERT**: Workflow failed (${error_type}) with exit code ${exit_code} after ${duration}s.\nCheck logs/latest.log for details."
+  
+  # If it's a target error, invoke Gemini CLI autonomously
+  if [[ "${error_type}" != "Unknown Error" ]]; then
+    msg="${msg}\n\n🤖 **Auto-Healing Initiated**: Invoking Gemini CLI to investigate and patch the root cause autonomously."
+    
+    # Run in background to avoid blocking the workflow exit
+    (
+      cd "${repo_dir}"
+      export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+      echo "[$(timestamp)] --- Auto-Healing Triggered for ${error_type} ---" >> logs/healing.log
+      gemini "FATAL ERROR: ${error_type}. Read logs/latest.log. Autonomously fix the code or system configuration causing this. You are running in a headless auto-healing context. Do not ask questions. Implement the fix, verify it, and exit." >> logs/healing.log 2>&1
+    ) &
+  fi
+
   printf '[%s] ERROR %s\n' "$(timestamp)" "${msg}"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
     curl -s -H "Content-Type: application/json" -d "{\"content\": \"${msg}\"}" "${DISCORD_WEBHOOK_URL}" > /dev/null || true
@@ -92,15 +117,15 @@ ensure_voicevox_running() {
   if ! check_voicevox; then
     printf '[%s] ERROR Voicevox is not responding. Starting Voicevox...\n' "$(timestamp)"
     # Try to start it using the task up command (Removing silent mode to log errors)
-    (cd "${repo_dir}" && /root/.local/bin/task up)
+    (cd "${repo_dir}" && docker rm -f voicevox-nemo || true && docker run -d --name voicevox-nemo --restart unless-stopped -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest && systemctl --user start yt3-aim.service && systemctl --user start yt3-discord.service)
     
     # Log docker state for debugging
     printf '[%s] INFO  Current Docker state for Voicevox:\n' "$(timestamp)"
     docker ps -a --filter name=voicevox-nemo --format "table {{.Names}}\t{{.Status}}\t{{.ID}}" || true
 
-    # Wait for it to become ready (up to 30s)
-    for i in {1..6}; do
-      printf '[%s] INFO  Waiting for Voicevox (attempt %s/6)...\n' "$(timestamp)" "$i"
+    # Wait for it to become ready (up to 60s)
+    for i in {1..12}; do
+      printf '[%s] INFO  Waiting for Voicevox (attempt %s/12)...\n' "$(timestamp)" "$i"
       sleep 5
       if check_voicevox; then
         printf '[%s] INFO  Voicevox is now ready.\n' "$(timestamp)"
@@ -108,7 +133,16 @@ ensure_voicevox_running() {
       fi
     done
 
-    notify_critical "🚨 **YT3 Automation FATAL**: Voicevox failed to respond after attempted start. Aborting."
+    notify_critical "🚨 **YT3 Automation FATAL**: Voicevox failed to respond after attempted start. Invoking Auto-Healing..."
+    
+    # Trigger Gemini CLI to fix Voicevox environment autonomously
+    (
+      cd "${repo_dir}"
+      export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+      echo "[$(timestamp)] --- Auto-Healing Triggered for VOICEVOX_STARTUP_FAILURE ---" >> logs/healing.log
+      gemini "FATAL ERROR: Voicevox is not responding. Check docker containers, ports (50121), and system resources. Autonomously fix the issue (e.g., restart docker, kill blocking processes, or recreate container) and ensure it is UP and responding to /version. Then exit." >> logs/healing.log 2>&1
+    ) &
+    
     return 1
   fi
   return 0

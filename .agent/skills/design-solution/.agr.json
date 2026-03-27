@@ -1,8 +1,0 @@
-{
-	"id": "remote:github:kasperjunge/skills/design-solution",
-	"tool": "claude",
-	"installed_name": "design-solution",
-	"type": "remote",
-	"handle": "kasperjunge/skills/design-solution",
-	"source": "github"
-}

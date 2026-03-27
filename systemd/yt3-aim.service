@@ -5,9 +5,11 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
-ExecStart=aim up --host 127.0.0.1 --port 43800
-Restart=on-failure
-RestartSec=5
+ExecStart=/usr/local/bin/aim up --host 127.0.0.1 --port 43800
+Restart=always
+RestartSec=10
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/kafka
 
 [Install]
 WantedBy=default.target

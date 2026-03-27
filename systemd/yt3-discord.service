@@ -6,9 +6,9 @@ After=network.target
 Type=simple
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
 ExecStart=/usr/local/bin/bun src/agents/standalone/discord_bot.ts
-Restart=on-failure
-RestartSec=5
-Environment=PATH=/home/kafka/.bun/bin:/usr/local/bin:/usr/bin:/bin
+Restart=always
+RestartSec=10
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
 
 [Install]

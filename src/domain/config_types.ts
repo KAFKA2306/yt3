@@ -222,6 +222,14 @@ export interface AppConfig {
 		services: Array<{ name: string; command: string[] }>;
 		schedules: Array<{ name: string; command: string[]; cron: string }>;
 	};
+	agents?: {
+		notebooklm?: {
+			enabled: boolean;
+			video_style: string;
+			output_dir: string;
+			temperature: number;
+		};
+	};
 	mcp: McpConfig;
 	design_tokens: DesignTokens;
 	news_bot?: {

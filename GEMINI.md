@@ -25,10 +25,18 @@ Always consider proper directory structure. Disorganized layout makes code hard 
 - config/default.yaml is the SINGLE source of configuration. No hardcoded values, no scattered config files. One config file means one place to look, one place to change.
 - Agent skills are managed via `agr` (agent-resources). Use `agr add` to install, `agr.toml` to track dependencies, and `agr sync` to reproduce environments. Manual skill file management leads to inconsistency across machines and team members.
 
+# System Integrity & Infrastructure
+- **Protected Files**: Do not modify `biome.json`, `Taskfile.yml`, `.gitignore`, `.claude/settings.json`, or `package.json` unless explicitly directed. These are the project's foundational infrastructure. Fix the implementation logic, not the build/config binary, whenever possible.
+- **Workflow Integrity**: Run `task lint` after every TypeScript modification to ensure structural integrity. Do not commit or push if linting fails.
+
 # Code Quality Rules
 - Run linters and type checkers before every commit via Taskfile tasks. **TS/Bun**: `tsc --noEmit` + `eslint src`. **Python**: `ruff check` + `ruff format` + `uv run ty check`. Automated checks catch style drift and type errors before review.
 - Use schema-validated models for ALL data structures. **TS/Bun**: Use Zod. No plain objects or `any`. **Python**: Use Pydantic. No dataclasses or plain dicts. Validation at the boundary makes schemas explicit and failures loud.
 - Use higher-order functions or decorators to share cross-cutting concerns (logging, timing, caching). Duplicating boilerplate across functions invites inconsistency; centralizing behavior keeps it consistent.
+
+# Frontend Rules
+- Keep it simple HTML. No frameworks unless explicitly required. Plain HTML is fast to write, easy to debug, and has zero build overhead.
+- Serve and develop via `task dev`. Frontend dev workflow MUST go through Taskfile like everything else. Separate dev commands fragment knowledge and break onboarding.
 
 # Core Realignment Mandates (March 2026)
 - **Daily Pulse Sovereignty**: All research must start with a "Blank Slate" observation of raw news data. The "Daily Pulse" is the sole and primary source of all video topics.

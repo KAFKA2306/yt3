@@ -215,50 +215,78 @@ export abstract class BaseAgent {
 }
 function cleanCodeBlock(text: string): string {
 	const stripped = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-	const match = stripped.match(/([{[][\s\S]*[}\]])/);
-	return match ? (match[1] || match[0]).trim() : stripped;
+
+	const firstBrace = stripped.indexOf("{");
+	const firstBracket = stripped.indexOf("[");
+	let start = -1;
+	if (firstBrace !== -1 && firstBracket !== -1) {
+		start = Math.min(firstBrace, firstBracket);
+	} else if (firstBrace !== -1) {
+		start = firstBrace;
+	} else if (firstBracket !== -1) {
+		start = firstBracket;
+	}
+
+	if (start !== -1) {
+		return stripped.slice(start).trim();
+	}
+
+	return stripped;
 }
 
 function repairJson(text: string): string {
 	let cleaned = cleanCodeBlock(text);
 
+	if (!cleaned.startsWith("{") && !cleaned.startsWith("[")) {
+		return cleaned;
+	}
+
 	let inString = false;
 	let escaped = false;
-	for (let i = 0; i < cleaned.length; i++) {
-		const char = cleaned[i];
-		if (char === '"' && !escaped) inString = !inString;
-		escaped = char === "\\" && !escaped;
-	}
-	if (inString) cleaned += '"';
-
+	let lastValidIndex = -1;
 	const stack: string[] = [];
-	inString = false;
-	escaped = false;
+
 	for (let i = 0; i < cleaned.length; i++) {
 		const char = cleaned[i];
 		if (char === '"' && !escaped) {
 			inString = !inString;
-			continue;
 		}
-		if (inString) {
-			escaped = char === "\\" && !escaped;
-			continue;
-		}
+		escaped = char === "\\" && !escaped;
 
-		if (char === "{") stack.push("}");
-		else if (char === "[") stack.push("]");
-		else if (char === "}" || char === "]") {
-			if (stack.length > 0 && stack[stack.length - 1] === char) {
-				stack.pop();
+		if (!inString) {
+			if (char === "{") stack.push("}");
+			else if (char === "[") stack.push("]");
+			else if (char === "}" || char === "]") {
+				if (stack.length > 0 && stack[stack.length - 1] === char) {
+					stack.pop();
+					if (stack.length === 0) lastValidIndex = i;
+				}
 			}
 		}
 	}
+
+	// 1. If we found a complete structure followed by garbage, trim it EARLY
+	if (lastValidIndex !== -1 && lastValidIndex < cleaned.length - 1) {
+		const remainder = cleaned.slice(lastValidIndex + 1).trim();
+		if (
+			remainder.length > 0 &&
+			!remainder.startsWith(",") &&
+			!remainder.startsWith(":")
+		) {
+			cleaned = cleaned.slice(0, lastValidIndex + 1);
+		}
+	}
+
+	// 2. Handle truncated content
+	if (inString) cleaned += '"';
 
 	while (stack.length > 0) {
 		cleaned += stack.pop();
 	}
 
-	cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*\]/g, "]");
+	// 3. Remove any trailing non-JSON characters (especially commas before closers)
+	// This must happen AFTER we've closed everything or we might miss commas that became trailing
+	cleaned = cleaned.replace(/,\s*([}\]])/g, "$1");
 
 	return cleaned;
 }

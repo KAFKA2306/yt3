@@ -156,6 +156,20 @@ export const StrategicInsightSchema = z.object({
 });
 export type StrategicAnalysis = z.infer<typeof StrategicInsightSchema>;
 
+export const NotebookVideoSchema = z.object({
+	notebook_id: z.string(),
+	notebook_title: z.string(),
+	video_path: z.string(),
+	generated_at: z.string(),
+});
+export type NotebookVideo = z.infer<typeof NotebookVideoSchema>;
+
+export const NotebookLMResultSchema = z.object({
+	videos: z.array(NotebookVideoSchema),
+	total_generated: z.number(),
+});
+export type NotebookLMResult = z.infer<typeof NotebookLMResultSchema>;
+
 export const AgentStateSchema = z.object({
 	run_id: z.string(),
 	bucket: z.string(),
@@ -172,5 +186,6 @@ export const AgentStateSchema = z.object({
 	memory_context: z.string().optional(),
 	mission_file: z.string().optional(),
 	strategic_insight: StrategicInsightSchema.optional(),
+	notebook_videos: NotebookLMResultSchema.optional(),
 });
 export type AgentState = z.infer<typeof AgentStateSchema>;

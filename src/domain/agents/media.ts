@@ -82,15 +82,38 @@ export class VisualDirector extends BaseAgent {
 				`[${i + 1}/${script.lines.length}] ${l.speaker}: ${cleanText.slice(0, 30)}...`,
 			);
 
-			const q = await axios.post(`${this.ttsUrl}/audio_query`, null, {
-				params: { text: cleanText, speaker: speakerId },
-			});
-			const s = await axios.post(`${this.ttsUrl}/synthesis`, q.data, {
-				params: { speaker: speakerId },
-				responseType: "arraybuffer",
-			});
+			let retryCount = 0;
+			const maxRetries = 3;
+			let success = false;
 
-			fs.writeFileSync(p, Buffer.from(s.data));
+			while (retryCount < maxRetries && !success) {
+				try {
+					const q = await axios.post(`${this.ttsUrl}/audio_query`, null, {
+						params: { text: cleanText, speaker: speakerId },
+						headers: { Connection: "close" },
+						timeout: 30000,
+					});
+					const s = await axios.post(`${this.ttsUrl}/synthesis`, q.data, {
+						params: { speaker: speakerId },
+						responseType: "arraybuffer",
+						headers: { Connection: "close" },
+						timeout: 120000, // Synthesis can be slow on CPU
+					});
+
+					fs.writeFileSync(p, Buffer.from(s.data));
+					success = true;
+				} catch (e) {
+					retryCount++;
+					AgentLogger.warn(
+						this.name,
+						"TTS",
+						"RETRY",
+						`Attempt ${retryCount} failed for ${l.speaker}: ${e}. Retrying in 5s...`,
+					);
+					if (retryCount >= maxRetries) throw e;
+					await new Promise((res) => setTimeout(res, 5000));
+				}
+			}
 			audio_paths.push(p);
 		}
 		const fullAudio = path.join(

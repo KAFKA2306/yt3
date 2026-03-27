@@ -3,12 +3,14 @@ import { ScriptSmith } from "./domain/agents/content.js";
 import { MacroRegimeAnalystAgent } from "./domain/agents/macro_regime_analyst_agent.js";
 import { VisualDirector } from "./domain/agents/media.js";
 import { MemoryAgent } from "./domain/agents/memory.js";
+import { NotebookLMAgent } from "./domain/agents/notebooklm.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
 import type {
 	AgentState,
 	DirectorData,
 	Metadata,
+	NotebookLMResult,
 	PublishResults,
 	Script,
 	StrategicAnalysis,
@@ -56,12 +58,16 @@ export function createGraph(store: AssetStore) {
 		strategic_insight: { reducer, default: () => undefined } as ChannelReducer<
 			StrategicAnalysis | undefined
 		>,
+		notebook_videos: { reducer, default: () => undefined } as ChannelReducer<
+			NotebookLMResult | undefined
+		>,
 	};
 	const research = new TrendScout(store);
 	const strategy = new MacroRegimeAnalystAgent(store);
 	const content = new ScriptSmith(store);
 	const media = new VisualDirector(store);
 	const publish = new PublishAgent(store);
+	const notebooklm = new NotebookLMAgent(store);
 	const memory = new MemoryAgent(store);
 	const workflow = new StateGraph<AgentState>({ channels });
 	workflow.addNode("research", async (state: AgentState) => {
@@ -137,10 +143,23 @@ export function createGraph(store: AssetStore) {
 		const res = await publish.run(state);
 		return { publish_results: res, status: "published" };
 	});
-	workflow.addNode("memory", async (state: AgentState) => {
+	workflow.addNode("notebooklm", async (state: AgentState) => {
 		AgentLogger.transition(
 			"SYSTEM",
 			"PUBLISH",
+			"NOTEBOOKLM",
+			"Generating NotebookLM videos",
+		);
+		// Extract notebook IDs from config or state; default to empty array
+		const notebookIds: string[] = [];
+		const videoStyle = cfg.agents?.notebooklm?.video_style || "whiteboard";
+		const res = await notebooklm.run(notebookIds, videoStyle);
+		return { notebook_videos: res };
+	});
+	workflow.addNode("memory", async (state: AgentState) => {
+		AgentLogger.transition(
+			"SYSTEM",
+			"NOTEBOOKLM",
 			"MEMORY",
 			"Updating memory with run results",
 		);
@@ -154,7 +173,8 @@ export function createGraph(store: AssetStore) {
 	graph.addEdge("strategy", "content");
 	graph.addEdge("content", "media");
 	graph.addEdge("media", "publish");
-	graph.addEdge("publish", "memory");
+	graph.addEdge("publish", "notebooklm");
+	graph.addEdge("notebooklm", "memory");
 	graph.addEdge("memory", END);
 	return workflow.compile();
 }
