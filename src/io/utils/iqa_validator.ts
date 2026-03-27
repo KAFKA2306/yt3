@@ -25,6 +25,7 @@ export class IqaValidator {
 			contrast_min: t.contrast_min ?? 5.0,
 			mobile_edge_min: t.mobile_edge_min ?? 18,
 			cognitive_min: t.cognitive_min ?? 0.6,
+			corner_size: t.corner_size ?? 40,
 		};
 	}
 	analyzeBackgroundRisk(bgHex: string): BackgroundRisk {

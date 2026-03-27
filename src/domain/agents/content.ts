@@ -76,7 +76,7 @@ export class ScriptSmith extends BaseAgent {
 		);
 
 		// 2. Generate Segments
-		const allLines: ScriptLine[] = [];
+		let allLines: ScriptLine[] = [];
 		for (const section of outline.sections) {
 			const segmentLines = await this.generateSegment(
 				director.angle,
@@ -84,7 +84,7 @@ export class ScriptSmith extends BaseAgent {
 				allLines.slice(-10), // Context for flow
 				fullContext,
 			);
-			allLines.push(...segmentLines);
+			allLines = [...allLines, ...segmentLines];
 		}
 
 		// 3. Generate Metadata

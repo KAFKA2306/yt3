@@ -130,6 +130,7 @@ export interface AppConfig {
 				contrast_min: number;
 				mobile_edge_min: number;
 				cognitive_min: number;
+				corner_size?: number;
 			};
 		};
 		video: {
@@ -209,6 +210,9 @@ export interface AppConfig {
 			start_hour: number;
 			user: string;
 		};
+	};
+	dashboard?: {
+		port: number;
 	};
 	logging: {
 		level: string;
