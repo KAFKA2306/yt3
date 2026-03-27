@@ -42,6 +42,7 @@ export class VideoComposer {
 
 		return new Promise((resolve, reject) => {
 			const bgColor = this.config.background_color ?? "#000000";
+			const codec = this.config.codec ?? "libx264";
 			const cmd = ffmpeg()
 				.input(`color=c=${bgColor}:s=${width}x${height}:r=${this.config.fps}`)
 				.inputFormat("lavfi")
@@ -69,7 +70,7 @@ export class VideoComposer {
 					"1:a",
 					"-shortest",
 					"-c:v",
-					this.config.codec,
+					codec,
 					"-pix_fmt",
 					"yuv420p",
 				])

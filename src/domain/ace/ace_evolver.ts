@@ -19,15 +19,14 @@ export class AceEvolver {
 			`Evolving playbook with ${signals.length} signals`,
 		);
 
-		let updatedBullets = [...currentPlaybook.bullets];
+		const updatedBulletMap = new Map(
+			currentPlaybook.bullets.map((b) => [b.id, b])
+		);
 
 		for (const signal of signals) {
-			const bulletIndex = updatedBullets.findIndex(
-				(b) => b.id === signal.bullet_id,
-			);
+			let bullet = updatedBulletMap.get(signal.bullet_id);
 			
-			let bullet: AceBullet;
-			if (bulletIndex === -1) {
+			if (!bullet) {
 				// Auto-create new bullet for discovered strategic signals
 				bullet = {
 					id: signal.bullet_id,
@@ -40,15 +39,12 @@ export class AceEvolver {
 					alpha: 1.0,
 					beta: 1.0,
 				};
-				updatedBullets = [...updatedBullets, bullet];
 				Logger.info(
 					"AceEvolver",
 					"EVOLVE",
 					"NEW_BULLET",
 					`Registered new strategic target: ${bullet.id}`,
 				);
-			} else {
-				bullet = updatedBullets[bulletIndex];
 			}
 
 			// Bayesian Update (Beta Distribution)
@@ -62,7 +58,7 @@ export class AceEvolver {
 			};
 			updatedBullet.confidence = updatedBullet.alpha / (updatedBullet.alpha + updatedBullet.beta);
 
-			updatedBullets[bulletIndex === -1 ? updatedBullets.length - 1 : bulletIndex] = updatedBullet;
+			updatedBulletMap.set(signal.bullet_id, updatedBullet);
 
 			Logger.info(
 				"AceEvolver",
@@ -72,15 +68,16 @@ export class AceEvolver {
 			);
 		}
 
-		const prunedBullets = updatedBullets.filter(
+		const allBullets = Array.from(updatedBulletMap.values());
+		const prunedBullets = allBullets.filter(
 			(b) => b.runs < 5 || b.confidence > 0.2,
 		);
-		if (prunedBullets.length < updatedBullets.length) {
+		if (prunedBullets.length < allBullets.length) {
 			Logger.info(
 				"AceEvolver",
 				"EVOLVE",
 				"PRUNE",
-				`Pruned ${updatedBullets.length - prunedBullets.length} low-performing bullets`,
+				`Pruned ${allBullets.length - prunedBullets.length} low-performing bullets`,
 			);
 		}
 		

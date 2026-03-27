@@ -29,9 +29,10 @@ type: project
    - Immutability & Functional Purity
    - Commit: e1128cc
 
-2. [ ] config/default.yaml からハードコード値排除（見積: 2日）
-   - 現状: config は一元化済み
-   - 検査対象: src/ 全体でのハードコード定数
+2. [x] config/default.yaml からハードコード値排除（完了）
+   - PORT: 3000 → config.dashboard.port
+   - CORNER: 40 → config.steps.thumbnail.iqa_thresholds.corner_size
+   - Commit: bb84248
 
 3. [ ] Zod スキーマによる API レスポンス検証（見積: 3日）
    - 現状: IqaResultSchema はすでに実装
