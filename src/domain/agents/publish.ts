@@ -16,13 +16,7 @@ export class PublishAgent extends BaseAgent {
 			twitter: !!this.config.steps.twitter?.enabled,
 		};
 		if (enabledProviders.youtube || enabledProviders.twitter) {
-			try {
-				validateCredentials(enabledProviders);
-			} catch (error) {
-				throw new Error(
-					"Failed to initialize publish agent: required credentials are not configured",
-				);
-			}
+			validateCredentials(enabledProviders);
 		}
 	}
 	async run(state: AgentState): Promise<PublishResults> {
