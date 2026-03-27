@@ -5,6 +5,7 @@ export interface IqaThresholds {
 	contrast_min: number;
 	mobile_edge_min: number;
 	cognitive_min: number;
+	corner_size: number;
 }
 export type BackgroundRisk = "low" | "medium" | "high";
 export interface TextLayoutAnalysis {
@@ -116,6 +117,7 @@ export async function calculateXHeightScore(
 export async function analyzeTextLayout(
 	imagePath: string,
 	charGuardBandPx = 850,
+	thresholds?: IqaThresholds,
 ): Promise<TextLayoutAnalysis> {
 	const xHeightScore = await calculateXHeightScore(imagePath);
 	const { data, info } = await sharp(imagePath)
@@ -123,7 +125,7 @@ export async function analyzeTextLayout(
 		.toBuffer({ resolveWithObject: true });
 	const { width, height, channels } = info;
 	const ch = channels || 3;
-	const CORNER = 40;
+	const CORNER = thresholds?.corner_size ?? 40;
 	let bgR = 0;
 	let bgG = 0;
 	let bgB = 0;

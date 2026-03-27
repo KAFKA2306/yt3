@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, mock, spyOn } from "bun:test";
 import { NotebookLMAgent, type NotebookLMResult } from "../../src/domain/agents/notebooklm";
 import type { AssetStore } from "../../src/io/core";
-import * as fs from "fs-extra";
+import fs from "fs-extra";
 import * as childProcess from "node:child_process";
 
 // Track mocked command calls
@@ -151,11 +151,10 @@ describe("NotebookLMAgent", () => {
 		const store = createMockStore();
 		const agent = new NotebookLMAgent(store);
 		
-		let error: Error | null = null;
 		try {
 			await agent.run(["abc123", "def456"]);
-		} catch (e) {
-			error = e as Error;
+		} catch {
+			// Expected to fail on fs check, but verify commands were executed
 		}
 
 		// Should have at least list, use, generate, and download commands
@@ -163,13 +162,6 @@ describe("NotebookLMAgent", () => {
 		const useCalls = execSyncCalls.filter(c => c.includes("use"));
 		const generateCalls = execSyncCalls.filter(c => c.includes("generate video"));
 		const downloadCalls = execSyncCalls.filter(c => c.includes("download video"));
-
-		console.log("execSyncCalls:", execSyncCalls);
-		console.log("Error:", error?.message);
-		console.log("listCalls:", listCalls.length);
-		console.log("useCalls:", useCalls.length, useCalls);
-		console.log("generateCalls:", generateCalls.length);
-		console.log("downloadCalls:", downloadCalls.length);
 
 		// Should call list once (it caches the result)
 		expect(listCalls.length).toBe(1);

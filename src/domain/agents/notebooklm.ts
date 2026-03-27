@@ -25,7 +25,7 @@ export interface NotebookLMResult {
 
 export class NotebookLMAgent extends BaseAgent {
 	override config: AppConfig;
-	private notebookCache: { id: string; title: string | null }[] | null = null;
+	private notebookCache: Array<{ id: string; title?: string }> | null = null;
 
 	constructor(store: AssetStore) {
 		const cfg = loadConfig();
@@ -133,13 +133,16 @@ export class NotebookLMAgent extends BaseAgent {
 			const output = execSync("notebooklm list --json", {
 				encoding: "utf-8",
 			});
-			this.notebookCache = JSON.parse(output);
+			const parsed = JSON.parse(output) as Array<{
+				id: string;
+				title?: string;
+			}>;
+			this.notebookCache = parsed;
 		}
 
 		// Find notebook by ID (full or partial match)
-		const notebook = this.notebookCache.find(
-			(nb: { id: string; title?: string }) =>
-				nb.id === notebookId || nb.id.startsWith(notebookId),
+		const notebook = this.notebookCache?.find(
+			(nb) => nb.id === notebookId || nb.id.startsWith(notebookId),
 		);
 
 		if (notebook) {

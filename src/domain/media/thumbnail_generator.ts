@@ -67,12 +67,8 @@ export class ThumbnailGenerator {
 
 		const validation = await this.validator.validate(
 			outputPath,
-			(palette as Record<string, string>).text ||
-				(palette as Record<string, string>).title_color ||
-				"#FFFFFF",
-			(palette as Record<string, string>).background ||
-				(palette as Record<string, string>).background_color ||
-				"#000000",
+			palette.title_color || "#FFFFFF",
+			palette.background_color || "#000000",
 			title,
 			this.config.right_guard_band_px ?? 850,
 		);

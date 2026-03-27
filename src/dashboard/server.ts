@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import path from "node:path";
 import express from "express";
 import fs from "fs-extra";
 import yaml from "js-yaml";
@@ -18,7 +19,8 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "../../");
 const RUNS_DIR = path.join(ROOT_DIR, "runs");
 const app = express();
-const PORT = 3000;
+const cfg = loadConfig();
+const PORT = cfg.dashboard.port;
 
 function escape(text: string): string {
 	return text

@@ -81,6 +81,7 @@ export class IqaValidator {
 		const textLayout = await analyzeTextLayout(
 		imagePath,
 		charGuardBandPx,
+		this.thresholds,
 	).catch((): undefined => undefined);
 		const xHeightLegibilityScore = textLayout?.xHeightScore ?? 0;
 		const reasons: string[] = [];
