@@ -53,7 +53,15 @@ export class VisualDirector extends BaseAgent {
 			},
 		});
 
-		this.videoComposer = new VideoComposer(cfg.steps.video);
+		this.videoComposer = new VideoComposer({
+			resolution: cfg.steps.video.resolution,
+			fps: cfg.steps.video.fps,
+			codec: cfg.steps.video.codec,
+			background_color: cfg.steps.video.background_color,
+			intro_seconds: cfg.steps.video.intro_seconds,
+			thumbnail_overlay: cfg.steps.video.thumbnail_overlay,
+			subtitles: cfg.steps.video.subtitles,
+		});
 
 		this.thumbnailGenerator = new ThumbnailGenerator({
 			layout: this.layout,

@@ -116,12 +116,12 @@ Include 'soft-metric-repetition' and 'soft-metric-sensationalism' if metrics are
 			if (text.includes(" ")) return text.split(" ");
 			// Character-level n-grams (bigram) for better Japanese comparison
 			const chars = text.split("");
-			const biGrams = [];
+			let biGrams: string[] = [];
 			for (let i = 0; i < chars.length - 1; i++) {
 				const c1 = chars[i];
 				const c2 = chars[i + 1];
 				if (c1 !== undefined && c2 !== undefined) {
-					biGrams.push(c1 + c2);
+					biGrams = [...biGrams, c1 + c2];
 				}
 			}
 			return biGrams.length > 0 ? biGrams : chars;

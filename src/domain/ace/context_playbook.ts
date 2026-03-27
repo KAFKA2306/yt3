@@ -35,19 +35,31 @@ export class ContextPlaybook {
 			(b) => b.content.toLowerCase() === bullet.content.toLowerCase(),
 		);
 		if (!exists) {
-			playbook.bullets.push(bullet);
-			this.save(playbook);
+			const updatedPlaybook = {
+				...playbook,
+				bullets: [...playbook.bullets, bullet],
+			};
+			this.save(updatedPlaybook);
 		}
 	}
 	updateBullet(bulletId: string, updates: Partial<AceBullet>) {
 		const playbook = this.load();
 		const index = playbook.bullets.findIndex((b) => b.id === bulletId);
 		if (index !== -1) {
-			playbook.bullets[index] = {
+			const updatedBullet = {
 				...playbook.bullets[index],
 				...updates,
 			} as AceBullet;
-			this.save(playbook);
+			const updatedBullets = [
+				...playbook.bullets.slice(0, index),
+				updatedBullet,
+				...playbook.bullets.slice(index + 1),
+			];
+			const updatedPlaybook = {
+				...playbook,
+				bullets: updatedBullets,
+			};
+			this.save(updatedPlaybook);
 		}
 	}
 }

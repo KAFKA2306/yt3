@@ -7,9 +7,9 @@ import type { RenderPlan } from "../layout_engine.js";
 export interface VideoCompositionConfig {
 	resolution: string;
 	fps: number;
-	codec: string;
-	background_color: string;
-	intro_seconds: number;
+	codec?: string;
+	background_color?: string;
+	intro_seconds?: number;
 	subtitles?: {
 		font_path?: string;
 	};
@@ -41,8 +41,9 @@ export class VideoComposer {
 		);
 
 		return new Promise((resolve, reject) => {
+			const bgColor = this.config.background_color ?? "#000000";
 			const cmd = ffmpeg()
-				.input(`color=c=${this.config.background_color}:s=${width}x${height}:r=${this.config.fps}`)
+				.input(`color=c=${bgColor}:s=${width}x${height}:r=${this.config.fps}`)
 				.inputFormat("lavfi")
 				.input(audioPath);
 

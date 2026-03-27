@@ -53,7 +53,7 @@ export class LayoutEngine {
 		canvasSize: Size,
 		calcSubtitles: boolean,
 	): Promise<RenderPlan> {
-		const overlays = [];
+		const overlays: Array<{ config: OverlayConfig; resolvedPath: string; bounds: Bounds }> = [];
 		for (const e of items || []) {
 			if ((e.type && e.type !== "overlay") || !e.enabled || !e.image_path)
 				continue;

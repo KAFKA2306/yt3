@@ -48,21 +48,22 @@ export class MemoryAgent extends BaseAgent {
 				? fs.readJsonSync(essenceFile)
 				: { essences: [] };
 
-			essencesData.essences.push({
+			const newEssence = {
 				run_id: state.run_id,
 				topic: state.metadata?.title || state.script?.title || "Unknown",
 				timestamp: new Date().toISOString(),
 				...essence,
-			});
+			};
+
+			const allEssences = [...essencesData.essences, newEssence];
+			const cleanedEssences = allEssences.length > 10 ? allEssences.slice(-10) : allEssences;
+			const finalEssencesData = {
+				...essencesData,
+				essences: cleanedEssences,
+			};
 
 			fs.ensureDirSync(essenceDir);
-			fs.writeJsonSync(essenceFile, essencesData, { spaces: 2 });
-
-			// Cleanup: keep only latest 10 essences
-			if (essencesData.essences.length > 10) {
-				essencesData.essences = essencesData.essences.slice(-10);
-				fs.writeJsonSync(essenceFile, essencesData, { spaces: 2 });
-			}
+			fs.writeJsonSync(essenceFile, finalEssencesData, { spaces: 2 });
 
 			this.logOutput({
 				status: "updated",

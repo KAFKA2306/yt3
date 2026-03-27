@@ -41,7 +41,7 @@ export class NotebookLMAgent extends BaseAgent {
 	): Promise<NotebookLMResult> {
 		this.logInput({ notebooks: notebook_ids.length, style: videoStyle });
 
-		const videos: NotebookVideo[] = [];
+		let videos: NotebookVideo[] = [];
 
 		for (const notebookId of notebook_ids) {
 			AgentLogger.info(
@@ -84,12 +84,15 @@ export class NotebookLMAgent extends BaseAgent {
 			);
 
 			if (await fs.pathExists(videoPath)) {
-				videos.push({
-					notebook_id: notebookId,
-					notebook_title: notebookInfo.title || "Untitled",
-					video_path: videoPath,
-					generated_at: new Date().toISOString(),
-				});
+				videos = [
+					...videos,
+					{
+						notebook_id: notebookId,
+						notebook_title: notebookInfo.title || "Untitled",
+						video_path: videoPath,
+						generated_at: new Date().toISOString(),
+					},
+				];
 
 				AgentLogger.info(
 					this.name,

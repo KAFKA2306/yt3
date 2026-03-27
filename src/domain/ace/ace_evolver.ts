@@ -19,12 +19,16 @@ export class AceEvolver {
 			`Evolving playbook with ${signals.length} signals`,
 		);
 
+		let updatedBullets = [...currentPlaybook.bullets];
+
 		for (const signal of signals) {
-			let bullet = currentPlaybook.bullets.find(
+			const bulletIndex = updatedBullets.findIndex(
 				(b) => b.id === signal.bullet_id,
 			);
-			if (!bullet) {
-				// Auto-create new bullet for discovered strategic signals (like soft-metrics)
+			
+			let bullet: AceBullet;
+			if (bulletIndex === -1) {
+				// Auto-create new bullet for discovered strategic signals
 				bullet = {
 					id: signal.bullet_id,
 					content: `Auto-generated rule for ${signal.bullet_id}`,
@@ -36,47 +40,54 @@ export class AceEvolver {
 					alpha: 1.0,
 					beta: 1.0,
 				};
-				currentPlaybook.bullets.push(bullet);
+				updatedBullets = [...updatedBullets, bullet];
 				Logger.info(
 					"AceEvolver",
 					"EVOLVE",
 					"NEW_BULLET",
 					`Registered new strategic target: ${bullet.id}`,
 				);
+			} else {
+				bullet = updatedBullets[bulletIndex];
 			}
 
-			bullet.runs += 1;
 			// Bayesian Update (Beta Distribution)
 			const weight = signal.weight || 1.0;
-			if (signal.success) {
-				bullet.successes += 1;
-				bullet.alpha = (bullet.alpha || 1.0) + weight;
-			} else {
-				bullet.beta = (bullet.beta || 1.0) + weight;
-			}
-			// Confidence is the mean of the Beta distribution: α / (α + β)
-			bullet.confidence = bullet.alpha / (bullet.alpha + bullet.beta);
+			const updatedBullet: AceBullet = {
+				...bullet,
+				runs: bullet.runs + 1,
+				successes: signal.success ? bullet.successes + 1 : bullet.successes,
+				alpha: signal.success ? (bullet.alpha || 1.0) + weight : bullet.alpha || 1.0,
+				beta: !signal.success ? (bullet.beta || 1.0) + weight : bullet.beta || 1.0,
+			};
+			updatedBullet.confidence = updatedBullet.alpha / (updatedBullet.alpha + updatedBullet.beta);
+
+			updatedBullets[bulletIndex === -1 ? updatedBullets.length - 1 : bulletIndex] = updatedBullet;
 
 			Logger.info(
 				"AceEvolver",
 				"EVOLVE",
 				"UPDATE",
-				`Updated bullet ${bullet.id}: confidence=${bullet.confidence.toFixed(2)} (α=${bullet.alpha.toFixed(1)}, β=${bullet.beta.toFixed(1)})`,
+				`Updated bullet ${updatedBullet.id}: confidence=${updatedBullet.confidence.toFixed(2)} (α=${updatedBullet.alpha.toFixed(1)}, β=${updatedBullet.beta.toFixed(1)})`,
 			);
 		}
 
-		const prunedBullets = currentPlaybook.bullets.filter(
+		const prunedBullets = updatedBullets.filter(
 			(b) => b.runs < 5 || b.confidence > 0.2,
 		);
-		if (prunedBullets.length < currentPlaybook.bullets.length) {
+		if (prunedBullets.length < updatedBullets.length) {
 			Logger.info(
 				"AceEvolver",
 				"EVOLVE",
 				"PRUNE",
-				`Pruned ${currentPlaybook.bullets.length - prunedBullets.length} low-performing bullets`,
+				`Pruned ${updatedBullets.length - prunedBullets.length} low-performing bullets`,
 			);
 		}
-		currentPlaybook.bullets = prunedBullets;
-		this.playbook.save(currentPlaybook);
+		
+		const finalPlaybook = {
+			...currentPlaybook,
+			bullets: prunedBullets,
+		};
+		this.playbook.save(finalPlaybook);
 	}
 }
