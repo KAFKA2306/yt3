@@ -1,6 +1,7 @@
 ---
 name: env-management
 description: Audit and enforce environment variable rules before any task that touches API keys or config. Use before running pipelines, debugging auth failures, or setting up a new environment. Triggers on "check env", "missing key", "API key", ".env", "GEMINI_API_KEY", or any config-related pre-flight check.
+type: skill
 ---
 
 # Environment Management
@@ -27,9 +28,3 @@ bun run src/io/utils/check_env.ts       # verify connectivity
 Never `cat config/.env` in logs — use `grep` for key names only, never values.
 
 ## Rules
-
-- Load via `bun --env-file=config/.env` or explicit `dotenv` at every entry point. No implicit env inheritance.
-- Source of truth is `src/domain/types.ts`. Every variable defined there must be present at startup or the process crashes — no fallbacks.
-- Placeholder values (`your_key_here`, `TODO`, `REPLACE_ME`) are treated as missing. The process must crash with a clear message pointing to the missing key name.
-- `.env` stays in `.gitignore`. If it's committed, treat it as a credential leak and rotate immediately.
-- Never log key values — log key names and status only (present/missing/invalid).

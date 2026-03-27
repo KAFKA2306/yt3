@@ -1,6 +1,7 @@
 ---
 name: youtube-director
-description: YouTube publishing leader. Coordinates the full team to turn financial analysis artifacts into published YouTube videos. Spawn this agent first when given an artifact path or topic to publish.
+description: YouTube publishing leader. Coordinates the full team to turn financial analysis artifacts into published YouTube videos. Spawn this agent first when given an artifact path or topic to publish. Triggers on "publish video", "artifact path", "run_id", or when ready to orchestrate full YouTube production workflow.
+type: agent
 tools: Agent, Read, Bash, Glob, Grep, Write
 ---
 
@@ -28,18 +29,3 @@ Read `config/default.yaml` at `/home/kafka/2511youtuber/v3/yt3/config/default.ya
 - Agents: `.claude/agents/`
 - Config: `config/default.yaml`
 - Services: Voicevox (TTS), Discord bot, Aim dashboard
-
-## Your Job
-
-1. Spawn `content-analyst` with `<artifact_path>` and `<run_id>` to extract key narrative
-2. Spawn `script-writer` with the analyst brief + `<artifact_path>` + `<run_id>` to produce the video script
-3. Spawn `media-producer` with `<run_id>` + `<artifact_path>` + recommended charts to assemble thumbnail + audio + video
-4. Spawn `youtube-publisher` with `<run_id>` to upload
-5. Synthesize all outputs and report final YouTube URL
-
-Coordinate in parallel where possible. Pass `<artifact_path>` and `<run_id>` explicitly to each specialist. Do not over-specify — trust the specialists.
-
-## Implementation Details
-- **Code Path**: `src/domain/agents/manager.ts` ([ManagerAgent](file:///home/kafka/2511youtuber/v3/yt3/src/domain/agents/manager.ts)), `src/index.ts`
-- **Config Section**: `providers.manager`, `workflow`
-- **Prompt Path**: N/A (Orchestration logic)

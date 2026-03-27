@@ -1,6 +1,7 @@
 ---
 name: operational-resilience
 description: Core infrastructure standards for the YT3 project. Apply when making architectural decisions, reviewing system design, handling failures, or setting up LLM orchestration strategy. Triggers on "infrastructure", "system design", "fail fast", "retry", "path management", "service unit", or when checking if a design follows project Iron Rules.
+type: skill
 ---
 
 # Operational Resilience
@@ -28,17 +29,3 @@ No `try-catch` in business logic. Unexpected states should crash immediately wit
 ## Infrastructure Essentials
 
 - **Absolute paths**: All scripts and service units use absolute paths. Relative paths break when working directory changes.
-- **Service unit standards**: Every unit defines `User`, `Group`, and `WorkingDirectory`. Use `ExecStartPre=+/bin/chown` to fix permissions before privilege drop.
-- **Pre-flight**: Verify write access to `runs/` and `logs/` before initialization.
-
-## Delivery Transparency
-
-Every successful publish workflow concludes with explicit **Final Deliverable Metadata**:
-- Video title: from `{runDir}/content/output.yaml`
-- Public URL/ID: from `{runDir}/publish/output.yaml`
-
-This closes the feedback loop — the agent confirms what was actually published, not what was intended.
-
-## Content Standards
-
-Ground all analysis in verifiable hard data. Avoid "Systemic Collapse" framing — focus on structural adaptive strategies that empower rather than alarm.

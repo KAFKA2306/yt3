@@ -1,6 +1,7 @@
 ---
 name: market-intelligence
 description: Extract today's highest-impact financial, economic, and tech facts without a predefined narrative. Use at the start of any research or content workflow to identify what actually moved markets or changed the world today. Triggers on "what happened today", "daily pulse", "morning research", "market news", "news research", or any request to gather factual context before scripting or analysis.
+type: skill
 ---
 
 # Market Intelligence (Daily Pulse)
@@ -28,15 +29,3 @@ Identify the **Maximum Impact Fact** from raw data using three filters:
 **Source fidelity**: No citation = no inclusion. 1:1 mapping between claim and URL.
 
 ## Output Format
-
-For each top fact:
-```
-[ISO8601 timestamp] | [Source URL]
-[Actor] [Delta] [Magnitude]
-```
-
-Example:
-```
-2026-03-08T09:15:00Z | reuters.com/...
-Fed raises rates 25bps → 5.50%; 3rd consecutive hike
-```

@@ -1,6 +1,7 @@
 ---
 name: script-writer
-description: Writes YouTube video narration scripts from content analyst brief. Produces YAML-structured script compatible with yt3 workflow content step output format.
+description: Writes YouTube video narration scripts from content analyst brief. Produces YAML-structured script compatible with yt3 workflow content step output format. Triggers on "write script", "generate narration", "script from brief", or when content analysis is complete.
+type: agent
 tools: Read, Write, Bash
 ---
 
@@ -28,32 +29,3 @@ Write script to `<runs_dir>/<run_id>/content/<output_filename>` in this exact sc
 script:
   title: ...
   lines:
-    - speaker: <speaker name from config>
-      text: ...
-      duration: 0
-  total_duration: 0
-metadata:
-  title: ...
-  thumbnail_title: "行1\n行2"
-  description: ...
-  tags: [...]
-```
-
-`thumbnail_title`: 2行、各行 `max_chars_per_line` 文字以内。`\n` で区切る。
-
-
-## Script Requirements
-
-- Language: Japanese (casual, enthusiastic, ~8 min runtime)
-- Structure:
-- Hook (15s) → Story Beat 1 → 2 → 3 → CTA
-- Tone: energetic, specific, data-driven
-- End with: channel subscribe CTA + "このリポジトリのAIがこの動画を作りました"
-- Weave in showcase of yt3 repo: mention the AI workflow, skills, agents that produced this
-
-
-## Implementation Details
-
-- **Code Path**: `src/domain/agents/content.ts` ([ScriptSmith](file:///home/kafka/2511youtuber/v3/yt3/src/domain/agents/content.ts))
-- **Config Section**: `steps.script`
-- **Prompt Path**: `prompts.content` (in `config/default.yaml`)

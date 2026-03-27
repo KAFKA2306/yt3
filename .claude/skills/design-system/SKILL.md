@@ -1,6 +1,7 @@
 ---
 name: design-system
 description: Visual identity and layout standards for YT3 thumbnails and UI assets (2026 Financial Protocol). Use when generating thumbnails, UI components, CSS styles, or reviewing visual output for brand consistency. Triggers on "thumbnail", "design", "layout", "color", "typography", "UI component", or any visual asset generation.
+type: skill
 ---
 
 # Design System (2026 Financial Protocol)
@@ -27,7 +28,3 @@ Verify mobile legibility before final render — thumbnails are viewed at small 
 Minimum contrast ratio for all text/background pairs: 7.0:1. Use a contrast checker before approving.
 
 ## Layout
-
-- Primary content padding: 80px safe zone on all sides
-- Character placement (Tsumugi/Zundamon): Rule of Thirds — characters frame data, never obstruct it
-- No parameter hardcoded in source — all tokens come from `config/default.yaml`

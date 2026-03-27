@@ -228,6 +228,7 @@ export interface AppConfig {
 			video_style: string;
 			output_dir: string;
 			temperature: number;
+			notebook_ids: string[];
 		};
 	};
 	mcp: McpConfig;

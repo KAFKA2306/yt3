@@ -3,6 +3,13 @@ import fs from "fs-extra";
 import { ROOT } from "../base.js";
 import { AgentLogger as Logger } from "./logger.js";
 
+export class QuotaExhaustionError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "QuotaExhaustionError";
+	}
+}
+
 interface QuotaState {
 	remaining: number;
 	resetTime: number;
@@ -131,7 +138,9 @@ export class QuotaManager {
 			});
 
 		if (candidates.length === 0) {
-			throw new Error("QUOTA_EXHAUSTED: No valid Gemini API keys available.");
+			const err = new QuotaExhaustionError("No valid Gemini API keys available. All keys are exhausted or in cooldown.");
+			Logger.error("SYSTEM", "QUOTA", "EXHAUSTION", err.message);
+			throw err;
 		}
 
 		const best = candidates[0];

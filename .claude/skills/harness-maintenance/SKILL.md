@@ -1,6 +1,7 @@
 ---
 name: harness-maintenance
-description: Enforce and maintain the autonomous harness infrastructure. Make sure to use this skill whenever the user mentions ADRs, hooks, linter config, repository rot, or when making any structural decision or completing a task session, even if they don't explicitly ask for 'harness maintenance'. You must trigger this skill to validate repository health.
+description: Enforce and maintain the autonomous harness infrastructure. Use whenever the user mentions ADRs, hooks, linter config, repository rot, or when making any structural decision or completing a task session. Triggers on "ADR", "hook", "linter", "repository health", "harness", or when running task harness:doctor.
+type: skill
 ---
 
 # Harness Maintenance Protocol
@@ -28,16 +29,3 @@ Enforce strict Biome rules (`noExplicitAny: error`). Do not use `// biome-ignore
 ### The "Doctor" Loop
 
 1. Complete task implementation.
-2. Execute `task harness:doctor`.
-3. Fix all detected rot immediately.
-4. Commit with a strict English semantic message.
-
-### ADR Life Cycle
-
-1. Execute `task adr:new -- title="Detailed Decision Name"`.
-2. Populate the generated template in `docs/adr/`.
-3. Do not reference ADR IDs in code comments. Maintain zero-fat code.
-
-### Config Protection
-
-Treat `biome.json`, `Taskfile.yml`, and `.claude/settings.json` as completely immutable unless the specific task is to evolve the harness.

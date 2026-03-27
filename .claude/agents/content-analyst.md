@@ -1,6 +1,7 @@
 ---
 name: content-analyst
-description: Analyzes financial analysis artifact files and extracts YouTube-ready narrative. Use after youtube-director assigns artifact analysis task.
+description: Analyzes financial analysis artifact files and extracts YouTube-ready narrative. Use after youtube-director assigns artifact analysis task. Triggers on "analyze artifact", "extract narrative", "financial analysis", or when starting content analysis phase.
+type: agent
 tools: Read, Glob, Grep, Bash
 ---
 
@@ -28,6 +29,3 @@ Read the research doc, valuation analysis, initiation report, and chart index. I
 Focus on what will make a retail investor in Japan want to watch for 8 minutes.
 
 ## Implementation Details
-- **Code Path**: `src/domain/agents/research.ts` ([TrendScout](file:///home/kafka/2511youtuber/v3/yt3/src/domain/agents/research.ts))
-- **Config Section**: `steps.research`
-- **Prompt Path**: `prompts.research` (in `config/default.yaml`)

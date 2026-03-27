@@ -1,6 +1,7 @@
 ---
 name: media-producer
-description: Produces thumbnail, audio (Voicevox TTS), and video for YouTube. Runs yt3 task commands for media step. Use after script-writer completes.
+description: Produces thumbnail, audio (Voicevox TTS), and video for YouTube. Runs yt3 task commands for media step. Use after script-writer completes. Triggers on "produce media", "generate thumbnail", "create audio", "build video", or when media production phase starts.
+type: agent
 tools: Bash, Read, Write
 ---
 
@@ -28,29 +29,3 @@ Read `config/default.yaml` at `/home/kafka/2511youtuber/v3/yt3/config/default.ya
 Run from `/home/kafka/2511youtuber/v3/yt3`:
 
 1. **Pre-check services**
-
-   ```bash
-   task status
-   ```
-
-   If Voicevox is not running at `voicevox.url`: `task up`
-
-2. **Run media production**
-
-   ```bash
-   task media -- <run_id>
-   ```
-
-3. **Charts**
-
-   Source charts are at `<artifact_path>/task4/`.
-   If the media step requires charts under `<runs_dir>/<run_id>/`, copy the needed files there first.
-
-## On failure
-
-Read the crash log exactly. Fix root cause. Do not add error handling.
-
-## Implementation Details
-- **Code Path**: `src/domain/agents/media.ts` ([VisualDirector](file:///home/kafka/2511youtuber/v3/yt3/src/domain/agents/media.ts)), `src/domain/layout_engine.ts` ([LayoutEngine](file:///home/kafka/2511youtuber/v3/yt3/src/domain/layout_engine.ts))
-- **Config Section**: `steps.video`, `steps.thumbnail`, `providers.tts.voicevox`
-- **Prompt Path**: N/A (Deterministic production)

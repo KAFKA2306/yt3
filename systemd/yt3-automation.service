@@ -8,6 +8,8 @@ WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
 ExecStart=/usr/bin/bash /home/kafka/2511youtuber/v3/yt3/src/io/utils/infra/run_workflow_cron.sh
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=default.target

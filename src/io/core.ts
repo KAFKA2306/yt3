@@ -9,13 +9,14 @@ import { ContextPlaybook } from "../domain/ace/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 import { ROOT, loadConfig as baseLoadConfig } from "./base.js";
 import { AgentLogger as Logger } from "./utils/logger.js";
-import { QuotaManager } from "./utils/quota_manager.js";
+import { QuotaManager, QuotaExhaustionError } from "./utils/quota_manager.js";
 
 dotenv.config({ path: path.join(ROOT, "config/.env"), override: true });
 
 export { Logger as AgentLogger };
 export type { AgentState };
 export { RunStage };
+export { QuotaExhaustionError };
 
 export function loadConfig(): AppConfig {
 	return baseLoadConfig() as AppConfig;

@@ -1,6 +1,7 @@
 ---
 name: discord-integration
-description: Manage Discord Webhook alerts and the standalone Discord Slash Command Bot.
+description: Manage Discord Webhook alerts and the standalone Discord Slash Command Bot. Use when setting up alerting, debugging bot connectivity, or configuring Discord integrations. Triggers on "Discord", "webhook", "alert", "bot status", "DISCORD_WEBHOOK_URL", or any request to monitor/configure Discord services.
+type: skill
 ---
 
 # Discord Integration Skill

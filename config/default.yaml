@@ -138,7 +138,14 @@ steps:
 providers:
   llm:
     provider: "gemini"
-    gemini: {model: "gemini-3-flash-preview", primary_llm: "gemini-3-flash-preview", temperature: 0.35, max_tokens: 32768}
+    gemini: {model: "gemini-2.5-flash", primary_llm: "gemini-2.5-flash", temperature: 0.35, max_tokens: 32768}
+    # === CRITICAL: Gemini API Version Lock ===
+    # Pin to stable Gemini 2.5 Flash (not preview, not experimental).
+    # Knowledge cutoff: 2024-12 | Pricing: $0.075/1M input, $0.3/1M output
+    # Thinking: Controlled per-call via thinking: false (fast) / true (deep reasoning)
+    # DO NOT override via CLI args, env vars, or config merges - this is the single source of truth
+    # To upgrade: Update both 'model' and 'primary_llm' fields, test in staging for 2 weeks before promoting
+    # Removal of this comment is forbidden - it documents the versioning decision
     content: {temperature: 0.4}
     media: {temperature: 0.1}
     research: {temperature: 0.5, selection_temperature: 0.4, relevance_temperature: 0.0}
@@ -189,6 +196,7 @@ agents:
     video_style: "whiteboard"
     output_dir: "runs/notebooklm"
     temperature: 0.1
+    notebook_ids: []
 
 mcp:
   servers:

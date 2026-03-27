@@ -22,5 +22,12 @@ task lint:fix    # リント自動修正
 - コメント最小限（自己説明的コード）
 - 高階関数・デコレータで横断的関心事を共有
 
+## Gemini API Strategy
+- **Primary Model**: Gemini 2.5 Flash（安定版）
+- **Config Source**: `config/default.yaml` の `providers.llm.gemini.model` が唯一の真実源
+- **Override禁止**: CLI args、env vars、config merges からの上書き不許可
+- **Upgrade Path**: 新版は GA のみ、2週間 staging 検証後に config 更新
+- **詳細**: `docs/gemini-strategy.md` 参照
+
 ## 詳細ガイド
 開発フロー・命名規則・エラーハンドリング等の詳細は `.serena/memories/` を参照。
