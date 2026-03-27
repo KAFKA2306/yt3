@@ -198,7 +198,7 @@ agents:
   notebooklm:
     enabled: true
     video_style: "whiteboard"
-    output_dir: "runs/notebooklm"
+    output_dir: "runs-nlm"
     temperature: 0.1
     notebook_ids: []
 

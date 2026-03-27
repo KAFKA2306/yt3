@@ -6,6 +6,7 @@ import {
 	AgentLogger,
 	type AssetStore,
 	BaseAgent,
+	ROOT,
 	RunStage,
 	loadConfig,
 } from "../../io/core.js";
@@ -58,24 +59,24 @@ export class NotebookLMAgent extends BaseAgent {
 			this.executeNotebooklmCommand(`use ${notebookId}`);
 
 			// 3. Generate video
-			const generationOutput = this.executeNotebooklmCommand(
+			this.executeNotebooklmCommand(
 				`generate video --wait --style ${videoStyle}`,
-				true,
 			);
 
-			// 4. Create output directory
-			const dirName = this.sanitizeFileName(
+			// 4. Get video title from artifact list
+			const videoTitle = this.getLatestVideoTitle();
+
+			// 5. Create output directory in runs-nlm
+			const notebookDirName = this.sanitizeFileName(
 				notebookInfo.title || notebookId.slice(0, 8),
 			);
-			const outputDir = path.join(
-			this.store.runDir,
-			dirName,
-			"videos",
-		);
+			const baseOutputDir =
+				this.config.agents?.notebooklm?.output_dir || "runs-nlm";
+			const outputDir = path.join(ROOT, baseOutputDir, notebookDirName, "videos");
 			await fs.ensureDir(outputDir);
 
-			// 5. Download video to specified path
-			const videoFileName = `video_${new Date().toISOString().slice(0, 10)}.mp4`;
+			// 6. Download video to specified path
+			const videoFileName = `${this.sanitizeFileName(videoTitle || "video")}.mp4`;
 			const videoPath = path.join(outputDir, videoFileName);
 
 			this.executeNotebooklmCommand(
@@ -136,11 +137,10 @@ export class NotebookLMAgent extends BaseAgent {
 			const output = execSync("notebooklm list --json", {
 				encoding: "utf-8",
 			});
-			const parsed = JSON.parse(output) as Array<{
-				id: string;
-				title?: string;
-			}>;
-			this.notebookCache = parsed;
+			const parsed = JSON.parse(output) as {
+				notebooks: Array<{ id: string; title?: string }>;
+			};
+			this.notebookCache = parsed.notebooks;
 		}
 
 		// Find notebook by ID (full or partial match)
@@ -156,6 +156,47 @@ export class NotebookLMAgent extends BaseAgent {
 		}
 
 		throw new Error(`Notebook ${notebookId} not found in list`);
+	}
+
+	private getLatestVideoTitle(): string | null {
+		try {
+			const output = this.executeNotebooklmCommand("artifact list --json", true);
+			if (!output) return null;
+
+			const parsed = JSON.parse(output) as {
+				artifacts: Array<{
+					type_id: string;
+					title: string;
+					created_at: string;
+				}>;
+			};
+
+			if (!parsed || !parsed.artifacts) {
+				AgentLogger.warn(
+					this.name,
+					"RUN",
+					"WARN",
+					`Artifacts list is missing artifacts property: ${output}`,
+				);
+				return null;
+			}
+			const videos = parsed.artifacts
+				.filter((a) => a.type_id === "video")
+				.sort(
+					(a, b) =>
+						new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+				);
+
+			return videos.length > 0 ? videos[0].title : null;
+		} catch (error) {
+			AgentLogger.warn(
+				this.name,
+				"RUN",
+				"WARN",
+				`Failed to get video title: ${error}`,
+			);
+			return null;
+		}
 	}
 
 	private sanitizeFileName(title: string): string {
