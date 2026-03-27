@@ -17,6 +17,23 @@ import type {
 } from "./domain/types.js";
 import type { AssetStore } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
+
+export type WorkflowPhase =
+	| "problem-exploration"
+	| "solution-convergence"
+	| "implementation-planning"
+	| "code-generation"
+	| "code-review"
+	| "testing"
+	| "documentation"
+	| "debugging";
+
+export interface GraphNodeMetadata {
+	name: string;
+	phase: WorkflowPhase;
+	type: "agent" | "orchestrator";
+	description?: string;
+}
 type ChannelReducer<T> = {
 	reducer: (x: T, y: T) => T;
 	default: () => T;
@@ -25,6 +42,52 @@ type StateChannels = {
 	[K in keyof AgentState]: ChannelReducer<AgentState[K]>;
 };
 const reducer = <T>(_x: T, y: T): T => y;
+
+const NODE_METADATA: Record<string, GraphNodeMetadata> = {
+	research: {
+		name: "research",
+		phase: "problem-exploration",
+		type: "agent",
+		description: "Trend discovery and problem analysis",
+	},
+	strategy: {
+		name: "strategy",
+		phase: "solution-convergence",
+		type: "agent",
+		description: "Strategic insight extraction and solution evaluation",
+	},
+	content: {
+		name: "content",
+		phase: "implementation-planning",
+		type: "agent",
+		description: "Script and metadata synthesis",
+	},
+	media: {
+		name: "media",
+		phase: "code-generation",
+		type: "agent",
+		description: "Audio and video asset generation",
+	},
+	publish: {
+		name: "publish",
+		phase: "code-review",
+		type: "agent",
+		description: "Upload and publish to YouTube and social channels",
+	},
+	notebooklm: {
+		name: "notebooklm",
+		phase: "code-generation",
+		type: "agent",
+		description: "NotebookLM video generation",
+	},
+	memory: {
+		name: "memory",
+		phase: "debugging",
+		type: "agent",
+		description: "Run results persistence and memory update",
+	},
+};
+
 export function createGraph(store: AssetStore) {
 	const cfg = store.cfg;
 	const channels: StateChannels = {
@@ -150,8 +213,7 @@ export function createGraph(store: AssetStore) {
 			"NOTEBOOKLM",
 			"Generating NotebookLM videos",
 		);
-		// Extract notebook IDs from config or state; default to empty array
-		const notebookIds: string[] = [];
+		const notebookIds = cfg.agents?.notebooklm?.notebook_ids || [];
 		const videoStyle = cfg.agents?.notebooklm?.video_style || "whiteboard";
 		const res = await notebooklm.run(notebookIds, videoStyle);
 		return { notebook_videos: res };
@@ -177,4 +239,18 @@ export function createGraph(store: AssetStore) {
 	graph.addEdge("notebooklm", "memory");
 	graph.addEdge("memory", END);
 	return workflow.compile();
+}
+
+export function getNodeMetadata(nodeName: string): GraphNodeMetadata | undefined {
+	return NODE_METADATA[nodeName];
+}
+
+export function getNodesByPhase(phase: WorkflowPhase): GraphNodeMetadata[] {
+	return Object.values(NODE_METADATA).filter((node) => node.phase === phase);
+}
+
+export function getAllPhases(): WorkflowPhase[] {
+	const phases = new Set<WorkflowPhase>();
+	Object.values(NODE_METADATA).forEach((node) => phases.add(node.phase));
+	return Array.from(phases);
 }
