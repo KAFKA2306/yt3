@@ -1,113 +1,83 @@
-import {
-	afterEach,
-	beforeEach,
-	describe,
-	expect,
-	it,
-	mock,
-	spyOn,
-} from "bun:test";
-import * as childProcess from "node:child_process";
-import fs from "fs-extra";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import path from "node:path";
+import fs from "fs-extra";
 import {
 	NotebookLMAgent,
-	type NotebookLMResult,
+	type ShellExecutor,
 } from "../../src/domain/agents/notebooklm";
-import type { AssetStore } from "../../src/io/core";
-import { ROOT } from "../../src/io/base";
+import { AssetStore, ROOT } from "../../src/io/core";
 
-// Use a unique calls array per test suite to avoid pollution
-let execSyncCalls: string[] = [];
-
-const createMockStore = (): AssetStore => {
-	const store = {
-		runDir: "/tmp/test-run",
-		cfg: {
-			global_style: "default",
-			workflow: {
-				memory: { essence_file: "essence.json" },
-				paths: { runs_dir: "runs", prompts_dir: "config/prompts" },
-				filenames: {
-					audio_full: "audio.mp3",
-					state: "state.json",
-					output: "output.yaml",
-					subtitles: "subtitles.ass",
-					thumbnail: "thumb.png",
-					video: "video.mp4",
-					input: "input.yaml",
+class FakeShell implements ShellExecutor {
+	calls: string[] = [];
+	responses: Record<string, string> = {
+		list: JSON.stringify({
+			notebooks: [
+				{ id: "abc123", title: "Test Notebook 1" },
+				{ id: "def456", title: "Test Notebook 2" },
+			],
+		}),
+		artifact: JSON.stringify({
+			artifacts: [
+				{
+					type_id: "video",
+					title: "Test Video Title",
+					created_at: new Date().toISOString(),
 				},
-			},
-			providers: { perplexity: { enabled: false } },
-			agents: {
-				notebooklm: {
-					enabled: true,
-					video_style: "whiteboard",
-					output_dir: "runs/notebooklm",
-					temperature: 0.1,
-					notebook_ids: [],
-				},
-			},
-		} as any,
-		save: () => {},
-		load: () => Promise.resolve({}),
-		loadState: () => ({}),
-		updateState: () => {},
-		audioDir: () => "/tmp/test-run/audio",
-		videoDir: () => "/tmp/test-run/video",
-	} as unknown as AssetStore;
-	return store;
-};
+			],
+		}),
+	};
 
-describe("NotebookLMAgent", () => {
-	let mockPathExists: ReturnType<typeof mock>;
-	let mockEnsureDir: ReturnType<typeof mock>;
-
-	beforeEach(() => {
-		execSyncCalls = [];
-
-		// Mock fs-extra functions
-		mockPathExists = mock(() => Promise.resolve(true));
-		mockEnsureDir = mock(() => Promise.resolve(undefined));
-
-		spyOn(fs, "pathExists").mockImplementation(mockPathExists);
-		spyOn(fs, "ensureDir").mockImplementation(mockEnsureDir);
-
-		// Default mock for execSync
-		spyOn(childProcess, "execSync").mockImplementation(((cmd: string) => {
-			const cmdStr = cmd.toString();
-			execSyncCalls.push(cmdStr);
-			if (cmdStr.includes("artifact list --json")) {
-				return JSON.stringify({
-					artifacts: [
-						{
-							type_id: "video",
-							title: "Test Video Title",
-							created_at: new Date().toISOString(),
-						},
-					],
-				});
+	execute(command: string, returnOutput = false): string | undefined {
+		this.calls.push(command);
+		if (returnOutput) {
+			if (command.includes("artifact list --json")) {
+				return this.responses.artifact;
 			}
-			if (cmdStr.includes("list --json")) {
-				return JSON.stringify({
-					notebooks: [
-						{ id: "abc123", title: "Test Notebook 1" },
-						{ id: "def456", title: "Test Notebook 2" },
-					],
-				});
+			if (command.includes("list --json")) {
+				return this.responses.list;
 			}
 			return "";
-		}) as any);
+		}
+		return undefined;
+	}
+}
+
+describe("NotebookLMAgent", () => {
+	let store: AssetStore;
+	let fakeShell: FakeShell;
+	let currentTestRunId: string;
+	let uniqueOutputDir: string;
+
+	beforeEach(() => {
+		currentTestRunId = `test-run-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+		uniqueOutputDir = `runs-nlm-test-${currentTestRunId}`;
+		store = new AssetStore(currentTestRunId);
+		fakeShell = new FakeShell();
+
+		// Initialize config for isolation
+		if (!store.cfg.agents) store.cfg.agents = {};
+		store.cfg.agents.notebooklm = {
+			enabled: true,
+			video_style: "whiteboard",
+			output_dir: uniqueOutputDir,
+			temperature: 0.1,
+			notebook_ids: [],
+		};
 	});
 
-	afterEach(() => {
-		// Clear mocks
-		mock.restore();
+	afterEach(async () => {
+		const runPath = path.join(ROOT, "runs", currentTestRunId);
+		if (await fs.pathExists(runPath)) {
+			await fs.remove(runPath);
+		}
+		const nlmPath = path.join(ROOT, uniqueOutputDir);
+		if (await fs.pathExists(nlmPath)) {
+			await fs.remove(nlmPath);
+		}
 	});
 
 	it("should return empty result when no notebooks are provided", async () => {
-		const store = createMockStore();
-		const agent = new NotebookLMAgent(store);
+		const agent = new NotebookLMAgent(store, fakeShell);
 		const result = await agent.run([]);
 
 		expect(result.videos).toEqual([]);
@@ -115,16 +85,31 @@ describe("NotebookLMAgent", () => {
 	});
 
 	it("should execute commands in correct sequence for single notebook", async () => {
-		const store = createMockStore();
-		const agent = new NotebookLMAgent(store);
+		const agent = new NotebookLMAgent(store, fakeShell);
+
+		const outputDir = path.join(
+			ROOT,
+			uniqueOutputDir,
+			"test_notebook_1",
+			"videos",
+		);
+		await fs.ensureDir(outputDir);
+		const videoPath = path.join(outputDir, "test_video_title.mp4");
+		await fs.writeFile(videoPath, "dummy");
 
 		await agent.run(["abc123"]);
 
-		const listIdx = execSyncCalls.findIndex((c) => c.includes("list --json"));
-		const useIdx = execSyncCalls.findIndex((c) => c.includes("use abc123"));
-		const genIdx = execSyncCalls.findIndex((c) => c.includes("generate video"));
-		const artIdx = execSyncCalls.findIndex((c) => c.includes("artifact list --json"));
-		const dlIdx = execSyncCalls.findIndex((c) => c.includes("download video"));
+		const listIdx = fakeShell.calls.findIndex((c) => c.includes("list --json"));
+		const useIdx = fakeShell.calls.findIndex((c) => c.includes("use abc123"));
+		const genIdx = fakeShell.calls.findIndex((c) =>
+			c.includes("generate video"),
+		);
+		const artIdx = fakeShell.calls.findIndex((c) =>
+			c.includes("artifact list --json"),
+		);
+		const dlIdx = fakeShell.calls.findIndex((c) =>
+			c.includes("download video"),
+		);
 
 		expect(listIdx).toBeGreaterThanOrEqual(0);
 		expect(useIdx).toBeGreaterThanOrEqual(0);
@@ -138,48 +123,28 @@ describe("NotebookLMAgent", () => {
 		expect(artIdx).toBeLessThan(dlIdx);
 	});
 
-	it("should execute generate command with whiteboard style by default", async () => {
-		const store = createMockStore();
-		const agent = new NotebookLMAgent(store);
-
-		try {
-			await agent.run(["abc123"]);
-		} catch {
-			// Expected to fail on fs check
-		}
-
-		const generateCall = execSyncCalls.find((c) =>
-			c.includes("generate video"),
-		);
-		expect(generateCall).toContain("--style whiteboard");
-	});
-
-	it("should use custom video style when provided", async () => {
-		const store = createMockStore();
-		const agent = new NotebookLMAgent(store);
-
-		try {
-			await agent.run(["abc123"], "voiceover");
-		} catch {
-			// Expected to fail on fs check
-		}
-
-		const generateCall = execSyncCalls.find((c) =>
-			c.includes("generate video"),
-		);
-		expect(generateCall).toContain("--style voiceover");
-	});
-
 	it("should process notebooks with proper command execution", async () => {
-		const store = createMockStore();
-		const agent = new NotebookLMAgent(store);
+		const agent = new NotebookLMAgent(store, fakeShell);
+
+		const dir1 = path.join(ROOT, uniqueOutputDir, "test_notebook_1", "videos");
+		const dir2 = path.join(ROOT, uniqueOutputDir, "test_notebook_2", "videos");
+		await fs.ensureDir(dir1);
+		await fs.ensureDir(dir2);
+		await fs.writeFile(path.join(dir1, "test_video_title.mp4"), "dummy");
+		await fs.writeFile(path.join(dir2, "test_video_title.mp4"), "dummy");
 
 		await agent.run(["abc123", "def456"]);
 
-		const listCalls = execSyncCalls.filter((c) => c === "notebooklm list --json");
-		const useCalls = execSyncCalls.filter((c) => c.includes("use"));
-		const generateCalls = execSyncCalls.filter((c) => c.includes("generate video"));
-		const downloadCalls = execSyncCalls.filter((c) => c.includes("download video"));
+		const listCalls = fakeShell.calls.filter(
+			(c) => c === "notebooklm list --json",
+		);
+		const useCalls = fakeShell.calls.filter((c) => c.includes("use"));
+		const generateCalls = fakeShell.calls.filter((c) =>
+			c.includes("generate video"),
+		);
+		const downloadCalls = fakeShell.calls.filter((c) =>
+			c.includes("download video"),
+		);
 
 		expect(listCalls.length).toBe(1);
 		expect(useCalls.length).toBe(2);
@@ -188,75 +153,112 @@ describe("NotebookLMAgent", () => {
 	});
 
 	it("should sanitize notebook and video titles with special characters in paths", async () => {
-		// Override mock for this specific test
-		spyOn(childProcess, "execSync").mockImplementation(((cmd: string) => {
-			const cmdStr = cmd.toString();
-			execSyncCalls.push(cmdStr);
-			if (cmdStr.includes("artifact list --json")) {
-				return JSON.stringify({
-					artifacts: [
-						{
-							type_id: "video",
-							title: "Awesome: Video*Title",
-							created_at: new Date().toISOString(),
-						},
-					],
-				});
-			}
-			if (cmdStr.includes("list --json")) {
-				return JSON.stringify({
-					notebooks: [{ id: "abc123", title: "Test: Notebook/Title*" }],
-				});
-			}
-			return "";
-		}) as any);
+		fakeShell.responses.list = JSON.stringify({
+			notebooks: [{ id: "abc123", title: "Test: Notebook/Title*" }],
+		});
+		fakeShell.responses.artifact = JSON.stringify({
+			artifacts: [
+				{
+					type_id: "video",
+					title: "Awesome: Video*Title",
+					created_at: new Date().toISOString(),
+				},
+			],
+		});
 
-		const store = createMockStore();
-		const agent = new NotebookLMAgent(store);
+		const agent = new NotebookLMAgent(store, fakeShell);
+
+		const outputDir = path.join(
+			ROOT,
+			uniqueOutputDir,
+			"test_notebook_title",
+			"videos",
+		);
+		await fs.ensureDir(outputDir);
+		await fs.writeFile(
+			path.join(outputDir, "awesome_video_title.mp4"),
+			"dummy",
+		);
 
 		await agent.run(["abc123"]);
 
-		const dlCall = execSyncCalls.find((c) => c.includes("download video"));
-		expect(dlCall).toContain("test_notebook_title");
-		expect(dlCall).toContain("awesome_video_title");
-		expect(dlCall).not.toContain("Test:");
-		expect(dlCall).not.toContain("Awesome:");
-		expect(dlCall).toContain("runs-nlm");
+		const dlCall = fakeShell.calls.find((c) => c.includes("download video"));
+		expect(dlCall).toBeDefined();
+		if (dlCall) {
+			expect(dlCall).toContain("test_notebook_title");
+			expect(dlCall).toContain("awesome_video_title");
+			expect(dlCall).toContain(uniqueOutputDir);
+		}
 	});
 
 	it("should throw error when notebook not found", async () => {
-		spyOn(childProcess, "execSync").mockImplementation(((cmd: string) => {
-			const cmdStr = cmd.toString();
-			execSyncCalls.push(cmdStr);
-			if (cmdStr.includes("list --json")) {
-				return JSON.stringify({ notebooks: [] });
-			}
-			return "";
-		}) as any);
-
-		const store = createMockStore();
-		const agent = new NotebookLMAgent(store);
+		fakeShell.responses.list = JSON.stringify({ notebooks: [] });
+		const agent = new NotebookLMAgent(store, fakeShell);
 
 		try {
 			await agent.run(["nonexistent-id"]);
-			expect.unreachable();
-		} catch (error: any) {
-			expect(error.message).toContain("not found");
+			throw new Error("Should have thrown");
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				expect(error.message).toContain("not found");
+			} else {
+				throw error;
+			}
 		}
 	});
 
 	it("should throw error when video file is not created", async () => {
-		mockPathExists = mock(() => Promise.resolve(false));
-		spyOn(fs, "pathExists").mockImplementation(mockPathExists);
-
-		const store = createMockStore();
-		const agent = new NotebookLMAgent(store);
+		const agent = new NotebookLMAgent(store, fakeShell);
 
 		try {
 			await agent.run(["abc123"]);
-			expect.unreachable();
-		} catch (error: any) {
-			expect(error.message).toContain("not found");
+			throw new Error("Should have thrown");
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				expect(error.message).toContain("Video file not found");
+			} else {
+				throw error;
+			}
 		}
+	});
+
+	it("should execute generate command with whiteboard style by default", async () => {
+		const agent = new NotebookLMAgent(store, fakeShell);
+
+		const outputDir = path.join(
+			ROOT,
+			uniqueOutputDir,
+			"test_notebook_1",
+			"videos",
+		);
+		await fs.ensureDir(outputDir);
+		await fs.writeFile(path.join(outputDir, "test_video_title.mp4"), "dummy");
+
+		await agent.run(["abc123"]);
+
+		const generateCall = fakeShell.calls.find((c) =>
+			c.includes("generate video"),
+		);
+		expect(generateCall).toContain("--style whiteboard");
+	});
+
+	it("should use custom video style when provided", async () => {
+		const agent = new NotebookLMAgent(store, fakeShell);
+
+		const outputDir = path.join(
+			ROOT,
+			uniqueOutputDir,
+			"test_notebook_1",
+			"videos",
+		);
+		await fs.ensureDir(outputDir);
+		await fs.writeFile(path.join(outputDir, "test_video_title.mp4"), "dummy");
+
+		await agent.run(["abc123"], "voiceover");
+
+		const generateCall = fakeShell.calls.find((c) =>
+			c.includes("generate video"),
+		);
+		expect(generateCall).toContain("--style voiceover");
 	});
 });

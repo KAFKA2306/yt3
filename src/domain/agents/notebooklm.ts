@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
+import { z } from "zod";
 
 import {
 	AgentLogger,
@@ -8,9 +9,26 @@ import {
 	BaseAgent,
 	ROOT,
 	RunStage,
-	loadConfig,
 } from "../../io/core.js";
-import type { AppConfig } from "../types.js";
+
+const NotebookListSchema = z.object({
+	notebooks: z.array(
+		z.object({
+			id: z.string(),
+			title: z.string().optional(),
+		}),
+	),
+});
+
+const ArtifactListSchema = z.object({
+	artifacts: z.array(
+		z.object({
+			type_id: z.string(),
+			title: z.string(),
+			created_at: z.string(),
+		}),
+	),
+});
 
 export interface NotebookVideo {
 	notebook_id: string;
@@ -24,16 +42,32 @@ export interface NotebookLMResult {
 	total_generated: number;
 }
 
-export class NotebookLMAgent extends BaseAgent {
-	override config: AppConfig;
-	private notebookCache: Array<{ id: string; title?: string }> | null = null;
+export interface ShellExecutor {
+	execute(command: string, returnOutput?: boolean): string | undefined;
+}
 
-	constructor(store: AssetStore) {
-		const cfg = loadConfig();
-		super(store, RunStage.MEDIA, {
+export class RealShellExecutor implements ShellExecutor {
+	execute(command: string, returnOutput = false): string | undefined {
+		if (returnOutput) {
+			return execSync(command, { encoding: "utf-8" });
+		}
+		execSync(command, { stdio: "inherit" });
+		return undefined;
+	}
+}
+
+export class NotebookLMAgent extends BaseAgent {
+	private notebookCache: Array<{ id: string; title?: string }> | null = null;
+	private shell: ShellExecutor;
+
+	constructor(
+		store: AssetStore,
+		shell: ShellExecutor = new RealShellExecutor(),
+	) {
+		super(store, "notebooklm", {
 			temperature: 0.1,
 		});
-		this.config = cfg;
+		this.shell = shell;
 	}
 
 	async run(
@@ -56,31 +90,36 @@ export class NotebookLMAgent extends BaseAgent {
 			const notebookInfo = this.getNotebookInfo(notebookId);
 
 			// 2. Set notebook context
-			this.executeNotebooklmCommand(`use ${notebookId}`);
+			this.shell.execute(`notebooklm use ${notebookId}`);
 
 			// 3. Generate video
-			this.executeNotebooklmCommand(
-				`generate video --wait --style ${videoStyle}`,
+			this.shell.execute(
+				`notebooklm generate video --wait --style ${videoStyle}`,
 			);
 
 			// 4. Get video title from artifact list
 			const videoTitle = this.getLatestVideoTitle();
 
-			// 5. Create output directory in runs-nlm
+			// 5. Create output directory
 			const notebookDirName = this.sanitizeFileName(
 				notebookInfo.title || notebookId.slice(0, 8),
 			);
 			const baseOutputDir =
 				this.config.agents?.notebooklm?.output_dir || "runs-nlm";
-			const outputDir = path.join(ROOT, baseOutputDir, notebookDirName, "videos");
+			const outputDir = path.join(
+				ROOT,
+				baseOutputDir,
+				notebookDirName,
+				"videos",
+			);
 			await fs.ensureDir(outputDir);
 
 			// 6. Download video to specified path
 			const videoFileName = `${this.sanitizeFileName(videoTitle || "video")}.mp4`;
 			const videoPath = path.join(outputDir, videoFileName);
 
-			this.executeNotebooklmCommand(
-				`download video "${videoPath}" --latest --force`,
+			this.shell.execute(
+				`notebooklm download video "${videoPath}" --latest --force`,
 			);
 
 			if (await fs.pathExists(videoPath)) {
@@ -116,30 +155,15 @@ export class NotebookLMAgent extends BaseAgent {
 		};
 	}
 
-	private executeNotebooklmCommand(
-		command: string,
-		returnOutput = false,
-	): string | undefined {
-		const fullCommand = `notebooklm ${command}`;
-		if (returnOutput) {
-			return execSync(fullCommand, { encoding: "utf-8" });
-		}
-		execSync(fullCommand, { stdio: "inherit" });
-		return undefined;
-	}
-
 	private getNotebookInfo(notebookId: string): {
 		id: string;
 		title: string | null;
 	} {
 		// Use cached list if available
 		if (!this.notebookCache) {
-			const output = execSync("notebooklm list --json", {
-				encoding: "utf-8",
-			});
-			const parsed = JSON.parse(output) as {
-				notebooks: Array<{ id: string; title?: string }>;
-			};
+			const output = this.shell.execute("notebooklm list --json", true);
+			if (!output) throw new Error("Failed to get notebook list");
+			const parsed = NotebookListSchema.parse(JSON.parse(output));
 			this.notebookCache = parsed.notebooks;
 		}
 
@@ -160,26 +184,14 @@ export class NotebookLMAgent extends BaseAgent {
 
 	private getLatestVideoTitle(): string | null {
 		try {
-			const output = this.executeNotebooklmCommand("artifact list --json", true);
+			const output = this.shell.execute(
+				"notebooklm artifact list --json",
+				true,
+			);
 			if (!output) return null;
 
-			const parsed = JSON.parse(output) as {
-				artifacts: Array<{
-					type_id: string;
-					title: string;
-					created_at: string;
-				}>;
-			};
+			const parsed = ArtifactListSchema.parse(JSON.parse(output));
 
-			if (!parsed || !parsed.artifacts) {
-				AgentLogger.warn(
-					this.name,
-					"RUN",
-					"WARN",
-					`Artifacts list is missing artifacts property: ${output}`,
-				);
-				return null;
-			}
 			const videos = parsed.artifacts
 				.filter((a) => a.type_id === "video")
 				.sort(
