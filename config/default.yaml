@@ -571,7 +571,12 @@ prompts:
       - 「インフレが〜」「金利が〜」といったマクロの定型文から始めないこと。物理的事実（スペック、数値、事件）から始めよ。
       - 情報ソース（URL等）を必ず含めること。
       - 必ず有効なJSON形式のみを出力し、説明文を含めないこと。
-      - キー名は以下の通りにすること：primary_delta (event, magnitude, structural_shift), insights (observation, implication, wisdom), investment_ideas (asset, rationale), strategic_summary, sources
+      - キー名は以下の通りにすること：
+        * primary_delta: { event, magnitude, structural_shift }
+        * insights: [{ observation, implication, wisdom }] （配列）
+        * investment_ideas: [{ asset, rationale, backdoor_opportunity }] （配列）
+        * strategic_summary: 文字列
+        * sources: [URL配列]
       - 日本語で回答すること。
 
       現在の日付: {current_date}
