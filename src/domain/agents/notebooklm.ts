@@ -189,14 +189,33 @@ export class NotebookLMAgent extends BaseAgent {
 		// Ensure correct notebook context
 		this.shell.execute(`notebooklm use ${notebookId}`);
 
-		// Check if research already exists
+		// 1. Check current research status FIRST to prevent redundant requests
+		const statusOutput = this.shell.execute("notebooklm research status", true);
+		if (statusOutput && statusOutput.includes("Research in progress")) {
+			AgentLogger.info(
+				this.name,
+				"RESEARCH",
+				"WAIT",
+				`Research already in progress for this notebook. Waiting instead of re-requesting...`,
+			);
+			try {
+				this.shell.execute("notebooklm research wait");
+				return;
+			} catch (e) {
+				AgentLogger.warn(this.name, "RESEARCH", "WARN", "Wait command failed, but skipping redundant request.");
+				return;
+			}
+		}
+
+		// 2. Check if we already have research results (report or many sources)
 		const artifactsOutput = this.shell.execute(
 			"notebooklm artifact list --json",
 			true,
 		);
-		const artifacts = artifactsOutput
+		const artifacts: Artifact[] = artifactsOutput
 			? ArtifactListSchema.parse(JSON.parse(artifactsOutput)).artifacts || []
 			: [];
+		
 		const hasReport = artifacts.some(
 			(a: Artifact) => a.type === "Report" && a.status === "completed",
 		);
@@ -206,36 +225,47 @@ export class NotebookLMAgent extends BaseAgent {
 				this.name,
 				"RESEARCH",
 				"SKIP",
-				`Deep research report already exists for: ${query}. Skipping...`,
+				`Deep research report already exists. Skipping...`,
 			);
 			return;
+		}
+
+		// 3. Last check: search for sources that look like they came from research
+		const sourceOutput = this.shell.execute("notebooklm source list --json", true);
+		if (sourceOutput) {
+			const sources = JSON.parse(sourceOutput).sources || [];
+			// If we have more than 5 sources, likely research was already done
+			if (sources.length > 5) {
+				AgentLogger.info(
+					this.name,
+					"RESEARCH",
+					"SKIP",
+					`Notebook already has ${sources.length} sources. Assuming research is complete.`,
+				);
+				return;
+			}
 		}
 
 		AgentLogger.info(
 			this.name,
 			"RESEARCH",
 			"DEEP",
-			`Performing deep research for: ${query}`,
+			`Issuing NEW deep research request for: ${query}`,
 		);
-		// Run deep research with English query and wait for completion
+		
 		try {
 			this.shell.execute(
 				`notebooklm source add-research "${query}" --mode deep --import-all`,
 			);
 		} catch (e) {
+			// If it fails with timeout but was actually accepted, we don't want to loop.
 			AgentLogger.warn(
 				this.name,
 				"RESEARCH",
 				"WARN",
-				`Deep research import failed (RPC error), but checking if report was created...`,
+				`Research request reported error, but it might be processing in background.`,
 			);
 		}
-		AgentLogger.info(
-			this.name,
-			"RESEARCH",
-			"SUCCESS",
-			`Deep research process handled for: ${query}`,
-		);
 	}
 
 	async run(
@@ -265,14 +295,15 @@ export class NotebookLMAgent extends BaseAgent {
 				"notebooklm artifact list --json",
 				true,
 			);
-			const artifacts = artifactsOutput
+			const artifacts: Artifact[] = artifactsOutput
 				? ArtifactListSchema.parse(JSON.parse(artifactsOutput)).artifacts || []
 				: [];
+			
 			const hasAudio = artifacts.some(
-				(a: Artifact) => a.type_id === "audio" && a.status === "completed",
+				(a: Artifact) => a.type_id === "audio" && (a.status === "completed" || a.status === "in_progress" || a.status === "pending"),
 			);
 			const hasVideo = artifacts.some(
-				(a: Artifact) => a.type_id === "video" && a.status === "completed",
+				(a: Artifact) => a.type_id === "video" && (a.status === "completed" || a.status === "in_progress" || a.status === "pending"),
 			);
 
 			// 3. Generate audio
@@ -288,14 +319,12 @@ export class NotebookLMAgent extends BaseAgent {
 						"Audio generation command returned an error, checking if it was queued...",
 					);
 				}
-				// Explicitly wait for any pending artifacts to ensure it's done before moving on
-				this.shell.execute(`notebooklm artifact wait`);
 			} else {
 				AgentLogger.info(
 					this.name,
 					"RUN",
 					"SKIP",
-					"Audio already exists and is completed. Skipping generation.",
+					"Audio already exists or is in progress. Skipping generation request.",
 				);
 			}
 
@@ -319,16 +348,18 @@ export class NotebookLMAgent extends BaseAgent {
 						"Video generation command returned an error, checking if it was queued...",
 					);
 				}
-				// Explicitly wait again
-				this.shell.execute(`notebooklm artifact wait`);
 			} else {
 				AgentLogger.info(
 					this.name,
 					"RUN",
 					"SKIP",
-					"Video already exists and is completed. Skipping generation.",
+					"Video already exists or is in progress. Skipping generation request.",
 				);
 			}
+
+			// Wait for any pending tasks before attempting download
+			AgentLogger.info(this.name, "RUN", "WAIT", "Waiting for all artifacts to complete...");
+			this.shell.execute(`notebooklm artifact wait`);
 
 			// 5. Get artifact title from artifact list (latest video or audio title)
 			const artifactTitle = this.getLatestVideoTitle(); // This actually gets the latest video title, which is fine for the folder name
@@ -350,20 +381,24 @@ export class NotebookLMAgent extends BaseAgent {
 			// 7. Download audio
 			const audioFileName = `${this.sanitizeFileName(artifactTitle || "audio")}.wav`;
 			const audioPath = path.join(outputDir, audioFileName);
-			AgentLogger.info(this.name, "RUN", "DOWNLOAD_AUDIO", `Downloading audio to ${audioPath}...`);
-			try {
-				this.shell.execute(`notebooklm download audio "${audioPath}" --latest --force`);
-			} catch (e) {
-				AgentLogger.warn(this.name, "RUN", "WARN", "Failed to download audio");
+			if (!fs.existsSync(audioPath)) {
+				AgentLogger.info(this.name, "RUN", "DOWNLOAD_AUDIO", `Downloading audio to ${audioPath}...`);
+				try {
+					this.shell.execute(`notebooklm download audio "${audioPath}" --latest --force`);
+				} catch (e) {
+					AgentLogger.warn(this.name, "RUN", "WARN", "Failed to download audio");
+				}
 			}
 
 			// 8. Download video
 			const videoFileName = `${this.sanitizeFileName(artifactTitle || "video")}.mp4`;
 			const videoPath = path.join(outputDir, videoFileName);
-			AgentLogger.info(this.name, "RUN", "DOWNLOAD_VIDEO", `Downloading video to ${videoPath}...`);
-			this.shell.execute(
-				`notebooklm download video "${videoPath}" --latest --force`,
-			);
+			if (!fs.existsSync(videoPath)) {
+				AgentLogger.info(this.name, "RUN", "DOWNLOAD_VIDEO", `Downloading video to ${videoPath}...`);
+				this.shell.execute(
+					`notebooklm download video "${videoPath}" --latest --force`,
+				);
+			}
 
 			if (await fs.pathExists(videoPath)) {
 				videos = [
@@ -380,7 +415,7 @@ export class NotebookLMAgent extends BaseAgent {
 					this.name,
 					"RUN",
 					"SUCCESS",
-					`Downloaded video to: ${videoPath}`,
+					`Artifacts ready at: ${outputDir}`,
 				);
 			} else {
 				throw new Error(`Video file not found at ${videoPath}`);
