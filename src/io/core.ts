@@ -211,10 +211,18 @@ export abstract class BaseAgent {
 			);
 		}
 
-		return parser(res.content as string);
+		if (!res.content || typeof res.content !== "string") {
+			throw new Error(
+				`LLM response content is invalid: type=${typeof res.content}, value=${JSON.stringify(res.content)?.slice(0, 100)}`
+			);
+		}
+		return parser(res.content);
 	}
 }
 function cleanCodeBlock(text: string): string {
+	if (typeof text !== "string") {
+		throw new Error(`Expected string for cleanCodeBlock, got ${typeof text}`);
+	}
 	const stripped = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
 	const firstBrace = stripped.indexOf("{");
