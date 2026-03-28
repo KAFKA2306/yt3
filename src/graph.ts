@@ -83,8 +83,8 @@ const NODE_METADATA: Record<string, GraphNodeMetadata> = {
 		type: "agent",
 		description: "NotebookLM video generation",
 	},
-	enriched_research: {
-		name: "enriched_research",
+	parallel_research: {
+		name: "parallel_research",
 		phase: "solution-convergence",
 		type: "agent",
 		description: "Parallel financial & web research post-NotebookLM",
@@ -232,11 +232,11 @@ export function createGraph(store: AssetStore) {
 		const res = await notebooklm.run(notebookIds, videoStyle);
 		return { notebook_videos: res };
 	});
-	workflow.addNode("enriched_research", async (state: AgentState) => {
+	workflow.addNode("parallel_research", async (state: AgentState) => {
 		AgentLogger.transition(
 			"SYSTEM",
 			"NOTEBOOKLM",
-			"ENRICHED_RESEARCH",
+			"PARALLEL_RESEARCH",
 			"Running parallel financial & web research",
 		);
 
@@ -280,7 +280,7 @@ export function createGraph(store: AssetStore) {
 	workflow.addNode("memory", async (state: AgentState) => {
 		AgentLogger.transition(
 			"SYSTEM",
-			"ENRICHED_RESEARCH",
+			"PARALLEL_RESEARCH",
 			"MEMORY",
 			"Updating memory with run results",
 		);
@@ -295,8 +295,8 @@ export function createGraph(store: AssetStore) {
 	graph.addEdge("content", "media");
 	graph.addEdge("media", "publish");
 	graph.addEdge("publish", "notebooklm");
-	graph.addEdge("notebooklm", "enriched_research");
-	graph.addEdge("enriched_research", "memory");
+	graph.addEdge("notebooklm", "parallel_research");
+	graph.addEdge("parallel_research", "memory");
 	graph.addEdge("memory", END);
 	return workflow.compile();
 }
