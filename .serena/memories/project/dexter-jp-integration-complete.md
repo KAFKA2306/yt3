@@ -80,5 +80,24 @@ Dexter JP (日本株特化の金融リサーチエージェント) と WebSearch
 - `cb15635` — fix: rename enriched_research node to parallel_research
 - `3d10b1b` — fix: add LLM response content validation to prevent parsing errors
 
+### Critical Bug Fixes Applied
+
+1. **LLM Response Validation** (3d10b1b)
+   - Validates LLM response content before passing to parser
+   - Prevents "text.replace is not a function" errors
+   - Ensures workflow can proceed without parsing failures
+
+2. **Duplicate Research Prevention** (5fc9605)
+   - Removed reliance on non-existent `notebooklm research status/wait` commands
+   - Strengthened artifact checks: completed reports, queued status, source count
+   - Lower source count threshold (5→3) for earlier duplicate detection
+   - Prevents redundant API calls that waste quota
+
+3. **NotebookLM Idempotency** (7651aa3)
+   - Reuse existing notebooks by title match
+   - Skip duplicate sources before adding
+   - Skip deep research if report exists
+   - Skip audio/video generation if artifacts completed
+
 ### Status
-**READY FOR PRODUCTION** — All core functionality implemented and tested. Parallel research pipeline will execute after NotebookLM completes in full workflow runs.
+**PRODUCTION READY** — All core functionality implemented, tested, and hardened against redundant operations. Parallel research pipeline will execute after NotebookLM completes in full workflow runs.
