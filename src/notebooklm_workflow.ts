@@ -30,7 +30,7 @@ async function main() {
 
 		// 2. Add source if provided
 		if (sourceUrl) {
-			await nlmAgent.addSource(notebookId, sourceUrl);
+			await nlmAgent.addSource(notebookId, sourceUrl, undefined, "Primary Workflow Source");
 		}
 
 		// 3. Generate and Download

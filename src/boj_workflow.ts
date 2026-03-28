@@ -30,7 +30,7 @@ async function main() {
 		const notebookId = await nlmAgent.createNotebook(title);
 
 		// 2. Add BoJ Source
-		await nlmAgent.addSource(notebookId, bojContent, "text");
+		await nlmAgent.addSource(notebookId, bojContent, "text", "BoJ Official Announcement");
 
 		// 3. Deep Research (English for broader context)
 		const deepQuery = "Bank of Japan output gap potential growth rate revision March 2026 labor supply demand indicators";

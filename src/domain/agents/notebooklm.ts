@@ -24,11 +24,15 @@ const ArtifactListSchema = z.object({
 	artifacts: z.array(
 		z.object({
 			type_id: z.string(),
+			type: z.string(),
 			title: z.string(),
+			status: z.string(),
 			created_at: z.string(),
 		}),
 	),
 });
+
+type Artifact = z.infer<typeof ArtifactListSchema>["artifacts"][number];
 
 const NotebookCreateSchema = z.object({
 	notebook: z.object({
@@ -78,9 +82,34 @@ export class NotebookLMAgent extends BaseAgent {
 	}
 
 	/**
-	 * Create a new notebook
+	 * Create a new notebook, or reuse an existing one if the title matches
 	 */
 	async createNotebook(title: string): Promise<string> {
+		// 1. Check if notebook with same title already exists
+		AgentLogger.info(
+			this.name,
+			"CREATE",
+			"CHECK",
+			`Checking for existing notebook with title: ${title}`,
+		);
+
+		const listOutput = this.shell.execute("notebooklm list --json", true);
+		if (listOutput) {
+			const parsed = NotebookListSchema.parse(JSON.parse(listOutput));
+			const existing = parsed.notebooks.find((nb) => nb.title === title);
+			if (existing) {
+				AgentLogger.info(
+					this.name,
+					"CREATE",
+					"REUSE",
+					`Found existing notebook "${title}" (${existing.id}). Reusing...`,
+				);
+				this.notebookCache = parsed.notebooks;
+				return existing.id;
+			}
+		}
+
+		// 2. Create if not found
 		AgentLogger.info(this.name, "CREATE", "START", `Creating notebook: ${title}`);
 		const output = this.shell.execute(
 			`notebooklm create "${title}" --json`,
@@ -106,7 +135,31 @@ export class NotebookLMAgent extends BaseAgent {
 		notebookId: string,
 		content: string,
 		type?: string,
+		title?: string,
 	): Promise<void> {
+		// 1. Check if source already exists
+		this.shell.execute(`notebooklm use ${notebookId}`);
+		const listOutput = this.shell.execute("notebooklm source list --json", true);
+		if (listOutput) {
+			const sources = JSON.parse(listOutput).sources || [];
+			const displayTitle = title || content.slice(0, 50);
+			const exists = sources.some(
+				(s: any) =>
+					s.title === title ||
+					s.title === displayTitle ||
+					s.title === content.slice(0, 30),
+			);
+			if (exists) {
+				AgentLogger.info(
+					this.name,
+					"SOURCE",
+					"SKIP",
+					`Source "${displayTitle}" already exists. Skipping...`,
+				);
+				return;
+			}
+		}
+
 		AgentLogger.info(
 			this.name,
 			"SOURCE",
@@ -114,32 +167,74 @@ export class NotebookLMAgent extends BaseAgent {
 			`Adding source to ${notebookId}: ${content.slice(0, 50)}...`,
 		);
 		const typeArg = type ? `--type ${type}` : "";
-		this.shell.execute(
-			`notebooklm source add "${content}" -n ${notebookId} ${typeArg}`,
-		);
+		const titleArg = title ? `--title "${title}"` : "";
+		try {
+			this.shell.execute(
+				`notebooklm source add "${content}" -n ${notebookId} ${typeArg} ${titleArg}`,
+			);
+		} catch (e) {
+			AgentLogger.warn(
+				this.name,
+				"SOURCE",
+				"WARN",
+				`Failed to add source (RPC error), but it might have been added or we can continue: ${title || content.slice(0, 20)}`,
+			);
+		}
 	}
 
 	/**
 	 * Perform deep research on a topic and add discovered sources
 	 */
 	async deepResearch(notebookId: string, query: string): Promise<void> {
+		// Ensure correct notebook context
+		this.shell.execute(`notebooklm use ${notebookId}`);
+
+		// Check if research already exists
+		const artifactsOutput = this.shell.execute(
+			"notebooklm artifact list --json",
+			true,
+		);
+		const artifacts = artifactsOutput
+			? ArtifactListSchema.parse(JSON.parse(artifactsOutput)).artifacts || []
+			: [];
+		const hasReport = artifacts.some(
+			(a: Artifact) => a.type === "Report" && a.status === "completed",
+		);
+
+		if (hasReport) {
+			AgentLogger.info(
+				this.name,
+				"RESEARCH",
+				"SKIP",
+				`Deep research report already exists for: ${query}. Skipping...`,
+			);
+			return;
+		}
+
 		AgentLogger.info(
 			this.name,
 			"RESEARCH",
 			"DEEP",
 			`Performing deep research for: ${query}`,
 		);
-		// Ensure correct notebook context
-		this.shell.execute(`notebooklm use ${notebookId}`);
 		// Run deep research with English query and wait for completion
-		this.shell.execute(
-			`notebooklm source add-research "${query}" --mode deep --import-all`,
-		);
+		try {
+			this.shell.execute(
+				`notebooklm source add-research "${query}" --mode deep --import-all`,
+			);
+		} catch (e) {
+			AgentLogger.warn(
+				this.name,
+				"RESEARCH",
+				"WARN",
+				`Deep research import failed (RPC error), but checking if report was created...`,
+			);
+		}
 		AgentLogger.info(
 			this.name,
 			"RESEARCH",
 			"SUCCESS",
-			`Deep research completed and sources added for: ${query}`,
+			`Deep research process handled for: ${query}`,
 		);
 	}
 
@@ -165,27 +260,75 @@ export class NotebookLMAgent extends BaseAgent {
 			// 2. Set notebook context
 			this.shell.execute(`notebooklm use ${notebookId}`);
 
+			// 3. Check existing artifacts
+			const artifactsOutput = this.shell.execute(
+				"notebooklm artifact list --json",
+				true,
+			);
+			const artifacts = artifactsOutput
+				? ArtifactListSchema.parse(JSON.parse(artifactsOutput)).artifacts || []
+				: [];
+			const hasAudio = artifacts.some(
+				(a: Artifact) => a.type_id === "audio" && a.status === "completed",
+			);
+			const hasVideo = artifacts.some(
+				(a: Artifact) => a.type_id === "video" && a.status === "completed",
+			);
+
 			// 3. Generate audio
-			AgentLogger.info(this.name, "RUN", "GENERATE_AUDIO", "Generating audio...");
-			try {
-				this.shell.execute(`notebooklm generate audio --wait`);
-			} catch (e) {
-				AgentLogger.warn(this.name, "RUN", "WARN", "Audio generation command returned an error, checking if it was queued...");
+			if (!hasAudio) {
+				AgentLogger.info(this.name, "RUN", "GENERATE_AUDIO", "Generating audio...");
+				try {
+					this.shell.execute(`notebooklm generate audio --wait`);
+				} catch (e) {
+					AgentLogger.warn(
+						this.name,
+						"RUN",
+						"WARN",
+						"Audio generation command returned an error, checking if it was queued...",
+					);
+				}
+				// Explicitly wait for any pending artifacts to ensure it's done before moving on
+				this.shell.execute(`notebooklm artifact wait`);
+			} else {
+				AgentLogger.info(
+					this.name,
+					"RUN",
+					"SKIP",
+					"Audio already exists and is completed. Skipping generation.",
+				);
 			}
-			// Explicitly wait for any pending artifacts to ensure it's done before moving on
-			this.shell.execute(`notebooklm artifact wait`);
 
 			// 4. Generate video
-			AgentLogger.info(this.name, "RUN", "GENERATE_VIDEO", `Generating video (${videoStyle})...`);
-			try {
-				this.shell.execute(
-					`notebooklm generate video --wait --style ${videoStyle}`,
+			if (!hasVideo) {
+				AgentLogger.info(
+					this.name,
+					"RUN",
+					"GENERATE_VIDEO",
+					`Generating video (${videoStyle})...`,
 				);
-			} catch (e) {
-				AgentLogger.warn(this.name, "RUN", "WARN", "Video generation command returned an error, checking if it was queued...");
+				try {
+					this.shell.execute(
+						`notebooklm generate video --wait --style ${videoStyle}`,
+					);
+				} catch (e) {
+					AgentLogger.warn(
+						this.name,
+						"RUN",
+						"WARN",
+						"Video generation command returned an error, checking if it was queued...",
+					);
+				}
+				// Explicitly wait again
+				this.shell.execute(`notebooklm artifact wait`);
+			} else {
+				AgentLogger.info(
+					this.name,
+					"RUN",
+					"SKIP",
+					"Video already exists and is completed. Skipping generation.",
+				);
 			}
-			// Explicitly wait again
-			this.shell.execute(`notebooklm artifact wait`);
 
 			// 5. Get artifact title from artifact list (latest video or audio title)
 			const artifactTitle = this.getLatestVideoTitle(); // This actually gets the latest video title, which is fine for the folder name

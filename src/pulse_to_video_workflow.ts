@@ -40,7 +40,7 @@ async function main() {
 		const pulsePath = path.join(ROOT, "pulse.md");
 		if (fs.existsSync(pulsePath)) {
 			const pulseContent = fs.readFileSync(pulsePath, "utf8");
-			await nlmAgent.addSource(notebookId, pulseContent, "text");
+			await nlmAgent.addSource(notebookId, pulseContent, "text", "Daily Pulse Sovereignty Data");
 		}
 
 		// 3. Deep Research (English)
