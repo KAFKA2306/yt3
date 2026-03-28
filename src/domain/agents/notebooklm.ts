@@ -189,25 +189,8 @@ export class NotebookLMAgent extends BaseAgent {
 		// Ensure correct notebook context
 		this.shell.execute(`notebooklm use ${notebookId}`);
 
-		// 1. Check current research status FIRST to prevent redundant requests
-		const statusOutput = this.shell.execute("notebooklm research status", true);
-		if (statusOutput && statusOutput.includes("Research in progress")) {
-			AgentLogger.info(
-				this.name,
-				"RESEARCH",
-				"WAIT",
-				`Research already in progress for this notebook. Waiting instead of re-requesting...`,
-			);
-			try {
-				this.shell.execute("notebooklm research wait");
-				return;
-			} catch (e) {
-				AgentLogger.warn(this.name, "RESEARCH", "WARN", "Wait command failed, but skipping redundant request.");
-				return;
-			}
-		}
-
-		// 2. Check if we already have research results (report or many sources)
+		// CRITICAL CHECK 1: Look for completed Report first
+		// This is the most reliable indicator that research is done
 		const artifactsOutput = this.shell.execute(
 			"notebooklm artifact list --json",
 			true,
@@ -216,54 +199,83 @@ export class NotebookLMAgent extends BaseAgent {
 			? ArtifactListSchema.parse(JSON.parse(artifactsOutput)).artifacts || []
 			: [];
 		
-		const hasReport = artifacts.some(
+		const hasCompletedReport = artifacts.some(
 			(a: Artifact) => a.type === "Report" && a.status === "completed",
 		);
 
-		if (hasReport) {
+		if (hasCompletedReport) {
 			AgentLogger.info(
 				this.name,
 				"RESEARCH",
 				"SKIP",
-				`Deep research report already exists. Skipping...`,
+				`Completed research report found. Deep research already performed. Skipping to avoid duplicate...`,
 			);
 			return;
 		}
 
-		// 3. Last check: search for sources that look like they came from research
+		// CRITICAL CHECK 2: Count sources - if many exist, research likely happened
 		const sourceOutput = this.shell.execute("notebooklm source list --json", true);
 		if (sourceOutput) {
 			const sources = JSON.parse(sourceOutput).sources || [];
-			// If we have more than 5 sources, likely research was already done
-			if (sources.length > 5) {
+			if (sources.length > 3) {
+				// More than 3 sources suggests research was already run
 				AgentLogger.info(
 					this.name,
 					"RESEARCH",
 					"SKIP",
-					`Notebook already has ${sources.length} sources. Assuming research is complete.`,
+					`Notebook already has ${sources.length} sources. Research likely completed. Skipping duplicate...`,
 				);
 				return;
 			}
 		}
 
+		// CRITICAL CHECK 3: Look for any "in_progress" or "queued" artifacts
+		const hasQueuedResearch = artifacts.some(
+			(a: Artifact) => 
+				(a.type === "Report" && (a.status === "in_progress" || a.status === "queued")) ||
+				(a.type_id === "research" && a.status !== "completed"),
+		);
+
+		if (hasQueuedResearch) {
+			AgentLogger.info(
+				this.name,
+				"RESEARCH",
+				"WAIT",
+				`Research is already in progress/queued. Waiting instead of re-requesting...`,
+			);
+			// Try to wait, but don't fail if command doesn't exist
+			try {
+				this.shell.execute("notebooklm artifact wait", true);
+			} catch {
+				// Command might not exist, but that's okay - we're just skipping the redundant request
+			}
+			return;
+		}
+
 		AgentLogger.info(
 			this.name,
 			"RESEARCH",
-			"DEEP",
-			`Issuing NEW deep research request for: ${query}`,
+			"EXEC",
+			`Executing deep research for: ${query}`,
 		);
 		
 		try {
 			this.shell.execute(
 				`notebooklm source add-research "${query}" --mode deep --import-all`,
 			);
+			AgentLogger.info(
+				this.name,
+				"RESEARCH",
+				"QUEUED",
+				`Research request queued. NotebookLM will process in background.`,
+			);
 		} catch (e) {
-			// If it fails with timeout but was actually accepted, we don't want to loop.
+			// Document the error but don't fail - research might still be processing
 			AgentLogger.warn(
 				this.name,
 				"RESEARCH",
-				"WARN",
-				`Research request reported error, but it might be processing in background.`,
+				"ERROR",
+				`Failed to queue research: ${String(e).slice(0, 100)}`,
 			);
 		}
 	}
