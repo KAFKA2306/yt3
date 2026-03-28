@@ -28,6 +28,7 @@ async function main() {
 		}
 
 		const title = research.director_data.title_hook;
+		const searchQuery = research.director_data.search_query;
 		const newsItems = research.news;
 
 		AgentLogger.info("SYSTEM", "PULSE_WORKFLOW", "TOPIC", `Selected Topic: ${title}`);
@@ -42,7 +43,13 @@ async function main() {
 			await nlmAgent.addSource(notebookId, pulseContent, "text");
 		}
 
-		// Add discovered news URLs as sources
+		// 3. Deep Research (English)
+		if (searchQuery) {
+			AgentLogger.info("SYSTEM", "PULSE_WORKFLOW", "DEEP_RESEARCH", `Starting deep research in NotebookLM for: ${searchQuery}`);
+			await nlmAgent.deepResearch(notebookId, searchQuery);
+		}
+
+		// 4. Add discovered news URLs as sources
 		for (const item of newsItems) {
 			if (item.url && item.url.startsWith("http")) {
 				try {
@@ -53,7 +60,7 @@ async function main() {
 			}
 		}
 
-		// 3. Generate and Download Video
+		// 5. Generate and Download Video
 		AgentLogger.info("SYSTEM", "PULSE_WORKFLOW", "GENERATE", "Generating NotebookLM video...");
 		const nlmResult = await nlmAgent.run([notebookId], "whiteboard");
 		
@@ -64,7 +71,7 @@ async function main() {
 		const video = nlmResult.videos[0];
 		if (!video) throw new Error("Video object is undefined");
 
-		// 4. Publish to YouTube
+		// 6. Publish to YouTube
 		AgentLogger.info("SYSTEM", "PULSE_WORKFLOW", "PUBLISH", `Publishing to YouTube: ${video.video_path}`);
 		
 		const state: AgentState = {

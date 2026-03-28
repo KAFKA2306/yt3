@@ -119,6 +119,30 @@ export class NotebookLMAgent extends BaseAgent {
 		);
 	}
 
+	/**
+	 * Perform deep research on a topic and add discovered sources
+	 */
+	async deepResearch(notebookId: string, query: string): Promise<void> {
+		AgentLogger.info(
+			this.name,
+			"RESEARCH",
+			"DEEP",
+			`Performing deep research for: ${query}`,
+		);
+		// Ensure correct notebook context
+		this.shell.execute(`notebooklm use ${notebookId}`);
+		// Run deep research with English query and wait for completion
+		this.shell.execute(
+			`notebooklm source add-research "${query}" --mode deep --import-all`,
+		);
+		AgentLogger.info(
+			this.name,
+			"RESEARCH",
+			"SUCCESS",
+			`Deep research completed and sources added for: ${query}`,
+		);
+	}
+
 	async run(
 		notebook_ids: string[],
 		videoStyle = "whiteboard",
