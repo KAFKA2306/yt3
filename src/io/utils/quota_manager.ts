@@ -352,4 +352,17 @@ export class QuotaManager {
 
 		return `[LLM System Status]\\nProvider: Gemini 3 Flash (Cluster Node ${index})\\nRemaining: ${state.remaining} requests, ${state.remainingTokens} tokens\\nPerformance: ${status}\\nBackoff Level: ${state.backoffLevel}\\nStrategic Guidance: ${guidance}`;
 	}
+
+	public static getLedgerSnapshot(): QuotaLedger {
+		QuotaManager.syncEnvKeys();
+		return JSON.parse(JSON.stringify(QuotaManager.loadLedger())) as QuotaLedger;
+	}
+
+	public static getMetrics(): QuotaMetric[] {
+		if (!fs.existsSync(METRICS_PATH)) return [];
+		const lines = fs.readFileSync(METRICS_PATH, "utf-8").split("\n");
+		return lines
+			.filter((l) => l.trim())
+			.map((l) => JSON.parse(l) as QuotaMetric);
+	}
 }

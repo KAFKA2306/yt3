@@ -165,15 +165,32 @@ export class NotebookLMAgent extends BaseAgent {
 			// 2. Set notebook context
 			this.shell.execute(`notebooklm use ${notebookId}`);
 
-			// 3. Generate video
-			this.shell.execute(
-				`notebooklm generate video --wait --style ${videoStyle}`,
-			);
+			// 3. Generate audio
+			AgentLogger.info(this.name, "RUN", "GENERATE_AUDIO", "Generating audio...");
+			try {
+				this.shell.execute(`notebooklm generate audio --wait`);
+			} catch (e) {
+				AgentLogger.warn(this.name, "RUN", "WARN", "Audio generation command returned an error, checking if it was queued...");
+			}
+			// Explicitly wait for any pending artifacts to ensure it's done before moving on
+			this.shell.execute(`notebooklm artifact wait`);
 
-			// 4. Get video title from artifact list
-			const videoTitle = this.getLatestVideoTitle();
+			// 4. Generate video
+			AgentLogger.info(this.name, "RUN", "GENERATE_VIDEO", `Generating video (${videoStyle})...`);
+			try {
+				this.shell.execute(
+					`notebooklm generate video --wait --style ${videoStyle}`,
+				);
+			} catch (e) {
+				AgentLogger.warn(this.name, "RUN", "WARN", "Video generation command returned an error, checking if it was queued...");
+			}
+			// Explicitly wait again
+			this.shell.execute(`notebooklm artifact wait`);
 
-			// 5. Create output directory
+			// 5. Get artifact title from artifact list (latest video or audio title)
+			const artifactTitle = this.getLatestVideoTitle(); // This actually gets the latest video title, which is fine for the folder name
+
+			// 6. Create output directory
 			const notebookDirName = this.sanitizeFileName(
 				notebookInfo.title || notebookId.slice(0, 8),
 			);
@@ -187,10 +204,20 @@ export class NotebookLMAgent extends BaseAgent {
 			);
 			await fs.ensureDir(outputDir);
 
-			// 6. Download video to specified path
-			const videoFileName = `${this.sanitizeFileName(videoTitle || "video")}.mp4`;
-			const videoPath = path.join(outputDir, videoFileName);
+			// 7. Download audio
+			const audioFileName = `${this.sanitizeFileName(artifactTitle || "audio")}.wav`;
+			const audioPath = path.join(outputDir, audioFileName);
+			AgentLogger.info(this.name, "RUN", "DOWNLOAD_AUDIO", `Downloading audio to ${audioPath}...`);
+			try {
+				this.shell.execute(`notebooklm download audio "${audioPath}" --latest --force`);
+			} catch (e) {
+				AgentLogger.warn(this.name, "RUN", "WARN", "Failed to download audio");
+			}
 
+			// 8. Download video
+			const videoFileName = `${this.sanitizeFileName(artifactTitle || "video")}.mp4`;
+			const videoPath = path.join(outputDir, videoFileName);
+			AgentLogger.info(this.name, "RUN", "DOWNLOAD_VIDEO", `Downloading video to ${videoPath}...`);
 			this.shell.execute(
 				`notebooklm download video "${videoPath}" --latest --force`,
 			);

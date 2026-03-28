@@ -170,6 +170,31 @@ export const NotebookLMResultSchema = z.object({
 });
 export type NotebookLMResult = z.infer<typeof NotebookLMResultSchema>;
 
+export const FinancialFindingSchema = z.object({
+	company: z.string().optional(),
+	edinet_key_metrics: z.record(z.string(), z.string()).optional(),
+	jquants_data: z.record(z.string(), z.string()).optional(),
+	summary: z.string(),
+});
+export type FinancialFinding = z.infer<typeof FinancialFindingSchema>;
+
+export const WebSearchResultSchema = z.object({
+	title: z.string(),
+	url: z.string(),
+	snippet: z.string(),
+	source: z.string().optional(),
+});
+export type WebSearchResult = z.infer<typeof WebSearchResultSchema>;
+
+export const EnrichedResearchSchema = z.object({
+	research_theme: z.string(),
+	dexter_jp_findings: z.array(FinancialFindingSchema).optional(),
+	web_search_results: z.array(WebSearchResultSchema).optional(),
+	combined_insights: z.string(),
+	generated_at: z.string(),
+});
+export type EnrichedResearch = z.infer<typeof EnrichedResearchSchema>;
+
 export const AgentStateSchema = z.object({
 	run_id: z.string(),
 	bucket: z.string(),
@@ -187,5 +212,6 @@ export const AgentStateSchema = z.object({
 	mission_file: z.string().optional(),
 	strategic_insight: StrategicInsightSchema.optional(),
 	notebook_videos: NotebookLMResultSchema.optional(),
+	enriched_research: EnrichedResearchSchema.optional(),
 });
 export type AgentState = z.infer<typeof AgentStateSchema>;

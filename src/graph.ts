@@ -1,14 +1,17 @@
 import { END, START, StateGraph } from "@langchain/langgraph";
 import { ScriptSmith } from "./domain/agents/content.js";
+import { DexterJPAgent } from "./domain/agents/dexter_jp.js";
 import { MacroRegimeAnalystAgent } from "./domain/agents/macro_regime_analyst_agent.js";
 import { VisualDirector } from "./domain/agents/media.js";
 import { MemoryAgent } from "./domain/agents/memory.js";
 import { NotebookLMAgent } from "./domain/agents/notebooklm.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
+import { WebSearchAgent } from "./domain/agents/web_search.js";
 import type {
 	AgentState,
 	DirectorData,
+	EnrichedResearch,
 	Metadata,
 	NotebookLMResult,
 	PublishResults,
@@ -80,6 +83,12 @@ const NODE_METADATA: Record<string, GraphNodeMetadata> = {
 		type: "agent",
 		description: "NotebookLM video generation",
 	},
+	enriched_research: {
+		name: "enriched_research",
+		phase: "solution-convergence",
+		type: "agent",
+		description: "Parallel financial & web research post-NotebookLM",
+	},
 	memory: {
 		name: "memory",
 		phase: "debugging",
@@ -124,8 +133,13 @@ export function createGraph(store: AssetStore) {
 		notebook_videos: { reducer, default: () => undefined } as ChannelReducer<
 			NotebookLMResult | undefined
 		>,
+		enriched_research: { reducer, default: () => undefined } as ChannelReducer<
+			EnrichedResearch | undefined
+		>,
 	};
 	const research = new TrendScout(store);
+	const dexterJp = new DexterJPAgent(store);
+	const webSearch = new WebSearchAgent(store);
 	const strategy = new MacroRegimeAnalystAgent(store);
 	const content = new ScriptSmith(store);
 	const media = new VisualDirector(store);
@@ -218,10 +232,55 @@ export function createGraph(store: AssetStore) {
 		const res = await notebooklm.run(notebookIds, videoStyle);
 		return { notebook_videos: res };
 	});
-	workflow.addNode("memory", async (state: AgentState) => {
+	workflow.addNode("enriched_research", async (state: AgentState) => {
 		AgentLogger.transition(
 			"SYSTEM",
 			"NOTEBOOKLM",
+			"ENRICHED_RESEARCH",
+			"Running parallel financial & web research",
+		);
+
+		// Extract research theme from NotebookLM output
+		const notebooks = state.notebook_videos?.videos || [];
+		const theme = notebooks.length > 0
+			? notebooks[0]?.notebook_title || "Market Analysis"
+			: "Financial Market Analysis";
+
+		AgentLogger.info(
+			"enriched_research",
+			"THEME",
+			"EXTRACT",
+			`Extracted theme: ${theme}`,
+		);
+
+		// Run parallel searches
+		const [dexterResults, webResults] = await Promise.all([
+			dexterJp.run(theme, 3),
+			webSearch.run(theme, 5),
+		]);
+
+		const insights = [
+			...dexterResults.map(
+				(f) =>
+					`${f.company || "Financial Analysis"}: ${f.summary}`,
+			),
+			...webResults.map((r) => `${r.title}: ${r.snippet}`),
+		].join(" | ");
+
+		return {
+			enriched_research: {
+				research_theme: theme,
+				dexter_jp_findings: dexterResults,
+				web_search_results: webResults,
+				combined_insights: insights,
+				generated_at: new Date().toISOString(),
+			},
+		};
+	});
+	workflow.addNode("memory", async (state: AgentState) => {
+		AgentLogger.transition(
+			"SYSTEM",
+			"ENRICHED_RESEARCH",
 			"MEMORY",
 			"Updating memory with run results",
 		);
@@ -236,7 +295,8 @@ export function createGraph(store: AssetStore) {
 	graph.addEdge("content", "media");
 	graph.addEdge("media", "publish");
 	graph.addEdge("publish", "notebooklm");
-	graph.addEdge("notebooklm", "memory");
+	graph.addEdge("notebooklm", "enriched_research");
+	graph.addEdge("enriched_research", "memory");
 	graph.addEdge("memory", END);
 	return workflow.compile();
 }

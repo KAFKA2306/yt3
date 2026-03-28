@@ -1,6 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import path from "node:path";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+} from "bun:test";
 import fs from "fs-extra";
+import path from "node:path";
 import {
 	NotebookLMAgent,
 	type ShellExecutor,
@@ -25,6 +31,12 @@ class FakeShell implements ShellExecutor {
 				},
 			],
 		}),
+		create: JSON.stringify({
+			notebook: {
+				id: "new-nb-id",
+				title: "New Notebook",
+			},
+		}),
 	};
 
 	execute(command: string, returnOutput = false): string | undefined {
@@ -35,6 +47,9 @@ class FakeShell implements ShellExecutor {
 			}
 			if (command.includes("list --json")) {
 				return this.responses.list;
+			}
+			if (command.includes("create")) {
+				return this.responses.create;
 			}
 			return "";
 		}
@@ -101,15 +116,11 @@ describe("NotebookLMAgent", () => {
 
 		const listIdx = fakeShell.calls.findIndex((c) => c.includes("list --json"));
 		const useIdx = fakeShell.calls.findIndex((c) => c.includes("use abc123"));
-		const genIdx = fakeShell.calls.findIndex((c) =>
-			c.includes("generate video"),
-		);
+		const genIdx = fakeShell.calls.findIndex((c) => c.includes("generate video"));
 		const artIdx = fakeShell.calls.findIndex((c) =>
 			c.includes("artifact list --json"),
 		);
-		const dlIdx = fakeShell.calls.findIndex((c) =>
-			c.includes("download video"),
-		);
+		const dlIdx = fakeShell.calls.findIndex((c) => c.includes("download video"));
 
 		expect(listIdx).toBeGreaterThanOrEqual(0);
 		expect(useIdx).toBeGreaterThanOrEqual(0);
@@ -175,10 +186,7 @@ describe("NotebookLMAgent", () => {
 			"videos",
 		);
 		await fs.ensureDir(outputDir);
-		await fs.writeFile(
-			path.join(outputDir, "awesome_video_title.mp4"),
-			"dummy",
-		);
+		await fs.writeFile(path.join(outputDir, "awesome_video_title.mp4"), "dummy");
 
 		await agent.run(["abc123"]);
 
@@ -232,7 +240,8 @@ describe("NotebookLMAgent", () => {
 			"videos",
 		);
 		await fs.ensureDir(outputDir);
-		await fs.writeFile(path.join(outputDir, "test_video_title.mp4"), "dummy");
+		const videoPath = path.join(outputDir, "test_video_title.mp4");
+		await fs.writeFile(videoPath, "dummy");
 
 		await agent.run(["abc123"]);
 
@@ -252,7 +261,8 @@ describe("NotebookLMAgent", () => {
 			"videos",
 		);
 		await fs.ensureDir(outputDir);
-		await fs.writeFile(path.join(outputDir, "test_video_title.mp4"), "dummy");
+		const videoPath = path.join(outputDir, "test_video_title.mp4");
+		await fs.writeFile(videoPath, "dummy");
 
 		await agent.run(["abc123"], "voiceover");
 
@@ -260,5 +270,31 @@ describe("NotebookLMAgent", () => {
 			c.includes("generate video"),
 		);
 		expect(generateCall).toContain("--style voiceover");
+	});
+
+	it("should create a notebook correctly", async () => {
+		const agent = new NotebookLMAgent(store, fakeShell);
+		const id = await agent.createNotebook("New Notebook");
+
+		expect(id).toBe("new-nb-id");
+		expect(fakeShell.calls).toContain('notebooklm create "New Notebook" --json');
+	});
+
+	it("should add a source correctly", async () => {
+		const agent = new NotebookLMAgent(store, fakeShell);
+		await agent.addSource("nb123", "https://example.com");
+
+		expect(fakeShell.calls).toContain(
+			'notebooklm source add "https://example.com" -n nb123 ',
+		);
+	});
+
+	it("should add a source with explicit type correctly", async () => {
+		const agent = new NotebookLMAgent(store, fakeShell);
+		await agent.addSource("nb123", "content", "text");
+
+		expect(fakeShell.calls).toContain(
+			'notebooklm source add "content" -n nb123 --type text',
+		);
 	});
 });

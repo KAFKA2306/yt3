@@ -12,6 +12,8 @@ import {
 	getCurrentDateString,
 	loadConfig,
 } from "../io/core.js";
+import { createQuotaRouter } from "./quota.js";
+import { createDashboardRoutes } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +34,10 @@ function escape(text: string): string {
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+// Register Quota Dashboard routes
+app.use("/dashboard", createDashboardRoutes());
+app.use("/api/quota", createQuotaRouter());
 
 const authMiddleware = (
 	req: express.Request,
