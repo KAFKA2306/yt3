@@ -13,10 +13,6 @@
 		}
 	},
 	"files": {
-		"ignore": [
-			"**/*.log",
-			"logs/**",
-			"node_modules/**"
-		]
+		"ignore": ["**/*.log", "logs/**", "node_modules/**", "data/**"]
 	}
 }
