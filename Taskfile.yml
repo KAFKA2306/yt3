@@ -56,10 +56,6 @@ tasks:
     desc: "Run full Daily Pulse to NotebookLM automation"
     cmds: ["bun --env-file=config/.env src/pulse_to_video_workflow.ts"]
 
-  notebooklm:boj:
-    desc: "Autonomous BoJ output gap revision analysis workflow"
-    cmds: ["bun --env-file=config/.env src/boj_workflow.ts"]
-
   # ============================================================================
   # INFRASTRUCTURE
   # ============================================================================

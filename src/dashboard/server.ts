@@ -23,7 +23,7 @@ const app = express();
 const cfg = loadConfig();
 const PORT = cfg.dashboard?.port ?? 3000;
 
-function escape(text: string): string {
+function escapeHtml(text: string): string {
 	return text
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
@@ -35,14 +35,13 @@ function escape(text: string): string {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Register Quota Dashboard routes
 app.use("/dashboard", createDashboardRoutes());
 app.use("/api/quota", createQuotaRouter());
 
 const authMiddleware = (
 	req: express.Request,
 	res: express.Response,
-	next: Function,
+	next: express.NextFunction,
 ) => {
 	const authHeader = req.headers.authorization;
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -164,7 +163,11 @@ app.get(
 			let scriptHtml = "";
 			if (await fs.pathExists(contentPath)) {
 				const contentFile = await fs.readFile(contentPath, "utf8");
-				const data = yaml.load(contentFile) as any;
+				interface ScriptData {
+					metadata?: { title?: string; description?: string; tags?: string[] };
+					script?: { lines?: { speaker: string; text: string }[] };
+				}
+				const data = yaml.load(contentFile) as ScriptData;
 				if (data?.metadata) {
 					metadataHtml = `
                     <div class="card metadata-card">

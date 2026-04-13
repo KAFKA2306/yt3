@@ -24,7 +24,6 @@ function envCheck() {
 	const pkgList = execSync("npm list typescript tsx").toString();
 	if (!pkgList.includes("typescript") || !pkgList.includes("tsx"))
 		throw new Error("Missing deps");
-	// Disk space check omitted for brevity
 }
 function runStep(step: string, runId: string, bucket = "") {
 	execSync(`bun src/step.ts ${step} ${runId} ${bucket}`, { stdio: "inherit" });

@@ -60,7 +60,10 @@ async function runStep(
 			publish_results: await new PublishAgent(store).run(state as AgentState),
 		}),
 		all: async () => {
-			await createGraph(store).invoke({
+			const graph = createGraph(store) as {
+				invoke: (s: AgentState) => Promise<AgentState>;
+			};
+			await graph.invoke({
 				run_id: store.runDir.split("/").pop() || "unknown",
 				bucket: state.bucket || bucket,
 			});

@@ -1,58 +1,53 @@
-import { Router, type Request, type Response } from "express";
-import { QuotaManager } from "../io/utils/quota_manager.js";
+import { type Request, type Response, Router } from "express";
 import { AgentLogger } from "../io/utils/logger.js";
+import * as Ledger from "../io/utils/quota/ledger.js";
+import * as QuotaManager from "../io/utils/quota/manager.js";
 
 export function createQuotaRouter(): Router {
 	const router = Router();
 
 	router.get("/api/quota/status", (req: Request, res: Response) => {
 		const keyName = (req.query.key as string) || "GEMINI_API_KEY";
-		const ledger = QuotaManager.getLedgerSnapshot();
-		const state = ledger.keys[keyName];
+		const quotas = QuotaManager.getAllEntries();
+		const state = quotas.find((q: { name: string }) => q.name === keyName) as
+			| { requests: number; tokens: number; reset_at: string }
+			| undefined;
 
 		if (!state) {
-			res.status(404).json({
-				success: false,
-				error: `Key ${keyName} not found`,
-			});
+			res
+				.status(404)
+				.json({ success: false, error: `Key ${keyName} not found` });
 			return;
 		}
-
-		const requestPercent = (state.remaining / 15) * 100;
-		const tokenPercent = (state.remainingTokens / 1000000) * 100;
 
 		res.json({
 			success: true,
 			key: keyName,
-			status: state.status,
-			remaining: state.remaining,
-			remainingTokens: state.remainingTokens,
-			resetTime: state.resetTime,
-			backoffLevel: state.backoffLevel,
-			requestPercent: Math.round(requestPercent),
-			tokenPercent: Math.round(tokenPercent),
-			isLowQuota: requestPercent < 30 || tokenPercent < 30,
+			status: "active",
+			remaining: state.requests,
+			remainingTokens: state.tokens,
+			resetTime: state.reset_at,
+			backoffLevel: 0,
 		});
 	});
 
 	router.get("/api/quota/all", (req: Request, res: Response) => {
-		const ledger = QuotaManager.getLedgerSnapshot();
-		const keys = Object.entries(ledger.keys).map(([name, state]) => {
-			const requestPercent = (state.remaining / 15) * 100;
-			const tokenPercent = (state.remainingTokens / 1000000) * 100;
-
-			return {
-				name,
-				status: state.status,
-				remaining: state.remaining,
-				remainingTokens: state.remainingTokens,
-				resetTime: state.resetTime,
-				backoffLevel: state.backoffLevel,
-				requestPercent: Math.round(requestPercent),
-				tokenPercent: Math.round(tokenPercent),
-				isLowQuota: requestPercent < 30 || tokenPercent < 30,
-			};
-		});
+		const quotas = QuotaManager.getAllEntries();
+		const keys = quotas.map(
+			(q: {
+				name: string;
+				requests: number;
+				tokens: number;
+				reset_at: string;
+			}) => ({
+				name: q.name,
+				status: "active",
+				remaining: q.requests,
+				remainingTokens: q.tokens,
+				resetTime: q.reset_at,
+				backoffLevel: 0,
+			}),
+		);
 
 		res.json({
 			success: true,
@@ -92,7 +87,7 @@ export function createQuotaRouter(): Router {
 
 		res.json({
 			success: true,
-			metrics: metrics.slice(-100), // Last 100 metrics
+			metrics: metrics.slice(-100),
 			count: metrics.length,
 		});
 	});

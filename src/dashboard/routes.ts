@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from "express";
+import { type Request, type Response, Router } from "express";
 
 export function createDashboardRoutes(): Router {
 	const router = Router();
@@ -45,7 +45,7 @@ export function createDashboardRoutes(): Router {
 
 	<script>
 		const API_BASE = '/api/quota';
-		const REFRESH_INTERVAL = 30000; // 30 seconds
+		const REFRESH_INTERVAL = 30000;
 
 		async function updateQuota() {
 			try {
@@ -140,7 +140,7 @@ export function createDashboardRoutes(): Router {
 			}
 		}
 
-		// Initial load and periodic refresh
+
 		updateQuota();
 		setInterval(updateQuota, REFRESH_INTERVAL);
 	</script>
