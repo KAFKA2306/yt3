@@ -14,7 +14,6 @@ export class Predictor {
 		sentimentScore: number,
 		newsDelta: number,
 	): PredictionResult {
-		// p_model = mkt_price + adjustments
 		const p_model = marketPrice + sentimentScore + newsDelta;
 		const clampedP = Math.max(0.01, Math.min(0.99, p_model));
 

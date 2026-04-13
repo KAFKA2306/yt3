@@ -7,6 +7,19 @@ export enum RunStage {
 	WATCHER = "watcher",
 	MEMORY = "memory",
 }
+import type { OverlayConfig, Rect, Size } from "./config/base.js";
+
+export interface RenderPlan {
+	canvas: Size;
+	overlays: Array<{
+		config: OverlayConfig;
+		resolvedPath: string;
+		bounds: Rect;
+	}>;
+	subtitleArea?: Rect;
+	safeMarginL?: number;
+	safeMarginR?: number;
+}
 export * from "./config_types.js";
 export const NewsItemSchema = z.object({
 	title: z.string(),
