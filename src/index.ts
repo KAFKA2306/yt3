@@ -26,11 +26,10 @@ async function main() {
 		bucket: BUCKET,
 		mission_file: MISSION_FILE,
 	};
-	const finalState = (await graph.invoke(
-		initialState,
-	)) as unknown as AgentState;
+	const finalState = (await (
+		graph as { invoke: (s: AgentState) => Promise<AgentState> }
+	).invoke(initialState)) as unknown as AgentState;
 
-	// Extract Mandatory Finality Reporting (operational-resilience Skill)
 	const finalTitle = finalState.metadata?.title || "Unknown Title";
 	const finalVideoId = finalState.publish_results?.youtube?.video_id;
 	const finalUrl = finalVideoId
@@ -51,7 +50,6 @@ async function main() {
 		},
 	);
 
-	// Mandatory Console output for terminal users
 	console.log(`\n${"=".repeat(80)}`);
 	console.log("🚀 PIPELINE SUCCESSFUL");
 	console.log(`🎬 TITLE: ${finalTitle}`);

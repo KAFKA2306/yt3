@@ -33,7 +33,6 @@ export class AceEvaluator {
 			`Analyzing ${recentLogs.length} log entries for ${bulletIds.length} bullets`,
 		);
 
-		// --- Mathematical Objectification (Internal Metrics) ---
 		const repetitionScore = this.calculateRepetitionScore(recentLogs);
 		const sensationalismScore = this.calculateSensationalismScore(recentLogs);
 
@@ -111,10 +110,9 @@ Include 'soft-metric-repetition' and 'soft-metric-sensationalism' if metrics are
 			});
 		if (topics.length < 2) return 0;
 
-		// Improved similarity for Japanese (character-based if no spaces)
 		const tokenize = (text: string) => {
 			if (text.includes(" ")) return text.split(" ");
-			// Character-level n-grams (bigram) for better Japanese comparison
+
 			const chars = text.split("");
 			let biGrams: string[] = [];
 			for (let i = 0; i < chars.length - 1; i++) {

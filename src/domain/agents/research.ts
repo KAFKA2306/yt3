@@ -132,7 +132,7 @@ export class TrendScout extends BaseAgent {
 				),
 			{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
 		);
-		// Merge all topics into a single research result
+
 		const allTopics = research.selected_topics || [];
 		const firstTopic = allTopics[0];
 		const result: ResearchResult = {

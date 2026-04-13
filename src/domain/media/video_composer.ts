@@ -98,11 +98,6 @@ export class VideoComposer {
 		let lastStream = "0:v";
 		const inputIndex = 2;
 
-		// Process all overlays (from RenderPlan)
-		// Note: This is a placeholder - actual overlays would come from RenderPlan
-		// which would be passed explicitly in production code
-
-		// Apply thumbnail overlay if enabled
 		if (
 			this.config.thumbnail_overlay?.enabled &&
 			thumbnailPath &&
@@ -116,7 +111,6 @@ export class VideoComposer {
 			lastStream = "v_thumb";
 		}
 
-		// Apply subtitles
 		const fontsDir = this.config.subtitles?.font_path
 			? path.dirname(path.resolve(this.config.subtitles.font_path))
 			: "";

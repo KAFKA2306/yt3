@@ -23,6 +23,7 @@ const NotebookListSchema = z.object({
 const ArtifactListSchema = z.object({
 	artifacts: z.array(
 		z.object({
+			id: z.string(),
 			type_id: z.string(),
 			type: z.string(),
 			title: z.string(),
@@ -85,7 +86,6 @@ export class NotebookLMAgent extends BaseAgent {
 	 * Create a new notebook, or reuse an existing one if the title matches
 	 */
 	async createNotebook(title: string): Promise<string> {
-		// 1. Check if notebook with same title already exists
 		AgentLogger.info(
 			this.name,
 			"CREATE",
@@ -109,8 +109,12 @@ export class NotebookLMAgent extends BaseAgent {
 			}
 		}
 
-		// 2. Create if not found
-		AgentLogger.info(this.name, "CREATE", "START", `Creating notebook: ${title}`);
+		AgentLogger.info(
+			this.name,
+			"CREATE",
+			"START",
+			`Creating notebook: ${title}`,
+		);
 		const output = this.shell.execute(
 			`notebooklm create "${title}" --json`,
 			true,
@@ -123,7 +127,7 @@ export class NotebookLMAgent extends BaseAgent {
 			"SUCCESS",
 			`Created notebook: ${parsed.notebook.title} (${parsed.notebook.id})`,
 		);
-		// Invalidate cache
+
 		this.notebookCache = null;
 		return parsed.notebook.id;
 	}
@@ -137,14 +141,16 @@ export class NotebookLMAgent extends BaseAgent {
 		type?: string,
 		title?: string,
 	): Promise<void> {
-		// 1. Check if source already exists
 		this.shell.execute(`notebooklm use ${notebookId}`);
-		const listOutput = this.shell.execute("notebooklm source list --json", true);
+		const listOutput = this.shell.execute(
+			"notebooklm source list --json",
+			true,
+		);
 		if (listOutput) {
 			const sources = JSON.parse(listOutput).sources || [];
 			const displayTitle = title || content.slice(0, 50);
 			const exists = sources.some(
-				(s: any) =>
+				(s: { title: string }) =>
 					s.title === title ||
 					s.title === displayTitle ||
 					s.title === content.slice(0, 30),
@@ -186,11 +192,8 @@ export class NotebookLMAgent extends BaseAgent {
 	 * Perform deep research on a topic and add discovered sources
 	 */
 	async deepResearch(notebookId: string, query: string): Promise<void> {
-		// Ensure correct notebook context
 		this.shell.execute(`notebooklm use ${notebookId}`);
 
-		// CRITICAL CHECK 1: Look for completed Report first
-		// This is the most reliable indicator that research is done
 		const artifactsOutput = this.shell.execute(
 			"notebooklm artifact list --json",
 			true,
@@ -198,7 +201,7 @@ export class NotebookLMAgent extends BaseAgent {
 		const artifacts: Artifact[] = artifactsOutput
 			? ArtifactListSchema.parse(JSON.parse(artifactsOutput)).artifacts || []
 			: [];
-		
+
 		const hasCompletedReport = artifacts.some(
 			(a: Artifact) => a.type === "Report" && a.status === "completed",
 		);
@@ -208,17 +211,18 @@ export class NotebookLMAgent extends BaseAgent {
 				this.name,
 				"RESEARCH",
 				"SKIP",
-				`Completed research report found. Deep research already performed. Skipping to avoid duplicate...`,
+				"Completed research report found. Deep research already performed. Skipping to avoid duplicate...",
 			);
 			return;
 		}
 
-		// CRITICAL CHECK 2: Count sources - if many exist, research likely happened
-		const sourceOutput = this.shell.execute("notebooklm source list --json", true);
+		const sourceOutput = this.shell.execute(
+			"notebooklm source list --json",
+			true,
+		);
 		if (sourceOutput) {
 			const sources = JSON.parse(sourceOutput).sources || [];
 			if (sources.length > 3) {
-				// More than 3 sources suggests research was already run
 				AgentLogger.info(
 					this.name,
 					"RESEARCH",
@@ -229,10 +233,10 @@ export class NotebookLMAgent extends BaseAgent {
 			}
 		}
 
-		// CRITICAL CHECK 3: Look for any "in_progress" or "queued" artifacts
 		const hasQueuedResearch = artifacts.some(
-			(a: Artifact) => 
-				(a.type === "Report" && (a.status === "in_progress" || a.status === "queued")) ||
+			(a: Artifact) =>
+				(a.type === "Report" &&
+					(a.status === "in_progress" || a.status === "queued")) ||
 				(a.type_id === "research" && a.status !== "completed"),
 		);
 
@@ -241,14 +245,12 @@ export class NotebookLMAgent extends BaseAgent {
 				this.name,
 				"RESEARCH",
 				"WAIT",
-				`Research is already in progress/queued. Waiting instead of re-requesting...`,
+				"Research is already in progress/queued. Waiting instead of re-requesting...",
 			);
-			// Try to wait, but don't fail if command doesn't exist
+
 			try {
 				this.shell.execute("notebooklm artifact wait", true);
-			} catch {
-				// Command might not exist, but that's okay - we're just skipping the redundant request
-			}
+			} catch {}
 			return;
 		}
 
@@ -258,7 +260,7 @@ export class NotebookLMAgent extends BaseAgent {
 			"EXEC",
 			`Executing deep research for: ${query}`,
 		);
-		
+
 		try {
 			this.shell.execute(
 				`notebooklm source add-research "${query}" --mode deep --import-all`,
@@ -267,10 +269,9 @@ export class NotebookLMAgent extends BaseAgent {
 				this.name,
 				"RESEARCH",
 				"QUEUED",
-				`Research request queued. NotebookLM will process in background.`,
+				"Research request queued. NotebookLM will process in background.",
 			);
 		} catch (e) {
-			// Document the error but don't fail - research might still be processing
 			AgentLogger.warn(
 				this.name,
 				"RESEARCH",
@@ -296,13 +297,10 @@ export class NotebookLMAgent extends BaseAgent {
 				`Processing notebook: ${notebookId}`,
 			);
 
-			// 1. Get notebook details
 			const notebookInfo = this.getNotebookInfo(notebookId);
 
-			// 2. Set notebook context
 			this.shell.execute(`notebooklm use ${notebookId}`);
 
-			// 3. Check existing artifacts
 			const artifactsOutput = this.shell.execute(
 				"notebooklm artifact list --json",
 				true,
@@ -310,19 +308,31 @@ export class NotebookLMAgent extends BaseAgent {
 			const artifacts: Artifact[] = artifactsOutput
 				? ArtifactListSchema.parse(JSON.parse(artifactsOutput)).artifacts || []
 				: [];
-			
+
 			const hasAudio = artifacts.some(
-				(a: Artifact) => a.type_id === "audio" && (a.status === "completed" || a.status === "in_progress" || a.status === "pending"),
+				(a: Artifact) =>
+					a.type_id === "audio" &&
+					(a.status === "completed" ||
+						a.status === "in_progress" ||
+						a.status === "pending"),
 			);
 			const hasVideo = artifacts.some(
-				(a: Artifact) => a.type_id === "video" && (a.status === "completed" || a.status === "in_progress" || a.status === "pending"),
+				(a: Artifact) =>
+					a.type_id === "video" &&
+					(a.status === "completed" ||
+						a.status === "in_progress" ||
+						a.status === "pending"),
 			);
 
-			// 3. Generate audio
 			if (!hasAudio) {
-				AgentLogger.info(this.name, "RUN", "GENERATE_AUDIO", "Generating audio...");
+				AgentLogger.info(
+					this.name,
+					"RUN",
+					"GENERATE_AUDIO",
+					"Generating audio...",
+				);
 				try {
-					this.shell.execute(`notebooklm generate audio --wait`);
+					this.shell.execute("notebooklm generate audio --wait");
 				} catch (e) {
 					AgentLogger.warn(
 						this.name,
@@ -340,7 +350,6 @@ export class NotebookLMAgent extends BaseAgent {
 				);
 			}
 
-			// 4. Generate video
 			if (!hasVideo) {
 				AgentLogger.info(
 					this.name,
@@ -369,14 +378,52 @@ export class NotebookLMAgent extends BaseAgent {
 				);
 			}
 
-			// Wait for any pending tasks before attempting download
-			AgentLogger.info(this.name, "RUN", "WAIT", "Waiting for all artifacts to complete...");
-			this.shell.execute(`notebooklm artifact wait`);
+			AgentLogger.info(
+				this.name,
+				"RUN",
+				"WAIT",
+				"Waiting for all artifacts to complete...",
+			);
 
-			// 5. Get artifact title from artifact list (latest video or audio title)
-			const artifactTitle = this.getLatestVideoTitle(); // This actually gets the latest video title, which is fine for the folder name
+			// Get artifacts again to find IDs
+			const waitArtifactsOutput = this.shell.execute(
+				"notebooklm artifact list --json",
+				true,
+			);
+			if (waitArtifactsOutput) {
+				const currentArtifacts =
+					ArtifactListSchema.parse(JSON.parse(waitArtifactsOutput)).artifacts ||
+					[];
+				const pending = currentArtifacts.filter(
+					(a) =>
+						a.status === "pending" ||
+						a.status === "in_progress" ||
+						a.status === "queued",
+				);
+				for (const p of pending) {
+					AgentLogger.info(
+						this.name,
+						"RUN",
+						"WAIT",
+						`Waiting for artifact: ${p.title} (${p.id})...`,
+					);
+					try {
+						this.shell.execute(
+							`notebooklm artifact wait ${p.id} --timeout 600`,
+						);
+					} catch (e) {
+						AgentLogger.warn(
+							this.name,
+							"RUN",
+							"WARN",
+							`Wait for ${p.id} failed or timed out: ${e}`,
+						);
+					}
+				}
+			}
 
-			// 6. Create output directory
+			const artifactTitle = this.getLatestVideoTitle();
+
 			const notebookDirName = this.sanitizeFileName(
 				notebookInfo.title || notebookId.slice(0, 8),
 			);
@@ -390,23 +437,38 @@ export class NotebookLMAgent extends BaseAgent {
 			);
 			await fs.ensureDir(outputDir);
 
-			// 7. Download audio
 			const audioFileName = `${this.sanitizeFileName(artifactTitle || "audio")}.wav`;
 			const audioPath = path.join(outputDir, audioFileName);
 			if (!fs.existsSync(audioPath)) {
-				AgentLogger.info(this.name, "RUN", "DOWNLOAD_AUDIO", `Downloading audio to ${audioPath}...`);
+				AgentLogger.info(
+					this.name,
+					"RUN",
+					"DOWNLOAD_AUDIO",
+					`Downloading audio to ${audioPath}...`,
+				);
 				try {
-					this.shell.execute(`notebooklm download audio "${audioPath}" --latest --force`);
+					this.shell.execute(
+						`notebooklm download audio "${audioPath}" --latest --force`,
+					);
 				} catch (e) {
-					AgentLogger.warn(this.name, "RUN", "WARN", "Failed to download audio");
+					AgentLogger.warn(
+						this.name,
+						"RUN",
+						"WARN",
+						"Failed to download audio",
+					);
 				}
 			}
 
-			// 8. Download video
 			const videoFileName = `${this.sanitizeFileName(artifactTitle || "video")}.mp4`;
 			const videoPath = path.join(outputDir, videoFileName);
 			if (!fs.existsSync(videoPath)) {
-				AgentLogger.info(this.name, "RUN", "DOWNLOAD_VIDEO", `Downloading video to ${videoPath}...`);
+				AgentLogger.info(
+					this.name,
+					"RUN",
+					"DOWNLOAD_VIDEO",
+					`Downloading video to ${videoPath}...`,
+				);
 				this.shell.execute(
 					`notebooklm download video "${videoPath}" --latest --force`,
 				);
@@ -449,7 +511,6 @@ export class NotebookLMAgent extends BaseAgent {
 		id: string;
 		title: string | null;
 	} {
-		// Use cached list if available
 		if (!this.notebookCache) {
 			const output = this.shell.execute("notebooklm list --json", true);
 			if (!output) throw new Error("Failed to get notebook list");
@@ -457,7 +518,6 @@ export class NotebookLMAgent extends BaseAgent {
 			this.notebookCache = parsed.notebooks;
 		}
 
-		// Find notebook by ID (full or partial match)
 		const notebook = this.notebookCache?.find(
 			(nb) => nb.id === notebookId || nb.id.startsWith(notebookId),
 		);
@@ -489,7 +549,7 @@ export class NotebookLMAgent extends BaseAgent {
 						new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
 				);
 
-			return videos.length > 0 ? videos[0]?.title ?? null : null;
+			return videos.length > 0 ? (videos[0]?.title ?? null) : null;
 		} catch (error) {
 			AgentLogger.warn(
 				this.name,
@@ -503,10 +563,10 @@ export class NotebookLMAgent extends BaseAgent {
 
 	private sanitizeFileName(title: string): string {
 		return title
-			.replace(/[\\/\:*?"<>|]/g, "_") // Replace special characters
-			.replace(/\s+/g, "_") // Replace spaces
-			.replace(/_+/g, "_") // Collapse multiple underscores to single
-			.replace(/_+$/, "") // Remove trailing underscores
+			.replace(/[\\/\:*?"<>|]/g, "_")
+			.replace(/\s+/g, "_")
+			.replace(/_+/g, "_")
+			.replace(/_+$/, "")
 			.toLowerCase()
 			.slice(0, 200);
 	}

@@ -24,7 +24,6 @@ export class MemoryAgent extends BaseAgent {
 		this.logInput(state);
 		const cfg = this.config.workflow.memory;
 
-		// Extract and Update Essences (Knowledge Distillation)
 		const scriptLines = state.script?.lines || [];
 		if (scriptLines.length > 0) {
 			const prompt = this.loadPrompt<{ system: string; user_template: string }>(

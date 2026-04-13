@@ -240,11 +240,11 @@ export function createGraph(store: AssetStore) {
 			"Running parallel financial & web research",
 		);
 
-		// Extract research theme from NotebookLM output
 		const notebooks = state.notebook_videos?.videos || [];
-		const theme = notebooks.length > 0
-			? notebooks[0]?.notebook_title || "Market Analysis"
-			: "Financial Market Analysis";
+		const theme =
+			notebooks.length > 0
+				? notebooks[0]?.notebook_title || "Market Analysis"
+				: "Financial Market Analysis";
 
 		AgentLogger.info(
 			"enriched_research",
@@ -253,7 +253,6 @@ export function createGraph(store: AssetStore) {
 			`Extracted theme: ${theme}`,
 		);
 
-		// Run parallel searches
 		const [dexterResults, webResults] = await Promise.all([
 			dexterJp.run(theme, 3),
 			webSearch.run(theme, 5),
@@ -261,8 +260,7 @@ export function createGraph(store: AssetStore) {
 
 		const insights = [
 			...dexterResults.map(
-				(f) =>
-					`${f.company || "Financial Analysis"}: ${f.summary}`,
+				(f) => `${f.company || "Financial Analysis"}: ${f.summary}`,
 			),
 			...webResults.map((r) => `${r.title}: ${r.snippet}`),
 		].join(" | ");
@@ -287,19 +285,24 @@ export function createGraph(store: AssetStore) {
 		await memory.run(state);
 		return { status: "completed" };
 	});
-	// biome-ignore lint/suspicious/noExplicitAny: StateGraph type complexity
-	const graph = workflow as any;
-	graph.addEdge(START, "research");
-	graph.addEdge("research", "strategy");
-	graph.addEdge("strategy", "content");
-	graph.addEdge("content", "media");
-	graph.addEdge("media", "publish");
-	graph.addEdge("publish", "notebooklm");
-	graph.addEdge("notebooklm", "parallel_research");
-	graph.addEdge("parallel_research", "memory");
-	graph.addEdge("memory", END);
-	return workflow.compile();
+
+	const w = workflow as unknown as {
+		addEdge: (v1: string, v2: string) => void;
+	};
+	w.addEdge(START, "research");
+	w.addEdge("research", "strategy");
+	w.addEdge("strategy", "content");
+	w.addEdge("content", "media");
+	w.addEdge("media", "publish");
+	w.addEdge("publish", "notebooklm");
+	w.addEdge("notebooklm", "parallel_research");
+	w.addEdge("parallel_research", "memory");
+	w.addEdge("memory", END);
+
+	return (workflow as unknown as { compile: () => unknown }).compile();
 }
+
+export * from "./domain/graph_registry.js";
 
 export function getNodeMetadata(
 	nodeName: string,
@@ -313,6 +316,6 @@ export function getNodesByPhase(phase: WorkflowPhase): GraphNodeMetadata[] {
 
 export function getAllPhases(): WorkflowPhase[] {
 	const phases = new Set<WorkflowPhase>();
-	Object.values(NODE_METADATA).forEach((node) => phases.add(node.phase));
+	for (const node of Object.values(NODE_METADATA)) phases.add(node.phase);
 	return Array.from(phases);
 }

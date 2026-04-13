@@ -20,9 +20,7 @@ export class DexterJPAgent extends BaseAgent {
 		);
 
 		const apiKey =
-			process.env.OPENAI_API_KEY ||
-			process.env.ANTHROPIC_API_KEY ||
-			"";
+			process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || "";
 
 		if (!apiKey) {
 			AgentLogger.warn(
@@ -100,7 +98,6 @@ export class DexterJPAgent extends BaseAgent {
 			const message = firstChoice?.message as Record<string, unknown>;
 			const content = String(message?.content || "[]");
 
-			// Extract JSON from response
 			const jsonMatch = content.match(/\[[\s\S]*\]/);
 			const parsed = jsonMatch ? (JSON.parse(jsonMatch[0]) as unknown[]) : [];
 
@@ -124,15 +121,10 @@ export class DexterJPAgent extends BaseAgent {
 		}
 	}
 
-	private ensureRecord(
-		obj: unknown,
-	): Record<string, string> | undefined {
+	private ensureRecord(obj: unknown): Record<string, string> | undefined {
 		if (obj && typeof obj === "object" && !Array.isArray(obj)) {
 			return Object.fromEntries(
-				Object.entries(obj).map(([k, v]) => [
-					k,
-					String(v || ""),
-				]),
+				Object.entries(obj).map(([k, v]) => [k, String(v || "")]),
 			);
 		}
 		return undefined;

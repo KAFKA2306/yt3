@@ -20,9 +20,7 @@ export class WebSearchAgent extends BaseAgent {
 		);
 
 		const apiKey =
-			process.env.PERPLEXITY_API_KEY ||
-			process.env.OPENAI_API_KEY ||
-			"";
+			process.env.PERPLEXITY_API_KEY || process.env.OPENAI_API_KEY || "";
 
 		if (!apiKey) {
 			AgentLogger.warn(
@@ -35,28 +33,29 @@ export class WebSearchAgent extends BaseAgent {
 		}
 
 		try {
-			const response = await fetch("https://api.perplexity.ai/chat/completions", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${apiKey}`,
+			const response = await fetch(
+				"https://api.perplexity.ai/chat/completions",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${apiKey}`,
+					},
+					body: JSON.stringify({
+						model: "pplx-7b-online",
+						messages: [
+							{
+								role: "user",
+								content: `Search the web and find the top ${limit} results related to: "${query}". Return as JSON array with: [{"title": "", "url": "", "snippet": "", "source": ""}]`,
+							},
+						],
+						temperature: 0.3,
+					}),
 				},
-				body: JSON.stringify({
-					model: "pplx-7b-online",
-					messages: [
-						{
-							role: "user",
-							content: `Search the web and find the top ${limit} results related to: "${query}". Return as JSON array with: [{"title": "", "url": "", "snippet": "", "source": ""}]`,
-						},
-					],
-					temperature: 0.3,
-				}),
-			});
+			);
 
 			if (!response.ok) {
-				throw new Error(
-					`Perplexity API error: ${response.statusText}`,
-				);
+				throw new Error(`Perplexity API error: ${response.statusText}`);
 			}
 
 			const data = (await response.json()) as Record<string, unknown>;
@@ -65,23 +64,18 @@ export class WebSearchAgent extends BaseAgent {
 			const message = firstChoice?.message as Record<string, unknown>;
 			const content = String(message?.content || "[]");
 
-			// Extract JSON from response
 			const jsonMatch = content.match(/\[[\s\S]*\]/);
-			const results = jsonMatch
-				? (JSON.parse(jsonMatch[0]) as unknown[])
-				: [];
+			const results = jsonMatch ? (JSON.parse(jsonMatch[0]) as unknown[]) : [];
 
-			const validated = results
-				.slice(0, limit)
-				.map((item: unknown) => {
-					const obj = item as Record<string, unknown>;
-					return {
-						title: String(obj.title || ""),
-						url: String(obj.url || ""),
-						snippet: String(obj.snippet || ""),
-						source: obj.source ? String(obj.source) : "web",
-					};
-				});
+			const validated = results.slice(0, limit).map((item: unknown) => {
+				const obj = item as Record<string, unknown>;
+				return {
+					title: String(obj.title || ""),
+					url: String(obj.url || ""),
+					snippet: String(obj.snippet || ""),
+					source: obj.source ? String(obj.source) : "web",
+				};
+			});
 
 			AgentLogger.info(
 				this.name,

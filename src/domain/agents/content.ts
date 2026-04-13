@@ -46,8 +46,6 @@ export class ScriptSmith extends BaseAgent {
 			this.store.cfg.workflow.filenames.output,
 		);
 		if (fs.existsSync(outputPath)) {
-			// biome-ignore lint/suspicious/noExplicitAny: Config is dynamic
-			const cfg: any = this.store.cfg;
 			const res = this.store.load<ContentResult>(this.name, "output");
 			if (!res) throw new Error("No content output found");
 			this.logOutput(res);
@@ -66,7 +64,6 @@ export class ScriptSmith extends BaseAgent {
 
 		const fullContext = newsContext + insightContext;
 
-		// 1. Generate Outline
 		const outline = await this.generateOutline(director.angle, fullContext);
 		Logger.info(
 			this.name,
@@ -75,19 +72,17 @@ export class ScriptSmith extends BaseAgent {
 			`Generated outline: ${outline.title}`,
 		);
 
-		// 2. Generate Segments
 		let allLines: ScriptLine[] = [];
 		for (const section of outline.sections) {
 			const segmentLines = await this.generateSegment(
 				director.angle,
 				section,
-				allLines.slice(-10), // Context for flow
+				allLines.slice(-10),
 				fullContext,
 			);
 			allLines = [...allLines, ...segmentLines];
 		}
 
-		// 3. Generate Metadata
 		const scriptText = allLines
 			.map((l) => `${l.speaker}: ${l.text}`)
 			.join("\n");

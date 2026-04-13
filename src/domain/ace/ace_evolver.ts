@@ -27,7 +27,6 @@ export class AceEvolver {
 			let bullet = updatedBulletMap.get(signal.bullet_id);
 
 			if (!bullet) {
-				// Auto-create new bullet for discovered strategic signals
 				bullet = {
 					id: signal.bullet_id,
 					content: `Auto-generated rule for ${signal.bullet_id}`,
@@ -47,7 +46,6 @@ export class AceEvolver {
 				);
 			}
 
-			// Bayesian Update (Beta Distribution)
 			const weight = signal.weight || 1.0;
 			const updatedBullet: AceBullet = {
 				...bullet,
