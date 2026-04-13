@@ -11,5 +11,12 @@
 				"noExplicitAny": "error"
 			}
 		}
+	},
+	"files": {
+		"ignore": [
+			"**/*.log",
+			"logs/**",
+			"node_modules/**"
+		]
 	}
 }
