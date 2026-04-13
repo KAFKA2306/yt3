@@ -9,7 +9,12 @@ import { ContextPlaybook } from "../domain/ace/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 import { ROOT, loadConfig as baseLoadConfig } from "./base.js";
 import { AgentLogger as Logger } from "./utils/logger.js";
-import { QuotaExhaustionError, QuotaManager } from "./utils/quota_manager.js";
+import {
+	QuotaExhaustionError,
+	acquireKey,
+	getQuotaContext,
+	updateFromHeaders,
+} from "./utils/quota/manager.js";
 
 dotenv.config({ path: path.join(ROOT, "config/.env"), override: true });
 
@@ -36,9 +41,7 @@ export function createLlm(
 	const { extra = {}, ...rest } = options;
 	const cfg = loadConfig();
 
-	const { name: keyName, key: apiKey } = QuotaManager.acquireKey(
-		options.sessionId,
-	);
+	const { name: keyName, key: apiKey } = acquireKey(options.sessionId);
 
 	Logger.info(
 		"SYSTEM",
@@ -186,7 +189,7 @@ export abstract class BaseAgent {
 			sessionId: this.store.runDir,
 		});
 		const keyName = llm.keyName || "unknown";
-		const quotaContext = QuotaManager.getQuotaContext(keyName, "gemini");
+		const quotaContext = getQuotaContext(keyName, "gemini");
 		const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
 
 		Logger.info(
@@ -205,18 +208,32 @@ export abstract class BaseAgent {
 
 		const metadata = res.response_metadata as Record<string, unknown>;
 		if (keyName && metadata?.headers) {
-			QuotaManager.updateFromHeaders(
-				keyName,
-				metadata.headers as Record<string, unknown>,
+			updateFromHeaders(keyName, metadata.headers as Record<string, unknown>);
+		}
+
+		let content: string;
+		if (typeof res.content === "string") {
+			content = res.content;
+		} else if (Array.isArray(res.content)) {
+			content = res.content
+				.map((c) =>
+					typeof c === "string"
+						? c
+						: "text" in c && typeof c.text === "string"
+							? c.text
+							: "",
+				)
+				.join("");
+		} else {
+			throw new Error(
+				`LLM response content is invalid: type=${typeof res.content}, value=${JSON.stringify(res.content)?.slice(0, 100)}`,
 			);
 		}
 
-		if (!res.content || typeof res.content !== "string") {
-			throw new Error(
-				`LLM response content is invalid: type=${typeof res.content}, value=${JSON.stringify(res.content)?.slice(0, 100)}`
-			);
+		if (!content) {
+			throw new Error("LLM response content is empty");
 		}
-		return parser(res.content);
+		return parser(content);
 	}
 }
 function cleanCodeBlock(text: string): string {
@@ -274,7 +291,6 @@ function repairJson(text: string): string {
 		}
 	}
 
-	// 1. If we found a complete structure followed by garbage, trim it EARLY
 	if (lastValidIndex !== -1 && lastValidIndex < cleaned.length - 1) {
 		const remainder = cleaned.slice(lastValidIndex + 1).trim();
 		if (
@@ -286,15 +302,12 @@ function repairJson(text: string): string {
 		}
 	}
 
-	// 2. Handle truncated content
 	if (inString) cleaned += '"';
 
 	while (stack.length > 0) {
 		cleaned += stack.pop();
 	}
 
-	// 3. Remove any trailing non-JSON characters (especially commas before closers)
-	// This must happen AFTER we've closed everything or we might miss commas that became trailing
 	cleaned = cleaned.replace(/,\s*([}\]])/g, "$1");
 
 	return cleaned;

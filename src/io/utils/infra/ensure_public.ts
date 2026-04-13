@@ -14,8 +14,9 @@ async function main() {
 	const publishData = yaml.load(
 		fs.readFileSync(publishPath, "utf-8"),
 	) as Record<string, unknown>;
-	// biome-ignore lint/suspicious/noExplicitAny: YAML data access
-	const videoId = (publishData as Record<string, any>).youtube?.video_id;
+
+	const videoId = (publishData?.youtube as { video_id?: string } | undefined)
+		?.video_id;
 	if (!videoId) {
 		console.error("No video ID found in publish output");
 		return;

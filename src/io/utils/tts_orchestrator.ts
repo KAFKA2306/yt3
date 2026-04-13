@@ -7,7 +7,6 @@ interface TtsRequest {
 }
 
 interface TtsAudioQueryResponse {
-	// Voicevox audio_query response structure
 	[key: string]: unknown;
 }
 

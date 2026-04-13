@@ -15,43 +15,72 @@ function logPath(
 	return path.join(dir, `${name}.log`);
 }
 
-async function startServices(automation: Record<string, unknown>) {
-	// biome-ignore lint/suspicious/noExplicitAny: automation config is dynamic
-	const logDir = (automation as any).log_dir || "logs/automation";
-	// biome-ignore lint/suspicious/noExplicitAny: automation config is dynamic
-	for (const service of (automation as any).services || []) {
+interface AutomationService {
+	name?: string;
+	enabled?: boolean;
+	command?: string[];
+	cwd?: string;
+	log_file?: string;
+	background?: boolean;
+	env?: Record<string, string>;
+}
+
+interface AutomationSchedule {
+	name?: string;
+	enabled?: boolean;
+	cron: string;
+	command: string[];
+	args?: string[];
+	cwd?: string;
+	log_file?: string;
+	env?: Record<string, string>;
+}
+
+interface AutomationConfig {
+	enabled?: boolean;
+	log_dir?: string;
+	services?: AutomationService[];
+	schedules?: AutomationSchedule[];
+}
+
+async function startServices(automation: AutomationConfig) {
+	const logDir = automation.log_dir || "logs/automation";
+
+	for (const service of automation.services || []) {
 		if (service.enabled === false) continue;
 		const cmdList = service.command || [];
-		if (cmdList.length === 0) continue;
+		if (cmdList.length === 0 || !cmdList[0]) continue;
 		const cwd = service.cwd ? path.resolve(service.cwd) : ROOT;
 		const lp = logPath(logDir, service.log_file, service.name || "service");
 		fs.ensureDirSync(path.dirname(lp));
 		const out = fs.openSync(lp, "a");
+		const env = { ...process.env, ...(service.env || {}) };
+		const stdio: Array<"ignore" | number> = ["ignore", out, out];
 
 		if (service.background !== false) {
 			const child = spawn(cmdList[0], cmdList.slice(1), {
 				cwd,
-				env: { ...process.env, ...(service.env || {}) },
-				stdio: ["ignore", out, out],
+				env,
+				stdio,
 				detached: true,
 			});
 			child.unref();
 		} else {
 			spawnSync(cmdList[0], cmdList.slice(1), {
 				cwd,
-				env: { ...process.env, ...(service.env || {}) },
-				stdio: ["ignore", out, out],
+				env,
+				stdio,
 			});
 		}
 	}
 }
 
-function buildSchedule(automation: Record<string, unknown>): string[] {
+function buildSchedule(automation: AutomationConfig): string[] {
 	const lines: string[] = [];
-	// biome-ignore lint/suspicious/noExplicitAny: automation config is dynamic
-	const logDir = (automation as any).log_dir || "logs/automation";
-	// biome-ignore lint/suspicious/noExplicitAny: automation config is dynamic
-	for (const schedule of (automation as any).schedules || []) {
+
+	const logDir = automation.log_dir || "logs/automation";
+
+	for (const schedule of automation.schedules || []) {
 		if (schedule.enabled === false) continue;
 		const cwd = schedule.cwd ? path.resolve(schedule.cwd) : ROOT;
 		const lp = logPath(logDir, schedule.log_file, schedule.name || "job");
@@ -69,7 +98,7 @@ function buildSchedule(automation: Record<string, unknown>): string[] {
 async function main() {
 	const args = process.argv.slice(2);
 	const config = loadConfig();
-	const automation = config.automation || {};
+	const automation = (config.automation || {}) as AutomationConfig;
 	if (automation.enabled === false) return;
 
 	if (!args.includes("--skip-services")) await startServices(automation);
