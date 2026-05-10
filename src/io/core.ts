@@ -16,7 +16,12 @@ import {
 	updateFromHeaders,
 } from "./utils/quota/manager.js";
 
-dotenv.config({ path: path.join(ROOT, "config/.env"), override: true });
+const envFilePath = process.env.ENV_FILE
+	? path.isAbsolute(process.env.ENV_FILE)
+		? process.env.ENV_FILE
+		: path.join(ROOT, process.env.ENV_FILE)
+	: path.join(ROOT, "config/.env");
+dotenv.config({ path: envFilePath, override: true });
 
 export { Logger as AgentLogger };
 export type { AgentState };
