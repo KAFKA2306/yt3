@@ -4,11 +4,19 @@
 
 All visual assets must adhere to the "Kafka Core" visual identity to maintain brand consistency across different situations (Onsen, Echo, etc.).
 
+## Prompt Contract
+
+- The reusable core prompt is managed in `docs/adr/0019-kafka-core-prompt-contract.md`.
+- This document keeps the minimum identity and anti-AI rules, while project-specific scene variables live in the per-project prompt.
+- If a new visual trait is needed everywhere, promote it into the ADR before spreading it to prompts.
+
 ## Base Identity
 Maintain the following traits regardless of setting:
 - **Hair**: Light-blue with lavender ends.
 - **Eyes**: Blue-purple, slightly tired.
 - **Vibe**: Emotional futurism, observational loneliness.
+
+Keep this block short. Anything beyond these minimum traits belongs in the scene-specific prompt or the standard document, not in the reusable core.
 
 ## Application Example: Echo Memory Rental
 [OUTFIT]: oversized dark navy hoodie, worn fabric texture
