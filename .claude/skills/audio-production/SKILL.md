@@ -42,7 +42,8 @@ For Yawa Archive ASMR, the objective is to preserve "録音されてしまった
 ## Yawa Archive Rules
 
 - Start from `docs/standard/asmr-workflow.md` when the project is Yawa Archive ASMR.
-- Keep `script_master.md` short, concrete, and situation-first.
+- **Mandatory Length**: `script_master.md` MUST exceed 5000 characters. Use `task asmr:expand` to guarantee this length if the initial generation is insufficient.
+- **Explicit Expansion**: Do not use vague terms like "long form." Use concrete character count targets (Target: 5000+).
 - Fix `voice caption` before generation and do not change it mid-run.
 - Use `seed` as a stability control and keep it fixed across reruns.
 - Treat ASR QA as a required semantic integrity check, not a polish step.

@@ -15,6 +15,7 @@
 - `0009-kafka-visual-identity-standard.md`: Kafka のビジュアル基準と AI っぽさ排除
 - `0010-yawa-archive-asmr-publish-workflow.md`: 夜話アーカイブの投稿ワークフロー
 - `0011-kafka-japanese-style-standard.md`: かふからしい日本語の文体指針
+- `0017-character-count-based-script-management.md`: 物理的文字数（5000文字超）による台本管理への移行
 
 ## Consolidated History
 
