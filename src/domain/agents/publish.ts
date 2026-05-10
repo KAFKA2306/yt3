@@ -18,6 +18,22 @@ export class PublishAgent extends BaseAgent {
 		if (enabledProviders.youtube || enabledProviders.twitter) {
 			validateCredentials(enabledProviders);
 		}
+		if (enabledProviders.youtube) {
+			const profile = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+			if (!profile || profile === "default" || profile === "config/.env") {
+				throw new Error(
+					"YouTube publish requires an explicit channel profile (set YOUTUBE_CHANNEL_PROFILE to byosan_money or yawa_archive_asmr)",
+				);
+			}
+
+			const expectedTitle = process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
+			const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
+			if (!expectedTitle && !expectedId) {
+				throw new Error(
+					"YouTube publish requires YOUTUBE_EXPECTED_CHANNEL_TITLE or YOUTUBE_EXPECTED_CHANNEL_ID",
+				);
+			}
+		}
 	}
 	async run(state: AgentState): Promise<PublishResults> {
 		this.logInput({ video_path: state.video_path, metadata: state.metadata });
@@ -38,10 +54,12 @@ export class PublishAgent extends BaseAgent {
 		const ytCfg = cfg.steps.youtube;
 		if (!ytCfg) throw new Error("YouTube config missing");
 
+		const auth = this.createYouTubeClient();
 		const youtube = google.youtube({
 			version: "v3",
-			auth: this.createYouTubeClient(),
+			auth,
 		});
+		await this.verifyYouTubeChannel(youtube);
 		const { video_path: videoPath, thumbnail_path: thumbnailPath } = state;
 		if (!videoPath) throw new Error("Video path missing");
 		const res = await youtube.videos.insert({
@@ -50,8 +68,15 @@ export class PublishAgent extends BaseAgent {
 			media: { body: fs.createReadStream(videoPath) },
 		});
 		const videoId = res.data.id;
-		if (videoId && thumbnailPath)
-			await this.setYouTubeThumbnail(youtube, videoId, thumbnailPath);
+		if (videoId && thumbnailPath) {
+			try {
+				await this.setYouTubeThumbnail(youtube, videoId, thumbnailPath);
+			} catch (error) {
+				console.warn(
+					`YouTube thumbnail upload skipped for ${videoId}: ${(error as Error).message}`,
+				);
+			}
+		}
 		return { status: "uploaded", video_id: videoId || "" };
 	}
 	private createYouTubeSnippet(
@@ -70,10 +95,56 @@ export class PublishAgent extends BaseAgent {
 				categoryId: (ytCfg.category_id || 24).toString(),
 			},
 			status: {
-				privacyStatus: ytCfg.default_visibility || "public",
+				privacyStatus: "private",
 				selfDeclaredMadeForKids: false,
 			},
 		};
+	}
+	private async verifyYouTubeChannel(
+		youtube: ReturnType<typeof google.youtube>,
+	) {
+		const profile = process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "unknown";
+		const expectedTitle = process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
+		const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
+		const requireMatch = process.env.YOUTUBE_REQUIRE_CHANNEL_MATCH === "true";
+
+		if (!expectedTitle && !expectedId && !requireMatch) {
+			throw new Error(
+				`YouTube channel preflight requires an explicit expected channel for profile "${profile}"`,
+			);
+		}
+
+		const res = await youtube.channels.list({
+			part: ["id", "snippet"],
+			mine: true,
+		});
+		const channel = res.data.items?.[0];
+		const actualTitle = channel?.snippet?.title?.trim();
+		const actualId = channel?.id?.trim();
+
+		if (!channel) {
+			throw new Error(
+				`YouTube channel preflight failed for profile "${profile}": no channel returned`,
+			);
+		}
+
+		if (expectedTitle && actualTitle !== expectedTitle) {
+			throw new Error(
+				`Wrong YouTube channel for profile "${profile}": expected "${expectedTitle}" but got "${actualTitle || "unknown"}"`,
+			);
+		}
+
+		if (expectedId && actualId !== expectedId) {
+			throw new Error(
+				`Wrong YouTube channel ID for profile "${profile}": expected "${expectedId}" but got "${actualId || "unknown"}"`,
+			);
+		}
+
+		if (requireMatch && !expectedTitle && !expectedId) {
+			throw new Error(
+				`YouTube channel preflight is required for profile "${profile}" but no expected channel was configured`,
+			);
+		}
 	}
 	private createYouTubeClient() {
 		const clientId = process.env.YOUTUBE_CLIENT_ID;
