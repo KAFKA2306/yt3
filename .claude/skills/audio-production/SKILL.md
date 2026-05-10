@@ -1,37 +1,44 @@
 ---
 name: audio-production
-description: 日本語音声コンテンツ制作を一貫実行する統合スキル。台本正規化、TTS生成、ASR逆検品、損傷修正、最終結合までを扱う。
+description: Integrated skill for consistent production of Japanese audio content. Handles script normalization, TTS generation, ASR reverse validation, damage correction, and final mixing.
 type: skill
 ---
 
 # Audio Production
 
-## 目的
+## Objective
 
-日本語TTS/ASMR音声の制作を、意味忠実度を維持したまま再現可能に実行する。
+Reproducibly execute production of Japanese TTS/ASMR audio while maintaining semantic fidelity.
 
-## 必須パス
+## Essential Paths
 
-- ルート: `/home/kafka/2511youtuber/v3/yt3`
-- 実行ディレクトリ: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/`
-- 台本: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/script_master.md`
-- 生成パーツ: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/parts/`
-- ASR検品: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/asr_quality/`
-- 最終音声: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/final_mix.wav`
+- Root: `/home/kafka/2511youtuber/v3/yt3`
+- Execution Directory: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/`
+- Script: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/script_master.md`
+- Generated Parts: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/parts/`
+- ASR Validation: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/asr_quality/`
+- Final Audio: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/final_mix.wav`
 
-## フォーマッター/検証
+## Formatter/Validation
 
-- Markdown整形: `bun run format`
+- Markdown Formatting: `bun run format`
 - Lint: `bun run lint`
 - Typecheck: `bun run typecheck`
-- 最終診断: `task harness:doctor`
+- Final Diagnosis: `task harness:doctor`
 
-## ワークフロー
+## Workflow
 
-1. `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/script_master.md` を作成する。
-2. 台本を章分割し、`/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/parts/` へ分割出力する。
-3. TTSで章ごとに音声生成する。
-4. 生成音声をASRで逆検品し、`/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/asr_quality/` に記録する。
-5. CRITICAL/HIGH損傷のみ台本修正して再生成する。
-6. `ffmpeg` で全章を結合し `final_mix.wav` を生成する。
-7. 成果物のパスを固定し、再実行時に同一ディレクトリへ上書き更新する。
+1. Create `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/script_master.md`.
+2. Segment the script into chapters and output to `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/parts/`.
+3. Generate audio for each chapter using TTS.
+4. Validate generated audio using ASR and record in `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/asr_quality/`.
+5. Fix script and regenerate only for CRITICAL/HIGH damage.
+6. Concatenate all chapters with `ffmpeg` to generate `final_mix.wav`.
+7. Keep result paths fixed and overwrite in the same directory upon rerun.
+
+## Video Integration
+
+- After creating `final_mix.wav`, ensure `thumbnail.png` exists in the same run directory.
+- If the image has been replaced, always execute `task asmr:video DIR=/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>` to regenerate `final_video.mp4`.
+- Do not stop at `final_mix.wav`. The final artifact for YouTube must include `final_video.mp4`.
+- Do not consider the task complete until `final_video.mp4` exists.
