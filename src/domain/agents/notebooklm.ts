@@ -82,9 +82,6 @@ export class NotebookLMAgent extends BaseAgent {
 		this.shell = shell;
 	}
 
-	/**
-	 * Create a new notebook, or reuse an existing one if the title matches
-	 */
 	async createNotebook(title: string): Promise<string> {
 		AgentLogger.info(
 			this.name,
@@ -132,9 +129,6 @@ export class NotebookLMAgent extends BaseAgent {
 		return parsed.notebook.id;
 	}
 
-	/**
-	 * Add a source to a notebook
-	 */
 	async addSource(
 		notebookId: string,
 		content: string,
@@ -188,9 +182,6 @@ export class NotebookLMAgent extends BaseAgent {
 		}
 	}
 
-	/**
-	 * Perform deep research on a topic and add discovered sources
-	 */
 	async deepResearch(notebookId: string, query: string): Promise<void> {
 		this.shell.execute(`notebooklm use ${notebookId}`);
 
