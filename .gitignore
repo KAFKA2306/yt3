@@ -6,6 +6,10 @@ dist/
 .env
 *.env
 secret/
+config/.env.*
+!config/.env.example
+!config/.env.byosan.example
+!config/.env.yawa.example
 
 # Logs & Runtime
 *.log
