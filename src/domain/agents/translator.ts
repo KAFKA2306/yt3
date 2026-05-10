@@ -29,7 +29,7 @@ export class TranslatorAgent extends BaseAgent {
 				"ERROR",
 				`Translation failed: ${error}`,
 			);
-			return englishTitle; // Fallback
+			return englishTitle;
 		}
 	}
 }
