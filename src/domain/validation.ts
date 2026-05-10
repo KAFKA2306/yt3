@@ -108,3 +108,32 @@ export function validateCredentials(enabledProviders: {
 
 	return result.data;
 }
+
+export const scriptContentSchema = z.string().refine(
+	(val) => {
+		const forbiddenPatterns = [
+			/\.wav/i,
+			/part_\d{3,}/i,
+			/\/home\/kafka/,
+			/ffmpeg/,
+			/whisper/,
+		];
+		const lowerCaseVal = val.toLowerCase();
+		return !forbiddenPatterns.some((pattern) => pattern.test(lowerCaseVal));
+	},
+	{
+		message:
+			"Script content contains forbidden metadata or internal commands (e.g., '.wav', 'part_XXX', paths, 'ffmpeg', 'whisper').",
+	},
+);
+
+export function validateScriptContent(content: string): {
+	success: boolean;
+	error?: string;
+} {
+	const result = scriptContentSchema.safeParse(content);
+	if (result.success) {
+		return { success: true };
+	}
+	return { success: false, error: result.error.issues[0]?.message };
+}
