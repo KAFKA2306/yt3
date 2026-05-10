@@ -106,7 +106,7 @@ tasks:
       IMAGE: '{{default (print .DIR "/thumbnail.png") .IMAGE}}'
       OUTPUT: '{{.DIR}}/final_video.mp4'
     cmds:
-      - ffmpeg -y -loop 1 -i "{{.IMAGE}}" -i "{{.AUDIO}}" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest -pix_fmt yuv420p "{{.OUTPUT}}"
+      - ffmpeg -y -loop 1 -i "{{.IMAGE}}" -i "{{.AUDIO}}" -c:v libx264 -tune stillimage -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:a aac -b:a 192k -shortest -pix_fmt yuv420p "{{.OUTPUT}}"
 
   asmr:reliable:
     desc: "Run full reliable ASMR pipeline (Generation -> ASR Verify -> Video)"
@@ -115,8 +115,20 @@ tasks:
       IMAGE: '{{default (print .DIR "/thumbnail.png") .IMAGE}}'
     cmds:
       - uv run {{.DIR}}/generate_ultra.py
-      - uv run --with faster-whisper python .claude/skills/asr-quality-loop/scripts/run_asr.py --input-wav {{.DIR}}/final_mix.wav --output-dir {{.DIR}}/asr_quality_final
+      - uv run --with faster-whisper python .claude/skills/audio-production/scripts/run_asr.py --input-wav {{.DIR}}/final_mix.wav --output-dir {{.DIR}}/asr_quality_final
       - task asmr:video DIR={{.DIR}} IMAGE={{.IMAGE}}
+
+  asmr:expand:
+    desc: "Expand ASMR scripts to target character count using the harness"
+    cmds:
+      - bun --env-file=config/.env src/scripts/expand_asmr_scripts.ts
+
+  asmr:artifacts:
+    desc: "List all key artifacts (scripts, metadata, audio, video) for a run"
+    vars:
+      DIR: '{{default "runs/2026-05-10" .DIR}}'
+    cmds:
+      - find {{.DIR}} -maxdepth 2 -type f \( -name "*.md" -o -name "*.wav" -o -name "*.mp4" \) | sort
 
   # ============================================================================
   # INFRASTRUCTURE
