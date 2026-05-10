@@ -385,7 +385,6 @@ export class NotebookLMAgent extends BaseAgent {
 				"Waiting for all artifacts to complete...",
 			);
 
-			// Get artifacts again to find IDs
 			const waitArtifactsOutput = this.shell.execute(
 				"notebooklm artifact list --json",
 				true,
