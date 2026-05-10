@@ -19,7 +19,6 @@ async function main() {
 	try {
 		let notebookId: string;
 		const firstArg = args[0];
-		// Check if it's a UUID or nb- prefixed ID
 		const isId =
 			firstArg &&
 			(firstArg.startsWith("nb-") ||
