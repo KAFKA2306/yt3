@@ -51,7 +51,6 @@ async function main() {
 			console.log(`Add this to your ${envFile} file:\n`);
 			console.log(`YOUTUBE_REFRESH_TOKEN=${tokens.refresh_token}`);
 
-			// Preflight check
 			oauth2Client.setCredentials(tokens);
 			const youtube = google.youtube({ version: "v3", auth: oauth2Client });
 			const res = await youtube.channels.list({
