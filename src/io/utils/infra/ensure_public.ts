@@ -3,8 +3,19 @@ import dotenv from "dotenv";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import yaml from "js-yaml";
-dotenv.config({ path: "config/.env" });
+const envFilePath = process.env.ENV_FILE
+	? path.isAbsolute(process.env.ENV_FILE)
+		? process.env.ENV_FILE
+		: path.join(process.cwd(), process.env.ENV_FILE)
+	: path.join(process.cwd(), "config/.env");
+dotenv.config({ path: envFilePath, override: true });
 async function main() {
+	if (process.env.YOUTUBE_ALLOW_PUBLICIZE !== "true") {
+		console.log(
+			"Skipping publicize check because YOUTUBE_ALLOW_PUBLICIZE is not true",
+		);
+		return;
+	}
 	const runId = process.env.RUN_ID || "run_20260218_antigravity";
 	const publishPath = `runs/${runId}/publish/output.yaml`;
 	if (!fs.existsSync(publishPath)) {
