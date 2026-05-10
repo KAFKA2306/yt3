@@ -55,7 +55,6 @@ async function main() {
 				continue;
 			}
 
-			// Financial theme check
 			const financeKeywords = [
 				"economic",
 				"monetary",
