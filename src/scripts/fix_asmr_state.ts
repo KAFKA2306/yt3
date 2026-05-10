@@ -1,5 +1,5 @@
-import fs from "fs-extra";
 import path from "node:path";
+import fs from "fs-extra";
 
 const BASE = "/home/kafka/2511youtuber/v3/yt3";
 const RUNS = [
@@ -18,15 +18,13 @@ function parseMetadata(mdPath: string) {
 	const tagsMatch = content.match(/## タグ\n(.*)/);
 
 	return {
-		title: titleMatch && titleMatch[1] ? titleMatch[1].trim() : "ASMR Archive",
-		description:
-			descMatch && descMatch[1]
-				? descMatch[1].trim()
-				: "Quiet late-night ASMR.",
-		tags:
-			tagsMatch && tagsMatch[1]
-				? tagsMatch[1].split(",").map((t) => t.trim())
-				: ["ASMR", "healing"],
+		title: titleMatch?.[1] ? titleMatch[1].trim() : "ASMR Archive",
+		description: descMatch?.[1]
+			? descMatch[1].trim()
+			: "Quiet late-night ASMR.",
+		tags: tagsMatch?.[1]
+			? tagsMatch[1].split(",").map((t) => t.trim())
+			: ["ASMR", "healing"],
 		thumbnail_title: "ASMR",
 	};
 }
