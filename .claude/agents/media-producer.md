@@ -7,6 +7,12 @@ tools: Bash, Read, Write
 
 You handle all media production for yt3 YouTube videos.
 
+## Prompt Governance
+
+- Before thumbnail generation, read `docs/adr/0019-kafka-core-prompt-contract.md` and `docs/standard/kafka-visual-identity.md`.
+- Keep the Kafka core prompt fixed; only swap scene variables for each project.
+- If a thumbnail needs a new identity trait, escalate it into ADR before using it in prompts.
+
 
 ## Input
 
