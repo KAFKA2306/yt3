@@ -1,6 +1,6 @@
 ---
 name: publish-operations
-description: Skill for managing publishing processes and channel auditing. Handles inventory via YouTube Data API, metadata correction, visibility settings, and branding compliance.
+description: Skill for managing publishing processes and channel auditing. Handles inventory via YouTube Data API, metadata correction, visibility settings, branding compliance, and Yawa Archive ASMR private/public workflows.
 type: skill
 ---
 
@@ -10,12 +10,15 @@ type: skill
 
 Maintain the brand quality of "Yawa Archive" and accurately execute video publishing and inventory management using the YouTube Data API.
 
+For Yawa Archive ASMR, keep uploads private by default, verify the channel identity first, and correct metadata from measured runtime data only.
+
 ## Essential Paths
 
 - Environment Variables: `/home/kafka/2511youtuber/v3/yt3/config/.env.yawa` (ASMR specific)
 - Execution Directory: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/`
 - Metadata: `runs/YYYY-MM-DD/<project_id>/youtube_metadata.md`
 - Publish Log: `runs/YYYY-MM-DD/<project_id>/publish/output.yaml`
+- Standard Workflow: `/home/kafka/2511youtuber/v3/yt3/docs/standard/asmr-workflow.md`
 
 ## YouTube API Operation Guide
 
@@ -42,6 +45,15 @@ Combine and execute the following APIs for editing or inventory management.
     - If the title is a placeholder like `ASMR Archive`, correct it immediately.
 5. **Deduplication**: If multiple videos with identical content exist, use `videos.update` to revert older or lower-quality ones to `private`.
 6. **Publicizing**: After confirming content perfection, change to `public` using `task publicize:yawa RUN_ID=...`.
+
+## Yawa Archive Rules
+
+- Use `ENV_FILE=config/.env.yawa` for all Yawa Archive ASMR publish operations.
+- Confirm `channels.list({ mine: true })` before any update.
+- Keep `privacyStatus` as `private` until QA and audit pass.
+- Use `videos.update` for metadata fixes and dedup privatization.
+- Never call `videos.delete`.
+- If title or description mentions duration, replace estimates with API-measured values.
 
 ## Prohibitions
 

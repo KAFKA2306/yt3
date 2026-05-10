@@ -1,6 +1,6 @@
 ---
 name: audio-production
-description: Integrated skill for consistent production of Japanese audio content. Handles script normalization, TTS generation, ASR reverse validation, damage correction, and final mixing.
+description: Integrated skill for consistent production of Japanese audio content. Handles script normalization, TTS generation, ASR reverse validation, damage correction, final mixing, and the Yawa Archive ASMR workflow.
 type: skill
 ---
 
@@ -10,6 +10,8 @@ type: skill
 
 Reproducibly execute production of Japanese TTS/ASMR audio while maintaining semantic fidelity.
 
+For Yawa Archive ASMR, the objective is to preserve "録音されてしまった深夜" across script, voice design, TTS, ASR QA, and final assembly.
+
 ## Essential Paths
 
 - Root: `/home/kafka/2511youtuber/v3/yt3`
@@ -18,6 +20,7 @@ Reproducibly execute production of Japanese TTS/ASMR audio while maintaining sem
 - Generated Parts: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/parts/`
 - ASR Validation: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/asr_quality/`
 - Final Audio: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/final_mix.wav`
+- Standard Workflow: `/home/kafka/2511youtuber/v3/yt3/docs/standard/asmr-workflow.md`
 
 ## Formatter/Validation
 
@@ -35,6 +38,15 @@ Reproducibly execute production of Japanese TTS/ASMR audio while maintaining sem
 5. Fix script and regenerate only for CRITICAL/HIGH damage.
 6. Concatenate all chapters with `ffmpeg` to generate `final_mix.wav`.
 7. Keep result paths fixed and overwrite in the same directory upon rerun.
+
+## Yawa Archive Rules
+
+- Start from `docs/standard/asmr-workflow.md` when the project is Yawa Archive ASMR.
+- Keep `script_master.md` short, concrete, and situation-first.
+- Fix `voice caption` before generation and do not change it mid-run.
+- Use `seed` as a stability control and keep it fixed across reruns.
+- Treat ASR QA as a required semantic integrity check, not a polish step.
+- If the run will be published through Yawa Archive, defer upload details to `publish-operations` and keep the audio run focused on audio artifacts.
 
 ## Video Integration
 
