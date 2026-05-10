@@ -29,6 +29,7 @@ Always consider proper directory structure. Disorganized layout makes code hard 
 # System Integrity & Infrastructure
 - **Protected Files**: Do not modify `biome.json`, `Taskfile.yml`, `.gitignore`, `.claude/settings.json`, or `package.json` unless explicitly directed. These are the project's foundational infrastructure. Fix the implementation logic, not the build/config binary, whenever possible.
 - **Workflow Integrity**: Run `task lint` after every TypeScript modification to ensure structural integrity. Do not commit or push if linting fails.
+- **Metadata Leakage Prevention**: NEVER include file paths, internal IDs, split-part filenames (e.g., `part_001.wav`), or absolute system paths in user-facing content (`script_master.md`, `youtube_metadata.md`). These are internal implementation details and must be stripped before final delivery. Any leakage is considered a critical quality failure.
 
 # Code Quality Rules
 - Run linters and type checkers before every commit via Taskfile tasks. **TS/Bun**: `tsc --noEmit` + `eslint src`. **Python**: `ruff check` + `ruff format` + `uv run ty check`. Automated checks catch style drift and type errors before review.

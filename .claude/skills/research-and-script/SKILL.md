@@ -38,6 +38,9 @@ Collect high-impact events with numerical data and convert them into analysis an
 6. Select maximum impact facts and convert them into scripts in `script_master.md`.
 7. Generate `youtube_metadata.md`.
 
+## Validation
+- After generation, `script_master.md` and `youtube_metadata.md` must be validated to ensure they do not contain any metadata artifacts like file paths, `.wav` filenames, or other internal identifiers (e.g., `part_001`). This is a critical quality gate.
+
 ## Integration
 
 - After creating the script and metadata, pass the same `runs/YYYY-MM-DD/<project_id>/` to the next step.
