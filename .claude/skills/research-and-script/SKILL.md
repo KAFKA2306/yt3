@@ -1,39 +1,45 @@
 ---
 name: research-and-script
-description: 調査から台本化までを統合するスキル。Daily Pulse調査、NotebookLM運用、Polymarket定量分析、動画台本化を扱う。
+description: Skill for integrating research and scriptwriting. Handles Daily Pulse research, NotebookLM operations, Polymarket quantitative analysis, and video scriptwriting.
 type: skill
 ---
 
 # Research And Script
 
-## 目的
+## Objective
 
-高インパクト事象を数値付きで収集し、分析と台本へ変換する。
+Collect high-impact events with numerical data and convert them into analysis and scripts.
 
-## 必須パス
+## Essential Paths
 
-- ルート: `/home/kafka/2511youtuber/v3/yt3`
-- リサーチ出力: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/research.md`
-- 台本出力: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/script_master.md`
-- メタデータ: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/youtube_metadata.md`
-- NotebookLM設定: `/home/kafka/2511youtuber/v3/yt3/config/default.yaml`
-- NotebookLM出力: `/home/kafka/2511youtuber/v3/yt3/runs-nlm/`
-- 定量分析ログ: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/`
+- Root: `/home/kafka/2511youtuber/v3/yt3`
+- Research Output: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/research.md`
+- Script Output: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/script_master.md`
+- Metadata: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/youtube_metadata.md`
+- NotebookLM Config: `/home/kafka/2511youtuber/v3/yt3/config/default.yaml`
+- NotebookLM Output: `/home/kafka/2511youtuber/v3/yt3/runs-nlm/`
+- Quantitative Analysis Log: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/`
 
-## フォーマッター/検証
+## Formatter/Validation
 
 - Format: `bun run format`
 - Lint: `bun run lint`
 - Typecheck: `bun run typecheck`
-- 検証: `bun run verify:scenario`
-- API検証: `bun run verify:api`
+- Validation: `bun run verify:scenario`
+- API Validation: `bun run verify:api`
 
-## ワークフロー
+## Workflow
 
-1. 当日ソースを収集し、主張ごとに数値・URL・ISO8601時刻を対応付ける。
-2. `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/research.md` に事実のみ記録する。
-3. 市場データを抽出し、`p_model` と `edge` を算出して優先度を決める。
-4. `config/default.yaml` を読み込み、`notebooklm list --json` で対象ノートを取得する。
-5. NotebookLM生成物を `/home/kafka/2511youtuber/v3/yt3/runs-nlm/` に保存する。
-6. 最大インパクト事実を選定し、`script_master.md` へ台本化する。
-7. `youtube_metadata.md` を生成する。
+1. Collect daily sources and associate numerical data, URLs, and ISO8601 timestamps with each claim.
+2. Record only facts in `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/research.md`.
+3. Extract market data, calculate `p_model` and `edge`, and determine priorities.
+4. Read `config/default.yaml` and retrieve target notebooks using `notebooklm list --json`.
+5. Save NotebookLM products to `/home/kafka/2511youtuber/v3/yt3/runs-nlm/`.
+6. Select maximum impact facts and convert them into scripts in `script_master.md`.
+7. Generate `youtube_metadata.md`.
+
+## Integration
+
+- After creating the script and metadata, pass the same `runs/YYYY-MM-DD/<project_id>/` to the next step.
+- Ensure `research.md` is complete before proceeding. Do not move forward if URLs, numbers, or timestamps are missing.
+- When both `script_master.md` and `youtube_metadata.md` are ready, pass them to `audio-production`.
