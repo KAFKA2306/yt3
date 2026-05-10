@@ -1,80 +1,42 @@
-# 🎬 きらきら動画メーカー yt3 ✨
+# yt3: 資産運用/マクロ経済動画生成システム
 
-<div align="center">
+LangGraph.js、Gemini、Voicevox、FFmpeg を統合し、金融・マクロ経済データの観測から動画制作までを自律的に行うシステム。
 
-**AIさんたちが がんばって おかねの動画を つくってくれるよ！💰✨**
+## クイックスタート
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![LangGraph](https://img.shields.io/badge/LangGraph-Workflow-00a67e?style=flat-square)](https://langchain-ai.github.io/langgraphjs/)
-[![Gemini](https://img.shields.io/badge/Gemini-LLM-4285f4?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev/)
-
-</div>
-
----
-
-## ⚡ はじめかた (｡•̀ᴗ-)✧
-
-これだけで、きれいな動画が できちゃうよ！
+依存関係のインストールと動画生成の基本手順。
 
 ```bash
-task bootstrap            # おともだち（依存関係）を よんでくるよ！
-task run -- "FOMC 金利"   # すきなテーマで 動画をつくろう！🚀
+task bootstrap            # 依存関係のセットアップ
+task run -- "テーマ名"    # 動画生成ワークフローの実行
 ```
 
-## 🛠️ まほうのコマンド ✨
+## ADR Index
 
-```
-task run      │ ワークフローを しゅっぱつ！
-task lint     │ おかしなところが ないかチェック！
-task test     │ ちゃんと動くか テストするよ！
-task up       │ みんなを 起こしてあげるよ！ (Voicevoxとか)
-task down     │ おやすみなさいの じかん！
-task status   │ みんな 元気かな？
-```
+設計判断は [`docs/adr/README.md`](/home/kafka/2511youtuber/v3/yt3/docs/adr/README.md) を起点に読む。親 ADR は `0001` からの連番で並べ、詳細な旧版は `docs/adr/archive/` に退避している。
 
-## 🧪 テストとルール (๑•̀ㅂ•́)و✧
+## 主要コマンド
 
-**「ぜったいあんぜん」せんりゃく！**:
-へんな お金が かかったりしないように、しっかり がーど してるよ！
-- **LLMは おやすみ**: `SKIP_LLM=true` で、むかしのデータを つかって テストするよ！
-- **かってに投稿しない**: `DRY_RUN=true` だから、YouTubeとかには 内緒だよ！🤫
+| コマンド | 内容 |
+| :--- | :--- |
+| `task run` | ワークフローの開始 |
+| `task lint` | コードの整合性チェック |
+| `task test` | 単体・結合テストの実行 |
+| `task up` | 音声合成等のバックエンドサービス起動 |
+| `task status` | 各サービスの稼働状況確認 |
 
-### ローカルでの つかいかた
-```bash
-task test    # はやく、あんぜんに テスト！✨
-```
+## 安全設計
 
-### なにを テストしてるの？
-1.  **だいじなところ** (`src/core.ts`):
-    *   せっていが ちゃんと よみこめるかな？
-    *   AIの おへんじが きれいかな？
-    *   ファイルが ちゃんと よめるかな？
-2.  **エージェントさん** (`src/agents/research.ts`):
-    *   **リサーチ**: ほんものの データがなくても、ちゃんと 動くか かくにんするよ！
+リソース保護と誤投稿防止のための制約。
+- **LLMキャッシュ**: `SKIP_LLM=true` により、過去の生成データを使用してテスト可能。
+- **ドライラン**: `DRY_RUN=true` がデフォルト。SNS等への自動投稿を抑制する。
 
-## 📁 おへやの 紹介 🏠
+## ディレクトリ構造
 
-```
-src/
-├── agents/    → はたらきものの エージェントさんたち！
-├── graph.ts   → どういう順番で すすむかな？
-├── state.ts   → みんなの 今の状態だよ！
-└── index.ts   → ぜんぶの はじまり！✨
-
-scripts/       → じどうくんたち！
-config/        → だいじな 設定ファイル！
-prompts/       → AIさんへの おねがいごと！
-runs/          → できたもの！🎁
-```
-
-## 📐 なかの しくみ ⚙️
-
-もっと くわしく しりたいときは、ここを みてね！
+- `src/agents/`: 自律エージェント群
+- `config/`: システム設定ファイル
+- `prompts/`: LLM向けプロンプト定義
+- `runs/`: 成果物および実行ログ
 
 ---
-
----
-
-<div align="center">
-<sub>LangGraph.js • Gemini • Voicevox • FFmpeg で つくったよ！🎀</sub>
-</div>
+<sub>LangGraph.js • Gemini • Voicevox • FFmpeg</sub>
