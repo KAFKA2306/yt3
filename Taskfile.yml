@@ -37,8 +37,40 @@ tasks:
     cmds: ["bun --env-file=config/.env src/step.ts media {{.CLI_ARGS}}"]
 
   publish:
-    desc: "Run publish step only (REAL PUBLISH)"
-    cmds: ["bun --env-file=config/.env src/step.ts publish {{.CLI_ARGS}}"]
+    desc: "Run publish step only (requires explicit channel profile env file)"
+    cmds:
+      - |
+        bash -lc '
+          if [ -z "${ENV_FILE:-}" ]; then
+            echo "Refusing to publish without ENV_FILE. Use config/.env.byosan or config/.env.yawa.";
+            exit 1;
+          fi
+          if [ "$ENV_FILE" = "config/.env" ]; then
+            echo "Refusing to publish from config/.env. Use a channel-specific env file.";
+            exit 1;
+          fi
+          bun --env-file="$ENV_FILE" src/step.ts publish {{.CLI_ARGS}}
+        '
+
+  publish:byosan:
+    desc: "Run publish step with the 秒算マネー profile"
+    cmds:
+      - ENV_FILE=config/.env.byosan task publish {{.CLI_ARGS}}
+
+  publish:yawa:
+    desc: "Run publish step with the 夜話アーカイブ ASMR profile"
+    cmds:
+      - ENV_FILE=config/.env.yawa task publish {{.CLI_ARGS}}
+
+  publicize:yawa:
+    desc: "Make ASMR video public (requires RUN_ID)"
+    cmds:
+      - ENV_FILE=config/.env.yawa YOUTUBE_ALLOW_PUBLICIZE=true RUN_ID={{.CLI_ARGS}} bun src/io/utils/infra/ensure_public.ts
+
+  auth:yawa:
+    desc: "Generate YouTube refresh token for the 夜話アーカイブ ASMR profile"
+    cmds:
+      - ENV_FILE=config/.env.yawa bun src/scripts/get_youtube_token.ts
 
   report:
     desc: "Generate full executive report (Macro, Fundamental, Risk, Event, Whale)"
@@ -55,6 +87,36 @@ tasks:
   pulse:auto:
     desc: "Run full Daily Pulse to NotebookLM automation"
     cmds: ["bun --env-file=config/.env src/pulse_to_video_workflow.ts"]
+
+  # ============================================================================
+  # ASMR WORKFLOW
+  # ============================================================================
+  asmr:build:
+    desc: "Build ASMR audio for a specific run directory"
+    cmds:
+      - bash {{.DIR}}/build_audio.sh
+    vars:
+      DIR: '{{default "runs/2026-05-10/publish_new_work" .DIR}}'
+
+  asmr:video:
+    desc: "Synthesize ASMR video from audio and thumbnail"
+    vars:
+      DIR: '{{default "runs/2026-05-10/publish_new_work" .DIR}}'
+      AUDIO: '{{.DIR}}/final_mix.wav'
+      IMAGE: '{{default (print .DIR "/thumbnail.png") .IMAGE}}'
+      OUTPUT: '{{.DIR}}/final_video.mp4'
+    cmds:
+      - ffmpeg -y -loop 1 -i "{{.IMAGE}}" -i "{{.AUDIO}}" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest -pix_fmt yuv420p "{{.OUTPUT}}"
+
+  asmr:reliable:
+    desc: "Run full reliable ASMR pipeline (Generation -> ASR Verify -> Video)"
+    vars:
+      DIR: '{{default "runs/2026-05-10/publish_new_work" .DIR}}'
+      IMAGE: '{{default (print .DIR "/thumbnail.png") .IMAGE}}'
+    cmds:
+      - uv run {{.DIR}}/generate_ultra.py
+      - uv run --with faster-whisper python .claude/skills/asr-quality-loop/scripts/run_asr.py --input-wav {{.DIR}}/final_mix.wav --output-dir {{.DIR}}/asr_quality_final
+      - task asmr:video DIR={{.DIR}} IMAGE={{.IMAGE}}
 
   # ============================================================================
   # INFRASTRUCTURE
@@ -118,6 +180,16 @@ tasks:
   systemd:setup:
     desc: "Install Systemd service and timer"
     cmds: ["bun src/io/utils/infra/setup_systemd.ts"]
+
+  tts:regen:
+    desc: "Rebuild Irodori-TTS from zero and regenerate baseline samples"
+    cmds:
+      - rm -rf sandbox/Irodori-TTS
+      - git clone https://github.com/Aratako/Irodori-TTS.git sandbox/Irodori-TTS
+      - cd sandbox/Irodori-TTS && uv sync
+      - awk -F, '/^Dialogue:/{ $1=$2=$3=$4=$5=$6=$7=$8=$9=""; sub(/^,,,,,,,,,/,""); gsub(/\{[^}]*\}/,""); gsub(/\\N/," "); gsub(/  +/," "); print }' runs/2026-05-09/subtitles.ass | sed '/^$/d' > runs/2026-05-09/script_for_tts.txt
+      - cd sandbox/Irodori-TTS && UV_CACHE_DIR=.uv-cache uv run python infer.py --hf-checkpoint Aratako/Irodori-TTS-500M-v2 --text "$(head -n 4 /home/kafka/2511youtuber/v3/yt3/runs/2026-05-09/script_for_tts.txt | tr '\n' ' ')" --no-ref --seed 1234 --num-steps 12 --output-wav outputs/regen_preview.wav
+      - cd sandbox/Irodori-TTS && UV_CACHE_DIR=.uv-cache uv run python infer.py --hf-checkpoint Aratako/Irodori-TTS-500M-v2-VoiceDesign --text "急がない。壊さない。推測しない。再現できるものだけを積む。" --caption "静かで知的な若い女性の声。少し疲れた深夜の距離感。青い光の中で、やさしく、淡々と、内省的に話す。" --no-ref --seed 2306 --output-wav outputs/regen_kafka_voice.wav
 
   # ============================================================================
   # ACE Intelligence (OpenCE)
