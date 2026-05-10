@@ -19,7 +19,7 @@ function parseMetadata(mdPath: string) {
     
     return {
         title: (titleMatch && titleMatch[1]) ? titleMatch[1].trim() : "ASMR Archive",
-        description: descMatch ? descMatch[1].trim() : "Quiet late-night ASMR.",
+        description: (descMatch && descMatch[1]) ? descMatch[1].trim() : "Quiet late-night ASMR.",
         tags: tagsMatch ? tagsMatch[1].split(",").map(t => t.trim()) : ["ASMR", "healing"],
         thumbnail_title: "ASMR"
     };
