@@ -1,30 +1,37 @@
 ---
 name: visual-design
-description: サムネイルとUIの視覚仕様を統合管理するスキル。日本語組版、配色、レイアウト、可読性検証を扱う。
+description: Skill for integrated management of thumbnail and UI visual specifications. Handles Japanese typography, color schemes, layout, and readability verification.
 type: skill
 ---
 
 # Visual Design
 
-## 目的
+## Objective
 
-サムネイル・UIの視認性とブランド整合を維持する。
+Maintain visibility and brand consistency for thumbnails and UI.
 
-## 必須パス
+## Essential Paths
 
-- ルート: `/home/kafka/2511youtuber/v3/yt3`
-- 画像出力: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/`
-- フォント参照: `Noto Sans JP`
+- Root: `/home/kafka/2511youtuber/v3/yt3`
+- Image Output: `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/`
+- Font Reference: `Noto Sans JP`
 
-## フォーマッター/検証
+## Formatter/Validation
 
-- CSS/TS整形: `bun run format`
-- ビルド検証: `bun run build`
+- CSS/TS Formatting: `bun run format`
+- Build Validation: `bun run build`
 
-## ワークフロー
+## Workflow
 
-1. 文字種が日本語を含む場合は `Noto Sans JP` を適用する。
-2. 主要配色は `#103766` と `#288CFA` を基準に定義する。
-3. タイトルと補助情報の階層を分離して配置する。
-4. モバイル縮小表示で可読性を確認する。
-5. 出力物を run ディレクトリへ保存する。
+1. Apply `Noto Sans JP` when Japanese characters are present.
+2. Define primary colors based on `#103766` and `#288CFA`.
+3. Separate title and auxiliary information hierarchies.
+4. Verify readability on mobile scaled-down displays.
+5. Save outputs to the run directory.
+
+## Persistence Rules
+
+- Always place the final image output at `/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>/thumbnail.png`.
+- Do not stop working until the final path is determined. Do not leave files in temporary locations.
+- After replacing an image, execute `task asmr:video DIR=/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>` in the next step to regenerate `final_video.mp4`.
+- Align with `ADR-0021` by prioritizing lived-in reality, natural imperfections, and low saturation over excessive AI-like effects.
