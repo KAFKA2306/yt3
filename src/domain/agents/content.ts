@@ -134,7 +134,7 @@ export class ScriptSmith extends BaseAgent {
 				.replace("{angle}", angle)
 				.replace("{section_title}", section.title)
 				.replace("{key_points}", section.key_points.join(", "))
-				.replace("{duration}", section.estimated_duration.toString())
+				.replace("{target_chars}", section.target_character_count.toString())
 				.replace("{previous_context}", prevContext)
 				.replace("{news_context}", newsContext),
 			(text) => parseLlmJson(text, ContentSegmentSchema),
