@@ -18,6 +18,7 @@ NEVER write defensive code. NO error handling, NO dummy code, NO try-catch. Defe
 
 # Project Structure Rules
 Always consider proper directory structure. Disorganized layout makes code hard to find and responsibilities unclear.
+- ADR は `docs/adr/README.md` を索引にして、`0001` からの連番で読む。派生記録は `docs/adr/archive/` にまとめる。
 - Taskfile.yml is the CLI. All executable operations MUST be defined as Taskfile tasks. Direct script invocation is forbidden. A single entry point keeps execution discoverable and reproducible.
 - **TS/Bun**: ALWAYS use `bun` to run scripts. ALL dependencies MUST be managed via `package.json` and `bun install`. No direct `node` invocation, no ad-hoc installs. **Python**: ALWAYS use `uv run`. ALL dependencies via `pyproject.toml`. No `pip install`, no `requirements.txt`.
 - src/domain/* holds ALL domain logic. Business rules, models, and core computations live here exclusively. Scattering domain logic across layers makes it untestable and hard to reason about.
