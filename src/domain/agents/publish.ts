@@ -53,6 +53,15 @@ export class PublishAgent extends BaseAgent {
 	): Promise<PublishResults["youtube"]> {
 		const ytCfg = cfg.steps.youtube;
 		if (!ytCfg) throw new Error("YouTube config missing");
+		if (!ytCfg.default_visibility) {
+			throw new Error(
+				"YouTube publish failed: steps.youtube.default_visibility is missing in config/default.yaml",
+			);
+		}
+
+		console.log(
+			`[PUBLISH:CONFIG] visibility=${ytCfg.default_visibility} source=config/default.yaml`,
+		);
 
 		const auth = this.createYouTubeClient();
 		const youtube = google.youtube({
@@ -105,7 +114,7 @@ export class PublishAgent extends BaseAgent {
 				categoryId: (ytCfg.category_id || 24).toString(),
 			},
 			status: {
-				privacyStatus: "private",
+				privacyStatus: ytCfg.default_visibility,
 				selfDeclaredMadeForKids: false,
 			},
 		};

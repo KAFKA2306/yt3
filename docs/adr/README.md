@@ -23,6 +23,8 @@
 - `0022-autonomous-asset-archiving-and-inventory-management.md`: ASMR 成果物の自律アーカイブと目次自動生成の導入
 - `0023-youtube-2026-compliance-strategy.md`: YouTube 2026年コンプライアンス戦略（EDSA & AIラベル）
 - `0024-youtube-thumbnail-replay-and-live-replacement.md`: 公開動画サムネイルの再現と live 差し替え運用
+- `0025-zero-trust-audit-integrity.md`: ゼロトラスト監査プロトコルと動画レンダリングの安定化
+- `0026-centralized-youtube-visibility-config.md`: YouTube 公開設定の単一ソース化 (Single Source of Truth)
 
 ## Consolidated History
 

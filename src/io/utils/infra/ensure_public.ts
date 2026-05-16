@@ -3,13 +3,26 @@ import dotenv from "dotenv";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import yaml from "js-yaml";
+import { loadConfig } from "../../core.js";
+
 const envFilePath = process.env.ENV_FILE
 	? path.isAbsolute(process.env.ENV_FILE)
 		? process.env.ENV_FILE
 		: path.join(process.cwd(), process.env.ENV_FILE)
 	: path.join(process.cwd(), "config/.env");
 dotenv.config({ path: envFilePath, override: true });
+
 async function main() {
+	const config = loadConfig();
+	const visibility = config.steps.youtube?.default_visibility;
+
+	if (!visibility) {
+		console.error(
+			"YouTube visibility update failed: steps.youtube.default_visibility is missing in config/default.yaml",
+		);
+		process.exit(1);
+	}
+
 	if (process.env.YOUTUBE_ALLOW_PUBLICIZE !== "true") {
 		console.log(
 			"Skipping publicize check because YOUTUBE_ALLOW_PUBLICIZE is not true",
@@ -54,18 +67,18 @@ async function main() {
 	const title = video.snippet?.title;
 	console.log(`Current Privacy: ${currentPrivacy}`);
 	console.log(`Title: ${title}`);
-	if (currentPrivacy !== "public") {
-		console.log("Updating to PUBLIC...");
+	if (currentPrivacy !== visibility) {
+		console.log(`Updating to ${visibility.toUpperCase()}...`);
 		await youtube.videos.update({
 			part: ["status"],
 			requestBody: {
 				id: videoId,
-				status: { privacyStatus: "public" },
+				status: { privacyStatus: visibility },
 			},
 		});
-		console.log("Successfully updated to PUBLIC.");
+		console.log(`Successfully updated to ${visibility.toUpperCase()}.`);
 	} else {
-		console.log("Video is already PUBLIC.");
+		console.log(`Video is already ${visibility.toUpperCase()}.`);
 	}
 }
 main();
