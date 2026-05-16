@@ -22,6 +22,7 @@
 - `0021-asmr-audition-and-archive-structure.md`: ASMR 成果物の整理と「オーディションルーム」の運用
 - `0022-autonomous-asset-archiving-and-inventory-management.md`: ASMR 成果物の自律アーカイブと目次自動生成の導入
 - `0023-youtube-2026-compliance-strategy.md`: YouTube 2026年コンプライアンス戦略（EDSA & AIラベル）
+- `0024-youtube-thumbnail-replay-and-live-replacement.md`: 公開動画サムネイルの再現と live 差し替え運用
 
 ## Consolidated History
 
