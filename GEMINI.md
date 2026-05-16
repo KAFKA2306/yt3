@@ -35,4 +35,10 @@ All video content must pass the `AuditAgent` validation based on the 100-point c
 - **Tone**: Professional financial voice, strict separation of "Fact" and "Possibility."
 - **Audio/Visual**: 1080p+, -14 LUFS loudness, consistent brand identity.
 - **Compliance**: Target channel must match `YOUTUBE_CHANNEL_PROFILE` exactly.
+38: 
+39: ## 6. Zero-Trust Audit Protocol (Contract vNext)
+40: - **Evidence Sovereignty**: `evidence_raw.json` is the canonical truth.
+41: - **Deterministic Primacy**: Numeric ASR (Frequency Map), EBU R128, and Voice Role Integrity (ID matching) MUST pass.
+42: - **Operational Integrity**: Publish receipts (videoId, channelId) must exist. 'Unknown Error' is forbidden.
+43: - **Fail Closed**: Any verifier timeout or crash (e.g. ENOBUFS) blocks publication.
 
