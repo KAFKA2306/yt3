@@ -37,6 +37,9 @@ Collect high-impact events with numerical data and convert them into analysis an
 5. Save NotebookLM products to `/home/kafka/2511youtuber/v3/yt3/runs-nlm/`.
 6. Select maximum impact facts and convert them into scripts in `script_master.md`.
 7. Generate `youtube_metadata.md`.
+    - For sensitive or fetish-related content, include **EDSA (Educational, Documentary, Scientific, or Artistic) context** in the description to ensure YouTube policy compliance.
+    - **Specific Details**: Include information such as character background, psychological themes, artistic intent, or cultural context.
+    - **Audio/Script Hint**: When writing `script_master.md` for sensitive topics, subtly incorporate monologues or opening/closing statements that establish the content as an artistic or psychological exploration (e.g., "This recording is a study of...").
 
 ## Validation
 - After generation, `script_master.md` and `youtube_metadata.md` must be validated to ensure they do not contain any metadata artifacts like file paths, `.wav` filenames, or other internal identifiers (e.g., `part_001`). This is a critical quality gate.

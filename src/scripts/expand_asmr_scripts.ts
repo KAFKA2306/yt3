@@ -8,9 +8,19 @@ import { validateScriptContent } from "../domain/validation.js";
 
 async function main() {
   Logger.init();
-  const tasksPath = path.join(ROOT, "runs/2026-05-10/expansion_tasks.json");
-  if (!fs.existsSync(tasksPath)) {
-    Logger.error("HARNESS", "EXPANSION", "INIT_FAIL", "expansion_tasks.json not found");
+  const runDirs = fs
+    .readdirSync(path.join(ROOT, "runs"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(entry.name))
+    .map((entry) => entry.name)
+    .sort()
+    .reverse();
+
+  const tasksPath = runDirs
+    .map((dir) => path.join(ROOT, "runs", dir, "expansion_tasks.json"))
+    .find((candidate) => fs.existsSync(candidate));
+
+  if (!tasksPath) {
+    Logger.error("HARNESS", "EXPANSION", "INIT_FAIL", "expansion_tasks.json not found in any dated runs directory");
     return;
   }
 
@@ -35,7 +45,7 @@ async function main() {
         new HumanMessage(userPrompt)
       ]);
 
-      const expandedScript = response.content.toString();
+      const expandedScript = response.content?.toString();
       if (!expandedScript || expandedScript.length < script.length) {
         throw new Error("Invalid or empty response from LLM");
       }

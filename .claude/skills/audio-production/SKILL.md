@@ -47,6 +47,11 @@ For Yawa Archive ASMR, the objective is to preserve "録音されてしまった
 - Fix `voice caption` before generation and do not change it mid-run.
 - Use `seed` as a stability control and keep it fixed across reruns.
 - Treat ASR QA as a required semantic integrity check, not a polish step.
+- **Irodori-TTS Stability Protocol (ADR-0020)**:
+  - **Preferred Model**: Use `Irodori-TTS-500M-v2` (Base) with high-quality reference audio (10-30s).
+  - **Reference Parameters**: Set `--max-ref-seconds 30.0`, `--ref-normalize-db -16.0`, and enable `--ref-ensure-max`.
+  - **VoiceDesign**: Use `Irodori-TTS-500M-v2-VoiceDesign` only for one-off characters or specific aesthetic tuning where reference audio is unavailable. Keep captions simple.
+  - **Persistent Characters**: Prioritize LoRA fine-tuning for recurring personas (e.g., Kafka).
 - If the run will be published through Yawa Archive, defer upload details to `publish-operations` and keep the audio run focused on audio artifacts.
 
 ## Video Integration

@@ -39,9 +39,11 @@ Combine and execute the following APIs for editing or inventory management.
 
 1. **Pre-verification**: Confirm the existence of `final_video.mp4` and compliance of metadata with `ADR-0015` (Facility names) and `ADR-0020` (Kafka-style Japanese).
 2. **Posting**: Execute `task publish:yawa`. Videos are initially posted as `private` by default.
+    - **AI Content Label**: Ensure the "Altered content" label is set to **true** in the YouTube Studio/API settings to comply with 2026 AI transparency policies.
 3. **Audit**: Call `videos.list` to retrieve the actual duration (`contentDetails.duration`) of the posted video.
 4. **Metadata Correction**:
     - Correct "minutes/seconds" in the title and description based on the actual measured duration.
+    - **EDSA Individualization**: Each video must have a unique, non-template description explaining its artistic or psychological intent (EDSA context) to avoid "AI slop" penalties and ensure policy compliance.
     - If the title is a placeholder like `ASMR Archive`, correct it immediately.
 5. **Deduplication**: If multiple videos with identical content exist, use `videos.update` to revert older or lower-quality ones to `private`.
 6. **Publicizing**: After confirming content perfection, change to `public` using `task publicize:yawa RUN_ID=...`.

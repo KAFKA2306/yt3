@@ -49,7 +49,7 @@ tasks:
             echo "Refusing to publish from config/.env. Use a channel-specific env file.";
             exit 1;
           fi
-          bun --env-file="$ENV_FILE" src/step.ts publish {{.CLI_ARGS}}
+          bun --env-file="$ENV_FILE" src/step.ts publish "${RUN_ID:-{{.CLI_ARGS}}}"
         '
 
   publish:byosan:
@@ -60,7 +60,7 @@ tasks:
   publish:yawa:
     desc: "Run publish step with the 夜話アーカイブ ASMR profile"
     cmds:
-      - ENV_FILE=config/.env.yawa task publish {{.CLI_ARGS}}
+      - task publish ENV_FILE=config/.env.yawa RUN_ID={{.CLI_ARGS}}
 
   publicize:yawa:
     desc: "Make ASMR video public (requires RUN_ID)"
@@ -114,7 +114,7 @@ tasks:
       DIR: '{{default "runs/2026-05-10/publish_new_work" .DIR}}'
       IMAGE: '{{default (print .DIR "/thumbnail.png") .IMAGE}}'
     cmds:
-      - uv run {{.DIR}}/generate_ultra.py
+      - /home/kafka/2511youtuber/v3/yt3/sandbox/Irodori-TTS/.venv/bin/python {{.DIR}}/generate_ultra.py
       - uv run --with faster-whisper python .claude/skills/audio-production/scripts/run_asr.py --input-wav {{.DIR}}/final_mix.wav --output-dir {{.DIR}}/asr_quality_final
       - task asmr:video DIR={{.DIR}} IMAGE={{.IMAGE}}
 
@@ -122,6 +122,16 @@ tasks:
     desc: "Expand ASMR scripts to target character count using the harness"
     cmds:
       - bun --env-file=config/.env src/scripts/expand_asmr_scripts.ts
+
+  asmr:ops:
+    desc: "Autonomous ASMR Operations (Archive, Symlink, Index)"
+    cmds:
+      - bun --env-file=config/.env src/scripts/asmr_ops.ts
+
+  asmr:publish:
+    desc: "Batch publish all completed ASMR projects listed in MASTER_PROGRESS.md"
+    cmds:
+      - bun src/scripts/publish_batch.ts
 
   asmr:artifacts:
     desc: "List all key artifacts (scripts, metadata, audio, video) for a run"
@@ -180,6 +190,10 @@ tasks:
     desc: "Run unit tests (bun test)"
     aliases: [t]
     cmds: ["SKIP_LLM=true bun test || echo 'No tests found'"]
+
+  audit:compliance:
+    desc: "Audit YouTube 2026 Compliance (EDSA, Context)"
+    cmds: ["bun src/scripts/audit_compliance.ts {{.CLI_ARGS}}"]
 
   audit:overlays:
     desc: "Audit video overlays"

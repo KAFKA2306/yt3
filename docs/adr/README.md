@@ -18,6 +18,10 @@
 - `0017-character-count-based-script-management.md`: 物理的文字数（5000文字超）による台本管理への移行
 - `0018-autonomous-asmr-management-engine.md`: systemd による自律型 ASMR 管理エンジンの導入
 - `0019-kafka-core-prompt-contract.md`: Kafka のビジュアル生成で使う最小コア・プロンプト契約
+- `0020-irodori-tts-stability-protocol.md`: Irodori-TTS の声固定・安定化のための公式準拠プロトコル
+- `0021-asmr-audition-and-archive-structure.md`: ASMR 成果物の整理と「オーディションルーム」の運用
+- `0022-autonomous-asset-archiving-and-inventory-management.md`: ASMR 成果物の自律アーカイブと目次自動生成の導入
+- `0023-youtube-2026-compliance-strategy.md`: YouTube 2026年コンプライアンス戦略（EDSA & AIラベル）
 
 ## Consolidated History
 
