@@ -241,3 +241,6 @@ tasks:
     cmds:
       - mkdir -p copcon
       - uv run copcon . --output-file copcon/context.md {{.CLI_ARGS}}
+  audit:
+    desc: "Run Zero-Trust audit on the latest or specified run"
+    cmds: ["bun --env-file=config/.env src/scripts/run_audit.ts {{.CLI_ARGS}}"]

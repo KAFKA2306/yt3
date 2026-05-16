@@ -6,6 +6,7 @@ export enum RunStage {
 	PUBLISH = "publish",
 	WATCHER = "watcher",
 	MEMORY = "memory",
+	AUDIT = "audit",
 }
 import type { OverlayConfig, Rect, Size } from "./config/base.js";
 
@@ -72,7 +73,14 @@ export const DirectorDataSchema = z.object({
 export type DirectorData = z.infer<typeof DirectorDataSchema>;
 export const PublishResultsSchema = z.object({
 	youtube: z
-		.object({ status: z.string(), video_id: z.string().optional() })
+		.object({
+			status: z.string(),
+			video_id: z.string().optional(),
+			channel_id: z.string().optional(),
+			channel_title: z.string().optional(),
+			privacy_status: z.string().optional(),
+			published_at: z.string().optional(),
+		})
 		.optional(),
 	twitter: z
 		.object({ status: z.string(), tweet_id: z.string().optional() })
@@ -226,5 +234,6 @@ export const AgentStateSchema = z.object({
 	strategic_insight: StrategicInsightSchema.optional(),
 	notebook_videos: NotebookLMResultSchema.optional(),
 	enriched_research: EnrichedResearchSchema.optional(),
+	audit_results: z.record(z.string(), z.any()).optional(),
 });
 export type AgentState = z.infer<typeof AgentStateSchema>;

@@ -123,6 +123,7 @@ export class VisualDirector extends BaseAgent {
 		audioDir: string,
 	): Promise<string[]> {
 		const audio_paths: string[] = [];
+		const manifestChunks: any[] = [];
 
 		for (let i = 0; i < script.lines.length; i++) {
 			const line = script.lines[i];
@@ -133,18 +134,9 @@ export class VisualDirector extends BaseAgent {
 				`${String(i).padStart(3, "0")}.wav`,
 			);
 
-			if (fs.existsSync(audioPath)) {
-				audio_paths.push(audioPath);
-				continue;
-			}
-
-			if (!this.ttsOrchestrator.isSpeakerValid(line.speaker)) {
-				AgentLogger.warn(
-					this.name,
-					"RUN",
-					"UNKNOWN_SPEAKER",
-					`Fallback to default speaker for: ${line.speaker}`,
-				);
+			const speakerId = this.speakers[line.speaker];
+			if (speakerId === undefined) {
+				throw new Error(`CRITICAL: Unknown speaker '${line.speaker}' in script. No fallback allowed.`);
 			}
 
 			const cleanText = this.cleanScriptText(line.text);
@@ -152,18 +144,33 @@ export class VisualDirector extends BaseAgent {
 				this.name,
 				"TTS",
 				"GENERATE",
-				`[${i + 1}/${script.lines.length}] ${line.speaker}: ${cleanText.slice(0, 30)}...`,
+				`[${i + 1}/${script.lines.length}] ${line.speaker} (ID: ${speakerId}): ${cleanText.slice(0, 30)}...`,
 			);
 
-			const speakerId = this.speakers[line.speaker] || 11;
-			const audioBuffer = await this.ttsOrchestrator.synthesize({
-				text: cleanText,
-				speaker: speakerId,
-			});
+			if (!fs.existsSync(audioPath)) {
+				const audioBuffer = await this.ttsOrchestrator.synthesize({
+					text: cleanText,
+					speaker: speakerId,
+				});
+				fs.writeFileSync(audioPath, audioBuffer);
+			}
 
-			fs.writeFileSync(audioPath, audioBuffer);
 			audio_paths.push(audioPath);
+			manifestChunks.push({
+				index: i,
+				speaker: line.speaker,
+				voice_id: speakerId,
+				path: audioPath,
+				text_preview: cleanText.slice(0, 50)
+			});
 		}
+
+		// Save Canonical Audio Manifest for Audit
+		fs.writeJsonSync(path.join(audioDir, "manifest.json"), {
+			total_chunks: manifestChunks.length,
+			chunks: manifestChunks,
+			voice_map: this.speakers
+		}, { spaces: 2 });
 
 		return audio_paths;
 	}

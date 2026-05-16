@@ -7,6 +7,7 @@ import { MemoryAgent } from "./domain/agents/memory.js";
 import { NotebookLMAgent } from "./domain/agents/notebooklm.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
+import { AuditAgent } from "./domain/agents/audit.js";
 import { WebSearchAgent } from "./domain/agents/web_search.js";
 import type {
 	AgentState,
@@ -135,6 +136,9 @@ export function createGraph(store: AssetStore) {
 		>,
 		enriched_research: { reducer, default: () => undefined } as ChannelReducer<
 			EnrichedResearch | undefined
+		>,
+		audit_results: { reducer, default: () => undefined } as ChannelReducer<
+			any | undefined
 		>,
 	};
 	const research = new TrendScout(store);
@@ -297,7 +301,15 @@ export function createGraph(store: AssetStore) {
 	w.addEdge("publish", "notebooklm");
 	w.addEdge("notebooklm", "parallel_research");
 	w.addEdge("parallel_research", "memory");
-	w.addEdge("memory", END);
+
+	workflow.addNode("audit", async (state: AgentState) => {
+		const audit = new AuditAgent(store);
+		const results = await audit.run(state);
+		return { audit_results: results };
+	});
+
+	w.addEdge("memory", "audit");
+	w.addEdge("audit", END);
 
 	return (workflow as unknown as { compile: () => unknown }).compile();
 }

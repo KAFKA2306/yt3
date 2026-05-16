@@ -1,33 +1,46 @@
-# 🤖 YT3 エージェント・システム構成
+# YT3: Agent Architecture & Responsibilities
 
-## 🧠 For Models: Core Directives
+This document defines the technical roles and verification gates for the autonomous production pipeline.
 
-**このプロジェクトで最初に読むべき指示です。**
+## 1. Core Directives for Autonomous Models
+- **Zero-Base Reasoning**: Do not rely on legacy code in `src/`. Evaluate requirements against current state.
+- **Sandbox Validation**: New logic must be tested in `sandbox/` before integration into `src/`.
+- **Finalization Protocol**: structured Full Path List of all generated artifacts is mandatory upon task completion.
+- **Governance Compliance**: Follow `.claude/CLAUDE.md` and `GEMINI.md` invariants.
 
-- **過去の生成コードに縛られるな**: src/ 内のコードは参考止まり。新しいタスクで矛盾があれば、現在の要件からゼロベースで考え直す。
-- **sandbox/ で実験**: 新しいコンポーネント・スクリプトは先に `sandbox/` で試す。成功したら最小限だけ `src/` に統合。
-- **積極的クリーンアップ**: `sandbox/` と `temp/` の不要ファイルを見つけたら即座に削除を提案。古い生成物は邪魔。
-- **ADR は連番で読む**: 設計判断は `docs/adr/README.md` を起点に、`0001` から `0017` までの親 ADR と archive を順にたどる。
-- **Finalization Protocol (成果物パス報告の義務)**: 複数の成果物を生成するタスクの完了時には、必ずすべての関連ファイルの**絶対パス（Full Path List）**を構造化して出力すること。これは「ハーネス」の一部として、成果物の発見可能性を保証するために必須である。
-- **詳細ルール**: コード品質・命名規則・エラーハンドリングは `.claude/CLAUDE.md` とメモリ（`.claude/memories/`）を参照。
+## 2. Agent Definitions (Functional Scope)
 
----
+### 1. 🔍 Research & Scanning (TrendScout)
+- **Scope**: Scanning external domains (Investing.com, Bloomberg, etc.) and quantitative sources.
+- **Responsibility**: Extract numerical data, verified URLs, and ISO8601 timestamps.
+- **Output**: `research.md` (Raw facts only).
 
-## システム構成（Daily Pulse 観測モード）
+### 2. ✍️ Script Synthesis (ScriptSmith)
+- **Scope**: Converting verified facts into structured dialogue scripts.
+- **Responsibility**: Transform data into character-based narratives with specific focus on socio-economic impact.
+- **Output**: `script_master.md`.
 
-YT3システムは、特定のバイアスを排した「生の事実（Daily Pulse）」を観測し、そこから強力なフック（Hook Triggers）を抽出して動画化する自律型システムだ。
+### 3. 🎬 Media Production (VisualDirector)
+- **Scope**: Synthesis of audio (TTS), subtitle generation, and video assembly (FFmpeg).
+- **Responsibility**: 
+    - **Audio**: Integration with `Irodori-TTS`.
+    - **Reliability Engineering**: Mandatory **Closed-Loop ASR** (Automatic Speech Recognition) to verify semantic integrity of long-form audio.
+    - **Phonetic Anchoring**: Use of correction dictionaries to prevent AI pronunciation hallucinations.
+- **Output**: `final_video.mp4`.
 
-## 1. 🔍 TrendScout (リサーチ・エージェント)
+### 4. 📢 Distribution (PublishAgent)
+- **Scope**: Platform optimization and metadata management.
+- **Responsibility**: YouTube Data API integration, EDSA (Educational, Documentary, Scientific, Artistic) context insertion, and compliance labeling.
+- **Output**: Published status and audit logs.
 
-**役割**: 世界中の主要ドメイン（Investing.com, Bloomberg等）からヘッドラインをスキャンし、事実と数値を収集する。
+## 3. Execution Control
+All agents are orchestrated via `Taskfile.yml` and managed through `agr` (agent-resources).
 
-- **Daily Pulse 観測**: キーキーワードに縛られず、今日一番のインパクトを自律的に特定する。
-- **多言語スカウト**: EN, ZH, RU のソースをそのまま受け取り、地域ごとの視点を保持する。
-- **ミッション・レンズ**: 進行中のミッションを「発見のヒント」として活用する。
-
-## 2. ✍️ ScriptSmith (台本執筆エージェント)
-
-**役割**: 収集された事実（Pulse）とフック（Triggers）を、キャラクター対話形式の物語に変換する。
+### Production Trigger (ASMR)
+- **Input**: `asmr/*` source texts.
+- **Target**: 5,000+ characters (use `task asmr:expand` for physical expansion).
+- **Verification**: Must follow `SKILL.md` protocols for synthesis and ASR validation.
+�式の物語に変換する。
 
 - **人格の核 (Persona Core)**: 人間が定義した「人格IP（静かな温もり、壊れそうな親密さ）」を軸に、愛されるための揺らぎを持つ台本を執筆する。
 - **共同探求**: 情報を伝えるだけでなく、聴き手の孤独に寄り添い、生活に溶け込むような物語を紡ぐ。

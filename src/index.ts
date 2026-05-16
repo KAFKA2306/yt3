@@ -5,6 +5,8 @@ import {
 	loadConfig,
 } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
+import fs from "fs-extra";
+import path from "node:path";
 async function main() {
 	const defaultRunId = getRunIdDateString();
 	const RUN_ID = process.env.RUN_ID || defaultRunId;
@@ -19,16 +21,15 @@ async function main() {
 	);
 	const BUCKET = process.env.BUCKET || loadConfig().workflow.default_bucket;
 	const MISSION_FILE = process.env.MISSION_FILE;
-	const { createGraph } = await import("./graph.js");
-	const graph = createGraph(store);
+	const { runSequentialWorkflow } = await import("./workflow.js");
+	
 	const initialState = {
 		run_id: runId,
 		bucket: BUCKET,
 		mission_file: MISSION_FILE,
 	};
-	const finalState = (await (
-		graph as { invoke: (s: AgentState) => Promise<AgentState> }
-	).invoke(initialState)) as unknown as AgentState;
+
+	const finalState = await runSequentialWorkflow(store, initialState);
 
 	const finalTitle = finalState.metadata?.title || "Unknown Title";
 	const finalVideoId = finalState.publish_results?.youtube?.video_id;
@@ -50,10 +51,18 @@ async function main() {
 		},
 	);
 
-	console.log(`\n${"=".repeat(80)}`);
-	console.log("🚀 PIPELINE SUCCESSFUL");
-	console.log(`🎬 TITLE: ${finalTitle}`);
-	console.log(`🔗 URL:   ${finalUrl}`);
-	console.log(`${"=".repeat(80)}\n`);
+	if (finalState.status === "SUCCESS") {
+		fs.writeFileSync(path.join(store.runDir, "SUCCESS"), `Published at ${new Date().toISOString()}\nVideo: ${finalUrl}`);
+		console.log(`\n${"=".repeat(80)}`);
+		console.log("🚀 PIPELINE SUCCESSFUL");
+		console.log(`🎬 TITLE: ${finalTitle}`);
+		console.log(`🔗 URL:   ${finalUrl}`);
+		console.log(`${"=".repeat(80)}\n`);
+	} else {
+		console.log(`\n${"!".repeat(80)}`);
+		console.log(`⚠️ PIPELINE FAILED: ${finalState.status}`);
+		console.log(`${"!".repeat(80)}\n`);
+		process.exit(1);
+	}
 }
 main();

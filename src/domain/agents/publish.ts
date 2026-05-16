@@ -68,6 +68,9 @@ export class PublishAgent extends BaseAgent {
 			media: { body: fs.createReadStream(videoPath) },
 		});
 		const videoId = res.data.id;
+		const snippet = res.data.snippet;
+		const status = res.data.status;
+
 		if (videoId && thumbnailPath) {
 			try {
 				await this.setYouTubeThumbnail(youtube, videoId, thumbnailPath);
@@ -77,7 +80,14 @@ export class PublishAgent extends BaseAgent {
 				);
 			}
 		}
-		return { status: "uploaded", video_id: videoId || "" };
+		return { 
+			status: "uploaded", 
+			video_id: videoId || "",
+			channel_id: snippet?.channelId || "",
+			channel_title: snippet?.channelTitle || "",
+			privacy_status: status?.privacyStatus || "",
+			published_at: snippet?.publishedAt || "",
+		};
 	}
 	private createYouTubeSnippet(
 		state: AgentState,

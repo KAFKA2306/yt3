@@ -1,51 +1,38 @@
-Achieve the goal with MINIMAL changes. Extra changes introduce extra bugs and slow review. NO comments in code. Good code reads itself; comments rot and mislead. Respond clearly, specifically, and concisely. Vague answers waste time and create misunderstanding.
+# YT3: Autonomous Agent Runtime Contract
 
-# Vibe Engineering & Agent Directives (The KJ Philosophy)
-This project treats AI context not as chat history, but as **Managed Dependencies**. You are not a conversational assistant; you are a professional, deterministic engine.
-- **Zero-Fat Instructions**: Read and follow `SKILL.md` files strictly. Assume all instructions are MANDATORY. Do not use "please", "should", or "try". Use absolute imperatives.
-- **Workflow Isolation**: Never mix Research, Design, and Planning. Execute one step at a time. Pass only **Facts**, not opinions, to the next stage.
-- **Respect Physical Constraints**: Always act under the assumption of strict physical limits (e.g., the 4096-token context window). Prune redundant context, force JSON outputs without XML wrappers, and NEVER generate large scripts using local fallbacks.
-- **Failure is Design Feedback**: Do not hide failures. If a command or a model configuration exceeds physical limits (like VRAM overflow), fail immediately (Fail Fast) and report the exact facts.
+This document defines the strict operational boundaries for autonomous agents within the YT3 repository.
 
-# No Safety Nets
-NEVER write defensive code. NO error handling, NO dummy code, NO try-catch. Defensive code hides bugs and delays discovery. Focus on making the main logic succeed.
-- Build the minimal thing, run it, and let it crash. Real failures teach faster than hypothetical planning.
-- Implement the smallest possible structure and EXECUTE IMMEDIATELY. Speed of iteration beats depth of speculation.
-- A crash is NOT a problem — it is design feedback. NEVER fear execution. Fear of running code leads to over-engineering.
-- Follow the strict cycle: CRASH → IDENTIFY ROOT CAUSE → MINIMAL FIX. Repeat relentlessly. Each cycle sharpens understanding of the actual system.
-- REJECT upfront over-engineering. Only real failures dictate real improvements. Imagined edge cases produce imagined solutions.
-- READ every crash log and traceback with absolute precision. Fix the ROOT CAUSE, not the symptom. Symptom fixes guarantee repeat failures.
+## 1. Claim Provenance Enforcement (STRICT)
+To prevent "Fake Inspection" and "Lore Fabrication," every statement made by an agent must be classified into one of the following provenance categories:
 
-# Project Structure Rules
-Always consider proper directory structure. Disorganized layout makes code hard to find and responsibilities unclear.
-- ADR は `docs/adr/README.md` を索引にして、`0001` からの連番で読む。派生記録は `docs/adr/archive/` にまとめる。
-- Taskfile.yml is the CLI. All executable operations MUST be defined as Taskfile tasks. Direct script invocation is forbidden. A single entry point keeps execution discoverable and reproducible.
-- **TS/Bun**: ALWAYS use `bun` to run scripts. ALL dependencies MUST be managed via `package.json` and `bun install`. No direct `node` invocation, no ad-hoc installs. **Python**: ALWAYS use `uv run`. ALL dependencies via `pyproject.toml`. No `pip install`, no `requirements.txt`.
-- src/domain/* holds ALL domain logic. Business rules, models, and core computations live here exclusively. Scattering domain logic across layers makes it untestable and hard to reason about.
-- src/io/* holds ALL data input/output. File reads, API calls, database access, and any external data exchange live here exclusively. Isolating I/O from domain logic keeps the core pure and testable.
-- config/default.yaml is the SINGLE source of configuration. No hardcoded values, no scattered config files. One config file means one place to look, one place to change.
-- Agent skills are managed via `agr` (agent-resources). Use `agr add` to install, `agr.toml` to track dependencies, and `agr sync` to reproduce environments. Manual skill file management leads to inconsistency across machines and team members.
+- **VERIFIED**: Directly observed via tool execution (e.g., `view_file`, `ls`, `command_output`). Must include actual quotes or paths.
+- **OBSERVED**: Information provided in the initial user prompt or explicit `user_rules`.
+- **INFERRED**: Logical hypotheses derived from observed facts. Must be explicitly labeled as "INFERRED."
+- **UNVERIFIED**: Files or states not yet inspected by a tool. If no tool was run, the agent MUST say "not inspected."
+- **FABRICATED**: (FORBIDDEN) Any canonical claim about project philosophy, governance, or file content without evidence.
 
-# System Integrity & Infrastructure
-- **Protected Files**: Do not modify `biome.json`, `Taskfile.yml`, `.gitignore`, `.claude/settings.json`, or `package.json` unless explicitly directed. These are the project's foundational infrastructure. Fix the implementation logic, not the build/config binary, whenever possible.
-- **Workflow Integrity**: Run `task lint` after every TypeScript modification to ensure structural integrity. Do not commit or push if linting fails.
-- **Metadata Leakage Prevention**: NEVER include file paths, internal IDs, split-part filenames (e.g., `part_001.wav`), or absolute system paths in user-facing content (`script_master.md`, `youtube_metadata.md`). These are internal implementation details and must be stripped before final delivery. Any leakage is considered a critical quality failure.
+## 2. Technical Invariants (Zero-Fat / Crash-Driven)
+- **Zero-Fat Implementation**: Delete unused code, comments, and boilerplate immediately. No "future-proofing."
+- **Crash-Driven Development (CDD)**: Do not use `try-catch` in business logic. Let the system fail loudly and fast. Use the crash log as the primary design feedback.
+- **Workflow Isolation**: Research, Scripting, and Production are distinct phases. Pass only **validated facts**, not opinions, across phase boundaries.
+- **No Safety Nets**: Never write defensive code to hide bugs. Fix the root cause, not the symptoms.
 
-# Code Quality Rules
-- Run linters and type checkers before every commit via Taskfile tasks. **TS/Bun**: `tsc --noEmit` + `eslint src`. **Python**: `ruff check` + `ruff format` + `uv run ty check`. Automated checks catch style drift and type errors before review.
-- Use schema-validated models for ALL data structures. **TS/Bun**: Use Zod. No plain objects or `any`. **Python**: Use Pydantic. No dataclasses or plain dicts. Validation at the boundary makes schemas explicit and failures loud.
-- Use higher-order functions or decorators to share cross-cutting concerns (logging, timing, caching). Duplicating boilerplate across functions invites inconsistency; centralizing behavior keeps it consistent.
+## 3. Infrastructure & State Management
+- **Taskfile.yml**: The sole entry point for all executable operations. Direct script execution is prohibited.
+- **State Sovereignty**: `MASTER_PROGRESS.md` (or equivalent run-logs) is the Single Source of Truth (SSOT) for the current production state.
+- **Metadata Integrity**: Stripping of internal IDs, paths, and intermediate filenames from user-facing artifacts is mandatory.
 
-# Frontend Rules
-- Keep it simple HTML. No frameworks unless explicitly required. Plain HTML is fast to write, easy to debug, and has zero build overhead.
-- Serve and develop via `task dev`. Frontend dev workflow MUST go through Taskfile like everything else. Separate dev commands fragment knowledge and break onboarding.
+## 4. Output & Documentation
+- **Tone**: Deterministic, technical, and professional. Eliminate all emotive, decorative, or personality-driven factors in system-level communication.
+- **English Skill Primacy**: Maintain all `SKILL.md` files in strict, imperative English for maximum LLM trigger rates.
+- **Japanese Usage**: Use Japanese only for domain-specific content (e.g., board games) or when explicitly requested for user-facing documentation.
 
-# Core Realignment Mandates (March 2026)
-- **Daily Pulse Sovereignty**: All research must start with a "Blank Slate" observation of raw news data. The "Daily Pulse" is the sole and primary source of all video topics.
-  - *Rationale*: Any pre-defined mission or bucket forces AI to interpret news through a fixed lens, leading to repetitive, biased narratives that ignore unexpected market anomalies (Alpha).
-- **Bias-Free Extraction**: Prioritize hard facts (Delta, Magnitude, Actors) over pre-defined narratives. Let the data dictate the story.
-  - *Rationale*: Sticking to numerical deltas ensures the content is grounded in verifiable institutional reality, preventing "AI hallucinations" and confirmation bias.
-- **English Skill Primacy**: All `SKILL.md` files must be maintained in strict, imperative English.
-  - *Rationale*: Standardized English ensures maximum operational precision and trigger rates for LLMs.
-- **Anti-Doom Policy**: Banish all "Collapse" or "End-of-World" narratives. Focus on "Adaptive Growth" and "Structural Realignment."
-  - *Rationale*: Educational content should empower viewers with "Adaptive Strategies" based on physical realities, building long-term institutional trust.
+## 5. Video Quality Standard (100-Point Audit)
+All video content must pass the `AuditAgent` validation based on the 100-point checklist:
+- **Title & Thumbnail**: Objective, factual, no sensationalism, mobile-readable.
+- **Structure**: "Cause -> Impact -> Future" (原因→影響→今後) logic.
+- **Hook**: Key theme and conclusions within the first 10 seconds.
+- **Tone**: Professional financial voice, strict separation of "Fact" and "Possibility."
+- **Audio/Visual**: 1080p+, -14 LUFS loudness, consistent brand identity.
+- **Compliance**: Target channel must match `YOUTUBE_CHANNEL_PROFILE` exactly.
+
