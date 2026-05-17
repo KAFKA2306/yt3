@@ -19,7 +19,7 @@ export interface VideoCompositionConfig {
 }
 
 export class VideoComposer {
-	private config: VideoCompositionConfig;
+	public config: VideoCompositionConfig;
 
 	constructor(config: VideoCompositionConfig) {
 		this.config = config;
@@ -107,7 +107,8 @@ export class VideoComposer {
 
 		// Apply Overlays
 		for (let i = 0; i < videoPlan.overlays.length; i++) {
-			const overlay = videoPlan.overlays[i]!;
+			const overlay = videoPlan.overlays[i];
+			if (!overlay) continue;
 			const overlayStream = `ovr_${i}`;
 			const nextStream = `v_${i}`;
 

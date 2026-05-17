@@ -4,8 +4,8 @@ import {
 	type AssetStore,
 	BaseAgent,
 	ROOT,
-	parseLlmJson,
 	getMemoryEssenceFile,
+	parseLlmJson,
 } from "../../io/core.js";
 import type { AgentState } from "../types.js";
 

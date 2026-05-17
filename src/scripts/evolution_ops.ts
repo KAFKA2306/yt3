@@ -1,9 +1,9 @@
 import path from "node:path";
-import { ROOT, loadConfig } from "../io/core.js";
 import { AceAcquirer } from "../domain/evolution/ace_acquirer.js";
 import { AceEvaluator } from "../domain/evolution/ace_evaluator.js";
 import { AceEvolver } from "../domain/evolution/ace_evolver.js";
 import { ContextPlaybook } from "../domain/evolution/context_playbook.js";
+import { ROOT, loadConfig } from "../io/core.js";
 async function main() {
 	const args = process.argv.slice(2);
 	const command = args[0];

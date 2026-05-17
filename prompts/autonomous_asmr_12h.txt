@@ -6,23 +6,24 @@ API キー課金や外部有料 API の使用は厳禁。
 cd /home/kafka/2511youtuber/v3/yt3
 
 前提情報の確認:
-1. runs/2026-05-10/MASTER_PROGRESS.md を読み、現状を把握する。
+1. asmr/yawa-archive/MASTER_PROGRESS.md を読み、現状を把握する。
 2. docs/standard/asmr-workflow.md 等の標準規約を遵守する。
 
 遵守事項:
 - 認証: 実行時に API キー関連の環境変数が存在する場合、即座に処理を中断する。OAuth 認証が有効であることを前提とする。
 - 安全性: 正常に完了しているプロジェクト（✅マーク）には一切手を加えない。
+- ドメイン境界: 全ての成果物は asmr/yawa-archive/ 配下の適切なブランドフォルダに配置し、runs/ 直下への直接書き込みを禁止する。
 - 品質: 尺が異常に短い（1〜2分等）動画の投稿は行わない。
 - Quota管理: YouTube のアップロード制限（quota exceeded）が発生している場合、投稿処理をスキップし、ローカルでの生成・検証作業のみを行う。
 
 実行タスク:
-1. MASTER_PROGRESS.md で 🚨要修正 とされているプロジェクトを特定。
+1. asmr/yawa-archive/MASTER_PROGRESS.md で 🚨要修正 とされているプロジェクトを特定。
 2. 対象プロジェクトの script_master.md と生成済みパーツ（parts_wav）の整合性を確認。
 3. 不一致や異常が認められる場合、古い生成物を削除し、最新の script_master.md に基づいて generate_ultra.py を再実行。
 4. 未着手の shinya-kansokushitsu-01, tsukari-ryokan-01 の生成を開始。
 5. 生成完了後、実測尺を計測し youtube_metadata.md を更新。
 6. 全てのチェック（5,000文字以上、全パーツ存在、実測尺の一致、サムネイル存在）をパスした作品のみ、YouTube への非公開投稿を試みる。
-7. 処理結果（成功、失敗、スキップの理由）を MASTER_PROGRESS.md に詳細に追記・更新する。
+7. 処理結果（成功、失敗、スキップの理由）を asmr/yawa-archive/MASTER_PROGRESS.md に詳細に追記・更新する。
 
 異常終了時の対応:
 - 予期せぬエラーや認証切れ等で失敗した場合、その理由を MASTER_PROGRESS.md の「最終更新」セクションに記録する。

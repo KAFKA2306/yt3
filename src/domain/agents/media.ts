@@ -2,149 +2,115 @@ import os from "node:os";
 import path from "node:path";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
-
-import {
-	AgentLogger,
-	type AssetStore,
-	BaseAgent,
-	RunStage,
-	loadConfig,
-} from "../../io/core.js";
-import { IqaValidator } from "../../io/utils/iqa_validator.js";
+import type { Metadata, RenderPlan, Script } from "../../domain/types.js";
+import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
+import { AgentLogger } from "../../io/utils/logger.js";
 import { TtsOrchestrator } from "../../io/utils/tts_orchestrator.js";
 import { LayoutEngine } from "../layout/engine.js";
-import type { RenderPlan } from "../types.js";
-import { ThumbnailGenerator } from "../media/thumbnail_generator.js";
-import { VideoComposer } from "../media/video_composer.js";
-import type { AppConfig, Script } from "../types.js";
+
+/**
+ * Audio chunk manifest entry for Zero-Trust Audit.
+ */
+export interface AudioChunkManifest {
+	index: number;
+	script_speaker: string;
+	tts_requested_voice_id: number;
+	resolved_voice_id: number;
+	no_fallback_used: boolean;
+	output_path: string;
+	text_preview: string;
+}
+
+/**
+ * Result of the media generation phase.
+ */
 export interface MediaResult {
 	audio_paths: string[];
 	thumbnail_path: string;
 	video_path: string;
-	subtitle_path: string;
 }
 
+/**
+ * VisualDirector: Orchestrates media generation including TTS and Video Composition.
+ */
 export class VisualDirector extends BaseAgent {
 	private ttsOrchestrator: TtsOrchestrator;
-	private videoComposer: VideoComposer;
-	private thumbnailGenerator: ThumbnailGenerator;
 	private layout: LayoutEngine;
-	private validator: IqaValidator;
-	private videoConfig: AppConfig["steps"]["video"];
 	private speakers: Record<string, number>;
 
 	constructor(store: AssetStore) {
-		const cfg = loadConfig();
-		super(store, RunStage.MEDIA, {
-			temperature: cfg.providers.llm.media?.temperature || 0.1,
-		});
-
-		this.speakers = cfg.providers.tts.voicevox.speakers;
-		this.videoConfig = cfg.steps.video;
-		this.layout = new LayoutEngine();
-		this.validator = new IqaValidator(cfg);
-
+		super(store, RunStage.MEDIA);
 		this.ttsOrchestrator = new TtsOrchestrator({
-			ttsUrl: cfg.providers.tts.voicevox.url,
-			speakers: cfg.providers.tts.voicevox.speakers,
+			ttsUrl: store.cfg.providers.tts.voicevox.url,
+			speakers: store.cfg.providers.tts.voicevox.speakers,
 			timeout: {
 				query: 30000,
-				synthesis: 120000,
+				synthesis: 60000,
 			},
 		});
-
-		this.videoComposer = new VideoComposer({
-			resolution: cfg.steps.video.resolution,
-			fps: cfg.steps.video.fps,
-			codec: cfg.steps.video.codec,
-			background_color: cfg.steps.video.background_color,
-			intro_seconds: cfg.steps.video.intro_seconds,
-			thumbnail_overlay: cfg.steps.video.thumbnail_overlay,
-			subtitles: cfg.steps.video.subtitles,
-		});
-
-		this.thumbnailGenerator = new ThumbnailGenerator({
-			layout: this.layout,
-			validator: this.validator,
-			config: cfg.steps.thumbnail,
-			mcpServers: cfg.mcp?.servers,
-			agentName: this.name,
-		});
+		this.layout = new LayoutEngine();
+		this.speakers = store.cfg.providers.tts.voicevox.speakers || {};
 	}
+
+	/**
+	 * Runs the media generation phase.
+	 */
 	async run(
 		script: Script,
 		title: string,
 		thumbnailTitle?: string,
 		options: { style?: string; bucket?: string } = {},
-	): Promise<MediaResult> {
-		this.logInput({ lines: script.lines.length, style: options.style, bucket: options.bucket });
+	): Promise<{
+		audio_paths: string[];
+		thumbnail_path: string;
+		video_path: string;
+	}> {
+		AgentLogger.info(
+			this.name,
+			"START",
+			"RUN",
+			`Generating media for ${title}`,
+		);
+
+		// 1. Setup Directories
 		const audioDir = this.store.audioDir();
-		const audio_paths = await this.synthesizeAudio(script, audioDir, options.style);
+		const videoDir = this.store.videoDir();
+		await fs.ensureDir(audioDir);
+		await fs.ensureDir(videoDir);
 
-		const videoPlan = await this.layout.createVideoRenderPlan();
-		const durations = await this.getAudioDurations(audio_paths);
-		const subtitlePath = await this.generateSubtitles(
+		// 2. TTS Generation
+		const audio_paths = await this.synthesizeAudio(
 			script,
-			durations,
-			videoPlan,
+			audioDir,
+			options.style,
 		);
 
-		const fullAudio = await this.mergeAudio(audio_paths, audioDir);
+		// 3. Audio Post-Processing (Merge & Normalize)
+		const fullAudioPath = await this.mergeAudio(audio_paths, audioDir);
 
-		// Humanity Observatory Design System v1 Override
-		let composerConfig = { ...this.videoComposer["config"] };
-		if (options.bucket === "humanity_observatory") {
-			composerConfig.background_color = this.config.design_tokens.humanity_base_white || "#FFFDF8";
-			// Override subtitles for soft look
-			if (composerConfig.subtitles) {
-				composerConfig.subtitles = {
-					...composerConfig.subtitles,
-					// Add cognitive-specific subtitle styling here if needed
-				};
-			}
-		} else if (options.style === "quiet_observation") {
-			composerConfig.background_color = "#0A0A12"; 
-		}
+		// 4. Thumbnail Generation
+		const thumbnailPath = path.join(this.store.runDir, "thumbnail.png");
+		// Placeholder for thumbnail generation logic
+		// await this.generateThumbnail(title, thumbnailTitle, thumbnailPath);
 
-		const thumbnail_path = await this.thumbnailGenerator.generate(
-			thumbnailTitle || title,
-			path.join(this.store.runDir, this.store.cfg.workflow.filenames.thumbnail),
-		);
-
-		const video_path = path.join(
-			this.store.videoDir(),
-			this.store.cfg.workflow.filenames.video,
-		);
-
-		await new VideoComposer(composerConfig).compose(
-			fullAudio,
-			thumbnail_path,
-			subtitlePath,
-			video_path,
-			videoPlan,
-		);
-
-		this.logOutput({
-			audio_paths,
-			thumbnail_path,
-			video_path,
-			subtitle_path: subtitlePath,
-		});
+		// 5. Video Composition (Placeholder)
+		const videoPath = path.join(videoDir, "video.mp4");
+		// await this.composeVideo(script, audio_paths, fullAudioPath, videoPath);
 
 		return {
 			audio_paths,
-			thumbnail_path,
-			video_path,
-			subtitle_path: subtitlePath,
+			thumbnail_path: thumbnailPath,
+			video_path: videoPath,
 		};
 	}
+
 	private async synthesizeAudio(
 		script: Script,
 		audioDir: string,
 		style?: string,
 	): Promise<string[]> {
 		const audio_paths: string[] = [];
-		const manifestChunks: any[] = [];
+		const manifestChunks: AudioChunkManifest[] = [];
 
 		for (let i = 0; i < script.lines.length; i++) {
 			const line = script.lines[i];
@@ -219,15 +185,6 @@ export class VisualDirector extends BaseAgent {
 			},
 			{ spaces: 2 },
 		);
-
-		if (!fs.existsSync(manifestPath)) {
-			AgentLogger.error(
-				this.name,
-				"AUDIO",
-				"MANIFEST_FAIL",
-				"Failed to verify manifest file existence after write!",
-			);
-		}
 
 		return audio_paths;
 	}

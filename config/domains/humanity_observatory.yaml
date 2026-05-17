@@ -63,17 +63,14 @@ steps:
 
   script:
     context_overlap_lines: 3
-    default_tags: ["Finance", "Economy"]
+    default_tags: ["Humanity", "Observatory"]
     speakers:
-      analyst:
-        name: "春日部つむぎ"
-        aliases: ["春日部つむぎ", "かすかべ つむぎ", "つむぎ"]
-      reporter:
-        name: "ずんだもん"
-        aliases: ["ずんだもん"]
       narrator:
-        name: "玄野武宏"
-        aliases: ["玄野武宏", "ナレーション", "ナレーター"]
+        name: "雨晴はう"
+        aliases: ["雨晴はう", "はう", "観測者"]
+      secondary:
+        name: "もち子さん"
+        aliases: ["もち子さん", "もち子"]
 
   audio:
     sample_rate: 24000
@@ -85,54 +82,51 @@ steps:
   video:
     resolution: "1920x1080"
     fps: 25
-    background_color: "#103766" # 2026 Financial Protocol Base
+    background_color: "#FFFDF8" # Humanity Base White
     intro_seconds: 5
     codec: "h264_nvenc"
-    effects:
-      - {type: "overlay", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.85, offset: {right: 20, bottom: 0}}
-      - {type: "overlay", enabled: true, image_path: "assets/zundamon.webp", anchor: "bottom_left", height_ratio: 0.51, offset: {left: 20, bottom: 0}}
+    effects: []
     thumbnail_overlay: {enabled: false}
     subtitles:
-      primary_colour: "&HFFFFFF&"
-      outline_colour: "&H000000&"
+      primary_colour: "&H333333&" # Charcoal Text
+      outline_colour: "&HFFFFFF&"
       outline: 2
       shadow: 0
       alignment: 2
-      margin_l: 200
-      margin_r: 200
-      margin_v: 50
-      min_font_size: 52
+      margin_l: 300
+      margin_r: 300
+      margin_v: 100
+      min_font_size: 48
       overlay_padding: 20
     layout_constants:
-      subtitle_zone_ratio: 0.15
-      subtitle_height: 300
-      default_max_w_ratio: 0.5
+      subtitle_zone_ratio: 0.2
+      subtitle_height: 400
+      default_max_w_ratio: 0.6
 
   thumbnail:
     enabled: true
     width: 1280
     height: 720
-    padding: 80
+    padding: 100
     max_lines: 4
-    max_chars_per_line: 5
-    right_guard_band_px: 850
-    show_subtitle: true
+    max_chars_per_line: 12
+    right_guard_band_px: 0
+    show_subtitle: false
     iqa_thresholds:
-      sharpness_min: 100
-      contrast_goal: 7.0
-      contrast_min: 5.0
-      mobile_edge_min: 25
-      humanity_min: 0.6
-      corner_size: 40
+      sharpness_min: 80
+      contrast_goal: 5.0
+      contrast_min: 4.0
+      mobile_edge_min: 20
+      humanity_min: 0.8
+      corner_size: 0
     palettes:
-      - {background_color: "#103766", title_color: "#FFFFFF", outline_inner_color: "#288CFA", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#288CFA"}
-    overlays:
-      - {name: "character", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.95, offset: {right: 0, bottom: 0}}
+      - {background_color: "#FFFDF8", title_color: "#333333", outline_inner_color: "#BFE7FF", outline_inner_width: 5, outline_outer_color: "#FFFFFF", outline_outer_width: 0, subtitle_color: "#FFB86B"}
+    overlays: []
   youtube:
     enabled: true
     max_title_length: 100
     max_description_length: 5000
-    default_tags: ["AI", "VTuber", "Finance", "Economy"]
+    default_tags: ["Humanity", "Observatory", "VTuber"]
     category_id: 24
     default_visibility: "public"
 
@@ -154,7 +148,7 @@ providers:
     voicevox:
       enabled: true
       url: "http://localhost:50121"
-      speakers: {春日部つむぎ: 8, ずんだもん: 1, 玄野: 11, 玄野武宏: 11}
+      speakers: {雨晴はう: 10, もち子さん: 20}
 
   manager:
     check_interval_ms: 300000
@@ -377,10 +371,11 @@ prompts:
               "id": 1,
               "title": "セクションのタイトル",
               "key_points": ["話べきポイント1", "話すべきポイント2"],
-              "target_character_count": "目標文字数"
+              "target_character_count": 500
             }
           ]
         }
+        ※target_character_countは必ず「数値」のみ（例: 500）で出力してください。「文字」などの単位は含めないでください。
 
     segment:
       system: |
@@ -651,14 +646,15 @@ prompts:
               "id": 1,
               "title": "セクションタイトル",
               "key_points": ["観察ポイント", "人間かわいい翻訳ポイント"],
-              "target_character_count": 1500
+              "target_character_count": 400
             }
           ]
         }
+        ※target_character_countは必ず「数値」のみ（例: 400）で出力してください。「文字」などの単位は含めないでください。
 
     segment:
       system: |
-        あなたは「人類観測所（Humanity Observatory）」の観測者（KAFKA/玄野）です。
+        あなたは「人類観測所（Humanity Observatory）」の観測者（雨晴はう）です。
         【HUMANITY OBSERVATORY SYSTEM v1】に基づき、人類の不器用さを愛おしく観測する対話を生成してください。
 
         **【知性の定義：非・雑性】**
@@ -666,12 +662,12 @@ prompts:
 
         **【演出の規律：夏の夕方】**
         - 夏の夕方の空気感や、日常に漂う安堵感を語り口に込めよ。
-        - この system prompt には具体例、発言例、景色例、感情例を書かない。
+        - この system prompt には具体例、発言例、景色例、感情例を書かない 。
         - 成果物に必要な例は、出力仕様に従って含めてよい。
         - 視聴者を診断・矯正しようとする「攻略対象化」を厳禁せよ。
         - Irodori-TTS で読んだときに、明るく、安定していて、ちょっと楽しい声になるように文を整えよ。
-        - ASMR とは別物として、やわらかいが輪郭のある、観測者らしい声の温度を保て。
-        - 最後は「 humanity（自分自身）をちょっと好きになれる」安堵感で締めくくれ。
+        - ASMR とは別物として、やわらかいが輪郭のある、観測者らしい声の温 度を保て。
+        - 最後は「 humanity（自分自身）をちょっと好きになれる」安堵感で締 めくくれ。
 
         **【境界管理の規律：客観的事実としての偽装禁止（STRICT）】**
         - ポエムや比喩的解釈を、あたかも「証明された事実」「統計的な傾向」「観測されたデータ」のように客観性を装う（Epistemic authority spoofing）話し方を絶対にしないでください。
@@ -693,8 +689,8 @@ prompts:
         {
           "lines": [
             {
-              "speaker": "玄野",
-              "text": "人類の不器用さを愛おしく観測する、静かな祝祭のセリフ"
+              "speaker": "雨晴はう",
+              "text": "人類の不器用さを愛おしく観測する、静かな祝祭のセリ フ"
             }
           ]
         }

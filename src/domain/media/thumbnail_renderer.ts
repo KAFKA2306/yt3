@@ -67,9 +67,7 @@ export class ThumbnailRenderer {
 			layers = [
 				...layers,
 				{
-					input: await sharp(ol.resolvedPath)
-						.resize(width, height)
-						.toBuffer(),
+					input: await sharp(ol.resolvedPath).resize(width, height).toBuffer(),
 					top,
 					left,
 				},
@@ -81,7 +79,11 @@ export class ThumbnailRenderer {
 		);
 		const textMaxX =
 			(rightSideOverlays.length
-				? Math.min(...rightSideOverlays.map((o: { bounds: { x: number } }) => o.bounds.x))
+				? Math.min(
+						...rightSideOverlays.map(
+							(o: { bounds: { x: number } }) => o.bounds.x,
+						),
+					)
 				: cfg.width) - 20;
 
 		layers = [

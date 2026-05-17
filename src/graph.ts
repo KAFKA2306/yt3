@@ -11,6 +11,7 @@ import { TrendScout } from "./domain/agents/research.js";
 import { WebSearchAgent } from "./domain/agents/web_search.js";
 import type {
 	AgentState,
+	AuditCheck,
 	DirectorData,
 	EnrichedResearch,
 	Metadata,
@@ -138,7 +139,7 @@ export function createGraph(store: AssetStore) {
 			EnrichedResearch | undefined
 		>,
 		audit_results: { reducer, default: () => undefined } as ChannelReducer<
-			any | undefined
+			Record<string, AuditCheck> | undefined
 		>,
 	};
 	const research = new TrendScout(store);

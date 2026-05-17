@@ -65,7 +65,11 @@ export class ScriptSmith extends BaseAgent {
 		const fullContext = newsContext + insightContext;
 		const channelType = director.channel_type || "default";
 
-		const outline = await this.generateOutline(director.angle, fullContext, channelType);
+		const outline = await this.generateOutline(
+			director.angle,
+			fullContext,
+			channelType,
+		);
 		Logger.info(
 			this.name,
 			"CONTENT",
@@ -88,7 +92,11 @@ export class ScriptSmith extends BaseAgent {
 		const scriptText = allLines
 			.map((l) => `${l.speaker}: ${l.text}`)
 			.join("\n");
-		const metadata = await this.generateMetadata(scriptText, fullContext, channelType);
+		const metadata = await this.generateMetadata(
+			scriptText,
+			fullContext,
+			channelType,
+		);
 
 		const result: ContentResult = {
 			script: {
@@ -109,7 +117,11 @@ export class ScriptSmith extends BaseAgent {
 		newsContext: string,
 		channelType: string,
 	): Promise<ContentOutline> {
-		const prompts = this.loadPrompt<any>(channelType === "humanity_observatory" ? "humanity_observatory" : this.name);
+		const prompts = this.loadPrompt<ContentPrompts>(
+			channelType === "humanity_observatory"
+				? "humanity_observatory"
+				: this.name,
+		);
 		return this.runLlm(
 			prompts.outline.system,
 			prompts.outline.user_template
@@ -126,7 +138,11 @@ export class ScriptSmith extends BaseAgent {
 		newsContext: string,
 		channelType: string,
 	): Promise<ScriptLine[]> {
-		const prompts = this.loadPrompt<any>(channelType === "humanity_observatory" ? "humanity_observatory" : this.name);
+		const prompts = this.loadPrompt<ContentPrompts>(
+			channelType === "humanity_observatory"
+				? "humanity_observatory"
+				: this.name,
+		);
 		const prevContext =
 			prevLines.length > 0
 				? prevLines.map((l) => `${l.speaker}: ${l.text}`).join("\n")
@@ -153,15 +169,20 @@ export class ScriptSmith extends BaseAgent {
 
 	private async generateMetadata(
 		scriptText: string,
-		newsSources: string,
+		newsContext: string,
 		channelType: string,
 	): Promise<Metadata> {
-		const prompts = this.loadPrompt<any>(channelType === "humanity_observatory" ? "humanity_observatory" : this.name);
+		const prompts = this.loadPrompt<ContentPrompts>(
+			channelType === "humanity_observatory"
+				? "humanity_observatory"
+				: this.name,
+		);
+
 		return this.runLlm(
 			prompts.metadata.system,
 			prompts.metadata.user_template
 				.replace("{script_text}", scriptText)
-				.replace("{news_sources}", newsSources),
+				.replace("{news_sources}", newsContext),
 			(text) => parseLlmJson(text, MetadataSchema),
 		);
 	}

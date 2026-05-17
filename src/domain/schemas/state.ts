@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { GenerationDynamicsSchema } from "./generation_dynamics.js";
 import { NewsItemSchema, WebSearchResultSchema } from "../types.js";
+import { GenerationDynamicsSchema } from "./generation_dynamics.js";
 import { StrategicInsightSchema } from "./research.js";
 import { MetadataSchema, ScriptSchema } from "./script.js";
 

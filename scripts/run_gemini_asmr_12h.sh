@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_ROOT="/home/kafka/2511youtuber/v3/yt3"
 LOG_DIR="${PROJECT_ROOT}/logs"
 PROMPT_FILE="${PROJECT_ROOT}/prompts/autonomous_asmr_12h.txt"
-PROGRESS_FILE="${PROJECT_ROOT}/runs/2026-05-10/MASTER_PROGRESS.md"
+PROGRESS_FILE="${PROJECT_ROOT}/asmr/yawa-archive/MASTER_PROGRESS.md"
 LOCK_FILE="/tmp/yt3-gemini-asmr.lock"
 
 cd "${PROJECT_ROOT}"

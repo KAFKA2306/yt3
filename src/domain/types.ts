@@ -245,6 +245,7 @@ export const AuditStatusSchema = z.enum([
 	"QUALITY_FAIL",
 	"INFRA_FAIL",
 	"UNVERIFIED",
+	"UNKNOWN",
 	"ASK_USER",
 	"FAIL",
 ]);

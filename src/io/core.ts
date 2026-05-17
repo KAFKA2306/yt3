@@ -9,12 +9,31 @@ import { ContextPlaybook } from "../domain/evolution/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 export const ROOT = process.cwd();
 
-export function loadConfig(): AppConfig {
-	const configPath = path.join(ROOT, "config", "default.yaml");
-	if (!fs.existsSync(configPath)) {
-		throw new Error(`Config file not found: ${configPath}`);
+export function loadConfig(domainId?: string): AppConfig {
+	const configPath = process.env.CONFIG_PATH;
+	if (configPath && fs.existsSync(configPath)) {
+		return yaml.load(fs.readFileSync(configPath, "utf-8")) as AppConfig;
 	}
-	return yaml.load(fs.readFileSync(configPath, "utf-8")) as AppConfig;
+
+	if (domainId) {
+		const domainConfigPath = path.join(
+			ROOT,
+			"config",
+			"domains",
+			`${domainId}.yaml`,
+		);
+		if (fs.existsSync(domainConfigPath)) {
+			return yaml.load(fs.readFileSync(domainConfigPath, "utf-8")) as AppConfig;
+		}
+	}
+
+	const defaultPath = path.join(ROOT, "config", "default.yaml");
+	if (fs.existsSync(defaultPath)) {
+		return yaml.load(fs.readFileSync(defaultPath, "utf-8")) as AppConfig;
+	}
+	throw new Error(
+		`CRITICAL: No configuration found. Domain: ${domainId || "none"}`,
+	);
 }
 
 import { AgentLogger as Logger } from "./utils/logger.js";
@@ -48,7 +67,17 @@ export function createLlm(
 	options: LlmOptions = {},
 ): BaseChatModel & { keyName?: string } {
 	const { extra = {}, ...rest } = options;
-	const cfg = loadConfig();
+
+	// Infer domain from sessionId (usually runDir path)
+	let domainId: string | undefined;
+	if (options.sessionId?.includes("/")) {
+		const parts = options.sessionId.split(path.sep);
+		const runsIdx = parts.lastIndexOf("runs");
+		if (runsIdx !== -1 && parts[runsIdx + 1]) {
+			domainId = parts[runsIdx + 1];
+		}
+	}
+	const cfg = loadConfig(domainId);
 
 	const { name: keyName, key: apiKey } = acquireKey(options.sessionId);
 
@@ -56,7 +85,7 @@ export function createLlm(
 		"SYSTEM",
 		"CORE",
 		"API_CHECK",
-		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}...`,
+		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}... (Domain: ${domainId || "default"})`,
 	);
 
 	const llm = new ChatGoogleGenerativeAI({
@@ -76,10 +105,22 @@ export function createLlm(
 export class AssetStore {
 	runDir: string;
 	cfg: AppConfig;
+	domainId: string;
+
 	constructor(runId: string) {
-		const c = loadConfig();
+		if (!runId.includes("/")) {
+			throw new Error(
+				`CRITICAL: Naming Boundary Violation. runId must be 'domain_id/run_id', got: '${runId}'`,
+			);
+		}
+		const [domainId, id] = runId.split("/");
+		if (!domainId || !id) {
+			throw new Error(`CRITICAL: Malformed runId: '${runId}'`);
+		}
+		this.domainId = domainId;
+		const c = loadConfig(domainId);
 		this.cfg = c;
-		this.runDir = path.join(ROOT, c.workflow.paths.runs_dir, runId);
+		this.runDir = path.join(ROOT, c.workflow.paths.runs_dir, domainId, id);
 		fs.ensureDirSync(this.runDir);
 	}
 	loadState(): Partial<AgentState> {
@@ -392,7 +433,13 @@ export function getMemoryEssenceFile(store: AssetStore): string {
 	const cfg = store.cfg;
 	const isCognitive = store.runDir.includes("humanity_observatory");
 	const subDir = isCognitive ? "humanity_observatory" : "daily_pulse";
-	const essenceFile = path.join(ROOT, "data", "memory", subDir, "essences.json");
+	const essenceFile = path.join(
+		ROOT,
+		"data",
+		"memory",
+		subDir,
+		"essences.json",
+	);
 
 	if (!isCognitive && !fs.existsSync(essenceFile)) {
 		const legacyFile = path.isAbsolute(cfg.workflow.memory.essence_file)

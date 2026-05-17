@@ -1,5 +1,6 @@
 import fs from "fs-extra";
 import sharp from "sharp";
+import type { IqaResult } from "../../domain/types.js";
 import { AgentLogger } from "../../io/core.js";
 import {
 	type BackgroundRisk,
@@ -11,7 +12,6 @@ import {
 	getLuminance,
 	hexToRgb,
 } from "./iqa_metrics.js";
-import type { IqaResult } from "../../domain/types.js";
 export type { BackgroundRisk, IqaResult };
 export class IqaValidator {
 	private thresholds: IqaThresholds;

@@ -48,28 +48,17 @@ tasks:
   publish:
     desc: "Run publish step only (requires explicit channel profile env file)"
     cmds:
-      - |
-        bash -lc '
-          if [ -z "${ENV_FILE:-}" ]; then
-            echo "Refusing to publish without ENV_FILE. Use config/.env.byosan or config/.env.yawa.";
-            exit 1;
-          fi
-          if [ "$ENV_FILE" = "config/.env" ]; then
-            echo "Refusing to publish from config/.env. Use a channel-specific env file.";
-            exit 1;
-          fi
-          bun --env-file="$ENV_FILE" src/step.ts publish "${RUN_ID:-{{.CLI_ARGS}}}"
-        '
+      - bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
 
   publish:byosan:
     desc: "Run publish step with the 秒算マネー profile"
     cmds:
-      - ENV_FILE=config/.env.byosan task publish {{.CLI_ARGS}}
+      - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan task publish {{.CLI_ARGS}}
 
   publish:yawa:
     desc: "Run publish step with the 夜話アーカイブ ASMR profile"
     cmds:
-      - task publish ENV_FILE=config/.env.yawa RUN_ID={{.CLI_ARGS}}
+      - ENV_FILE=config/.env.yawa YOUTUBE_CHANNEL_PROFILE=yawa task publish RUN_ID={{.CLI_ARGS}}
 
   publicize:yawa:
     desc: "Make ASMR video public (requires RUN_ID)"
@@ -79,7 +68,22 @@ tasks:
   auth:yawa:
     desc: "Generate YouTube refresh token for the 夜話アーカイブ ASMR profile"
     cmds:
-      - ENV_FILE=config/.env.yawa bun src/scripts/get_youtube_token.ts
+      - ENV_FILE=config/.env.yawa YOUTUBE_CHANNEL_PROFILE=yawa bun src/scripts/youtube_oauth.ts
+
+  auth:humanity:
+    desc: "Generate YouTube refresh token for the 人類観測所 profile"
+    cmds:
+      - ENV_FILE=config/.env YOUTUBE_CHANNEL_PROFILE=humanity bun src/scripts/youtube_oauth.ts
+
+  auth:verify:humanity:
+    desc: "Verify the current YouTube token for the 人類観測所 profile"
+    cmds:
+      - ENV_FILE=config/.env YOUTUBE_CHANNEL_PROFILE=humanity bun src/scripts/youtube_oauth.ts --verify-only
+
+  publish:humanity:
+    desc: "Run publish step with the 人類観測所 profile"
+    cmds:
+      - ENV_FILE=config/.env YOUTUBE_CHANNEL_PROFILE=humanity bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
 
   report:
     desc: "Generate full executive report (Macro, Fundamental, Risk, Event, Whale)"

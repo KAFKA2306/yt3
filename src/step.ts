@@ -8,21 +8,54 @@ import type { AgentState } from "./domain/types.js";
 import { createGraph } from "./graph.js";
 import { AssetStore, ROOT, loadConfig } from "./io/core.js";
 import { sendAlert } from "./io/utils/discord.js";
+
 const cfg = loadConfig();
+
 function resolveRunId(arg?: string): string {
+	// Map profile to domainId (Zero-Fat mapping)
+	let domainId = "daily_pulse";
+	const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+	if (profileName) {
+		const norm = profileName.toLowerCase();
+		if (norm.includes("yawa")) {
+			domainId = "yawa_archive";
+		} else if (norm.includes("humanity")) {
+			domainId = "humanity_observatory";
+		}
+	} else if (process.env.ENV_FILE?.includes("yawa")) {
+		domainId = "yawa_archive";
+	} else if (process.env.ENV_FILE?.includes("humanity")) {
+		domainId = "humanity_observatory";
+	}
+
 	if (!arg || arg === "latest") {
-		const d = path.join(ROOT, cfg.workflow.paths.runs_dir);
-		if (!fs.existsSync(d)) return new Date().toISOString().split("T")[0] || "";
-		const rawFiles = fs.readdirSync(d);
-		const dirs = rawFiles
-			.map((n) => ({ n, p: path.join(d, n) }))
-			.filter((d) => fs.statSync(d.p).isDirectory())
-			.sort((a, b) => fs.statSync(b.p).mtimeMs - fs.statSync(a.p).mtimeMs);
-		const first = dirs[0];
-		return first ? first.n : new Date().toISOString().split("T")[0] || "";
+		// 1. Try domain-separated runs dir first
+		const domainRunsDir = path.join(
+			ROOT,
+			cfg.workflow.paths.runs_dir,
+			domainId,
+		);
+		if (fs.existsSync(domainRunsDir)) {
+			const rawFiles = fs.readdirSync(domainRunsDir);
+			const dirs = rawFiles
+				.map((n) => ({ n, p: path.join(domainRunsDir, n) }))
+				.filter((d) => fs.statSync(d.p).isDirectory())
+				.sort((a, b) => fs.statSync(b.p).mtimeMs - fs.statSync(a.p).mtimeMs);
+			if (dirs[0]) return `${domainId}/${dirs[0].n}`;
+		}
+
+		// 2. Fallback to current date
+		return `${domainId}/${new Date().toISOString().split("T")[0]}`;
+	}
+
+	// Auto-prefix with domainId if missing slash
+	if (!arg.includes("/")) {
+		return `${domainId}/${arg}`;
 	}
 	return arg;
 }
+import { AuditAgent } from "./domain/agents/audit.js";
+
 async function runStep(
 	step: string,
 	bucket: string,
@@ -56,6 +89,10 @@ async function runStep(
 				video_path: res.video_path,
 			};
 		},
+		audit: async () => {
+			const results = await new AuditAgent(store).run(state as AgentState);
+			return { audit_results: results };
+		},
 		publish: async () => ({
 			publish_results: await new PublishAgent(store).run(state as AgentState),
 		}),
@@ -75,7 +112,10 @@ async function runStep(
 		},
 	};
 	const fn = agents[step];
-	if (!fn) throw new Error(`Unknown step: ${step}`);
+	if (!fn) {
+		console.log(`Available steps: ${Object.keys(agents).join(", ")}`);
+		throw new Error(`Unknown step: ${step}`);
+	}
 	return fn();
 }
 async function main() {

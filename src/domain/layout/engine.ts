@@ -1,8 +1,8 @@
 import sharp from "sharp";
 import { loadConfig, resolvePath } from "../../io/core.js";
 import type { OverlayConfig, Rect, Size } from "../config/base.js";
-import type { AppConfig, RenderPlan, Script } from "../types.js";
 import { ThumbnailRenderer } from "../media/thumbnail_renderer.js";
+import type { AppConfig, RenderPlan, Script } from "../types.js";
 import { generateASS } from "./ass.js";
 import { calculateBounds } from "./bounds.js";
 

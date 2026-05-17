@@ -23,6 +23,15 @@ To prevent "Fake Inspection" and "Lore Fabrication," every statement made by an 
 - **Taskfile.yml**: The sole entry point for all executable operations. Direct script execution is prohibited.
 - **State Sovereignty**: `MASTER_PROGRESS.md` (or equivalent run-logs) is the Single Source of Truth (SSOT) for the current production state.
 - **Metadata Integrity**: Stripping of internal IDs, paths, and intermediate filenames from user-facing artifacts is mandatory.
+- **Naming as Security Boundary (STRICT)**: 
+  - If a domain cannot be identified from the path/name alone, the system is contaminated.
+  - **Prohibited Terms**: `shared`, `common`, `misc`, `tmp`, `default`, `latest`, `test`, `final`, `new`, `output`, `run`, `build`.
+  - **Path Requirement**: All runs and artifacts MUST reside in domain-prefixed paths (e.g. `runs/domain_id/run_id`).
+  - **Implicit Inheritance**: Prohibited. No silent merging of `default.yaml`. All configurations MUST be explicit per domain.
+- **Multi-modal Brand Integrity (STRICT)**:
+  - Artifacts MUST pass quantitative style audits (ADR-0034).
+  - **Negative Verification**: Prove the absence of forbidden domain attributes (e.g. Finance Navy #103766 in Humanity domain).
+  - **Acoustic/Visual Invariants**: Voice pitch, brightness, and visual palette must match domain tokens exactly.
 
 ## 4. Output & Documentation
 - **Tone**: Deterministic, technical, and professional. Eliminate all emotive, decorative, or personality-driven factors in system-level communication.
@@ -78,3 +87,17 @@ Always connect macro events to: **daily life, money, work, anxiety, opportunity.
 ### Final Objective
 The goal is NOT to sound like an AI-generated intellectual essay.
 The goal IS to create a viewing experience humans voluntarily continue watching.
+
+
+
+秒算マネー、夜話アーカイブ、人類観測所を絶対に混同しない。
+byosan
+brand: 秒算マネー
+bucket: byosan_money
+yawa
+brand: 夜話アーカイブ ASMR
+bucket: yawa_archive
+humanity
+brand: 雨晴はうの人類観測所
+bucket: humanity_observatory
+expected_channel_handle: @humanity_observatory

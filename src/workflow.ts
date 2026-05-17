@@ -2,12 +2,17 @@ import path from "node:path";
 import fs from "fs-extra";
 import { AuditAgent } from "./domain/agents/audit.js";
 import { ScriptSmith } from "./domain/agents/content.js";
-import { DynamicsOrchestrator } from "./domain/evolution/dynamics_orchestrator.js";
-import { VisualDirector } from "./domain/agents/media.js";
+import { type MediaResult, VisualDirector } from "./domain/agents/media.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
-import type { AgentState } from "./domain/types.js";
+import { DynamicsOrchestrator } from "./domain/evolution/dynamics_orchestrator.js";
+import type {
+	AgentState,
+	ContentResult,
+	GenerationDynamics,
+} from "./domain/types.js";
 import type { AssetStore } from "./io/core.js";
+
 import { AgentLogger } from "./io/utils/logger.js";
 
 import { sendAlert } from "./io/utils/discord.js";
@@ -23,7 +28,7 @@ export async function runSequentialWorkflow(
 	let state: AgentState = { ...initialState } as AgentState;
 	const dynOrch = new DynamicsOrchestrator(store);
 	const dynPath = path.join(store.runDir, "generation_dynamics.json");
-	const dynamicsObj: any = fs.existsSync(dynPath)
+	const dynamicsObj: Partial<GenerationDynamics> = fs.existsSync(dynPath)
 		? fs.readJsonSync(dynPath)
 		: {};
 
@@ -95,7 +100,9 @@ export async function runSequentialWorkflow(
 			"STEP",
 			"Skipping Content Synthesis (cached metadata & script found)",
 		);
-		const contentResults = store.load<any>("content", "output")!;
+		const contentResults = store.load<ContentResult>("content", "output");
+		if (!contentResults)
+			throw new Error("Failed to load cached content results");
 		state = {
 			...state,
 			script: contentResults.script,
@@ -108,10 +115,12 @@ export async function runSequentialWorkflow(
 			"STEP",
 			"Starting Content Synthesis...",
 		);
+		if (!state.director_data)
+			throw new Error("Missing director_data for content synthesis");
 		const scriptSmith = new ScriptSmith(store);
 		const contentResults = await scriptSmith.run(
 			state.news || [],
-			state.director_data!,
+			state.director_data,
 			state.memory_context || "",
 		);
 		state = {
@@ -168,7 +177,8 @@ export async function runSequentialWorkflow(
 			"STEP",
 			"Skipping Media Rendering (cached video & media output found)",
 		);
-		const mediaResults = store.load<any>("media", "output")!;
+		const mediaResults = store.load<MediaResult>("media", "output");
+		if (!mediaResults) throw new Error("Failed to load cached media results");
 		state = { ...state, ...mediaResults };
 	} else {
 		AgentLogger.info(
@@ -177,10 +187,11 @@ export async function runSequentialWorkflow(
 			"STEP",
 			"Starting Media Rendering...",
 		);
+		if (!state.script) throw new Error("Missing script for media rendering");
 		const media = new VisualDirector(store);
 		const mediaResults = await media.run(
-			state.script!,
-			state.metadata?.title || state.script!.title,
+			state.script,
+			state.metadata?.title || state.script.title,
 			state.metadata?.thumbnail_title,
 		);
 		state = { ...state, ...mediaResults };
@@ -189,7 +200,7 @@ export async function runSequentialWorkflow(
 
 	// 4. Audit (Strict Zero-Trust Quality Gate)
 	// Inject current dynamics into AgentState so AuditAgent can inspect it!
-	state.generation_dynamics = dynamicsObj;
+	state.generation_dynamics = dynamicsObj as GenerationDynamics;
 	store.updateState(state);
 
 	AgentLogger.info("SYSTEM", "WORKFLOW", "STEP", "Starting Quality Audit...");
@@ -210,9 +221,7 @@ export async function runSequentialWorkflow(
 	);
 	if (hasCriticalFailure) {
 		const failingChecks = Object.values(auditResults)
-			.filter(
-				(r) => r.critical && r.status !== "PASS",
-			)
+			.filter((r) => r.critical && r.status !== "PASS")
 			.map((r) => r.name);
 
 		AgentLogger.error(
@@ -242,7 +251,7 @@ export async function runSequentialWorkflow(
 	state = { ...state, publish_results: publishResults };
 
 	await sendAlert(
-		`✅ **Successfully Published** video to YouTube!`,
+		"✅ **Successfully Published** video to YouTube!",
 		"publish",
 		{
 			title: state.metadata?.title,
@@ -250,7 +259,6 @@ export async function runSequentialWorkflow(
 			runId: state.run_id,
 		},
 	);
-
 
 	// Save publish/receipt.json
 	fs.writeJsonSync(
@@ -267,12 +275,22 @@ export async function runSequentialWorkflow(
 		"Finalizing dynamics & calculating mutations...",
 	);
 	const finalDynamics = dynOrch.calculateEvolution(
-		dynamicsObj.world_state,
-		dynamicsObj.selection_state,
-		dynamicsObj.strategy_genome,
-		dynamicsObj.narrative_state,
-		dynamicsObj.generation_state,
-		dynamicsObj.attention_state,
+		dynamicsObj.world_state as NonNullable<typeof dynamicsObj.world_state>,
+		dynamicsObj.selection_state as NonNullable<
+			typeof dynamicsObj.selection_state
+		>,
+		dynamicsObj.strategy_genome as NonNullable<
+			typeof dynamicsObj.strategy_genome
+		>,
+		dynamicsObj.narrative_state as NonNullable<
+			typeof dynamicsObj.narrative_state
+		>,
+		dynamicsObj.generation_state as NonNullable<
+			typeof dynamicsObj.generation_state
+		>,
+		dynamicsObj.attention_state as NonNullable<
+			typeof dynamicsObj.attention_state
+		>,
 		state.publish_results,
 	);
 	fs.writeJsonSync(dynPath, finalDynamics, { spaces: 2 });

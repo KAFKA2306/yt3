@@ -23,7 +23,8 @@ export function acquireKey(sessionId?: string) {
 	];
 
 	for (let i = 0; i < keyList.length; i++) {
-		const item = keyList[i]!;
+		const item = keyList[i];
+		if (!item) continue;
 		const val = process.env[item.env];
 		if (!val) continue;
 

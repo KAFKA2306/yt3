@@ -6,8 +6,8 @@ import {
 	getRunIdDateString,
 	loadConfig,
 } from "./io/core.js";
-import { AgentLogger } from "./io/utils/logger.js";
 import { sendAlert } from "./io/utils/discord.js";
+import { AgentLogger } from "./io/utils/logger.js";
 
 async function main() {
 	const defaultRunId = getRunIdDateString();
@@ -16,9 +16,21 @@ async function main() {
 
 	const BUCKET = process.env.BUCKET || loadConfig().workflow.default_bucket;
 	if (BUCKET === "humanity_observatory") {
-		runId = `humanity_observatory/${runId}`;
+		if (RUN_ID.includes("/") && !RUN_ID.startsWith("humanity_observatory/")) {
+			throw new Error(
+				`Domain mismatch: BUCKET is ${BUCKET} but RUN_ID starts with a different prefix: ${RUN_ID}`,
+			);
+		}
+		runId = RUN_ID.startsWith("humanity_observatory/")
+			? RUN_ID
+			: `humanity_observatory/${runId}`;
 	} else {
-		runId = `daily_pulse/${runId}`;
+		if (RUN_ID.includes("/") && !RUN_ID.startsWith("daily_pulse/")) {
+			throw new Error(
+				`Domain mismatch: BUCKET is ${BUCKET} but RUN_ID starts with a different prefix: ${RUN_ID}`,
+			);
+		}
+		runId = RUN_ID.startsWith("daily_pulse/") ? RUN_ID : `daily_pulse/${runId}`;
 	}
 
 	const store = new AssetStore(runId);
@@ -33,7 +45,9 @@ async function main() {
 		);
 		const MISSION_FILE = process.env.MISSION_FILE;
 		const { runSequentialWorkflow } = await import("./workflow.js");
-		const { runHumanityObservatoryWorkflow } = await import("./humanity_observatory_workflow.js");
+		const { runHumanityObservatoryWorkflow } = await import(
+			"./humanity_observatory_workflow.js"
+		);
 
 		const initialState = {
 			run_id: runId,

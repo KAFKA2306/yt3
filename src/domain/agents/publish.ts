@@ -4,6 +4,12 @@ import { TwitterApi } from "twitter-api-v2";
 import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
 import type { AgentState, AppConfig, PublishResults } from "../types.js";
 import { validateCredentials } from "../validation.js";
+import {
+	assertYouTubeChannelMatchesProfile,
+	getYouTubeProfile,
+	hydrateOAuthCredentials,
+	resolveYouTubeRedirectUri,
+} from "../youtube_profiles.js";
 export class PublishAgent extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.PUBLISH);
@@ -19,19 +25,31 @@ export class PublishAgent extends BaseAgent {
 			validateCredentials(enabledProviders);
 		}
 		if (enabledProviders.youtube) {
-			const profile = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
-			if (!profile || profile === "default" || profile === "config/.env") {
+			const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+			if (
+				!profileName ||
+				profileName === "default" ||
+				profileName === "config/.env"
+			) {
 				throw new Error(
 					"YouTube publish requires an explicit channel profile (set YOUTUBE_CHANNEL_PROFILE to byosan_money or yawa_archive_asmr)",
 				);
 			}
 
-			const expectedTitle = process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
-			const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
-			if (!expectedTitle && !expectedId) {
-				throw new Error(
-					"YouTube publish requires YOUTUBE_EXPECTED_CHANNEL_TITLE or YOUTUBE_EXPECTED_CHANNEL_ID",
-				);
+			if (
+				profileName === "humanity" ||
+				profileName === "humanity_observatory"
+			) {
+				getYouTubeProfile(profileName);
+			} else {
+				const expectedTitle =
+					process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
+				const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
+				if (!expectedTitle && !expectedId) {
+					throw new Error(
+						"YouTube publish requires YOUTUBE_EXPECTED_CHANNEL_TITLE or YOUTUBE_EXPECTED_CHANNEL_ID",
+					);
+				}
 			}
 		}
 	}
@@ -63,12 +81,12 @@ export class PublishAgent extends BaseAgent {
 			`[PUBLISH:CONFIG] visibility=${ytCfg.default_visibility} source=config/default.yaml`,
 		);
 
-		const auth = this.createYouTubeClient();
+		const auth = await this.createYouTubeClient();
 		const youtube = google.youtube({
 			version: "v3",
 			auth,
 		});
-		await this.verifyYouTubeChannel(youtube);
+		await this.verifyYouTubeChannel(youtube, auth);
 		const { video_path: videoPath, thumbnail_path: thumbnailPath } = state;
 		if (!videoPath) throw new Error("Video path missing");
 		const res = await youtube.videos.insert({
@@ -121,15 +139,24 @@ export class PublishAgent extends BaseAgent {
 	}
 	private async verifyYouTubeChannel(
 		youtube: ReturnType<typeof google.youtube>,
+		auth: InstanceType<typeof google.auth.OAuth2>,
 	) {
-		const profile = process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "unknown";
+		const profileName =
+			process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "unknown";
+
+		if (profileName === "humanity" || profileName === "humanity_observatory") {
+			const profile = getYouTubeProfile(profileName);
+			await assertYouTubeChannelMatchesProfile(auth, profile);
+			return;
+		}
+
 		const expectedTitle = process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
 		const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
 		const requireMatch = process.env.YOUTUBE_REQUIRE_CHANNEL_MATCH === "true";
 
 		if (!expectedTitle && !expectedId && !requireMatch) {
 			throw new Error(
-				`YouTube channel preflight requires an explicit expected channel for profile "${profile}"`,
+				`YouTube channel preflight requires an explicit expected channel for profile "${profileName}"`,
 			);
 		}
 
@@ -143,29 +170,29 @@ export class PublishAgent extends BaseAgent {
 
 		if (!channel) {
 			throw new Error(
-				`YouTube channel preflight failed for profile "${profile}": no channel returned`,
+				`YouTube channel preflight failed for profile "${profileName}": no channel returned`,
 			);
 		}
 
 		if (expectedTitle && actualTitle !== expectedTitle) {
 			throw new Error(
-				`Wrong YouTube channel for profile "${profile}": expected "${expectedTitle}" but got "${actualTitle || "unknown"}"`,
+				`Wrong YouTube channel for profile "${profileName}": expected "${expectedTitle}" but got "${actualTitle || "unknown"}"`,
 			);
 		}
 
 		if (expectedId && actualId !== expectedId) {
 			throw new Error(
-				`Wrong YouTube channel ID for profile "${profile}": expected "${expectedId}" but got "${actualId || "unknown"}"`,
+				`Wrong YouTube channel ID for profile "${profileName}": expected "${expectedId}" but got "${actualId || "unknown"}"`,
 			);
 		}
 
 		if (requireMatch && !expectedTitle && !expectedId) {
 			throw new Error(
-				`YouTube channel preflight is required for profile "${profile}" but no expected channel was configured`,
+				`YouTube channel preflight is required for profile "${profileName}" but no expected channel was configured`,
 			);
 		}
 	}
-	private createYouTubeClient() {
+	private async createYouTubeClient() {
 		const clientId = process.env.YOUTUBE_CLIENT_ID;
 		const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
 		const redirectUri =
@@ -184,9 +211,17 @@ export class PublishAgent extends BaseAgent {
 			redirectUri,
 		});
 
-		const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-		if (refreshToken) {
-			client.setCredentials({ refresh_token: refreshToken });
+		const profileName =
+			process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "unknown";
+
+		if (profileName === "humanity" || profileName === "humanity_observatory") {
+			const profile = getYouTubeProfile(profileName);
+			await hydrateOAuthCredentials(client, profile);
+		} else {
+			const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+			if (refreshToken) {
+				client.setCredentials({ refresh_token: refreshToken });
+			}
 		}
 
 		return client;

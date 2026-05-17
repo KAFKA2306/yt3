@@ -20,6 +20,7 @@ import {
 	NewsItemSchema,
 	type ResearchDeepDive,
 	ResearchDeepDiveSchema,
+	type ScriptLine,
 } from "../types.js";
 export interface ResearchResult {
 	director_data: {
@@ -134,15 +135,42 @@ export class TrendScout extends BaseAgent {
 		);
 
 		const allTopics = research.selected_topics || [];
-		const firstTopic = allTopics[0];
+		const pastRuns = this.getPastRunsState();
+		const pastTitles = pastRuns.map((run) => run.title).filter(Boolean);
+
+		let selectedTopic = allTopics[0];
+		let selectedResult = selectedTopic?.results?.[0];
+
+		if (allTopics.length > 0) {
+			let minSimilarity = 1.0;
+			for (const topic of allTopics) {
+				for (const r of topic.results || []) {
+					const currentTitle = r.title_hook || topic.selected_topic || "";
+					if (!currentTitle) continue;
+
+					let maxTitleSim = 0;
+					for (const pastTitle of pastTitles) {
+						const sim = calculateStringSimilarity(currentTitle, pastTitle);
+						if (sim > maxTitleSim) {
+							maxTitleSim = sim;
+						}
+					}
+
+					if (maxTitleSim < minSimilarity) {
+						minSimilarity = maxTitleSim;
+						selectedTopic = topic;
+						selectedResult = r;
+					}
+				}
+			}
+		}
+
 		const result: ResearchResult = {
 			director_data: {
-				angle: firstTopic?.angle || "",
+				angle: selectedResult?.angle || selectedTopic?.angle || "",
 				title_hook:
-					firstTopic?.results[0]?.title_hook ||
-					firstTopic?.selected_topic ||
-					"",
-				search_query: firstTopic?.search_query || "",
+					selectedResult?.title_hook || selectedTopic?.selected_topic || "",
+				search_query: selectedTopic?.search_query || "",
 				key_questions: allTopics
 					.flatMap((topic) => topic.results)
 					.flatMap((r) => r.key_questions)
@@ -157,4 +185,61 @@ export class TrendScout extends BaseAgent {
 		this.logOutput(result);
 		return result;
 	}
+
+	private getPastRunsState(): Array<{
+		run_id: string;
+		title: string;
+		script: string;
+	}> {
+		const pastRuns: Array<{ run_id: string; title: string; script: string }> =
+			[];
+		try {
+			const runsDir = path.join(ROOT, "runs");
+			if (!fs.existsSync(runsDir)) return pastRuns;
+			const dirs = fs.readdirSync(runsDir).filter((name) => {
+				const fullPath = path.join(runsDir, name);
+				return (
+					fs.statSync(fullPath).isDirectory() &&
+					name !== "runs" &&
+					name !== "audit-demo" &&
+					name !== "--run-id"
+				);
+			});
+			for (const dir of dirs) {
+				const statePath = path.join(runsDir, dir, "state.json");
+				if (fs.existsSync(statePath)) {
+					try {
+						const runState = fs.readJsonSync(statePath);
+						const title =
+							runState.script?.title || runState.metadata?.title || "";
+						const lines = runState.script?.lines || [];
+						const scriptText = lines
+							.map((l: ScriptLine) => `${l.speaker}: ${l.text}`)
+							.join("\n");
+						if (title || scriptText) {
+							pastRuns.push({
+								run_id: dir,
+								title,
+								script: scriptText.substring(0, 1000),
+							});
+						}
+					} catch {
+						// ignore individual parsing failures
+					}
+				}
+			}
+		} catch (e) {
+			console.error("Failed to read past runs states:", e);
+		}
+		return pastRuns;
+	}
+}
+
+function calculateStringSimilarity(str1: string, str2: string): number {
+	const set1 = new Set(str1.split(""));
+	const set2 = new Set(str2.split(""));
+	const intersection = new Set([...set1].filter((x) => set2.has(x)));
+	const union = new Set([...set1, ...set2]);
+	if (union.size === 0) return 0;
+	return intersection.size / union.size;
 }

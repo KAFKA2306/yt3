@@ -2,6 +2,8 @@ import { AuditAgent } from "../domain/agents/audit.js";
 import { AssetStore, getRunIdDateString } from "../io/core.js";
 import { AgentLogger } from "../io/utils/logger.js";
 
+import type { AgentState } from "../domain/types.js";
+
 async function main() {
 	const runId = process.argv[2] || getRunIdDateString();
 	AgentLogger.init();
@@ -12,7 +14,7 @@ async function main() {
 
 	const state = store.loadState();
 	const audit = new AuditAgent(store);
-	const results = await audit.run(state as any);
+	const results = await audit.run(state as AgentState);
 
 	let failedCritical = false;
 
@@ -25,10 +27,7 @@ async function main() {
 		else if (check.status === "INFRA_FAIL") icon = "🔧";
 		else if (check.status === "UNVERIFIED") icon = "🔭";
 
-		if (
-			check.critical &&
-			check.status !== "PASS"
-		) {
+		if (check.critical && check.status !== "PASS") {
 			failedCritical = true;
 			statusText += " (CRITICAL)";
 		}
