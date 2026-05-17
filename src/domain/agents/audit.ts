@@ -18,7 +18,7 @@ import type {
 	AuditReportCheck,
 	AuditStatus,
 } from "../types.js";
-import { DynamicsOrchestrator } from "./dynamics_orchestrator.js";
+import { DynamicsOrchestrator } from "../evolution/dynamics_orchestrator.js";
 import { MetaAuditLayer } from "./meta_audit_layer.js";
 
 const SemanticAuditResultSchema = z.object({

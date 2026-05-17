@@ -5,7 +5,7 @@ import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import type { z } from "zod";
-import { ContextPlaybook } from "../domain/ace/context_playbook.js";
+import { ContextPlaybook } from "../domain/evolution/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 export const ROOT = process.cwd();
 

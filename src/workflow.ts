@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { AuditAgent } from "./domain/agents/audit.js";
 import { ScriptSmith } from "./domain/agents/content.js";
-import { DynamicsOrchestrator } from "./domain/agents/dynamics_orchestrator.js";
+import { DynamicsOrchestrator } from "./domain/evolution/dynamics_orchestrator.js";
 import { VisualDirector } from "./domain/agents/media.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
