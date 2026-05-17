@@ -5,8 +5,8 @@ export const queryValidationSchema = z
 	.min(1, "Query cannot be empty")
 	.max(200, "Query must be at most 200 characters")
 	.regex(
-		/^[a-zA-Z0-9\s&\-:'".,!?()]+$/,
-		"Query contains invalid characters. Only alphanumeric, spaces, and basic punctuation (&, -, :, ', \", ., !, ?, (, )) are allowed",
+		/^[a-zA-Z0-9\s&\-:'".,!?()ぁ-んァ-ン一-龥々〇！？、。（）]+$/,
+		"Query contains invalid characters. Only alphanumeric, spaces, Japanese characters, and basic punctuation are allowed",
 	)
 	.refine((val) => {
 		const dangerousPatterns = [

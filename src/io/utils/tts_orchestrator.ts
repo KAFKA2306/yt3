@@ -3,7 +3,7 @@ import type { AxiosInstance } from "axios";
 
 interface TtsRequest {
 	text: string;
-	speaker: number;
+	speakerId: number;
 }
 
 interface TtsAudioQueryResponse {
@@ -13,17 +13,21 @@ interface TtsAudioQueryResponse {
 export interface TtsOrchestrationConfig {
 	ttsUrl: string;
 	speakers: Record<string, number>;
-	defaultSpeaker: number;
 	timeout: {
 		query: number;
 		synthesis: number;
 	};
 }
 
+export interface TtsSynthesisResult {
+	audio: Buffer;
+	speakerId: number;
+	usedFallback: boolean;
+}
+
 export class TtsOrchestrator {
 	private ttsUrl: string;
 	private speakers: Record<string, number>;
-	private defaultSpeaker: number;
 	private queryTimeout: number;
 	private synthesisTimeout: number;
 	private axiosInstance: AxiosInstance;
@@ -31,7 +35,6 @@ export class TtsOrchestrator {
 	constructor(config: TtsOrchestrationConfig) {
 		this.ttsUrl = config.ttsUrl;
 		this.speakers = config.speakers;
-		this.defaultSpeaker = config.defaultSpeaker;
 		this.queryTimeout = config.timeout.query;
 		this.synthesisTimeout = config.timeout.synthesis;
 		this.axiosInstance = axios.create({
@@ -41,14 +44,21 @@ export class TtsOrchestrator {
 		});
 	}
 
-	async synthesize(request: TtsRequest): Promise<Buffer> {
-		const speakerId = this.resolveSpeakerId(request.speaker);
-		const queryResponse = await this.getAudioQuery(request.text, speakerId);
+	async synthesize(request: TtsRequest): Promise<TtsSynthesisResult> {
+		this.assertSpeakerId(request.speakerId);
+		const queryResponse = await this.getAudioQuery(
+			request.text,
+			request.speakerId,
+		);
 		const synthesisBuffer = await this.synthesizeAudio(
 			queryResponse,
-			speakerId,
+			request.speakerId,
 		);
-		return synthesisBuffer;
+		return {
+			audio: synthesisBuffer,
+			speakerId: request.speakerId,
+			usedFallback: false,
+		};
 	}
 
 	private async getAudioQuery(
@@ -82,10 +92,13 @@ export class TtsOrchestrator {
 		return Buffer.from(response.data as ArrayBuffer);
 	}
 
-	private resolveSpeakerId(speaker: number): number {
-		return speaker !== undefined && speaker in this.speakers
-			? speaker
-			: this.defaultSpeaker;
+	private assertSpeakerId(speakerId: number): void {
+		const validSpeakerIds = new Set(Object.values(this.speakers));
+		if (!validSpeakerIds.has(speakerId)) {
+			throw new Error(
+				`CRITICAL: Unknown voice ID '${speakerId}' supplied to TTS synthesis.`,
+			);
+		}
 	}
 
 	isSpeakerValid(speakerName: string): boolean {

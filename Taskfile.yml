@@ -33,8 +33,13 @@ tasks:
     cmds: ["bun --env-file=config/.env src/step.ts content {{.CLI_ARGS}}"]
 
   media:
-    desc: "Run media step only"
+    desc: "Run media step only (TTS & Rendering)"
+    aliases: [render]
     cmds: ["bun --env-file=config/.env src/step.ts media {{.CLI_ARGS}}"]
+
+  audit:
+    desc: "Run Zero-Trust audit on the latest or specified run"
+    cmds: ["bun --env-file=config/.env src/scripts/run_audit.ts {{.CLI_ARGS}}"]
 
   publish:
     desc: "Run publish step only (requires explicit channel profile env file)"

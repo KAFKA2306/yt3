@@ -1,3 +1,5 @@
+import path from "node:path";
+import fs from "fs-extra";
 import {
 	type AgentState,
 	AssetStore,
@@ -5,8 +7,6 @@ import {
 	loadConfig,
 } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
-import fs from "fs-extra";
-import path from "node:path";
 async function main() {
 	const defaultRunId = getRunIdDateString();
 	const RUN_ID = process.env.RUN_ID || defaultRunId;
@@ -22,7 +22,7 @@ async function main() {
 	const BUCKET = process.env.BUCKET || loadConfig().workflow.default_bucket;
 	const MISSION_FILE = process.env.MISSION_FILE;
 	const { runSequentialWorkflow } = await import("./workflow.js");
-	
+
 	const initialState = {
 		run_id: runId,
 		bucket: BUCKET,
@@ -52,7 +52,10 @@ async function main() {
 	);
 
 	if (finalState.status === "SUCCESS") {
-		fs.writeFileSync(path.join(store.runDir, "SUCCESS"), `Published at ${new Date().toISOString()}\nVideo: ${finalUrl}`);
+		fs.writeFileSync(
+			path.join(store.runDir, "SUCCESS"),
+			`Published at ${new Date().toISOString()}\nVideo: ${finalUrl}`,
+		);
 		console.log(`\n${"=".repeat(80)}`);
 		console.log("🚀 PIPELINE SUCCESSFUL");
 		console.log(`🎬 TITLE: ${finalTitle}`);

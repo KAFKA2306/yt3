@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GenerationDynamicsSchema } from "./generation_dynamics.js";
 import { NewsItemSchema, WebSearchResultSchema } from "./news.js";
 import { StrategicInsightSchema } from "./research.js";
 import { MetadataSchema, ScriptSchema } from "./script.js";
@@ -47,5 +48,6 @@ export const AgentStateSchema = z.object({
 			generated_at: z.string(),
 		})
 		.optional(),
+	generation_dynamics: GenerationDynamicsSchema.optional(),
 });
 export type AgentState = z.infer<typeof AgentStateSchema>;

@@ -1,8 +1,15 @@
-import fs from "fs-extra";
 import path from "node:path";
+import fs from "fs-extra";
 import { glob } from "glob";
 
-const REQUIRED_KEYWORDS = ["EDSA", "芸術", "心理学", "研究", "キャラクター", "ドキュメント"];
+const REQUIRED_KEYWORDS = [
+	"EDSA",
+	"芸術",
+	"心理学",
+	"研究",
+	"キャラクター",
+	"ドキュメント",
+];
 
 async function auditCompliance(runDir: string) {
 	const metadataPath = path.join(runDir, "youtube_metadata.md");
@@ -11,7 +18,7 @@ async function auditCompliance(runDir: string) {
 	console.log(`Auditing: ${runDir}`);
 
 	if (!(await fs.pathExists(metadataPath))) {
-		console.error(`  ❌ Missing youtube_metadata.md`);
+		console.error("  ❌ Missing youtube_metadata.md");
 		return false;
 	}
 
@@ -19,18 +26,18 @@ async function auditCompliance(runDir: string) {
 	const hasEDSA = REQUIRED_KEYWORDS.some((kw) => metadata.includes(kw));
 
 	if (!hasEDSA) {
-		console.error(`  ❌ Metadata lacks EDSA context`);
+		console.error("  ❌ Metadata lacks EDSA context");
 		return false;
 	}
 
 	if (await fs.pathExists(scriptPath)) {
 		const script = await fs.readFile(scriptPath, "utf-8");
 		if (!script.includes("EDSA") && !script.includes("Artistic Intent")) {
-			console.warn(`  ⚠️  Script lacks EDSA/Artistic Intent header`);
+			console.warn("  ⚠️  Script lacks EDSA/Artistic Intent header");
 		}
 	}
 
-	console.log(`  ✅ Compliance Passed`);
+	console.log("  ✅ Compliance Passed");
 	return true;
 }
 

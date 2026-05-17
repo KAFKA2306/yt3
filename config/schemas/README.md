@@ -12,6 +12,11 @@ This directory contains JSON Schema definitions for LLM responses and data struc
 - **research_schema_v2.json** - Research agent output (director data, news items)
 - **outline_schema_v2.json** - Content outline structure (hook, sections, CTA)
 
+### v3
+
+- **zero_trust_audit_checklist_v1.json** - Project-specific audit checklist specification
+- **zero_trust_audit_report_v1.json** - Structured audit result report
+
 ## Schema Management
 
 ### Loading Schemas
@@ -51,6 +56,7 @@ if (!result.valid) {
   - Outline schema with sections and CTA
 
 Future versions will be added as `v3.json`, `v4.json`, etc.
+Audit-specific schemas use explicit names because they are policy artifacts, not generic generation payloads.
 
 ## Integration Points
 

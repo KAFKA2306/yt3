@@ -216,6 +216,113 @@ export const EnrichedResearchSchema = z.object({
 });
 export type EnrichedResearch = z.infer<typeof EnrichedResearchSchema>;
 
+export const AuditStatusSchema = z.enum([
+	"PASS",
+	"QUALITY_FAIL",
+	"INFRA_FAIL",
+	"UNVERIFIED",
+	"ASK_USER",
+	"FAIL",
+]);
+export type AuditStatus = z.infer<typeof AuditStatusSchema>;
+
+export const AuditTypeSchema = z.enum([
+	"DETERMINISTIC",
+	"BOUNDED_PROBABILISTIC",
+]);
+export type AuditType = z.infer<typeof AuditTypeSchema>;
+
+export const AuditEvidenceRefSchema = z.object({
+	key: z.string(),
+	label: z.string(),
+	path: z.string().optional(),
+	note: z.string().optional(),
+});
+export type AuditEvidenceRef = z.infer<typeof AuditEvidenceRefSchema>;
+
+export const AuditCheckSchema = z.object({
+	name: z.string(),
+	description: z.string(),
+	status: AuditStatusSchema,
+	details: z.string().optional(),
+	critical: z.boolean(),
+	type: AuditTypeSchema,
+});
+export type AuditCheck = z.infer<typeof AuditCheckSchema>;
+
+export const AuditReportCheckSchema = AuditCheckSchema.extend({
+	check_id: z.string(),
+	category: z.string(),
+	normative_source: z.string(),
+	expected_state: z.string(),
+	failure_codes: z.array(z.string()),
+	verification_method: z.string(),
+	evidence_refs: z.array(AuditEvidenceRefSchema),
+});
+export type AuditReportCheck = z.infer<typeof AuditReportCheckSchema>;
+
+export const AuditReportSchema = z.object({
+	schema_version: z.literal("zero_trust_audit_report_v1"),
+	run_id: z.string(),
+	generated_at: z.string(),
+	decision: z.enum(["PASS", "BLOCKED", "UNVERIFIED"]),
+	summary: z.object({
+		total_checks: z.number(),
+		critical_failures: z.number(),
+		status_counts: z.record(z.string(), z.number()),
+	}),
+	checks: z.array(AuditReportCheckSchema),
+	evidence_files: z.object({
+		evidence_raw: z.string(),
+		result: z.string(),
+		report: z.string().optional(),
+		voice_assignment_report: z.string().optional(),
+	}),
+});
+export type AuditReport = z.infer<typeof AuditReportSchema>;
+
+export const ZeroTrustAuditCriterionSchema = z.object({
+	criterion_id: z.string(),
+	category: z.string(),
+	title: z.string(),
+	normative_source: z.string(),
+	expected_state: z.string(),
+	failure_codes: z.array(z.string()).min(1),
+	verification_method: z.string(),
+	evidence_required: z.array(z.string()).min(1),
+	determinism: z
+		.enum(["DETERMINISTIC", "BOUNDED_PROBABILISTIC", "HYBRID"])
+		.default("DETERMINISTIC"),
+});
+export type ZeroTrustAuditCriterion = z.infer<
+	typeof ZeroTrustAuditCriterionSchema
+>;
+
+export const ZeroTrustAuditCategorySchema = z.object({
+	category_id: z.string(),
+	title: z.string(),
+	purpose: z.string(),
+	criteria: z.array(ZeroTrustAuditCriterionSchema).min(1),
+});
+export type ZeroTrustAuditCategory = z.infer<
+	typeof ZeroTrustAuditCategorySchema
+>;
+
+export const ZeroTrustAuditChecklistSchema = z.object({
+	schema_version: z.literal("zero_trust_audit_checklist_v1"),
+	project: z.string(),
+	scope: z.string(),
+	markdown_role: z.literal("rendering_only"),
+	principles: z.array(z.string()).min(1),
+	categories: z.array(ZeroTrustAuditCategorySchema).min(1),
+});
+export type ZeroTrustAuditChecklist = z.infer<
+	typeof ZeroTrustAuditChecklistSchema
+>;
+
+export * from "./schemas/generation_dynamics.js";
+import { GenerationDynamicsSchema } from "./schemas/generation_dynamics.js";
+
 export const AgentStateSchema = z.object({
 	run_id: z.string(),
 	bucket: z.string(),
@@ -234,6 +341,7 @@ export const AgentStateSchema = z.object({
 	strategic_insight: StrategicInsightSchema.optional(),
 	notebook_videos: NotebookLMResultSchema.optional(),
 	enriched_research: EnrichedResearchSchema.optional(),
-	audit_results: z.record(z.string(), z.any()).optional(),
+	audit_results: z.record(z.string(), AuditCheckSchema).optional(),
+	generation_dynamics: GenerationDynamicsSchema.optional(),
 });
 export type AgentState = z.infer<typeof AgentStateSchema>;

@@ -1,0 +1,108 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "ZeroTrustAuditChecklist",
+	"description": "Project-specific audit checklist specification. Markdown is rendering-only and must not be used as a compliance criterion.",
+	"type": "object",
+	"properties": {
+		"schema_version": {
+			"const": "zero_trust_audit_checklist_v1"
+		},
+		"project": {
+			"type": "string"
+		},
+		"scope": {
+			"type": "string"
+		},
+		"markdown_role": {
+			"const": "rendering_only"
+		},
+		"principles": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"minItems": 1
+		},
+		"categories": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"category_id": {
+						"type": "string"
+					},
+					"title": {
+						"type": "string"
+					},
+					"purpose": {
+						"type": "string"
+					},
+					"criteria": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"criterion_id": {
+									"type": "string"
+								},
+								"category": {
+									"type": "string"
+								},
+								"title": {
+									"type": "string"
+								},
+								"normative_source": {
+									"type": "string"
+								},
+								"expected_state": {
+									"type": "string"
+								},
+								"failure_codes": {
+									"type": "array",
+									"items": {
+										"type": "string"
+									},
+									"minItems": 1
+								},
+								"verification_method": {
+									"type": "string"
+								},
+								"evidence_required": {
+									"type": "array",
+									"items": {
+										"type": "string"
+									},
+									"minItems": 1
+								},
+								"determinism": {
+									"enum": ["DETERMINISTIC", "BOUNDED_PROBABILISTIC", "HYBRID"]
+								}
+							},
+							"required": [
+								"criterion_id",
+								"category",
+								"title",
+								"normative_source",
+								"expected_state",
+								"failure_codes",
+								"verification_method",
+								"evidence_required"
+							]
+						},
+						"minItems": 1
+					}
+				},
+				"required": ["category_id", "title", "purpose", "criteria"]
+			},
+			"minItems": 1
+		}
+	},
+	"required": [
+		"schema_version",
+		"project",
+		"scope",
+		"markdown_role",
+		"principles",
+		"categories"
+	]
+}

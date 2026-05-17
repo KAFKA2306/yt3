@@ -89,8 +89,8 @@ export class PublishAgent extends BaseAgent {
 				);
 			}
 		}
-		return { 
-			status: "uploaded", 
+		return {
+			status: "uploaded",
 			video_id: videoId || "",
 			channel_id: snippet?.channelId || "",
 			channel_title: snippet?.channelTitle || "",

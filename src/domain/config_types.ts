@@ -202,6 +202,9 @@ export interface AppConfig {
 				enabled: boolean;
 				url: string;
 				speakers: Record<string, number>;
+				voice_audit?: {
+					allowed_duplicate_groups?: string[][];
+				};
 			};
 		};
 		manager: {

@@ -1,0 +1,147 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "ZeroTrustAuditReport",
+	"description": "Structured audit result report. Markdown output is optional and must be derived from this JSON, not used as audit criteria.",
+	"type": "object",
+	"properties": {
+		"schema_version": {
+			"const": "zero_trust_audit_report_v1"
+		},
+		"run_id": {
+			"type": "string"
+		},
+		"generated_at": {
+			"type": "string"
+		},
+		"decision": {
+			"enum": ["PASS", "BLOCKED", "UNVERIFIED"]
+		},
+		"summary": {
+			"type": "object",
+			"properties": {
+				"total_checks": {
+					"type": "number"
+				},
+				"critical_failures": {
+					"type": "number"
+				},
+				"status_counts": {
+					"type": "object",
+					"additionalProperties": {
+						"type": "number"
+					}
+				}
+			},
+			"required": ["total_checks", "critical_failures", "status_counts"]
+		},
+		"checks": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"check_id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"status": {
+						"enum": ["PASS", "QUALITY_FAIL", "INFRA_FAIL", "UNVERIFIED"]
+					},
+					"details": {
+						"type": "string"
+					},
+					"critical": {
+						"type": "boolean"
+					},
+					"type": {
+						"enum": ["DETERMINISTIC", "BOUNDED_PROBABILISTIC"]
+					},
+					"category": {
+						"type": "string"
+					},
+					"normative_source": {
+						"type": "string"
+					},
+					"expected_state": {
+						"type": "string"
+					},
+					"failure_codes": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"verification_method": {
+						"type": "string"
+					},
+					"evidence_refs": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"key": {
+									"type": "string"
+								},
+								"label": {
+									"type": "string"
+								},
+								"path": {
+									"type": "string"
+								},
+								"note": {
+									"type": "string"
+								}
+							},
+							"required": ["key", "label"]
+						}
+					}
+				},
+				"required": [
+					"check_id",
+					"name",
+					"description",
+					"status",
+					"critical",
+					"type",
+					"category",
+					"normative_source",
+					"expected_state",
+					"failure_codes",
+					"verification_method",
+					"evidence_refs"
+				]
+			}
+		},
+		"evidence_files": {
+			"type": "object",
+			"properties": {
+				"evidence_raw": {
+					"type": "string"
+				},
+				"result": {
+					"type": "string"
+				},
+				"report": {
+					"type": "string"
+				},
+				"voice_assignment_report": {
+					"type": "string"
+				}
+			},
+			"required": ["evidence_raw", "result"]
+		}
+	},
+	"required": [
+		"schema_version",
+		"run_id",
+		"generated_at",
+		"decision",
+		"summary",
+		"checks",
+		"evidence_files"
+	]
+}

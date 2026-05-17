@@ -14,6 +14,8 @@ To prevent "Fake Inspection" and "Lore Fabrication," every statement made by an 
 ## 2. Technical Invariants (Zero-Fat / Crash-Driven)
 - **Zero-Fat Implementation**: Delete unused code, comments, and boilerplate immediately. No "future-proofing."
 - **Crash-Driven Development (CDD)**: Do not use `try-catch` in business logic. Let the system fail loudly and fast. Use the crash log as the primary design feedback.
+- **Viral Retention Engineering**: Every video must be a "platform retention machine" following the [PRM Spec v1](./docs/standard/viral-retention-engineering.md). `AuditAgent` will block publication if specific metrics (`novelty_event_interval`, `entity_density`, etc.) fail.
+- **Strict Anti-Marketing Prose**: All system descriptions, logs, and outputs must be technical and data-driven. Ban abstract praise (e.g., "viral", "engaging", "powerful", "revolutionary") and self-congratulatory completion theater.
 - **Workflow Isolation**: Research, Scripting, and Production are distinct phases. Pass only **validated facts**, not opinions, across phase boundaries.
 - **No Safety Nets**: Never write defensive code to hide bugs. Fix the root cause, not the symptoms.
 
@@ -36,9 +38,43 @@ All video content must pass the `AuditAgent` validation based on the 100-point c
 - **Audio/Visual**: 1080p+, -14 LUFS loudness, consistent brand identity.
 - **Compliance**: Target channel must match `YOUTUBE_CHANNEL_PROFILE` exactly.
 38: 
-39: ## 6. Zero-Trust Audit Protocol (Contract vNext)
-40: - **Evidence Sovereignty**: `evidence_raw.json` is the canonical truth.
-41: - **Deterministic Primacy**: Numeric ASR (Frequency Map), EBU R128, and Voice Role Integrity (ID matching) MUST pass.
-42: - **Operational Integrity**: Publish receipts (videoId, channelId) must exist. 'Unknown Error' is forbidden.
-43: - **Fail Closed**: Any verifier timeout or crash (e.g. ENOBUFS) blocks publication.
+## 6. Zero-Trust Audit Protocol (Contract vNext)
+- **Evidence Sovereignty**: `evidence_raw.json` is the canonical truth.
+- **Deterministic Primacy**: Numeric ASR (Frequency Map), EBU R128, and Voice Role Integrity (ID matching) MUST pass.
+- **Acoustic Integrity**: Different speakers MUST be acoustically distinct (Embedding distance check).
+- **Checklist Compliance**: Agents MUST adhere to [ADR-0028](./docs/adr/0028-audit-protocol-v1.md) and [ADR-0029](./docs/adr/0029-zero-trust-voice-audit-v1.md) as the canonical zero-trust audit policies.
+- **Operational Integrity**: Publish receipts (videoId, channelId) must exist. 'Unknown Error' is forbidden.
+- **Fail Closed**: Any verifier timeout or crash (e.g. ENOBUFS) blocks publication.
 
+## 7. Audit Driven Media System - LLM Operational Contract (THE CONSTITUTION)
+
+### Core Principle
+You are NOT rewarded for sounding intelligent, abstract synthesis, or "deep" essays.
+You ARE rewarded for **viewer retention, clarity, specificity, and emotional relevance**.
+The target is NOT "Generate a correct essay." The target IS **"Generate a high-retention viewing experience."**
+
+### Primary Narrative Rule: FACTS FIRST. STRUCTURE LATER.
+Never begin with abstract philosophy, "hidden structures", or paradigm explanations.
+Always begin with: **concrete event, named entity, numerical change, contradiction, or observable delta.**
+
+### Narrative Flow Contract
+1. Concrete Event -> 2. Why This Matters -> 3. Human Consequence -> 4. Broader Implication -> 5. Optional Structural Insight.
+**Structure is an amplifier, NOT the protagonist.**
+
+### Audience Retention Rules
+The viewer must understand within seconds: **who, what, why now, why it matters.**
+Avoid slow philosophical setups or vague intellectual framing.
+
+### Abstract Compression & Specificity Rules
+Abstract concepts are allowed ONLY IF tied to human consequences. Never stack them.
+Prioritize: names, companies, institutions, numbers, dates.
+Avoid: "invisible transformation", "a new era", "society is shifting".
+
+### Anti-Collapse & Emotional Relevance
+Do NOT converge toward repetitive titles or framing. Novelty matters.
+Required transition: **Fact -> Meaning -> Human Relevance.**
+Always connect macro events to: **daily life, money, work, anxiety, opportunity.**
+
+### Final Objective
+The goal is NOT to sound like an AI-generated intellectual essay.
+The goal IS to create a viewing experience humans voluntarily continue watching.

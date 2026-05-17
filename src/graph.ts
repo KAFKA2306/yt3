@@ -1,4 +1,5 @@
 import { END, START, StateGraph } from "@langchain/langgraph";
+import { AuditAgent } from "./domain/agents/audit.js";
 import { ScriptSmith } from "./domain/agents/content.js";
 import { DexterJPAgent } from "./domain/agents/dexter_jp.js";
 import { MacroRegimeAnalystAgent } from "./domain/agents/macro_regime_analyst_agent.js";
@@ -7,7 +8,6 @@ import { MemoryAgent } from "./domain/agents/memory.js";
 import { NotebookLMAgent } from "./domain/agents/notebooklm.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
-import { AuditAgent } from "./domain/agents/audit.js";
 import { WebSearchAgent } from "./domain/agents/web_search.js";
 import type {
 	AgentState,

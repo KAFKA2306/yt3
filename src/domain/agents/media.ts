@@ -46,7 +46,6 @@ export class VisualDirector extends BaseAgent {
 		this.ttsOrchestrator = new TtsOrchestrator({
 			ttsUrl: cfg.providers.tts.voicevox.url,
 			speakers: cfg.providers.tts.voicevox.speakers,
-			defaultSpeaker: 11,
 			timeout: {
 				query: 30000,
 				synthesis: 120000,
@@ -71,7 +70,11 @@ export class VisualDirector extends BaseAgent {
 			agentName: this.name,
 		});
 	}
-	async run(script: Script, title: string): Promise<MediaResult> {
+	async run(
+		script: Script,
+		title: string,
+		thumbnailTitle?: string,
+	): Promise<MediaResult> {
 		this.logInput({ lines: script.lines.length });
 		const audioDir = this.store.audioDir();
 		const audio_paths = await this.synthesizeAudio(script, audioDir);
@@ -87,7 +90,7 @@ export class VisualDirector extends BaseAgent {
 		const fullAudio = await this.mergeAudio(audio_paths, audioDir);
 
 		const thumbnail_path = await this.thumbnailGenerator.generate(
-			title,
+			thumbnailTitle || title,
 			path.join(this.store.runDir, this.store.cfg.workflow.filenames.thumbnail),
 		);
 
@@ -136,7 +139,9 @@ export class VisualDirector extends BaseAgent {
 
 			const speakerId = this.speakers[line.speaker];
 			if (speakerId === undefined) {
-				throw new Error(`CRITICAL: Unknown speaker '${line.speaker}' in script. No fallback allowed.`);
+				throw new Error(
+					`CRITICAL: Unknown speaker '${line.speaker}' in script. No fallback allowed.`,
+				);
 			}
 
 			const cleanText = this.cleanScriptText(line.text);
@@ -148,29 +153,63 @@ export class VisualDirector extends BaseAgent {
 			);
 
 			if (!fs.existsSync(audioPath)) {
-				const audioBuffer = await this.ttsOrchestrator.synthesize({
+				const synthesis = await this.ttsOrchestrator.synthesize({
 					text: cleanText,
-					speaker: speakerId,
+					speakerId,
 				});
-				fs.writeFileSync(audioPath, audioBuffer);
+				fs.writeFileSync(audioPath, synthesis.audio);
+				audio_paths.push(audioPath);
+				manifestChunks.push({
+					index: i,
+					script_speaker: line.speaker,
+					tts_requested_voice_id: speakerId,
+					resolved_voice_id: synthesis.speakerId,
+					no_fallback_used: !synthesis.usedFallback,
+					output_path: audioPath,
+					text_preview: cleanText.slice(0, 50),
+				});
+				continue;
 			}
 
 			audio_paths.push(audioPath);
 			manifestChunks.push({
 				index: i,
-				speaker: line.speaker,
-				voice_id: speakerId,
-				path: audioPath,
-				text_preview: cleanText.slice(0, 50)
+				script_speaker: line.speaker,
+				tts_requested_voice_id: speakerId,
+				resolved_voice_id: speakerId,
+				no_fallback_used: true,
+				output_path: audioPath,
+				text_preview: cleanText.slice(0, 50),
 			});
 		}
 
 		// Save Canonical Audio Manifest for Audit
-		fs.writeJsonSync(path.join(audioDir, "manifest.json"), {
-			total_chunks: manifestChunks.length,
-			chunks: manifestChunks,
-			voice_map: this.speakers
-		}, { spaces: 2 });
+		const manifestPath = path.join(audioDir, "manifest.json");
+		AgentLogger.info(
+			this.name,
+			"AUDIO",
+			"MANIFEST",
+			`Writing manifest to ${manifestPath} (${manifestChunks.length} chunks)`,
+		);
+
+		fs.writeJsonSync(
+			manifestPath,
+			{
+				total_chunks: manifestChunks.length,
+				chunks: manifestChunks,
+				voice_map: this.speakers,
+			},
+			{ spaces: 2 },
+		);
+
+		if (!fs.existsSync(manifestPath)) {
+			AgentLogger.error(
+				this.name,
+				"AUDIO",
+				"MANIFEST_FAIL",
+				"Failed to verify manifest file existence after write!",
+			);
+		}
 
 		return audio_paths;
 	}
@@ -210,6 +249,7 @@ export class VisualDirector extends BaseAgent {
 		audioPaths: string[],
 		audioDir: string,
 	): Promise<string> {
+		const tempMergedPath = path.join(audioDir, "temp_merged.wav");
 		const fullAudioPath = path.join(
 			audioDir,
 			this.store.cfg.workflow.filenames.audio_full,
@@ -220,12 +260,27 @@ export class VisualDirector extends BaseAgent {
 			audioCmd.input(audioPath);
 		}
 
-		return new Promise((resolve, reject) => {
+		// Step 1: Merge
+		await new Promise<void>((resolve, reject) => {
 			audioCmd
 				.on("error", reject)
-				.on("end", () => resolve(fullAudioPath))
-				.mergeToFile(fullAudioPath, os.tmpdir());
+				.on("end", () => resolve())
+				.mergeToFile(tempMergedPath, os.tmpdir());
 		});
+
+		// Step 2: Normalize
+		await new Promise<void>((resolve, reject) => {
+			ffmpeg(tempMergedPath)
+				.audioFilters("loudnorm=I=-14:TP=-1.0:LRA=11")
+				.on("error", reject)
+				.on("end", () => {
+					fs.removeSync(tempMergedPath);
+					resolve();
+				})
+				.save(fullAudioPath);
+		});
+
+		return fullAudioPath;
 	}
 
 	private cleanScriptText(text: string): string {

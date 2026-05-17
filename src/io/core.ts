@@ -212,8 +212,11 @@ export abstract class BaseAgent {
 		);
 
 		const metadata = res.response_metadata as Record<string, unknown>;
-		if (keyName && metadata?.headers) {
-			updateFromHeaders(keyName, metadata.headers as Record<string, unknown>);
+		if (keyName) {
+			updateFromHeaders(
+				keyName,
+				(metadata?.headers || {}) as Record<string, unknown>,
+			);
 		}
 
 		let content: string;
@@ -249,6 +252,9 @@ function cleanCodeBlock(text: string): string {
 
 	const firstBrace = stripped.indexOf("{");
 	const firstBracket = stripped.indexOf("[");
+	const lastBrace = stripped.lastIndexOf("}");
+	const lastBracket = stripped.lastIndexOf("]");
+
 	let start = -1;
 	if (firstBrace !== -1 && firstBracket !== -1) {
 		start = Math.min(firstBrace, firstBracket);
@@ -256,6 +262,19 @@ function cleanCodeBlock(text: string): string {
 		start = firstBrace;
 	} else if (firstBracket !== -1) {
 		start = firstBracket;
+	}
+
+	let end = -1;
+	if (lastBrace !== -1 && lastBracket !== -1) {
+		end = Math.max(lastBrace, lastBracket);
+	} else if (lastBrace !== -1) {
+		end = lastBrace;
+	} else if (lastBracket !== -1) {
+		end = lastBracket;
+	}
+
+	if (start !== -1 && end !== -1 && end > start) {
+		return stripped.slice(start, end + 1).trim();
 	}
 
 	if (start !== -1) {

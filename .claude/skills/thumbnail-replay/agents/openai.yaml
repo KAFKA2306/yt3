@@ -1,0 +1,7 @@
+interface:
+  display_name: "Thumbnail Replay"
+  short_description: "Rebuild and replace YouTube thumbnails fast"
+  default_prompt: "Use $skill-name to fetch live metadata first, generate strong thumbnail variants, pick the best one, QA it, replace the live YouTube thumbnail, and verify the swap."
+
+policy:
+  allow_implicit_invocation: true
