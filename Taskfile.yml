@@ -94,39 +94,15 @@ tasks:
     cmds: ["bun --env-file=config/.env src/pulse_to_video_workflow.ts"]
 
   # ============================================================================
-  # ASMR WORKFLOW
+  # EVOLUTION & OPS
   # ============================================================================
-  asmr:build:
-    desc: "Build ASMR audio for a specific run directory"
-    cmds:
-      - bash {{.DIR}}/build_audio.sh
-    vars:
-      DIR: '{{default "runs/2026-05-10/publish_new_work" .DIR}}'
+  db:backfill:
+    desc: "Backfill historic runs into the Evolution Database"
+    cmds: ["bun src/scripts/backfill_db.ts"]
 
-  asmr:video:
-    desc: "Synthesize ASMR video from audio and thumbnail"
-    vars:
-      DIR: '{{default "runs/2026-05-10/publish_new_work" .DIR}}'
-      AUDIO: '{{.DIR}}/final_mix.wav'
-      IMAGE: '{{default (print .DIR "/thumbnail.png") .IMAGE}}'
-      OUTPUT: '{{.DIR}}/final_video.mp4'
-    cmds:
-      - ffmpeg -y -loop 1 -i "{{.IMAGE}}" -i "{{.AUDIO}}" -c:v libx264 -tune stillimage -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:a aac -b:a 192k -shortest -pix_fmt yuv420p "{{.OUTPUT}}"
-
-  asmr:reliable:
-    desc: "Run full reliable ASMR pipeline (Generation -> ASR Verify -> Video)"
-    vars:
-      DIR: '{{default "runs/2026-05-10/publish_new_work" .DIR}}'
-      IMAGE: '{{default (print .DIR "/thumbnail.png") .IMAGE}}'
-    cmds:
-      - /home/kafka/2511youtuber/v3/yt3/sandbox/Irodori-TTS/.venv/bin/python {{.DIR}}/generate_ultra.py
-      - uv run --with faster-whisper python .claude/skills/audio-production/scripts/run_asr.py --input-wav {{.DIR}}/final_mix.wav --output-dir {{.DIR}}/asr_quality_final
-      - task asmr:video DIR={{.DIR}} IMAGE={{.IMAGE}}
-
-  asmr:expand:
-    desc: "Expand ASMR scripts to target character count using the harness"
-    cmds:
-      - bun --env-file=config/.env src/scripts/expand_asmr_scripts.ts
+  db:evolution:
+    desc: "Run ACE Evolution operations (evaluate|evolve|acquire)"
+    cmds: ["bun src/scripts/evolution_ops.ts {{.CLI_ARGS}}"]
 
   asmr:ops:
     desc: "Autonomous ASMR Operations (Archive, Symlink, Index)"
@@ -134,16 +110,9 @@ tasks:
       - bun --env-file=config/.env src/scripts/asmr_ops.ts
 
   asmr:publish:
-    desc: "Batch publish all completed ASMR projects listed in MASTER_PROGRESS.md"
+    desc: "Batch publish all completed ASMR projects"
     cmds:
       - bun src/scripts/publish_batch.ts
-
-  asmr:artifacts:
-    desc: "List all key artifacts (scripts, metadata, audio, video) for a run"
-    vars:
-      DIR: '{{default "runs/2026-05-10" .DIR}}'
-    cmds:
-      - find {{.DIR}} -maxdepth 2 -type f \( -name "*.md" -o -name "*.wav" -o -name "*.mp4" \) | sort
 
   # ============================================================================
   # INFRASTRUCTURE
@@ -163,23 +132,19 @@ tasks:
       - systemctl --user stop yt3-aim.service || true
       - systemctl --user stop yt3-discord.service || true
 
-  status:
-    desc: "Check status of background services"
-    aliases: [s]
-    cmds:
-      - systemctl --user status yt3-aim.service --no-pager || true
-      - systemctl --user status yt3-discord.service --no-pager || true
-      - docker ps | grep voicevox-nemo || true
+  serve:
+    desc: "Start the Evolution Dashboard and API Server"
+    cmds: ["bun src/server.ts"]
+
+  serve:legacy:
+    desc: "Start the Legacy HTMX Dashboard (Deprecated)"
+    cmds: ["bun src/dashboard/server.ts"]
 
   bootstrap:
     desc: "Install dependencies and setup environment"
     cmds:
       - bun install
       - task up
-
-  serve:
-    desc: "Start the HTMX Dashboard to monitor runs"
-    cmds: ["bun src/dashboard/server.ts"]
 
   # ============================================================================
   # UTILITIES
@@ -196,56 +161,12 @@ tasks:
     aliases: [t]
     cmds: ["SKIP_LLM=true bun test || echo 'No tests found'"]
 
-  audit:compliance:
-    desc: "Audit YouTube 2026 Compliance (EDSA, Context)"
-    cmds: ["bun src/scripts/audit_compliance.ts {{.CLI_ARGS}}"]
-
-  audit:overlays:
-    desc: "Audit video overlays"
-    cmds: ["bun src/io/utils/qa/audit_overlays.ts"]
-
-  cron:
-    desc: "Install cron jobs based on config (Legacy)"
-    cmds: ["bun src/io/utils/infra/automation.ts --install-cron"]
+  clean:
+    desc: "Reset logs and temporary artifacts"
+    cmds:
+      - rm -rf logs/*
+      - touch logs/.gitkeep
 
   systemd:setup:
     desc: "Install Systemd service and timer"
     cmds: ["bun src/io/utils/infra/setup_systemd.ts"]
-
-  tts:regen:
-    desc: "Rebuild Irodori-TTS from zero and regenerate baseline samples"
-    cmds:
-      - rm -rf sandbox/Irodori-TTS
-      - git clone https://github.com/Aratako/Irodori-TTS.git sandbox/Irodori-TTS
-      - cd sandbox/Irodori-TTS && uv sync
-      - awk -F, '/^Dialogue:/{ $1=$2=$3=$4=$5=$6=$7=$8=$9=""; sub(/^,,,,,,,,,/,""); gsub(/\{[^}]*\}/,""); gsub(/\\N/," "); gsub(/  +/," "); print }' runs/2026-05-09/subtitles.ass | sed '/^$/d' > runs/2026-05-09/script_for_tts.txt
-      - cd sandbox/Irodori-TTS && UV_CACHE_DIR=.uv-cache uv run python infer.py --hf-checkpoint Aratako/Irodori-TTS-500M-v2 --text "$(head -n 4 /home/kafka/2511youtuber/v3/yt3/runs/2026-05-09/script_for_tts.txt | tr '\n' ' ')" --no-ref --seed 1234 --num-steps 12 --output-wav outputs/regen_preview.wav
-      - cd sandbox/Irodori-TTS && UV_CACHE_DIR=.uv-cache uv run python infer.py --hf-checkpoint Aratako/Irodori-TTS-500M-v2-VoiceDesign --text "急がない。壊さない。推測しない。再現できるものだけを積む。" --caption "静かで知的な若い女性の声。少し疲れた深夜の距離感。青い光の中で、やさしく、淡々と、内省的に話す。" --no-ref --seed 2306 --output-wav outputs/regen_kafka_voice.wav
-
-  # ============================================================================
-  # ACE Intelligence (OpenCE)
-  # ============================================================================
-  ace:evaluate:
-    desc: "Analyze logs and evolve playbook (Closed-Loop)"
-    cmds: ["bun --env-file=config/.env src/domain/ace/ops.ts evaluate"]
-
-  ace:acquire:
-    desc: "Acquire new orthogonal strategic hypotheses"
-    cmds: ["bun --env-file=config/.env src/domain/ace/ops.ts acquire"]
-
-  monitor:watch:
-    desc: "Run the watcher agent manually"
-    cmds: ["bun src/agents/watcher.ts {{.CLI_ARGS}}"]
-
-
-  # ============================================================================
-  # CONTEXT
-  # ============================================================================
-  copcon:
-    desc: "Generate codebase context report with copcon (output: copcon/context.md)"
-    cmds:
-      - mkdir -p copcon
-      - uv run copcon . --output-file copcon/context.md {{.CLI_ARGS}}
-  audit:
-    desc: "Run Zero-Trust audit on the latest or specified run"
-    cmds: ["bun --env-file=config/.env src/scripts/run_audit.ts {{.CLI_ARGS}}"]

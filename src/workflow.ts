@@ -10,6 +10,8 @@ import type { AgentState } from "./domain/types.js";
 import type { AssetStore } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
 
+import { sendAlert } from "./io/utils/discord.js";
+
 /**
  * Sequential Pipeline: Decision-free execution of the video production loop.
  * Each stage produces artifacts and persists state.
@@ -207,17 +209,28 @@ export async function runSequentialWorkflow(
 		(r) => r.critical && r.status !== "PASS" && r.status !== "UNVERIFIED",
 	);
 	if (hasCriticalFailure) {
+		const failingChecks = Object.values(auditResults)
+			.filter(
+				(r) => r.critical && r.status !== "PASS" && r.status !== "UNVERIFIED",
+			)
+			.map((r) => r.name);
+
 		AgentLogger.error(
 			"SYSTEM",
 			"WORKFLOW",
 			"BLOCK",
-			`Publish blocked by Audit failure: ${Object.values(auditResults)
-				.filter(
-					(r) => r.critical && r.status !== "PASS" && r.status !== "UNVERIFIED",
-				)
-				.map((r) => r.name)
-				.join(", ")}`,
+			`Publish blocked by Audit failure: ${failingChecks.join(", ")}`,
 		);
+
+		await sendAlert(
+			`🚨 **Publish Blocked** for run \`${state.run_id}\``,
+			"audit_fail",
+			{
+				reason: "Critical Audit Failure",
+				checks: failingChecks.join(", "),
+			},
+		);
+
 		state.status = "PUBLISH_BLOCKED";
 		return state;
 	}
@@ -227,6 +240,17 @@ export async function runSequentialWorkflow(
 	const publisher = new PublishAgent(store);
 	const publishResults = await publisher.run(state);
 	state = { ...state, publish_results: publishResults };
+
+	await sendAlert(
+		`✅ **Successfully Published** video to YouTube!`,
+		"publish",
+		{
+			title: state.metadata?.title,
+			videoId: publishResults.youtube?.video_id || "N/A",
+			runId: state.run_id,
+		},
+	);
+
 
 	// Save publish/receipt.json
 	fs.writeJsonSync(

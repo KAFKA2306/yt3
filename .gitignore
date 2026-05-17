@@ -16,7 +16,14 @@ config/.env.*
 nohup.out
 runs/
 logs/
+!logs/.gitkeep
 tsc_output.txt
+
+# Databases
+db/*.db
+db/*.db-journal
+db/*.db-shm
+db/*.db-wal
 
 # Media & Assets
 assets/
@@ -36,7 +43,7 @@ models/
 *~
 aim/
 .aim/
-copcon/context.md
+copcon/
 data/state/
 *.pickle
 

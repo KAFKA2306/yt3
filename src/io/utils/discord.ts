@@ -1,14 +1,50 @@
 import { AgentLogger } from "./logger.js";
+
+export type AlertType = "info" | "success" | "warn" | "error" | "audit_fail" | "publish";
+
+const COLORS = {
+	info: 3447003,       // Blue
+	success: 3066993,    // Green
+	warn: 16776960,      // Yellow
+	error: 15158332,     // Red
+	audit_fail: 15158332, // Red
+	publish: 10181046,   // Purple
+};
+
 export async function sendAlert(
 	message: string,
-	type: "info" | "success" | "warn" | "error" = "info",
+	type: AlertType = "info",
+	details?: Record<string, unknown>,
 ) {
 	const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 	if (!webhookUrl) return;
+
 	AgentLogger.info("DISCORD", "ALERT", type.toUpperCase(), message);
-	await fetch(webhookUrl, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ content: `[${type.toUpperCase()}] ${message}` }),
-	});
+
+	const embed: any = {
+		title: `[${type.toUpperCase()}] YT3 System Notification`,
+		description: message,
+		color: COLORS[type] || COLORS.info,
+		timestamp: new Date().toISOString(),
+		footer: { text: "YT3 Autonomous Production" },
+	};
+
+	if (details) {
+		embed.fields = Object.entries(details).map(([key, value]) => ({
+			name: key,
+			value: typeof value === "object" ? `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\`` : String(value),
+			inline: true,
+		}));
+	}
+
+	try {
+		await fetch(webhookUrl, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ embeds: [embed] }),
+		});
+	} catch (err) {
+		const error = err as Error;
+		AgentLogger.error("DISCORD", "ALERT_FAILED", "Failed to send discord alert", error.message, error);
+	}
 }
