@@ -59,14 +59,19 @@ export class ThumbnailRenderer {
 		let layers: sharp.OverlayOptions[] = [{ input: backdrop, top: 0, left: 0 }];
 
 		for (const ol of plan.overlays) {
+			const width = Math.max(1, Math.round(ol.bounds.width));
+			const height = Math.max(1, Math.round(ol.bounds.height));
+			const top = Math.round(ol.bounds.y);
+			const left = Math.round(ol.bounds.x);
+
 			layers = [
 				...layers,
 				{
 					input: await sharp(ol.resolvedPath)
-						.resize(ol.bounds.width, ol.bounds.height)
+						.resize(width, height)
 						.toBuffer(),
-					top: ol.bounds.y,
-					left: ol.bounds.x,
+					top,
+					left,
 				},
 			];
 		}

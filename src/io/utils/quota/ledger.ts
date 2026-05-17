@@ -1,13 +1,12 @@
 import path from "node:path";
 import fs from "fs-extra";
-import { ROOT } from "../../core.js";
 
 export type QuotaLedger = Record<
 	string,
 	{ requests: number; tokens: number; reset_at: string }
 >;
 
-const LEDGER_PATH = path.join(ROOT, "data/state/llm_quotas.json");
+const LEDGER_PATH = path.join(process.cwd(), "data/state/llm_quotas.json");
 let ledger: QuotaLedger | null = null;
 
 function load() {
