@@ -110,6 +110,49 @@ const AudienceAuditResultSchema = z.object({
 	}),
 });
 
+const CognitiveAuditResultSchema = z.object({
+	humanity: z.object({
+		passed: z.boolean(),
+		score: z.number(),
+		feedback: z.string(),
+	}),
+	reality_grounding: z.object({
+		passed: z.boolean(),
+		score: z.number(),
+		feedback: z.string(),
+	}),
+	cognitive_tone: z.object({
+		passed: z.boolean(),
+		score: z.number(),
+		feedback: z.string(),
+	}),
+	anti_doomcool: z.object({
+		passed: z.boolean(),
+		score: z.number(),
+		feedback: z.string(),
+	}),
+	emotional_afterglow: z.object({
+		passed: z.boolean(),
+		score: z.number(),
+		feedback: z.string(),
+	}),
+	structure: z.object({
+		passed: z.boolean(),
+		score: z.number(),
+		feedback: z.string(),
+	}),
+	golden_rule: z.object({
+		passed: z.boolean(),
+		score: z.number(),
+		feedback: z.string(),
+	}),
+	design_v1: z.object({
+		passed: z.boolean(),
+		score: z.number(),
+		feedback: z.string(),
+	}),
+});
+
 export class AuditAgent extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.AUDIT);
@@ -160,6 +203,11 @@ export class AuditAgent extends BaseAgent {
 
 		// 5.9 META AUDIT LAYER (Process-Evolution-Centric Audit)
 		Object.assign(results, await this.auditMetaEvolution(state, evidence));
+
+		// 5.10 COGNITIVE AUDIT (For 'Thinking Cross-section' channel)
+		if (state.script && state.bucket === "cognitive_observation") {
+			Object.assign(results, await this.auditCognitive(state, evidence));
+		}
 
 		// 6. TOPOLOGY (Job Relationship Evidence)
 		this.auditTopology(evidence);
@@ -2442,6 +2490,62 @@ export class AuditAgent extends BaseAgent {
 					verification_method:
 						"Capture the current git commit hash and store it in the evidence bundle.",
 				};
+			case "cog_humanity":
+				return {
+					category: "cognitive",
+					normative_source: "Humanity Audit v1: Love & Understanding",
+					expected_state: "Humans are treated as lovable, not broken or correction targets.",
+					failure_codes: ["HUMAN_SHAMING_DETECTED", "QUALITY_FAIL"],
+					verification_method: "LLM-based attitude evaluation.",
+				};
+			case "cog_reality":
+				return {
+					category: "cognitive",
+					normative_source: "Humanity Audit v1: Reality Grounding",
+					expected_state: "Mundane life fragments (conveni, laundry, etc.) are present.",
+					failure_codes: ["ABSTRACTION_OVERLOAD", "QUALITY_FAIL"],
+					verification_method: "LLM-based reality check.",
+				};
+			case "cog_tone":
+				return {
+					category: "cognitive",
+					normative_source: "Humanity Audit v1: Cognitive Tone",
+					expected_state: "Concrete nouns outweigh abstract concepts; bright, stable, playful narration; no TED-talk tone.",
+					failure_codes: ["INTELLECTUAL_SLOP", "QUALITY_FAIL"],
+					verification_method: "LLM-based tone audit.",
+				};
+			case "cog_doomcool":
+				return {
+					category: "cognitive",
+					normative_source: "Humanity Audit v1: Anti-Doomcool",
+					expected_state: "Rejects stylish despair and cynical aesthetics.",
+					failure_codes: ["CYNICISM_DETECTED", "QUALITY_FAIL"],
+					verification_method: "LLM-based mindset audit.",
+				};
+			case "cog_afterglow":
+				return {
+					category: "cognitive",
+					normative_source: "Humanity Audit v1: Emotional Afterglow",
+					expected_state: "Viewer feels understood and lighter (shame reduced).",
+					failure_codes: ["NEGATIVE_AFTERGLOW", "QUALITY_FAIL"],
+					verification_method: "LLM-based impact evaluation.",
+				};
+			case "cog_structure":
+				return {
+					category: "cognitive",
+					normative_source: "Humanity Audit v1: Narrative Structure",
+					expected_state: "Sequence: Mundane -> Structure -> Understanding -> Smile -> Unresolved.",
+					failure_codes: ["STRUCTURAL_MISMATCH", "QUALITY_FAIL"],
+					verification_method: "LLM-based sequence audit.",
+				};
+			case "cog_golden_rule":
+				return {
+					category: "cognitive",
+					normative_source: "Humanity Audit v1: GOLDEN RULE",
+					expected_state: "Does this help the viewer stop blaming themselves?",
+					failure_codes: ["SELF_BLAME_REINFORCED", "QUALITY_FAIL"],
+					verification_method: "LLM-based psychological safety gate.",
+				};
 			default:
 				return {
 					category: "general",
@@ -2495,7 +2599,13 @@ export class AuditAgent extends BaseAgent {
 			det_numeric_density: ["LOW_FACTUAL_DENSITY"],
 			det_slop_detection: ["SLOP_PHRASE_DETECTED"],
 			det_abstract_sludge: ["ABSTRACT_SLUDGE_DETECTED"],
-			det_cadence_variance: ["MONOTONE_CADENCE"],
+			cog_humanity: ["HUMAN_SHAMING_DETECTED"],
+			cog_reality: ["ABSTRACTION_OVERLOAD"],
+			cog_tone: ["INTELLECTUAL_SLOP"],
+			cog_doomcool: ["CYNICISM_DETECTED"],
+			cog_afterglow: ["NEGATIVE_AFTERGLOW"],
+			cog_structure: ["STRUCTURAL_MISMATCH"],
+			cog_golden_rule: ["SELF_BLAME_REINFORCED"],
 		};
 
 		return map[checkId] || [status];
@@ -2618,6 +2728,13 @@ export class AuditAgent extends BaseAgent {
 					label: "Quota manager API rotation error logs",
 				},
 			],
+			cog_humanity: [{ key: "cognitive", label: "Cognitive audit results" }],
+			cog_reality: [{ key: "cognitive", label: "Cognitive audit results" }],
+			cog_tone: [{ key: "cognitive", label: "Cognitive audit results" }],
+			cog_doomcool: [{ key: "cognitive", label: "Cognitive audit results" }],
+			cog_afterglow: [{ key: "cognitive", label: "Cognitive audit results" }],
+			cog_structure: [{ key: "cognitive", label: "Cognitive audit results" }],
+			cog_golden_rule: [{ key: "cognitive", label: "Cognitive audit results" }],
 		};
 
 		const result = refs[checkId] || [];
@@ -2672,5 +2789,127 @@ export class AuditAgent extends BaseAgent {
 		}
 
 		return map;
+	}
+
+	private async auditCognitive(
+		state: AgentState,
+		evidence: Record<string, any>,
+	): Promise<Record<string, AuditCheck>> {
+		const system = `You are a Bounded Humanity Auditor for the "Humanity Observatory" (人類観測所) operating under the HUMANITY OBSERVATORY SYSTEM v1.
+
+Your supreme mandate: Verify that humanity is observed as "lovable clumsiness" (不器用すぎて愛おしい).
+
+Audit Layers:
+1. HUMANITY. Do not treat humans as broken or targets for correction. Use understanding, not judgment. Reject "攻略対象" (hacking/conquering) tone.
+2. LOVABILITY. Verify presence of "tiny struggles," "harmless contradictions," or "small failures."
+3. REALITY GROUNDING. Must include at least 3 mundane fragments (conveni, laundry, earphones, ice cream, etc.).
+4. ANTI-DOOMCOOL. Rejects aestheticizing despair, stylish nihilism, or internet sage tone.
+5. ANTI-SLOP. Rejects TED-talk cadence, abstraction soup, or AI empathy slop. Concrete nouns MUST outweigh abstract concepts.
+6. EMOTIONAL GOAL. Viewer MUST feel humanity is "surprisingly cute" and life is "not that bad."
+7. VOICE. If the channel is meant for Irodori-TTS, the narration must feel bright, stable, and lightly playful, not flat, not whisper-only, and not hype-driven.
+8. STRUCTURE. Sequence: humanity-aru-aru -> Why? -> Structure -> Understanding -> Smile -> Unresolved.
+9. GOLDEN RULE. "Does this help the viewer love humanity (and themselves) a little bit more?"
+
+Output MUST be a single JSON object:
+{
+"humanity": { "passed": boolean, "score": number, "feedback": string },
+"reality_grounding": { "passed": boolean, "score": number, "feedback": string },
+"cognitive_tone": { "passed": boolean, "score": number, "feedback": string },
+"anti_doomcool": { "passed": boolean, "score": number, "feedback": string },
+"emotional_afterglow": { "passed": boolean, "score": number, "feedback": string },
+"structure": { "passed": boolean, "score": number, "feedback": string },
+"golden_rule": { "passed": boolean, "score": number, "feedback": string },
+"design_v1": { "passed": boolean, "score": number, "feedback": string }
+}
+Output strictly valid JSON.`;
+
+		try {
+			const res = await this.runLlm(
+				system,
+				JSON.stringify(state.script?.lines),
+				(t) => parseLlmJson(t, CognitiveAuditResultSchema),
+				{ temperature: 0 },
+			);
+			evidence.cognitive = res;
+
+			return {
+				cog_humanity: {
+					name: "Humanity: Love & Understanding Audit",
+					description: "Ensures humans are treated as lovable, not broken.",
+					status: res.humanity.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.humanity.score}/100. ${res.humanity.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+				cog_reality: {
+					name: "Humanity: Reality Grounding Audit",
+					description: "Verifies the presence of mundane life temperature.",
+					status: res.reality_grounding.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.reality_grounding.score}/100. ${res.reality_grounding.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+				cog_tone: {
+					name: "Humanity: Cognitive Tone Audit",
+					description: "Rejects intellectual slop and abstraction inflation.",
+					status: res.cognitive_tone.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.cognitive_tone.score}/100. ${res.cognitive_tone.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+				cog_doomcool: {
+					name: "Humanity: Anti-Doomcool Audit",
+					description: "Rejects aestheticizing despair and stylish nihilism.",
+					status: res.anti_doomcool.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.anti_doomcool.score}/100. ${res.anti_doomcool.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+				cog_afterglow: {
+					name: "Humanity: Emotional Afterglow Audit",
+					description: "Viewer must feel understood and lighter.",
+					status: res.emotional_afterglow.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.emotional_afterglow.score}/100. ${res.emotional_afterglow.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+				cog_structure: {
+					name: "Humanity: Narrative Structure Audit",
+					description: "Ensures the 'human-affirming' sequence and unresolvedness.",
+					status: res.structure.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.structure.score}/100. ${res.structure.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+				cog_golden_rule: {
+					name: "Humanity: GOLDEN RULE GATE",
+					description: "Does it help the viewer stop blaming themselves?",
+					status: res.golden_rule.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.golden_rule.score}/100. ${res.golden_rule.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+				cog_design_v1: {
+					name: "Humanity: Design System v1 Compliance",
+					description: "Verifies warm palette and 'One Message per Screen' relief.",
+					status: res.design_v1.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.design_v1.score}/100. ${res.design_v1.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+			};
+		} catch (e) {
+			evidence.cognitive_error = String(e);
+			return {
+				cog_infra: {
+					name: "Cognitive: Audit Verifier Health",
+					description: "Integrity of the cognitive audit LLM verifier.",
+					status: "INFRA_FAIL",
+					details: `Cognitive Audit Failed: ${String(e)}`,
+					critical: true,
+					type: "DETERMINISTIC",
+				},
+			};
+		}
 	}
 }
