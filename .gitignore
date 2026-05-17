@@ -51,3 +51,13 @@ data/state/
 sandbox/
 temp/
 *.generated
+
+# Tool Specific
+.serena/
+!.serena/project.yml
+config/.cache/
+artifacts/
+!artifacts/generated/
+!artifacts/generated/.gitkeep
+audits/
+!audits/.gitkeep
