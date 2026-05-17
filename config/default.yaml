@@ -122,7 +122,7 @@ steps:
       contrast_goal: 7.0
       contrast_min: 5.0
       mobile_edge_min: 25
-      cognitive_min: 0.6
+      humanity_min: 0.6
       corner_size: 40
     palettes:
       - {background_color: "#103766", title_color: "#FFFFFF", outline_inner_color: "#288CFA", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#288CFA"}
@@ -222,14 +222,14 @@ design_tokens:
   accent_brand_color: "#288CFA"
   contrast_text_color: "#0A0A12"
   # 人類観測所 v1 Palette
-  cognitive_base_white: "#FFFDF8"
-  cognitive_soft_sky: "#BFE7FF"
-  cognitive_human_cream: "#FFF1D6"
-  cognitive_evening_orange: "#FFB86B"
-  cognitive_gentle_blue: "#7DC8F7"
-  cognitive_soft_gray: "#E9E6DF"
-  cognitive_text_charcoal: "#333333"
-  cognitive_accent_pink: "#FF9FB2"
+  humanity_base_white: "#FFFDF8"
+  humanity_soft_sky: "#BFE7FF"
+  humanity_human_cream: "#FFF1D6"
+  humanity_evening_orange: "#FFB86B"
+  humanity_gentle_blue: "#7DC8F7"
+  humanity_soft_gray: "#E9E6DF"
+  humanity_text_charcoal: "#333333"
+  humanity_accent_pink: "#FF9FB2"
   alert_color: "#C62828"
   success_color: "#00A3AF"
   font_display: "Geist"

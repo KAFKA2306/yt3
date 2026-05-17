@@ -93,8 +93,8 @@ export class VisualDirector extends BaseAgent {
 
 		// Humanity Observatory Design System v1 Override
 		let composerConfig = { ...this.videoComposer["config"] };
-		if (options.bucket === "cognitive_observation") {
-			composerConfig.background_color = this.config.design_tokens.cognitive_base_white || "#FFFDF8";
+		if (options.bucket === "humanity_observatory") {
+			composerConfig.background_color = this.config.design_tokens.humanity_base_white || "#FFFDF8";
 			// Override subtitles for soft look
 			if (composerConfig.subtitles) {
 				composerConfig.subtitles = {

@@ -28,7 +28,6 @@
 - `0028-audit-protocol-v1.md`: Zero-Trust Audit Protocol (Viewer Quality Assurance)
 - `0029-zero-trust-voice-audit-v1.md`: Zero-Trust Voice Audit (Acoustic Integrity)
 - `0030-humanity-observatory-v1.md`: 人類観測所（Humanity Observatory）システム v1
-- `0031-scrub-personification.md`: 脱・擬人化と観察対象の純粋化
 
 ## Consolidated History
 

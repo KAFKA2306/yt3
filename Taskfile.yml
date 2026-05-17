@@ -17,7 +17,7 @@ tasks:
     aliases: [r]
     cmds: ["bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
 
-  run:cognitive:
+  run:humanity:
     desc: "Run the Humanity Observatory workflow"
     cmds: ["BUCKET=humanity_observatory bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
 

@@ -15,12 +15,12 @@ export interface DesignTokens {
 	font_japanese: string;
 
 	// Humanity Observatory (Cognitive) Palette
-	cognitive_base_white: string;
-	cognitive_soft_sky: string;
-	cognitive_human_cream: string;
-	cognitive_evening_orange: string;
-	cognitive_gentle_blue: string;
-	cognitive_soft_gray: string;
-	cognitive_text_charcoal: string;
-	cognitive_accent_pink: string;
+	humanity_base_white: string;
+	humanity_soft_sky: string;
+	humanity_human_cream: string;
+	humanity_evening_orange: string;
+	humanity_gentle_blue: string;
+	humanity_soft_gray: string;
+	humanity_text_charcoal: string;
+	humanity_accent_pink: string;
 }

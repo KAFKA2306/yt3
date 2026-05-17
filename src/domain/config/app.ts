@@ -78,7 +78,7 @@ export interface AppConfig {
 				contrast_goal: number;
 				contrast_min: number;
 				mobile_edge_min: number;
-				cognitive_min: number;
+				humanity_min: number;
 				corner_size?: number;
 			};
 		};

@@ -24,7 +24,7 @@ export class IqaValidator {
 			contrast_goal: t.contrast_goal ?? 7.0,
 			contrast_min: t.contrast_min ?? 5.0,
 			mobile_edge_min: t.mobile_edge_min ?? 18,
-			cognitive_min: t.cognitive_min ?? 0.6,
+			humanity_min: t.humanity_min ?? 0.6,
 			corner_size: t.corner_size ?? 40,
 		};
 	}
@@ -92,7 +92,7 @@ export class IqaValidator {
 			reasons.push(`鮮鋭度不足: ${sharpness.toFixed(2)}`);
 		if (contrastRatio < this.thresholds.contrast_min)
 			reasons.push(`コントラスト不足: ${contrastRatio.toFixed(2)}`);
-		if (cognitiveRecognitionScore < this.thresholds.cognitive_min)
+		if (cognitiveRecognitionScore < this.thresholds.humanity_min)
 			reasons.push(`認知スコア不足: ${cognitiveRecognitionScore.toFixed(2)}`);
 		if (mobileEdgeStrength < this.thresholds.mobile_edge_min)
 			reasons.push(`Mobile edge weak: ${mobileEdgeStrength.toFixed(2)}`);

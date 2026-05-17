@@ -12,7 +12,7 @@ const thresholds = cfg.steps.thumbnail.iqa_thresholds || {
 	contrast_goal: 7.0,
 	contrast_min: 5.0,
 	mobile_edge_min: 18,
-	cognitive_min: 0.6,
+	humanity_min: 0.6,
 };
 
 const COLORS = {
