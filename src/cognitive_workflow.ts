@@ -11,7 +11,7 @@ import { AgentLogger } from "./io/utils/logger.js";
 import { sendAlert } from "./io/utils/discord.js";
 
 /**
- * Thinking Cross-section (Cognitive Observation) Workflow.
+ * Humanity Observatory Workflow.
  * Focuses on long-form intellectual exploration, cognitive audit, and source-bound generation.
  */
 export async function runCognitiveWorkflow(
@@ -20,16 +20,16 @@ export async function runCognitiveWorkflow(
 ) {
 	let state: AgentState = { ...initialState } as AgentState;
 	
-	AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "START", `RunID: ${state.run_id}`);
+	AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "START", `RunID: ${state.run_id}`);
 
 	// 1. Topic Selection & Research (Source-Bound)
 	const researchJsonPath = path.join(store.runDir, "research.json");
 	if (fs.existsSync(researchJsonPath)) {
-		AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "RESEARCH", "Using cached research.json");
+		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "RESEARCH", "Using cached research.json");
 		const researchResults = fs.readJsonSync(researchJsonPath);
 		state = { ...state, ...researchResults };
 	} else {
-		AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "RESEARCH", "Starting Source-Bound Research...");
+		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "RESEARCH", "Starting Source-Bound Research...");
 		const scout = new TrendScout(store);
 		const missionFile = state.mission_file || path.join("data", "cognitive_pulse.md");
 		const researchResults = await scout.run("cognitive_observation", state.limit, missionFile);
@@ -40,11 +40,11 @@ export async function runCognitiveWorkflow(
 	// 2. Script Synthesis (Cognitive Tone & Structural Loneliness)
 	const contentOutputPath = path.join(store.runDir, "content", "output.json");
 	if (fs.existsSync(contentOutputPath)) {
-		AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "CONTENT", "Using cached script");
+		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "CONTENT", "Using cached script");
 		const contentResults = fs.readJsonSync(contentOutputPath);
 		state = { ...state, script: contentResults.script, metadata: contentResults.metadata };
 	} else {
-		AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "CONTENT", "Synthesizing Cognitive Script...");
+		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "CONTENT", "Synthesizing Humanity Observatory Script...");
 		const smith = new ScriptSmith(store);
 		// ScriptSmith needs to handle the 'cognitive' persona
 		const contentResults = await smith.run(
@@ -59,14 +59,14 @@ export async function runCognitiveWorkflow(
 	// 3. Media Generation (Quiet Visuals & Whisper TTS)
 	const videoPath = path.join(store.videoDir(), "final_video.mp4");
 	if (fs.existsSync(videoPath)) {
-		AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "MEDIA", "Using cached video");
+		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "MEDIA", "Using cached video");
 	} else {
-		AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "MEDIA", "Rendering Quiet Visuals...");
+		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "MEDIA", "Rendering Quiet Visuals...");
 		const director = new VisualDirector(store);
 		// VisualDirector should handle low-stimulus hybrid visuals
 		const mediaResults = await director.run(
 			state.script!,
-			state.metadata?.title || "Thinking Cross-section",
+			state.metadata?.title || "Humanity Observatory",
 			state.metadata?.thumbnail_title,
 			{ style: "quiet_observation", bucket: state.bucket }
 		);
@@ -75,7 +75,7 @@ export async function runCognitiveWorkflow(
 	}
 
 	// 4. Cognitive Quality Audit (Zero-Trust Cognitive Audit)
-	AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "AUDIT", "Starting Cognitive Quality Audit...");
+	AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "AUDIT", "Starting Cognitive Quality Audit...");
 	const auditor = new AuditAgent(store);
 	// We'll need to update AuditAgent to include cognitive-specific checks
 	const auditResults = await auditor.run(state);
@@ -86,14 +86,14 @@ export async function runCognitiveWorkflow(
 	);
 
 	if (hasCriticalFailure) {
-		AgentLogger.error("SYSTEM", "COGNITIVE_WORKFLOW", "BLOCK", "Cognitive Audit Failed");
+		AgentLogger.error("SYSTEM", "HUMANITY_OBSERVATORY", "BLOCK", "Cognitive Audit Failed");
 		await sendAlert(`🚨 **Cognitive Audit Blocked** run \`${state.run_id}\``, "audit_fail");
 		state.status = "PUBLISH_BLOCKED";
 		return state;
 	}
 
 	// 5. Publish Gate (Human-in-the-Loop)
-	AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "PUBLISH", "Publish Gate: Waiting for Human Approval...");
+	AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "PUBLISH", "Publish Gate: Waiting for Human Approval...");
 	// In autonomous mode, we might wait for a file marker or a specific command
 	// For now, we assume it's a pass if we reach here in a semi-autonomous flow
 	// or we can implement a specific check.
@@ -102,7 +102,7 @@ export async function runCognitiveWorkflow(
 	const publishResults = await publisher.run(state);
 	state = { ...state, publish_results: publishResults };
 
-	AgentLogger.info("SYSTEM", "COGNITIVE_WORKFLOW", "SUCCESS", "Workflow completed!");
+	AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "SUCCESS", "Workflow completed!");
 	state.status = "SUCCESS";
 	return state;
 }
