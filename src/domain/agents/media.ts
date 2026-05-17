@@ -91,7 +91,7 @@ export class VisualDirector extends BaseAgent {
 
 		const fullAudio = await this.mergeAudio(audio_paths, audioDir);
 
-		// Cognitive Design System v1 Override
+		// Humanity Observatory Design System v1 Override
 		let composerConfig = { ...this.videoComposer["config"] };
 		if (options.bucket === "cognitive_observation") {
 			composerConfig.background_color = "#FFFDF8"; // Base White
