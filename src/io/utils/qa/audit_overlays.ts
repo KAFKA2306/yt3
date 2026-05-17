@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "fs-extra";
 import sharp from "sharp";
-import { LayoutEngine } from "../../../domain/layout_engine.ts";
+import { LayoutEngine } from "../../../domain/layout/engine.ts";
 import { loadConfig } from "../../core.ts";
 async function main() {
 	console.log("Starting Layout Audit...");

@@ -2,7 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
-import type { RenderPlan } from "../layout_engine.js";
+import type { RenderPlan } from "../types.js";
 
 export interface VideoCompositionConfig {
 	resolution: string;

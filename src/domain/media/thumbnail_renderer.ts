@@ -1,13 +1,15 @@
 import sharp from "sharp";
-import { IqaValidator } from "../io/utils/iqa_validator.js";
-import type { AppConfig } from "./config_types.js";
-import type { RenderPlan } from "./layout_engine.js";
+import { IqaValidator } from "../../io/utils/iqa_validator.js";
+import type { AppConfig, RenderPlan } from "../types.js";
+
 type Palette = AppConfig["steps"]["thumbnail"]["palettes"][number];
+
 export class ThumbnailRenderer {
 	private validator: IqaValidator;
 	constructor(private config: AppConfig) {
 		this.validator = new IqaValidator(this.config);
 	}
+
 	selectBestPalette(palettes: Palette[]): Palette {
 		if (!palettes || palettes.length === 0) {
 			throw new Error("No palettes configured");
@@ -15,10 +17,12 @@ export class ThumbnailRenderer {
 		const first = palettes[0];
 		if (!first) throw new Error("No palettes configured");
 		if (palettes.length === 1) return first;
+
 		interface ScoredPalette {
 			palette: Palette;
 			score: number;
 		}
+
 		const scored: ScoredPalette[] = palettes.map((p) => {
 			const bgHex = p.background_color || "#000000";
 			const textHex = p.title_color || "#FFFFFF";
@@ -30,16 +34,19 @@ export class ThumbnailRenderer {
 			const score = contrastScore * 0.6 + riskScore * 0.4;
 			return { palette: p, score };
 		});
+
 		scored.sort((a, b) => b.score - a.score);
 		const best = scored[0];
 		if (!best) throw new Error("No best palette found");
 		return best.palette;
 	}
+
 	async render(plan: RenderPlan, title: string, output: string): Promise<void> {
 		const cfg = this.config.steps.thumbnail;
 		const palettes = cfg.palettes;
 		if (!palettes || palettes.length === 0) throw new Error("No palette");
 		const palette = this.selectBestPalette(palettes);
+
 		const backdrop = {
 			create: {
 				width: cfg.width,
@@ -48,7 +55,9 @@ export class ThumbnailRenderer {
 				background: palette.background_color,
 			},
 		};
+
 		let layers: sharp.OverlayOptions[] = [{ input: backdrop, top: 0, left: 0 }];
+
 		for (const ol of plan.overlays) {
 			layers = [
 				...layers,
@@ -61,13 +70,15 @@ export class ThumbnailRenderer {
 				},
 			];
 		}
+
 		const rightSideOverlays = plan.overlays.filter(
-			(o) => o.bounds.x > cfg.width / 2,
+			(o: { bounds: { x: number } }) => o.bounds.x > cfg.width / 2,
 		);
 		const textMaxX =
 			(rightSideOverlays.length
-				? Math.min(...rightSideOverlays.map((o) => o.bounds.x))
+				? Math.min(...rightSideOverlays.map((o: { bounds: { x: number } }) => o.bounds.x))
 				: cfg.width) - 20;
+
 		layers = [
 			...layers,
 			{
@@ -76,6 +87,7 @@ export class ThumbnailRenderer {
 				left: 0,
 			},
 		];
+
 		await sharp({
 			create: {
 				width: cfg.width,
@@ -88,6 +100,7 @@ export class ThumbnailRenderer {
 			.png()
 			.toFile(output);
 	}
+
 	private createSvg(
 		title: string,
 		maxX: number,
@@ -102,13 +115,16 @@ export class ThumbnailRenderer {
 				);
 			}
 		}
+
 		const g = this.config.global_style;
 		const tokens = this.config.design_tokens;
 		const fz = cfg.title_font_size || g.thumbnail.title_size;
 		const fontName = `${tokens?.font_display || "Geist"}, "${tokens?.font_japanese || "Noto Sans JP"}", sans-serif`;
 		const lh = fz * 1.1;
 		const padding = cfg.padding || 80;
+
 		const startY = (cfg.height - lines.length * lh) / 2 + lh / 2;
+
 		const txt = lines
 			.map((l, i) => {
 				const y = startY + i * lh;
@@ -121,6 +137,7 @@ export class ThumbnailRenderer {
                     <text x="${padding}" y="${y}" class="fill">${escaped}</text>`;
 			})
 			.join("");
+
 		return `
         <svg width="${cfg.width}" height="${cfg.height}" xmlns="http://www.w3.org/2000/svg">
             <defs>

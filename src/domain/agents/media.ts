@@ -12,7 +12,8 @@ import {
 } from "../../io/core.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
 import { TtsOrchestrator } from "../../io/utils/tts_orchestrator.js";
-import { LayoutEngine, type RenderPlan } from "../layout_engine.js";
+import { LayoutEngine } from "../layout/engine.js";
+import type { RenderPlan } from "../types.js";
 import { ThumbnailGenerator } from "../media/thumbnail_generator.js";
 import { VideoComposer } from "../media/video_composer.js";
 import type { AppConfig, Script } from "../types.js";

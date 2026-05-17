@@ -1,6 +1,7 @@
 import { AgentLogger, runMcpTool } from "../../io/core.js";
 import type { IqaValidator } from "../../io/utils/iqa_validator.js";
-import type { LayoutEngine, RenderPlan } from "../layout_engine.js";
+import type { LayoutEngine } from "../layout/engine.js";
+import type { RenderPlan } from "../types.js";
 
 interface TrendInfo {
 	data?: {
