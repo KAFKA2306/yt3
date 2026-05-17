@@ -12,7 +12,7 @@ import { sendAlert } from "./io/utils/discord.js";
 
 /**
  * Humanity Observatory Workflow.
- * Focuses on long-form intellectual exploration, cognitive audit, and source-bound generation.
+ * Focuses on long-form intellectual exploration, humanity audit, and source-bound generation.
  */
 export async function runHumanityObservatoryWorkflow(
 	store: AssetStore,
@@ -37,7 +37,7 @@ export async function runHumanityObservatoryWorkflow(
 		fs.writeJsonSync(researchJsonPath, researchResults, { spaces: 2 });
 	}
 
-	// 2. Script Synthesis (Cognitive Tone & Structural Loneliness)
+	// 2. Script Synthesis (Humanity Tone & Structural Loneliness)
 	const contentOutputPath = path.join(store.runDir, "content", "output.json");
 	if (fs.existsSync(contentOutputPath)) {
 		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "CONTENT", "Using cached script");
@@ -74,8 +74,8 @@ export async function runHumanityObservatoryWorkflow(
 		store.save("media", "output", mediaResults);
 	}
 
-	// 4. Cognitive Quality Audit (Zero-Trust Cognitive Audit)
-	AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "AUDIT", "Starting Cognitive Quality Audit...");
+	// 4. Humanity Quality Audit (Zero-Trust Humanity Audit)
+	AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "AUDIT", "Starting Humanity Quality Audit...");
 	const auditor = new AuditAgent(store);
 	// AuditAgent uses 'humanity_observatory' bucket for specific checks
 	const auditResults = await auditor.run({ ...state, bucket: "humanity_observatory" });
@@ -86,8 +86,8 @@ export async function runHumanityObservatoryWorkflow(
 	);
 
 	if (hasCriticalFailure) {
-		AgentLogger.error("SYSTEM", "HUMANITY_OBSERVATORY", "BLOCK", "Cognitive Audit Failed");
-		await sendAlert(`🚨 **Cognitive Audit Blocked** run \`${state.run_id}\``, "audit_fail");
+		AgentLogger.error("SYSTEM", "HUMANITY_OBSERVATORY", "BLOCK", "Humanity Audit Failed");
+		await sendAlert(`🚨 **Humanity Audit Blocked** run \`${state.run_id}\``, "audit_fail");
 		state.status = "PUBLISH_BLOCKED";
 		return state;
 	}
