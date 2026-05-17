@@ -27,8 +27,7 @@ async function main() {
 
 		if (
 			check.critical &&
-			check.status !== "PASS" &&
-			check.status !== "UNVERIFIED"
+			check.status !== "PASS"
 		) {
 			failedCritical = true;
 			statusText += " (CRITICAL)";

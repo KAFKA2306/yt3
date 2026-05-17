@@ -206,12 +206,12 @@ export async function runSequentialWorkflow(
 
 	// Check Audit PASS/FAIL
 	const hasCriticalFailure = Object.values(auditResults).some(
-		(r) => r.critical && r.status !== "PASS" && r.status !== "UNVERIFIED",
+		(r) => r.critical && r.status !== "PASS",
 	);
 	if (hasCriticalFailure) {
 		const failingChecks = Object.values(auditResults)
 			.filter(
-				(r) => r.critical && r.status !== "PASS" && r.status !== "UNVERIFIED",
+				(r) => r.critical && r.status !== "PASS",
 			)
 			.map((r) => r.name);
 
