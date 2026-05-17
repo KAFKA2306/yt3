@@ -15,7 +15,7 @@ async function main() {
 	let runId = RUN_ID === "latest" ? defaultRunId : RUN_ID;
 
 	const BUCKET = process.env.BUCKET || loadConfig().workflow.default_bucket;
-	if (BUCKET === "cognitive_observation") {
+	if (BUCKET === "humanity_observatory") {
 		runId = `humanity_observatory/${runId}`;
 	} else {
 		runId = `daily_pulse/${runId}`;
@@ -42,7 +42,7 @@ async function main() {
 		};
 
 		const finalState =
-			BUCKET === "cognitive_observation"
+			BUCKET === "humanity_observatory"
 				? await runHumanityObservatoryWorkflow(store, initialState)
 				: await runSequentialWorkflow(store, initialState);
 

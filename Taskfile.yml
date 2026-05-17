@@ -19,7 +19,7 @@ tasks:
 
   run:cognitive:
     desc: "Run the Humanity Observatory workflow"
-    cmds: ["BUCKET=cognitive_observation bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
+    cmds: ["BUCKET=humanity_observatory bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
 
   run:cached:
     desc: "Run full workflow using cached LLM outputs (WARNING: May Publish)"

@@ -32,7 +32,7 @@ export async function runHumanityObservatoryWorkflow(
 		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "RESEARCH", "Starting Source-Bound Research...");
 		const scout = new TrendScout(store);
 		const missionFile = state.mission_file || path.join("data", "humanity_pulse.md");
-		const researchResults = await scout.run("cognitive_observation", state.limit, missionFile);
+		const researchResults = await scout.run("humanity_observatory", state.limit, missionFile);
 		state = { ...state, ...researchResults };
 		fs.writeJsonSync(researchJsonPath, researchResults, { spaces: 2 });
 	}
@@ -46,10 +46,10 @@ export async function runHumanityObservatoryWorkflow(
 	} else {
 		AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "CONTENT", "Synthesizing Humanity Observatory Script...");
 		const smith = new ScriptSmith(store);
-		// ScriptSmith needs to handle the 'cognitive' persona
+		// ScriptSmith needs to handle the 'humanity_observatory' persona
 		const contentResults = await smith.run(
 			state.news || [],
-			{ ...state.director_data!, channel_type: "cognitive" },
+			{ ...state.director_data!, channel_type: "humanity_observatory" },
 			state.memory_context || ""
 		);
 		state = { ...state, script: contentResults.script, metadata: contentResults.metadata };
@@ -68,7 +68,7 @@ export async function runHumanityObservatoryWorkflow(
 			state.script!,
 			state.metadata?.title || "Humanity Observatory",
 			state.metadata?.thumbnail_title,
-			{ style: "quiet_observation", bucket: state.bucket }
+			{ style: "quiet_observation", bucket: "humanity_observatory" }
 		);
 		state = { ...state, ...mediaResults };
 		store.save("media", "output", mediaResults);
@@ -77,8 +77,8 @@ export async function runHumanityObservatoryWorkflow(
 	// 4. Cognitive Quality Audit (Zero-Trust Cognitive Audit)
 	AgentLogger.info("SYSTEM", "HUMANITY_OBSERVATORY", "AUDIT", "Starting Cognitive Quality Audit...");
 	const auditor = new AuditAgent(store);
-	// We'll need to update AuditAgent to include cognitive-specific checks
-	const auditResults = await auditor.run(state);
+	// AuditAgent uses 'humanity_observatory' bucket for specific checks
+	const auditResults = await auditor.run({ ...state, bucket: "humanity_observatory" });
 	state = { ...state, audit_results: auditResults };
 
 	const hasCriticalFailure = Object.values(auditResults).some(

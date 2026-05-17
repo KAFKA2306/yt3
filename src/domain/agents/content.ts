@@ -109,7 +109,7 @@ export class ScriptSmith extends BaseAgent {
 		newsContext: string,
 		channelType: string,
 	): Promise<ContentOutline> {
-		const prompts = this.loadPrompt<any>(channelType === "cognitive" ? "cognitive" : this.name);
+		const prompts = this.loadPrompt<any>(channelType === "humanity_observatory" ? "humanity_observatory" : this.name);
 		return this.runLlm(
 			prompts.outline.system,
 			prompts.outline.user_template
@@ -126,7 +126,7 @@ export class ScriptSmith extends BaseAgent {
 		newsContext: string,
 		channelType: string,
 	): Promise<ScriptLine[]> {
-		const prompts = this.loadPrompt<any>(channelType === "cognitive" ? "cognitive" : this.name);
+		const prompts = this.loadPrompt<any>(channelType === "humanity_observatory" ? "humanity_observatory" : this.name);
 		const prevContext =
 			prevLines.length > 0
 				? prevLines.map((l) => `${l.speaker}: ${l.text}`).join("\n")
@@ -156,7 +156,7 @@ export class ScriptSmith extends BaseAgent {
 		newsSources: string,
 		channelType: string,
 	): Promise<Metadata> {
-		const prompts = this.loadPrompt<any>(channelType === "cognitive" ? "cognitive" : this.name);
+		const prompts = this.loadPrompt<any>(channelType === "humanity_observatory" ? "humanity_observatory" : this.name);
 		return this.runLlm(
 			prompts.metadata.system,
 			prompts.metadata.user_template

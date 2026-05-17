@@ -611,7 +611,7 @@ prompts:
 
       現在の日付: {current_date}
 
-  cognitive:
+  humanity_observatory:
     outline:
       system: |
         あなたは「人類観測所（Humanity Observatory）」の構成作家です。
