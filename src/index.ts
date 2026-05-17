@@ -33,7 +33,7 @@ async function main() {
 		);
 		const MISSION_FILE = process.env.MISSION_FILE;
 		const { runSequentialWorkflow } = await import("./workflow.js");
-		const { runCognitiveWorkflow } = await import("./cognitive_workflow.js");
+		const { runHumanityObservatoryWorkflow } = await import("./humanity_observatory_workflow.js");
 
 		const initialState = {
 			run_id: runId,
@@ -43,7 +43,7 @@ async function main() {
 
 		const finalState =
 			BUCKET === "cognitive_observation"
-				? await runCognitiveWorkflow(store, initialState)
+				? await runHumanityObservatoryWorkflow(store, initialState)
 				: await runSequentialWorkflow(store, initialState);
 
 		const finalTitle = finalState.metadata?.title || "Unknown Title";
