@@ -31,6 +31,38 @@ export const NewsItemSchema = z.object({
 	original_english_text: z.string().optional(),
 });
 export type NewsItem = z.infer<typeof NewsItemSchema>;
+
+export const WebSearchResultSchema = z.object({
+	title: z.string(),
+	url: z.string(),
+	snippet: z.string(),
+	source: z.string().optional(),
+});
+export type WebSearchResult = z.infer<typeof WebSearchResultSchema>;
+
+export const IqaResultSchema = z.object({
+	passed: z.boolean(),
+	score: z.number(),
+	metrics: z.object({
+		sharpness: z.number(),
+		contrastRatio: z.number(),
+		isResolutionCorrect: z.boolean(),
+		cognitiveRecognitionScore: z.number(),
+		xHeightLegibilityScore: z.number(),
+		mobileEdgeStrength: z.number(),
+	}),
+	backgroundRisk: z.enum(["low", "medium", "high"]),
+	textLayout: z
+		.object({
+			isTextClipped: z.boolean(),
+			clipBoundaryRatio: z.number(),
+			isTextOverlappingCharacter: z.boolean(),
+			overlapRatio: z.number(),
+		})
+		.optional(),
+	reason: z.string().optional(),
+});
+export type IqaResult = z.infer<typeof IqaResultSchema>;
 export const ScriptLineSchema = z.object({
 	speaker: z.string(),
 	text: z.string(),
@@ -198,14 +230,6 @@ export const FinancialFindingSchema = z.object({
 	summary: z.string(),
 });
 export type FinancialFinding = z.infer<typeof FinancialFindingSchema>;
-
-export const WebSearchResultSchema = z.object({
-	title: z.string(),
-	url: z.string(),
-	snippet: z.string(),
-	source: z.string().optional(),
-});
-export type WebSearchResult = z.infer<typeof WebSearchResultSchema>;
 
 export const EnrichedResearchSchema = z.object({
 	research_theme: z.string(),

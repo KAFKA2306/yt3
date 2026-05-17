@@ -11,7 +11,7 @@ import {
 	getLuminance,
 	hexToRgb,
 } from "./iqa_metrics.js";
-import type { IqaResult } from "./schemas.js";
+import type { IqaResult } from "../../domain/types.js";
 export type { BackgroundRisk, IqaResult };
 export class IqaValidator {
 	private thresholds: IqaThresholds;

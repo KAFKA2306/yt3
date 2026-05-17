@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NewsItemSchema } from "./news.js";
+import { NewsItemSchema } from "../types.js";
 
 export const ResearchLlmResponseSchema = z.object({
 	director_data: z.object({
