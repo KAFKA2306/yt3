@@ -18,7 +18,7 @@
 - 配色：Base White (#FFFDF8), Soft Sky (#BFE7FF), Evening Orange (#FFB86B)
 - モチーフ：コンビニ、河川敷、アイス、洗濯物等の生活感を必須とする。
 
-### 3. 監査システム：Cognitive Humanity Audit v1
+### 3. 監査システム：Humanity Humanity Audit v1
 - 従来の「品質監査」を超えた「態度監査」を実装。
 - **黄金律 (Golden Rule)**: 「この動画を見た人が、ちょっとだけ自分を責めるのをやめられるか？」を最終ゲートとする。
 - 8レイヤー監査（Humanity, Reality, Tone, Doomcool, Afterglow, Structure, Drift, Preservation）。
@@ -28,8 +28,8 @@
 - 完璧な答え（Closed Loop）を禁止し、視聴者の脳に余白を残す。
 
 ### 5. 実行インフラ：Source-Bound Runtime
-- `src/cognitive_workflow.ts` による専用ランタイムの構築。
-- `data/cognitive_pulse.md` をシードとした自律生成。
+- `src/humanity_observatory_workflow.ts` による専用ランタイムの構築。
+- `data/humanity_pulse.md` をシードとした自律生成。
 - `task run:cognitive` によるワンコマンド実行。
 
 ## 帰結
