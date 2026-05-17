@@ -7,7 +7,16 @@ import yaml from "js-yaml";
 import type { z } from "zod";
 import { ContextPlaybook } from "../domain/ace/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
-import { ROOT, loadConfig as baseLoadConfig } from "./base.js";
+export const ROOT = process.cwd();
+
+export function loadConfig(): AppConfig {
+	const configPath = path.join(ROOT, "config", "default.yaml");
+	if (!fs.existsSync(configPath)) {
+		throw new Error(`Config file not found: ${configPath}`);
+	}
+	return yaml.load(fs.readFileSync(configPath, "utf-8")) as AppConfig;
+}
+
 import { AgentLogger as Logger } from "./utils/logger.js";
 import {
 	QuotaExhaustionError,
@@ -27,11 +36,6 @@ export { Logger as AgentLogger };
 export type { AgentState };
 export { RunStage };
 export { QuotaExhaustionError };
-
-export function loadConfig(): AppConfig {
-	return baseLoadConfig() as AppConfig;
-}
-export { ROOT };
 export interface LlmOptions {
 	model?: string;
 	temperature?: number;

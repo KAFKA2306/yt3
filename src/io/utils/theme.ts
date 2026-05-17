@@ -1,8 +1,7 @@
 import path from "node:path";
 import fs from "fs-extra";
 import yaml from "js-yaml";
-import { ROOT, loadConfig } from "../base.js";
-import type { AssetStore } from "../storage/asset_store.js";
+import { AssetStore, ROOT, loadConfig } from "../core.js";
 
 export function loadMemoryContext(store: AssetStore, limit = 5): string {
 	const f = path.isAbsolute(store.cfg.workflow.memory.essence_file)

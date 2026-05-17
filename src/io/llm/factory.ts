@@ -1,7 +1,7 @@
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import type { AppConfig } from "../../domain/types.js";
-import { loadConfig } from "../base.js";
+import { loadConfig } from "../core.js";
 import { AgentLogger as Logger } from "../utils/logger.js";
 import { acquireKey } from "../utils/quota/manager.js";
 

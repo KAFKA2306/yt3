@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "fs-extra";
-import { ROOT } from "../../base.js";
+import { ROOT } from "../../core.js";
 
 export type QuotaMetric = {
 	keyName: string;
