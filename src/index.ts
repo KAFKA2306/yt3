@@ -12,7 +12,15 @@ import { sendAlert } from "./io/utils/discord.js";
 async function main() {
 	const defaultRunId = getRunIdDateString();
 	const RUN_ID = process.env.RUN_ID || defaultRunId;
-	const runId = RUN_ID === "latest" ? defaultRunId : RUN_ID;
+	let runId = RUN_ID === "latest" ? defaultRunId : RUN_ID;
+
+	const BUCKET = process.env.BUCKET || loadConfig().workflow.default_bucket;
+	if (BUCKET === "cognitive_observation") {
+		runId = `humanity_observatory/${runId}`;
+	} else {
+		runId = `daily_pulse/${runId}`;
+	}
+
 	const store = new AssetStore(runId);
 	AgentLogger.init();
 
@@ -23,9 +31,9 @@ async function main() {
 			"INIT",
 			`Starting AI YouTuber Pipeline (RunID: ${runId})`,
 		);
-		const BUCKET = process.env.BUCKET || loadConfig().workflow.default_bucket;
 		const MISSION_FILE = process.env.MISSION_FILE;
 		const { runSequentialWorkflow } = await import("./workflow.js");
+		const { runCognitiveWorkflow } = await import("./cognitive_workflow.js");
 
 		const initialState = {
 			run_id: runId,
@@ -33,7 +41,10 @@ async function main() {
 			mission_file: MISSION_FILE,
 		};
 
-		const finalState = await runSequentialWorkflow(store, initialState);
+		const finalState =
+			BUCKET === "cognitive_observation"
+				? await runCognitiveWorkflow(store, initialState)
+				: await runSequentialWorkflow(store, initialState);
 
 		const finalTitle = finalState.metadata?.title || "Unknown Title";
 		const finalVideoId = finalState.publish_results?.youtube?.video_id;

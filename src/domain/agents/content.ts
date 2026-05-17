@@ -36,7 +36,7 @@ export class ScriptSmith extends BaseAgent {
 
 	async run(
 		news: NewsItem[],
-		director: { angle: string; title_hook: string },
+		director: { angle: string; title_hook: string; channel_type?: string },
 		context: string,
 		strategic_insight?: StrategicAnalysis,
 	): Promise<ContentResult> {
@@ -63,8 +63,9 @@ export class ScriptSmith extends BaseAgent {
 			: "";
 
 		const fullContext = newsContext + insightContext;
+		const channelType = director.channel_type || "default";
 
-		const outline = await this.generateOutline(director.angle, fullContext);
+		const outline = await this.generateOutline(director.angle, fullContext, channelType);
 		Logger.info(
 			this.name,
 			"CONTENT",
@@ -79,6 +80,7 @@ export class ScriptSmith extends BaseAgent {
 				section,
 				allLines.slice(-10),
 				fullContext,
+				channelType,
 			);
 			allLines = [...allLines, ...segmentLines];
 		}
@@ -86,7 +88,7 @@ export class ScriptSmith extends BaseAgent {
 		const scriptText = allLines
 			.map((l) => `${l.speaker}: ${l.text}`)
 			.join("\n");
-		const metadata = await this.generateMetadata(scriptText, fullContext);
+		const metadata = await this.generateMetadata(scriptText, fullContext, channelType);
 
 		const result: ContentResult = {
 			script: {
@@ -105,8 +107,9 @@ export class ScriptSmith extends BaseAgent {
 	private async generateOutline(
 		angle: string,
 		newsContext: string,
+		channelType: string,
 	): Promise<ContentOutline> {
-		const prompts = this.loadPrompt<ContentPrompts>(this.name);
+		const prompts = this.loadPrompt<any>(channelType === "cognitive" ? "cognitive" : this.name);
 		return this.runLlm(
 			prompts.outline.system,
 			prompts.outline.user_template
@@ -121,8 +124,9 @@ export class ScriptSmith extends BaseAgent {
 		section: ContentOutline["sections"][0],
 		prevLines: ScriptLine[],
 		newsContext: string,
+		channelType: string,
 	): Promise<ScriptLine[]> {
-		const prompts = this.loadPrompt<ContentPrompts>(this.name);
+		const prompts = this.loadPrompt<any>(channelType === "cognitive" ? "cognitive" : this.name);
 		const prevContext =
 			prevLines.length > 0
 				? prevLines.map((l) => `${l.speaker}: ${l.text}`).join("\n")
@@ -150,8 +154,9 @@ export class ScriptSmith extends BaseAgent {
 	private async generateMetadata(
 		scriptText: string,
 		newsSources: string,
+		channelType: string,
 	): Promise<Metadata> {
-		const prompts = this.loadPrompt<ContentPrompts>(this.name);
+		const prompts = this.loadPrompt<any>(channelType === "cognitive" ? "cognitive" : this.name);
 		return this.runLlm(
 			prompts.metadata.system,
 			prompts.metadata.user_template

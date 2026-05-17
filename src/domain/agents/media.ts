@@ -75,10 +75,11 @@ export class VisualDirector extends BaseAgent {
 		script: Script,
 		title: string,
 		thumbnailTitle?: string,
+		options: { style?: string; bucket?: string } = {},
 	): Promise<MediaResult> {
-		this.logInput({ lines: script.lines.length });
+		this.logInput({ lines: script.lines.length, style: options.style, bucket: options.bucket });
 		const audioDir = this.store.audioDir();
-		const audio_paths = await this.synthesizeAudio(script, audioDir);
+		const audio_paths = await this.synthesizeAudio(script, audioDir, options.style);
 
 		const videoPlan = await this.layout.createVideoRenderPlan();
 		const durations = await this.getAudioDurations(audio_paths);
@@ -90,6 +91,21 @@ export class VisualDirector extends BaseAgent {
 
 		const fullAudio = await this.mergeAudio(audio_paths, audioDir);
 
+		// Cognitive Design System v1 Override
+		let composerConfig = { ...this.videoComposer["config"] };
+		if (options.bucket === "cognitive_observation") {
+			composerConfig.background_color = "#FFFDF8"; // Base White
+			// Override subtitles for soft look
+			if (composerConfig.subtitles) {
+				composerConfig.subtitles = {
+					...composerConfig.subtitles,
+					// Add cognitive-specific subtitle styling here if needed
+				};
+			}
+		} else if (options.style === "quiet_observation") {
+			composerConfig.background_color = "#0A0A12"; 
+		}
+
 		const thumbnail_path = await this.thumbnailGenerator.generate(
 			thumbnailTitle || title,
 			path.join(this.store.runDir, this.store.cfg.workflow.filenames.thumbnail),
@@ -100,7 +116,7 @@ export class VisualDirector extends BaseAgent {
 			this.store.cfg.workflow.filenames.video,
 		);
 
-		await this.videoComposer.compose(
+		await new VideoComposer(composerConfig).compose(
 			fullAudio,
 			thumbnail_path,
 			subtitlePath,
@@ -125,6 +141,7 @@ export class VisualDirector extends BaseAgent {
 	private async synthesizeAudio(
 		script: Script,
 		audioDir: string,
+		style?: string,
 	): Promise<string[]> {
 		const audio_paths: string[] = [];
 		const manifestChunks: any[] = [];
