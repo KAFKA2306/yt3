@@ -5,6 +5,7 @@ import {
 	BaseAgent,
 	ROOT,
 	parseLlmJson,
+	getMemoryEssenceFile,
 } from "../../io/core.js";
 import type { AgentState } from "../types.js";
 
@@ -39,9 +40,7 @@ export class MemoryAgent extends BaseAgent {
 				(text) => parseLlmJson<Essence>(text),
 			);
 
-			const essenceFile = path.isAbsolute(cfg.essence_file)
-				? cfg.essence_file
-				: path.join(ROOT, cfg.essence_file);
+			const essenceFile = getMemoryEssenceFile(this.store);
 			const essenceDir = path.dirname(essenceFile);
 			const essencesData = fs.existsSync(essenceFile)
 				? fs.readJsonSync(essenceFile)

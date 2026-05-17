@@ -18,5 +18,6 @@ task --list
 - `db/`: Evolution and audit trace database (SQLite).
 - `docs/`: ADRs and Audit Protocols.
 - `runs/`: Immutable run logs and artifacts.
+- `docs/standard/humanity-observatory-audit-standard.md`: Humanity Observatory System の編集監査基準書。
 
 For detailed audit protocols, see [docs/AUDIT_PROTOCOL.md](docs/AUDIT_PROTOCOL.md).

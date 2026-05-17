@@ -388,11 +388,26 @@ export function getRunIdDateString(): string {
 	const day = String(d.getDate()).padStart(2, "0");
 	return `${y}-${m}-${day}`;
 }
-export function loadMemoryContext(store: AssetStore): string {
+export function getMemoryEssenceFile(store: AssetStore): string {
 	const cfg = store.cfg;
-	const essenceFile = path.isAbsolute(cfg.workflow.memory.essence_file)
-		? cfg.workflow.memory.essence_file
-		: path.join(ROOT, cfg.workflow.memory.essence_file);
+	const isCognitive = store.runDir.includes("humanity_observatory");
+	const subDir = isCognitive ? "humanity_observatory" : "daily_pulse";
+	const essenceFile = path.join(ROOT, "data", "memory", subDir, "essences.json");
+
+	if (!isCognitive && !fs.existsSync(essenceFile)) {
+		const legacyFile = path.isAbsolute(cfg.workflow.memory.essence_file)
+			? cfg.workflow.memory.essence_file
+			: path.join(ROOT, cfg.workflow.memory.essence_file);
+		if (fs.existsSync(legacyFile)) {
+			fs.ensureDirSync(path.dirname(essenceFile));
+			fs.copySync(legacyFile, essenceFile);
+		}
+	}
+	return essenceFile;
+}
+
+export function loadMemoryContext(store: AssetStore): string {
+	const essenceFile = getMemoryEssenceFile(store);
 
 	if (!fs.existsSync(essenceFile)) return "";
 
