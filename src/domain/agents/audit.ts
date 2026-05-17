@@ -110,7 +110,7 @@ const AudienceAuditResultSchema = z.object({
 	}),
 });
 
-const CognitiveAuditResultSchema = z.object({
+const HumanityAuditResultSchema = z.object({
 	humanity: z.object({
 		passed: z.boolean(),
 		score: z.number(),
@@ -121,7 +121,7 @@ const CognitiveAuditResultSchema = z.object({
 		score: z.number(),
 		feedback: z.string(),
 	}),
-	cognitive_tone: z.object({
+	humanity_tone: z.object({
 		passed: z.boolean(),
 		score: z.number(),
 		feedback: z.string(),
@@ -219,9 +219,9 @@ export class AuditAgent extends BaseAgent {
 		// 5.9 META AUDIT LAYER (Process-Evolution-Centric Audit)
 		Object.assign(results, await this.auditMetaEvolution(state, evidence));
 
-		// 5.10 COGNITIVE AUDIT (For 'Humanity Observatory' channel)
+		// 5.10 HUMANITY OBSERVATORY AUDIT (For 'Humanity Observatory' channel)
 		if (state.script && state.bucket === "cognitive_observation") {
-			Object.assign(results, await this.auditCognitive(state, evidence));
+			Object.assign(results, await this.auditHumanityObservatory(state, evidence));
 		}
 
 		// 5.11 CLAIM PROVENANCE AUDIT (Strict Epistemic Authority Check)
@@ -2811,7 +2811,7 @@ export class AuditAgent extends BaseAgent {
 		return map;
 	}
 
-	private async auditCognitive(
+	private async auditHumanityObservatory(
 		state: AgentState,
 		evidence: Record<string, any>,
 	): Promise<Record<string, AuditCheck>> {
@@ -2834,7 +2834,7 @@ Output MUST be a single JSON object:
 {
 "humanity": { "passed": boolean, "score": number, "feedback": string },
 "reality_grounding": { "passed": boolean, "score": number, "feedback": string },
-"cognitive_tone": { "passed": boolean, "score": number, "feedback": string },
+"humanity_tone": { "passed": boolean, "score": number, "feedback": string },
 "anti_doomcool": { "passed": boolean, "score": number, "feedback": string },
 "emotional_afterglow": { "passed": boolean, "score": number, "feedback": string },
 "structure": { "passed": boolean, "score": number, "feedback": string },
@@ -2847,10 +2847,10 @@ Output strictly valid JSON.`;
 			const res = await this.runLlm(
 				system,
 				JSON.stringify(state.script?.lines),
-				(t) => parseLlmJson(t, CognitiveAuditResultSchema),
+				(t) => parseLlmJson(t, HumanityAuditResultSchema),
 				{ temperature: 0 },
 			);
-			evidence.cognitive = res;
+			evidence.humanity_observatory = res;
 
 			return {
 				cog_humanity: {
@@ -2870,10 +2870,10 @@ Output strictly valid JSON.`;
 					type: "BOUNDED_PROBABILISTIC",
 				},
 				cog_tone: {
-					name: "Humanity: Cognitive Tone Audit",
+					name: "Humanity: Tone Audit",
 					description: "Rejects intellectual slop and abstraction inflation.",
-					status: res.cognitive_tone.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.cognitive_tone.score}/100. ${res.cognitive_tone.feedback}`,
+					status: res.humanity_tone.passed ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.humanity_tone.score}/100. ${res.humanity_tone.feedback}`,
 					critical: true,
 					type: "BOUNDED_PROBABILISTIC",
 				},
@@ -2919,13 +2919,13 @@ Output strictly valid JSON.`;
 				},
 			};
 		} catch (e) {
-			evidence.cognitive_error = String(e);
+			evidence.humanity_observatory_error = String(e);
 			return {
 				cog_infra: {
-					name: "Cognitive: Audit Verifier Health",
-					description: "Integrity of the cognitive audit LLM verifier.",
+					name: "Humanity: Audit Verifier Health",
+					description: "Integrity of the humanity audit LLM verifier.",
 					status: "INFRA_FAIL",
-					details: `Cognitive Audit Failed: ${String(e)}`,
+					details: `Humanity Audit Failed: ${String(e)}`,
 					critical: true,
 					type: "DETERMINISTIC",
 				},
