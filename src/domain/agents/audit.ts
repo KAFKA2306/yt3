@@ -153,6 +153,21 @@ const CognitiveAuditResultSchema = z.object({
 	}),
 });
 
+const ProvenanceAuditResultSchema = z.object({
+	passed: z.boolean(),
+	score: z.number(),
+	feedback: z.string(),
+	claims: z.array(
+		z.object({
+			claim: z.string(),
+			claim_type: z.enum(["VERIFIED", "SUPPORTED", "INTERPRETIVE", "POETIC", "UNVERIFIED"]),
+			evidence: z.string().optional().nullable(),
+			has_epistemic_spoofing: z.boolean(),
+			spoofing_details: z.string().optional().nullable(),
+		})
+	),
+});
+
 export class AuditAgent extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.AUDIT);
@@ -204,9 +219,14 @@ export class AuditAgent extends BaseAgent {
 		// 5.9 META AUDIT LAYER (Process-Evolution-Centric Audit)
 		Object.assign(results, await this.auditMetaEvolution(state, evidence));
 
-		// 5.10 COGNITIVE AUDIT (For 'Thinking Cross-section' channel)
+		// 5.10 COGNITIVE AUDIT (For 'Humanity Observatory' channel)
 		if (state.script && state.bucket === "cognitive_observation") {
 			Object.assign(results, await this.auditCognitive(state, evidence));
+		}
+
+		// 5.11 CLAIM PROVENANCE AUDIT (Strict Epistemic Authority Check)
+		if (state.script && state.bucket === "cognitive_observation") {
+			Object.assign(results, await this.auditClaimProvenance(state, evidence));
 		}
 
 		// 6. TOPOLOGY (Job Relationship Evidence)
@@ -2906,6 +2926,65 @@ Output strictly valid JSON.`;
 					description: "Integrity of the cognitive audit LLM verifier.",
 					status: "INFRA_FAIL",
 					details: `Cognitive Audit Failed: ${String(e)}`,
+					critical: true,
+					type: "DETERMINISTIC",
+				},
+			};
+		}
+	}
+
+	private async auditClaimProvenance(
+		state: AgentState,
+		evidence: Record<string, any>,
+	): Promise<Record<string, AuditCheck>> {
+		const system = `You are a strict Zero-Trust Claim Provenance Auditor for the Humanity Observatory.
+Your supreme mandate is to prevent "Epistemic Authority Spoofing" and "Fake Factualization" where poetic/philosophical/narrative interpretations are repackaged as empirical, verified facts.
+
+Verify the following:
+- All claims in the news and script must be classified into one of:
+  - VERIFIED: Directly observed objective numbers/facts with verifiable empirical sources.
+  - SUPPORTED: Hypotheses or theories backed by research papers or academic consensus.
+  - INTERPRETIVE: Subjective analytical models or interpretations of events.
+  - POETIC: Philosophic abstractions, metaphors, narrative frames, or expressions.
+  - UNVERIFIED: Factual claims with no clear source.
+- Epistemic Spoofing: If a POETIC or INTERPRETIVE claim uses VERIFIED-style wording (e.g. claiming a metaphor is a "scientifically observed fact", "proven trend", or using "観測されている" / "示唆している" without any empirical source), it must fail.
+
+Input Content:
+News Items: ${JSON.stringify(state.news || [])}
+Script Text: ${JSON.stringify(state.script?.lines || [])}
+
+Output MUST be a single JSON object matching the schema.
+No markdown or raw tags, only valid JSON.`;
+
+		try {
+			const res = await this.runLlm(
+				system,
+				"Analyze the above input content and provide the exact JSON.",
+				(t) => parseLlmJson(t, ProvenanceAuditResultSchema),
+				{ temperature: 0 },
+			);
+			evidence.claim_provenance = res;
+
+			const spoofedCount = res.claims.filter((c: any) => c.has_epistemic_spoofing).length;
+
+			return {
+				cog_claim_provenance: {
+					name: "Claim Provenance: Epistemic Authority Audit",
+					description: "Bans repackaging poetic metaphors as observed empirical facts (epistemic authority spoofing).",
+					status: res.passed && spoofedCount === 0 ? "PASS" : "QUALITY_FAIL",
+					details: `Score: ${res.score}/100. Spoofed claims: ${spoofedCount}. ${res.feedback}`,
+					critical: true,
+					type: "BOUNDED_PROBABILISTIC",
+				},
+			};
+		} catch (e) {
+			evidence.claim_provenance_error = String(e);
+			return {
+				cog_claim_provenance: {
+					name: "Claim Provenance: Audit Verifier Health",
+					description: "Integrity of the claim provenance audit LLM verifier.",
+					status: "INFRA_FAIL",
+					details: `Claim Provenance Audit Failed: ${String(e)}`,
 					critical: true,
 					type: "DETERMINISTIC",
 				},
