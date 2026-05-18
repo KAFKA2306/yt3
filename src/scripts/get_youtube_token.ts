@@ -62,9 +62,13 @@ async function main() {
 				console.log("\n--- CHANNEL PREFLIGHT ---");
 				console.log(`Channel Title: ${channel.snippet?.title}`);
 				console.log(`Channel ID: ${channel.id}`);
+				console.log(`Channel Handle: ${channel.snippet?.customUrl ?? ""}`);
 				console.log("-------------------------\n");
 				console.log("Recommended settings for config/.env.yawa:");
 				console.log(`YOUTUBE_EXPECTED_CHANNEL_TITLE=${channel.snippet?.title}`);
+				console.log(
+					`YOUTUBE_EXPECTED_CHANNEL_HANDLE=${channel.snippet?.customUrl ?? ""}`,
+				);
 				console.log(`YOUTUBE_EXPECTED_CHANNEL_ID=${channel.id}`);
 			}
 		} catch (err) {

@@ -18,8 +18,9 @@
 3.  表示されたURLをブラウザで開き、**対象のブランドアカウント**を選択して認可。
 4.  リダイレクトURLから `code=` 以降をコピーしてターミナルに貼り付け。
 5.  表示された `REFRESH_TOKEN` を `.env` ファイルに保存。
+6.  併せて `YOUTUBE_EXPECTED_CHANNEL_TITLE`、`YOUTUBE_EXPECTED_CHANNEL_HANDLE`、`YOUTUBE_EXPECTED_CHANNEL_ID` を保存する。
 
 ## 3. 安全装置
 
-- **Channel Matching**: プロファイルに記述された `YOUTUBE_EXPECTED_CHANNEL_TITLE` と実際のチャンネル名が一致しない場合、アップロードは即座に中止されます。
+- **Channel Matching**: `YOUTUBE_EXPECTED_CHANNEL_ID` が最終ゲートです。`YOUTUBE_EXPECTED_CHANNEL_TITLE` と `YOUTUBE_EXPECTED_CHANNEL_HANDLE` は観測用ですが、未設定なら publish は中止されます。
 - **Auto-Private**: すべての動画は `private` 設定でアップロードされます。

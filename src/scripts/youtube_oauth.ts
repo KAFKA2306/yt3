@@ -105,6 +105,7 @@ async function main() {
 		const result = await assertYouTubeChannelMatchesProfile(auth, profile);
 		console.log("CHANNEL:");
 		console.log(result.actual.title);
+		console.log(result.actual.channelId);
 		console.log(result.actual.handle ?? "");
 		return;
 	}
@@ -133,6 +134,7 @@ async function main() {
 	const result = await assertYouTubeChannelMatchesProfile(auth, profile);
 	console.log("CHANNEL:");
 	console.log(result.actual.title);
+	console.log(result.actual.channelId);
 	console.log(result.actual.handle ?? "");
 	console.log(`Saved token to ${profile.tokenPath}`);
 }

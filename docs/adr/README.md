@@ -31,6 +31,7 @@
 - `0031-domain-separation-standard.md`: 3チャンネルのドメイン分離・共通処理境界設計
 - `0032-zero-trust-audit-charter.md`: Zero-Trust 監査アーキテクチャ憲章
 - `0037-visual-reference-mirroring-and-ctr-first-thumbnail-prompting.md`: 参照画像ローカルミラーとCTR優先サムネイル方針
+- `0038-publish-destination-guard.md`: 投稿先取り違え防止の宛先ガード
 
 ## Consolidated History (統合履歴)
 

@@ -4,38 +4,37 @@ import { google } from "googleapis";
 
 export type YouTubeProfileName = "byosan" | "yawa" | "humanity";
 
-export type YouTubeProfile = {
+export type YouTubeProfileBase = {
 	profileName: YouTubeProfileName;
 	bucket: string;
 	envFile: string;
-	expectedChannelTitle: string;
-	expectedChannelHandle: string | null;
 	tokenPath: string;
 };
 
-export const YOUTUBE_PROFILES: Record<YouTubeProfileName, YouTubeProfile> = {
+export type YouTubeProfile = YouTubeProfileBase & {
+	expectedChannelTitle: string;
+	expectedChannelHandle: string;
+	expectedChannelId: string;
+};
+
+export const YOUTUBE_PROFILES: Record<YouTubeProfileName, YouTubeProfileBase> =
+	{
 	byosan: {
 		profileName: "byosan",
 		bucket: "daily_pulse",
 		envFile: "config/.env.byosan",
-		expectedChannelTitle: "秒算マネー",
-		expectedChannelHandle: null,
 		tokenPath: "config/.cache/youtube/byosan.json",
 	},
 	yawa: {
 		profileName: "yawa",
 		bucket: "yawa_archive",
 		envFile: "config/.env.yawa",
-		expectedChannelTitle: "夜話アーカイブ ASMR",
-		expectedChannelHandle: null,
 		tokenPath: "config/.cache/youtube/yawa.json",
 	},
 	humanity: {
 		profileName: "humanity",
 		bucket: "humanity_observatory",
 		envFile: "config/.env",
-		expectedChannelTitle: "雨晴はうの人類観測所",
-		expectedChannelHandle: "@humanity_observatory",
 		tokenPath: "config/.cache/youtube/humanity.json",
 	},
 };
@@ -45,6 +44,14 @@ export type YouTubeChannelIdentity = {
 	title: string;
 	handle: string | null;
 };
+
+function resolveRequiredEnv(name: string): string {
+	const value = process.env[name]?.trim();
+	if (!value) {
+		throw new Error(`${name} is required for YouTube publish/profile safety`);
+	}
+	return value;
+}
 
 export function getYouTubeProfile(
 	profileName = process.env.YOUTUBE_CHANNEL_PROFILE,
@@ -71,7 +78,21 @@ export function getYouTubeProfile(
 		);
 	}
 
-	return profile;
+	const expectedChannelHandle = normalizeChannelHandle(
+		resolveRequiredEnv("YOUTUBE_EXPECTED_CHANNEL_HANDLE"),
+	);
+	if (!expectedChannelHandle) {
+		throw new Error(
+			"YOUTUBE_EXPECTED_CHANNEL_HANDLE is required for YouTube publish/profile safety",
+		);
+	}
+
+	return {
+		...profile,
+		expectedChannelTitle: resolveRequiredEnv("YOUTUBE_EXPECTED_CHANNEL_TITLE"),
+		expectedChannelHandle,
+		expectedChannelId: resolveRequiredEnv("YOUTUBE_EXPECTED_CHANNEL_ID"),
+	};
 }
 
 export function assertProfileEnvFile(
@@ -165,17 +186,22 @@ export async function assertYouTubeChannelMatchesProfile(
 	profile: YouTubeProfile,
 ) {
 	const actual = await fetchCurrentChannelIdentity(auth);
-	const expectedHandle = normalizeChannelHandle(profile.expectedChannelHandle);
 
 	if (actual.title !== profile.expectedChannelTitle) {
-		throw new Error(
-			`Channel mismatch: expected title '${profile.expectedChannelTitle}' but got '${actual.title}'`,
+		console.warn(
+			`[WARNING: CHANNEL MISMATCH] Expected title '${profile.expectedChannelTitle}' but got '${actual.title}'`
 		);
 	}
 
-	if (expectedHandle && actual.handle !== expectedHandle) {
+	if (actual.channelId !== profile.expectedChannelId) {
 		throw new Error(
-			`Channel mismatch: expected handle '${expectedHandle}' but got '${actual.handle ?? "null"}'`,
+			`Channel mismatch: expected channelId '${profile.expectedChannelId}' but got '${actual.channelId || "null"}'`
+		);
+	}
+
+	if (actual.handle !== profile.expectedChannelHandle) {
+		console.warn(
+			`[WARNING: CHANNEL MISMATCH] Expected handle '${profile.expectedChannelHandle}' but got '${actual.handle ?? "null"}'`
 		);
 	}
 

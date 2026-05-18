@@ -37,21 +37,7 @@ export class PublishAgent extends BaseAgent {
 				);
 			}
 
-			if (
-				profileName === "humanity" ||
-				profileName === "humanity_observatory"
-			) {
-				getYouTubeProfile(profileName);
-			} else {
-				const expectedTitle =
-					process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
-				const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
-				if (!expectedTitle && !expectedId) {
-					throw new Error(
-						"YouTube publish requires YOUTUBE_EXPECTED_CHANNEL_TITLE or YOUTUBE_EXPECTED_CHANNEL_ID",
-					);
-				}
-			}
+			getYouTubeProfile(profileName);
 		}
 	}
 	async run(state: AgentState): Promise<PublishResults> {
@@ -108,8 +94,19 @@ export class PublishAgent extends BaseAgent {
 			);
 		}
 
+		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+		const expectedBucket = this.resolveExpectedBucket(profileName);
+		if (expectedBucket && state.bucket !== expectedBucket) {
+			throw new Error(
+				`YouTube publish blocked: run bucket '${state.bucket}' does not match profile bucket '${expectedBucket}' for '${profileName || "unknown"}'`,
+			);
+		}
+
 		console.log(
 			`[PUBLISH:CONFIG] visibility=${ytCfg.default_visibility} source=config/default.yaml`,
+		);
+		console.log(
+			`[PUBLISH:DESTINATION] bucket=${state.bucket} expected_bucket=${expectedBucket || "unresolved"} profile=${profileName || "unknown"}`,
 		);
 
 		const auth = await this.createYouTubeClient();
@@ -117,7 +114,7 @@ export class PublishAgent extends BaseAgent {
 			version: "v3",
 			auth,
 		});
-		await this.verifyYouTubeChannel(youtube, auth);
+		await this.verifyYouTubeChannel(auth);
 		const { video_path: videoPath, thumbnail_path: thumbnailPath } = state;
 		if (!videoPath) throw new Error("Video path missing");
 		const res = await youtube.videos.insert({
@@ -147,6 +144,13 @@ export class PublishAgent extends BaseAgent {
 			published_at: snippet?.publishedAt || "",
 		};
 	}
+	private resolveExpectedBucket(profileName?: string): string | null {
+		if (!profileName) {
+			return process.env.YOUTUBE_EXPECTED_BUCKET?.trim() || null;
+		}
+
+		return getYouTubeProfile(profileName).bucket;
+	}
 	private createYouTubeSnippet(
 		state: AgentState,
 		ytCfg: NonNullable<AppConfig["steps"]["youtube"]>,
@@ -169,59 +173,11 @@ export class PublishAgent extends BaseAgent {
 		};
 	}
 	private async verifyYouTubeChannel(
-		youtube: ReturnType<typeof google.youtube>,
 		auth: InstanceType<typeof google.auth.OAuth2>,
 	) {
-		const profileName =
-			process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "unknown";
-
-		if (profileName === "humanity" || profileName === "humanity_observatory") {
-			const profile = getYouTubeProfile(profileName);
-			await assertYouTubeChannelMatchesProfile(auth, profile);
-			return;
-		}
-
-		const expectedTitle = process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
-		const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
-		const requireMatch = process.env.YOUTUBE_REQUIRE_CHANNEL_MATCH === "true";
-
-		if (!expectedTitle && !expectedId && !requireMatch) {
-			throw new Error(
-				`YouTube channel preflight requires an explicit expected channel for profile "${profileName}"`,
-			);
-		}
-
-		const res = await youtube.channels.list({
-			part: ["id", "snippet"],
-			mine: true,
-		});
-		const channel = res.data.items?.[0];
-		const actualTitle = channel?.snippet?.title?.trim();
-		const actualId = channel?.id?.trim();
-
-		if (!channel) {
-			throw new Error(
-				`YouTube channel preflight failed for profile "${profileName}": no channel returned`,
-			);
-		}
-
-		if (expectedTitle && actualTitle !== expectedTitle) {
-			throw new Error(
-				`Wrong YouTube channel for profile "${profileName}": expected "${expectedTitle}" but got "${actualTitle || "unknown"}"`,
-			);
-		}
-
-		if (expectedId && actualId !== expectedId) {
-			throw new Error(
-				`Wrong YouTube channel ID for profile "${profileName}": expected "${expectedId}" but got "${actualId || "unknown"}"`,
-			);
-		}
-
-		if (requireMatch && !expectedTitle && !expectedId) {
-			throw new Error(
-				`YouTube channel preflight is required for profile "${profileName}" but no expected channel was configured`,
-			);
-		}
+		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+		const profile = getYouTubeProfile(profileName);
+		await assertYouTubeChannelMatchesProfile(auth, profile);
 	}
 	private async createYouTubeClient() {
 		const clientId = process.env.YOUTUBE_CLIENT_ID;
