@@ -9,6 +9,7 @@ import {
 	RunStage,
 	parseLlmJson,
 } from "../../io/core.js";
+import { ScriptIntegrityLinter } from "../../io/utils/qa/script_linter.js";
 import { DynamicsOrchestrator } from "../evolution/dynamics_orchestrator.js";
 import { AuditReportSchema } from "../types.js";
 import type {
@@ -22,7 +23,6 @@ import type {
 } from "../types.js";
 import { compareVoiceMaps, getCanonicalVoiceMap } from "../voice_registry.js";
 import { MetaAuditLayer } from "./meta_audit_layer.js";
-import { ScriptIntegrityLinter } from "../../io/utils/qa/script_linter.js";
 
 const SemanticAuditResultSchema = z.object({
 	content_structure: z.object({
@@ -3319,12 +3319,15 @@ No markdown or raw tags, only valid JSON.`;
 			else if (check.status === "WARN") status = "QUALITY_FAIL";
 			else if (check.status === "FAIL") status = "FAIL";
 
+			// Balanced criticality for v2
+			const isCritical = ["FactPlausibility", "Repetition", "Structure", "Artifact"].includes(check.layer);
+
 			checks[checkId] = {
 				name: `Integrity: ${check.layer} Discomfort`,
 				description: check.message,
 				status,
 				details: check.details ? check.details.join(", ") : check.message,
-				critical: check.status === "FAIL",
+				critical: isCritical && check.status === "FAIL",
 				type: "DETERMINISTIC",
 			};
 		}

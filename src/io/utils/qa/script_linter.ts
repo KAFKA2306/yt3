@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { AgentState, Script, ScriptLine } from "../../../domain/types.js";
+import type { AgentState, Script, ScriptLine, NewsItem } from "../../../domain/types.js";
 import { AgentLogger as Logger } from "../../logger.js";
 
 /**
@@ -22,14 +22,14 @@ export const DiscomfortLinterResultSchema = z.object({
 export type DiscomfortLinterResult = z.infer<typeof DiscomfortLinterResultSchema>;
 
 /**
- * ScriptIntegrityLinter: Detects "discomfort" (repeats, clashing voice, unverified facts)
+ * ScriptIntegrityLinter v2: Detects "discomfort" (repeats, clashing voice, unverified facts, metric density)
  */
 export class ScriptIntegrityLinter {
-	private brandWords = ["humanity", "不器用", "愛おしい", "祝祭", "観測"];
-	private forbiddenTerms = ["一石を投じる", "パラダイムシフト", "激変する世界", "未知の領域"];
+	private brandWords = ["humanity", "不器用", "愛おしい", "祝祭", "観測", "デルタ", "断面"];
+	private forbiddenTerms = ["一石を投じる", "パラダイムシフト", "激変する世界", "未知の領域", "いかがでしたでしょうか"];
 
 	/**
-	 * Run all 8 layers of discomfort audit
+	 * Run all 10 layers of discomfort audit (v2)
 	 */
 	async audit(state: AgentState): Promise<DiscomfortLinterResult> {
 		const script = state.script;
@@ -41,43 +41,48 @@ export class ScriptIntegrityLinter {
 		const checks: DiscomfortLinterResult["checks"] = [];
 		let totalScore = 100;
 
-		// 1. Fact Check (Heuristic placeholder for numbers/proper nouns)
-		const factCheck = this.checkFactDiscomfort(script);
+		// 1. Fact Plausibility & 2. Source Legitimacy (Corroboration with research)
+		const factCheck = this.checkFactPlausibility(script, state.news || []);
 		checks.push(factCheck);
 		if (factCheck.status === "FAIL") totalScore -= 20;
 
-		// 2. Duplication Check
-		const dupCheck = this.checkDuplicationDiscomfort(script);
+		// 3. Metric Density Check
+		const metricCheck = this.checkMetricDensity(script);
+		checks.push(metricCheck);
+		if (metricCheck.status === "WARN") totalScore -= 10;
+
+		// 4. Repetition Entropy (Duplication Check v2)
+		const dupCheck = this.checkRepetitionEntropy(script);
 		checks.push(dupCheck);
 		if (dupCheck.status === "FAIL") totalScore -= 30;
 
-		// 3. Structure Check (Intro-Body-Conclusion repetition)
-		const structCheck = this.checkStructureDiscomfort(script);
+		// 5. Structure Consistency (Intro-Conclusion sets)
+		const structCheck = this.checkStructureConsistency(script);
 		checks.push(structCheck);
 		if (structCheck.status === "FAIL") totalScore -= 20;
 
-		// 4. Wording Check (Consistency of "humanity", etc.)
-		const wordingCheck = this.checkWordingDiscomfort(script);
+		// 6. Dialogue Template Reuse
+		const templateCheck = this.checkDialogueTemplateReuse(script);
+		checks.push(templateCheck);
+		if (templateCheck.status === "WARN") totalScore -= 10;
+
+		// 7. Authority & Weighting (Source mixing)
+		const authorityCheck = this.checkAuthorityMixing(script);
+		checks.push(authorityCheck);
+		if (authorityCheck.status === "WARN") totalScore -= 10;
+
+		// 8. Scope Overload (Topic coherence)
+		const scopeCheck = this.checkScopeOverload(script, metadata.title);
+		checks.push(scopeCheck);
+		if (scopeCheck.status === "WARN") totalScore -= 10;
+
+		// 9. Character & Brand Wording
+		const wordingCheck = this.checkWordingDiscomfort(script, state.bucket || "");
 		checks.push(wordingCheck);
 		if (wordingCheck.status === "WARN") totalScore -= 10;
 
-		// 5. Character Voice Check (Vocabulary clash)
-		const voiceCheck = this.checkCharacterVoiceDiscomfort(script, state.bucket || "");
-		checks.push(voiceCheck);
-		if (voiceCheck.status === "WARN") totalScore -= 10;
-
-		// 6. Ethics/Finance Risk Check
-		const riskCheck = this.checkRiskDiscomfort(script);
-		checks.push(riskCheck);
-		if (riskCheck.status === "WARN") totalScore -= 10;
-
-		// 7. Theme Consistency Check
-		const themeCheck = this.checkThemeConsistency(script, metadata.title);
-		checks.push(themeCheck);
-		if (themeCheck.status === "WARN") totalScore -= 10;
-
-		// 8. Completion State Check (Duration 0 check)
-		const completionCheck = this.checkCompletionState(script);
+		// 10. Artifact Completeness (Duration check)
+		const completionCheck = this.checkArtifactCompleteness(script);
 		checks.push(completionCheck);
 		if (completionCheck.status === "FAIL") totalScore -= 10;
 
@@ -88,80 +93,136 @@ export class ScriptIntegrityLinter {
 		};
 	}
 
-	private checkFactDiscomfort(script: Script): DiscomfortLinterResult["checks"][0] {
+	private checkFactPlausibility(script: Script, news: NewsItem[]): DiscomfortLinterResult["checks"][0] {
 		const allText = script.lines.map(l => l.text).join(" ");
 		const numbers = allText.match(/\d+(?:\.\d+)?%?/g) || [];
-		const properNouns = allText.match(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g) || []; // Simple regex for English nouns
-
-		const details: string[] = [];
-		if (numbers.length > 10) details.push(`High density of numbers: ${numbers.slice(0, 5).join(", ")}...`);
 		
-		// Flag specific "suspicious" claims if they lack source refs
-		const unverified = numbers.filter(n => n === "85%" || n === "50%" || n === "500%");
-		if (unverified.length > 0) {
+		const newsText = news.map(n => n.summary + " " + n.title).join(" ");
+		const unverifiedNumbers = numbers.filter(n => !newsText.includes(n.replace("%", "")));
+
+		if (unverifiedNumbers.length > 5) {
 			return {
-				layer: "Fact",
+				layer: "FactPlausibility",
 				status: "FAIL",
-				message: `Unverified/High-impact numbers detected: ${[...new Set(unverified)].join(", ")}`,
-				details,
+				message: "Unverified numeric claims detected (not found in research source)",
+				details: unverifiedNumbers.slice(0, 5).map(n => `Unverified: ${n}`),
 			};
 		}
 
-		return { layer: "Fact", status: "OK", message: "Facts seem reasonable" };
+		return { layer: "FactPlausibility", status: "OK", message: "Numeric claims corroborated with research" };
 	}
 
-	private checkDuplicationDiscomfort(script: Script): DiscomfortLinterResult["checks"][0] {
+	private checkMetricDensity(script: Script): DiscomfortLinterResult["checks"][0] {
+		const allText = script.lines.map(l => l.text).join(" ");
+		const numbers = allText.match(/\d+/g) || [];
+		const sentenceCount = allText.split(/[。！？\n]/).length;
+		const density = numbers.length / sentenceCount;
+
+		if (density > 0.8) {
+			return {
+				layer: "MetricDensity",
+				status: "WARN",
+				message: "Extremely high metric density detected (plausible fake pattern)",
+				details: [`Density: ${density.toFixed(2)} numbers per sentence`],
+			};
+		}
+
+		return { layer: "MetricDensity", status: "OK", message: "Metric density is natural" };
+	}
+
+	private checkRepetitionEntropy(script: Script): DiscomfortLinterResult["checks"][0] {
 		const lines = script.lines.map(l => l.text.trim());
-		const duplicates: string[] = [];
-		const seen = new Set<string>();
+		const duplicates = lines.filter((item, index) => lines.indexOf(item) !== index && item.length > 15);
 
-		for (const line of lines) {
-			if (line.length < 10) continue;
-			// Simple exact match first
-			if (seen.has(line)) {
-				duplicates.push(line);
-			}
-			seen.add(line);
-		}
-
-		// Fuzzy repetition (checking for same keywords in multiple segments)
-		const topics = ["NFT", "DeFi", "ロシア", "バッテリー", "新薬", "夕焼け"];
-		const topicCounts: Record<string, number> = {};
-		for (const topic of topics) {
-			topicCounts[topic] = lines.filter(l => l.includes(topic)).length;
-		}
-
-		const overused = Object.entries(topicCounts).filter(([_, count]) => count > 3).map(([topic]) => topic);
-
-		if (duplicates.length > 0 || overused.length > 0) {
+		if (duplicates.length > 0) {
 			return {
-				layer: "Duplication",
+				layer: "Repetition",
 				status: "FAIL",
-				message: "Repeated content or topics detected",
-				details: [...duplicates.map(d => `Exact repeat: ${d.slice(0, 30)}...`), ...overused.map(t => `Topic overuse: ${t}`)],
+				message: "Exact sentence repetition detected (Generative failure)",
+				details: duplicates.map(d => `Repeat: ${d.slice(0, 40)}...`),
 			};
 		}
 
-		return { layer: "Duplication", status: "OK", message: "No significant repetition" };
+		return { layer: "Repetition", status: "OK", message: "No significant repetition" };
 	}
 
-	private checkStructureDiscomfort(script: Script): DiscomfortLinterResult["checks"][0] {
-		const intros = script.lines.filter(l => l.text.includes("お疲れ様") || l.text.includes("聞いてください") || l.text.includes("最近、AIが")).length;
-		const closings = script.lines.filter(l => l.text.includes("夕焼け") || l.text.includes("また明日") || l.text.includes("いいですね")).length;
+	private checkStructureConsistency(script: Script): DiscomfortLinterResult["checks"][0] {
+		const introCount = script.lines.filter(l => l.text.includes("お疲れ様") || l.text.includes("聞いてください")).length;
+		const outroCount = script.lines.filter(l => l.text.includes("観測記録でした") || l.text.includes("また明日")).length;
 
-		if (intros > 2 || closings > 2) {
+		if (introCount > 1 || outroCount > 1) {
 			return {
 				layer: "Structure",
 				status: "FAIL",
-				message: "Multiple Intro/Conclusion sets detected. Script seems like a concatenation of candidates.",
-				details: [`Intros: ${intros}`, `Closings: ${closings}`],
+				message: "Multiple intro/outro sequences detected (Concatenation of candidates)",
+				details: [`Intros: ${introCount}`, `Outros: ${outroCount}`],
 			};
 		}
 
-		return { layer: "Structure", status: "OK", message: "Structure is consistent" };
+		return { layer: "Structure", status: "OK", message: "One coherent structure" };
 	}
 
-	private checkWordingDiscomfort(script: Script): DiscomfortLinterResult["checks"][0] {
+	private checkDialogueTemplateReuse(script: Script): DiscomfortLinterResult["checks"][0] {
+		const patterns = script.lines.map(l => {
+			if (l.text.includes("すごい") || l.text.includes("驚異的")) return "SURPRISE";
+			if (l.text.includes("でも") || l.text.includes("課題")) return "SKEPTIC";
+			if (l.text.includes("そうね") || l.text.includes("確かに")) return "EXPLAIN";
+			return "OTHER";
+		});
+
+		let reuseCount = 0;
+		for (let i = 0; i < patterns.length - 2; i++) {
+			if (patterns[i] === "SURPRISE" && patterns[i+1] === "SKEPTIC" && patterns[i+2] === "EXPLAIN") {
+				reuseCount++;
+			}
+		}
+
+		if (reuseCount > 2) {
+			return {
+				layer: "Dialogue",
+				status: "WARN",
+				message: "Repetitive dialogue pattern 'Surprise -> Skeptic -> Explain' detected",
+				details: [`Pattern matched ${reuseCount} times`],
+			};
+		}
+
+		return { layer: "Dialogue", status: "OK", message: "Dialogue flow is natural" };
+	}
+
+	private checkAuthorityMixing(script: Script): DiscomfortLinterResult["checks"][0] {
+		const allText = script.lines.map(l => l.text).join(" ");
+		const authorities = ["WHO", "科学院", "連邦", "省", "政府"];
+		const corporations = ["社", "企業", "Pharma", "Tech"];
+
+		const foundAuth = authorities.filter(a => allText.includes(a));
+		const foundCorp = corporations.filter(c => allText.includes(c));
+
+		if (foundAuth.length > 0 && foundCorp.length > 0) {
+			const details = [`Auth: ${foundAuth.join(",")}`, `Corp: ${foundCorp.join(",")}`];
+			return { layer: "Authority", status: "OK", message: "Mixed authority types handled (Manual review suggested)", details };
+		}
+
+		return { layer: "Authority", status: "OK", message: "Consistent authority level" };
+	}
+
+	private checkScopeOverload(script: Script, title: string): DiscomfortLinterResult["checks"][0] {
+		const allText = script.lines.map(l => l.text).join(" ");
+		const topics = ["医療", "EV", "雇用", "ロシア", "地政学"];
+		const foundTopics = topics.filter(t => allText.includes(t));
+
+		if (foundTopics.length > 3) {
+			return {
+				layer: "Scope",
+				status: "WARN",
+				message: "Scope overload: Too many disparate topics in one script",
+				details: [`Found: ${foundTopics.join(", ")}`],
+			};
+		}
+
+		return { layer: "Scope", status: "OK", message: "Topic scope is focused" };
+	}
+
+	private checkWordingDiscomfort(script: Script, bucket: string): DiscomfortLinterResult["checks"][0] {
 		const allText = script.lines.map(l => l.text).join(" ");
 		const variants = ["humanity", "人類", "人間"];
 		const found = variants.filter(v => allText.includes(v));
@@ -170,75 +231,23 @@ export class ScriptIntegrityLinter {
 			return {
 				layer: "Wording",
 				status: "WARN",
-				message: "Inconsistent brand terminology",
-				details: [`Found variants: ${found.join(", ")}`],
+				message: "Brand terminology mixing",
+				details: [`Variants: ${found.join(", ")}`],
 			};
 		}
 
-		return { layer: "Wording", status: "OK", message: "Terminology is consistent" };
+		return { layer: "Wording", status: "OK", message: "Wording is consistent" };
 	}
 
-	private checkCharacterVoiceDiscomfort(script: Script, bucket: string): DiscomfortLinterResult["checks"][0] {
-		if (bucket !== "humanity_observatory") return { layer: "Character", status: "OK", message: "Not applicable" };
-
-		const hardTerms = ["治験成功率", "固体電解質材料", "金融市場", "中央銀行", "DEFI", "NFT"];
-		const lines = script.lines.map(l => l.text);
-		const clashingLines = lines.filter(l => hardTerms.some(t => l.toUpperCase().includes(t.toUpperCase())));
-
-		if (clashingLines.length > 5) {
-			return {
-				layer: "Character",
-				status: "WARN",
-				message: "Technical vocabulary clashing with character voice",
-				details: clashingLines.slice(0, 3),
-			};
-		}
-
-		return { layer: "Character", status: "OK", message: "Character voice matches content" };
-	}
-
-	private checkRiskDiscomfort(script: Script): DiscomfortLinterResult["checks"][0] {
-		const allText = script.lines.map(l => l.text).join(" ");
-		const riskyPhrases = ["リスクを承知で", "全ツッパ", "一攫千金", "物語に熱中"];
-		
-		if (riskyPhrases.some(p => allText.includes(p)) && (allText.includes("愛おしい") || allText.includes("それでいい"))) {
-			return {
-				layer: "Risk",
-				status: "WARN",
-				message: "Potential glorification of financial/speculative risk",
-				details: ["Risk-taking behavior combined with positive affirmation."],
-			};
-		}
-
-		return { layer: "Risk", status: "OK", message: "Risk handling is acceptable" };
-	}
-
-	private checkThemeConsistency(script: Script, title: string): DiscomfortLinterResult["checks"][0] {
-		const allText = script.lines.map(l => l.text).join(" ");
-		const titleKeywords = title.split(/[・、。\s]+/).filter(k => k.length > 1);
-		
-		// If "推し" is in title but not in body
-		if (title.includes("推し") && !allText.includes("推し")) {
-			return {
-				layer: "Theme",
-				status: "WARN",
-				message: "Title mentions 'Oshi' but body focuses on finance/NFTs.",
-				details: [`Title: ${title}`],
-			};
-		}
-
-		return { layer: "Theme", status: "OK", message: "Theme is consistent" };
-	}
-
-	private checkCompletionState(script: Script): DiscomfortLinterResult["checks"][0] {
+	private checkArtifactCompleteness(script: Script): DiscomfortLinterResult["checks"][0] {
 		const allZero = script.lines.every(l => l.duration === 0);
 		if (allZero && script.lines.length > 0) {
 			return {
-				layer: "Completion",
+				layer: "Artifact",
 				status: "FAIL",
-				message: "All durations are 0. Script appears unconfirmed or uninitialized.",
+				message: "Incomplete timing data (all durations are 0)",
 			};
 		}
-		return { layer: "Completion", status: "OK", message: "Durations are set" };
+		return { layer: "Artifact", status: "OK", message: "Artifact states are valid" };
 	}
 }

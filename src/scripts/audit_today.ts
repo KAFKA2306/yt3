@@ -9,6 +9,8 @@ type ChannelReport = {
 	research_done: boolean;
 	video_done: boolean;
 	publish_done: boolean;
+	audit_passed: boolean;
+	discomfort_warnings: string[];
 	missing: string[];
 	brainstorm: string[];
 };
@@ -19,12 +21,14 @@ type AuditTodayReport = {
 };
 
 const ROOT = process.cwd();
-const today = new Intl.DateTimeFormat("en-CA", {
-	timeZone: "Asia/Tokyo",
-	year: "numeric",
-	month: "2-digit",
-	day: "2-digit",
-}).format(new Date());
+const today =
+	process.env.RUN_ID ||
+	new Intl.DateTimeFormat("en-CA", {
+		timeZone: "Asia/Tokyo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).format(new Date());
 
 function artifactExists(...candidates: string[]): boolean {
 	return candidates.some((candidate) => candidate.length > 0);
@@ -76,6 +80,27 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 		(items) => artifactExists(...items.map(String)) && items.some(Boolean),
 	);
 
+	// Audit Report Analysis
+	const auditReportPath = path.join(runDir, "audit", "report.json");
+	let audit_passed = true;
+	const discomfort_warnings: string[] = [];
+
+	if (await exists(auditReportPath)) {
+		try {
+			const report = JSON.parse(await fs.readFile(auditReportPath, "utf-8"));
+			audit_passed = report.decision === "PASS";
+			if (report.checks) {
+				for (const check of Object.values(report.checks) as any[]) {
+					if (check.status !== "PASS" && check.name.includes("Discomfort")) {
+						discomfort_warnings.push(`${check.name}: ${check.details}`);
+					}
+				}
+			}
+		} catch (e) {
+			audit_passed = false;
+		}
+	}
+
 	const missing: string[] = [];
 	if (!research_done) missing.push("research/web_search");
 	if (!video_done) missing.push("video_production");
@@ -88,7 +113,10 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 		brainstorm.push(
 			"Check the latest script and media artifacts, then identify the smallest missing production step.",
 		);
-	if (!publish_done)
+	if (discomfort_warnings.length > 0) {
+		brainstorm.push("Address the discomfort warnings in the script template/prompt.");
+	}
+	if (!publish_done && video_done)
 		brainstorm.push(
 			"Verify the publish receipt and the channel state before deciding the run is done.",
 		);
@@ -104,6 +132,8 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 		research_done,
 		video_done,
 		publish_done,
+		audit_passed,
+		discomfort_warnings,
 		missing,
 		brainstorm,
 	};
@@ -114,12 +144,20 @@ function formatReport(report: AuditTodayReport): string {
 	lines.push(`# Audit Today ${report.today}`);
 	for (const item of report.reports) {
 		lines.push("");
-		lines.push(`[${item.channel}] ${item.run_dir}`);
-		lines.push(`research/web_search: ${item.research_done ? "yes" : "no"}`);
-		lines.push(`video_production: ${item.video_done ? "yes" : "no"}`);
-		lines.push(`publish: ${item.publish_done ? "yes" : "no"}`);
+		lines.push(`## [${item.channel === "daily_pulse" ? "秒算マネー" : "人類観測所"}]`);
+		lines.push(`- **Run Dir**: \`${item.run_dir}\``);
+		lines.push(`- **Research**: ${item.research_done ? "✅ DONE" : "❌ MISSING"}`);
+		lines.push(`- **Video**: ${item.video_done ? "✅ DONE" : "❌ MISSING"}`);
+		lines.push(`- **Publish**: ${item.publish_done ? "✅ DONE" : "❌ MISSING"}`);
+		lines.push(`- **Audit**: ${item.audit_passed ? "✅ PASS" : "⚠️ BLOCKED/FAIL"}`);
+
+		if (item.discomfort_warnings.length > 0) {
+			lines.push("### ⚠️ Discomfort Detected");
+			for (const warn of item.discomfort_warnings) lines.push(`- ${warn}`);
+		}
+
 		if (item.missing.length > 0) {
-			lines.push("brainstorm:");
+			lines.push("### 💡 Brainstorm / Action");
 			for (const idea of item.brainstorm) lines.push(`- ${idea}`);
 		}
 	}
@@ -162,17 +200,7 @@ async function main(): Promise<void> {
 		"utf8",
 	);
 
-	for (const item of report.reports) {
-		console.log(`[${item.channel}] ${item.run_dir}`);
-		console.log(`  research/web_search: ${item.research_done ? "yes" : "no"}`);
-		console.log(`  video_production: ${item.video_done ? "yes" : "no"}`);
-		console.log(`  publish: ${item.publish_done ? "yes" : "no"}`);
-		if (item.missing.length > 0) {
-			console.log("  brainstorm:");
-			for (const idea of item.brainstorm) console.log(`    - ${idea}`);
-		}
-	}
-
+	console.log(markdown);
 	await notifyDiscord(markdown);
 }
 
