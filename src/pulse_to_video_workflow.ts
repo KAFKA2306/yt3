@@ -8,7 +8,10 @@ import { AssetStore, ROOT, getRunIdDateString } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
 
 async function main() {
-	const runId = `pulse-nlm-${getRunIdDateString()}`;
+	let runId = process.env.RUN_ID || `pulse_nlm/${getRunIdDateString()}`;
+	if (!runId.includes("/")) {
+		runId = `pulse_nlm/${runId}`;
+	}
 	const store = new AssetStore(runId);
 	AgentLogger.init();
 

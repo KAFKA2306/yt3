@@ -2,6 +2,7 @@ import fs from "fs-extra";
 import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
 import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
+import { sendAlert } from "../../io/utils/discord.js";
 import type { AgentState, AppConfig, PublishResults } from "../types.js";
 import { validateCredentials } from "../validation.js";
 import {
@@ -57,11 +58,41 @@ export class PublishAgent extends BaseAgent {
 		this.logInput({ video_path: state.video_path, metadata: state.metadata });
 		const results: PublishResults = {};
 		const ytStep = this.config.steps.youtube;
-		if (ytStep?.enabled)
+		if (ytStep?.enabled) {
 			results.youtube = await this.uploadToYouTube(state, this.config);
+			if (results.youtube?.status === "uploaded") {
+				const videoId = results.youtube.video_id;
+				const channelTitle = results.youtube.channel_title || "YouTube Channel";
+				const videoUrl = videoId
+					? `https://www.youtube.com/watch?v=${videoId}`
+					: "N/A";
+				await sendAlert(
+					`✅ **Successfully Published** video to ${channelTitle}!`,
+					"publish",
+					{
+						title: state.metadata?.title || "N/A",
+						videoId: videoId || "N/A",
+						url: videoUrl,
+						runId: state.run_id,
+					},
+				);
+			}
+		}
 		const twStep = this.config.steps.twitter;
-		if (twStep?.enabled)
+		if (twStep?.enabled) {
 			results.twitter = await this.postToTwitter(state, this.config);
+			if (results.twitter?.status === "posted") {
+				await sendAlert(
+					"🐦 **Successfully Posted** to Twitter (X)!",
+					"publish",
+					{
+						tweetId: results.twitter.tweet_id || "N/A",
+						title: state.metadata?.title || "N/A",
+						runId: state.run_id,
+					},
+				);
+			}
+		}
 		this.logOutput(results);
 		return results;
 	}

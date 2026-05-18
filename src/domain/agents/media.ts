@@ -3,10 +3,18 @@ import path from "node:path";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
 import type { Metadata, RenderPlan, Script } from "../../domain/types.js";
-import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
+import {
+	type AssetStore,
+	BaseAgent,
+	RunStage,
+	loadConfig,
+} from "../../io/core.js";
+import { IqaValidator } from "../../io/utils/iqa_validator.js";
 import { AgentLogger } from "../../io/utils/logger.js";
 import { TtsOrchestrator } from "../../io/utils/tts_orchestrator.js";
 import { LayoutEngine } from "../layout/engine.js";
+import { ThumbnailGenerator } from "../media/thumbnail_generator.js";
+import { VideoComposer } from "../media/video_composer.js";
 
 /**
  * Audio chunk manifest entry for Zero-Trust Audit.
@@ -35,21 +43,42 @@ export interface MediaResult {
  */
 export class VisualDirector extends BaseAgent {
 	private ttsOrchestrator: TtsOrchestrator;
+	private videoComposer: VideoComposer;
+	private thumbnailGenerator: ThumbnailGenerator;
 	private layout: LayoutEngine;
+	private validator: IqaValidator;
 	private speakers: Record<string, number>;
 
 	constructor(store: AssetStore) {
 		super(store, RunStage.MEDIA);
+		const cfg = store.cfg;
 		this.ttsOrchestrator = new TtsOrchestrator({
-			ttsUrl: store.cfg.providers.tts.voicevox.url,
-			speakers: store.cfg.providers.tts.voicevox.speakers,
+			ttsUrl: cfg.providers.tts.voicevox.url,
+			speakers: cfg.providers.tts.voicevox.speakers,
 			timeout: {
 				query: 30000,
 				synthesis: 60000,
 			},
 		});
 		this.layout = new LayoutEngine();
-		this.speakers = store.cfg.providers.tts.voicevox.speakers || {};
+		this.validator = new IqaValidator(cfg);
+		this.videoComposer = new VideoComposer({
+			resolution: cfg.steps.video.resolution,
+			fps: cfg.steps.video.fps,
+			codec: cfg.steps.video.codec,
+			background_color: cfg.steps.video.background_color,
+			intro_seconds: cfg.steps.video.intro_seconds,
+			thumbnail_overlay: cfg.steps.video.thumbnail_overlay,
+			subtitles: cfg.steps.video.subtitles,
+		});
+		this.thumbnailGenerator = new ThumbnailGenerator({
+			layout: this.layout,
+			validator: this.validator,
+			config: cfg.steps.thumbnail,
+			mcpServers: cfg.mcp?.servers,
+			agentName: this.name,
+		});
+		this.speakers = cfg.providers.tts.voicevox.speakers || {};
 	}
 
 	/**
@@ -88,14 +117,47 @@ export class VisualDirector extends BaseAgent {
 		// 3. Audio Post-Processing (Merge & Normalize)
 		const fullAudioPath = await this.mergeAudio(audio_paths, audioDir);
 
-		// 4. Thumbnail Generation
-		const thumbnailPath = path.join(this.store.runDir, "thumbnail.png");
-		// Placeholder for thumbnail generation logic
-		// await this.generateThumbnail(title, thumbnailTitle, thumbnailPath);
+		// 4. Subtitle and Plan Generation
+		const videoPlan = await this.layout.createVideoRenderPlan();
+		const durations = await this.getAudioDurations(audio_paths);
+		const subtitlePath = await this.generateSubtitles(
+			script,
+			durations,
+			videoPlan,
+		);
 
-		// 5. Video Composition (Placeholder)
-		const videoPath = path.join(videoDir, "video.mp4");
-		// await this.composeVideo(script, audio_paths, fullAudioPath, videoPath);
+		// 5. Thumbnail Generation
+		const thumbnailPath = path.join(
+			this.store.runDir,
+			this.store.cfg.workflow.filenames.thumbnail,
+		);
+		await this.thumbnailGenerator.generate(
+			thumbnailTitle || title,
+			thumbnailPath,
+		);
+
+		// 6. Video Composition
+		const videoPath = path.join(
+			videoDir,
+			this.store.cfg.workflow.filenames.video,
+		);
+
+		// Humanity Observatory Design System Override
+		const composerConfig = { ...this.videoComposer.config };
+		if (options.bucket === "humanity_observatory") {
+			composerConfig.background_color = "#FFFDF8"; // Default humanity white
+		} else if (options.style === "quiet_observation") {
+			composerConfig.background_color = "#0A0A12";
+		}
+
+		const dynamicComposer = new VideoComposer(composerConfig);
+		await dynamicComposer.compose(
+			fullAudioPath,
+			thumbnailPath,
+			subtitlePath,
+			videoPath,
+			videoPlan,
+		);
 
 		return {
 			audio_paths,

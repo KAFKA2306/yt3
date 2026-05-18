@@ -7,7 +7,10 @@ import { AssetStore, ROOT, getRunIdDateString } from "../io/core.js";
 import { AgentLogger } from "../io/utils/logger.js";
 
 async function main() {
-	const runId = `publish-bulk-${getRunIdDateString()}`;
+	let runId = process.env.RUN_ID || `publish_bulk/${getRunIdDateString()}`;
+	if (!runId.includes("/")) {
+		runId = `publish_bulk/${runId}`;
+	}
 	const store = new AssetStore(runId);
 	AgentLogger.init();
 

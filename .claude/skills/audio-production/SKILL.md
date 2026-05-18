@@ -60,3 +60,9 @@ For Yawa Archive ASMR, the objective is to preserve "録音されてしまった
 - If the image has been replaced, always execute `task asmr:video DIR=/home/kafka/2511youtuber/v3/yt3/runs/YYYY-MM-DD/<project_id>` to regenerate `final_video.mp4`.
 - Do not stop at `final_mix.wav`. The final artifact for YouTube must include `final_video.mp4`.
 - Do not consider the task complete until `final_video.mp4` exists.
+
+## Daily Audit
+
+- Before entering the audio pipeline for today's run, confirm `task audit:today` reports the upstream research stage as complete.
+- If the audit says the video or publish stage is still missing, treat the run as unfinished and brainstorm the smallest recoverable production step.
+- Do not add new content ideas during production triage. Keep the brainstorm limited to completion gaps.

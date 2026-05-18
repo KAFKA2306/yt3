@@ -377,7 +377,7 @@ prompts:
               "id": 1,
               "title": "セクションのタイトル",
               "key_points": ["話べきポイント1", "話すべきポイント2"],
-              "target_character_count": "目標文字数"
+              "target_character_count": 500
             }
           ]
         }

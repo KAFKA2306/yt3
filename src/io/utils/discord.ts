@@ -1,3 +1,10 @@
+/**
+ * Discord Notification Utility
+ *
+ * Roles:
+ * - Webhook: For logs, alerts, success notifications, and system monitoring.
+ * - Bot: For external interactions, commands, and interactive operations.
+ */
 import { AgentLogger } from "./logger.js";
 
 export type AlertType =
@@ -17,6 +24,9 @@ const COLORS = {
 	publish: 10181046, // Purple
 };
 
+/**
+ * Sends a notification via Discord Webhook.
+ */
 export async function sendAlert(
 	message: string,
 	type: AlertType = "info",
@@ -70,3 +80,14 @@ export async function sendAlert(
 		);
 	}
 }
+
+export const discord = {
+	info: (msg: string, details?: Record<string, unknown>) =>
+		sendAlert(msg, "info", details),
+	success: (msg: string, details?: Record<string, unknown>) =>
+		sendAlert(msg, "success", details),
+	warn: (msg: string, details?: Record<string, unknown>) =>
+		sendAlert(msg, "warn", details),
+	error: (msg: string, details?: Record<string, unknown>) =>
+		sendAlert(msg, "error", details),
+};

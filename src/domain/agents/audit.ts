@@ -218,6 +218,9 @@ export class AuditAgent extends BaseAgent {
 		// 5. OPERATIONAL AUDIT (Workflow & Publish Trace)
 		Object.assign(results, this.auditOperations(state, evidence));
 
+		// 5.1 SYSTEM HEALTH AUDIT (systemd services & Discord)
+		Object.assign(results, this.auditSystemHealth(state, evidence));
+
 		// 5.5 ADAPTIVE SURVIVABILITY AUDIT (Build, Runtime, State, Artifacts, Recovery, Observability, and ASK_USER)
 		Object.assign(
 			results,
@@ -1127,7 +1130,7 @@ export class AuditAgent extends BaseAgent {
 			let videoDuration = 0;
 			try {
 				const durationStr = execSync(
-					`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:noc Vikings=1 -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`,
+					`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`,
 					{ encoding: "utf-8" },
 				).trim();
 				videoDuration = Number.parseFloat(durationStr) || 0;
@@ -3292,5 +3295,63 @@ No markdown or raw tags, only valid JSON.`;
 				},
 			};
 		}
+	}
+
+	private auditSystemHealth(
+		state: AgentState,
+		evidence: Record<string, unknown>,
+	): Record<string, AuditCheck> {
+		const checks: Record<string, AuditCheck> = {};
+
+		// 1. systemd_services audit
+		const services = [
+			"yt3-automation.timer",
+			"yt3-aim.service",
+			"yt3-discord.service",
+			"yt3-asmr-autonomous.timer",
+		];
+		const serviceStatus: Record<string, string> = {};
+		let allActive = true;
+
+		for (const service of services) {
+			try {
+				const status = execSync(`systemctl --user is-active ${service}`, {
+					encoding: "utf8",
+				}).trim();
+				serviceStatus[service] = status;
+				if (status !== "active") {
+					allActive = false;
+				}
+			} catch (e) {
+				serviceStatus[service] = "inactive (or failed)";
+				allActive = false;
+			}
+		}
+
+		checks.systemd_services = {
+			name: "SYS-001: systemd Service Integrity",
+			description: "Checks if critical systemd services and timers are active.",
+			status: allActive ? "PASS" : "FAIL",
+			details: JSON.stringify(serviceStatus),
+			critical: false,
+			type: "DETERMINISTIC",
+		};
+		evidence.systemd_services = serviceStatus;
+
+		// 2. discord_connectivity audit
+		const hasWebhook = !!process.env.DISCORD_WEBHOOK_URL;
+		checks.discord_connectivity = {
+			name: "SYS-002: Discord Connectivity Check",
+			description: "Verifies DISCORD_WEBHOOK_URL environment variable.",
+			status: hasWebhook ? "PASS" : "FAIL",
+			details: hasWebhook
+				? "DISCORD_WEBHOOK_URL is configured."
+				: "DISCORD_WEBHOOK_URL is missing.",
+			critical: true,
+			type: "DETERMINISTIC",
+		};
+		evidence.discord_connectivity = { has_webhook: hasWebhook };
+
+		return checks;
 	}
 }

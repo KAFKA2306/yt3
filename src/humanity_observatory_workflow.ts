@@ -113,6 +113,11 @@ export async function runHumanityObservatoryWorkflow(
 			metadata: contentResults.metadata,
 		};
 		store.save("content", "output", contentResults);
+		fs.writeJsonSync(
+			path.join(store.runDir, "metadata.json"),
+			contentResults.metadata,
+			{ spaces: 2 },
+		);
 	}
 
 	// Generate Phase 2 Dynamics: strategy_genome, narrative_state, generation_state & attention_state
@@ -196,6 +201,9 @@ export async function runHumanityObservatoryWorkflow(
 	}
 
 	// 4. Humanity Quality Audit (Zero-Trust Humanity Audit)
+	state.generation_dynamics = dynamicsObj as GenerationDynamics;
+	store.updateState(state);
+
 	AgentLogger.info(
 		"SYSTEM",
 		"HUMANITY_OBSERVATORY",

@@ -250,16 +250,6 @@ export async function runSequentialWorkflow(
 	const publishResults = await publisher.run(state);
 	state = { ...state, publish_results: publishResults };
 
-	await sendAlert(
-		"✅ **Successfully Published** video to YouTube!",
-		"publish",
-		{
-			title: state.metadata?.title,
-			videoId: publishResults.youtube?.video_id || "N/A",
-			runId: state.run_id,
-		},
-	);
-
 	// Save publish/receipt.json
 	fs.writeJsonSync(
 		path.join(store.runDir, "publish", "receipt.json"),

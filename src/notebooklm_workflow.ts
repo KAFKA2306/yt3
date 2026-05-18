@@ -9,7 +9,10 @@ async function main() {
 	const notebookTitle = args[0] || `Notebook-${getRunIdDateString()}`;
 	const sourceUrl = args[1];
 
-	const runId = `nlm-${getRunIdDateString()}`;
+	let runId = process.env.RUN_ID || `nlm/${getRunIdDateString()}`;
+	if (!runId.includes("/")) {
+		runId = `nlm/${runId}`;
+	}
 	const store = new AssetStore(runId);
 	AgentLogger.init();
 
