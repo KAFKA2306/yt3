@@ -160,6 +160,10 @@ export async function runHumanityObservatoryWorkflow(
 			"MEDIA",
 			"Using cached video",
 		);
+		const mediaResults = store.load<MediaResult>("media", "output");
+		if (!mediaResults)
+			throw new Error("Failed to load cached humanity media results");
+		state = { ...state, ...mediaResults };
 	} else {
 		AgentLogger.info(
 			"SYSTEM",

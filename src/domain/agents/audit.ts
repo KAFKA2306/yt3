@@ -22,6 +22,7 @@ import type {
 } from "../types.js";
 import { compareVoiceMaps, getCanonicalVoiceMap } from "../voice_registry.js";
 import { MetaAuditLayer } from "./meta_audit_layer.js";
+import { ScriptIntegrityLinter } from "../../io/utils/qa/script_linter.js";
 
 const SemanticAuditResultSchema = z.object({
 	content_structure: z.object({
@@ -271,6 +272,11 @@ export class AuditAgent extends BaseAgent {
 			Object.assign(results, await this.auditBrandStyle(state, evidence));
 		}
 
+		// 5.14 SCRIPT INTEGRITY AUDIT (Discomfort Linter)
+		if (state.script) {
+			Object.assign(results, await this.auditScriptIntegrity(state, evidence));
+		}
+
 		// 6. TOPOLOGY (Job Relationship Evidence)
 		this.auditTopology(evidence);
 
@@ -373,7 +379,7 @@ export class AuditAgent extends BaseAgent {
 			status: "UNKNOWN", // Subjective: Cannot be deterministically verified
 			details:
 				"Brand impression requires human review or retention metrics. No deterministic drift detected.",
-			critical: false,
+			critical: true,
 			type: "BOUNDED_PROBABILISTIC",
 		};
 
@@ -383,7 +389,7 @@ export class AuditAgent extends BaseAgent {
 			description: "Ensures results end in 'Humanity is cute' space.",
 			status: "UNKNOWN", // Subjective: Cannot be deterministically verified
 			details: "Emotional landing requires pairwise ranking or human review.",
-			critical: false,
+			critical: true,
 			type: "BOUNDED_PROBABILISTIC",
 		};
 
@@ -486,7 +492,7 @@ export class AuditAgent extends BaseAgent {
 				description: "Verifies different speakers sound distinct.",
 				status: "INFRA_FAIL",
 				details: `Forensic audit failed: ${String(e)}`,
-				critical: false,
+				critical: true,
 				type: "BOUNDED_PROBABILISTIC",
 			};
 		}
@@ -564,7 +570,7 @@ export class AuditAgent extends BaseAgent {
 					"Audit for structural duplication or pattern locking in cadence or topic narrative strategies.",
 				status: "PASS",
 				details: `Parameter drift was detected, but Strategy Mutation Engine successfully triggered exploration. Strategy Mutation: "${strategyMutation}". Cadence Mutation: "${cadenceMutation}".`,
-				critical: false,
+				critical: true,
 				type: "DETERMINISTIC",
 			};
 		} else {
@@ -575,7 +581,7 @@ export class AuditAgent extends BaseAgent {
 				status: "PASS",
 				details:
 					"No significant parameter drift detected. Strategy variance remains healthy.",
-				critical: false,
+				critical: true,
 				type: "DETERMINISTIC",
 			};
 		}
@@ -589,7 +595,7 @@ export class AuditAgent extends BaseAgent {
 					"Verifies viewer fatigue does not exceed quality thresholds (fatigue <= 0.75).",
 				status: "QUALITY_FAIL",
 				details: `High viewer fatigue risk detected (${fatigue}). Entropy accumulation is critical due to lack of new information, predictable syntax or high cadence repetition.`,
-				critical: false,
+				critical: true,
 				type: "BOUNDED_PROBABILISTIC",
 			};
 		} else {
@@ -599,7 +605,7 @@ export class AuditAgent extends BaseAgent {
 					"Verifies viewer fatigue does not exceed quality thresholds (fatigue <= 0.75).",
 				status: "PASS",
 				details: `Viewer fatigue risk is within healthy bounds (${fatigue}).`,
-				critical: false,
+				critical: true,
 				type: "BOUNDED_PROBABILISTIC",
 			};
 		}
@@ -621,7 +627,7 @@ export class AuditAgent extends BaseAgent {
 					"Verifies state contains necessary dynamics for meta auditing.",
 				status: "QUALITY_FAIL",
 				details: "State generation_dynamics is not populated.",
-				critical: false,
+				critical: true,
 				type: "DETERMINISTIC",
 			};
 			return checks;
@@ -658,7 +664,7 @@ export class AuditAgent extends BaseAgent {
 					? "PASS"
 					: "QUALITY_FAIL",
 			details: `Fear narrative ratio is ${metaReport.strategy_convergence.fear_narrative_ratio}. Emotional path entropy: ${metaReport.strategy_convergence.emotional_path_entropy}. Hook diversity: ${metaReport.strategy_convergence.hook_pattern_diversity}.`,
-			critical: false,
+			critical: true,
 			type: "DETERMINISTIC",
 		};
 
@@ -673,7 +679,7 @@ export class AuditAgent extends BaseAgent {
 						? "PASS"
 						: "QUALITY_FAIL",
 			details: `Viewer predictability score is ${metaReport.attention_entropy.audience_predictability_score} (status: ${metaReport.attention_entropy.status}). Cadence repeat count: ${metaReport.attention_entropy.repeated_cadence_count}. Opening rhythm repeat count: ${metaReport.attention_entropy.repeated_opening_rhythm_count}.`,
-			critical: false,
+			critical: true,
 			type: "BOUNDED_PROBABILISTIC",
 		};
 
@@ -1859,7 +1865,7 @@ export class AuditAgent extends BaseAgent {
 			status: "ASK_USER",
 			details:
 				"Visual transitions, thumbnail, and VoiceVox speech must be reviewed manually.",
-			critical: false,
+			critical: true,
 			type: "DETERMINISTIC",
 		};
 
@@ -1870,7 +1876,7 @@ export class AuditAgent extends BaseAgent {
 			status: "ASK_USER",
 			details:
 				"Requires confirmation of public metadata and channel profiles before final publicizing.",
-			critical: false,
+			critical: true,
 			type: "DETERMINISTIC",
 		};
 
@@ -1881,7 +1887,7 @@ export class AuditAgent extends BaseAgent {
 			status: "ASK_USER",
 			details:
 				"Quota ledger shows current key usage levels. Check against financial constraints.",
-			critical: false,
+			critical: true,
 			type: "DETERMINISTIC",
 		};
 
@@ -3297,6 +3303,35 @@ No markdown or raw tags, only valid JSON.`;
 		}
 	}
 
+	private async auditScriptIntegrity(
+		state: AgentState,
+		evidence: Record<string, unknown>,
+	): Promise<Record<string, AuditCheck>> {
+		const linter = new ScriptIntegrityLinter();
+		const res = await linter.audit(state);
+		evidence.script_integrity = res;
+
+		const checks: Record<string, AuditCheck> = {};
+		for (const check of res.checks) {
+			const checkId = `script_${check.layer.toLowerCase()}`;
+			let status: AuditStatus = "UNKNOWN";
+			if (check.status === "OK") status = "PASS";
+			else if (check.status === "WARN") status = "QUALITY_FAIL";
+			else if (check.status === "FAIL") status = "FAIL";
+
+			checks[checkId] = {
+				name: `Integrity: ${check.layer} Discomfort`,
+				description: check.message,
+				status,
+				details: check.details ? check.details.join(", ") : check.message,
+				critical: check.status === "FAIL",
+				type: "DETERMINISTIC",
+			};
+		}
+
+		return checks;
+	}
+
 	private auditSystemHealth(
 		state: AgentState,
 		evidence: Record<string, unknown>,
@@ -3347,7 +3382,7 @@ No markdown or raw tags, only valid JSON.`;
 			details: hasWebhook
 				? "DISCORD_WEBHOOK_URL is configured."
 				: "DISCORD_WEBHOOK_URL is missing.",
-			critical: true,
+			critical: false,
 			type: "DETERMINISTIC",
 		};
 		evidence.discord_connectivity = { has_webhook: hasWebhook };

@@ -40,12 +40,7 @@ async function exists(filePath: string): Promise<boolean> {
 }
 
 async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
-	const runDir = path.join(
-		ROOT,
-		"runs",
-		channel,
-		today,
-	);
+	const runDir = path.join(ROOT, "runs", channel, today);
 
 	const researchCandidates =
 		channel === "daily_pulse"
@@ -71,9 +66,15 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 				]
 			: [path.join(runDir, "publish", "output.yaml")];
 
-	const research_done = await Promise.all(researchCandidates.map(exists)).then((items) => artifactExists(...items.map(String)) && items.some(Boolean));
-	const video_done = await Promise.all(videoCandidates.map(exists)).then((items) => artifactExists(...items.map(String)) && items.some(Boolean));
-	const publish_done = await Promise.all(publishCandidates.map(exists)).then((items) => artifactExists(...items.map(String)) && items.some(Boolean));
+	const research_done = await Promise.all(researchCandidates.map(exists)).then(
+		(items) => artifactExists(...items.map(String)) && items.some(Boolean),
+	);
+	const video_done = await Promise.all(videoCandidates.map(exists)).then(
+		(items) => artifactExists(...items.map(String)) && items.some(Boolean),
+	);
+	const publish_done = await Promise.all(publishCandidates.map(exists)).then(
+		(items) => artifactExists(...items.map(String)) && items.some(Boolean),
+	);
 
 	const missing: string[] = [];
 	if (!research_done) missing.push("research/web_search");
@@ -81,11 +82,20 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 	if (!publish_done) missing.push("publish");
 
 	const brainstorm: string[] = [];
-	if (!research_done) brainstorm.push("Gather today's raw facts and choose a fresh angle.");
-	if (!video_done) brainstorm.push("Check the latest script and media artifacts, then identify the smallest missing production step.");
-	if (!publish_done) brainstorm.push("Verify the publish receipt and the channel state before deciding the run is done.");
+	if (!research_done)
+		brainstorm.push("Gather today's raw facts and choose a fresh angle.");
+	if (!video_done)
+		brainstorm.push(
+			"Check the latest script and media artifacts, then identify the smallest missing production step.",
+		);
+	if (!publish_done)
+		brainstorm.push(
+			"Verify the publish receipt and the channel state before deciding the run is done.",
+		);
 	if (missing.length > 0) {
-		brainstorm.push("If the topic feels stale, pivot to a more concrete or more local angle instead of forcing the old one.");
+		brainstorm.push(
+			"If the topic feels stale, pivot to a more concrete or more local angle instead of forcing the old one.",
+		);
 	}
 
 	return {
@@ -141,8 +151,16 @@ async function main(): Promise<void> {
 	const markdown = formatReport(report);
 	const outputDir = path.join(ROOT, "logs");
 	await fs.mkdir(outputDir, { recursive: true });
-	await fs.writeFile(path.join(outputDir, "audit_today.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
-	await fs.writeFile(path.join(outputDir, "audit_today.md"), `${markdown}\n`, "utf8");
+	await fs.writeFile(
+		path.join(outputDir, "audit_today.json"),
+		`${JSON.stringify(report, null, 2)}\n`,
+		"utf8",
+	);
+	await fs.writeFile(
+		path.join(outputDir, "audit_today.md"),
+		`${markdown}\n`,
+		"utf8",
+	);
 
 	for (const item of report.reports) {
 		console.log(`[${item.channel}] ${item.run_dir}`);
