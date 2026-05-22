@@ -5,7 +5,13 @@ readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_dir="$(cd "${script_dir}/../../../../" && pwd)"
 
 # Ensure correct runtime paths
-export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+readonly repo_venv="${repo_dir}/.venv"
+
+# Force the workspace virtualenv so nested `uv`/`python` calls do not
+# accidentally pick up the root-owned parent repo venv.
+unset VIRTUAL_ENV PYTHONHOME PYTHONPATH
+export VIRTUAL_ENV="${repo_venv}"
+export PATH="${repo_venv}/bin:/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
 readonly bun_bin=$(which bun || echo "/home/kafka/.bun/bin/bun")
 
 # Load environment variables for Discord notifications from bash
@@ -20,7 +26,7 @@ readonly log_file="${daily_log_dir}/${today_date}.log"
 readonly latest_log="${repo_dir}/logs/latest.log"
 readonly status_file="${repo_dir}/data/state/last_run.json"
 readonly lock_file="${repo_dir}/logs/cron.lock"
-readonly uv_bin="${UV_BIN:-/root/.local/bin/uv}"
+readonly uv_bin="${UV_BIN:-$(command -v uv || echo /root/.local/bin/uv)}"
 
 mkdir -p "${log_dir}" "${daily_log_dir}"
 exec >>"${log_file}" 2>&1
