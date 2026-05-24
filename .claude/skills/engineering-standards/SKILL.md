@@ -25,9 +25,9 @@ Maintain implementation quality and operational reproducibility across all chann
 - Format: `bun run format`
 - Lint: `bun run lint`
 - Typecheck: `bun run typecheck`
-- Harness Doctor: `task harness:doctor`
+- Repo Checks: `bun run format && bun run lint && bun run typecheck`
 - Env Validation: `bun run src/io/utils/check_env.ts`
-- Service Status: `task status`
+- Service Status: `systemctl --user status yt3-aim.service yt3-discord.service yt3-automation.timer`
 
 ## Zero-Trust Audit Architecture Principles (Mandatory)
 
@@ -65,8 +65,7 @@ Maintain implementation quality and operational reproducibility across all chann
 2. Document architectural decisions in `/home/kafka/2511youtuber/v3/yt3/docs/adr/` before execution.
 3. Record compared alternative designs and selected plan in `/home/kafka/2511youtuber/v3/yt3/temp/plan.md`.
 4. Apply code changes, then run format, lint, and typecheck commands.
-5. Execute `task harness:doctor` and resolve all warnings.
-6. Verify Discord webhook setup and test notification channels via `task up` and `task status`.
+5. Execute the repo checks (`bun run format`, `bun run lint`, `bun run typecheck`) and resolve all warnings.
+6. Verify Discord webhook setup and test notification channels via `task up` and `systemctl --user status yt3-aim.service yt3-discord.service`.
 7. Terminate services with `task down` when finished.
 8. Resolve issues by modifying the code directly rather than altering hook settings.
-

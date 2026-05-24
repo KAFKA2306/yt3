@@ -27,7 +27,7 @@ For Yawa Archive ASMR, the objective is to preserve "録音されてしまった
 - Markdown Formatting: `bun run format`
 - Lint: `bun run lint`
 - Typecheck: `bun run typecheck`
-- Final Diagnosis: `task harness:doctor`
+- Final Diagnosis: `bun run format && bun run lint && bun run typecheck`
 
 ## Workflow
 
