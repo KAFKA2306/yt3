@@ -476,10 +476,13 @@ export class AuditAgent extends BaseAgent {
 		if (!fs.existsSync(manifestPath)) return {};
 
 		try {
-			const output = execSync(`"${pythonBin}" "${pythonScript}" "${manifestPath}"`, {
-				encoding: "utf-8",
-				env: cleanPythonEnv,
-			});
+			const output = execSync(
+				`"${pythonBin}" "${pythonScript}" "${manifestPath}"`,
+				{
+					encoding: "utf-8",
+					env: cleanPythonEnv,
+				},
+			);
 			const report = JSON.parse(output);
 			evidence.voice_forensic = report;
 
@@ -936,6 +939,25 @@ export class AuditAgent extends BaseAgent {
 			const cleaned = w.replace(/[乖離%]/g, "");
 			if (cleaned.length >= 2 && segments.intro.includes(cleaned)) {
 				return false;
+			}
+
+			// Soft matching / script boundary splitting (ADR-0034 / Thumbnail-Intro alignment)
+			const parts =
+				w.match(
+					/([A-Za-z0-9]+|[\u4e00-\u9faf]+|[\u30a0-\u30ffー]+|[\u3040-\u309f]+)/g,
+				) || [];
+			for (const part of parts) {
+				if (part.length >= 2 && segments.intro.includes(part)) {
+					return false;
+				}
+				if (part.length >= 4) {
+					for (let i = 0; i <= part.length - 2; i += 2) {
+						const slice = part.slice(i, i + 2);
+						if (slice.length >= 2 && segments.intro.includes(slice)) {
+							return false;
+						}
+					}
+				}
 			}
 			return true;
 		});
@@ -1608,7 +1630,10 @@ export class AuditAgent extends BaseAgent {
 
 		// 1. Build Verification - Compilation Check
 		try {
-			execSync("npx tsc --noEmit", { cwd: ROOT, stdio: "ignore" });
+			execSync("bun node_modules/typescript/bin/tsc --noEmit", {
+				cwd: ROOT,
+				stdio: "ignore",
+			});
 			checks.build_compilation = {
 				name: "Build: TypeScript Compilation",
 				description:
@@ -1634,7 +1659,7 @@ export class AuditAgent extends BaseAgent {
 		// 2. Build Verification - Linter Check
 		try {
 			execSync(
-				"bun biome check --formatter-enabled=true --linter-enabled=false src",
+				"bun node_modules/@biomejs/biome/bin/biome check --formatter-enabled=true --linter-enabled=false src",
 				{ cwd: ROOT, stdio: "ignore" },
 			);
 			checks.build_lint = {

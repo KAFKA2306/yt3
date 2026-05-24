@@ -5,19 +5,34 @@ readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_dir="$(cd "${script_dir}/../../../../" && pwd)"
 
 # Ensure correct runtime paths
-readonly repo_venv="${repo_dir}/.venv"
-
-# Force the workspace virtualenv so nested `uv`/`python` calls do not
-# accidentally pick up the root-owned parent repo venv.
-unset VIRTUAL_ENV PYTHONHOME PYTHONPATH
-export VIRTUAL_ENV="${repo_venv}"
-export PATH="${repo_venv}/bin:/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+export VIRTUAL_ENV="${repo_dir}/.venv"
+export PATH="${VIRTUAL_ENV}/bin:/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
 readonly bun_bin=$(which bun || echo "/home/kafka/.bun/bin/bun")
 
+# Determine environment file to use: priority: ENV_FILE > profile > config/.env.byosan
+ENV_FILE="${ENV_FILE:-}"
+if [ -z "${ENV_FILE}" ]; then
+  if [ -n "${YOUTUBE_CHANNEL_PROFILE:-}" ]; then
+    if [ "${YOUTUBE_CHANNEL_PROFILE}" = "byosan" ]; then
+      ENV_FILE="config/.env.byosan"
+    elif [ "${YOUTUBE_CHANNEL_PROFILE}" = "yawa" ]; then
+      ENV_FILE="config/.env.yawa"
+    elif [ "${YOUTUBE_CHANNEL_PROFILE}" = "humanity" ]; then
+      ENV_FILE="config/.env"
+    fi
+  fi
+fi
+
+if [ -z "${ENV_FILE}" ]; then
+  ENV_FILE="config/.env.byosan"
+fi
+
+readonly resolved_env="${repo_dir}/${ENV_FILE}"
+
 # Load environment variables for Discord notifications from bash
-if [ -f "${repo_dir}/config/.env" ]; then
+if [ -f "${resolved_env}" ]; then
   # Sourcing safely: ignoring comments and empty lines
-  export $(grep -v '^#' "${repo_dir}/config/.env" | xargs)
+  export $(grep -v '^#' "${resolved_env}" | xargs)
 fi
 readonly log_dir="${repo_dir}/data/state"
 readonly daily_log_dir="${repo_dir}/logs/daily"
@@ -195,7 +210,7 @@ ensure_voicevox_running || exit 1
 
 printf '[%s] INFO  starting workflow run (pid=%s)\n' "$(timestamp)" "$$"
 
-if (cd "${repo_dir}" && "${bun_bin}" --env-file=config/.env src/index.ts); then
+if (cd "${repo_dir}" && "${bun_bin}" --env-file="${ENV_FILE}" src/index.ts); then
   run_exit=0
   
   latest_run=$(ls -td "${repo_dir}/runs/"*/ | head -n 1 || echo "")
