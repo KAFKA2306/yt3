@@ -87,6 +87,7 @@ async function runStep(
 				audio_paths: res.audio_paths,
 				thumbnail_path: res.thumbnail_path,
 				video_path: res.video_path,
+				script: res.script,
 			};
 		},
 		audit: async () => {

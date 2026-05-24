@@ -6,19 +6,19 @@ Accepted
 ## コンテキスト
 yt3 では投稿先ごとに実行領域が分かれており、宛先を間違えると公開事故になる。
 
-必要なのは、`profile.id`、`profile.expected_bucket`、`profile.expected_channel_id` を exact match で照合する決定論的な経路制御である。
+必要なのは、`profile.id`、`profile.bucket`、`profile.expectedChannelId` を exact match で照合する決定論的な経路制御である。
 
 `title` と `handle` は観測情報として残すが、最終ゲートには使わない。`channelId` だけを hard gate とし、それ以外では publish を許可しない。
 
 ## 対応表
 
-| bucket | profile.id | channelId 主キー | 表示名 |
-| :--- | :--- | :--- | :--- |
-| `daily_pulse` | `byosan` | 必須 | 秒算マネー |
-| `yawa_archive` | `yawa` | 必須 | 夜話アーカイブ ASMR |
-| `humanity_observatory` | `humanity` | 必須 | 人類観測所 |
+| bucket | profile.id | channelId 主キー | 表示名 | handle |
+| :--- | :--- | :--- | :--- | :--- |
+| `daily_pulse` | `byosan` | `UCYtjO-PYBfdG3MuPLXfhA-Q` | 秒算マネー | `@byosan-money` |
+| `yawa_archive` | `yawa` | `UCtq3BVv6SBCFjtPiDoetizw` | 夜話アーカイブ ASMR | `@yawa_archive` |
+| `humanity_observatory` | `humanity` | `UCMDrWHL4Jc6gtmfoqaW7sxg` | 人類観測所 | `@humanity_observatory` |
 
-`byosan_money`、`yawa_archive_asmr`、`humanity_observatory` のような入力互換名は、あくまで入口の後方互換に限る。policy evaluation には使わない。
+profile 名は exact key のみを受け付ける。互換名や自然言語の「系」は使わない。
 
 ## 意思決定
 
@@ -28,18 +28,18 @@ yt3 では投稿先ごとに実行領域が分かれており、宛先を間違�
 - prefix rule、部分一致、`byosan 系` のような自然言語分類は policy から排除する。
 
 ### 2. チャンネル照合は channelId を最終ゲートにする
-- `src/domain/youtube_profiles.ts` は `expected_channel_title`、`expected_channel_handle`、`expected_channel_id` を必須解決する。
-- `src/domain/agents/publish.ts` は `state.bucket` と `profile.expected_bucket` を照合し、その後で `channelId` の一致を確認する。
+- `src/domain/youtube_profiles.ts` は profile registry に `expectedChannelTitle`、`expectedChannelHandle`、`expectedChannelId` を固定定義する。
+- `src/domain/agents/publish.ts` は `state.bucket` と `profile.bucket` を照合し、その後で `channelId` の一致を確認する。
 - `title` と `handle` は観測ログとして残すが、これらの一致だけでは publish を許可しない。
 
 ### 3. 未解決は必ず fail closed
-- `expected_bucket` が解決できない場合は publish 禁止。
-- `expected_channel_id` が解決できない場合は publish 禁止。
+- `profile.bucket` が解決できない場合は publish 禁止。
+- `profile.expectedChannelId` が解決できない場合は publish 禁止。
 - `ENV_FILE` と `profile.id` の組が未登録、または `Taskfile.yml` の publish entry が profile を明示していない場合も publish 禁止。
 - `WARN` 継続や暗黙の fallback は認めない。
 
 ### 4. run metadata を不変保存する
-- publish 直前に `run_id`、`bucket`、`profile.id`、`expected_bucket`、`expected_channel_id`、`channel_title`、`channel_handle`、`publish_intent` を保存する。
+- publish 直前に `run_id`、`bucket`、`profile.id`、`profile.bucket`、`profile.expectedChannelId`、`channel_title`、`channel_handle`、`publish_intent` を保存する。
 - 既存 run の再投稿でも、このメタデータを再照合してから publish する。
 
 ### 5. human confirmation boundary を明示する
@@ -50,11 +50,11 @@ yt3 では投稿先ごとに実行領域が分かれており、宛先を間違�
 
 以下は audit の対象とする。
 
-- `[FAIL] state.bucket と profile.expected_bucket が不一致`
-- `[FAIL] profile.expected_channel_id と認証先 channelId が不一致`
+- `[FAIL] state.bucket と profile.bucket が不一致`
+- `[FAIL] profile.expectedChannelId と認証先 channelId が不一致`
 - `[FAIL] ENV_FILE と profile.id の組が未登録`
 - `[FAIL] Taskfile publish entry が profile を明示していない`
-- `[FAIL] custom profile に expected_bucket / expected_channel_id がない`
+- `[FAIL] custom profile に bucket / expectedChannelId がない`
 - `[FAIL] run metadata に bucket / run_id / profile.id / channelId が保存されていない`
 - `[WARN] title / handle のみで一致判定している`
 

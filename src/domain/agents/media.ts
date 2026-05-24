@@ -60,7 +60,7 @@ export class VisualDirector extends BaseAgent {
 				synthesis: 60000,
 			},
 		});
-		this.layout = new LayoutEngine();
+		this.layout = new LayoutEngine(cfg);
 		this.validator = new IqaValidator(cfg);
 		this.videoComposer = new VideoComposer({
 			resolution: cfg.steps.video.resolution,
@@ -93,6 +93,7 @@ export class VisualDirector extends BaseAgent {
 		audio_paths: string[];
 		thumbnail_path: string;
 		video_path: string;
+		script?: Script;
 	}> {
 		AgentLogger.info(
 			this.name,
@@ -120,6 +121,12 @@ export class VisualDirector extends BaseAgent {
 		// 4. Subtitle and Plan Generation
 		const videoPlan = await this.layout.createVideoRenderPlan();
 		const durations = await this.getAudioDurations(audio_paths);
+		for (let i = 0; i < script.lines.length; i++) {
+			const line = script.lines[i];
+			if (line) {
+				line.duration = durations[i] || 0;
+			}
+		}
 		const subtitlePath = await this.generateSubtitles(
 			script,
 			durations,
@@ -163,6 +170,7 @@ export class VisualDirector extends BaseAgent {
 			audio_paths,
 			thumbnail_path: thumbnailPath,
 			video_path: videoPath,
+			script,
 		};
 	}
 
@@ -308,7 +316,7 @@ export class VisualDirector extends BaseAgent {
 		// Step 2: Normalize
 		await new Promise<void>((resolve, reject) => {
 			ffmpeg(tempMergedPath)
-				.audioFilters("loudnorm=I=-14:TP=-1.0:LRA=11")
+				.audioFilters("loudnorm=I=-14:TP=-3.0:LRA=11")
 				.on("error", reject)
 				.on("end", () => {
 					fs.removeSync(tempMergedPath);

@@ -25,12 +25,12 @@ async function main() {
 			? RUN_ID
 			: `humanity_observatory/${runId}`;
 	} else {
-		if (RUN_ID.includes("/") && !RUN_ID.startsWith("daily_pulse/")) {
+		if (RUN_ID.includes("/") && !RUN_ID.startsWith(`${BUCKET}/`)) {
 			throw new Error(
 				`Domain mismatch: BUCKET is ${BUCKET} but RUN_ID starts with a different prefix: ${RUN_ID}`,
 			);
 		}
-		runId = RUN_ID.startsWith("daily_pulse/") ? RUN_ID : `daily_pulse/${runId}`;
+		runId = RUN_ID.startsWith(`${BUCKET}/`) ? RUN_ID : `${BUCKET}/${runId}`;
 	}
 
 	const store = new AssetStore(runId);

@@ -3,7 +3,10 @@ import { config } from "dotenv";
 import { google } from "googleapis";
 
 async function main() {
-	const envFile = process.env.ENV_FILE || "config/.env";
+	const envFile = process.env.ENV_FILE?.trim();
+	if (!envFile) {
+		throw new Error("ENV_FILE is required for get_youtube_token");
+	}
 	config({ path: envFile });
 
 	const clientId = process.env.YOUTUBE_CLIENT_ID;
@@ -64,12 +67,7 @@ async function main() {
 				console.log(`Channel ID: ${channel.id}`);
 				console.log(`Channel Handle: ${channel.snippet?.customUrl ?? ""}`);
 				console.log("-------------------------\n");
-				console.log("Recommended settings for config/.env.yawa:");
-				console.log(`YOUTUBE_EXPECTED_CHANNEL_TITLE=${channel.snippet?.title}`);
-				console.log(
-					`YOUTUBE_EXPECTED_CHANNEL_HANDLE=${channel.snippet?.customUrl ?? ""}`,
-				);
-				console.log(`YOUTUBE_EXPECTED_CHANNEL_ID=${channel.id}`);
+				console.log("Save the refresh token to the matching profile env file.");
 			}
 		} catch (err) {
 			console.error("Error retrieving access token", err);

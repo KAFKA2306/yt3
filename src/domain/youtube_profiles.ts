@@ -17,41 +17,41 @@ export type YouTubeProfile = YouTubeProfileBase & {
 	expectedChannelId: string;
 };
 
-export const YOUTUBE_PROFILES: Record<YouTubeProfileName, YouTubeProfileBase> =
-	{
+export const YOUTUBE_PROFILES = {
 	byosan: {
 		profileName: "byosan",
 		bucket: "daily_pulse",
 		envFile: "config/.env.byosan",
 		tokenPath: "config/.cache/youtube/byosan.json",
+		expectedChannelTitle: "秒算マネー",
+		expectedChannelHandle: "@byosan-money",
+		expectedChannelId: "UCYtjO-PYBfdG3MuPLXfhA-Q",
 	},
 	yawa: {
 		profileName: "yawa",
 		bucket: "yawa_archive",
 		envFile: "config/.env.yawa",
 		tokenPath: "config/.cache/youtube/yawa.json",
+		expectedChannelTitle: "夜話アーカイブ ASMR",
+		expectedChannelHandle: "@yawa_archive",
+		expectedChannelId: "UCtq3BVv6SBCFjtPiDoetizw",
 	},
 	humanity: {
 		profileName: "humanity",
 		bucket: "humanity_observatory",
 		envFile: "config/.env",
 		tokenPath: "config/.cache/youtube/humanity.json",
+		expectedChannelTitle: "雨晴はうの人類観測所",
+		expectedChannelHandle: "@humanity_observatory",
+		expectedChannelId: "UCMDrWHL4Jc6gtmfoqaW7sxg",
 	},
-};
+} as const satisfies Record<YouTubeProfileName, YouTubeProfile>;
 
 export type YouTubeChannelIdentity = {
 	channelId: string;
 	title: string;
 	handle: string | null;
 };
-
-function resolveRequiredEnv(name: string): string {
-	const value = process.env[name]?.trim();
-	if (!value) {
-		throw new Error(`${name} is required for YouTube publish/profile safety`);
-	}
-	return value;
-}
 
 export function getYouTubeProfile(
 	profileName = process.env.YOUTUBE_CHANNEL_PROFILE,
@@ -62,14 +62,8 @@ export function getYouTubeProfile(
 		);
 	}
 
-	// Support backwards compatibility for legacy profile names
-	let normalizedName = profileName.trim();
-	if (normalizedName === "byosan_money") normalizedName = "byosan";
-	if (normalizedName === "yawa_archive_asmr") normalizedName = "yawa";
-	if (normalizedName === "humanity_observatory") normalizedName = "humanity";
-
-	const profile =
-		YOUTUBE_PROFILES[normalizedName as YouTubeProfileName] ?? null;
+	const normalizedName = profileName.trim() as YouTubeProfileName;
+	const profile = YOUTUBE_PROFILES[normalizedName] ?? null;
 	if (!profile) {
 		throw new Error(
 			`Unknown YOUTUBE_CHANNEL_PROFILE '${profileName}'. Expected one of: ${Object.keys(
@@ -78,21 +72,7 @@ export function getYouTubeProfile(
 		);
 	}
 
-	const expectedChannelHandle = normalizeChannelHandle(
-		resolveRequiredEnv("YOUTUBE_EXPECTED_CHANNEL_HANDLE"),
-	);
-	if (!expectedChannelHandle) {
-		throw new Error(
-			"YOUTUBE_EXPECTED_CHANNEL_HANDLE is required for YouTube publish/profile safety",
-		);
-	}
-
-	return {
-		...profile,
-		expectedChannelTitle: resolveRequiredEnv("YOUTUBE_EXPECTED_CHANNEL_TITLE"),
-		expectedChannelHandle,
-		expectedChannelId: resolveRequiredEnv("YOUTUBE_EXPECTED_CHANNEL_ID"),
-	};
+	return profile;
 }
 
 export function assertProfileEnvFile(
@@ -169,13 +149,16 @@ export async function fetchCurrentChannelIdentity(
 	if (!channel) {
 		throw new Error("Unable to resolve the authenticated YouTube channel");
 	}
+	if (!channel.id) {
+		throw new Error("YouTube channel ID is missing");
+	}
 	const title = channel.snippet?.title ?? null;
 	if (!title) {
 		throw new Error("YouTube channel title is missing");
 	}
 
 	return {
-		channelId: channel.id ?? "",
+		channelId: channel.id,
 		title,
 		handle: normalizeChannelHandle(channel.snippet?.customUrl ?? null),
 	};
@@ -189,19 +172,19 @@ export async function assertYouTubeChannelMatchesProfile(
 
 	if (actual.title !== profile.expectedChannelTitle) {
 		console.warn(
-			`[WARNING: CHANNEL MISMATCH] Expected title '${profile.expectedChannelTitle}' but got '${actual.title}'`
+			`[WARNING: CHANNEL MISMATCH] Expected title '${profile.expectedChannelTitle}' but got '${actual.title}'`,
 		);
 	}
 
 	if (actual.channelId !== profile.expectedChannelId) {
 		throw new Error(
-			`Channel mismatch: expected channelId '${profile.expectedChannelId}' but got '${actual.channelId || "null"}'`
+			`Channel mismatch: expected channelId '${profile.expectedChannelId}' but got '${actual.channelId || "null"}'`,
 		);
 	}
 
 	if (actual.handle !== profile.expectedChannelHandle) {
 		console.warn(
-			`[WARNING: CHANNEL MISMATCH] Expected handle '${profile.expectedChannelHandle}' but got '${actual.handle ?? "null"}'`
+			`[WARNING: CHANNEL MISMATCH] Expected handle '${profile.expectedChannelHandle}' but got '${actual.handle ?? "null"}'`,
 		);
 	}
 

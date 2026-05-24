@@ -20,22 +20,25 @@ function resolveRunId(arg?: string): string {
 			domainId = "humanity_observatory";
 		} else if (bucket === "yawa_archive") {
 			domainId = "yawa_archive";
-		} else if (bucket === "byosan_money" || bucket === "daily_pulse") {
+		} else if (bucket === "daily_pulse") {
 			domainId = "daily_pulse";
 		}
 	} else {
 		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
 		if (profileName) {
-			const norm = profileName.toLowerCase();
-			if (norm.includes("yawa")) {
+			if (profileName === "yawa") {
 				domainId = "yawa_archive";
-			} else if (norm.includes("humanity")) {
+			} else if (profileName === "humanity") {
 				domainId = "humanity_observatory";
+			} else if (profileName === "byosan") {
+				domainId = "daily_pulse";
 			}
-		} else if (process.env.ENV_FILE?.includes("yawa")) {
+		} else if (process.env.ENV_FILE === "config/.env.yawa") {
 			domainId = "yawa_archive";
-		} else if (process.env.ENV_FILE?.includes("humanity")) {
+		} else if (process.env.ENV_FILE === "config/.env") {
 			domainId = "humanity_observatory";
+		} else if (process.env.ENV_FILE === "config/.env.byosan") {
+			domainId = "daily_pulse";
 		}
 	}
 

@@ -90,9 +90,13 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 			const report = JSON.parse(await fs.readFile(auditReportPath, "utf-8"));
 			audit_passed = report.decision === "PASS";
 			if (report.checks) {
-				for (const check of Object.values(report.checks) as any[]) {
+				for (const check of Object.values(report.checks) as Array<{
+					status: string;
+					name: string;
+					details?: string;
+				}>) {
 					if (check.status !== "PASS" && check.name.includes("Discomfort")) {
-						discomfort_warnings.push(`${check.name}: ${check.details}`);
+						discomfort_warnings.push(`${check.name}: ${check.details || ""}`);
 					}
 				}
 			}
@@ -114,7 +118,9 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 			"Check the latest script and media artifacts, then identify the smallest missing production step.",
 		);
 	if (discomfort_warnings.length > 0) {
-		brainstorm.push("Address the discomfort warnings in the script template/prompt.");
+		brainstorm.push(
+			"Address the discomfort warnings in the script template/prompt.",
+		);
 	}
 	if (!publish_done && video_done)
 		brainstorm.push(
@@ -144,12 +150,20 @@ function formatReport(report: AuditTodayReport): string {
 	lines.push(`# Audit Today ${report.today}`);
 	for (const item of report.reports) {
 		lines.push("");
-		lines.push(`## [${item.channel === "daily_pulse" ? "秒算マネー" : "人類観測所"}]`);
+		lines.push(
+			`## [${item.channel === "daily_pulse" ? "秒算マネー" : "人類観測所"}]`,
+		);
 		lines.push(`- **Run Dir**: \`${item.run_dir}\``);
-		lines.push(`- **Research**: ${item.research_done ? "✅ DONE" : "❌ MISSING"}`);
+		lines.push(
+			`- **Research**: ${item.research_done ? "✅ DONE" : "❌ MISSING"}`,
+		);
 		lines.push(`- **Video**: ${item.video_done ? "✅ DONE" : "❌ MISSING"}`);
-		lines.push(`- **Publish**: ${item.publish_done ? "✅ DONE" : "❌ MISSING"}`);
-		lines.push(`- **Audit**: ${item.audit_passed ? "✅ PASS" : "⚠️ BLOCKED/FAIL"}`);
+		lines.push(
+			`- **Publish**: ${item.publish_done ? "✅ DONE" : "❌ MISSING"}`,
+		);
+		lines.push(
+			`- **Audit**: ${item.audit_passed ? "✅ PASS" : "⚠️ BLOCKED/FAIL"}`,
+		);
 
 		if (item.discomfort_warnings.length > 0) {
 			lines.push("### ⚠️ Discomfort Detected");

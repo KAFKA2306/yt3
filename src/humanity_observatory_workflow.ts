@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { AuditAgent } from "./domain/agents/audit.js";
 import { ScriptSmith } from "./domain/agents/content.js";
-import { VisualDirector } from "./domain/agents/media.js";
+import { type MediaResult, VisualDirector } from "./domain/agents/media.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
 import { DynamicsOrchestrator } from "./domain/evolution/dynamics_orchestrator.js";
@@ -164,6 +164,26 @@ export async function runHumanityObservatoryWorkflow(
 		if (!mediaResults)
 			throw new Error("Failed to load cached humanity media results");
 		state = { ...state, ...mediaResults };
+
+		// Map computed durations to cached script lines to satisfy Quality Audit requirements
+		if (state.script && mediaResults.audio_paths) {
+			const { execSync } = require("node:child_process");
+			for (let i = 0; i < state.script.lines.length; i++) {
+				const line = state.script.lines[i];
+				const audioPath = mediaResults.audio_paths[i];
+				if (line && audioPath && fs.existsSync(audioPath)) {
+					try {
+						const durationStr = execSync(
+							`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`,
+							{ encoding: "utf-8" },
+						).trim();
+						line.duration = Number.parseFloat(durationStr) || 0;
+					} catch {
+						line.duration = 0;
+					}
+				}
+			}
+		}
 	} else {
 		AgentLogger.info(
 			"SYSTEM",

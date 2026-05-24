@@ -180,6 +180,26 @@ export async function runSequentialWorkflow(
 		const mediaResults = store.load<MediaResult>("media", "output");
 		if (!mediaResults) throw new Error("Failed to load cached media results");
 		state = { ...state, ...mediaResults };
+
+		// Map computed durations to cached script lines to satisfy Quality Audit requirements
+		if (state.script && mediaResults.audio_paths) {
+			const { execSync } = require("node:child_process");
+			for (let i = 0; i < state.script.lines.length; i++) {
+				const line = state.script.lines[i];
+				const audioPath = mediaResults.audio_paths[i];
+				if (line && audioPath && fs.existsSync(audioPath)) {
+					try {
+						const durationStr = execSync(
+							`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`,
+							{ encoding: "utf-8" },
+						).trim();
+						line.duration = Number.parseFloat(durationStr) || 0;
+					} catch {
+						line.duration = 0;
+					}
+				}
+			}
+		}
 	} else {
 		AgentLogger.info(
 			"SYSTEM",
@@ -200,7 +220,25 @@ export async function runSequentialWorkflow(
 
 	// 4. Audit (Strict Zero-Trust Quality Gate)
 	// Inject current dynamics into AgentState so AuditAgent can inspect it!
-	state.generation_dynamics = dynamicsObj as GenerationDynamics;
+	state.generation_dynamics = dynOrch.calculateEvolution(
+		dynamicsObj.world_state as NonNullable<typeof dynamicsObj.world_state>,
+		dynamicsObj.selection_state as NonNullable<
+			typeof dynamicsObj.selection_state
+		>,
+		dynamicsObj.strategy_genome as NonNullable<
+			typeof dynamicsObj.strategy_genome
+		>,
+		dynamicsObj.narrative_state as NonNullable<
+			typeof dynamicsObj.narrative_state
+		>,
+		dynamicsObj.generation_state as NonNullable<
+			typeof dynamicsObj.generation_state
+		>,
+		dynamicsObj.attention_state as NonNullable<
+			typeof dynamicsObj.attention_state
+		>,
+		undefined,
+	);
 	store.updateState(state);
 
 	AgentLogger.info("SYSTEM", "WORKFLOW", "STEP", "Starting Quality Audit...");

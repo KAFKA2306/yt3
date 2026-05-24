@@ -12,8 +12,8 @@ export class LayoutEngine {
 	thumbRes: Size;
 	thumbRenderer: ThumbnailRenderer;
 
-	constructor() {
-		this.config = loadConfig();
+	constructor(config?: AppConfig) {
+		this.config = config || loadConfig();
 		this.thumbRenderer = new ThumbnailRenderer(this.config);
 		const parseRes = (s: string) => s.split("x").map(Number);
 		const v = parseRes(this.config.steps.video.resolution || "1920x1080");

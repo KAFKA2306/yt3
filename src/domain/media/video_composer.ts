@@ -75,6 +75,10 @@ export class VideoComposer {
 					codec,
 					"-pix_fmt",
 					"yuv420p",
+					"-c:a",
+					"aac",
+					"-b:a",
+					"192k",
 				])
 				.save(outputPath)
 				.on("end", () => resolve())

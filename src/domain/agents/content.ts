@@ -63,7 +63,14 @@ export class ScriptSmith extends BaseAgent {
 			: "";
 
 		const fullContext = newsContext + insightContext;
-		const channelType = director.channel_type || "default";
+		let channelType = director.channel_type || "default";
+		if (channelType === "default" || !channelType) {
+			if (this.store.runDir.includes("humanity_observatory")) {
+				channelType = "humanity_observatory";
+			} else if (this.store.runDir.includes("yawa_archive")) {
+				channelType = "yawa_archive";
+			}
+		}
 
 		const outline = await this.generateOutline(
 			director.angle,
@@ -160,11 +167,18 @@ export class ScriptSmith extends BaseAgent {
 			(text) => parseLlmJson(text, ContentSegmentSchema),
 		);
 
-		return res.lines.map((l) => ({
-			speaker: l.speaker,
-			text: l.text,
-			duration: 0,
-		}));
+		const processedLines: ScriptLine[] = [];
+		for (const l of res.lines) {
+			const textChunks = splitLongText(l.text, 120);
+			for (const chunk of textChunks) {
+				processedLines.push({
+					speaker: l.speaker,
+					text: chunk,
+					duration: 0,
+				});
+			}
+		}
+		return processedLines;
 	}
 
 	private async generateMetadata(
@@ -186,4 +200,43 @@ export class ScriptSmith extends BaseAgent {
 			(text) => parseLlmJson(text, MetadataSchema),
 		);
 	}
+}
+
+function splitLongText(text: string, maxLength = 120): string[] {
+	if (text.length <= maxLength) return [text];
+
+	const sentences = text.split(/(?<=[。！？\n])/g);
+	const chunks: string[] = [];
+	let currentChunk = "";
+
+	for (const sentence of sentences) {
+		if (!sentence.trim()) continue;
+		if ((currentChunk + sentence).length <= maxLength) {
+			currentChunk += sentence;
+		} else {
+			if (currentChunk) {
+				chunks.push(currentChunk.trim());
+			}
+			if (sentence.length > maxLength) {
+				let subSentence = sentence;
+				while (subSentence.length > maxLength) {
+					let splitIdx = subSentence.slice(0, maxLength).lastIndexOf("、");
+					if (splitIdx === -1) {
+						splitIdx = maxLength;
+					} else {
+						splitIdx += 1;
+					}
+					chunks.push(subSentence.slice(0, splitIdx).trim());
+					subSentence = subSentence.slice(splitIdx);
+				}
+				currentChunk = subSentence;
+			} else {
+				currentChunk = sentence;
+			}
+		}
+	}
+	if (currentChunk) {
+		chunks.push(currentChunk.trim());
+	}
+	return chunks;
 }

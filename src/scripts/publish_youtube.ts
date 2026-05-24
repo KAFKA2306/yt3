@@ -9,11 +9,14 @@ import {
 	hydrateOAuthCredentials,
 } from "../domain/youtube_profiles.js";
 
-const envFilePath = process.env.ENV_FILE
-	? path.isAbsolute(process.env.ENV_FILE)
-		? process.env.ENV_FILE
-		: path.join(process.cwd(), process.env.ENV_FILE)
-	: path.join(process.cwd(), "config/.env");
+const envFile = process.env.ENV_FILE?.trim();
+if (!envFile) {
+	throw new Error("ENV_FILE is required for YouTube publish");
+}
+
+const envFilePath = path.isAbsolute(envFile)
+	? envFile
+	: path.join(process.cwd(), envFile);
 
 dotenv.config({ path: envFilePath, override: true });
 
@@ -53,12 +56,7 @@ async function main() {
 	await new Promise<void>((resolve, reject) => {
 		const child = spawn(
 			"bun",
-			[
-				`--env-file=${process.env.ENV_FILE || ""}`,
-				"src/step.ts",
-				"publish",
-				runId,
-			],
+			[`--env-file=${envFile}`, "src/step.ts", "publish", runId],
 			{
 				cwd: process.cwd(),
 				env: process.env,

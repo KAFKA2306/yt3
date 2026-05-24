@@ -27,7 +27,7 @@ async function main() {
     const refreshToken = getEnv("YOUTUBE_REFRESH_TOKEN");
     const clientId = getEnv("YOUTUBE_CLIENT_ID");
     const clientSecret = getEnv("YOUTUBE_CLIENT_SECRET");
-    const expectedTitle = getEnv("YOUTUBE_EXPECTED_CHANNEL_TITLE") || "夜話アーカイブ ASMR";
+    const expectedTitle = "夜話アーカイブ ASMR";
 
     console.log(`Debug: Using Token starting with ${refreshToken?.substring(0, 10)}`);
 

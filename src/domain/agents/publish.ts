@@ -9,7 +9,6 @@ import {
 	assertYouTubeChannelMatchesProfile,
 	getYouTubeProfile,
 	hydrateOAuthCredentials,
-	resolveYouTubeRedirectUri,
 } from "../youtube_profiles.js";
 export class PublishAgent extends BaseAgent {
 	constructor(store: AssetStore) {
@@ -33,7 +32,7 @@ export class PublishAgent extends BaseAgent {
 				profileName === "config/.env"
 			) {
 				throw new Error(
-					"YouTube publish requires an explicit channel profile (set YOUTUBE_CHANNEL_PROFILE to byosan_money or yawa_archive_asmr)",
+					"YouTube publish requires an explicit channel profile (set YOUTUBE_CHANNEL_PROFILE to byosan, yawa, or humanity)",
 				);
 			}
 
@@ -48,7 +47,7 @@ export class PublishAgent extends BaseAgent {
 			results.youtube = await this.uploadToYouTube(state, this.config);
 			if (results.youtube?.status === "uploaded") {
 				const videoId = results.youtube.video_id;
-				const channelTitle = results.youtube.channel_title || "YouTube Channel";
+				const channelTitle = results.youtube.channel_title;
 				const videoUrl = videoId
 					? `https://www.youtube.com/watch?v=${videoId}`
 					: "N/A";
@@ -94,11 +93,12 @@ export class PublishAgent extends BaseAgent {
 			);
 		}
 
-		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
-		const expectedBucket = this.resolveExpectedBucket(profileName);
-		if (expectedBucket && state.bucket !== expectedBucket) {
+		const profile = getYouTubeProfile(
+			process.env.YOUTUBE_CHANNEL_PROFILE?.trim(),
+		);
+		if (state.bucket !== profile.bucket) {
 			throw new Error(
-				`YouTube publish blocked: run bucket '${state.bucket}' does not match profile bucket '${expectedBucket}' for '${profileName || "unknown"}'`,
+				`YouTube publish blocked: run bucket '${state.bucket}' does not match profile bucket '${profile.bucket}' for '${profile.profileName}'`,
 			);
 		}
 
@@ -106,7 +106,7 @@ export class PublishAgent extends BaseAgent {
 			`[PUBLISH:CONFIG] visibility=${ytCfg.default_visibility} source=config/default.yaml`,
 		);
 		console.log(
-			`[PUBLISH:DESTINATION] bucket=${state.bucket} expected_bucket=${expectedBucket || "unresolved"} profile=${profileName || "unknown"}`,
+			`[PUBLISH:DESTINATION] bucket=${state.bucket} expected_bucket=${profile.bucket} profile=${profile.profileName}`,
 		);
 
 		const auth = await this.createYouTubeClient();
@@ -125,8 +125,20 @@ export class PublishAgent extends BaseAgent {
 		const videoId = res.data.id;
 		const snippet = res.data.snippet;
 		const status = res.data.status;
+		if (!videoId) {
+			throw new Error("YouTube upload response is missing video id");
+		}
+		if (!snippet?.channelId) {
+			throw new Error("YouTube upload response is missing channelId");
+		}
+		if (!snippet.channelTitle) {
+			throw new Error("YouTube upload response is missing channelTitle");
+		}
+		if (!status?.privacyStatus) {
+			throw new Error("YouTube upload response is missing privacyStatus");
+		}
 
-		if (videoId && thumbnailPath) {
+		if (thumbnailPath) {
 			try {
 				await this.setYouTubeThumbnail(youtube, videoId, thumbnailPath);
 			} catch (error) {
@@ -137,19 +149,12 @@ export class PublishAgent extends BaseAgent {
 		}
 		return {
 			status: "uploaded",
-			video_id: videoId || "",
-			channel_id: snippet?.channelId || "",
-			channel_title: snippet?.channelTitle || "",
-			privacy_status: status?.privacyStatus || "",
-			published_at: snippet?.publishedAt || "",
+			video_id: videoId,
+			channel_id: snippet.channelId,
+			channel_title: snippet.channelTitle,
+			privacy_status: status.privacyStatus,
+			published_at: snippet.publishedAt ?? "",
 		};
-	}
-	private resolveExpectedBucket(profileName?: string): string | null {
-		if (!profileName) {
-			return process.env.YOUTUBE_EXPECTED_BUCKET?.trim() || null;
-		}
-
-		return getYouTubeProfile(profileName).bucket;
 	}
 	private createYouTubeSnippet(
 		state: AgentState,
@@ -198,10 +203,14 @@ export class PublishAgent extends BaseAgent {
 			redirectUri,
 		});
 
-		const profileName =
-			process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "unknown";
+		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+		if (!profileName) {
+			throw new Error(
+				"YouTube client initialization requires YOUTUBE_CHANNEL_PROFILE",
+			);
+		}
 
-		if (profileName === "humanity" || profileName === "humanity_observatory") {
+		if (profileName === "humanity") {
 			const profile = getYouTubeProfile(profileName);
 			await hydrateOAuthCredentials(client, profile);
 		} else {

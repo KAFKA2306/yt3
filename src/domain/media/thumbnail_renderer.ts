@@ -114,12 +114,29 @@ export class ThumbnailRenderer {
 		cfg: AppConfig["steps"]["thumbnail"],
 		pal: Palette,
 	): string {
-		const lines = title.split("\n").filter((l) => l.trim());
-		for (const line of lines) {
-			if (line.length > 12) {
-				throw new Error(
-					`Thumbnail line too long: "${line}" (${line.length} chars). Max 12 chars allowed to prevent character overlap.`,
-				);
+		const originalLines = title.split("\n").filter((l) => l.trim());
+		const lines: string[] = [];
+		for (const line of originalLines) {
+			if (line.length <= 12) {
+				lines.push(line);
+			} else {
+				// Try to split by common Japanese/English punctuation first, then by length
+				const parts = line.split(/(?<=[、。，．,.\s])/);
+				let current = "";
+				for (const part of parts) {
+					if ((current + part).length <= 12) {
+						current += part;
+					} else {
+						if (current) lines.push(current);
+						current = part;
+						// If a single part is still > 12 characters, split it forcefully
+						while (current.length > 12) {
+							lines.push(current.slice(0, 12));
+							current = current.slice(12);
+						}
+					}
+				}
+				if (current) lines.push(current);
 			}
 		}
 

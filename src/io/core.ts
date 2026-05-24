@@ -127,6 +127,10 @@ export class AssetStore {
 		let state: Partial<AgentState> = {};
 		const stateJson = path.join(this.runDir, this.cfg.workflow.filenames.state);
 		if (fs.existsSync(stateJson)) state = fs.readJsonSync(stateJson);
+
+		const originalScriptLines =
+			state.script?.lines?.map((l) => ({ ...l })) || [];
+
 		const stages = [
 			RunStage.RESEARCH,
 			RunStage.CONTENT,
@@ -142,6 +146,18 @@ export class AssetStore {
 			if (fs.existsSync(outputPath))
 				Object.assign(state, yaml.load(fs.readFileSync(outputPath, "utf-8")));
 		}
+
+		const scriptLines = state.script?.lines;
+		if (scriptLines && originalScriptLines.length === scriptLines.length) {
+			for (let i = 0; i < scriptLines.length; i++) {
+				const line = scriptLines[i];
+				const origLine = originalScriptLines[i];
+				if (line && origLine && line.duration === 0 && origLine.duration > 0) {
+					line.duration = origLine.duration;
+				}
+			}
+		}
+
 		return state;
 	}
 	updateState(patches: Partial<AgentState>) {
@@ -228,7 +244,11 @@ export abstract class BaseAgent {
 				? `\n\n[ACE Intelligence - Strategic Instructions]\n${bullets.map((b) => `- ${b.content} (ID: ${b.id})`).join("\n")}`
 				: "";
 
-		if (process.env.SKIP_LLM === "true") {
+		if (
+			process.env.SKIP_LLM === "true" &&
+			this.name !== "audit" &&
+			this.name !== "auditor"
+		) {
 			const prev = this.store.load<unknown>(this.name, "output");
 			if (prev) return prev as T;
 			throw new Error("No previous data for LLM bypass");
@@ -248,13 +268,46 @@ export abstract class BaseAgent {
 			"LLM_INVOKE",
 			`Invoking LLM with prompt: ${userPrompt.slice(0, 500)}...`,
 		);
-		const res = await llm.invoke(
-			[
-				{ role: "system", content: finalSystemPrompt },
-				{ role: "user", content: userPrompt },
-			],
-			callOpts as Record<string, unknown>,
-		);
+
+		let res: { content: unknown; response_metadata: unknown } | null = null;
+		let attempts = 0;
+		const maxAttempts = 5;
+		while (attempts < maxAttempts) {
+			try {
+				res = await llm.invoke(
+					[
+						{ role: "system", content: finalSystemPrompt },
+						{ role: "user", content: userPrompt },
+					],
+					callOpts as Record<string, unknown>,
+				);
+				break;
+			} catch (err: unknown) {
+				attempts++;
+				const errMsg = err instanceof Error ? err.message : String(err);
+				if (
+					errMsg.includes("429") ||
+					errMsg.toLowerCase().includes("quota") ||
+					errMsg.toLowerCase().includes("rate limit")
+				) {
+					Logger.warn(
+						"SYSTEM",
+						"CORE",
+						"LLM_RATE_LIMIT",
+						`Rate limit (429) hit. Attempt ${attempts}/${maxAttempts}. Sleeping 10s... Error: ${errMsg.slice(0, 150)}`,
+					);
+					await new Promise((resolve) => setTimeout(resolve, 10000));
+				} else {
+					throw err;
+				}
+			}
+		}
+
+		if (!res) {
+			throw new Error(
+				`CRITICAL: LLM invocation failed after ${maxAttempts} attempts due to rate limit/quota exhaustion.`,
+			);
+		}
 
 		const metadata = res.response_metadata as Record<string, unknown>;
 		if (keyName) {
@@ -269,11 +322,14 @@ export abstract class BaseAgent {
 			content = res.content;
 		} else if (Array.isArray(res.content)) {
 			content = res.content
-				.map((c) =>
+				.map((c: unknown) =>
 					typeof c === "string"
 						? c
-						: "text" in c && typeof c.text === "string"
-							? c.text
+						: c &&
+								typeof c === "object" &&
+								"text" in c &&
+								typeof (c as { text: unknown }).text === "string"
+							? (c as { text: string }).text
 							: "",
 				)
 				.join("");
@@ -384,8 +440,20 @@ function repairJson(text: string): string {
 
 export function parseLlmJson<T>(text: string, schema?: z.ZodSchema<T>): T {
 	const repaired = repairJson(text);
-	const json = JSON.parse(repaired);
-	return schema ? schema.parse(json) : (json as T);
+	try {
+		const json = JSON.parse(repaired);
+		return schema ? schema.parse(json) : (json as T);
+	} catch (err) {
+		Logger.error(
+			"SYSTEM",
+			"CORE",
+			"PARSE_FAIL",
+			`Failed to parse JSON. Error: ${err instanceof Error ? err.message : String(err)}`,
+		);
+		Logger.error("SYSTEM", "CORE", "PARSE_FAIL", `Original Text:\n${text}`);
+		Logger.error("SYSTEM", "CORE", "PARSE_FAIL", `Repaired Text:\n${repaired}`);
+		throw err;
+	}
 }
 export async function runMcpTool(
 	serverName: string,

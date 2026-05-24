@@ -32,30 +32,20 @@ export class DexterJPAgent extends BaseAgent {
 
 		const userPrompt = `Analyze this financial research theme: "${query}". Provide key financial findings for relevant Japanese companies including EDINET metrics and J-Quants data points.`;
 
-		try {
-			const findings = await this.runLlm<FinancialFinding[]>(
-				systemPrompt,
-				userPrompt,
-				(t) => parseLlmJson(t, DexterResponseSchema),
-			);
+		const findings = await this.runLlm<FinancialFinding[]>(
+			systemPrompt,
+			userPrompt,
+			(t) => parseLlmJson(t, DexterResponseSchema),
+		);
 
-			AgentLogger.info(
-				this.name,
-				"ANALYSIS",
-				"SUCCESS",
-				`Generated ${findings.length} financial findings`,
-			);
+		AgentLogger.info(
+			this.name,
+			"ANALYSIS",
+			"SUCCESS",
+			`Generated ${findings.length} financial findings`,
+		);
 
-			this.logOutput({ findings_count: findings.length });
-			return findings.slice(0, limit);
-		} catch (error) {
-			AgentLogger.warn(
-				this.name,
-				"ANALYSIS",
-				"ERROR",
-				`Financial analysis failed: ${error}`,
-			);
-			return [];
-		}
+		this.logOutput({ findings_count: findings.length });
+		return findings.slice(0, limit);
 	}
 }

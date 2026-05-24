@@ -37,6 +37,28 @@ Maintain implementation quality and operational reproducibility across all chann
 4. **Boundary Isolation**: Ensure complete segregation between Byousan Money, Yawa Archive, and Humanity Observatory. Verify speaker roles, config files, and publishing channels to prevent cross-domain contamination.
 5. **Runtime & Artifact-Centric Auditing**: Do not assume code works because it exists. Always verify at runtime (e.g., execute subprocesses, decode mp4/wav with ffmpeg, perform automated speech recognition) and inspect actual generated artifacts.
 
+## Preflight Destructive Command Harness (Mandatory)
+
+1. **Direct Destructive Commands Forbidden**: Do NOT run destructive commands directly in the shell. Destructive commands include:
+   - `git clean`
+   - `git restore`
+   - `git reset`
+   - `rm`
+   - `mv`
+   - `checkout`
+   - Any command overwriting `db/prompts.json`
+   - Any command deleting files under `artifacts/`
+
+2. **Execute Harness First**: Before executing any command matching the patterns above, you MUST run the safety harness script `./scripts/guard_destructive.sh`.
+3. **Use Safe Git Clean**: Never run `git clean -fd` directly. You must run `./scripts/safe_git_clean.sh` to perform a dry-run check.
+4. **Zero Reasoning Exemption**: You are not allowed to claim safety through verbal reasoning or LLM self-report. A "PASS" status is valid only if produced via the script's exit code `0`. If the script exits with code `1`, you must report the evidence path and file list, and immediately stop execution (Fail Loudly).
+5. **Agent Contract**:
+   - Destructive command must be wrapped.
+   - Evidence directory must exist before action.
+   - PASS/FAIL must be produced by script exit code.
+   - If FAIL, agent may only report evidence path and file list.
+   - Agent must not summarize deleted files as recoverable unless file exists on disk.
+
 ## Development Workflow
 
 1. Prior to any code change, verify required keys exist in `/home/kafka/2511youtuber/v3/yt3/config/.env`.
@@ -47,3 +69,4 @@ Maintain implementation quality and operational reproducibility across all chann
 6. Verify Discord webhook setup and test notification channels via `task up` and `task status`.
 7. Terminate services with `task down` when finished.
 8. Resolve issues by modifying the code directly rather than altering hook settings.
+

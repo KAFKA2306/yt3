@@ -271,8 +271,7 @@ Output strictly valid JSON. Do not include abstract praise.`;
 		const publishState = {
 			platform: "youtube",
 			visibility: publishResults?.youtube?.privacy_status || "private",
-			target_channel:
-				process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE || "秒算マネー",
+			target_channel: publishResults?.youtube?.channel_title ?? "",
 			title_length: publishResults?.youtube?.video_id ? 45 : 0,
 			description_length: publishResults?.youtube?.video_id ? 150 : 0,
 		};
