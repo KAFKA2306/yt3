@@ -214,3 +214,7 @@ tasks:
     desc: "Audit YouTube publish routing, profile identity, and env/task alignment"
     cmds:
       - bun src/scripts/audit_publish_routing.ts
+  audit:byosan-money:
+    desc: "Run zero-trust source policy audit for 秒算マネー"
+    cmds:
+      - bun run audit:byosan-money

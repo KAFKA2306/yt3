@@ -8,7 +8,8 @@
 		"lint": "bun biome check src",
 		"format": "bun biome format --write src",
 		"check": "bun biome check --write src",
-		"typecheck": "bun x tsc --noEmit"
+		"typecheck": "bun x tsc --noEmit",
+		"audit:byosan-money": "bun scripts/audit_byosan_money_zero_trust.ts"
 	},
 	"repository": {
 		"type": "git",
