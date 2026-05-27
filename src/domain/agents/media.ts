@@ -36,6 +36,7 @@ export interface MediaResult {
 	audio_paths: string[];
 	thumbnail_path: string;
 	video_path: string;
+	asset_version?: string;
 }
 
 /**
@@ -93,6 +94,7 @@ export class VisualDirector extends BaseAgent {
 		audio_paths: string[];
 		thumbnail_path: string;
 		video_path: string;
+		asset_version?: string;
 		script?: Script;
 	}> {
 		AgentLogger.info(
@@ -170,6 +172,7 @@ export class VisualDirector extends BaseAgent {
 			audio_paths,
 			thumbnail_path: thumbnailPath,
 			video_path: videoPath,
+			asset_version: "humanity-scenes-v1",
 			script,
 		};
 	}

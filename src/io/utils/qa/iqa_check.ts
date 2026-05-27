@@ -53,7 +53,7 @@ async function auditImage(imagePath: string): Promise<BatchResult> {
 	const palette = thumbCfg.palettes[0];
 	if (!palette) throw new Error("No palette found");
 	const textHex = palette.title_color;
-	const bgHex = palette.background_color;
+	const bgHex = palette.background_color || "#000000";
 	const guardBand = thumbCfg.right_guard_band_px ?? 850;
 
 	if (!fs.existsSync(imagePath) || fs.statSync(imagePath).size === 0) {
@@ -209,9 +209,11 @@ function auditPalettes(): void {
 			const p = item as Record<string, unknown>;
 			const contrast = validator.calculateContrastRatio(
 				String(p.title_color),
-				String(p.background_color),
+				String(p.background_color || "#000000"),
 			);
-			const risk = validator.analyzeBackgroundRisk(String(p.background_color));
+			const risk = validator.analyzeBackgroundRisk(
+				String(p.background_color || "#000000"),
+			);
 			const mobilePred =
 				risk === "low"
 					? "≥ 35 (安全)"

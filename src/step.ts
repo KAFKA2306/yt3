@@ -61,6 +61,7 @@ async function runStep(
 	bucket: string,
 	store: AssetStore,
 	state: Partial<AgentState>,
+	publishVideoPath?: string,
 ): Promise<Partial<AgentState>> {
 	const researchCfg = store.cfg.steps.research;
 	const agents: Record<string, () => Promise<Partial<AgentState>>> = {
@@ -95,7 +96,10 @@ async function runStep(
 			return { audit_results: results };
 		},
 		publish: async () => ({
-			publish_results: await new PublishAgent(store).run(state as AgentState),
+			publish_results: await new PublishAgent(store).run({
+				...(state as AgentState),
+				publish_video_path: publishVideoPath || state.publish_video_path,
+			}),
 		}),
 		all: async () => {
 			const graph = createGraph(store) as {
@@ -124,12 +128,21 @@ async function main() {
 	const step = args[0];
 	const runIdArg = args[1];
 	const bucketArg = args[2];
+	const publishVideoPathArg = args[3];
 	if (!step) {
-		console.error("Usage: bun src/step.ts <step> [runId] [bucket]");
+		console.error(
+			"Usage: bun src/step.ts <step> [runId] [bucket] [publishVideoPath]",
+		);
 		process.exit(1);
 	}
 	const store = new AssetStore(resolveRunId(runIdArg));
-	const res = await runStep(step, bucketArg || "", store, store.loadState());
+	const res = await runStep(
+		step,
+		bucketArg || "",
+		store,
+		store.loadState(),
+		publishVideoPathArg,
+	);
 	if (res) store.updateState(res);
 }
 main();

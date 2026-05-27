@@ -13,7 +13,8 @@ interface TrendInfo {
 }
 
 export interface ThumbnailPalette {
-	background_color: string;
+	background_color?: string;
+	background_image?: string;
 	title_color: string;
 }
 

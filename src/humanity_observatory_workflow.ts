@@ -15,6 +15,8 @@ import { AgentLogger } from "./io/utils/logger.js";
  * Humanity Observatory Workflow (v1)
  * High-performance, Zero-Trust media production for the "Humanity Observatory" domain.
  */
+const HUMANITY_MEDIA_VERSION = "humanity-scenes-v1";
+
 export async function runHumanityObservatoryWorkflow(
 	store: AssetStore,
 	initialState: Partial<AgentState>,
@@ -45,7 +47,11 @@ export async function runHumanityObservatoryWorkflow(
 			"Starting research phase...",
 		);
 		const scout = new TrendScout(store);
-		const researchResults = await scout.run("humanity_observatory", 3);
+		const researchResults = await scout.run(
+			"humanity_observatory",
+			3,
+			state.mission_file,
+		);
 		state = { ...state, ...researchResults };
 		fs.writeJsonSync(researchJsonPath, researchResults, { spaces: 2 });
 	}
@@ -153,24 +159,24 @@ export async function runHumanityObservatoryWorkflow(
 		store.videoDir(),
 		store.cfg.workflow.filenames.video,
 	);
-	if (fs.existsSync(videoPath)) {
+	const cachedMediaResults = fs.existsSync(videoPath)
+		? store.load<MediaResult>("media", "output")
+		: null;
+	if (cachedMediaResults?.asset_version === HUMANITY_MEDIA_VERSION) {
 		AgentLogger.info(
 			"SYSTEM",
 			"HUMANITY_OBSERVATORY",
 			"MEDIA",
 			"Using cached video",
 		);
-		const mediaResults = store.load<MediaResult>("media", "output");
-		if (!mediaResults)
-			throw new Error("Failed to load cached humanity media results");
-		state = { ...state, ...mediaResults };
+		state = { ...state, ...cachedMediaResults };
 
 		// Map computed durations to cached script lines to satisfy Quality Audit requirements
-		if (state.script && mediaResults.audio_paths) {
+		if (state.script && cachedMediaResults.audio_paths) {
 			const { execSync } = require("node:child_process");
 			for (let i = 0; i < state.script.lines.length; i++) {
 				const line = state.script.lines[i];
-				const audioPath = mediaResults.audio_paths[i];
+				const audioPath = cachedMediaResults.audio_paths[i];
 				if (line && audioPath && fs.existsSync(audioPath)) {
 					try {
 						const durationStr = execSync(
@@ -185,6 +191,14 @@ export async function runHumanityObservatoryWorkflow(
 			}
 		}
 	} else {
+		if (fs.existsSync(videoPath)) {
+			AgentLogger.info(
+				"SYSTEM",
+				"HUMANITY_OBSERVATORY",
+				"MEDIA",
+				"Cached video is stale for the current scene set; regenerating",
+			);
+		}
 		AgentLogger.info(
 			"SYSTEM",
 			"HUMANITY_OBSERVATORY",

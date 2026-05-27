@@ -16,11 +16,13 @@ export function loadConfig(domainId?: string): AppConfig {
 	}
 
 	if (domainId) {
+		const mappedDomainId =
+			domainId === "daily_pulse" ? "byosan_money" : domainId;
 		const domainConfigPath = path.join(
 			ROOT,
 			"config",
 			"domains",
-			`${domainId}.yaml`,
+			`${mappedDomainId}.yaml`,
 		);
 		if (fs.existsSync(domainConfigPath)) {
 			return yaml.load(fs.readFileSync(domainConfigPath, "utf-8")) as AppConfig;
@@ -41,6 +43,7 @@ import {
 	QuotaExhaustionError,
 	acquireKey,
 	getQuotaContext,
+	markKeyRateLimited,
 	updateFromHeaders,
 } from "./utils/quota/manager.js";
 
@@ -254,25 +257,20 @@ export abstract class BaseAgent {
 			throw new Error("No previous data for LLM bypass");
 		}
 
-		const llm = createLlm({
-			...this.opts,
-			sessionId: this.store.runDir,
-		});
-		const keyName = llm.keyName || "unknown";
-		const quotaContext = getQuotaContext(keyName, "gemini");
-		const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
-
-		Logger.info(
-			"SYSTEM",
-			"CORE",
-			"LLM_INVOKE",
-			`Invoking LLM with prompt: ${userPrompt.slice(0, 500)}...`,
-		);
-
 		let res: { content: unknown; response_metadata: unknown } | null = null;
 		let attempts = 0;
 		const maxAttempts = 5;
+		let lastKeyName = "unknown";
 		while (attempts < maxAttempts) {
+			const llm = createLlm({
+				...this.opts,
+				sessionId: this.store.runDir,
+			});
+			const keyName = llm.keyName || "unknown";
+			lastKeyName = keyName;
+			const quotaContext = getQuotaContext(keyName, "gemini");
+			const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
+
 			try {
 				res = await llm.invoke(
 					[
@@ -285,18 +283,24 @@ export abstract class BaseAgent {
 			} catch (err: unknown) {
 				attempts++;
 				const errMsg = err instanceof Error ? err.message : String(err);
-				if (
+				const isRateLimit =
 					errMsg.includes("429") ||
 					errMsg.toLowerCase().includes("quota") ||
-					errMsg.toLowerCase().includes("rate limit")
-				) {
+					errMsg.toLowerCase().includes("rate limit");
+				const isInvalidKey =
+					errMsg.toLowerCase().includes("api_key_invalid") ||
+					errMsg.toLowerCase().includes("api key not found");
+
+				if (isRateLimit || isInvalidKey) {
+					const sleepMs = isInvalidKey ? 2000 : 10000;
 					Logger.warn(
 						"SYSTEM",
 						"CORE",
 						"LLM_RATE_LIMIT",
-						`Rate limit (429) hit. Attempt ${attempts}/${maxAttempts}. Sleeping 10s... Error: ${errMsg.slice(0, 150)}`,
+						`Error for key ${keyName} (${isInvalidKey ? "invalid key" : "rate limit"}). Attempt ${attempts}/${maxAttempts}. Rotating key and sleeping ${sleepMs / 1000}s... Error: ${errMsg.slice(0, 150)}`,
 					);
-					await new Promise((resolve) => setTimeout(resolve, 10000));
+					markKeyRateLimited(keyName);
+					await new Promise((resolve) => setTimeout(resolve, sleepMs));
 				} else {
 					throw err;
 				}
@@ -310,9 +314,9 @@ export abstract class BaseAgent {
 		}
 
 		const metadata = res.response_metadata as Record<string, unknown>;
-		if (keyName) {
+		if (lastKeyName && lastKeyName !== "unknown") {
 			updateFromHeaders(
-				keyName,
+				lastKeyName,
 				(metadata?.headers || {}) as Record<string, unknown>,
 			);
 		}

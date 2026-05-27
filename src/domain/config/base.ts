@@ -21,4 +21,6 @@ export interface OverlayConfig {
 	scaling?: "fit" | "fill" | "stretch";
 	position?: { x: number; y: number };
 	size?: { width: number; height: number };
+	start_time?: number;
+	end_time?: number;
 }

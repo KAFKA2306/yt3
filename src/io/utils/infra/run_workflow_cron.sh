@@ -95,7 +95,7 @@ notify_failure() {
       cd "${repo_dir}"
       export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
       echo "[$(timestamp)] --- Auto-Healing Triggered for ${error_type} ---" >> logs/healing.log
-      gemini "FATAL ERROR: ${error_type}. Read logs/latest.log. Autonomously fix the code or system configuration causing this. You are running in a headless auto-healing context. Do not ask questions. Implement the fix, verify it, and exit." >> logs/healing.log 2>&1
+      "${bun_bin}" /usr/local/bin/gemini -m gemini-2.5-flash "FATAL ERROR: ${error_type}. Read logs/latest.log. Autonomously fix the code or system configuration causing this. You are running in a headless auto-healing context. Do not ask questions. Implement the fix, verify it, and exit." >> logs/healing.log 2>&1
     ) &
   fi
 
@@ -161,7 +161,7 @@ ensure_voicevox_running() {
       cd "${repo_dir}"
       export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
       echo "[$(timestamp)] --- Auto-Healing Triggered for VOICEVOX_STARTUP_FAILURE ---" >> logs/healing.log
-      gemini "FATAL ERROR: Voicevox is not responding. Check docker containers, ports (50121), and system resources. Autonomously fix the issue (e.g., restart docker, kill blocking processes, or recreate container) and ensure it is UP and responding to /version. Then exit." >> logs/healing.log 2>&1
+      "${bun_bin}" /usr/local/bin/gemini -m gemini-2.5-flash "FATAL ERROR: Voicevox is not responding. Check docker containers, ports (50121), and system resources. Autonomously fix the issue (e.g., restart docker, kill blocking processes, or recreate container) and ensure it is UP and responding to /version. Then exit." >> logs/healing.log 2>&1
     ) &
     
     return 1

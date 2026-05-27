@@ -356,6 +356,7 @@ export const AgentStateSchema = z.object({
 	script: ScriptSchema.optional(),
 	audio_paths: z.array(z.string()).optional(),
 	video_path: z.string().optional(),
+	publish_video_path: z.string().optional(),
 	thumbnail_path: z.string().optional(),
 	status: z.string().optional(),
 	director_data: DirectorDataSchema.optional(),

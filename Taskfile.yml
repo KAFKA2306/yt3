@@ -189,8 +189,8 @@ tasks:
     desc: "Type-check and Lint"
     aliases: [l]
     cmds:
-      - npx tsc --noEmit
-      - bun biome check src
+      - bun x --bun tsc --noEmit
+      - bun x --bun biome check src
 
   test:
     desc: "Run unit tests (bun test)"

@@ -61,3 +61,7 @@ artifacts/
 !artifacts/generated/.gitkeep
 audits/
 !audits/.gitkeep
+
+# Exclude repomix output and scratch directories
+repomix-output.xml
+scratch/

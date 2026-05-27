@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { resolvePath } from "../../io/core.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
 import type { AppConfig, RenderPlan } from "../types.js";
 
@@ -47,16 +48,25 @@ export class ThumbnailRenderer {
 		if (!palettes || palettes.length === 0) throw new Error("No palette");
 		const palette = this.selectBestPalette(palettes);
 
-		const backdrop = {
-			create: {
-				width: cfg.width,
-				height: cfg.height,
-				channels: 4 as const,
-				background: palette.background_color,
-			},
-		};
-
-		let layers: sharp.OverlayOptions[] = [{ input: backdrop, top: 0, left: 0 }];
+		let layers: sharp.OverlayOptions[] = [];
+		if (palette.background_image) {
+			const bgPath = resolvePath(palette.background_image);
+			layers.push({
+				input: await sharp(bgPath).resize(cfg.width, cfg.height).toBuffer(),
+				top: 0,
+				left: 0,
+			});
+		} else {
+			const backdrop = {
+				create: {
+					width: cfg.width,
+					height: cfg.height,
+					channels: 4 as const,
+					background: palette.background_color || "#000000",
+				},
+			};
+			layers.push({ input: backdrop, top: 0, left: 0 });
+		}
 
 		for (const ol of plan.overlays) {
 			const width = Math.max(1, Math.round(ol.bounds.width));
@@ -77,7 +87,7 @@ export class ThumbnailRenderer {
 		const rightSideOverlays = plan.overlays.filter(
 			(o: { bounds: { x: number } }) => o.bounds.x > cfg.width / 2,
 		);
-		const textMaxX =
+		let textMaxX =
 			(rightSideOverlays.length
 				? Math.min(
 						...rightSideOverlays.map(
@@ -85,6 +95,10 @@ export class ThumbnailRenderer {
 						),
 					)
 				: cfg.width) - 20;
+
+		if (cfg.right_guard_band_px && cfg.right_guard_band_px > 0) {
+			textMaxX = Math.min(textMaxX, cfg.right_guard_band_px);
+		}
 
 		layers = [
 			...layers,
@@ -114,25 +128,26 @@ export class ThumbnailRenderer {
 		cfg: AppConfig["steps"]["thumbnail"],
 		pal: Palette,
 	): string {
+		const maxChars = cfg.max_chars_per_line || 12;
 		const originalLines = title.split("\n").filter((l) => l.trim());
 		const lines: string[] = [];
 		for (const line of originalLines) {
-			if (line.length <= 12) {
+			if (line.length <= maxChars) {
 				lines.push(line);
 			} else {
 				// Try to split by common Japanese/English punctuation first, then by length
 				const parts = line.split(/(?<=[、。，．,.\s])/);
 				let current = "";
 				for (const part of parts) {
-					if ((current + part).length <= 12) {
+					if ((current + part).length <= maxChars) {
 						current += part;
 					} else {
 						if (current) lines.push(current);
 						current = part;
-						// If a single part is still > 12 characters, split it forcefully
-						while (current.length > 12) {
-							lines.push(current.slice(0, 12));
-							current = current.slice(12);
+						// If a single part is still > maxChars characters, split it forcefully
+						while (current.length > maxChars) {
+							lines.push(current.slice(0, maxChars));
+							current = current.slice(maxChars);
 						}
 					}
 				}

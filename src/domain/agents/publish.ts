@@ -1,3 +1,4 @@
+import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
@@ -40,11 +41,21 @@ export class PublishAgent extends BaseAgent {
 		}
 	}
 	async run(state: AgentState): Promise<PublishResults> {
-		this.logInput({ video_path: state.video_path, metadata: state.metadata });
+		const publishVideoPath = this.resolvePublishVideoPath(state);
+		if (publishVideoPath) {
+			this.store.updateState({ publish_video_path: publishVideoPath });
+		}
+		this.logInput({
+			video_path: state.video_path,
+			publish_video_path: publishVideoPath,
+			metadata: state.metadata,
+		});
 		const results: PublishResults = {};
 		const ytStep = this.config.steps.youtube;
 		if (ytStep?.enabled) {
-			results.youtube = await this.uploadToYouTube(state, this.config);
+			results.youtube = await this.uploadToYouTube(state, this.config, {
+				publishVideoPath,
+			});
 			if (results.youtube?.status === "uploaded") {
 				const videoId = results.youtube.video_id;
 				const channelTitle = results.youtube.channel_title;
@@ -84,6 +95,7 @@ export class PublishAgent extends BaseAgent {
 	private async uploadToYouTube(
 		state: AgentState,
 		cfg: AppConfig,
+		options: { publishVideoPath?: string } = {},
 	): Promise<PublishResults["youtube"]> {
 		const ytCfg = cfg.steps.youtube;
 		if (!ytCfg) throw new Error("YouTube config missing");
@@ -115,8 +127,11 @@ export class PublishAgent extends BaseAgent {
 			auth,
 		});
 		await this.verifyYouTubeChannel(auth);
-		const { video_path: videoPath, thumbnail_path: thumbnailPath } = state;
+		const { thumbnail_path: thumbnailPath } = state;
+		const videoPath =
+			options.publishVideoPath || this.resolvePublishVideoPath(state);
 		if (!videoPath) throw new Error("Video path missing");
+		console.log(`[PUBLISH:VIDEO] source=${videoPath}`);
 		const res = await youtube.videos.insert({
 			part: ["snippet", "status"],
 			requestBody: this.createYouTubeSnippet(state, ytCfg),
@@ -243,7 +258,8 @@ export class PublishAgent extends BaseAgent {
 		if (!twCfg) throw new Error("Twitter config missing");
 
 		const client = this.createTwitterClient();
-		const { metadata, video_path: videoPath } = state;
+		const { metadata } = state;
+		const videoPath = this.resolvePublishVideoPath(state);
 		let mediaId: string | undefined;
 		if (videoPath && fs.existsSync(videoPath))
 			mediaId = await client.v1.uploadMedia(videoPath);
@@ -281,5 +297,35 @@ export class PublishAgent extends BaseAgent {
 	private createTweetText(metadata?: AgentState["metadata"]) {
 		const tags = (metadata?.tags || []).map((t) => `#${t}`).join(" ");
 		return `${metadata?.title || ""}\n\n${tags}`.substring(0, 280);
+	}
+
+	public previewPublishVideoPath(state: AgentState): string {
+		return this.resolvePublishVideoPath(state);
+	}
+
+	private resolvePublishVideoPath(state: AgentState): string {
+		const candidates = [
+			process.env.PUBLISH_VIDEO_PATH?.trim(),
+			state.publish_video_path?.trim(),
+			path.join(this.store.runDir, "publish_video.mp4"),
+			path.join(this.store.runDir, "media", "video", "publish_video.mp4"),
+			path.join(this.store.runDir, "video", "final_video.mp4"),
+			path.join(this.store.runDir, "media", "video", "video.mp4"),
+			state.video_path?.trim(),
+		].filter(Boolean) as string[];
+
+		for (const candidate of candidates) {
+			const resolved = path.isAbsolute(candidate)
+				? candidate
+				: path.join(this.store.runDir, candidate);
+			if (fs.existsSync(resolved)) {
+				if (resolved !== state.video_path) {
+					state.publish_video_path = resolved;
+				}
+				return resolved;
+			}
+		}
+
+		return state.video_path || "";
 	}
 }

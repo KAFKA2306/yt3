@@ -30,6 +30,11 @@ async function main() {
 			`RUN_ID is required for publish profile '${profile.profileName}'`,
 		);
 	}
+	const publishVideoPathArg = process.argv[3]?.trim();
+	if (publishVideoPathArg) {
+		process.env.PUBLISH_VIDEO_PATH = publishVideoPathArg;
+		console.log(`PUBLISH_VIDEO_PATH=${publishVideoPathArg}`);
+	}
 
 	const clientId = process.env.YOUTUBE_CLIENT_ID;
 	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
@@ -56,7 +61,13 @@ async function main() {
 	await new Promise<void>((resolve, reject) => {
 		const child = spawn(
 			"bun",
-			[`--env-file=${envFile}`, "src/step.ts", "publish", runId],
+			[
+				`--env-file=${envFile}`,
+				"src/step.ts",
+				"publish",
+				runId,
+				publishVideoPathArg || "",
+			].filter(Boolean),
 			{
 				cwd: process.cwd(),
 				env: process.env,

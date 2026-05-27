@@ -8,7 +8,9 @@ import {
 	loadConfig,
 	parseLlmJson,
 } from "../../io/core.js";
+import { ScriptIntegrityLinter } from "../../io/utils/qa/script_linter.js";
 import {
+	type AgentState,
 	type ContentOutline,
 	ContentOutlineSchema,
 	type ContentResult,
@@ -72,48 +74,123 @@ export class ScriptSmith extends BaseAgent {
 			}
 		}
 
-		const outline = await this.generateOutline(
-			director.angle,
-			fullContext,
-			channelType,
-		);
-		Logger.info(
-			this.name,
-			"CONTENT",
-			"OUTLINE_GEN",
-			`Generated outline: ${outline.title}`,
-		);
+		let attempt = 0;
+		const maxAttempts = 3;
+		let lastErrorFeedback = "";
+		let result: ContentResult | null = null;
 
-		let allLines: ScriptLine[] = [];
-		for (const section of outline.sections) {
-			const segmentLines = await this.generateSegment(
-				director.angle,
-				section,
-				allLines.slice(-10),
-				fullContext,
-				channelType,
+		while (attempt < maxAttempts) {
+			attempt++;
+			Logger.info(
+				this.name,
+				"CONTENT",
+				"GENERATE_ATTEMPT",
+				`Attempt ${attempt}/${maxAttempts}`,
 			);
-			allLines = [...allLines, ...segmentLines];
+
+			try {
+				const outline = await this.generateOutline(
+					director.angle,
+					fullContext,
+					channelType,
+					lastErrorFeedback,
+				);
+				Logger.info(
+					this.name,
+					"CONTENT",
+					"OUTLINE_GEN",
+					`Generated outline: ${outline.title}`,
+				);
+
+				let allLines: ScriptLine[] = [];
+				for (const section of outline.sections) {
+					const segmentLines = await this.generateSegment(
+						director.angle,
+						section,
+						allLines,
+						fullContext,
+						channelType,
+						lastErrorFeedback,
+					);
+					allLines = [...allLines, ...segmentLines];
+				}
+
+				const scriptText = allLines
+					.map((l) => `${l.speaker}: ${l.text}`)
+					.join("\n");
+				const metadata = await this.generateMetadata(
+					scriptText,
+					fullContext,
+					channelType,
+				);
+
+				result = {
+					script: {
+						title: outline.title,
+						description: metadata.description,
+						lines: allLines,
+						total_duration: 0,
+					},
+					metadata,
+				};
+
+				// Run linter validation
+				const linter = new ScriptIntegrityLinter();
+				const linterState: Partial<AgentState> = {
+					script: result.script,
+					metadata,
+					news,
+					bucket: channelType,
+				};
+
+				const auditRes = await linter.audit(linterState as AgentState);
+				const relevantChecks = auditRes.checks.filter(
+					(c) => c.layer !== "Artifact",
+				);
+				const passed = relevantChecks.every((c) => c.status !== "FAIL");
+
+				if (passed) {
+					Logger.info(
+						this.name,
+						"CONTENT",
+						"AUDIT_PASS",
+						`Script passed integrity linter (Score: ${auditRes.score}/100, content-phase)`,
+					);
+					break;
+				}
+				const failedChecks = relevantChecks
+					.filter((c) => c.status === "FAIL" || c.status === "WARN")
+					.map(
+						(c) =>
+							`- ${c.layer}: ${c.message} (${c.details ? c.details.join(", ") : ""})`,
+					)
+					.join("\n");
+				lastErrorFeedback = `【警告】前回の生成台本は品質チェックに失敗しました。以下を確実に改善し、反復を避け、より自然な対話・解説にしてください：\n${failedChecks}`;
+				Logger.warn(
+					this.name,
+					"CONTENT",
+					"AUDIT_FAIL",
+					`Script failed integrity linter (Score: ${auditRes.score}/100). Feedback:\n${lastErrorFeedback}`,
+				);
+				result = null; // Reset result to retry
+			} catch (e: unknown) {
+				const errMsg = e instanceof Error ? e.message : String(e);
+				Logger.error(
+					this.name,
+					"CONTENT",
+					"GENERATE_ERROR",
+					`Attempt ${attempt} failed with error: ${errMsg}`,
+				);
+				lastErrorFeedback = `【エラー】前回の生成中にエラーが発生しました：${errMsg}`;
+				result = null;
+			}
 		}
 
-		const scriptText = allLines
-			.map((l) => `${l.speaker}: ${l.text}`)
-			.join("\n");
-		const metadata = await this.generateMetadata(
-			scriptText,
-			fullContext,
-			channelType,
-		);
-
-		const result: ContentResult = {
-			script: {
-				title: outline.title,
-				description: metadata.description,
-				lines: allLines,
-				total_duration: 0,
-			},
-			metadata,
-		};
+		if (!result) {
+			throw new Error(
+				`CRITICAL: Failed to generate a script passing integrity audits after ${maxAttempts} attempts.`,
+			);
+		}
 
 		this.logOutput(result);
 		return result;
@@ -123,18 +200,21 @@ export class ScriptSmith extends BaseAgent {
 		angle: string,
 		newsContext: string,
 		channelType: string,
+		feedback = "",
 	): Promise<ContentOutline> {
 		const prompts = this.loadPrompt<ContentPrompts>(
 			channelType === "humanity_observatory"
 				? "humanity_observatory"
 				: this.name,
 		);
-		return this.runLlm(
-			prompts.outline.system,
+		const userPrompt =
 			prompts.outline.user_template
 				.replace("{angle}", angle)
-				.replace("{news_context}", newsContext),
-			(text) => parseLlmJson(text, ContentOutlineSchema),
+				.replace("{news_context}", newsContext) +
+			(feedback ? `\n\n${feedback}` : "");
+
+		return this.runLlm(prompts.outline.system, userPrompt, (text) =>
+			parseLlmJson(text, ContentOutlineSchema),
 		);
 	}
 
@@ -144,6 +224,7 @@ export class ScriptSmith extends BaseAgent {
 		prevLines: ScriptLine[],
 		newsContext: string,
 		channelType: string,
+		feedback = "",
 	): Promise<ScriptLine[]> {
 		const prompts = this.loadPrompt<ContentPrompts>(
 			channelType === "humanity_observatory"
@@ -155,16 +236,18 @@ export class ScriptSmith extends BaseAgent {
 				? prevLines.map((l) => `${l.speaker}: ${l.text}`).join("\n")
 				: "（対話開始）";
 
-		const res = await this.runLlm(
-			prompts.segment.system,
+		const userPrompt =
 			prompts.segment.user_template
 				.replace("{angle}", angle)
 				.replace("{section_title}", section.title)
 				.replace("{key_points}", section.key_points.join(", "))
 				.replace("{target_chars}", section.target_character_count.toString())
 				.replace("{previous_context}", prevContext)
-				.replace("{news_context}", newsContext),
-			(text) => parseLlmJson(text, ContentSegmentSchema),
+				.replace("{news_context}", newsContext) +
+			(feedback ? `\n\n${feedback}` : "");
+
+		const res = await this.runLlm(prompts.segment.system, userPrompt, (text) =>
+			parseLlmJson(text, ContentSegmentSchema),
 		);
 
 		const processedLines: ScriptLine[] = [];

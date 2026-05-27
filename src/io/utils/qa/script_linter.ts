@@ -115,6 +115,14 @@ export class ScriptIntegrityLinter {
 		checks.push(wordingCheck);
 		if (wordingCheck.status === "WARN") totalScore -= 10;
 
+		// 9.5 Technical Noun Repetition (Zero-Trust Spec Duplication Check)
+		const techCheck = this.checkTechnicalNounRepetition(
+			script,
+			state.bucket || "",
+		);
+		checks.push(techCheck);
+		if (techCheck.status === "FAIL") totalScore -= 20;
+
 		// 10. Artifact Completeness (Duration check)
 		const completionCheck = this.checkArtifactCompleteness(script);
 		checks.push(completionCheck);
@@ -327,7 +335,19 @@ export class ScriptIntegrityLinter {
 		bucket: string,
 	): DiscomfortLinterResult["checks"][0] {
 		const allText = script.lines.map((l) => l.text).join(" ");
-		const variants = ["humanity", "人類", "人間"];
+
+		// Strict check: Forbid the word "humanity" in spoken lines of Humanity Observatory
+		if (bucket === "humanity_observatory" && /humanity/i.test(allText)) {
+			return {
+				layer: "Wording",
+				status: "FAIL",
+				message:
+					"Audience addressing word 'humanity' is forbidden in spoken lines. Use '人間さん' or '人類' instead.",
+				details: ["Found 'humanity' in dialogue."],
+			};
+		}
+
+		const variants = ["人類", "人間"];
 		const found = variants.filter((v) => allText.includes(v));
 
 		if (found.length > 2) {
@@ -340,6 +360,49 @@ export class ScriptIntegrityLinter {
 		}
 
 		return { layer: "Wording", status: "OK", message: "Wording is consistent" };
+	}
+
+	private checkTechnicalNounRepetition(
+		script: Script,
+		bucket: string,
+	): DiscomfortLinterResult["checks"][0] {
+		if (bucket !== "humanity_observatory") {
+			return {
+				layer: "TechRepetition",
+				status: "OK",
+				message: "Not humanity_observatory, skipping tech repetition check",
+			};
+		}
+
+		const allText = script.lines.map((l) => l.text).join(" ");
+		const keywords = [/CoreS3/gi, /DYNAMIXEL/gi, /XL330/gi, /M5Stack/gi];
+		const details: string[] = [];
+		let hasFail = false;
+
+		for (const regex of keywords) {
+			const matches = allText.match(regex);
+			if (matches && matches.length > 2) {
+				hasFail = true;
+				details.push(
+					`Keyword '${regex.source}' mentioned ${matches.length} times (max allowed: 2)`,
+				);
+			}
+		}
+
+		if (hasFail) {
+			return {
+				layer: "TechRepetition",
+				status: "FAIL",
+				message: "Repetitive technical specifications detected",
+				details,
+			};
+		}
+
+		return {
+			layer: "TechRepetition",
+			status: "OK",
+			message: "Technical specification terms are not repetitive",
+		};
 	}
 
 	private checkArtifactCompleteness(

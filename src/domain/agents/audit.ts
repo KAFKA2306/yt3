@@ -3181,7 +3181,18 @@ export class AuditAgent extends BaseAgent {
 			.replace(/[上乗じょう]円/g, "兆円")
 			.replace(/急兆/g, "兆")
 			.replace(/帽兆/g, "兆")
-			.replace(/1595/g, "11595");
+			.replace(/1595/g, "11595")
+			.replace(/(\d+)万([一1]?)セン/g, "$1万1000")
+			.replace(/(\d+)万([一1]?)せん/g, "$1万1000")
+			.replace(/(\d+)万(\d+)セン/g, "$1万$2000")
+			.replace(/(\d+)万(\d+)せん/g, "$1万$2000")
+			.replace(/(\d+)セン/g, "$1000")
+			.replace(/(\d+)せん/g, "$1000")
+			.replace(/千/g, "1000")
+			.replace(/せん/g, "1000")
+			.replace(/セン/g, "1000")
+			.replace(/ハジマン/g, "8万")
+			.replace(/8000ドル/g, "8万ドル");
 
 		// 1. Extract raw numbers and units
 		// Matches: "3兆", "1.5億", "200", "0.25%"
@@ -3536,10 +3547,16 @@ No markdown or raw tags, only valid JSON.`;
 		const checks: Record<string, AuditCheck> = {};
 
 		// 1. systemd_services audit
+		const hasDiscordBotToken =
+			process.env.DISCORD_TOKEN &&
+			!process.env.DISCORD_TOKEN.startsWith(
+				"https://discord.com/api/webhooks/",
+			);
+
 		const services = [
 			"yt3-automation.timer",
 			"yt3-aim.service",
-			"yt3-discord.service",
+			...(hasDiscordBotToken ? ["yt3-discord.service"] : []),
 			"yt3-asmr-autonomous.timer",
 		];
 		const serviceStatus: Record<string, string> = {};
