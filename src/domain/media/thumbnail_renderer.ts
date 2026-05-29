@@ -128,31 +128,17 @@ export class ThumbnailRenderer {
 		cfg: AppConfig["steps"]["thumbnail"],
 		pal: Palette,
 	): string {
-		const maxChars = cfg.max_chars_per_line || 12;
-		const originalLines = title.split("\n").filter((l) => l.trim());
-		const lines: string[] = [];
-		for (const line of originalLines) {
-			if (line.length <= maxChars) {
-				lines.push(line);
-			} else {
-				// Try to split by common Japanese/English punctuation first, then by length
-				const parts = line.split(/(?<=[、。，．,.\s])/);
-				let current = "";
-				for (const part of parts) {
-					if ((current + part).length <= maxChars) {
-						current += part;
-					} else {
-						if (current) lines.push(current);
-						current = part;
-						// If a single part is still > maxChars characters, split it forcefully
-						while (current.length > maxChars) {
-							lines.push(current.slice(0, maxChars));
-							current = current.slice(maxChars);
-						}
-					}
-				}
-				if (current) lines.push(current);
-			}
+		const maxLines = Math.max(1, cfg.max_lines || 3);
+		const lineBudget = title.replace(/\n/g, "").length;
+		let maxChars = Math.max(
+			1,
+			cfg.max_chars_per_line || 12,
+			Math.ceil(lineBudget / maxLines),
+		);
+		let lines = this.wrapTitleLines(title, maxChars);
+		while (lines.length > maxLines && maxChars < lineBudget) {
+			maxChars += 1;
+			lines = this.wrapTitleLines(title, maxChars);
 		}
 
 		const g = this.config.global_style;
@@ -189,7 +175,37 @@ export class ThumbnailRenderer {
                 .outline { fill: none; stroke: ${pal.outline_outer_color || "#000000"}; stroke-width: ${(pal.outline_outer_width || 20) * 2}px; stroke-linejoin: round; } 
                 .fill { fill: ${pal.title_color || "#FFFFFF"}; stroke: ${pal.outline_inner_color || "#FFFFFF"}; stroke-width: ${pal.outline_inner_width || 10}px; paint-order: stroke fill; stroke-linejoin: round; }
             </style>
-            <g clip-path="url(#s)">${txt}</g>
+			<g clip-path="url(#s)">${txt}</g>
         </svg>`;
+	}
+
+	private wrapTitleLines(title: string, maxChars: number): string[] {
+		const originalLines = title.split("\n").filter((l) => l.trim());
+		const lines: string[] = [];
+		for (const line of originalLines) {
+			if (line.length <= maxChars) {
+				lines.push(line);
+				continue;
+			}
+
+			// Try to split by common Japanese/English punctuation first, then by length
+			const parts = line.split(/(?<=[、。，．,.\s])/);
+			let current = "";
+			for (const part of parts) {
+				if ((current + part).length <= maxChars) {
+					current += part;
+				} else {
+					if (current) lines.push(current);
+					current = part;
+					// If a single part is still > maxChars characters, split it forcefully
+					while (current.length > maxChars) {
+						lines.push(current.slice(0, maxChars));
+						current = current.slice(maxChars);
+					}
+				}
+			}
+			if (current) lines.push(current);
+		}
+		return lines;
 	}
 }

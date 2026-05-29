@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import {
 	type AgentState,
 	AssetStore,
+	appendLoopMemory,
 	getRunIdDateString,
 	loadConfig,
 } from "./io/core.js";
@@ -104,6 +105,20 @@ async function main() {
 		}
 	} catch (err) {
 		const error = err as Error;
+		appendLoopMemory(store, {
+			run_id: runId,
+			bucket: BUCKET,
+			stage: "pipeline",
+			kind: "failure",
+			summary:
+				"Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+			signals: [error.message],
+			fixes: [
+				"read the terminal error once, then route the next run through cached research or deterministic fallback",
+				"avoid repeated retries when the failure is already a quota or integrity terminal state",
+			],
+			timestamp: new Date().toISOString(),
+		});
 		AgentLogger.error("SYSTEM", "PIPE", "CRASH", error.message, error);
 		await sendAlert(`🔥 **Pipeline Crashed** (Run: \`${runId}\`)`, "error", {
 			message: error.message,

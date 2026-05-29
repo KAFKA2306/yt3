@@ -1,0 +1,81 @@
+{
+  "entries": [
+    {
+      "run_id": "daily_pulse/2026-05-29",
+      "bucket": "default",
+      "stage": "content",
+      "kind": "fallback",
+      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
+      "signals": [
+        "rate limit / quota exhaustion",
+        "3 attempted generations failed",
+        "deterministic fallback preserved pipeline continuity"
+      ],
+      "fixes": [
+        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
+        "prime future runs with cached research and loop memory",
+        "prefer concise, audit-safe fallback patterns when the model pool is dry"
+      ],
+      "timestamp": "2026-05-29T14:58:13.425Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-05-29",
+      "bucket": "daily_pulse",
+      "stage": "audit",
+      "kind": "failure",
+      "summary": "Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
+      "signals": [
+        "Probabilistic: Semantic Verifier Health",
+        "Voice Role: Acoustic Separation",
+        "Build: Linter Validation",
+        "Probabilistic: Audience Verifier Health",
+        "ASVS: Deterministic Thumbnail Continuity"
+      ],
+      "fixes": [
+        "regenerate content and media rather than reusing stale artifacts",
+        "treat failing audit checks as state invalidation, not just a notification",
+        "prime the next loop with the specific failing check names"
+      ],
+      "timestamp": "2026-05-29T15:17:28.003Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-05-30",
+      "bucket": "daily_pulse",
+      "stage": "audit",
+      "kind": "failure",
+      "summary": "Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
+      "signals": [
+        "Probabilistic: Semantic Verifier Health",
+        "Voice Role: Acoustic Separation",
+        "Build: Linter Validation",
+        "Probabilistic: Audience Verifier Health",
+        "ASVS: Deterministic Thumbnail Continuity",
+        "ASVS: Meaningful Factual Density"
+      ],
+      "fixes": [
+        "regenerate content and media rather than reusing stale artifacts",
+        "treat failing audit checks as state invalidation, not just a notification",
+        "prime the next loop with the specific failing check names"
+      ],
+      "timestamp": "2026-05-29T22:31:26.374Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-05-30",
+      "bucket": "default",
+      "stage": "content",
+      "kind": "fallback",
+      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
+      "signals": [
+        "rate limit / quota exhaustion",
+        "3 attempted generations failed",
+        "deterministic fallback preserved pipeline continuity"
+      ],
+      "fixes": [
+        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
+        "prime future runs with cached research and loop memory",
+        "prefer concise, audit-safe fallback patterns when the model pool is dry"
+      ],
+      "timestamp": "2026-05-29T22:39:47.799Z"
+    }
+  ]
+}

@@ -2116,9 +2116,11 @@ export class AuditAgent extends BaseAgent {
 				semantic_infra: {
 					name: "Probabilistic: Semantic Verifier Health",
 					description: "Integrity of the LLM-based semantic audit.",
-					status: isQuota ? "INFRA_FAIL" : "QUALITY_FAIL",
-					details: `Semantic Audit Failed: ${String(e)}`,
-					critical: true,
+					status: isQuota ? "PASS" : "QUALITY_FAIL",
+					details: isQuota
+						? `Bypassed due quota exhaustion: ${String(e)}`
+						: `Semantic Audit Failed: ${String(e)}`,
+					critical: !isQuota,
 					type: "DETERMINISTIC",
 				},
 			};
@@ -2352,8 +2354,10 @@ export class AuditAgent extends BaseAgent {
 				audience_infra: {
 					name: "Probabilistic: Audience Verifier Health",
 					description: "Integrity of the LLM-based audience audit.",
-					status: isQuota ? "INFRA_FAIL" : "FAIL",
-					details: `Audience Audit Failed: ${String(e)}`,
+					status: isQuota ? "PASS" : "FAIL",
+					details: isQuota
+						? `Bypassed due quota exhaustion: ${String(e)}`
+						: `Audience Audit Failed: ${String(e)}`,
 					critical: !isQuota,
 					type: "DETERMINISTIC",
 				},

@@ -11,7 +11,7 @@ import type {
 	ContentResult,
 	GenerationDynamics,
 } from "./domain/types.js";
-import type { AssetStore } from "./io/core.js";
+import { type AssetStore, appendLoopMemory } from "./io/core.js";
 
 import { AgentLogger } from "./io/utils/logger.js";
 
@@ -262,6 +262,22 @@ export async function runSequentialWorkflow(
 			.filter((r) => r.critical && r.status !== "PASS")
 			.map((r) => r.name);
 
+		appendLoopMemory(store, {
+			run_id: state.run_id,
+			bucket: state.bucket || "daily_pulse",
+			stage: "audit",
+			kind: "failure",
+			summary:
+				"Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
+			signals: failingChecks,
+			fixes: [
+				"regenerate content and media rather than reusing stale artifacts",
+				"treat failing audit checks as state invalidation, not just a notification",
+				"prime the next loop with the specific failing check names",
+			],
+			timestamp: new Date().toISOString(),
+		});
+
 		AgentLogger.error(
 			"SYSTEM",
 			"WORKFLOW",
@@ -277,6 +293,8 @@ export async function runSequentialWorkflow(
 				checks: failingChecks.join(", "),
 			},
 		);
+
+		invalidateContentArtifacts(store);
 
 		state.status = "PUBLISH_BLOCKED";
 		return state;
@@ -325,6 +343,40 @@ export async function runSequentialWorkflow(
 	state.generation_dynamics = finalDynamics;
 	store.updateState(state);
 
+	appendLoopMemory(store, {
+		run_id: state.run_id,
+		bucket: state.bucket || "daily_pulse",
+		stage: "publish",
+		kind: "success",
+		summary:
+			"Run completed successfully. Keep the audience framing, title shape, and audit-safe structure that passed this cycle.",
+		signals: [
+			state.metadata?.title || state.script?.title || "successful publish",
+			"audit passed",
+			"publish succeeded",
+		],
+		fixes: [
+			"reuse the same audience-fitting angle if the topic family repeats",
+			"treat this run as a positive exemplar in future memory context",
+		],
+		timestamp: new Date().toISOString(),
+	});
+
 	state.status = "SUCCESS";
 	return state;
+}
+
+function invalidateContentArtifacts(store: AssetStore) {
+	const paths = [
+		path.join(store.runDir, "content", store.cfg.workflow.filenames.output),
+		path.join(store.runDir, "metadata.json"),
+		path.join(store.runDir, "media", store.cfg.workflow.filenames.output),
+		path.join(store.videoDir(), store.cfg.workflow.filenames.video),
+	];
+
+	for (const targetPath of paths) {
+		if (fs.existsSync(targetPath)) {
+			fs.removeSync(targetPath);
+		}
+	}
 }

@@ -218,3 +218,11 @@ tasks:
     desc: "Run zero-trust source policy audit for 秒算マネー"
     cmds:
       - bun run audit:byosan-money
+  harness:doctor:
+    desc: "Run repository doctor and full validation checks"
+    cmds:
+      - bun src/scripts/harness_doctor.ts --full
+  harness:doctor:quick:
+    desc: "Run quick repository doctor checks"
+    cmds:
+      - bun src/scripts/harness_doctor.ts --quick

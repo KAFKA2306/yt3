@@ -42,6 +42,8 @@ readonly latest_log="${repo_dir}/logs/latest.log"
 readonly status_file="${repo_dir}/data/state/last_run.json"
 readonly lock_file="${repo_dir}/logs/cron.lock"
 readonly uv_bin="${UV_BIN:-$(command -v uv || echo /root/.local/bin/uv)}"
+readonly node_bin="${NODE_BIN:-$(if [ -x /root/.nvm/versions/node/v22.17.1/bin/node ]; then echo /root/.nvm/versions/node/v22.17.1/bin/node; else command -v node; fi)}"
+readonly log_start_line="$(wc -l < "${log_file}" 2>/dev/null || echo 0)"
 
 mkdir -p "${log_dir}" "${daily_log_dir}"
 exec >>"${log_file}" 2>&1
@@ -51,6 +53,21 @@ ln -sf "${log_file}" "${latest_log}"
 
 timestamp() {
   date '+%Y-%m-%dT%H:%M:%S%z'
+}
+
+current_run_log() {
+  tail -n +"$((log_start_line + 1))" "${log_file}" 2>/dev/null || true
+}
+
+run_auto_heal() {
+  local reason="$1"
+
+  (
+    cd "${repo_dir}"
+    export PATH="/root/.nvm/versions/node/v22.17.1/bin:/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+    echo "[$(timestamp)] --- Auto-Healing Triggered for ${reason} ---" >> logs/healing.log
+    "${node_bin}" /usr/local/bin/gemini -m gemini-2.5-flash "${2}" >> logs/healing.log 2>&1
+  ) &
 }
 
 printf '[%s] INFO  acquiring lock\n' "$(timestamp)"
@@ -76,11 +93,15 @@ notify_failure() {
   local exit_code=$1
   local duration=$2
   local error_type="Unknown Error"
+  local run_log
+  run_log="$(current_run_log)"
   
   # Detect specific error patterns in the log
-  if grep -qiE "Permission denied|EACCES|operation not permitted" "${log_file}"; then
+  if printf '%s\n' "${run_log}" | grep -qiE "Permission denied|EACCES|EPERM|operation not permitted|Read-only file system"; then
     error_type="🚨 PERMISSION_ERROR (Root Escalation Issue)"
-  elif grep -qiE "SyntaxError: JSON Parse error|JSON\.parse" "${log_file}"; then
+  elif printf '%s\n' "${run_log}" | grep -qiE "Failed to generate a script passing integrity audits|integrity linter|AUDIT_FAIL"; then
+    error_type="🧩 CONTENT_INTEGRITY_ERROR (Audience Fit Issue)"
+  elif printf '%s\n' "${run_log}" | grep -qiE "SyntaxError: JSON Parse error|JSON\.parse"; then
     error_type="🧠 LLM_PARSE_ERROR (Logic/Formatting Issue)"
   fi
 
@@ -89,14 +110,11 @@ notify_failure() {
   # If it's a target error, invoke Gemini CLI autonomously
   if [[ "${error_type}" != "Unknown Error" ]]; then
     msg="${msg}\n\n🤖 **Auto-Healing Initiated**: Invoking Gemini CLI to investigate and patch the root cause autonomously."
-    
-    # Run in background to avoid blocking the workflow exit
-    (
-      cd "${repo_dir}"
-      export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
-      echo "[$(timestamp)] --- Auto-Healing Triggered for ${error_type} ---" >> logs/healing.log
-      "${bun_bin}" /usr/local/bin/gemini -m gemini-2.5-flash "FATAL ERROR: ${error_type}. Read logs/latest.log. Autonomously fix the code or system configuration causing this. You are running in a headless auto-healing context. Do not ask questions. Implement the fix, verify it, and exit." >> logs/healing.log 2>&1
-    ) &
+
+    # Run in background to avoid blocking the workflow exit.
+    run_auto_heal \
+      "${error_type}" \
+      "FATAL ERROR: ${error_type}. Read logs/latest.log. Autonomously fix the code or system configuration causing this. You are running in a headless auto-healing context. Do not ask questions. Implement the fix, verify it, and exit."
   fi
 
   printf '[%s] ERROR %s\n' "$(timestamp)" "${msg}"
@@ -157,15 +175,27 @@ ensure_voicevox_running() {
     notify_critical "🚨 **YT3 Automation FATAL**: Voicevox failed to respond after attempted start. Invoking Auto-Healing..."
     
     # Trigger Gemini CLI to fix Voicevox environment autonomously
-    (
-      cd "${repo_dir}"
-      export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
-      echo "[$(timestamp)] --- Auto-Healing Triggered for VOICEVOX_STARTUP_FAILURE ---" >> logs/healing.log
-      "${bun_bin}" /usr/local/bin/gemini -m gemini-2.5-flash "FATAL ERROR: Voicevox is not responding. Check docker containers, ports (50121), and system resources. Autonomously fix the issue (e.g., restart docker, kill blocking processes, or recreate container) and ensure it is UP and responding to /version. Then exit." >> logs/healing.log 2>&1
-    ) &
+    run_auto_heal \
+      "VOICEVOX_STARTUP_FAILURE" \
+      "FATAL ERROR: Voicevox is not responding. Check docker containers, ports (50121), and system resources. Autonomously fix the issue (e.g., restart docker, kill blocking processes, or recreate container) and ensure it is UP and responding to /version. Then exit."
     
     return 1
   fi
+  return 0
+}
+
+run_harness_doctor() {
+  if [ "${SKIP_HARNESS_DOCTOR:-false}" = "true" ]; then
+    printf '[%s] INFO  harness doctor skipped via SKIP_HARNESS_DOCTOR\n' "$(timestamp)"
+    return 0
+  fi
+
+  printf '[%s] INFO  running harness doctor...\n' "$(timestamp)"
+  if ! "${bun_bin}" src/scripts/harness_doctor.ts --quick; then
+    notify_critical "🚨 **YT3 Automation FATAL**: Harness doctor failed before workflow execution."
+    return 1
+  fi
+  printf '[%s] INFO  harness doctor passed.\n' "$(timestamp)"
   return 0
 }
 
@@ -207,6 +237,7 @@ run_exit=0
 
 # Check Voicevox before proceeding
 ensure_voicevox_running || exit 1
+run_harness_doctor || exit 1
 
 printf '[%s] INFO  starting workflow run (pid=%s)\n' "$(timestamp)" "$$"
 

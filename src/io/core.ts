@@ -58,6 +58,16 @@ export { Logger as AgentLogger };
 export type { AgentState };
 export { RunStage };
 export { QuotaExhaustionError };
+export interface LoopMemoryEntry {
+	run_id: string;
+	bucket: string;
+	stage: string;
+	kind: "fallback" | "failure" | "success";
+	summary: string;
+	signals: string[];
+	fixes: string[];
+	timestamp: string;
+}
 export interface LlmOptions {
 	model?: string;
 	temperature?: number;
@@ -308,7 +318,7 @@ export abstract class BaseAgent {
 		}
 
 		if (!res) {
-			throw new Error(
+			throw new QuotaExhaustionError(
 				`CRITICAL: LLM invocation failed after ${maxAttempts} attempts due to rate limit/quota exhaustion.`,
 			);
 		}
@@ -525,29 +535,89 @@ export function getMemoryEssenceFile(store: AssetStore): string {
 	return essenceFile;
 }
 
+export function getLoopMemoryFile(store: AssetStore): string {
+	const isCognitive = store.runDir.includes("humanity_observatory");
+	const subDir = isCognitive ? "humanity_observatory" : "daily_pulse";
+	return path.join(ROOT, "data", "memory", subDir, "loop_journal.json");
+}
+
+export function appendLoopMemory(
+	store: AssetStore,
+	entry: LoopMemoryEntry,
+): void {
+	const file = getLoopMemoryFile(store);
+	const dir = path.dirname(file);
+	const data = fs.existsSync(file)
+		? (fs.readJsonSync(file) as { entries?: LoopMemoryEntry[] })
+		: { entries: [] as LoopMemoryEntry[] };
+
+	const entries = Array.isArray(data.entries) ? data.entries : [];
+	const nextEntry = {
+		...entry,
+		timestamp: entry.timestamp || new Date().toISOString(),
+	};
+	const deduped = entries.filter(
+		(existing) =>
+			!(
+				existing.run_id === nextEntry.run_id &&
+				existing.stage === nextEntry.stage &&
+				existing.kind === nextEntry.kind &&
+				existing.summary === nextEntry.summary
+			),
+	);
+	const capped = [...deduped, nextEntry].slice(-30);
+	fs.ensureDirSync(dir);
+	fs.writeJsonSync(file, { entries: capped }, { spaces: 2 });
+}
+
 export function loadMemoryContext(store: AssetStore): string {
 	const essenceFile = getMemoryEssenceFile(store);
+	const loopFile = getLoopMemoryFile(store);
 
-	if (!fs.existsSync(essenceFile)) return "";
+	if (!fs.existsSync(essenceFile) && !fs.existsSync(loopFile)) return "";
 
-	const essencesData = fs.readJsonSync(essenceFile) as {
-		essences: Array<{
-			topic: string;
-			timestamp: string;
-			key_insights: string[];
-			universal_principles: string[];
-		}>;
-	};
+	const essencesData = fs.existsSync(essenceFile)
+		? (fs.readJsonSync(essenceFile) as {
+				essences: Array<{
+					topic: string;
+					timestamp: string;
+					key_insights: string[];
+					universal_principles: string[];
+				}>;
+			})
+		: {
+				essences: [],
+			};
+	const loopData = fs.existsSync(loopFile)
+		? (fs.readJsonSync(loopFile) as {
+				entries?: Array<LoopMemoryEntry>;
+			})
+		: { entries: [] as LoopMemoryEntry[] };
 
-	if (!essencesData.essences || essencesData.essences.length === 0) return "";
+	const recentEssences = Array.isArray(essencesData.essences)
+		? essencesData.essences.slice(-5).reverse()
+		: [];
+	const recentLoopEntries = Array.isArray(loopData.entries)
+		? loopData.entries.slice(-3).reverse()
+		: [];
 
-	const recent = essencesData.essences.slice(-5).reverse();
-	return recent
+	if (recentEssences.length === 0 && recentLoopEntries.length === 0) return "";
+
+	const loopText = recentLoopEntries
+		.map((entry) => {
+			const signals =
+				entry.signals.length > 0 ? entry.signals.join(" / ") : "なし";
+			const fixes = entry.fixes.length > 0 ? entry.fixes.join(" / ") : "なし";
+			return `【Loop ${entry.kind}: ${entry.stage}】\n${entry.summary}\n兆候: ${signals}\n対策: ${fixes}`;
+		})
+		.join("\n\n");
+	const essenceText = recentEssences
 		.map(
 			(e) =>
 				`【${e.topic}】\n${e.key_insights.slice(0, 2).join("\n")}\n原則: ${e.universal_principles[0] || ""}`,
 		)
 		.join("\n\n");
+	return [loopText, essenceText].filter(Boolean).join("\n\n");
 }
 
 export function fetchRecentThemes(store: AssetStore, days = 7): string {

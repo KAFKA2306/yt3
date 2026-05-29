@@ -7,6 +7,7 @@ import {
 	type AssetStore,
 	BaseAgent,
 	RunStage,
+	appendLoopMemory,
 	loadConfig,
 } from "../../io/core.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
@@ -140,10 +141,63 @@ export class VisualDirector extends BaseAgent {
 			this.store.runDir,
 			this.store.cfg.workflow.filenames.thumbnail,
 		);
-		await this.thumbnailGenerator.generate(
-			thumbnailTitle || title,
-			thumbnailPath,
-		);
+		const primaryThumbnailTitle = thumbnailTitle || title;
+		try {
+			await this.thumbnailGenerator.generate(
+				primaryThumbnailTitle,
+				thumbnailPath,
+			);
+		} catch (error) {
+			const errMsg = error instanceof Error ? error.message : String(error);
+			const fallbackTitle = this.buildThumbnailFallbackTitle(
+				primaryThumbnailTitle,
+				title,
+			);
+			if (!this.isThumbnailLegibilityError(errMsg)) {
+				appendLoopMemory(this.store, {
+					run_id: this.store.runDir.split(path.sep).slice(-2).join("/"),
+					bucket: options.bucket || "daily_pulse",
+					stage: "media",
+					kind: "failure",
+					summary:
+						"Thumbnail generation failed for a non-legibility reason. Capture the exact error and retry from the next loop.",
+					signals: [errMsg],
+					fixes: [
+						"inspect the thumbnail rendering path and image assets",
+						"avoid reusing a broken visual plan without review",
+					],
+					timestamp: new Date().toISOString(),
+				});
+				throw error;
+			}
+
+			AgentLogger.warn(
+				this.name,
+				"THUMBNAIL",
+				"RETRY",
+				`Primary thumbnail title failed legibility audit; retrying with a shorter fallback title: ${fallbackTitle}`,
+			);
+			appendLoopMemory(this.store, {
+				run_id: this.store.runDir.split(path.sep).slice(-2).join("/"),
+				bucket: options.bucket || "daily_pulse",
+				stage: "media",
+				kind: "fallback",
+				summary:
+					"Thumbnail x-height failure triggered a shorter fallback title. Keep future thumbnails denser and less vertically fragmented.",
+				signals: [
+					"thumbnail x-height rejection",
+					errMsg,
+					"fallback title used",
+				],
+				fixes: [
+					"prefer shorter title phrasing when generating thumbnails",
+					"reduce vertical line breaks before rendering",
+					"keep thumbnail titles under the fallback threshold",
+				],
+				timestamp: new Date().toISOString(),
+			});
+			await this.thumbnailGenerator.generate(fallbackTitle, thumbnailPath);
+		}
 
 		// 6. Video Composition
 		const videoPath = path.join(
@@ -175,6 +229,34 @@ export class VisualDirector extends BaseAgent {
 			asset_version: "humanity-scenes-v1",
 			script,
 		};
+	}
+
+	private isThumbnailLegibilityError(message: string): boolean {
+		const lower = message.toLowerCase();
+		return (
+			lower.includes("x-height") ||
+			lower.includes("font") ||
+			lower.includes("legibility") ||
+			lower.includes("可読性")
+		);
+	}
+
+	private buildThumbnailFallbackTitle(primary: string, title: string): string {
+		const source = (primary || title).replace(/\s+/g, " ").trim();
+		const segments = source
+			.split(/[、,，:：|/・\-—]+/)
+			.map((s) => s.trim())
+			.filter(Boolean);
+		if (segments.length >= 2) {
+			return segments.slice(0, 3).join("\n");
+		}
+		const compact = source
+			.replace(/\b(2026|2027|2028)\b/g, "")
+			.replace(/\s{2,}/g, " ")
+			.trim();
+		return compact.length > 18
+			? `${compact.slice(0, 18)}\n続きは本文で`
+			: compact;
 	}
 
 	private async synthesizeAudio(

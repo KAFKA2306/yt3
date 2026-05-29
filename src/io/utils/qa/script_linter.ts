@@ -49,6 +49,23 @@ export class ScriptIntegrityLinter {
 		"いかがでしたでしょうか",
 	];
 
+	private extractMeaningfulNumericClaims(text: string): string[] {
+		const claims = new Set<string>();
+		const patterns = [
+			/\d{4}[/-]\d{1,2}[/-]\d{1,2}/g,
+			/\d+(?:\.\d+)?%/g,
+			/\d+(?:\.\d+)?\s?(?:億円|万円|円|ドル|人|件|回|日|年|ヶ月|か月|時間|分|秒|MW|GW|kW|GB|TB|nm|倍|台|社|ポイント)/g,
+			/\d+\s*(?:〜|-)\s*\d+/g,
+		];
+
+		for (const pattern of patterns) {
+			const matches = text.match(pattern) || [];
+			for (const match of matches) claims.add(match);
+		}
+
+		return [...claims];
+	}
+
 	/**
 	 * Run all 10 layers of discomfort audit (v2)
 	 */
@@ -81,6 +98,11 @@ export class ScriptIntegrityLinter {
 		const metricCheck = this.checkMetricDensity(script);
 		checks.push(metricCheck);
 		if (metricCheck.status === "WARN") totalScore -= 10;
+
+		// 3.5. Metadata Leakage Check
+		const metadataLeakCheck = this.checkMetadataLeakage(script);
+		checks.push(metadataLeakCheck);
+		if (metadataLeakCheck.status === "FAIL") totalScore -= 20;
 
 		// 4. Repetition Entropy (Duplication Check v2)
 		const dupCheck = this.checkRepetitionEntropy(script);
@@ -140,11 +162,12 @@ export class ScriptIntegrityLinter {
 		news: NewsItem[],
 	): DiscomfortLinterResult["checks"][0] {
 		const allText = script.lines.map((l) => l.text).join(" ");
-		const numbers = allText.match(/\d+(?:\.\d+)?%?/g) || [];
-
-		const newsText = news.map((n) => `${n.summary} ${n.title}`).join(" ");
-		const unverifiedNumbers = numbers.filter(
-			(n) => !newsText.includes(n.replace("%", "")),
+		const newsText = news
+			.map((n) => `${n.title} ${n.summary} ${n.published_at || ""} ${n.url}`)
+			.join(" ");
+		const meaningfulClaims = this.extractMeaningfulNumericClaims(allText);
+		const unverifiedNumbers = meaningfulClaims.filter(
+			(claim) => !newsText.includes(claim.replace(/\s+/g, "")),
 		);
 
 		if (unverifiedNumbers.length > 5) {
@@ -186,6 +209,30 @@ export class ScriptIntegrityLinter {
 			layer: "MetricDensity",
 			status: "OK",
 			message: "Metric density is natural",
+		};
+	}
+
+	private checkMetadataLeakage(
+		script: Script,
+	): DiscomfortLinterResult["checks"][0] {
+		const leakedLines = script.lines.filter((line) =>
+			/\bsource_(?:tier|identifier|url)\b/i.test(line.text),
+		);
+
+		if (leakedLines.length > 0) {
+			return {
+				layer: "MetadataLeakage",
+				status: "FAIL",
+				message:
+					"Source metadata leaked into dialogue lines instead of staying in references",
+				details: leakedLines.slice(0, 5).map((line) => line.text),
+			};
+		}
+
+		return {
+			layer: "MetadataLeakage",
+			status: "OK",
+			message: "Dialogue contains no source metadata leakage",
 		};
 	}
 
