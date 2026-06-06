@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { sendAlert } from "../io/utils/discord.js";
 
 type ChannelKey = "daily_pulse" | "humanity_observatory";
 
@@ -178,19 +179,16 @@ function formatReport(report: AuditTodayReport): string {
 	return lines.join("\n");
 }
 
-async function notifyDiscord(message: string): Promise<void> {
-	const webhook = process.env.DISCORD_WEBHOOK_URL;
-	if (!webhook) return;
+async function notifyDiscord(report: AuditTodayReport): Promise<void> {
+	const summary = report.reports
+		.map((item) => {
+			const channelName =
+				item.channel === "daily_pulse" ? "秒算マネー" : "人類観測所";
+			return `${channelName}: research=${item.research_done ? "✅" : "❌"}, video=${item.video_done ? "✅" : "❌"}, publish=${item.publish_done ? "✅" : "❌"}, audit=${item.audit_passed ? "✅" : "⚠️"}`;
+		})
+		.join("\n");
 
-	const response = await fetch(webhook, {
-		method: "POST",
-		headers: { "content-type": "application/json" },
-		body: JSON.stringify({ content: message }),
-	});
-
-	if (!response.ok) {
-		throw new Error(`Discord webhook failed with status ${response.status}`);
-	}
+	await sendAlert(`Audit Today ${report.today}\n${summary}`, "info");
 }
 
 async function main(): Promise<void> {
@@ -215,7 +213,7 @@ async function main(): Promise<void> {
 	);
 
 	console.log(markdown);
-	await notifyDiscord(markdown);
+	await notifyDiscord(report);
 }
 
 main().catch((error: unknown) => {

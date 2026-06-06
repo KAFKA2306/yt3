@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
 	type AssetStore,
 	BaseAgent,
+	QuotaExhaustionError,
 	ROOT,
 	RunStage,
 	parseLlmJson,
@@ -2111,7 +2112,11 @@ export class AuditAgent extends BaseAgent {
 			};
 		} catch (e) {
 			evidence.semantic_error = String(e);
-			const isQuota = String(e).includes("429");
+			const isQuota =
+				e instanceof QuotaExhaustionError ||
+				String(e).includes("429") ||
+				String(e).toLowerCase().includes("quota exhaustion") ||
+				String(e).includes("LLM invocation failed after 5 attempts");
 			return {
 				semantic_infra: {
 					name: "Probabilistic: Semantic Verifier Health",
@@ -2349,7 +2354,11 @@ export class AuditAgent extends BaseAgent {
 			};
 		} catch (e) {
 			evidence.audience_error = String(e);
-			const isQuota = String(e).includes("429");
+			const isQuota =
+				e instanceof QuotaExhaustionError ||
+				String(e).includes("429") ||
+				String(e).toLowerCase().includes("quota exhaustion") ||
+				String(e).includes("LLM invocation failed after 5 attempts");
 			return {
 				audience_infra: {
 					name: "Probabilistic: Audience Verifier Health",
@@ -3192,6 +3201,8 @@ export class AuditAgent extends BaseAgent {
 			.replace(/(\d+)万(\d+)せん/g, "$1万$2000")
 			.replace(/(\d+)セン/g, "$1000")
 			.replace(/(\d+)せん/g, "$1000")
+			.replace(/デセオクゲ/g, "千億")
+			.replace(/デセオク/g, "千億")
 			.replace(/千/g, "1000")
 			.replace(/せん/g, "1000")
 			.replace(/セン/g, "1000")

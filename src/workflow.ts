@@ -130,6 +130,7 @@ export async function runSequentialWorkflow(
 		};
 		store.save("content", "output", contentResults);
 		fs.writeJsonSync(metadataJsonPath, contentResults.metadata, { spaces: 2 });
+		invalidateMediaArtifacts(store);
 	}
 
 	// Generate Phase 2 Dynamics: narrative_state, generation_state & attention_state
@@ -377,6 +378,26 @@ function invalidateContentArtifacts(store: AssetStore) {
 	for (const targetPath of paths) {
 		if (fs.existsSync(targetPath)) {
 			fs.removeSync(targetPath);
+		}
+	}
+}
+
+function invalidateMediaArtifacts(store: AssetStore) {
+	const mediaDir = path.join(store.runDir, "media");
+	const paths = [
+		path.join(mediaDir, store.cfg.workflow.filenames.output),
+		path.join(mediaDir, "audio", "manifest.json"),
+		path.join(mediaDir, "audio"),
+		path.join(mediaDir, "thumbnail.png"),
+		path.join(mediaDir, "video", store.cfg.workflow.filenames.video),
+		path.join(mediaDir, "video"),
+		path.join(store.runDir, store.cfg.workflow.filenames.thumbnail),
+		path.join(store.runDir, store.cfg.workflow.filenames.subtitles),
+	];
+
+	for (const p of paths) {
+		if (fs.existsSync(p)) {
+			fs.removeSync(p);
 		}
 	}
 }

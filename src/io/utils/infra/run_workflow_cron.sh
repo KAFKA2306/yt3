@@ -85,7 +85,10 @@ fi
 notify_critical() {
   printf '[%s] CRITICAL %s\n' "$(timestamp)" "$1"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
-    curl -s -H "Content-Type: application/json" -d "{\"content\": \"$1\"}" "${DISCORD_WEBHOOK_URL}" > /dev/null || true
+    (
+      cd "${repo_dir}"
+      DISCORD_ALERT_TYPE="error" DISCORD_ALERT_MESSAGE="$1" "${bun_bin}" src/scripts/send_discord_alert.ts >/dev/null 2>&1 || true
+    )
   fi
 }
 
@@ -119,7 +122,10 @@ notify_failure() {
 
   printf '[%s] ERROR %s\n' "$(timestamp)" "${msg}"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
-    curl -s -H "Content-Type: application/json" -d "{\"content\": \"${msg}\"}" "${DISCORD_WEBHOOK_URL}" > /dev/null || true
+    (
+      cd "${repo_dir}"
+      DISCORD_ALERT_TYPE="error" DISCORD_ALERT_MESSAGE="${msg}" "${bun_bin}" src/scripts/send_discord_alert.ts >/dev/null 2>&1 || true
+    )
   fi
 }
 
@@ -143,7 +149,10 @@ notify_success() {
   local msg="✅ **YT3 Automation SUCCESS**\n🎬 **Title**: ${title}\n🔗 **URL**: ${video_url:-"(no URL)"}\n⏱️ **Duration**: ${duration}s"
   printf '[%s] INFO  %s\n' "$(timestamp)" "${msg}"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
-    curl -s -H "Content-Type: application/json" -d "{\"content\": \"${msg}\"}" "${DISCORD_WEBHOOK_URL}" > /dev/null || true
+    (
+      cd "${repo_dir}"
+      DISCORD_ALERT_TYPE="success" DISCORD_ALERT_MESSAGE="${msg}" "${bun_bin}" src/scripts/send_discord_alert.ts >/dev/null 2>&1 || true
+    )
   fi
 }
 

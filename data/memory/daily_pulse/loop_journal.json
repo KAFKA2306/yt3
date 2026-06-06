@@ -45,19 +45,17 @@
       "kind": "failure",
       "summary": "Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
       "signals": [
-        "Probabilistic: Semantic Verifier Health",
-        "Voice Role: Acoustic Separation",
-        "Build: Linter Validation",
-        "Probabilistic: Audience Verifier Health",
-        "ASVS: Deterministic Thumbnail Continuity",
-        "ASVS: Meaningful Factual Density"
+        "Signal: ASR Loopback",
+        "Probabilistic: Narrative Structure",
+        "Probabilistic: Entity Density",
+        "Probabilistic: Abstract Noun Ratio"
       ],
       "fixes": [
         "regenerate content and media rather than reusing stale artifacts",
         "treat failing audit checks as state invalidation, not just a notification",
         "prime the next loop with the specific failing check names"
       ],
-      "timestamp": "2026-05-29T22:31:26.374Z"
+      "timestamp": "2026-05-30T09:00:15.856Z"
     },
     {
       "run_id": "daily_pulse/2026-05-30",
@@ -75,7 +73,174 @@
         "prime future runs with cached research and loop memory",
         "prefer concise, audit-safe fallback patterns when the model pool is dry"
       ],
-      "timestamp": "2026-05-29T22:39:47.799Z"
+      "timestamp": "2026-05-30T09:08:58.312Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-05-30",
+      "bucket": "daily_pulse",
+      "stage": "publish",
+      "kind": "success",
+      "summary": "Run completed successfully. Keep the audience framing, title shape, and audit-safe structure that passed this cycle.",
+      "signals": [
+        "高金利と生活コスト: AI投資はどこへ向かう？",
+        "audit passed",
+        "publish succeeded"
+      ],
+      "fixes": [
+        "reuse the same audience-fitting angle if the topic family repeats",
+        "treat this run as a positive exemplar in future memory context"
+      ],
+      "timestamp": "2026-05-30T09:29:14.655Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-04",
+      "bucket": "daily_pulse",
+      "stage": "publish",
+      "kind": "success",
+      "summary": "Run completed successfully. Keep the audience framing, title shape, and audit-safe structure that passed this cycle.",
+      "signals": [
+        "S&P500利益28.6%増はNVIDIA集中。2026年7月4日、トランプ・アカウント年間210億ドル米国株自動流入開始",
+        "audit passed",
+        "publish succeeded"
+      ],
+      "fixes": [
+        "reuse the same audience-fitting angle if the topic family repeats",
+        "treat this run as a positive exemplar in future memory context"
+      ],
+      "timestamp": "2026-06-04T11:42:33.277Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-04",
+      "bucket": "daily_pulse",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "EACCES: permission denied, open '/home/kafka/2511youtuber/v3/yt3/runs/daily_pulse/2026-06-04/state.json'"
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-04T11:42:47.261Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-05",
+      "bucket": "daily_pulse",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: LLM invocation failed after 5 attempts due to rate limit/quota exhaustion."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-04T22:33:45.237Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-05",
+      "bucket": "default",
+      "stage": "content",
+      "kind": "fallback",
+      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
+      "signals": [
+        "rate limit / quota exhaustion",
+        "3 attempted generations failed",
+        "deterministic fallback preserved pipeline continuity"
+      ],
+      "fixes": [
+        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
+        "prime future runs with cached research and loop memory",
+        "prefer concise, audit-safe fallback patterns when the model pool is dry"
+      ],
+      "timestamp": "2026-06-05T06:49:36.566Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-05",
+      "bucket": "daily_pulse",
+      "stage": "audit",
+      "kind": "failure",
+      "summary": "Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
+      "signals": [
+        "Signal: ASR Loopback",
+        "Probabilistic: Audience Verifier Health"
+      ],
+      "fixes": [
+        "regenerate content and media rather than reusing stale artifacts",
+        "treat failing audit checks as state invalidation, not just a notification",
+        "prime the next loop with the specific failing check names"
+      ],
+      "timestamp": "2026-06-05T07:01:13.831Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-05",
+      "bucket": "daily_pulse",
+      "stage": "publish",
+      "kind": "success",
+      "summary": "Run completed successfully. Keep the audience framing, title shape, and audit-safe structure that passed this cycle.",
+      "signals": [
+        "S&P500利益28.6%増：NVIDIAなどAIメガキャップ集中とWTI原油87ドル、2026年トランプ・アカウントが促す資産再考",
+        "audit passed",
+        "publish succeeded"
+      ],
+      "fixes": [
+        "reuse the same audience-fitting angle if the topic family repeats",
+        "treat this run as a positive exemplar in future memory context"
+      ],
+      "timestamp": "2026-06-05T07:17:54.980Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-06",
+      "bucket": "daily_pulse",
+      "stage": "audit",
+      "kind": "failure",
+      "summary": "Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
+      "signals": [
+        "Operation: Error Classification"
+      ],
+      "fixes": [
+        "regenerate content and media rather than reusing stale artifacts",
+        "treat failing audit checks as state invalidation, not just a notification",
+        "prime the next loop with the specific failing check names"
+      ],
+      "timestamp": "2026-06-06T00:18:01.047Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-06",
+      "bucket": "default",
+      "stage": "content",
+      "kind": "fallback",
+      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
+      "signals": [
+        "rate limit / quota exhaustion",
+        "3 attempted generations failed",
+        "deterministic fallback preserved pipeline continuity"
+      ],
+      "fixes": [
+        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
+        "prime future runs with cached research and loop memory",
+        "prefer concise, audit-safe fallback patterns when the model pool is dry"
+      ],
+      "timestamp": "2026-06-06T04:07:56.929Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-06",
+      "bucket": "daily_pulse",
+      "stage": "publish",
+      "kind": "success",
+      "summary": "Run completed successfully. Keep the audience framing, title shape, and audit-safe structure that passed this cycle.",
+      "signals": [
+        "高金利と生活コスト: AI投資はどこへ向かう？",
+        "audit passed",
+        "publish succeeded"
+      ],
+      "fixes": [
+        "reuse the same audience-fitting angle if the topic family repeats",
+        "treat this run as a positive exemplar in future memory context"
+      ],
+      "timestamp": "2026-06-06T04:27:01.836Z"
     }
   ]
 }

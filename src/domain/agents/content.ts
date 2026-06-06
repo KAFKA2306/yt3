@@ -417,7 +417,7 @@ export class ScriptSmith extends BaseAgent {
 					]
 				: [
 						{
-							speaker: "春日部つむぎ",
+							speaker: "玄野",
 							text: `${macro.title}。高金利が長引くほど、住宅ローンも生活コストも下がりにくい。`,
 							duration: 0,
 						},
@@ -427,7 +427,7 @@ export class ScriptSmith extends BaseAgent {
 							duration: 0,
 						},
 						{
-							speaker: "春日部つむぎ",
+							speaker: "玄野",
 							text: `${china.title} は3年間で1000億元。TSMCのドイツ工場も重なって、供給網が組み替わる。`,
 							duration: 0,
 						},
@@ -437,7 +437,7 @@ export class ScriptSmith extends BaseAgent {
 							duration: 0,
 						},
 						{
-							speaker: "春日部つむぎ",
+							speaker: "玄野",
 							text: "高金利、AI投資、生活コスト。この3語を押さえれば、今日の資本の向きが見える。",
 							duration: 0,
 						},
