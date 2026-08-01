@@ -63,12 +63,25 @@ for (const runId of targetRuns) {
 	}
 
 	// 1. Runs
-	const hasSuccess = fs.existsSync(path.join(runPath, "SUCCESS"));
-	const status = hasSuccess
-		? "SUCCESS"
-		: runId === "2026-05-17"
-			? "PUBLISH_BLOCKED"
-			: "FAILED";
+	const runEvidencePath = path.join(runPath, "run_evidence.json");
+	const receiptPath = path.join(runPath, "publish", "receipt.json");
+	let status = "FAILED";
+	if (fs.existsSync(runEvidencePath)) {
+		try {
+			const evidence = JSON.parse(
+				fs.readFileSync(runEvidencePath, "utf-8"),
+			) as {
+				status?: string;
+			};
+			status = evidence.status || "FAILED";
+		} catch {
+			status = "FAILED";
+		}
+	} else if (fs.existsSync(receiptPath)) {
+		status = "SUCCESS";
+	} else if (runId === "2026-05-17") {
+		status = "PUBLISH_BLOCKED";
+	}
 	const insertRun = db.prepare(
 		"INSERT INTO runs (run_id, started_at, ended_at, status, workflow_version, commit_hash, config_hash, input_hash, output_hash, published_video_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 	);

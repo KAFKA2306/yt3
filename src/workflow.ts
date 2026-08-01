@@ -14,6 +14,11 @@ import type {
 import { type AssetStore, appendLoopMemory } from "./io/core.js";
 
 import { AgentLogger } from "./io/utils/logger.js";
+import {
+	classifyFailureMessage,
+	resolveDailyLogPath,
+	writeRunEvidence,
+} from "./io/utils/stability.js";
 
 import { sendAlert } from "./io/utils/discord.js";
 
@@ -298,14 +303,70 @@ export async function runSequentialWorkflow(
 		invalidateContentArtifacts(store);
 
 		state.status = "PUBLISH_BLOCKED";
+		writeRunEvidence(store.runDir, {
+			run_id: state.run_id,
+			bucket: state.bucket || "daily_pulse",
+			status: state.status,
+			disposition: "blocked",
+			log_path: resolveDailyLogPath(state.run_id),
+			evidence_paths: [
+				path.join(store.runDir, "state.json"),
+				path.join(store.runDir, "audit", "result.json"),
+			],
+			artifact_paths: [],
+			note: "Publish was blocked by critical audit checks and the content cache was invalidated.",
+		});
 		return state;
 	}
 
 	// 5. Publish (Upload to YouTube)
 	AgentLogger.info("SYSTEM", "WORKFLOW", "STEP", "Starting Publication...");
 	const publisher = new PublishAgent(store);
-	const publishResults = await publisher.run(state);
-	state = { ...state, publish_results: publishResults };
+	let publishResults: Awaited<ReturnType<PublishAgent["run"]>> | undefined;
+	try {
+		publishResults = await publisher.run(state);
+		state = { ...state, publish_results: publishResults };
+	} catch (err) {
+		const error = err as Error;
+		const failure = classifyFailureMessage(error.message);
+		appendLoopMemory(store, {
+			run_id: state.run_id,
+			bucket: state.bucket || "daily_pulse",
+			stage: "publish",
+			kind: "failure",
+			summary:
+				"Publish step was classified and recorded instead of surfacing as an ambiguous crash.",
+			signals: [error.message],
+			fixes: [
+				"keep publish-blocked evidence in the run directory",
+				"retry only when the failure is retryable",
+			],
+			timestamp: new Date().toISOString(),
+		});
+		state.status =
+			failure.disposition === "blocked"
+				? "PUBLISH_BLOCKED"
+				: failure.disposition === "pending"
+					? "PENDING"
+					: failure.disposition === "retryable"
+						? "RETRYABLE"
+						: "FAILED";
+		writeRunEvidence(store.runDir, {
+			run_id: state.run_id,
+			bucket: state.bucket || "daily_pulse",
+			status: state.status,
+			disposition: failure.disposition,
+			log_path: resolveDailyLogPath(state.run_id),
+			evidence_paths: [path.join(store.runDir, "state.json")],
+			artifact_paths: [],
+			failure,
+			note: "Publish exception was caught and classified in workflow.ts.",
+		});
+		if (failure.disposition === "fatal") {
+			throw error;
+		}
+		return state;
+	}
 
 	// Save publish/receipt.json
 	fs.writeJsonSync(
@@ -364,6 +425,19 @@ export async function runSequentialWorkflow(
 	});
 
 	state.status = "SUCCESS";
+	writeRunEvidence(store.runDir, {
+		run_id: state.run_id,
+		bucket: state.bucket || "daily_pulse",
+		status: state.status,
+		disposition: "success",
+		log_path: resolveDailyLogPath(state.run_id),
+		evidence_paths: [
+			path.join(store.runDir, "state.json"),
+			path.join(store.runDir, "publish", "receipt.json"),
+		],
+		artifact_paths: [state.video_path || ""].filter(Boolean),
+		note: "Sequential workflow completed successfully with publish receipt evidence.",
+	});
 	return state;
 }
 

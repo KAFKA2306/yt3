@@ -10,8 +10,15 @@ import {
 const THRESHOLD = 0.3;
 const DAILY_LIMIT = 1000;
 const rateLimitedKeys = new Map<string, number>();
+const rateLimitBackoff = new Map<string, number>();
 
 export async function waitIfRateLimited(keyName: string): Promise<number> {
+	const cooldownExpiry = rateLimitedKeys.get(keyName) || 0;
+	const waitMs = Math.max(0, cooldownExpiry - Date.now());
+	if (waitMs > 0) {
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
+		return waitMs;
+	}
 	return 0;
 }
 
@@ -79,7 +86,10 @@ export function updateFromHeaders(
 }
 
 export function markKeyRateLimited(key: string) {
-	rateLimitedKeys.set(key, Date.now() + 60000); // 60s cooldown
+	const level = Math.min((rateLimitBackoff.get(key) || 0) + 1, 5);
+	rateLimitBackoff.set(key, level);
+	const cooldownMs = 60_000 * level;
+	rateLimitedKeys.set(key, Date.now() + cooldownMs);
 	Ledger.updateQuota(key, 1, 0);
 }
 

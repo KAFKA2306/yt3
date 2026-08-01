@@ -69,7 +69,8 @@ export const promptExampleTerms = [
 	"アイスクリーム",
 ];
 
-// 6. 生活断片オブジェクト分類 (Mundane Object Ontology)
+// 6. 生活断片オブジェクト分類 (Mundane Object Lexicon)
+// NOTE: This is a local domain vocabulary, not an ISO top-level ontology.
 export const mundaneClassifications = {
 	food: [
 		"アイス",
@@ -185,6 +186,16 @@ export const mundaneClassifications = {
 		"小銭",
 	],
 };
+
+export const projectOntologyAlignment = {
+	scope: "Humanity Observatory domain vocabulary",
+	standard_basis: [
+		"ISO/IEC 21838-1:2021",
+		"ISO 5127:2017",
+		"ISO/IEC TR 20943-6:2013",
+	],
+	role: "local domain vocabulary aligned to a top-level ontology, not a published ISO ontology",
+} as const;
 
 // 7. 各種監査閾値
 export const thresholds = {

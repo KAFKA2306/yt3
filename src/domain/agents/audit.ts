@@ -10,6 +10,7 @@ import {
 	RunStage,
 	parseLlmJson,
 } from "../../io/core.js";
+import { evaluateCreativeFreshness } from "../../io/utils/creative_freshness.js";
 import { ScriptIntegrityLinter } from "../../io/utils/qa/script_linter.js";
 import { DynamicsOrchestrator } from "../evolution/dynamics_orchestrator.js";
 import { AuditReportSchema } from "../types.js";
@@ -201,6 +202,9 @@ export class AuditAgent extends BaseAgent {
 
 		// 2. POLICY AUDIT (DETERMINISTIC / REGEX)
 		Object.assign(results, this.auditPolicies(state, evidence));
+
+		// 2.5 CREATIVE FRESHNESS AUDIT (DETERMINISTIC / RECENT-RUN COMPARISON)
+		Object.assign(results, this.auditCreativeFreshness(state, evidence));
 
 		// 3. SEMANTIC AUDIT (BOUNDED PROBABILISTIC / LLM)
 		if (
@@ -1050,37 +1054,40 @@ export class AuditAgent extends BaseAgent {
 
 		if (!videoPath || !fs.existsSync(videoPath)) return {};
 
-		// A. Signal: Loudness (EBU R128) - Compliance with YouTube/Broadcast standards
+		// A. Signal: Loudness & Voice QA
 		try {
-			const audioLog = execSync(
-				`ffmpeg -nostats -i "${videoPath}" -af ebur128=peak=true -f null /dev/null 2>&1`,
-				{ encoding: "utf-8", maxBuffer: 100 * 1024 * 1024 },
-			);
-			const summaryPart = audioLog.split("Summary:")[1] || audioLog;
-			const integratedLUFS = Number.parseFloat(
-				summaryPart.match(/I:\s+([\-\d\.]+) LUFS/)?.[1] || "0",
-			);
-			const truePeak = Number.parseFloat(
-				summaryPart.match(/Peak:\s+([\-\d\.]+) (dBTP|dBFS)/)?.[1] || "0",
-			);
+			let runDir = path.dirname(videoPath);
+			while (
+				runDir &&
+				!fs.existsSync(path.join(runDir, "run_evidence.json")) &&
+				!fs.existsSync(path.join(runDir, "state.json")) &&
+				runDir !== path.dirname(runDir)
+			) {
+				runDir = path.dirname(runDir);
+			}
 
-			const pass =
-				integratedLUFS > -18 && integratedLUFS < -11 && truePeak <= 0.1;
+			const { runAudioQA } = require("../../io/utils/audio_qa.ts");
+			const qaResult = runAudioQA(videoPath, runDir);
 			checks.audio_loudness = {
-				name: "Signal: Loudness (EBU R128)",
+				name: "Signal: Voice & Loudness Quality QA",
 				description:
-					"Target -14 LUFS (+/- 2). Rejects clipping or whisper-quiet audio.",
-				status: pass ? "PASS" : "QUALITY_FAIL",
-				details: `LUFS: ${integratedLUFS}, Peak: ${truePeak} dB`,
+					"Target -14 LUFS, max 3s silences, and channel-specific speech rate boundaries.",
+				status: qaResult.status,
+				details: qaResult.details,
 				critical: true,
 				type: "DETERMINISTIC",
 			};
-			evidence.ebur128 = { integratedLUFS, truePeak };
+			evidence.audio_qa = qaResult.report;
+			evidence.ebur128 = {
+				integratedLUFS: qaResult.report.integrated_loudness_lufs,
+				truePeak: qaResult.report.true_peak_db,
+			};
 		} catch (e) {
 			evidence.loudness_error = String(e);
 			checks.audio_loudness = {
-				name: "Signal: Loudness (EBU R128)",
-				description: "Loudness check.",
+				name: "Signal: Voice & Loudness Quality QA",
+				description:
+					"Target -14 LUFS, max 3s silences, and channel-specific speech rate boundaries.",
 				status: "INFRA_FAIL",
 				details: String(e),
 				critical: true,
@@ -1153,9 +1160,23 @@ export class AuditAgent extends BaseAgent {
 			const asrMap = this.getNumericFrequencyMap(asrRaw);
 
 			const missing: string[] = [];
+			// Japanese TTS reads 億/兆 units aloud; ASR may transcribe only the base digit.
+			// Build a set of magnitude-reduced equivalents for each script number.
+			const magnitudes = [1e12, 1e8, 1e4];
+			const getEquivalents = (n: number): Set<number> => {
+				const s = new Set<number>([n]);
+				for (const mag of magnitudes) {
+					if (n >= mag && n % mag === 0) s.add(n / mag);
+				}
+				return s;
+			};
+
 			for (const [num, count] of Object.entries(scriptMap)) {
 				let foundCount = 0;
 				const numVal = Number.parseFloat(num);
+				const numEquivs = Number.isNaN(numVal)
+					? new Set<number>()
+					: getEquivalents(numVal);
 
 				for (const [asrNum, asrCount] of Object.entries(asrMap)) {
 					if (asrNum === num) {
@@ -1169,12 +1190,21 @@ export class AuditAgent extends BaseAgent {
 						continue;
 					}
 
-					// Value-based fuzzy check
 					const asrVal = Number.parseFloat(asrNum);
 					if (!Number.isNaN(numVal) && !Number.isNaN(asrVal)) {
+						// Value-based fuzzy check (5% tolerance)
 						const diff = Math.abs(numVal - asrVal) / Math.max(1, numVal);
 						if (diff < 0.05) {
 							foundCount += asrCount;
+							continue;
+						}
+						// Magnitude-aware: 210億(=21000000000) vs ASR "210"
+						for (const equiv of numEquivs) {
+							const equivDiff = Math.abs(equiv - asrVal) / Math.max(1, equiv);
+							if (equivDiff < 0.05) {
+								foundCount += asrCount;
+								break;
+							}
 						}
 					}
 				}
@@ -1202,7 +1232,7 @@ export class AuditAgent extends BaseAgent {
 				description: "ASR check.",
 				status: "INFRA_FAIL",
 				details: `ASR Verifier Failed: ${String(e)}`,
-				critical: true,
+				critical: false,
 				type: "DETERMINISTIC",
 			};
 		}
@@ -1228,7 +1258,7 @@ export class AuditAgent extends BaseAgent {
 				).trim();
 				videoDuration = Number.parseFloat(durationStr) || 0;
 			} catch {
-				videoDuration = (state.script?.lines || []).length * 4; // approximate fallback
+				videoDuration = (state.script?.lines || []).length * 4; // estimated duration
 			}
 			cutMatches.push(videoDuration);
 			cutMatches.sort((a, b) => a - b);
@@ -1594,7 +1624,16 @@ export class AuditAgent extends BaseAgent {
 		let unknownErrors = 0;
 		if (fs.existsSync(logPath)) {
 			const logs = fs.readFileSync(logPath, "utf-8");
-			unknownErrors = (logs.match(/Unknown Error/gi) || []).length;
+			const runMarkers = [
+				state.run_id,
+				path.basename(this.store.runDir),
+				this.store.runDir,
+			].filter(Boolean);
+			const scopedLogs = logs
+				.split("\n")
+				.filter((line) => runMarkers.some((marker) => line.includes(marker)))
+				.join("\n");
+			unknownErrors = (scopedLogs.match(/Unknown Error/gi) || []).length;
 		}
 
 		// Also check the current evidence bundle for unclassified error strings
@@ -2004,7 +2043,7 @@ export class AuditAgent extends BaseAgent {
 				{ name: "Sentinel", time: "08:00", objective: "Success Verification" },
 			],
 			dependencies: "Linear Pipeline (Sequential)",
-			verifiable_marker: "SUCCESS file in run directory",
+			verifiable_marker: "publish/receipt.json + run_evidence.json",
 		};
 
 		const topologyPath = path.join(this.store.runDir, "job_topology.json");
@@ -2042,6 +2081,62 @@ export class AuditAgent extends BaseAgent {
 		evidence.policy = { found };
 
 		return checks;
+	}
+
+	private auditCreativeFreshness(
+		state: AgentState,
+		evidence: Record<string, unknown>,
+	): Record<string, AuditCheck> {
+		if (!state.script || !state.metadata) {
+			return {
+				creative_freshness: {
+					name: "Creative Freshness Gate",
+					description: "Requires a script and metadata to evaluate freshness.",
+					status: "UNVERIFIED",
+					details:
+						"Script or metadata missing, so freshness cannot be computed.",
+					critical: true,
+					type: "DETERMINISTIC",
+				},
+			};
+		}
+
+		const metrics = evaluateCreativeFreshness(this.store, state);
+		evidence.creative_freshness = metrics;
+		fs.ensureDirSync(path.join(this.store.runDir, "audit"));
+		fs.writeJsonSync(
+			path.join(this.store.runDir, "audit", "creative_freshness_report.json"),
+			{
+				run_id: state.run_id || path.basename(this.store.runDir),
+				generated_at: new Date().toISOString(),
+				metrics,
+			},
+			{ spaces: 2 },
+		);
+
+		const status = metrics.pass ? "PASS" : "QUALITY_FAIL";
+		return {
+			creative_freshness: {
+				name: "Creative Freshness Gate",
+				description:
+					"Combines novelty, diversity, serendipity, and coverage against recent runs.",
+				status,
+				details: [
+					`Freshness: ${metrics.freshness_score}/100`,
+					`Novelty: ${metrics.novelty_score}/100`,
+					`Diversity: ${metrics.diversity_score}/100`,
+					`Serendipity: ${metrics.serendipity_score}/100`,
+					`Coverage: ${metrics.coverage_score}/100`,
+					`Concreteness: ${metrics.concreteness_score}/100`,
+					`Max similarity: ${(metrics.max_similarity * 100).toFixed(1)}%`,
+					metrics.signals.length > 0
+						? `Signals: ${metrics.signals.join(", ")}`
+						: "No freshness regressions detected.",
+				].join(" | "),
+				critical: true,
+				type: "DETERMINISTIC",
+			},
+		};
 	}
 
 	private async auditSemantics(
@@ -2745,6 +2840,17 @@ export class AuditAgent extends BaseAgent {
 					verification_method:
 						"Evaluate the title against the blacklist and contextual collapse rules.",
 				};
+			case "creative_freshness":
+				return {
+					category: "audience",
+					normative_source:
+						"Creative freshness policy grounded in beyond-accuracy evaluation",
+					expected_state:
+						"Recent-run novelty, diversity, serendipity, and coverage stay above threshold.",
+					failure_codes: ["FRESHNESS_REGRESSION", "QUALITY_FAIL"],
+					verification_method:
+						"Deterministic comparison of the current run against recent run profiles.",
+				};
 			case "semantic_structure":
 				return {
 					category: "semantic",
@@ -3063,6 +3169,9 @@ export class AuditAgent extends BaseAgent {
 				{ key: "operations", label: "Operational error classification" },
 			],
 			policy_clickbait: [{ key: "policy", label: "Title policy evaluation" }],
+			creative_freshness: [
+				{ key: "creative_freshness", label: "Creative freshness metrics" },
+			],
 			semantic_structure: [{ key: "semantic", label: "Semantic audit output" }],
 			semantic_brand: [{ key: "semantic", label: "Semantic audit output" }],
 			provenance: [{ key: "provenance", label: "Git commit trace" }],

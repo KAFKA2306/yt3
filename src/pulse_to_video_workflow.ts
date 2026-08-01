@@ -6,6 +6,11 @@ import { TrendScout } from "./domain/agents/research.js";
 import type { AgentState } from "./domain/types.js";
 import { AssetStore, ROOT, getRunIdDateString } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
+import {
+	classifyFailureMessage,
+	resolveDailyLogPath,
+	writeRunEvidence,
+} from "./io/utils/stability.js";
 
 async function main() {
 	let runId = process.env.RUN_ID || `pulse_nlm/${getRunIdDateString()}`;
@@ -133,13 +138,35 @@ async function main() {
 				context: { youtube_id: publishResult.youtube?.video_id },
 			},
 		);
+		writeRunEvidence(store.runDir, {
+			run_id: runId,
+			bucket: "daily_pulse_nlm",
+			status: "SUCCESS",
+			disposition: "success",
+			log_path: resolveDailyLogPath(runId),
+			evidence_paths: [
+				path.join(store.runDir, "state.json"),
+				path.join(store.runDir, "publish", "receipt.json"),
+			],
+			artifact_paths: [video.video_path],
+			note: "NotebookLM workflow completed successfully.",
+		});
 	} catch (err: unknown) {
-		AgentLogger.error(
-			"SYSTEM",
-			"PULSE_WORKFLOW",
-			"FAILED",
-			(err as { message: string }).message,
-		);
+		const error = err as Error;
+		const failure = classifyFailureMessage(error.message);
+		AgentLogger.error("SYSTEM", "PULSE_WORKFLOW", "FAILED", error.message);
+
+		writeRunEvidence(store.runDir, {
+			run_id: runId,
+			bucket: "daily_pulse_nlm",
+			status: failure.disposition === "blocked" ? "PUBLISH_BLOCKED" : "PENDING",
+			disposition: failure.disposition,
+			log_path: resolveDailyLogPath(runId),
+			evidence_paths: [path.join(store.runDir, "state.json")],
+			artifact_paths: [],
+			failure,
+			note: "NotebookLM workflow failed. Fallback reuse and fallback publishing are prohibited.",
+		});
 		process.exit(1);
 	}
 }

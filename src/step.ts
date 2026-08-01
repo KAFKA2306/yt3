@@ -8,6 +8,11 @@ import type { AgentState } from "./domain/types.js";
 import { createGraph } from "./graph.js";
 import { AssetStore, ROOT, loadConfig } from "./io/core.js";
 import { sendAlert } from "./io/utils/discord.js";
+import {
+	classifyFailureMessage,
+	resolveDailyLogPath,
+	writeRunEvidence,
+} from "./io/utils/stability.js";
 
 const cfg = loadConfig();
 
@@ -17,11 +22,15 @@ function resolveRunId(arg?: string): string {
 	const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
 	if (profileName) {
 		const norm = profileName.toLowerCase();
-		if (norm.includes("yawa")) {
+		if (norm.includes("byosan")) {
+			domainId = "byosan_money";
+		} else if (norm.includes("yawa")) {
 			domainId = "yawa_archive";
 		} else if (norm.includes("humanity")) {
 			domainId = "humanity_observatory";
 		}
+	} else if (process.env.ENV_FILE?.includes("byosan")) {
+		domainId = "byosan_money";
 	} else if (process.env.ENV_FILE?.includes("yawa")) {
 		domainId = "yawa_archive";
 	} else if (process.env.ENV_FILE?.includes("humanity")) {
@@ -44,7 +53,7 @@ function resolveRunId(arg?: string): string {
 			if (dirs[0]) return `${domainId}/${dirs[0].n}`;
 		}
 
-		// 2. Fallback to current date
+		// 2. Use current date when no prior run exists.
 		return `${domainId}/${new Date().toISOString().split("T")[0]}`;
 	}
 
@@ -95,12 +104,66 @@ async function runStep(
 			const results = await new AuditAgent(store).run(state as AgentState);
 			return { audit_results: results };
 		},
-		publish: async () => ({
-			publish_results: await new PublishAgent(store).run({
-				...(state as AgentState),
-				publish_video_path: publishVideoPath || state.publish_video_path,
-			}),
-		}),
+		publish: async () => {
+			const runId =
+				(state as AgentState).run_id ||
+				`${store.domainId}/${path.basename(store.runDir)}`;
+			const bucketName =
+				(state as AgentState).bucket || bucket || store.domainId;
+			try {
+				const publish_results = await new PublishAgent(store).run({
+					...(state as AgentState),
+					publish_video_path: publishVideoPath || state.publish_video_path,
+				});
+				store.updateState({ publish_results });
+				writeRunEvidence(store.runDir, {
+					run_id: runId,
+					bucket: bucketName,
+					status: "SUCCESS",
+					disposition: "success",
+					log_path: resolveDailyLogPath(runId),
+					evidence_paths: [
+						path.join(store.runDir, "state.json"),
+						path.join(store.runDir, "publish", "receipt.json"),
+					],
+					artifact_paths: [
+						publishVideoPath ||
+							state.publish_video_path ||
+							state.video_path ||
+							"",
+					].filter(Boolean),
+					note: "Standalone publish step completed successfully with receipt evidence.",
+				});
+				return { publish_results };
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				const failure = classifyFailureMessage(message);
+				writeRunEvidence(store.runDir, {
+					run_id: runId,
+					bucket: bucketName,
+					status:
+						failure.disposition === "blocked"
+							? "PUBLISH_BLOCKED"
+							: failure.disposition === "retryable"
+								? "RETRYABLE"
+								: failure.disposition === "pending"
+									? "PENDING"
+									: "FAILED",
+					disposition: failure.disposition,
+					log_path: resolveDailyLogPath(runId),
+					evidence_paths: [path.join(store.runDir, "state.json")],
+					artifact_paths: [
+						publishVideoPath ||
+							state.publish_video_path ||
+							state.video_path ||
+							"",
+					].filter(Boolean),
+					failure,
+					note: "Standalone publish step failed and was classified.",
+				});
+				throw error;
+			}
+		},
 		all: async () => {
 			const graph = createGraph(store) as {
 				invoke: (s: AgentState) => Promise<AgentState>;

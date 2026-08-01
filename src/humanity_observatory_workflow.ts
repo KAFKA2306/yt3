@@ -10,6 +10,11 @@ import type { AgentState, GenerationDynamics } from "./domain/types.js";
 import { type AssetStore, ROOT, loadConfig } from "./io/core.js";
 import { sendAlert } from "./io/utils/discord.js";
 import { AgentLogger } from "./io/utils/logger.js";
+import {
+	classifyFailureMessage,
+	resolveDailyLogPath,
+	writeRunEvidence,
+} from "./io/utils/stability.js";
 
 /**
  * Humanity Observatory Workflow (v1)
@@ -271,6 +276,19 @@ export async function runHumanityObservatoryWorkflow(
 			"audit_fail",
 		);
 		state.status = "PUBLISH_BLOCKED";
+		writeRunEvidence(store.runDir, {
+			run_id: state.run_id,
+			bucket: state.bucket || "humanity_observatory",
+			status: state.status,
+			disposition: "blocked",
+			log_path: resolveDailyLogPath(state.run_id),
+			evidence_paths: [
+				path.join(store.runDir, "state.json"),
+				path.join(store.runDir, "audit", "result.json"),
+			],
+			artifact_paths: [],
+			note: "Humanity audit blocked publish and evidence was written.",
+		});
 		return state;
 	}
 
@@ -283,8 +301,42 @@ export async function runHumanityObservatoryWorkflow(
 	);
 
 	const publisher = new PublishAgent(store);
-	const publishResults = await publisher.run(state);
-	state = { ...state, publish_results: publishResults };
+	try {
+		const publishResults = await publisher.run(state);
+		state = { ...state, publish_results: publishResults };
+	} catch (err) {
+		const error = err as Error;
+		const failure = classifyFailureMessage(error.message);
+		AgentLogger.warn(
+			"SYSTEM",
+			"HUMANITY_OBSERVATORY",
+			"PUBLISH_FAILURE",
+			`Publish step classified as ${failure.disposition}: ${error.message}`,
+		);
+		state.status =
+			failure.disposition === "blocked"
+				? "PUBLISH_BLOCKED"
+				: failure.disposition === "pending"
+					? "PENDING"
+					: failure.disposition === "retryable"
+						? "RETRYABLE"
+						: "FAILED";
+		writeRunEvidence(store.runDir, {
+			run_id: state.run_id,
+			bucket: state.bucket || "humanity_observatory",
+			status: state.status,
+			disposition: failure.disposition,
+			log_path: resolveDailyLogPath(state.run_id),
+			evidence_paths: [path.join(store.runDir, "state.json")],
+			artifact_paths: [],
+			failure,
+			note: "Humanity publish exception was caught and classified in the workflow.",
+		});
+		if (failure.disposition === "fatal") {
+			throw error;
+		}
+		return state;
+	}
 
 	AgentLogger.info(
 		"SYSTEM",
@@ -293,5 +345,18 @@ export async function runHumanityObservatoryWorkflow(
 		"Workflow completed!",
 	);
 	state.status = "SUCCESS";
+	writeRunEvidence(store.runDir, {
+		run_id: state.run_id,
+		bucket: state.bucket || "humanity_observatory",
+		status: state.status,
+		disposition: "success",
+		log_path: resolveDailyLogPath(state.run_id),
+		evidence_paths: [
+			path.join(store.runDir, "state.json"),
+			path.join(store.runDir, "publish", "receipt.json"),
+		],
+		artifact_paths: [state.video_path || ""].filter(Boolean),
+		note: "Humanity workflow completed successfully with state evidence.",
+	});
 	return state;
 }

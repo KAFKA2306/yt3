@@ -134,6 +134,7 @@ async function main() {
 			"check",
 			"src",
 		]);
+		runCommand(results, "ontology", "bun", ["run", "audit:ontology"]);
 	}
 
 	print(results, jsonMode);

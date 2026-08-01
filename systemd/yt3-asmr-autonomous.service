@@ -7,6 +7,7 @@ Type=oneshot
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
 Environment=PATH=/home/kafka/.bun/bin:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
+Environment=AUTONOMY_TRIGGER=timer
 ExecStart=/home/kafka/2511youtuber/v3/yt3/scripts/run_gemini_asmr_12h.sh
 StandardOutput=append:/home/kafka/2511youtuber/v3/yt3/logs/gemini_asmr_12h.log
 StandardError=append:/home/kafka/2511youtuber/v3/yt3/logs/gemini_asmr_12h.log

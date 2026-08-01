@@ -6,7 +6,6 @@ import {
 	AgentLogger as Logger,
 	QuotaExhaustionError,
 	RunStage,
-	appendLoopMemory,
 	loadConfig,
 	parseLlmJson,
 } from "../../io/core.js";
@@ -209,38 +208,15 @@ export class ScriptSmith extends BaseAgent {
 					e instanceof QuotaExhaustionError ||
 					this.isQuotaExhaustionMessage(errMsg)
 				) {
-					Logger.warn(
+					Logger.error(
 						this.name,
 						"CONTENT",
-						"QUOTA_FALLBACK",
-						`LLM quota exhausted; using deterministic fallback content instead of failing: ${errMsg}`,
+						"QUOTA_TERMINAL",
+						`LLM quota exhausted; fallback content generation is prohibited: ${errMsg}`,
 					);
-					appendLoopMemory(this.store, {
-						run_id: `${this.store.domainId}/${path.basename(this.store.runDir)}`,
-						bucket: channelType,
-						stage: "content",
-						kind: "fallback",
-						summary:
-							"LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
-						signals: [
-							"rate limit / quota exhaustion",
-							"3 attempted generations failed",
-							"deterministic fallback preserved pipeline continuity",
-						],
-						fixes: [
-							"treat quota exhaustion as a terminal content-state, not a recoverable generation error",
-							"prime future runs with cached research and loop memory",
-							"prefer concise, audit-safe fallback patterns when the model pool is dry",
-						],
-						timestamp: new Date().toISOString(),
-					});
-					result = this.buildFallbackContent(
-						news,
-						director,
-						channelType,
-						strategic_insight,
+					throw new QuotaExhaustionError(
+						`CRITICAL: Content generation stopped after quota exhaustion. Deterministic fallback content is prohibited. Original error: ${errMsg}`,
 					);
-					break;
 				}
 				Logger.error(
 					this.name,
@@ -328,189 +304,6 @@ export class ScriptSmith extends BaseAgent {
 		);
 	}
 
-	private buildFallbackContent(
-		news: NewsItem[],
-		director: { angle: string; title_hook: string; channel_type?: string },
-		channelType: string,
-		strategic_insight?: StrategicAnalysis,
-	): ContentResult {
-		const scriptLines = this.normalizeScriptLines(
-			this.buildFallbackScriptLines(news, channelType, strategic_insight),
-			channelType,
-		);
-		const metadata = this.buildFallbackMetadata(
-			news,
-			director,
-			scriptLines,
-			strategic_insight,
-		);
-
-		return {
-			script: {
-				title: metadata.title,
-				description: metadata.description,
-				lines: scriptLines,
-				total_duration: 0,
-			},
-			metadata,
-		};
-	}
-
-	private buildFallbackScriptLines(
-		news: NewsItem[],
-		channelType: string,
-		strategic_insight?: StrategicAnalysis,
-	): ScriptLine[] {
-		const defaultItem = (title: string): NewsItem => ({
-			title,
-			summary: title,
-			url: "https://example.com",
-		});
-		const pick = (
-			predicate: (item: NewsItem) => boolean,
-			index: number,
-			fallbackTitle: string,
-		) =>
-			news.find(predicate) ||
-			news[index] ||
-			news[0] ||
-			defaultItem(fallbackTitle);
-		const macro = pick(
-			(n) => /Fed|FRB|BOE|ECB|金利|inflation/i.test(n.title),
-			0,
-			"FRBの金利",
-		);
-		const ai = pick(
-			(n) => /NVIDIA|AI|Blackwell|chip|半導体/i.test(n.title),
-			3,
-			"AI投資",
-		);
-		const china = pick(
-			(n) => /中国|China|AI chip|チップ/i.test(n.title),
-			4,
-			"中国のAI投資",
-		);
-		const supply = pick(
-			(n) => /TSMC|Germany|工場|factory|供給/i.test(n.title),
-			5,
-			"供給網の再編",
-		);
-
-		const lines: ScriptLine[] =
-			channelType === "humanity_observatory"
-				? [
-						{
-							speaker: "玄野",
-							text: `今日の観測は、${macro.title}。インフレが粘るほど、中央銀行は利下げを急がない。`,
-							duration: 0,
-						},
-						{
-							speaker: "玄野",
-							text: `${ai.title} では、AIの性能向上が投資を呼び込む一方で、現実の電力や工場が足りない。`,
-							duration: 0,
-						},
-						{
-							speaker: "玄野",
-							text: "だから人類は、数字だけじゃなくて、誰が先に土台へ投資するかを見る必要がある。",
-							duration: 0,
-						},
-					]
-				: [
-						{
-							speaker: "玄野",
-							text: `${macro.title}。高金利が長引くほど、住宅ローンも生活コストも下がりにくい。`,
-							duration: 0,
-						},
-						{
-							speaker: "玄野",
-							text: `${ai.title} では、推論性能が最大5倍。投資の重心はAI基盤と電力へ寄っている。`,
-							duration: 0,
-						},
-						{
-							speaker: "玄野",
-							text: `${china.title} は3年間で1000億元。TSMCのドイツ工場も重なって、供給網が組み替わる。`,
-							duration: 0,
-						},
-						{
-							speaker: "玄野",
-							text: "つまり、2027年の地政学、金利、電力、人材の4つが、家計の明日の形を決める。",
-							duration: 0,
-						},
-						{
-							speaker: "玄野",
-							text: "高金利、AI投資、生活コスト。この3語を押さえれば、今日の資本の向きが見える。",
-							duration: 0,
-						},
-						{
-							speaker: "玄野",
-							text: "結論はひとつ。数字の騒ぎより、資本がどこへ流れるかを見ること。",
-							duration: 0,
-						},
-					];
-
-		if (strategic_insight?.strategic_summary) {
-			lines.push({
-				speaker:
-					channelType === "humanity_observatory" ? "玄野" : "春日部つむぎ",
-				text: `補足すると、${strategic_insight.strategic_summary.slice(0, 60)}...`,
-				duration: 0,
-			});
-		}
-
-		return lines;
-	}
-
-	private buildFallbackMetadata(
-		news: NewsItem[],
-		director: { angle: string; title_hook: string; channel_type?: string },
-		scriptLines: ScriptLine[],
-		strategic_insight?: StrategicAnalysis,
-	): Metadata {
-		const defaultItem = (title: string): NewsItem => ({
-			title,
-			summary: title,
-			url: "https://example.com",
-		});
-		const primary =
-			news[0] || news[1] || news[2] || defaultItem(director.title_hook);
-		const secondary = news[3] || news[4] || news[0] || defaultItem("AI投資");
-		const title = `高金利と生活コスト: ${secondary.title.includes("NVIDIA") ? "NVIDIA 5倍" : "AI投資"}はどこへ向かう？`;
-		const thumbnail_title = ["高金利", "生活コスト", "AI投資"].join("\n");
-		const chapterBlocks = [
-			`0:00 ${primary?.title || director.title_hook}`,
-			`1:20 ${secondary?.title || "AI投資と高金利"}`,
-			"2:40 生活への影響",
-			"4:00 次に流れる資本",
-		];
-		const sourceUrls = news
-			.slice(0, 4)
-			.map((n) => `- ${n.title}: ${n.url}`)
-			.join("\n");
-		const description = [
-			`${director.title_hook} を起点に、FRB・BOE・ECBの高金利姿勢と、NVIDIAや中国のAI投資を同時に観測します。`,
-			"",
-			"【チャプター】",
-			...chapterBlocks,
-			"",
-			"【情報ソース】",
-			sourceUrls,
-			"",
-			"生活への影響としては、住宅ローン、電気代、AIを使いこなすスキル差が焦点です。2027年も見据えて、金利と供給網を見ます。",
-			strategic_insight?.strategic_summary
-				? `戦略メモ: ${strategic_insight.strategic_summary}`
-				: "",
-		]
-			.filter((line) => line.length > 0)
-			.join("\n");
-
-		return {
-			title,
-			thumbnail_title,
-			description,
-			tags: ["AI", "Finance", "Economy", "FRB", "NVIDIA"],
-		};
-	}
-
 	private normalizeScriptLines(
 		lines: ScriptLine[],
 		channelType: string,
@@ -569,7 +362,7 @@ export class ScriptSmith extends BaseAgent {
 		channelType: string,
 	): string[] {
 		if (channelType === "humanity_observatory") {
-			return ["玄野"];
+			return ["雨晴はう", "もち子さん"];
 		}
 
 		const seen = new Set<string>();

@@ -1,8 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { sendAlert } from "../io/utils/discord.js";
+import {
+	findRunDirForDate,
+	getLatestPublishedChannelUrls,
+	getMissingEvidence,
+	isEvidenceReady,
+} from "../io/utils/stability.js";
 
-type ChannelKey = "daily_pulse" | "humanity_observatory";
+type ChannelKey = "byosan_money" | "humanity_observatory";
 
 type ChannelReport = {
 	channel: ChannelKey;
@@ -11,6 +17,10 @@ type ChannelReport = {
 	video_done: boolean;
 	publish_done: boolean;
 	audit_passed: boolean;
+	evidence_path: string;
+	evidence_ready: boolean;
+	latest_public_url?: string;
+	missing_evidence: string[];
 	discomfort_warnings: string[];
 	missing: string[];
 	brainstorm: string[];
@@ -31,8 +41,8 @@ const today =
 		day: "2-digit",
 	}).format(new Date());
 
-function artifactExists(...candidates: string[]): boolean {
-	return candidates.some((candidate) => candidate.length > 0);
+function channelLabel(channel: ChannelKey): string {
+	return channel === "byosan_money" ? "秒算マネー" : "人類観測所";
 }
 
 async function exists(filePath: string): Promise<boolean> {
@@ -44,12 +54,37 @@ async function exists(filePath: string): Promise<boolean> {
 	}
 }
 
-async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
-	const runDir = path.join(ROOT, "runs", channel, today);
+async function evidenceStatus(runDir: string): Promise<{
+	evidence_path: string;
+	evidence_ready: boolean;
+	missing_evidence: string[];
+}> {
+	const evidencePath = path.join(runDir, "run_evidence.json");
+	const ready = isEvidenceReady(runDir);
+	const missing = getMissingEvidence(runDir);
+	return {
+		evidence_path: evidencePath,
+		evidence_ready: ready,
+		missing_evidence: missing,
+	};
+}
+
+async function reportChannel(
+	channel: ChannelKey,
+	latestChannelUrlsByLabel: Map<
+		string,
+		Awaited<ReturnType<typeof getLatestPublishedChannelUrls>>[number]
+	>,
+): Promise<ChannelReport> {
+	const runDir = findRunDirForDate(channel, today);
+	const { evidence_path, evidence_ready, missing_evidence } =
+		await evidenceStatus(runDir);
 
 	const researchCandidates =
-		channel === "daily_pulse"
+		channel === "byosan_money"
 			? [
+					path.join(runDir, "research.json"),
+					path.join(runDir, "content", "output.yaml"),
 					path.join(runDir, "research", "output.yaml"),
 					path.join(runDir, "web_search", "input.yaml"),
 				]
@@ -63,27 +98,21 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 		path.join(runDir, "video", "final_video.mp4"),
 	];
 
-	const publishCandidates =
-		channel === "daily_pulse"
-			? [
-					path.join(runDir, "publish", "output.yaml"),
-					path.join(runDir, "publish", "receipt.json"),
-				]
-			: [path.join(runDir, "publish", "output.yaml")];
+	const publishCandidates = [path.join(runDir, "publish", "receipt.json")];
 
-	const research_done = await Promise.all(researchCandidates.map(exists)).then(
-		(items) => artifactExists(...items.map(String)) && items.some(Boolean),
+	const research_done = (
+		await Promise.all(researchCandidates.map(exists))
+	).some(Boolean);
+	const video_done = (await Promise.all(videoCandidates.map(exists))).some(
+		Boolean,
 	);
-	const video_done = await Promise.all(videoCandidates.map(exists)).then(
-		(items) => artifactExists(...items.map(String)) && items.some(Boolean),
-	);
-	const publish_done = await Promise.all(publishCandidates.map(exists)).then(
-		(items) => artifactExists(...items.map(String)) && items.some(Boolean),
+	const publish_done = (await Promise.all(publishCandidates.map(exists))).some(
+		Boolean,
 	);
 
 	// Audit Report Analysis
 	const auditReportPath = path.join(runDir, "audit", "report.json");
-	let audit_passed = true;
+	let audit_passed = false;
 	const discomfort_warnings: string[] = [];
 
 	if (await exists(auditReportPath)) {
@@ -140,6 +169,11 @@ async function reportChannel(channel: ChannelKey): Promise<ChannelReport> {
 		video_done,
 		publish_done,
 		audit_passed,
+		evidence_path,
+		evidence_ready,
+		latest_public_url: latestChannelUrlsByLabel.get(channelLabel(channel))
+			?.public_url,
+		missing_evidence,
 		discomfort_warnings,
 		missing,
 		brainstorm,
@@ -151,9 +185,7 @@ function formatReport(report: AuditTodayReport): string {
 	lines.push(`# Audit Today ${report.today}`);
 	for (const item of report.reports) {
 		lines.push("");
-		lines.push(
-			`## [${item.channel === "daily_pulse" ? "秒算マネー" : "人類観測所"}]`,
-		);
+		lines.push(`## [${channelLabel(item.channel)}]`);
 		lines.push(`- **Run Dir**: \`${item.run_dir}\``);
 		lines.push(
 			`- **Research**: ${item.research_done ? "✅ DONE" : "❌ MISSING"}`,
@@ -165,6 +197,16 @@ function formatReport(report: AuditTodayReport): string {
 		lines.push(
 			`- **Audit**: ${item.audit_passed ? "✅ PASS" : "⚠️ BLOCKED/FAIL"}`,
 		);
+		lines.push(
+			`- **Evidence ready**: ${item.evidence_ready ? "✅ YES" : "❌ NO"}`,
+		);
+		lines.push(`- **Evidence path**: \`${item.evidence_path}\``);
+		if (item.latest_public_url) {
+			lines.push(`- **Latest URL**: \`${item.latest_public_url}\``);
+		}
+		if (item.missing_evidence.length > 0) {
+			lines.push(`- **Missing evidence**: \`${item.missing_evidence[0]}\``);
+		}
 
 		if (item.discomfort_warnings.length > 0) {
 			lines.push("### ⚠️ Discomfort Detected");
@@ -182,9 +224,8 @@ function formatReport(report: AuditTodayReport): string {
 async function notifyDiscord(report: AuditTodayReport): Promise<void> {
 	const summary = report.reports
 		.map((item) => {
-			const channelName =
-				item.channel === "daily_pulse" ? "秒算マネー" : "人類観測所";
-			return `${channelName}: research=${item.research_done ? "✅" : "❌"}, video=${item.video_done ? "✅" : "❌"}, publish=${item.publish_done ? "✅" : "❌"}, audit=${item.audit_passed ? "✅" : "⚠️"}`;
+			const channelName = channelLabel(item.channel);
+			return `${channelName}: research=${item.research_done ? "✅" : "❌"}, video=${item.video_done ? "✅" : "❌"}, publish=${item.publish_done ? "✅" : "❌"}, audit=${item.audit_passed ? "✅" : "⚠️"}, evidence=${item.evidence_ready ? "✅" : "❌"}`;
 		})
 		.join("\n");
 
@@ -192,9 +233,13 @@ async function notifyDiscord(report: AuditTodayReport): Promise<void> {
 }
 
 async function main(): Promise<void> {
+	const latestChannelUrls = await getLatestPublishedChannelUrls();
+	const latestChannelUrlsByLabel = new Map(
+		latestChannelUrls.map((item) => [item.channel_label, item]),
+	);
 	const reports = await Promise.all([
-		reportChannel("daily_pulse"),
-		reportChannel("humanity_observatory"),
+		reportChannel("byosan_money", latestChannelUrlsByLabel),
+		reportChannel("humanity_observatory", latestChannelUrlsByLabel),
 	]);
 
 	const report: AuditTodayReport = { today, reports };

@@ -1,4 +1,10 @@
+import path from "node:path";
 import { AgentLogger } from "../../io/utils/logger.js";
+import {
+	classifyFailureMessage,
+	resolveDailyLogPath,
+	writeRunEvidence,
+} from "../../io/utils/stability.js";
 import type { ScriptSmith } from "../agents/content.js";
 import type { DexterJPAgent } from "../agents/dexter_jp.js";
 import type { MacroRegimeAnalystAgent } from "../agents/macro_regime_analyst_agent.js";
@@ -20,6 +26,17 @@ export interface GraphAgents {
 	publish: PublishAgent;
 	notebooklm: NotebookLMAgent;
 	memory: MemoryAgent;
+}
+
+function resolveRunDir(cfg: AppConfig, state: AgentState): string {
+	const bucket = state.bucket || cfg.workflow.default_bucket || "daily_pulse";
+	const runIdPart = (state.run_id || "unknown").split("/").pop() || "unknown";
+	return path.join(
+		process.cwd(),
+		cfg.workflow.paths.runs_dir,
+		bucket,
+		runIdPart,
+	);
 }
 
 export class WorkflowNodes {
@@ -81,8 +98,49 @@ export class WorkflowNodes {
 
 	async publish(state: AgentState) {
 		AgentLogger.info("SYSTEM", "MEDIA", "PUBLISH", "Uploading video");
-		const res = await this.agents.publish.run(state);
-		return { publish_results: res, status: "published" };
+		const runId = state.run_id || "unknown";
+		const runDir = resolveRunDir(this.cfg, state);
+		try {
+			const res = await this.agents.publish.run(state);
+			writeRunEvidence(runDir, {
+				run_id: runId,
+				bucket:
+					state.bucket || this.cfg.workflow.default_bucket || "daily_pulse",
+				status: "SUCCESS",
+				disposition: "success",
+				log_path: resolveDailyLogPath(runId),
+				evidence_paths: [
+					path.join(runDir, "state.json"),
+					path.join(runDir, "publish", "receipt.json"),
+				],
+				artifact_paths: [state.video_path || ""].filter(Boolean),
+				note: "WorkflowNodes publish step completed successfully with receipt evidence.",
+			});
+			return { publish_results: res, status: "published" };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			const failure = classifyFailureMessage(message);
+			writeRunEvidence(runDir, {
+				run_id: runId,
+				bucket:
+					state.bucket || this.cfg.workflow.default_bucket || "daily_pulse",
+				status:
+					failure.disposition === "blocked"
+						? "PUBLISH_BLOCKED"
+						: failure.disposition === "retryable"
+							? "RETRYABLE"
+							: failure.disposition === "pending"
+								? "PENDING"
+								: "FAILED",
+				disposition: failure.disposition,
+				log_path: resolveDailyLogPath(runId),
+				evidence_paths: [path.join(runDir, "state.json")],
+				artifact_paths: [state.video_path || ""].filter(Boolean),
+				failure,
+				note: "WorkflowNodes publish step failed and was classified.",
+			});
+			throw error;
+		}
 	}
 
 	async notebooklm(_state: AgentState) {

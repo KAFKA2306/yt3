@@ -1,5 +1,6 @@
 export type VoiceBucket =
 	| "daily_pulse"
+	| "byosan_money"
 	| "yawa_archive"
 	| "humanity_observatory";
 
@@ -8,6 +9,12 @@ export const CANONICAL_VOICE_MAPS: Record<
 	Record<string, number>
 > = {
 	daily_pulse: {
+		春日部つむぎ: 8,
+		ずんだもん: 1,
+		玄野: 11,
+		玄野武宏: 11,
+	},
+	byosan_money: {
 		春日部つむぎ: 8,
 		ずんだもん: 1,
 		玄野: 11,

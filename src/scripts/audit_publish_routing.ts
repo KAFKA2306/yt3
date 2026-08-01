@@ -21,7 +21,7 @@ type ExpectedProfile = {
 
 const EXPECTED_PROFILES: Record<YouTubeProfileName, ExpectedProfile> = {
 	byosan: {
-		bucket: "daily_pulse",
+		bucket: "byosan_money",
 		envFile: "config/.env.byosan",
 		expectedChannelTitle: "秒算マネー",
 		expectedChannelHandle: "@byosan-money",

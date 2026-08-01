@@ -90,19 +90,39 @@ export class NotebookLMAgent extends BaseAgent {
 			`Checking for existing notebook with title: ${title}`,
 		);
 
-		const listOutput = this.shell.execute("notebooklm list --json", true);
+		let listOutput: string | undefined;
+		try {
+			listOutput = this.shell.execute("notebooklm list --json", true);
+		} catch (e) {
+			AgentLogger.warn(
+				this.name,
+				"AUTH",
+				"LIST_FAIL",
+				"Failed to list notebooks. Proceeding with creation attempt. Run 'notebooklm login' if this fails consistently.",
+			);
+		}
+
 		if (listOutput) {
-			const parsed = NotebookListSchema.parse(JSON.parse(listOutput));
-			const existing = parsed.notebooks.find((nb) => nb.title === title);
-			if (existing) {
-				AgentLogger.info(
+			try {
+				const parsed = NotebookListSchema.parse(JSON.parse(listOutput));
+				const existing = parsed.notebooks.find((nb) => nb.title === title);
+				if (existing) {
+					AgentLogger.info(
+						this.name,
+						"CREATE",
+						"REUSE",
+						`Found existing notebook "${title}" (${existing.id}). Reusing...`,
+					);
+					this.notebookCache = parsed.notebooks;
+					return existing.id;
+				}
+			} catch (e) {
+				AgentLogger.warn(
 					this.name,
 					"CREATE",
-					"REUSE",
-					`Found existing notebook "${title}" (${existing.id}). Reusing...`,
+					"PARSE_FAIL",
+					"Failed to parse notebook list.",
 				);
-				this.notebookCache = parsed.notebooks;
-				return existing.id;
 			}
 		}
 
@@ -502,10 +522,20 @@ export class NotebookLMAgent extends BaseAgent {
 		title: string | null;
 	} {
 		if (!this.notebookCache) {
-			const output = this.shell.execute("notebooklm list --json", true);
-			if (!output) throw new Error("Failed to get notebook list");
-			const parsed = NotebookListSchema.parse(JSON.parse(output));
-			this.notebookCache = parsed.notebooks;
+			try {
+				const output = this.shell.execute("notebooklm list --json", true);
+				if (output) {
+					const parsed = NotebookListSchema.parse(JSON.parse(output));
+					this.notebookCache = parsed.notebooks;
+				}
+			} catch (e) {
+				AgentLogger.warn(
+					this.name,
+					"INFO",
+					"LIST_FAIL",
+					"Failed to retrieve notebook info cache.",
+				);
+			}
 		}
 
 		const notebook = this.notebookCache?.find(

@@ -21,6 +21,7 @@ export function createLlm(options: {
 		apiKey,
 		temperature: options.temperature ?? cfg.providers.llm.gemini.temperature,
 		maxOutputTokens: cfg.providers.llm.gemini.max_tokens,
+		maxRetries: 3,
 		...options.extra,
 	});
 

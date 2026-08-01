@@ -2,24 +2,37 @@
 set -euo pipefail
 
 today="$(date +%F)"
-channels=("daily_pulse" "humanity_observatory")
+channels=("byosan_money" "humanity_observatory")
+
+find_run_dir() {
+	local channel="$1"
+	local exact="runs/${channel}/${today}"
+	if [ -d "${exact}" ]; then
+		printf "%s\n" "${exact}"
+		return
+	fi
+	find "runs/${channel}" -maxdepth 1 -type d -name "${today}-*" -print 2>/dev/null | sort -r | head -n 1
+}
 
 for channel in "${channels[@]}"; do
-	run_dir="runs/${channel}/${today}"
+	run_dir="$(find_run_dir "${channel}")"
+	if [ -z "${run_dir}" ]; then
+		run_dir="runs/${channel}/${today}"
+	fi
 	research_done="no"
 	video_done="no"
 	publish_done="no"
 
 	if [ -d "${run_dir}" ]; then
 		case "${channel}" in
-			daily_pulse)
-				if [ -f "${run_dir}/research/output.yaml" ] || [ -f "${run_dir}/web_search/input.yaml" ]; then
+			byosan_money)
+				if [ -f "${run_dir}/research.json" ] || [ -f "${run_dir}/content/output.yaml" ] || [ -f "${run_dir}/research/output.yaml" ] || [ -f "${run_dir}/web_search/input.yaml" ]; then
 					research_done="yes"
 				fi
 				if [ -f "${run_dir}/media/video/video.mp4" ] || [ -f "${run_dir}/video/final_video.mp4" ]; then
 					video_done="yes"
 				fi
-				if [ -f "${run_dir}/publish/output.yaml" ] || [ -f "${run_dir}/publish/receipt.json" ]; then
+				if [ -f "${run_dir}/publish/receipt.json" ]; then
 					publish_done="yes"
 				fi
 				;;
@@ -30,7 +43,7 @@ for channel in "${channels[@]}"; do
 				if [ -f "${run_dir}/media/video/video.mp4" ] || [ -f "${run_dir}/video/final_video.mp4" ]; then
 					video_done="yes"
 				fi
-				if [ -f "${run_dir}/publish/output.yaml" ]; then
+				if [ -f "${run_dir}/publish/receipt.json" ]; then
 					publish_done="yes"
 				fi
 				;;

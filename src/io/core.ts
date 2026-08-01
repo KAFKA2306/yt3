@@ -45,7 +45,12 @@ import {
 	getQuotaContext,
 	markKeyRateLimited,
 	updateFromHeaders,
+	waitIfRateLimited,
 } from "./utils/quota/manager.js";
+import {
+	type FailureClassification,
+	classifyFailureMessage,
+} from "./utils/stability.js";
 
 const envFilePath = process.env.ENV_FILE
 	? path.isAbsolute(process.env.ENV_FILE)
@@ -62,7 +67,7 @@ export interface LoopMemoryEntry {
 	run_id: string;
 	bucket: string;
 	stage: string;
-	kind: "fallback" | "failure" | "success";
+	kind: "failure" | "success";
 	summary: string;
 	signals: string[];
 	fixes: string[];
@@ -271,6 +276,7 @@ export abstract class BaseAgent {
 		let attempts = 0;
 		const maxAttempts = 5;
 		let lastKeyName = "unknown";
+		let lastFailure: FailureClassification | undefined;
 		while (attempts < maxAttempts) {
 			const llm = createLlm({
 				...this.opts,
@@ -280,6 +286,7 @@ export abstract class BaseAgent {
 			lastKeyName = keyName;
 			const quotaContext = getQuotaContext(keyName, "gemini");
 			const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
+			await waitIfRateLimited(keyName);
 
 			try {
 				res = await llm.invoke(
@@ -300,6 +307,7 @@ export abstract class BaseAgent {
 				const isInvalidKey =
 					errMsg.toLowerCase().includes("api_key_invalid") ||
 					errMsg.toLowerCase().includes("api key not found");
+				lastFailure = classifyFailureMessage(errMsg);
 
 				if (isRateLimit || isInvalidKey) {
 					const sleepMs = isInvalidKey ? 2000 : 10000;
@@ -319,7 +327,7 @@ export abstract class BaseAgent {
 
 		if (!res) {
 			throw new QuotaExhaustionError(
-				`CRITICAL: LLM invocation failed after ${maxAttempts} attempts due to rate limit/quota exhaustion.`,
+				`CRITICAL: LLM invocation failed after ${maxAttempts} attempts due to rate limit/quota exhaustion. Cached-output fallback is prohibited.`,
 			);
 		}
 
