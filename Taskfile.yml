@@ -12,6 +12,10 @@ tasks:
   # ============================================================================
   # MAIN WORKFLOW
   # ============================================================================
+  loop:
+    desc: "Autonomous Daily Loop: Health Check -> Content -> Audit"
+    cmds: ["bun src/scripts/agentic_orchestrator.ts"]
+
   run:
     desc: "Run the full workflow (Production Mode)"
     aliases: [r]
@@ -19,7 +23,12 @@ tasks:
 
   run:humanity:
     desc: "Run the Humanity Observatory workflow"
-    cmds: ["BUCKET=humanity_observatory bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
+    cmds: ["ENV_FILE=config/.env YOUTUBE_CHANNEL_PROFILE=humanity BUCKET=humanity_observatory bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
+
+  byosan:daily:
+    desc: "Research, produce, audit, and publish one high-quality 秒算マネー feature"
+    cmds:
+      - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
   run:cached:
     desc: "Run full workflow using cached LLM outputs (WARNING: May Publish)"

@@ -4,6 +4,7 @@ import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
 import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
 import { sendAlert } from "../../io/utils/discord.js";
+import { ensureYouTubeVideoVisibility } from "../../io/utils/youtube_visibility.js";
 import type { AgentState, AppConfig, PublishResults } from "../types.js";
 import { validateCredentials } from "../validation.js";
 import {
@@ -45,6 +46,7 @@ export class PublishAgent extends BaseAgent {
 		if (publishVideoPath) {
 			this.store.updateState({ publish_video_path: publishVideoPath });
 		}
+		this.assertNoFallbackPublish(state, publishVideoPath);
 		this.logInput({
 			video_path: state.video_path,
 			publish_video_path: publishVideoPath,
@@ -90,7 +92,54 @@ export class PublishAgent extends BaseAgent {
 			}
 		}
 		this.logOutput(results);
+		if (Object.keys(results).length > 0) {
+			const receiptPath = path.join(
+				this.store.runDir,
+				"publish",
+				"receipt.json",
+			);
+			fs.ensureDirSync(path.dirname(receiptPath));
+			fs.writeJsonSync(receiptPath, results, { spaces: 2 });
+		}
 		return results;
+	}
+	private assertNoFallbackPublish(
+		state: AgentState,
+		publishVideoPath?: string,
+	): void {
+		const metadata = state.metadata;
+		const metadataText = [
+			metadata?.title,
+			metadata?.description,
+			metadata?.thumbnail_title,
+			...(metadata?.tags || []),
+		]
+			.filter(Boolean)
+			.join("\n")
+			.toLowerCase();
+		if (
+			/\bfallback\b/.test(metadataText) ||
+			metadataText.includes("reused because") ||
+			metadataText.includes("cached fallback")
+		) {
+			throw new Error(
+				"YouTube publish blocked: fallback metadata is prohibited and must be deleted, not published.",
+			);
+		}
+
+		const bucket = state.bucket || "";
+		const isNotebookLmPulseBucket =
+			bucket === "daily_pulse_nlm" || bucket === "pulse_nlm";
+		const videoPath = publishVideoPath || state.video_path || "";
+		if (
+			isNotebookLmPulseBucket &&
+			videoPath &&
+			!path.resolve(videoPath).startsWith(path.resolve(this.store.runDir))
+		) {
+			throw new Error(
+				"YouTube publish blocked: NotebookLM pulse publishing cannot reuse videos outside the current run directory.",
+			);
+		}
 	}
 	private async uploadToYouTube(
 		state: AgentState,
@@ -108,7 +157,10 @@ export class PublishAgent extends BaseAgent {
 		const profile = getYouTubeProfile(
 			process.env.YOUTUBE_CHANNEL_PROFILE?.trim(),
 		);
-		if (state.bucket !== profile.bucket) {
+		const bucketAllowed =
+			state.bucket === profile.bucket ||
+			(profile.bucket === "daily_pulse" && state.bucket === "daily_pulse_nlm");
+		if (!bucketAllowed) {
 			throw new Error(
 				`YouTube publish blocked: run bucket '${state.bucket}' does not match profile bucket '${profile.bucket}' for '${profile.profileName}'`,
 			);
@@ -162,12 +214,22 @@ export class PublishAgent extends BaseAgent {
 				);
 			}
 		}
+		const visibilityAttestation = await ensureYouTubeVideoVisibility(
+			auth,
+			videoId,
+			ytCfg.default_visibility,
+		);
+		fs.writeJsonSync(
+			path.join(this.store.runDir, "publish", "visibility_attestation.json"),
+			visibilityAttestation,
+			{ spaces: 2 },
+		);
 		return {
 			status: "uploaded",
 			video_id: videoId,
 			channel_id: snippet.channelId,
 			channel_title: snippet.channelTitle,
-			privacy_status: status.privacyStatus,
+			privacy_status: visibilityAttestation.current_privacy_status,
 			published_at: snippet.publishedAt ?? "",
 		};
 	}
@@ -245,10 +307,58 @@ export class PublishAgent extends BaseAgent {
 		await youtube.thumbnails.set({
 			videoId: videoId,
 			media: {
-				mimeType: "image/png",
+				mimeType:
+					path.extname(thumbnailPath).toLowerCase() === ".jpg" ||
+					path.extname(thumbnailPath).toLowerCase() === ".jpeg"
+						? "image/jpeg"
+						: "image/png",
 				body: fs.createReadStream(thumbnailPath),
 			},
 		});
+		let thumbnailVariants: string[] = [];
+		for (let attempt = 0; attempt < 6; attempt++) {
+			const response = await youtube.videos.list({
+				part: ["snippet"],
+				id: [videoId],
+			});
+			thumbnailVariants = Object.keys(
+				response.data.items?.[0]?.snippet?.thumbnails ?? {},
+			);
+			if (
+				["default", "medium", "high"].every((key) =>
+					thumbnailVariants.includes(key),
+				)
+			) {
+				break;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 3000));
+		}
+		if (
+			!["default", "medium", "high"].every((key) =>
+				thumbnailVariants.includes(key),
+			)
+		) {
+			throw new Error(
+				`Thumbnail update could not be verified for ${videoId}; variants=${thumbnailVariants.join(",")}`,
+			);
+		}
+		fs.writeJsonSync(
+			path.join(this.store.runDir, "publish", "thumbnail_attestation.json"),
+			{
+				video_id: videoId,
+				source_path: thumbnailPath,
+				mime_type:
+					path.extname(thumbnailPath).toLowerCase() === ".jpg" ||
+					path.extname(thumbnailPath).toLowerCase() === ".jpeg"
+						? "image/jpeg"
+						: "image/png",
+				size_bytes: fs.statSync(thumbnailPath).size,
+				api_update_status: "succeeded",
+				thumbnail_variants: thumbnailVariants,
+				verified_at: new Date().toISOString(),
+			},
+			{ spaces: 2 },
+		);
 	}
 	private async postToTwitter(
 		state: AgentState,

@@ -502,7 +502,7 @@ export function resolvePath(p: string): string {
 	return path.resolve(ROOT, p);
 }
 export function getCurrentDateString(): string {
-	return new Date().toISOString().slice(0, 10);
+	return getRunIdDateString();
 }
 export function getRunIdDateString(): string {
 	const d = new Date();
@@ -514,7 +514,12 @@ export function getRunIdDateString(): string {
 export function getMemoryEssenceFile(store: AssetStore): string {
 	const cfg = store.cfg;
 	const isCognitive = store.runDir.includes("humanity_observatory");
-	const subDir = isCognitive ? "humanity_observatory" : "daily_pulse";
+	const isByosanMoney = store.runDir.includes("byosan_money");
+	const subDir = isCognitive
+		? "humanity_observatory"
+		: isByosanMoney
+			? "byosan_money"
+			: "daily_pulse";
 	const essenceFile = path.join(
 		ROOT,
 		"data",
@@ -537,7 +542,12 @@ export function getMemoryEssenceFile(store: AssetStore): string {
 
 export function getLoopMemoryFile(store: AssetStore): string {
 	const isCognitive = store.runDir.includes("humanity_observatory");
-	const subDir = isCognitive ? "humanity_observatory" : "daily_pulse";
+	const isByosanMoney = store.runDir.includes("byosan_money");
+	const subDir = isCognitive
+		? "humanity_observatory"
+		: isByosanMoney
+			? "byosan_money"
+			: "daily_pulse";
 	return path.join(ROOT, "data", "memory", subDir, "loop_journal.json");
 }
 
@@ -622,7 +632,7 @@ export function loadMemoryContext(store: AssetStore): string {
 
 export function fetchRecentThemes(store: AssetStore, days = 7): string {
 	const cfg = loadConfig();
-	const runsDir = path.join(ROOT, cfg.workflow.paths.runs_dir);
+	const runsDir = path.join(ROOT, cfg.workflow.paths.runs_dir, store.domainId);
 
 	if (!fs.existsSync(runsDir)) {
 		Logger.warn("SYSTEM", "CORE", "FETCH_THEMES", "Runs directory not found");
@@ -652,8 +662,14 @@ export function fetchRecentThemes(store: AssetStore, days = 7): string {
 				if (categories.length > 0) {
 					themes.push({ date: dir, categories });
 				}
-			} else if (output.selected_topic && output.angle) {
-				const angle = String(output.angle).toLowerCase();
+			} else if (
+				output.director_data &&
+				typeof output.director_data === "object" &&
+				"angle" in output.director_data
+			) {
+				const angle = String(
+					(output.director_data as { angle?: unknown }).angle ?? "",
+				).toLowerCase();
 				const category = inferCategoryFromAngle(angle);
 				themes.push({ date: dir, categories: [category] });
 			}

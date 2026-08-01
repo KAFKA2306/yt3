@@ -9,7 +9,7 @@ global_style:
 
 workflow:
   default_run_dir: "runs"
-  default_bucket: "daily_pulse"
+  default_bucket: "byosan_money"
   checkpoint_enabled: true
   memory:
     index_file: "data/memory/index.json"
@@ -230,6 +230,8 @@ design_tokens:
 
 source_policy:
   schema_version: "byosan_money_source_policy_v1"
+  domain: "byosan_money"
+  power_macro_registry: "config/sources/byosan_money_power_macro_sources.json"
   tier1_sources:
     - {name: "FRED", source_tier: 1, source_identifier: "fred", url: "https://fred.stlouisfed.org/"}
     - {name: "Federal Reserve", source_tier: 1, source_identifier: "federal_reserve", url: "https://www.federalreserve.gov/"}

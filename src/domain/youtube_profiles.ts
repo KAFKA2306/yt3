@@ -20,7 +20,7 @@ export type YouTubeProfile = YouTubeProfileBase & {
 export const YOUTUBE_PROFILES = {
 	byosan: {
 		profileName: "byosan",
-		bucket: "daily_pulse",
+		bucket: "byosan_money",
 		envFile: "config/.env.byosan",
 		tokenPath: "config/.cache/youtube/byosan.json",
 		expectedChannelTitle: "秒算マネー",

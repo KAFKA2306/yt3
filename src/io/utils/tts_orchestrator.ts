@@ -1,9 +1,22 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
 
-interface TtsRequest {
+export interface TtsVoiceControls {
+	speedScale?: number;
+	pitchScale?: number;
+	intonationScale?: number;
+	volumeScale?: number;
+	prePhonemeLength?: number;
+	postPhonemeLength?: number;
+	pauseLengthScale?: number;
+	outputSamplingRate?: number;
+	outputStereo?: boolean;
+}
+
+export interface TtsRequest {
 	text: string;
 	speakerId: number;
+	voice?: TtsVoiceControls;
 }
 
 interface TtsAudioQueryResponse {
@@ -22,6 +35,8 @@ export interface TtsOrchestrationConfig {
 export interface TtsSynthesisResult {
 	audio: Buffer;
 	speakerId: number;
+	usedSubstituteVoice: boolean;
+	/** @deprecated Use usedSubstituteVoice. Kept for clean-checkout compatibility. */
 	usedFallback: boolean;
 }
 
@@ -50,6 +65,7 @@ export class TtsOrchestrator {
 			request.text,
 			request.speakerId,
 		);
+		this.applyVoiceControls(queryResponse, request.voice);
 		const synthesisBuffer = await this.synthesizeAudio(
 			queryResponse,
 			request.speakerId,
@@ -57,8 +73,19 @@ export class TtsOrchestrator {
 		return {
 			audio: synthesisBuffer,
 			speakerId: request.speakerId,
+			usedSubstituteVoice: false,
 			usedFallback: false,
 		};
+	}
+
+	private applyVoiceControls(
+		query: TtsAudioQueryResponse,
+		voice?: TtsVoiceControls,
+	): void {
+		if (!voice) return;
+		for (const [key, value] of Object.entries(voice)) {
+			if (value !== undefined) query[key] = value;
+		}
 	}
 
 	private async getAudioQuery(

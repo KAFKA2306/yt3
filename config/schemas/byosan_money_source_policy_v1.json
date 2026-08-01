@@ -7,6 +7,7 @@
 	"required": [
 		"schema_version",
 		"domain",
+		"power_macro_registry",
 		"tier1_sources",
 		"forbidden_patterns",
 		"required_state_variables",
@@ -18,6 +19,10 @@
 		},
 		"domain": {
 			"const": "byosan_money"
+		},
+		"power_macro_registry": {
+			"type": "string",
+			"minLength": 1
 		},
 		"tier1_sources": {
 			"type": "array",
