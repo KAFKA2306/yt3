@@ -8,7 +8,10 @@ import { AssetStore, getRunIdDateString } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
 
 async function main() {
-	const runId = process.env.RUN_ID || `report-${getRunIdDateString()}`;
+	let runId = process.env.RUN_ID || `report/${getRunIdDateString()}`;
+	if (!runId.includes("/")) {
+		runId = `report/${runId}`;
+	}
 	const store = new AssetStore(runId);
 	AgentLogger.init();
 

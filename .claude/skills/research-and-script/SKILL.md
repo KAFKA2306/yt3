@@ -49,3 +49,9 @@ Collect high-impact events with numerical data and convert them into analysis an
 - After creating the script and metadata, pass the same `runs/YYYY-MM-DD/<project_id>/` to the next step.
 - Ensure `research.md` is complete before proceeding. Do not move forward if URLs, numbers, or timestamps are missing.
 - When both `script_master.md` and `youtube_metadata.md` are ready, pass them to `audio-production`.
+
+## Daily Audit
+
+- Before starting new research or script work for today's runs, run `task audit:today`.
+- If the audit reports missing research, video, or publish artifacts, stop and switch to brainstorming mode instead of generating new facts.
+- Use the missing artifacts as the only input to the brainstorm. Do not invent a new topic when the current one is simply unfinished.

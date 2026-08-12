@@ -16,6 +16,9 @@ This directory contains JSON Schema definitions for LLM responses and data struc
 
 - **zero_trust_audit_checklist_v1.json** - Project-specific audit checklist specification
 - **zero_trust_audit_report_v1.json** - Structured audit result report
+- **prompt_boundary_policy_v1.json** - Boundary policy for prompt-system edits and generated artifacts
+- **prompt_manifest_v1.json** - Manifest for system prompt artifacts
+- **generated_artifact_manifest_v1.json** - Manifest for generated artifacts
 
 ## Schema Management
 

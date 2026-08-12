@@ -6,7 +6,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "bash -c 'FILE=$(jq -r \".tool_input.file_path // .tool_input.path\" <<< \"$(cat)\"); PROTECTED=\"biome.json Taskfile.yml .gitignore .claude/settings.json package.json\"; for p in $PROTECTED; do if [[ \"$FILE\" == *\"$p\"* ]]; then echo \"🛑 $FILE is protected! Fix the code, not the config binary!\" >&2; exit 2; fi; done'"
+						"command": "python3 hooks/prompt_boundary_guard.py --phase pre"
 					}
 				]
 			}
@@ -15,6 +15,10 @@
 			{
 				"matcher": "Write|Edit|MultiEdit",
 				"hooks": [
+					{
+						"type": "command",
+						"command": "python3 hooks/prompt_boundary_guard.py --phase post"
+					},
 					{
 						"type": "command",
 						"command": "bash -c 'FILE=$(jq -r \".tool_input.file_path // .tool_input.path\" <<< \"$(cat)\"); if [[ \"$FILE\" == *.ts ]]; then task lint 2>&1 | head -n 20; fi'"

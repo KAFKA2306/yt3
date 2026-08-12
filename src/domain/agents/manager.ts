@@ -137,6 +137,6 @@ export class ManagerAgent extends BaseAgent {
 }
 const arg1 = process.argv[1];
 if (arg1 && (arg1.endsWith("manager.ts") || arg1.endsWith("manager.js"))) {
-	const store = new AssetStore("system-manager");
+	const store = new AssetStore("system/manager");
 	new ManagerAgent(store).run();
 }

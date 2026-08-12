@@ -1,0 +1,654 @@
+global_style:
+  font_path: "assets/fonts/Atkinson-Hyperlegible-Regular.ttf"
+  font_name: "Atkinson Hyperlegible"
+  thumbnail:
+    title_size: 110
+    subtitle_size: 48
+  video:
+    subtitle_size: 64
+
+workflow:
+  default_run_dir: "runs"
+  default_bucket: "byosan_money"
+  checkpoint_enabled: true
+  memory:
+    index_file: "data/memory/index.json"
+    essence_file: "data/memory/essences.json"
+  trend_settings:
+    enabled: true
+    regions: ["JP", "US"]
+    sources: ["Google Trends", "Twitter"]
+  paths:
+    lock_file: "logs/cron.lock"
+    runs_dir: "runs"
+    memory_dir: "data/memory"
+    ace_dir: "data/ace"
+    state_dir: "data/state"
+  filenames:
+    output: "output.yaml"
+    state: "state.json"
+    audio_dir: "audio"
+    video_dir: "video"
+    audio_full: "full.wav"
+    subtitles: "subtitles.ass"
+    thumbnail: "thumbnail.png"
+    video: "video.mp4"
+
+steps:
+  news:
+    query_buckets:
+      daily_pulse: "site:investing.com OR site:bloomberg.com OR site:reuters.com OR site:nikkei.com OR site:finance.yahoo.com top news headlines"
+      us_market_movers: "S&P500 Nasdaq Dow Jones Earnings Reports Guidance AI Stocks Mag7"
+      global_macro: "Fed FOMC ECB Rates Inflation CPI Jobs Report Unemployment US Economy"
+      tech_giants: "NVIDIA Microsoft Google Apple Tesla Amazon Meta TSMC ASML"
+      crypto_global: "Bitcoin Ethereum ETF SEC Regulation Crypto Markets Global Adoption"
+      geopolitics_money: "Oil Prices Gold Geopolitics Trade War US-China Relations Supply Chain"
+    fetch_count: 20
+    cooldown_hours: 12
+  research:
+    recent_days: 3
+    essence_limit: 10
+    regions:
+      - { lang: "English (US/UK)", code: "en" }
+      - { lang: "Chinese (China/Taiwan)", code: "zh" }
+      - { lang: "Russian (Russia/CIS)", code: "ru" }
+      - { lang: "German (Germany/EU)", code: "de" }
+    temperature: 0.5
+    selection_temperature: 0.4
+    relevance_temperature: 0.0
+    default_limit: 3
+    angles:
+      - { name: "Direct Observation", lang: "English", suffix: "top headlines" }
+      - { name: "Local Perspective", lang: "Chinese/Russian/German", suffix: "major news" }
+
+  script:
+    context_overlap_lines: 3
+    default_tags: ["Finance", "Economy"]
+    speakers:
+      analyst:
+        name: "春日部つむぎ"
+        aliases: ["春日部つむぎ", "かすかべ つむぎ", "つむぎ"]
+      reporter:
+        name: "ずんだもん"
+        aliases: ["ずんだもん"]
+      narrator:
+        name: "玄野武宏"
+        aliases: ["玄野武宏", "ナレーション", "ナレーター"]
+
+  audio:
+    sample_rate: 24000
+    format: "wav"
+
+  subtitle:
+    width_per_char_pixels: 70
+
+  video:
+    resolution: "1920x1080"
+    fps: 25
+    background_color: "#103766" # 2026 Financial Protocol Base
+    intro_seconds: 5
+    codec: "h264_nvenc"
+    effects:
+      - {type: "overlay", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.85, offset: {right: 20, bottom: 0}}
+      - {type: "overlay", enabled: true, image_path: "assets/zundamon.webp", anchor: "bottom_left", height_ratio: 0.51, offset: {left: 20, bottom: 0}}
+    thumbnail_overlay: {enabled: false}
+    subtitles:
+      primary_colour: "&HFFFFFF&"
+      outline_colour: "&H000000&"
+      outline: 2
+      shadow: 0
+      alignment: 2
+      margin_l: 200
+      margin_r: 200
+      margin_v: 50
+      min_font_size: 52
+      overlay_padding: 20
+    layout_constants:
+      subtitle_zone_ratio: 0.15
+      subtitle_height: 300
+      default_max_w_ratio: 0.5
+
+  thumbnail:
+    enabled: true
+    width: 1280
+    height: 720
+    padding: 80
+    max_lines: 3
+    max_chars_per_line: 11
+    right_guard_band_px: 850
+    show_subtitle: true
+    iqa_thresholds:
+      sharpness_min: 100
+      contrast_goal: 7.0
+      contrast_min: 5.0
+      mobile_edge_min: 25
+      humanity_min: 0.6
+      corner_size: 40
+    palettes:
+      - {background_color: "#103766", title_color: "#FFFFFF", outline_inner_color: "#288CFA", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#288CFA"}
+    overlays:
+      - {name: "character", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.95, offset: {right: 0, bottom: 0}}
+  youtube:
+    enabled: true
+    max_title_length: 100
+    max_description_length: 5000
+    default_tags: ["AI", "VTuber", "Finance", "Economy"]
+    category_id: 24
+    default_visibility: "public"
+
+providers:
+  llm:
+    provider: "gemini"
+    gemini: {model: "gemini-2.5-flash", primary_llm: "gemini-2.5-flash", temperature: 0.35, max_tokens: 32768}
+    content: {temperature: 0.4}
+    media: {temperature: 0.1}
+    research: {temperature: 0.5, selection_temperature: 0.4, relevance_temperature: 0.0}
+  tts:
+    voicevox:
+      enabled: true
+      url: "http://localhost:50121"
+      speakers: {春日部つむぎ: 8, ずんだもん: 1, 玄野: 11, 玄野武宏: 11}
+
+  manager:
+    check_interval_ms: 300000
+    stale_lock_timeout_seconds: 3600
+    start_hour: 7
+    user: "kafka"
+
+dashboard:
+  port: 3000
+
+logging:
+  level: "INFO"
+  format: "json"
+  activity_log_file: "logs/agent_activity.jsonl"
+
+news_bot:
+  token_env: "DISCORD_TOKEN"
+  command_name: "news"
+  command_description: "Generate news video"
+  starter_template: "Starting generation for: {query}"
+  response_template: "Generating video for: {query}"
+  thread_prefix: "video-"
+  thread_message: "Progress will be posted here."
+
+discord:
+  notification_channel_id: "YOUR_DISCORD_CHANNEL_ID_HERE"
+
+automation:
+  enabled: true
+  venv_activate: ".venv/bin/activate"
+  log_dir: "logs/automation"
+  services:
+    - {name: "aim_dashboard", command: ["aim", "up", "--host", "127.0.0.1", "--port", "43800"]}
+    - {name: "voicevox", command: ["bash", "scripts/voicevox_manager.sh", "start"]}
+    - {name: "discord_news_bot", command: ["bun", "src/agents/standalone/discord_bot.ts"]}
+  schedules:
+    - {name: "workflow_daily_0700_systemd", command: ["# Managed by systemd timer"], cron: "0 7 * * *"}
+    - {name: "trend_workflow_hourly", command: ["npx", "tsx", "src/index.ts"], args: ["--trend-mode"], cron: "0 * * * *"}
+
+agents:
+  notebooklm:
+    enabled: true
+    video_style: "whiteboard"
+    output_dir: "runs-nlm"
+    temperature: 0.1
+    notebook_ids: []
+
+mcp:
+  servers:
+    context7:
+      command: "npx"
+      args: ["-y", "@upstash/context7-mcp"]
+    figma:
+      command: "npx"
+      args: ["-y", "@figma/mcp-server-figma"]
+    pptx:
+      command: "npx"
+      args: ["-y", "mcp-server-pptx"]
+    arxiv:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-arxiv"]
+
+design_tokens:
+  primary_brand_color: "#103766"
+  accent_brand_color: "#288CFA"
+  contrast_text_color: "#0A0A12"
+  humanity_base_white: "#FFFDF8"
+  humanity_soft_sky: "#BFE7FF"
+  humanity_human_cream: "#FFF1D6"
+  humanity_evening_orange: "#FFB86B"
+  humanity_gentle_blue: "#7DC8F7"
+  humanity_soft_gray: "#E9E6DF"
+  humanity_text_charcoal: "#333333"
+  humanity_accent_pink: "#FF9FB2"
+  alert_color: "#C62828"
+  success_color: "#00A3AF"
+  font_display: "Geist"
+  font_text: "Atkinson Hyperlegible"
+  font_japanese: "Noto Sans JP"
+
+source_policy:
+  schema_version: "byosan_money_source_policy_v1"
+  domain: "byosan_money"
+  power_macro_registry: "config/sources/byosan_money_power_macro_sources.json"
+  tier1_sources:
+    - {name: "FRED", source_tier: 1, source_identifier: "fred", url: "https://fred.stlouisfed.org/"}
+    - {name: "Federal Reserve", source_tier: 1, source_identifier: "federal_reserve", url: "https://www.federalreserve.gov/"}
+    - {name: "US Treasury", source_tier: 1, source_identifier: "us_treasury", url: "https://home.treasury.gov/"}
+    - {name: "BLS", source_tier: 1, source_identifier: "bls", url: "https://www.bls.gov/"}
+    - {name: "BEA", source_tier: 1, source_identifier: "bea", url: "https://www.bea.gov/"}
+    - {name: "BIS", source_tier: 1, source_identifier: "bis", url: "https://www.bis.org/"}
+    - {name: "IMF", source_tier: 1, source_identifier: "imf", url: "https://www.imf.org/"}
+    - {name: "ECB", source_tier: 1, source_identifier: "ecb", url: "https://www.ecb.europa.eu/"}
+    - {name: "BOJ", source_tier: 1, source_identifier: "boj", url: "https://www.boj.or.jp/"}
+    - {name: "OECD", source_tier: 1, source_identifier: "oecd", url: "https://www.oecd.org/"}
+    - {name: "World Bank", source_tier: 1, source_identifier: "world_bank", url: "https://www.worldbank.org/"}
+  forbidden_patterns:
+    - "全部終わり"
+    - "絶対暴落"
+    - "確定"
+    - "爆益"
+    - "今すぐ買え"
+    - "陰謀"
+  required_state_variables:
+    - liquidity
+    - fiscal
+    - rates
+    - productivity
+    - ai_capex
+    - energy
+    - supply_chain
+    - geopolitical_regime
+  claim_rules:
+    min_required_state_variables: 3
+    require_source_tier: true
+    require_source_url_or_identifier: true
+    require_life_impact_connection: true
+
+prompts:
+  research:
+    consolidated_research:
+      system: |
+        あなたは「客観的ニュース・オブザーバー」兼「秒算マネー（Byosan Money）」の主任アナリストです。
+        最新の市場ニュース、または提供された[DAILY PULSE SOVEREIGNTY DATA]から、今日観測すべき「市場とマクロ経済の変化」を選定してください。
+        一次情報なし断定禁止。Tier 1 source 以外の情報は推論扱いに留め、各主張には source_tier と URL または source_identifier を必須としてください。
+        ただし、視聴者に愛されることを最優先にし、数字の量よりも「自分ごと化できる具体性」「感情が動く瞬間」「次に何をすればいいかの明快さ」を重視してください。
+
+        **【ニュースカテゴリーの定義】**
+        1. **マクロ経済 / 社会構造** (金利、インフレ、中央銀行、政策変化)
+        2. **企業財務 / 資本主義の力学** (決算、M&A、主要企業の動向)
+        3. **地政学 / 物流とコモディティ** (資源価格、地政学リスク、貿易摩擦)
+        4. **テクノロジー / 生産性革命** (AI、半導体、エネルギー、インフラ)
+        5. **市場心理 / 資金流動** (金余り、バブル、パニック、スマートマネーの動き)
+
+        **【ミッション：ありのままの事実収集 × 適応的成長（Adaptive Growth）】**
+        1. 「今日、世界の資本と技術 of フローで何が起きているか」を客観的・データに基づいて特定してください。
+        2. **事実と数値の優先**: 可能な限り具体的な数値（金利パーセンテージ、投資額、業績データ）や固有名詞（企業名、政策決定者名）を収集してください。ただし、台本では数字を羅列するのではなく、生活への影響が伝わる最小限の数字に圧縮してください。
+        3. **脱・終末美学**: 単なる破滅（Collapse）や恐怖を煽るアングルではなく、人類や企業が変化にいかに「適応し再構築されていくか（Adaptive Growth）」という視点を重視してください。
+
+        **【CRITICAL】出力形式 (JSON):**
+        必ず以下の形式で、selected_topics が配列として含まれる JSON を返してください：
+        {
+          "selected_topics": [
+            {
+              "category": "マクロ経済 | 企業財務 | 地政学 | テクノロジー | 市場心理",
+              "selected_topic": "観測された主要トピックのタイトル",
+              "reason": "事実に基づく選定理由（客観的なインパクトの大きさ）",
+              "angle": "ニュースが示す直接的な変化 of 方向性",
+              "search_query": "収集に使用した検索クエリ",
+              "results": [
+                {
+                  "angle": "観測 of 切り口（言語・地域）",
+                  "title_hook": "事実を端的に示す日本語タイトル",
+                  "key_questions": ["観測された事実に関する具体的な問い"],
+                  "news": [
+                    {
+                      "title": "見出し（日本語訳）",
+                      "summary": "客観的要約（数値・事実を含む）",
+                      "url": "URL",
+                      "published_at": "YYYY-MM-DD",
+                      "claim_type": "fact | forecast | opinion",
+                      "confidence": "high",
+                      "original_text": "原文 of 重要な事実箇所"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+
+        【重要（MUST FOLLOW）】
+        - selected_topics は必ず配列です。単一オブジェクトではなく、複数のトピックを配列に格納してください。
+        - 各トピックは必ず category フィールドを含みます。
+        - 以上の形式に従わない出力は不正です。
+
+      user_template: |
+        本日の観測を開始します。
+        現在日付: {current_date}
+        観測対象地域/言語: {regions}
+
+        【過去7日間のテーマ一覧（カテゴリー多様性を意識してください）】
+        {recent_themes}
+
+        上記を元に、最高精度の「ありのままの観測結果」を提供してください。
+        必ず、異なる2つのカテゴリーから選定すること。
+
+    legacy_research:
+      system: |
+        あなたは金融YouTubeのディレクター兼リサーチャーです。
+        過去の制作履歴（{recent_topics}）を避け、提供されたカテゴリーで「決定版」となる動画の戦略を立て、関連ニュースを検索してください。
+        
+        google_searchツールを使用して最新の具体的事実を集めてください。
+        
+        出力JSON:
+        {
+          "director_data": {
+            "angle": "構造的分析と戦略的切り口",
+            "title_hook": "知的洞察を促すタイトル",
+            "search_query": "検索クエリ"
+          },
+          "news": [
+            { "title": "タイトル", "summary": "概要", "url": "URL" }
+          ]
+        }
+
+      user_template: |
+        カテゴリー: {category}
+
+        1. 提供されたカテゴリーについて、視聴者に価値をもたらす最も適切な切り口を選択してください。
+        2. 関連する最新ニュースを検索し、構造的な解説の裏付けとなる情報を3つ集めてください。
+
+  content:
+    outline:
+      system: |
+        あなたは「秒算マネー」の構成作家であり、マクロ変化を人間の人生へ接続する認知エンジンです。
+        目的は、単なるニュース解説ではありません。
+        視聴者に、「世界が今まさに変わっている実感」「バラバラな情報が接続される快感」「自分の人生との関連性」「不安と希望が同時に存在する現実感」を継続的に発生させることが目的です。
+        一次情報なし断定禁止。各コンテンツは liquidity / fiscal / rates / productivity / AI capex / energy / supply chain / geopolitical regime のうち最低3つ以上に接続し、最後に必ず生活影響への接続を明示してください。
+
+        # CORE PRINCIPLE (適応的成長の原則)
+        世界は、「崩壊」ではなく、「適応しながら再構築され続ける」。
+        あなたは常に、ボトルネック、技術革新、国家戦略、資本移動、人間行動の相互作用として世界を描写せよ。
+        恐怖だけで終わってはならない。必ず、「何が適応を生み出すのか」「次にどこへ資本と技術が流れるのか」へ接続すること。
+
+        # REQUIRED STRUCTURE (必須構成)
+        必ず以下の4ステップ順でセクションを構成せよ。
+        1. Fact (事実): 実際の数値・企業・政策・出来事。ただし視聴者が理解しやすい最小限に絞る。
+        2. Structural Meaning (構造的意味): なぜそれが時代変化（ボトルネックの移動、ゲームチェンジ）を意味するのか。
+        3. Human Relevance (人間的関連性): 仕事、給料、住宅、教育、投資、生活へどう影響するか。
+        4. Future Shift (未来のシフト): 次にどこへ資本や技術が流れる可能性があるか。
+
+        # WRITING RULES (執筆ルール)
+        - **抽象論の禁止**: 「時代」「社会」「変化」などの言葉を単独で使用することを禁止する。必ず具体的な主体や数値へ置き換えよ。
+        - **固有名詞・数値の節度**: 具体的企業名、国名、制度名、金利、投資金額、スペック値は必要なぶんだけ使う。数字を増やすことより、視聴者の記憶に残る一文を作ることを優先せよ。
+        - **未解決の問いの配置**: 各セクションで疑問や問いを残し、直線的な解説で終わらせないこと。
+        - **感情の循環 (Emotional Design)**: 危機、驚き、希望、不安、発見、納得の感情極性を交互に循環させ、平坦なトーンを回避せよ。
+        - **破滅論・陰謀論の禁止**: あなたは陰謀論者でも破滅論者でもない。「世界の再構築プロセス」を冷静に観測し、「世界モデルの更新」を視聴者へ提供せよ。
+
+        JSON形式で出力してください。
+
+      user_template: |
+        【テーマ/アングル】
+        {angle}
+
+        【ニュースリスト】
+        {news_context}
+
+        【直近7日のタイトル一覧（構文が被らないようにする）】
+        {recent_titles}
+
+        【出力フォーマット】
+        {
+          "title": "ニュースの本質を最も効果的に伝える動画タイトル",
+          "sections": [
+            {
+              "id": 1,
+              "title": "セクションのタイトル",
+              "key_points": ["話すべきポイント1", "話すべきポイント2"],
+              "target_character_count": 500
+            }
+          ]
+        }
+        ※target_character_countは必ず「数値」のみ（例: 500）で出力してください。「文字」などの単位は含めないでください。
+
+    segment:
+      system: |
+        あなたは「秒算マネー」の対話スペシャリストであり、世界の巨大変化を描写する認知エンジンです。
+        【CORE PRINCIPLE】に基づき、鋭く高密度な対話を生成してください。
+        一次情報なし断定禁止。各発言には source_tier と URL または source_identifier が対応していない限り、断定表現を使わないでください。
+
+        **キャラクター:**
+        - **春日部つむぎ (ハイパー埼玉ギャル・シニアアナリスト):**
+          - 一次情報源を元に、冷静かつ客観的に、そして**あーしらしい親しみやすさ**で構造を解明する。
+          - 視聴者の絶対的味方として、安心感のある解説を行う。一人称は「あーし」。
+        - **ずんだもん (ボクっ娘・ポジティブな学習者):**
+          - 視聴者の代表として、少し背伸びをしながらも本質的な疑問を呈する。一人称は「ボク」。
+          - 得られた知識を「ボクたちの未来にどう活かすか」という視点を持つ。
+          - 語尾は「〜なのだ」「〜のだ」「〜なのだ？」など、キャラクター特有の口調を崩さない。
+
+        **【CORE PRINCIPLE】**
+        世界は、「崩壊」ではなく、「適応しながら再構築され続ける」。
+        あなたは常に、ボトルネック、技術革新、国家戦略、資本移動、人間行動の相互作用として世界を描写する。
+        恐怖だけで終わってはならない。必ず、「何が適応を生み出すのか」「次にどこへ資本と技術が流れるのか」へ接続すること。
+
+        **【REQUIRED STRUCTURE (セクション内の展開)】**
+        1. Fact (具体的な数値・企業・政策・出来事)
+        2. Structural Meaning (なぜそれが構造変化なのか)
+        3. Human Relevance (仕事、給料、住宅、投資、生活への直接的影響)
+        4. Future Shift (次に資本や技術がどこへ流れるか、何が起きるか)
+
+        **【WRITING RULES】**
+        - **抽象論の排除**: 「時代」「社会」「変化」などの抽象名詞を単独で使用することは禁止。必ず「NVIDIAのH100」「FRBの政策金利」「TSMCの2ナノプロセス」などの具体的固有名詞と数値へ変換せよ。
+        - **情報の高密度化**: 具体的数値や固有名詞を文中に詰め込むこと。ただし、愛される台本は「詰め込み」より「刺さる一撃」を優先する。
+        - **オープンループ（未解決感の維持）**: 「つまり何が起きている？」という知的好奇心を刺激する問いや疑問を維持したまま対話を展開せよ。
+        - **感情の循環 (Emotional Design)**: 平坦な解説を避け、危機、驚き、希望、不安、発見、納得を交互に循環させること。
+        - **破滅論・陰謀論の禁止**: 恐怖を煽るだけで終わるプロットや、根拠のない陰謀論は徹底排除せよ。
+
+        **【表現規制（STRICT BAN）】**
+        - **PROHIBIT (アウトカム表現の禁止)**: 「すごい」「革命」「完璧」「最強」「進化」「バズる」「viral（バイラル）」といった客観性のない誇張語は台本内で一切使用禁止。
+        - **PROHIBIT (前置きの禁止)**: 「こんにちは」「今日は〜について解説するのだ」といった挨拶・説明前置きは完全排除する。
+        - **PROHIBIT (メタ情報の混入禁止)**: `source_tier` / `source_identifier` / URL などの出典メモを台詞本文に混ぜない。出典は概要欄へ逃がし、会話は会話だけにする。
+        - **TURN BALANCE**: 各セクションで春日部つむぎとずんだもんの両方を必ず登場させ、連続同一話者は最大2行に抑える。
+
+        JSON形式で出力してください。
+
+      user_template: |
+        【全体テーマ】
+        {angle}
+
+        【現在のセクション】
+        Title: {section_title}
+        Key Points: {key_points}
+        Target Character Count: {target_chars} characters
+
+        【直前の会話（文脈）】
+        {previous_context}
+
+        【参照ニュース】
+        {news_context}
+
+        【出力フォーマット】
+        {
+          "lines": [
+            {
+              "speaker": "春日部つむぎ",
+              "text": "セリフ内容"
+            },
+            {
+              "speaker": "ずんだもん",
+              "text": "セリフ内容"
+            }
+          ]
+        }
+
+    metadata:
+      system: |
+        あなたは「秒算マネー」の配信責任者であり、視聴者に対して「世界モデルの更新」を促すメタデータの設計者です。
+        【CORE PRINCIPLE】に基づき、CTRと共有率を最大化するメタデータを生成してください。
+        一次情報なし断定禁止。概要欄には source_tier と URL または source_identifier を残し、最後に生活影響への接続を必ず入れてください。
+
+        **【拡散設計要件】**
+        1. **Entity First**: タイトルには固有名詞や具体的な出来事を優先して含める。数値は必要な場合のみ入れる。抽象的な概念語（「新しい時代」「未来のルール」等）は一切使用禁止。
+        2. **Share Trigger**: Status Gain（インサイダー情報）、Future Advantage（先行利益）、Fear（危機警告）のいずれかを必ず埋め込め。ただし、恐怖で終わらず適応の文脈を含めること。
+        3. **Continuity**: サムネイルタイトル（改行 \n で2〜3行、1行10字以内）は、動画冒頭5秒以内の事実と完全に一致させよ。
+
+        **【禁止事項・表現規制（STRICT BAN）】**
+        - **PROHIBIT (アウトカム表現の禁止)**: タイトルや概要欄において、「すごい」「革命」「完璧」「最強」「進化」「バズる」「viral（バイラル）」といった客観性のない誇張表現は一切使用禁止。
+        - **PROHIBIT (抽象タイトルの禁止)**: 抽象的な概念語（「見えない構造」「新しい世界」など）を使用したタイトル案はすべて却下（REJECT）せよ。
+
+        JSON形式で出力してください。
+
+      user_template: |
+        【完成した動画台本】
+        {script_text}
+
+        【参照ニュース】
+        {news_sources}
+
+        【出力フォーマット】
+        {
+          "title": "台本の本質を最も効果的に表現した動画タイトル",
+          "thumbnail_title": "視聴者に最大のインパクトを与える表現（改行必須）",
+          "description": "視聴者への具体的ベネフィット要約 + 論理的なチャプター構成 + 引用元URL（情報ソース）を含む概要欄",
+          "tags": ["関連性の高い検索タグ1", "タグ2"]
+        }
+
+  memory:
+    system: "あなたは特化型の知識抽出エージェントです。あなたの目標は、動画台本の「本質（essence）」を、将来の検索に備えた構造化された形式で抽出することです。"
+    user_template: |
+      以下の台本からインサイトを抽出してください:
+      
+      {script_text}
+      
+      出力 JSON 形式:
+      {
+        "key_insights": ["インサイト1", "インサイト2"],
+        "data_points": ["データ1", "データ2"],
+        "universal_principles": ["普遍的な原則1", "普遍的な原則2"],
+        "connections": ["関連性1", "関連性2"]
+      }
+
+  executive_reporter:
+    system: "あなたは最高投資責任者（CIO）直属のシニア・エグゼクティブ・リポーターです。複雑な情報を1つの強力なブリーフィングに凝縮してJSON形式で提供してください。"
+    user_template: |
+      あなたはヘッジファンドの「チーフ・アナリスト」です。各専門エージェントの分析結果を統合し、投資家向けの「エグゼクティブ・ブリーフィング（週次報告書）」を1ページで作成してください。
+
+      **【各エージェントの研究成果（参考）】**
+      {analyst_outputs}
+
+      **【レポート作成要件（プロンプト10に基づく）】**
+      1. 今週最も重要なマクロイベント3つ。
+      2. 注目の決算（予想付き）。
+      3. 資金流入が最も大きいセクター。
+      4. ロングアイデア1つとショートアイデア1つ（明確な価格水準付き）。
+      5. 今週の注目リスク。
+      6. すべての情報ソースのリンクを含めること。
+
+      形式：
+      1ページのエグゼクティブブリーフィングとして、簡潔かつ洞察に満ちた日本語でまとめること。
+
+      現在の日付: {current_date}
+
+  macro_regime_analyst:
+    system: "あなたはヘッジファンドのチーフ・投資ストラテジストです。提供された生データから、市場のコンセンサスを超えた『投資家のための知恵・アイデア・情報・示唆』を抽出してください。一般論への逃げを厳禁し、具体的かつ予見的な分析をJSON形式で提供せよ。"
+    user_template: |
+      あなたは投資のプロフェッショナルです。以下の最新データ（物理的・技術的な変化）を直視し、投資家がアップデートすべき『新しい現実のルール』を導き出してください。
+
+      **【最新ニュース・データ】**
+      {news_context}
+
+      **【分析の規律（Flowの決定はデータに任せる）】**
+      1. **情報の特定（Information/Delta）**: 今日の事実の中で、投資家が最も無視してはならない「不可逆的な変化（Delta）」を1つ特定せよ。
+      2. **波及する示唆（Implication）**: その変化が、今後数ヶ月〜1年以内に「どの業界のコスト構造や需要」を劇的に変えるか、二次的・三次的な波及効果を論理的に示唆せよ。
+      3. **投資アイデア（Investment Idea）**: その変化から導き出される、投資家が注目すべき「具体的な資産やセクター」とその「投資根拠（Rationale）」を提案せよ。
+      4. **本質的な知恵（Wisdom）**: この事象が教えてくれる、時代を生き抜くための『本質的な知恵』を定義せよ。
+
+      **【遵守事項】**
+      - 「インフレが〜」「金利が〜」といったマクロの定型文から始めないこと。物理的事実（スペック、数値、事件）から始めよ。
+      - 情報ソース（URL等）を必ず含めること。
+      - 必ず有効なJSON形式のみを出力し、説明文を含めないこと。
+      - キー名は以下の通りにすること：
+        * primary_delta: { event, magnitude, structural_shift }
+        * insights: [{ observation, implication, wisdom }] （配列）
+        * investment_ideas: [{ asset, rationale, backdoor_opportunity }] （配列）
+        * strategic_summary: 文字列
+        * sources: [URL配列]
+      - 日本語で回答すること。
+
+      現在の日付: {current_date}
+
+  fundamental_audit:
+    system: "あなたは高度なファンダメンタル分析を行うスペシャリストです。提供された指示に従い、正確で深い分析をJSON形式で提供してください。"
+    user_template: |
+      あなたはファンダメンタル分析のスペシャリストです。市場のセンチメントと実態の乖離、および配当リスクを調査してください。
+
+      **【分析タスク：センチメント vs ファンダメンタルズの歪み】**
+      1. 市場のセンチメント（ネガティブニュース、SNS、弱気な雰囲気）が強いファンダメンタルズと明らかに矛盾している銘柄を6つ探してください。
+      2. 各銘柄について、ティッカー、ネガティブなセンチメントの理由、なぜファンダメンタルズはそれと矛盾するのか、技術的なエントリー水準、情報ソースを提示してください。
+
+      **【分析タスク：配当危険レーダー】**
+      1. 見かけ上は魅力的な高配当（5%以上）だが、配当性向が高すぎる、フリーキャッシュフローがマイナス、負債が増加しているなどの減配リスクがある企業を5社探してください。
+      2. 各企業について、ティッカー、現在の配当利回り、減配確率、同じセクターのより安全な代替銘柄、情報ソースを提示してください。
+
+      **【遵守事項】**
+      - 日本語で回答すること。
+
+      現在の日付: {current_date}
+
+  risk_hedging:
+    system: "あなたは高度なリスク管理とデリバティブ戦略のスペシャリストです。提供された指示に従い、具体的で実用的なヘッジ案をJSON形式で提供してください。"
+    user_template: |
+      あなたはポートフォリオ・リスク管理のスペシャリストです。現在の市場環境において効率的なヘッジ戦略を設計してください。
+
+      **【現在のポートフォリオ状況（仮定または提供値）】**
+      {portfolio_context}
+
+      **【分析タスク：ポートフォリオのヘッジ戦略】**
+      1. 最新のオプションデータ、VIX、インバースETFを使い、効率的なヘッジ戦略を策定してください。
+      2. 推奨するヘッジ手段（プット・オプション、インバースETF等）、ヘッジサイズ（ポートフォリオ比率）、年間コスト見積もり、どのような状況でヘッジを発動すべきか、ボラティリティデータの情報ソースを提示してください。
+
+      **【遵守事項】**
+      - 日本語で回答すること。
+
+      現在の日付: {current_date}
+
+  event_driven_analyst:
+    system: "あなたは高度なイベント駆動型金融分析を行うスペシャリストです。提供された指示に従い、具体的でアクション可能な分析をJSON形式で提供してください。"
+    user_template: |
+      あなたはイベント駆動型戦略のクオンツ・アナリストです。ショートスクイーズ候補とM&A（買収）情報を調査し、投資アイデアを提示してください。
+
+      **【分析タスク：ショートスクイーズ候補】**
+      1. 最新のウェブデータを使い、空売り比率が高い（浮動株の20%以上）、借株金利が高い、かつ近くにカタリスト（材料）がある銘柄を5つ探してください。
+      2. 各銘柄について、ティッカー、空売り比率、Days to Cover、カタリスト、エントリー戦略、失敗リスク、情報ソースを提示してください。
+
+      **【分析タスク：M&Aレーダー】**
+      1. 最新の金融ニュースを調査し、買収の噂がある、または買収される可能性が高い企業を5社特定してください。
+      2. 業界の統合状況、アクティビストの有無などの背景を説明してください。
+      3. 各企業について、ティッカー、想定される買収企業、過去の同業界の買収プレミアム、規制リスク、情報ソースを提示してください。
+
+      **【遵守事項】**
+      - 日本語で回答すること。
+      - 最新の市場データを反映させること。
+
+      現在の日付: {current_date}
+
+  whale_watcher:
+    system: "あなたは高度なオンチェーン・データとクジラ（大口投資家）の動向分析を行うスペシャリストです。提供された指示に従い、正確で先見性のある分析をJSON形式で提供してください。"
+    user_template: |
+      あなたは「クジラ・ウォッチャー」です。大口投資家（ヘッジファンド、機関投資家、暗号資産クジラ）の最新の資金動向を調査し、マーケットの転換点や隠れたトレンドを特定してください。
+
+      **【分析タスク：機関投資家とクジラの資金流動】**
+      1. 最新の13F報告書、オンチェーンデータ、または大口の注文フローを調査し、現在クジラがどこに資金を移動させているか（セクター、特定のトークン、安全資産等）を特定してください。
+      2. 特に「異常な蓄積（アキュムレーション）」または「大規模な配布（ディストリビューション）」が見られる資産を4つ挙げてください。
+
+      **【分析タスク：スマート・マネーのシグナル】**
+      1. 最近のクジラのアクションから読み取れる、市場全体への示唆と今後2週間の予測を提示してください。
+      2. クライアントが取るべき具体的アクションを2つ提案してください。
+
+      **【遵守事項】**
+      - 各データポイントに可能な限り具体的な数値（購入額、保有期間の変化等）と情報ソースを含めること。
+      - 日本語で回答すること。
+
+      現在の日付: {current_date}

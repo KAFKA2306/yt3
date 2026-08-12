@@ -271,8 +271,7 @@ Output strictly valid JSON. Do not include abstract praise.`;
 		const publishState = {
 			platform: "youtube",
 			visibility: publishResults?.youtube?.privacy_status || "private",
-			target_channel:
-				process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE || "秒算マネー",
+			target_channel: publishResults?.youtube?.channel_title ?? "",
 			title_length: publishResults?.youtube?.video_id ? 45 : 0,
 			description_length: publishResults?.youtube?.video_id ? 150 : 0,
 		};
@@ -311,5 +310,42 @@ Output strictly valid JSON. Do not include abstract praise.`;
 			audience_response_state: audienceResponse,
 			evolution_state: evolutionState,
 		};
+	}
+
+	/**
+	 * Orchestrates the full synthesis of generation dynamics.
+	 */
+	async synthesizeEvolutionDynamics(
+		state: Partial<AgentState>,
+	): Promise<GenerationDynamics> {
+		if (!state.news || !state.director_data) {
+			throw new Error(
+				"Missing news or director_data for research dynamics synthesis",
+			);
+		}
+		const { world_state, selection_state } =
+			await this.synthesizeResearchDynamics(state.news, state.director_data);
+
+		if (!state.script || !state.metadata) {
+			throw new Error(
+				"Missing script or metadata for narrative dynamics synthesis",
+			);
+		}
+		const {
+			strategy_genome,
+			narrative_state,
+			generation_state,
+			attention_state,
+		} = await this.synthesizeNarrativeDynamics(state.script, state.metadata);
+
+		return this.calculateEvolution(
+			world_state,
+			selection_state,
+			strategy_genome,
+			narrative_state,
+			generation_state,
+			attention_state,
+			state.publish_results,
+		);
 	}
 }

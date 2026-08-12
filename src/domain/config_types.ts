@@ -18,6 +18,8 @@ export interface OverlayConfig {
 	height?: number;
 	height_ratio?: number;
 	width_ratio?: number;
+	start_time?: number;
+	end_time?: number;
 }
 export interface McpServerConfig {
 	command: string;
@@ -124,7 +126,8 @@ export interface AppConfig {
 			title_font_size?: number;
 			subtitle_font_size?: number;
 			palettes: Array<{
-				background_color: string;
+				background_color?: string;
+				background_image?: string;
 				title_color: string;
 				outline_inner_color: string;
 				outline_inner_width: number;

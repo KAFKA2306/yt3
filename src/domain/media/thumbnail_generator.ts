@@ -1,3 +1,5 @@
+import path from "node:path";
+import fs from "fs-extra";
 import { AgentLogger, runMcpTool } from "../../io/core.js";
 import type { IqaValidator } from "../../io/utils/iqa_validator.js";
 import type { LayoutEngine } from "../layout/engine.js";
@@ -13,7 +15,8 @@ interface TrendInfo {
 }
 
 export interface ThumbnailPalette {
-	background_color: string;
+	background_color?: string;
+	background_image?: string;
 	title_color: string;
 }
 
@@ -65,6 +68,17 @@ export class ThumbnailGenerator {
 			title,
 			this.config.right_guard_band_px ?? 850,
 		);
+
+		try {
+			const runDir = path.dirname(outputPath);
+			const auditDir = path.join(runDir, "audit");
+			fs.ensureDirSync(auditDir);
+			fs.writeJsonSync(path.join(auditDir, "iqa_report.json"), validation, {
+				spaces: 2,
+			});
+		} catch {
+			// Best-effort write
+		}
 
 		if (!validation.passed) {
 			throw new Error(`Asset quality rejection: ${validation.reason}`);

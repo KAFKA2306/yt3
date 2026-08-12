@@ -1,0 +1,7 @@
+# Runtime, raw data and reports
+logs/
+raw/
+normalized/
+reports/
+snapshots/
+audit/results/

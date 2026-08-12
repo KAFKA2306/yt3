@@ -19,7 +19,7 @@ export interface VideoCompositionConfig {
 }
 
 export class VideoComposer {
-	private config: VideoCompositionConfig;
+	public config: VideoCompositionConfig;
 
 	constructor(config: VideoCompositionConfig) {
 		this.config = config;
@@ -75,6 +75,10 @@ export class VideoComposer {
 					codec,
 					"-pix_fmt",
 					"yuv420p",
+					"-c:a",
+					"aac",
+					"-b:a",
+					"192k",
 				])
 				.save(outputPath)
 				.on("end", () => resolve())
@@ -107,34 +111,23 @@ export class VideoComposer {
 
 		// Apply Overlays
 		for (let i = 0; i < videoPlan.overlays.length; i++) {
-			const overlay = videoPlan.overlays[i]!;
+			const overlay = videoPlan.overlays[i];
+			if (!overlay) continue;
 			const overlayStream = `ovr_${i}`;
 			const nextStream = `v_${i}`;
 
-			// Scale and format conversion (ensure even dimensions and rgba)
-			const h = Math.round(
-				Number.parseInt(height) * (overlay.config.height_ratio || 0.8),
-			);
+			const overlayWidth = Math.max(2, Math.round(overlay.bounds.width));
+			const overlayHeight = Math.max(2, Math.round(overlay.bounds.height));
+			const overlayX = Math.round(overlay.bounds.x);
+			const overlayY = Math.round(overlay.bounds.y);
 			filters.push(
-				`[${inputIndex}:v]format=rgba,scale=-2:${h},setsar=1[${overlayStream}]`,
+				`[${inputIndex}:v]format=rgba,scale=${overlayWidth}:${overlayHeight}:flags=lanczos,setsar=1[${overlayStream}]`,
 			);
 
-			let pos = "0:0";
-			const anchor = overlay.config.anchor || "bottom_right";
-			const offset = overlay.config.offset || {
-				right: 0,
-				bottom: 0,
-				left: 0,
-				top: 0,
-			};
-
-			if (anchor === "bottom_right")
-				pos = `main_w-overlay_w-${offset.right || 0}:main_h-overlay_h-${offset.bottom || 0}`;
-			else if (anchor === "bottom_left")
-				pos = `${offset.left || 0}:main_h-overlay_h-${offset.bottom || 0}`;
-
+			const enable = this.buildEnableExpression(overlay.config);
+			const enableClause = enable ? `:enable='${enable}'` : "";
 			filters.push(
-				`[${lastStream}][${overlayStream}]overlay=${pos}:format=auto[${nextStream}]`,
+				`[${lastStream}][${overlayStream}]overlay=${overlayX}:${overlayY}:format=auto${enableClause}[${nextStream}]`,
 			);
 			lastStream = nextStream;
 			inputIndex++;
@@ -167,5 +160,17 @@ export class VideoComposer {
 		);
 
 		return filters;
+	}
+
+	private buildEnableExpression(config: {
+		start_time?: number;
+		end_time?: number;
+	}): string | undefined {
+		const { start_time: start, end_time: end } = config;
+		if (start === undefined && end === undefined) return undefined;
+		if (start !== undefined && end !== undefined)
+			return `between(t,${start},${end})`;
+		if (start !== undefined) return `gte(t,${start})`;
+		return `lte(t,${end})`;
 	}
 }

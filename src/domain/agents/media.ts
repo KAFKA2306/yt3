@@ -2,57 +2,68 @@ import os from "node:os";
 import path from "node:path";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
-
+import type { Metadata, RenderPlan, Script } from "../../domain/types.js";
 import {
-	AgentLogger,
 	type AssetStore,
 	BaseAgent,
 	RunStage,
+	appendLoopMemory,
 	loadConfig,
 } from "../../io/core.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
+import { AgentLogger } from "../../io/utils/logger.js";
 import { TtsOrchestrator } from "../../io/utils/tts_orchestrator.js";
 import { LayoutEngine } from "../layout/engine.js";
-import type { RenderPlan } from "../types.js";
 import { ThumbnailGenerator } from "../media/thumbnail_generator.js";
 import { VideoComposer } from "../media/video_composer.js";
-import type { AppConfig, Script } from "../types.js";
+
+/**
+ * Audio chunk manifest entry for Zero-Trust Audit.
+ */
+export interface AudioChunkManifest {
+	index: number;
+	script_speaker: string;
+	tts_requested_voice_id: number;
+	resolved_voice_id: number;
+	no_fallback_used: boolean;
+	output_path: string;
+	text_preview: string;
+}
+
+/**
+ * Result of the media generation phase.
+ */
 export interface MediaResult {
 	audio_paths: string[];
 	thumbnail_path: string;
 	video_path: string;
-	subtitle_path: string;
+	asset_version?: string;
 }
 
+/**
+ * VisualDirector: Orchestrates media generation including TTS and Video Composition.
+ */
 export class VisualDirector extends BaseAgent {
 	private ttsOrchestrator: TtsOrchestrator;
 	private videoComposer: VideoComposer;
 	private thumbnailGenerator: ThumbnailGenerator;
 	private layout: LayoutEngine;
 	private validator: IqaValidator;
-	private videoConfig: AppConfig["steps"]["video"];
 	private speakers: Record<string, number>;
 
 	constructor(store: AssetStore) {
-		const cfg = loadConfig();
-		super(store, RunStage.MEDIA, {
-			temperature: cfg.providers.llm.media?.temperature || 0.1,
-		});
-
-		this.speakers = cfg.providers.tts.voicevox.speakers;
-		this.videoConfig = cfg.steps.video;
-		this.layout = new LayoutEngine();
-		this.validator = new IqaValidator(cfg);
-
+		super(store, RunStage.MEDIA);
+		const cfg = store.cfg;
 		this.ttsOrchestrator = new TtsOrchestrator({
 			ttsUrl: cfg.providers.tts.voicevox.url,
 			speakers: cfg.providers.tts.voicevox.speakers,
 			timeout: {
 				query: 30000,
-				synthesis: 120000,
+				synthesis: 60000,
 			},
 		});
-
+		this.layout = new LayoutEngine(cfg);
+		this.validator = new IqaValidator(cfg);
 		this.videoComposer = new VideoComposer({
 			resolution: cfg.steps.video.resolution,
 			fps: cfg.steps.video.fps,
@@ -62,7 +73,6 @@ export class VisualDirector extends BaseAgent {
 			thumbnail_overlay: cfg.steps.video.thumbnail_overlay,
 			subtitles: cfg.steps.video.subtitles,
 		});
-
 		this.thumbnailGenerator = new ThumbnailGenerator({
 			layout: this.layout,
 			validator: this.validator,
@@ -70,81 +80,131 @@ export class VisualDirector extends BaseAgent {
 			mcpServers: cfg.mcp?.servers,
 			agentName: this.name,
 		});
+		this.speakers = cfg.providers.tts.voicevox.speakers || {};
 	}
+
+	/**
+	 * Runs the media generation phase.
+	 */
 	async run(
 		script: Script,
 		title: string,
 		thumbnailTitle?: string,
 		options: { style?: string; bucket?: string } = {},
-	): Promise<MediaResult> {
-		this.logInput({ lines: script.lines.length, style: options.style, bucket: options.bucket });
-		const audioDir = this.store.audioDir();
-		const audio_paths = await this.synthesizeAudio(script, audioDir, options.style);
+	): Promise<{
+		audio_paths: string[];
+		thumbnail_path: string;
+		video_path: string;
+		asset_version?: string;
+		script?: Script;
+	}> {
+		AgentLogger.info(
+			this.name,
+			"START",
+			"RUN",
+			`Generating media for ${title}`,
+		);
 
+		// 1. Setup Directories
+		const audioDir = this.store.audioDir();
+		const videoDir = this.store.videoDir();
+		await fs.ensureDir(audioDir);
+		await fs.ensureDir(videoDir);
+
+		// 2. TTS Generation
+		const audio_paths = await this.synthesizeAudio(
+			script,
+			audioDir,
+			options.style,
+		);
+
+		// 3. Audio Post-Processing (Merge & Normalize)
+		const fullAudioPath = await this.mergeAudio(audio_paths, audioDir);
+
+		// 4. Subtitle and Plan Generation
 		const videoPlan = await this.layout.createVideoRenderPlan();
 		const durations = await this.getAudioDurations(audio_paths);
+		for (let i = 0; i < script.lines.length; i++) {
+			const line = script.lines[i];
+			if (line) {
+				line.duration = durations[i] || 0;
+			}
+		}
 		const subtitlePath = await this.generateSubtitles(
 			script,
 			durations,
 			videoPlan,
 		);
 
-		const fullAudio = await this.mergeAudio(audio_paths, audioDir);
-
-		// Humanity Observatory Design System v1 Override
-		let composerConfig = { ...this.videoComposer["config"] };
-		if (options.bucket === "humanity_observatory") {
-			composerConfig.background_color = this.config.design_tokens.humanity_base_white || "#FFFDF8";
-			// Override subtitles for soft look
-			if (composerConfig.subtitles) {
-				composerConfig.subtitles = {
-					...composerConfig.subtitles,
-					// Add cognitive-specific subtitle styling here if needed
-				};
-			}
-		} else if (options.style === "quiet_observation") {
-			composerConfig.background_color = "#0A0A12"; 
+		// 5. Thumbnail Generation
+		const thumbnailPath = path.join(
+			this.store.runDir,
+			this.store.cfg.workflow.filenames.thumbnail,
+		);
+		const primaryThumbnailTitle = thumbnailTitle || title;
+		try {
+			await this.thumbnailGenerator.generate(
+				primaryThumbnailTitle,
+				thumbnailPath,
+			);
+		} catch (error) {
+			const errMsg = error instanceof Error ? error.message : String(error);
+			appendLoopMemory(this.store, {
+				run_id: this.store.runDir.split(path.sep).slice(-2).join("/"),
+				bucket: options.bucket || "daily_pulse",
+				stage: "media",
+				kind: "failure",
+				summary:
+					"Thumbnail generation failed. Alternative fallback thumbnail titles are prohibited.",
+				signals: [errMsg],
+				fixes: [
+					"fix the primary thumbnail title or renderer inputs before retrying",
+					"do not publish or regenerate with substitute fallback wording",
+				],
+				timestamp: new Date().toISOString(),
+			});
+			throw error;
 		}
 
-		const thumbnail_path = await this.thumbnailGenerator.generate(
-			thumbnailTitle || title,
-			path.join(this.store.runDir, this.store.cfg.workflow.filenames.thumbnail),
-		);
-
-		const video_path = path.join(
-			this.store.videoDir(),
+		// 6. Video Composition
+		const videoPath = path.join(
+			videoDir,
 			this.store.cfg.workflow.filenames.video,
 		);
 
-		await new VideoComposer(composerConfig).compose(
-			fullAudio,
-			thumbnail_path,
+		// Humanity Observatory Design System Override
+		const composerConfig = { ...this.videoComposer.config };
+		if (options.bucket === "humanity_observatory") {
+			composerConfig.background_color = "#FFFDF8"; // Default humanity white
+		} else if (options.style === "quiet_observation") {
+			composerConfig.background_color = "#0A0A12";
+		}
+
+		const dynamicComposer = new VideoComposer(composerConfig);
+		await dynamicComposer.compose(
+			fullAudioPath,
+			thumbnailPath,
 			subtitlePath,
-			video_path,
+			videoPath,
 			videoPlan,
 		);
 
-		this.logOutput({
-			audio_paths,
-			thumbnail_path,
-			video_path,
-			subtitle_path: subtitlePath,
-		});
-
 		return {
 			audio_paths,
-			thumbnail_path,
-			video_path,
-			subtitle_path: subtitlePath,
+			thumbnail_path: thumbnailPath,
+			video_path: videoPath,
+			asset_version: "humanity-scenes-v1",
+			script,
 		};
 	}
+
 	private async synthesizeAudio(
 		script: Script,
 		audioDir: string,
 		style?: string,
 	): Promise<string[]> {
 		const audio_paths: string[] = [];
-		const manifestChunks: any[] = [];
+		const manifestChunks: AudioChunkManifest[] = [];
 
 		for (let i = 0; i < script.lines.length; i++) {
 			const line = script.lines[i];
@@ -182,7 +242,7 @@ export class VisualDirector extends BaseAgent {
 					script_speaker: line.speaker,
 					tts_requested_voice_id: speakerId,
 					resolved_voice_id: synthesis.speakerId,
-					no_fallback_used: !synthesis.usedFallback,
+					no_fallback_used: !synthesis.usedSubstituteVoice,
 					output_path: audioPath,
 					text_preview: cleanText.slice(0, 50),
 				});
@@ -219,15 +279,6 @@ export class VisualDirector extends BaseAgent {
 			},
 			{ spaces: 2 },
 		);
-
-		if (!fs.existsSync(manifestPath)) {
-			AgentLogger.error(
-				this.name,
-				"AUDIO",
-				"MANIFEST_FAIL",
-				"Failed to verify manifest file existence after write!",
-			);
-		}
 
 		return audio_paths;
 	}
@@ -289,7 +340,7 @@ export class VisualDirector extends BaseAgent {
 		// Step 2: Normalize
 		await new Promise<void>((resolve, reject) => {
 			ffmpeg(tempMergedPath)
-				.audioFilters("loudnorm=I=-14:TP=-1.0:LRA=11")
+				.audioFilters("loudnorm=I=-14:TP=-3.0:LRA=11")
 				.on("error", reject)
 				.on("end", () => {
 					fs.removeSync(tempMergedPath);

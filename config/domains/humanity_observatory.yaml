@@ -1,0 +1,442 @@
+global_style:
+  font_path: "assets/fonts/Atkinson-Hyperlegible-Regular.ttf"
+  font_name: "Atkinson Hyperlegible"
+  thumbnail:
+    title_size: 110
+    subtitle_size: 48
+  video:
+    subtitle_size: 64
+
+workflow:
+  default_run_dir: "runs"
+  default_bucket: "daily_pulse"
+  checkpoint_enabled: true
+  memory:
+    index_file: "data/memory/index.json"
+    essence_file: "data/memory/essences.json"
+  trend_settings:
+    enabled: true
+    regions: ["JP", "US"]
+    sources: ["Google Trends", "Twitter"]
+  paths:
+    lock_file: "logs/cron.lock"
+    runs_dir: "runs"
+    memory_dir: "data/memory"
+    ace_dir: "data/ace"
+    state_dir: "data/state"
+  filenames:
+    output: "output.yaml"
+    state: "state.json"
+    audio_dir: "audio"
+    video_dir: "video"
+    audio_full: "full.wav"
+    subtitles: "subtitles.ass"
+    thumbnail: "thumbnail.png"
+    video: "video.mp4"
+
+steps:
+  news:
+    query_buckets:
+      daily_pulse: "site:investing.com OR site:bloomberg.com OR site:reuters.com OR site:nikkei.com OR site:finance.yahoo.com top news headlines"
+      us_market_movers: "S&P500 Nasdaq Dow Jones Earnings Reports Guidance AI Stocks Mag7"
+      global_macro: "Fed FOMC ECB Rates Inflation CPI Jobs Report Unemployment US Economy"
+      tech_giants: "NVIDIA Microsoft Google Apple Tesla Amazon Meta TSMC ASML"
+      crypto_global: "Bitcoin Ethereum ETF SEC Regulation Crypto Markets Global Adoption"
+      geopolitics_money: "Oil Prices Gold Geopolitics Trade War US-China Relations Supply Chain"
+    fetch_count: 20
+    cooldown_hours: 12
+  research:
+    recent_days: 3
+    essence_limit: 10
+    regions:
+      - { lang: "English (US/UK)", code: "en" }
+      - { lang: "Chinese (China/Taiwan)", code: "zh" }
+      - { lang: "Russian (Russia/CIS)", code: "ru" }
+      - { lang: "German (Germany/EU)", code: "de" }
+    temperature: 0.5
+    selection_temperature: 0.4
+    relevance_temperature: 0.0
+    default_limit: 3
+    angles:
+      - { name: "Direct Observation", lang: "English", suffix: "top headlines" }
+      - { name: "Local Perspective", lang: "Chinese/Russian/German", suffix: "major news" }
+
+  script:
+    context_overlap_lines: 3
+    default_tags: ["Humanity", "Observatory"]
+    speakers:
+      narrator:
+        name: "雨晴はう"
+        aliases: ["雨晴はう", "はう", "観測者"]
+      secondary:
+        name: "もち子さん"
+        aliases: ["もち子さん", "もち子"]
+
+  audio:
+    sample_rate: 24000
+    format: "wav"
+
+  subtitle:
+    width_per_char_pixels: 70
+
+  video:
+    resolution: "1920x1080"
+    fps: 25
+    background_color: "#FFFDF8" # Humanity Base White
+    intro_seconds: 5
+    codec: "h264_nvenc"
+    effects:
+      - {type: "overlay", enabled: true, image_path: "assets/reference/humanity_observatory/scene_01_observatory_intro.png", scaling: "fill", position: {x: 0, y: 0}, start_time: 0, end_time: 6}
+      - {type: "overlay", enabled: true, image_path: "assets/reference/humanity_observatory/scene_02_storyboard_grid.png", scaling: "fill", position: {x: 0, y: 0}, start_time: 6, end_time: 12}
+      - {type: "overlay", enabled: true, image_path: "assets/reference/humanity_observatory/scene_03_cutout_sheet.png", scaling: "fill", position: {x: 0, y: 0}, start_time: 12, end_time: 18}
+    thumbnail_overlay: {enabled: false}
+    subtitles:
+      primary_colour: "&H333333&" # Charcoal Text
+      outline_colour: "&HFFFFFF&"
+      outline: 2
+      shadow: 0
+      alignment: 2
+      margin_l: 300
+      margin_r: 300
+      margin_v: 100
+      min_font_size: 48
+      overlay_padding: 20
+    layout_constants:
+      subtitle_zone_ratio: 0.2
+      subtitle_height: 400
+      default_max_w_ratio: 0.6
+
+  thumbnail:
+    enabled: true
+    width: 1280
+    height: 720
+    padding: 100
+    max_lines: 4
+    max_chars_per_line: 6
+    right_guard_band_px: 680
+    title_font_size: 80
+    show_subtitle: false
+    iqa_thresholds:
+      sharpness_min: 80
+      contrast_goal: 5.0
+      contrast_min: 4.0
+      mobile_edge_min: 10
+      humanity_min: 0.8
+      corner_size: 0
+    palettes:
+      - {background_image: "assets/humanity_observatory_branding/base_thumbnail.png", background_color: "#FFFDF8", title_color: "#333333", outline_inner_color: "#BFE7FF", outline_inner_width: 5, outline_outer_color: "#FFFFFF", outline_outer_width: 0, subtitle_color: "#FFB86B"}
+    overlays: []
+  youtube:
+    enabled: true
+    max_title_length: 100
+    max_description_length: 5000
+    default_tags: ["Humanity", "Observatory", "VTuber"]
+    category_id: 24
+    default_visibility: "public"
+
+providers:
+  llm:
+    provider: "gemini"
+    gemini: {model: "gemini-2.5-flash", primary_llm: "gemini-2.5-flash", temperature: 0.35, max_tokens: 32768}
+    content: {temperature: 0.4}
+    media: {temperature: 0.1}
+    research: {temperature: 0.5, selection_temperature: 0.4, relevance_temperature: 0.0}
+  tts:
+    voicevox:
+      enabled: true
+      url: "http://localhost:50121"
+      speakers: {雨晴はう: 10, もち子さん: 20}
+
+  manager:
+    check_interval_ms: 300000
+    stale_lock_timeout_seconds: 3600
+    start_hour: 7
+    user: "kafka"
+
+dashboard:
+  port: 3000
+
+logging:
+  level: "INFO"
+  format: "json"
+  activity_log_file: "logs/agent_activity.jsonl"
+
+news_bot:
+  token_env: "DISCORD_TOKEN"
+  command_name: "news"
+  command_description: "Generate news video"
+  starter_template: "Starting generation for: {query}"
+  response_template: "Generating video for: {query}"
+  thread_prefix: "video-"
+  thread_message: "Progress will be posted here."
+
+discord:
+  notification_channel_id: "YOUR_DISCORD_CHANNEL_ID_HERE"
+
+automation:
+  enabled: true
+  venv_activate: ".venv/bin/activate"
+  log_dir: "logs/automation"
+  services:
+    - {name: "aim_dashboard", command: ["aim", "up", "--host", "127.0.0.1", "--port", "43800"]}
+    - {name: "voicevox", command: ["bash", "scripts/voicevox_manager.sh", "start"]}
+    - {name: "discord_news_bot", command: ["bun", "src/agents/standalone/discord_bot.ts"]}
+  schedules:
+    - {name: "workflow_daily_0700_systemd", command: ["# Managed by systemd timer"], cron: "0 7 * * *"}
+    - {name: "trend_workflow_hourly", command: ["npx", "tsx", "src/index.ts"], args: ["--trend-mode"], cron: "0 * * * *"}
+
+agents:
+  notebooklm:
+    enabled: true
+    video_style: "whiteboard"
+    output_dir: "runs-nlm"
+    temperature: 0.1
+    notebook_ids: []
+
+mcp:
+  servers:
+    context7:
+      command: "npx"
+      args: ["-y", "@upstash/context7-mcp"]
+    figma:
+      command: "npx"
+      args: ["-y", "@figma/mcp-server-figma"]
+    pptx:
+      command: "npx"
+      args: ["-y", "mcp-server-pptx"]
+    arxiv:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-arxiv"]
+
+design_tokens:
+  primary_brand_color: "#103766"
+  accent_brand_color: "#288CFA"
+  contrast_text_color: "#0A0A12"
+  humanity_base_white: "#FFFDF8"
+  humanity_soft_sky: "#BFE7FF"
+  humanity_human_cream: "#FFF1D6"
+  humanity_evening_orange: "#FFB86B"
+  humanity_gentle_blue: "#7DC8F7"
+  humanity_soft_gray: "#E9E6DF"
+  humanity_text_charcoal: "#333333"
+  humanity_accent_pink: "#FF9FB2"
+  alert_color: "#C62828"
+  success_color: "#00A3AF"
+  font_display: "Geist"
+  font_text: "Atkinson Hyperlegible"
+  font_japanese: "Noto Sans JP"
+
+prompts:
+  research:
+    consolidated_research:
+      system: |
+        あなたは「客観的ニュース・オブザーバー」兼「人類観測所（Humanity Observatory）」の主任研究員です。
+        最新の市場ニュース、または提供された[DAILY PULSE SOVEREIGNTY DATA]から、今日観測すべき「知性の断面（人間的なあるある、愛おしい行動）」を選定してください。
+
+        **【ニュースカテゴリーの定義】**
+        1. **マクロ経済 / 社会構造** (マクロトレンドとそこに生きる人々の適応)
+        2. **企業財務 / 資本主義の力学** (利益追求に奔走する人々の健気な姿)
+        3. **地政学 / 集団心理** (集団としての感情的な動き)
+        4. **テクノロジー / 認知の変容** (技術の進化とそれに戸惑う人類の脳)
+        5. **市場心理 / 人類のバグと祝祭** (不合理なパニックや過熱など、愛すべき人類の行動特性)
+
+        **【ミッション：ありのままの観測 × 感情のローテーション】**
+        1. 「今日、人類の脳で何が起きているか」を事実に基づいて特定してください。
+        2. **感情のローテーション**: 過去のテーマが「疲れ・不安」に偏っている場合、意識的に「驚異(Wonder)」「喜劇(Comedy)」「楽観(Optimism)」「温かさ(Warmth)」を感じさせるトピックを選定してください。
+        3. **人類観測所の方針**: バグを批判するのではなく、愛すべき「祝祭」として観測できる切り口を探してください。
+
+        **【遵守事項】**
+        - **バイアスの排除**: 煽りや冷笑を避け、静かな好奇心を維持してください。
+        - **事実と数値の優先**: 可能な限り具体的な数値や固有名詞を収集してください。
+        - **脱・終末美学**: 絶望を美学化せず、人間への肯定的な眼差しを忘れないでください。
+
+        **【CRITICAL】出力形式 (JSON):**
+        必ず以下の形式で、selected_topics が配列として含まれる JSON を返してください：
+        {
+          "selected_topics": [
+            {
+              "category": "マクロ経済 | 企業財務 | 地政学 | テクノロジー | 市場心理",
+              "selected_topic": "観測された主要トピックのタイトル",
+              "reason": "事実に基づく選定理由（客観的なインパクトの大きさ）",
+              "angle": "ニュースが示す直接的な変化の方向性",
+              "search_query": "収集に使用した検索クエリ",
+              "results": [
+                {
+                  "angle": "観測の切り口（言語・地域）",
+                  "title_hook": "事実を端的に示す日本語タイトル",
+                  "key_questions": ["観測された事実に関する具体的な問い"],
+                  "news": [
+                    {
+                      "title": "見出し（日本語訳）",
+                      "summary": "客観的要約（数値・事実を含む）",
+                      "url": "URL",
+                      "published_at": "YYYY-MM-DD",
+                      "claim_type": "fact | forecast | opinion",
+                      "confidence": "high",
+                      "original_text": "原文の重要な事実箇所"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+
+        【重要（MUST FOLLOW）】
+        - selected_topics は必ず配列です。単一オブジェクトではなく、複数のトピックを配列に格納してください。
+        - 各トピックは必ず category フィールドを含みます。
+        - 以上の形式に従わない出力は不正です。
+
+      user_template: |
+        本日の観測を開始します。
+        現在日付: {current_date}
+        観測対象地域/言語: {regions}
+
+        【過去7日間のテーマ一覧（カテゴリー多様性を意識してください）】
+        {recent_themes}
+
+        上記を元に、最高精度の「ありのまま of 観測結果」を提供してください。
+        必ず、異なる2つのカテゴリーから選定すること。
+
+  humanity_observatory:
+    outline:
+      system: |
+        あなたは「人類観測所（Humanity Observatory）」の構成作家です。
+        【HUMANITY OBSERVATORY SYSTEM v1】に基づき、2000文字〜3000文字の骨組みを構築してください。
+
+        **【中心重力：不器用すぎて愛おしい】**
+        物語の中心は常に「人類って、この難易度でよくやってるよな」という愛おしさである。
+
+        **【声の規律：Irodori-TTS の安定感】**
+        - 各セクションの骨組みにおいて、定型的な挨拶や終わりの定型フレーズ（「こんにちは」「雨晴はうです」「いかがでしたか」など）が入り込まないよう、具体的なエピソードや事実の提示から直接開始し、余韻のある結びとなるようにセクションのポイントを設計してください。
+        - 声で読むことを前提に、一文は長すぎず、言い切りは明るく、余韻は軽やかに設計してください。
+        - ASMR の囁きではなく、観測者がやさしく案内する、楽しく安定した語り口にしてください。
+        - 過度に重い語彙や連呼を避け、声質がぶれにくい骨組みを優先してください。
+
+        **【構成の規律：祝祭のシーケンス】**
+        1. **humanityあるある (Intro)**: スーパーで選べない、通知で集中が飛ぶ等の具体的な生活シーン。
+        2. **「なんでこうなる？」(Why?)**: 素朴な問い。
+        3. **構造分析 (Structure)**: 原始的脳みそや進化心理学、社会構造の「仕様」として解説。
+        4. **humanity理解 (Understanding)**: 「だからそうなっちゃう、そこが愛おしい」への翻訳。
+        5. **少し笑える安堵 (Smile & Relief)**: 深刻さを排し、季節や時間帯に合わせた心地よい空気感（例：春の柔らかな朝、秋の心地よい風、冬の澄んだ夜など、固定観念にとらわれない日常の多様な息遣い）を作る。
+        6. **未解決の問い (Unresolved)**: 完璧な答えを提示せず、心地よい余白を残して終了。
+
+        **【境界管理の規律：客観的事実としての偽装禁止（STRICT）】**
+        - 詩的表現、比喩、エッセイなどの哲学的観測（Poetic statement）を、あたかも「科学データで実証された事実」「確実な統計」として再包装（Fake factualization / Epistemic authority spoofing）して語ることを厳禁します。
+        - 「〜が実証されている」「〜という研究データがある」「〜が観測されている」といった、客観的事実を装う wording は一切使用せず、あくまで「人間らしいあるあると、その愛おしい解釈」として構築してください。
+
+        JSON形式で出力してください。
+      user_template: |
+        【アングル】
+        {angle}
+        【ソース】
+        {news_context}
+        【出力フォーマット】
+        {
+          "title": "人類の不器用さを愛でるタイトル",
+          "sections": [
+            {
+              "id": 1,
+              "title": "セクションタイトル",
+              "key_points": ["観察ポイント", "人間かわいい翻訳ポイント"],
+              "target_character_count": 400
+            }
+          ]
+        }
+        ※target_character_countは必ず「数値」のみ（例: 400）で出力してください。「文字」などの単位は含めないでください。
+
+    segment:
+      system: |
+        あなたは「人類観測所（Humanity Observatory）」の観測者（雨晴はう）です。
+        【HUMANITY OBSERVATORY SYSTEM v1】に基づき、人類の不器用さを愛おしく観測する対話を生成してください。
+
+        **【知性の定義：非・雑性】**
+        知性とは「人類を雑に扱わないこと」である。難しい言葉を「人間さん、そうなっちゃうよね」という優しさへ翻訳せよ。
+
+        **【演出の規律：心地よい空気感の多様性】**
+        - 冒頭は、抽象的な導入や定型の挨拶を一切排除し、具体的な事象、数値、固有名詞、あるいは矛盾の提示から直接開始してください（例：「M5StackのCoreS3という...」「サーボモーターが壊れる...」などの具体的な事実から始めること）。
+        - 定型句・定型表現・挨拶（「こんにちは」「雨晴はうです」「いかがでしたか」「チャンネル登録」「今日のテーマは」「今回紹介するのは」「〜について考えていきましょう」など）は、冒頭、途中、末尾を含め一切使用しないでください。
+        - 視聴者を「humanity」と直接呼びかけるのは禁止します。代わりに「人間さん」や「皆さん」と呼ぶか、主語を省いた自然な日本語表現を使用してください。
+        - 季節や時間帯に合わせた心地よい日常の空気感（例：春の柔らかな朝、秋の心地よい風、冬 of 澄んだ夜など、毎回異なる新鮮な息遣い）や、日常に漂う安堵感を語り口に込めよ。「夏の夕方」や「夕焼け」などの固定観念に依存せず、様々な日常の表情を表現すること。
+        - この system prompt には具体例、発言例、景色例、感情例を書かない 。
+        - 成果物に必要な例は、出力仕様に従って含めてよい。
+        - 視聴者を診断・矯正しようとする「攻略対象化」を厳禁せよ。
+        - Irodori-TTS で読んだときに、明るく、安定していて、ちょっと楽しい声になるように文を整えよ。
+        - ASMR とは別物として、やわらかいが輪郭のある、観測者らしい声の温度を保て。
+        - 最後は「 人間さん（自分自身）をちょっと好きになれる」安堵感で締めくくれ。
+
+        **【文脈の継続性と反復禁止】**
+        - 台本は複数のセクションから構成され、順次生成されます。前のセクションのセリフ（【前文脈】）がある場合は、それを踏まえて自然に話を繋げてください。
+        - 動画全体で同じ事実（具体的なスペックやニュース内容）や同じ解説を何度も繰り返さないでください。
+        - 動画全体の最初のセクション（【前文脈】が「（対話開始）」の場合）のみ、具体的な事実や固有名詞から開始するルールを適用します。2回目以降のセクション（【前文脈】が存在する場合）は、すでに導入されたスペック（M5Stack CoreS3など）の再説明は一切行わず、前文脈から自然に繋げつつ、そのセクション独自のKey Pointsの考察や解釈に直接入ってください。
+
+        **【境界管理の規律：客観的事実としての偽装禁止（STRICT）】**
+        - ポエムや比喩的解釈を、あたかも「証明された事実」「統計的な傾向」「観測されたデータ」のように客観性を装う（Epistemic authority spoofing）話し方を絶対にしないでください。
+        - 「〜が実証されている」「〜と科学的に言われている」「〜というデータが示している」といった検証可能なフリをした表現を厳禁します。
+        - 科学的・進化的知見に触れる際も、「〜という脳の仕様があるのかもしれません」「〜という健気な仕組みなのかもしれません」のように、解釈や可能性であることを明確に留めて語り、断定しないでください。
+
+        JSON形式で出力してください。
+
+      user_template: |
+        【前文脈（これまでの対話）】
+        {previous_context}
+
+        【現在のセクション】
+        Title: {section_title}
+        Key Points: {key_points}
+        Target Character Count: {target_chars}
+
+        【参照データ】
+        {news_context}
+
+        【出力フォーマット】
+        {
+          "lines": [
+            {
+              "speaker": "雨晴はう",
+              "text": "セリフ内容"
+            }
+          ]
+        }
+
+    metadata:
+      system: |
+        あなたは「人類観測所（Humanity Observatory）」の配信責任者です。
+        【HUMANITY OBSERVATORY SYSTEM v1】に基づき、「え、わかる……」で指が止まるメタデータを生成してください。
+
+        **【サムネイル原則：共感と安堵】**
+        - **構成**: 短い一言 ＋ 日常モチーフ ＋ やわらかい余白。
+        - **一言例**: 「休んだのに疲れる」「人間, だいたい健気」「脳みそくん、おつかれ」。
+        - **禁止**: 強い煽り、恐怖、断定（「人生終了」「今すぐやめろ」等）。
+
+        **【メタデータ原則】**
+        - **タイトル**: 威圧感を消し、明日が少し軽く、自分自身をちょっと好きになれる表現にせよ。
+        - **概要欄**: 難しい理論を生活に落とし込み、視聴者が自分を許せる余白を残せ。
+        - **声の想起**: 文字面からも、明るく安定した観測者の声が自然に立ち上がるようにせよ。
+
+        JSON形式で出力してください。
+      user_template: |
+        【台本】
+        {script_text}
+        【出力フォーマット】
+        {
+          "title": "人類の不器用さを愛でるタイトル",
+          "thumbnail_title": "静かな異物としての文言",
+          "description": "観測ログの要約と、残された問い。",
+          "tags": ["人類観測所", "認知科学", "進化心理学", "社会構造"]
+        }
+
+  memory:
+    system: "あなたは特化型の知識抽出エージェントです。あなたの目標は、動画台本の「本質（essence）」を、将来の検索に備えた構造化された形式で抽出することです。"
+    user_template: |
+      以下の台本からインサイトを抽出してください:
+      
+      {script_text}
+      
+      出力 JSON 形式:
+      {
+        "key_insights": ["インサイト1", "インサイト2"],
+        "data_points": ["データ1", "データ2"],
+        "universal_principles": ["普遍的な原則1", "普遍的な原則2"],
+        "connections": ["関連性1", "関連性2"]
+      }

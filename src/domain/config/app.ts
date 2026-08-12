@@ -63,7 +63,8 @@ export interface AppConfig {
 			title_font_size?: number;
 			subtitle_font_size?: number;
 			palettes: Array<{
-				background_color: string;
+				background_color?: string;
+				background_image?: string;
 				title_color: string;
 				outline_inner_color: string;
 				outline_inner_width: number;

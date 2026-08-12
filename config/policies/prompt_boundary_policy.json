@@ -1,0 +1,41 @@
+{
+	"schema_version": "prompt_boundary_policy_v1",
+	"monitor_roots": [
+		"prompts/system",
+		"artifacts/generated",
+		"outputs",
+		"scripts"
+	],
+	"editable_paths": ["prompts/system/**"],
+	"readonly_paths": ["artifacts/generated/**", "outputs/**"],
+	"deny_symlink_outside_repo": true,
+	"hooks": [
+		{
+			"id": "strip_system_examples",
+			"purpose": "remove_examples_from_system_prompt_only",
+			"input_scope": {
+				"include": ["prompts/system/**"]
+			},
+			"deny_scope": ["artifacts/generated/**", "outputs/**", "scripts/**"],
+			"forbidden": [
+				"concrete_example",
+				"dialogue_example",
+				"scenery_example",
+				"emotion_example"
+			],
+			"operation": {
+				"mode": "remove_only"
+			},
+			"audit": {
+				"emit_diff": true,
+				"emit_changed_lines": true,
+				"require_scope_validation": true,
+				"use_content_hash_snapshot": true,
+				"use_delete_detection": true,
+				"use_rename_detection": true,
+				"use_symlink_validation": true,
+				"use_git_evidence": true
+			}
+		}
+	]
+}

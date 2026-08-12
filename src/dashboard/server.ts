@@ -56,7 +56,7 @@ const authMiddleware = (
 
 class ChatAgent extends BaseAgent {
 	constructor() {
-		super(new AssetStore("chat_session"), "chat");
+		super(new AssetStore("chat/session"), "chat");
 	}
 }
 

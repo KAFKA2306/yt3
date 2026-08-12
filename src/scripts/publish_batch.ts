@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
 
-const PROGRESS_FILE = "runs/2026-05-10/MASTER_PROGRESS.md";
+const PROGRESS_FILE = "asmr/yawa-archive/MASTER_PROGRESS.md";
 
 async function main() {
 	if (!fs.existsSync(PROGRESS_FILE)) {

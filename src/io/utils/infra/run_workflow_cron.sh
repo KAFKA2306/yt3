@@ -5,13 +5,34 @@ readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_dir="$(cd "${script_dir}/../../../../" && pwd)"
 
 # Ensure correct runtime paths
-export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+export VIRTUAL_ENV="${repo_dir}/.venv"
+export PATH="${VIRTUAL_ENV}/bin:/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
 readonly bun_bin=$(which bun || echo "/home/kafka/.bun/bin/bun")
 
+# Determine environment file to use: priority: ENV_FILE > profile > config/.env.byosan
+ENV_FILE="${ENV_FILE:-}"
+if [ -z "${ENV_FILE}" ]; then
+  if [ -n "${YOUTUBE_CHANNEL_PROFILE:-}" ]; then
+    if [ "${YOUTUBE_CHANNEL_PROFILE}" = "byosan" ]; then
+      ENV_FILE="config/.env.byosan"
+    elif [ "${YOUTUBE_CHANNEL_PROFILE}" = "yawa" ]; then
+      ENV_FILE="config/.env.yawa"
+    elif [ "${YOUTUBE_CHANNEL_PROFILE}" = "humanity" ]; then
+      ENV_FILE="config/.env"
+    fi
+  fi
+fi
+
+if [ -z "${ENV_FILE}" ]; then
+  ENV_FILE="config/.env.byosan"
+fi
+
+readonly resolved_env="${repo_dir}/${ENV_FILE}"
+
 # Load environment variables for Discord notifications from bash
-if [ -f "${repo_dir}/config/.env" ]; then
+if [ -f "${resolved_env}" ]; then
   # Sourcing safely: ignoring comments and empty lines
-  export $(grep -v '^#' "${repo_dir}/config/.env" | xargs)
+  export $(grep -v '^#' "${resolved_env}" | xargs)
 fi
 readonly log_dir="${repo_dir}/data/state"
 readonly daily_log_dir="${repo_dir}/logs/daily"
@@ -20,7 +41,9 @@ readonly log_file="${daily_log_dir}/${today_date}.log"
 readonly latest_log="${repo_dir}/logs/latest.log"
 readonly status_file="${repo_dir}/data/state/last_run.json"
 readonly lock_file="${repo_dir}/logs/cron.lock"
-readonly uv_bin="${UV_BIN:-/root/.local/bin/uv}"
+readonly uv_bin="${UV_BIN:-$(command -v uv || echo /root/.local/bin/uv)}"
+readonly node_bin="${NODE_BIN:-$(if [ -x /root/.nvm/versions/node/v22.17.1/bin/node ]; then echo /root/.nvm/versions/node/v22.17.1/bin/node; else command -v node; fi)}"
+readonly log_start_line="$(wc -l < "${log_file}" 2>/dev/null || echo 0)"
 
 mkdir -p "${log_dir}" "${daily_log_dir}"
 exec >>"${log_file}" 2>&1
@@ -30,6 +53,27 @@ ln -sf "${log_file}" "${latest_log}"
 
 timestamp() {
   date '+%Y-%m-%dT%H:%M:%S%z'
+}
+
+current_run_log() {
+  tail -n +"$((log_start_line + 1))" "${log_file}" 2>/dev/null || true
+}
+
+run_auto_heal() {
+  local reason="$1"
+
+  if [ "${ENABLE_AUTO_HEAL:-false}" != "true" ]; then
+    printf '[%s] WARN  auto-heal skipped for %s; set ENABLE_AUTO_HEAL=true for an explicitly authorized repair run\n' "$(timestamp)" "${reason}" >> logs/healing.log
+    return 0
+  fi
+
+  (
+    cd "${repo_dir}"
+    export PATH="/root/.nvm/versions/node/v22.17.1/bin:/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
+    export AUTONOMY_TRIGGER="auto-heal"
+    echo "[$(timestamp)] --- Auto-Healing Triggered for ${reason} ---" >> logs/healing.log
+    "${node_bin}" /usr/local/bin/gemini -m gemini-2.5-flash "${2}" >> logs/healing.log 2>&1
+  ) &
 }
 
 printf '[%s] INFO  acquiring lock\n' "$(timestamp)"
@@ -47,7 +91,10 @@ fi
 notify_critical() {
   printf '[%s] CRITICAL %s\n' "$(timestamp)" "$1"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
-    curl -s -H "Content-Type: application/json" -d "{\"content\": \"$1\"}" "${DISCORD_WEBHOOK_URL}" > /dev/null || true
+    (
+      cd "${repo_dir}"
+      DISCORD_ALERT_TYPE="error" DISCORD_ALERT_MESSAGE="$1" "${bun_bin}" src/scripts/send_discord_alert.ts >/dev/null 2>&1 || true
+    )
   fi
 }
 
@@ -55,11 +102,15 @@ notify_failure() {
   local exit_code=$1
   local duration=$2
   local error_type="Unknown Error"
+  local run_log
+  run_log="$(current_run_log)"
   
   # Detect specific error patterns in the log
-  if grep -qiE "Permission denied|EACCES|operation not permitted" "${log_file}"; then
+  if printf '%s\n' "${run_log}" | grep -qiE "Permission denied|EACCES|EPERM|operation not permitted|Read-only file system"; then
     error_type="🚨 PERMISSION_ERROR (Root Escalation Issue)"
-  elif grep -qiE "SyntaxError: JSON Parse error|JSON\.parse" "${log_file}"; then
+  elif printf '%s\n' "${run_log}" | grep -qiE "Failed to generate a script passing integrity audits|integrity linter|AUDIT_FAIL"; then
+    error_type="🧩 CONTENT_INTEGRITY_ERROR (Audience Fit Issue)"
+  elif printf '%s\n' "${run_log}" | grep -qiE "SyntaxError: JSON Parse error|JSON\.parse"; then
     error_type="🧠 LLM_PARSE_ERROR (Logic/Formatting Issue)"
   fi
 
@@ -68,19 +119,19 @@ notify_failure() {
   # If it's a target error, invoke Gemini CLI autonomously
   if [[ "${error_type}" != "Unknown Error" ]]; then
     msg="${msg}\n\n🤖 **Auto-Healing Initiated**: Invoking Gemini CLI to investigate and patch the root cause autonomously."
-    
-    # Run in background to avoid blocking the workflow exit
-    (
-      cd "${repo_dir}"
-      export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
-      echo "[$(timestamp)] --- Auto-Healing Triggered for ${error_type} ---" >> logs/healing.log
-      gemini "FATAL ERROR: ${error_type}. Read logs/latest.log. Autonomously fix the code or system configuration causing this. You are running in a headless auto-healing context. Do not ask questions. Implement the fix, verify it, and exit." >> logs/healing.log 2>&1
-    ) &
+
+    # Run in background to avoid blocking the workflow exit.
+    run_auto_heal \
+      "${error_type}" \
+      "FATAL ERROR: ${error_type}. Read logs/latest.log. Autonomously fix the code or system configuration causing this. You are running in a headless auto-healing context. Do not ask questions. Implement the fix, verify it, and exit."
   fi
 
   printf '[%s] ERROR %s\n' "$(timestamp)" "${msg}"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
-    curl -s -H "Content-Type: application/json" -d "{\"content\": \"${msg}\"}" "${DISCORD_WEBHOOK_URL}" > /dev/null || true
+    (
+      cd "${repo_dir}"
+      DISCORD_ALERT_TYPE="error" DISCORD_ALERT_MESSAGE="${msg}" "${bun_bin}" src/scripts/send_discord_alert.ts >/dev/null 2>&1 || true
+    )
   fi
 }
 
@@ -89,22 +140,35 @@ notify_success() {
   local latest_run=$2
   local title="Unknown Title"
   local video_url=""
+  local proof_state="publish proof missing"
+  local receipt_path="${latest_run}publish/receipt.json"
 
   if [ -f "${latest_run}content/output.yaml" ]; then
     title=$(grep -oP 'title:\s*\K.+' "${latest_run}content/output.yaml" | head -n 1 || echo "Unknown Title")
   fi
-  if [ -f "${latest_run}publish/output.yaml" ]; then
+  if [ -f "${receipt_path}" ]; then
     local video_id
-    video_id=$(grep -oP 'video_id:\s*\K.+' "${latest_run}publish/output.yaml" | head -n 1 || echo "")
+    video_id=$(grep -oP '"video_id"\s*:\s*"\K[^"]+' "${receipt_path}" | head -n 1 || echo "")
     if [ -n "${video_id}" ]; then
       video_url="https://youtu.be/${video_id}"
+      proof_state="publish proof present"
     fi
   fi
 
-  local msg="✅ **YT3 Automation SUCCESS**\n🎬 **Title**: ${title}\n🔗 **URL**: ${video_url:-"(no URL)"}\n⏱️ **Duration**: ${duration}s"
-  printf '[%s] INFO  %s\n' "$(timestamp)" "${msg}"
+  local msg
+  local alert_type="success"
+  if [ -n "${video_url}" ]; then
+    msg="✅ **YT3 Automation SUCCESS**\n🎬 **Title**: ${title}\n🔗 **URL**: ${video_url}\n🧾 **Proof**: ${proof_state}\n⏱️ **Duration**: ${duration}s"
+  else
+    alert_type="warn"
+    msg="⚠️ **YT3 Automation COMPLETE WITHOUT PUBLISH PROOF**\n🎬 **Title**: ${title}\n🧾 **Proof**: ${proof_state}\n⏱️ **Duration**: ${duration}s"
+  fi
+  printf '[%s] %s  %s\n' "$(timestamp)" "${alert_type^^}" "${msg}"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
-    curl -s -H "Content-Type: application/json" -d "{\"content\": \"${msg}\"}" "${DISCORD_WEBHOOK_URL}" > /dev/null || true
+    (
+      cd "${repo_dir}"
+      DISCORD_ALERT_TYPE="${alert_type}" DISCORD_ALERT_MESSAGE="${msg}" "${bun_bin}" src/scripts/send_discord_alert.ts >/dev/null 2>&1 || true
+    )
   fi
 }
 
@@ -136,15 +200,27 @@ ensure_voicevox_running() {
     notify_critical "🚨 **YT3 Automation FATAL**: Voicevox failed to respond after attempted start. Invoking Auto-Healing..."
     
     # Trigger Gemini CLI to fix Voicevox environment autonomously
-    (
-      cd "${repo_dir}"
-      export PATH="/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
-      echo "[$(timestamp)] --- Auto-Healing Triggered for VOICEVOX_STARTUP_FAILURE ---" >> logs/healing.log
-      gemini "FATAL ERROR: Voicevox is not responding. Check docker containers, ports (50121), and system resources. Autonomously fix the issue (e.g., restart docker, kill blocking processes, or recreate container) and ensure it is UP and responding to /version. Then exit." >> logs/healing.log 2>&1
-    ) &
+    run_auto_heal \
+      "VOICEVOX_STARTUP_FAILURE" \
+      "FATAL ERROR: Voicevox is not responding. Check docker containers, ports (50121), and system resources. Autonomously fix the issue (e.g., restart docker, kill blocking processes, or recreate container) and ensure it is UP and responding to /version. Then exit."
     
     return 1
   fi
+  return 0
+}
+
+run_harness_doctor() {
+  if [ "${SKIP_HARNESS_DOCTOR:-false}" = "true" ]; then
+    printf '[%s] INFO  harness doctor skipped via SKIP_HARNESS_DOCTOR\n' "$(timestamp)"
+    return 0
+  fi
+
+  printf '[%s] INFO  running harness doctor...\n' "$(timestamp)"
+  if ! "${bun_bin}" src/scripts/harness_doctor.ts --quick; then
+    notify_critical "🚨 **YT3 Automation FATAL**: Harness doctor failed before workflow execution."
+    return 1
+  fi
+  printf '[%s] INFO  harness doctor passed.\n' "$(timestamp)"
   return 0
 }
 
@@ -186,10 +262,11 @@ run_exit=0
 
 # Check Voicevox before proceeding
 ensure_voicevox_running || exit 1
+run_harness_doctor || exit 1
 
-printf '[%s] INFO  starting workflow run (pid=%s)\n' "$(timestamp)" "$$"
+printf '[%s] INFO  starting unified agentic loop (pid=%s)\n' "$(timestamp)" "$$"
 
-if (cd "${repo_dir}" && "${bun_bin}" --env-file=config/.env src/index.ts); then
+if (cd "${repo_dir}" && task loop); then
   run_exit=0
   
   latest_run=$(ls -td "${repo_dir}/runs/"*/ | head -n 1 || echo "")
@@ -206,7 +283,7 @@ if [ "${run_exit}" -ne 0 ]; then
   outcome="failure"
   printf '[%s] ERROR run failed exit_code=%s duration=%ss\n' "$(timestamp)" "${run_exit}" "${duration}"
 else
-  printf '[%s] INFO  run finished status=success exit_code=0 duration=%ss\n' "$(timestamp)" "${duration}"
+  printf '[%s] INFO  run finished exit_code=0 duration=%ss\n' "$(timestamp)" "${duration}"
 fi
 
 cat >"${status_file}.tmp" <<JSON

@@ -1,0 +1,68 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "Generated Artifact Manifest v1",
+	"type": "object",
+	"required": [
+		"schema_version",
+		"artifact_type",
+		"domain",
+		"path",
+		"provenance",
+		"generator",
+		"allowed_editors",
+		"content_hash"
+	],
+	"properties": {
+		"schema_version": {
+			"const": "generated_artifact_manifest_v1"
+		},
+		"artifact_type": {
+			"const": "generated_artifact"
+		},
+		"domain": {
+			"type": "string"
+		},
+		"path": {
+			"type": "string"
+		},
+		"provenance": {
+			"type": "object",
+			"required": ["source"],
+			"properties": {
+				"source": {
+					"type": "string"
+				},
+				"source_hash": {
+					"type": "string"
+				},
+				"prompt_manifest_hash": {
+					"type": "string"
+				}
+			},
+			"additionalProperties": true
+		},
+		"generator": {
+			"type": "object",
+			"required": ["name"],
+			"properties": {
+				"name": {
+					"type": "string"
+				},
+				"version": {
+					"type": "string"
+				}
+			},
+			"additionalProperties": true
+		},
+		"allowed_editors": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"content_hash": {
+			"type": "string"
+		}
+	},
+	"additionalProperties": false
+}

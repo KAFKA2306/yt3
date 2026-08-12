@@ -2,8 +2,8 @@ import path from "node:path";
 import dotenv from "dotenv";
 import fs from "fs-extra";
 import { google } from "googleapis";
-import yaml from "js-yaml";
 import { loadConfig } from "../../core.js";
+import { ensureYouTubeVideoVisibility } from "../youtube_visibility.js";
 
 const envFilePath = process.env.ENV_FILE
 	? path.isAbsolute(process.env.ENV_FILE)
@@ -30,19 +30,18 @@ async function main() {
 		return;
 	}
 	const runId = process.env.RUN_ID || "run_20260218_antigravity";
-	const publishPath = `runs/${runId}/publish/output.yaml`;
+	const publishPath = `runs/${runId}/publish/receipt.json`;
 	if (!fs.existsSync(publishPath)) {
-		console.error(`Publish output not found at ${publishPath}`);
+		console.error(`Publish receipt not found at ${publishPath}`);
 		return;
 	}
-	const publishData = yaml.load(
-		fs.readFileSync(publishPath, "utf-8"),
-	) as Record<string, unknown>;
+	const publishData = fs.readJsonSync(publishPath) as {
+		youtube?: { video_id?: string };
+	};
 
-	const videoId = (publishData?.youtube as { video_id?: string } | undefined)
-		?.video_id;
+	const videoId = publishData?.youtube?.video_id;
 	if (!videoId) {
-		console.error("No video ID found in publish output");
+		console.error("No video ID found in publish receipt");
 		return;
 	}
 	console.log(`Checking visibility for Video ID: ${videoId}`);
@@ -52,33 +51,21 @@ async function main() {
 		process.env.YOUTUBE_REDIRECT_URI || "http://localhost:3000/oauth2callback",
 	);
 	auth.setCredentials({ refresh_token: process.env.YOUTUBE_REFRESH_TOKEN });
-	const youtube = google.youtube({ version: "v3", auth });
-	const res = await youtube.videos.list({
-		part: ["status", "snippet"],
-		id: [videoId],
-	});
-	if (!res.data.items || res.data.items.length === 0) {
-		console.error("Video not found on YouTube");
-		return;
-	}
-	const video = res.data.items[0];
-	if (!video) return;
-	const currentPrivacy = video.status?.privacyStatus;
-	const title = video.snippet?.title;
-	console.log(`Current Privacy: ${currentPrivacy}`);
-	console.log(`Title: ${title}`);
-	if (currentPrivacy !== visibility) {
-		console.log(`Updating to ${visibility.toUpperCase()}...`);
-		await youtube.videos.update({
-			part: ["status"],
-			requestBody: {
-				id: videoId,
-				status: { privacyStatus: visibility },
-			},
-		});
+	const attestation = await ensureYouTubeVideoVisibility(
+		auth,
+		videoId,
+		visibility,
+	);
+	console.log(`Current Privacy: ${attestation.current_privacy_status}`);
+	if (attestation.updated) {
 		console.log(`Successfully updated to ${visibility.toUpperCase()}.`);
 	} else {
 		console.log(`Video is already ${visibility.toUpperCase()}.`);
 	}
+	fs.writeJsonSync(
+		path.join("runs", runId, "publish", "visibility_attestation.json"),
+		attestation,
+		{ spaces: 2 },
+	);
 }
 main();

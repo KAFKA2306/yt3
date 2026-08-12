@@ -9,12 +9,33 @@ import { ContextPlaybook } from "../domain/evolution/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 export const ROOT = process.cwd();
 
-export function loadConfig(): AppConfig {
-	const configPath = path.join(ROOT, "config", "default.yaml");
-	if (!fs.existsSync(configPath)) {
-		throw new Error(`Config file not found: ${configPath}`);
+export function loadConfig(domainId?: string): AppConfig {
+	const configPath = process.env.CONFIG_PATH;
+	if (configPath && fs.existsSync(configPath)) {
+		return yaml.load(fs.readFileSync(configPath, "utf-8")) as AppConfig;
 	}
-	return yaml.load(fs.readFileSync(configPath, "utf-8")) as AppConfig;
+
+	if (domainId) {
+		const mappedDomainId =
+			domainId === "daily_pulse" ? "byosan_money" : domainId;
+		const domainConfigPath = path.join(
+			ROOT,
+			"config",
+			"domains",
+			`${mappedDomainId}.yaml`,
+		);
+		if (fs.existsSync(domainConfigPath)) {
+			return yaml.load(fs.readFileSync(domainConfigPath, "utf-8")) as AppConfig;
+		}
+	}
+
+	const defaultPath = path.join(ROOT, "config", "default.yaml");
+	if (fs.existsSync(defaultPath)) {
+		return yaml.load(fs.readFileSync(defaultPath, "utf-8")) as AppConfig;
+	}
+	throw new Error(
+		`CRITICAL: No configuration found. Domain: ${domainId || "none"}`,
+	);
 }
 
 import { AgentLogger as Logger } from "./utils/logger.js";
@@ -22,8 +43,14 @@ import {
 	QuotaExhaustionError,
 	acquireKey,
 	getQuotaContext,
+	markKeyRateLimited,
 	updateFromHeaders,
+	waitIfRateLimited,
 } from "./utils/quota/manager.js";
+import {
+	type FailureClassification,
+	classifyFailureMessage,
+} from "./utils/stability.js";
 
 const envFilePath = process.env.ENV_FILE
 	? path.isAbsolute(process.env.ENV_FILE)
@@ -36,6 +63,16 @@ export { Logger as AgentLogger };
 export type { AgentState };
 export { RunStage };
 export { QuotaExhaustionError };
+export interface LoopMemoryEntry {
+	run_id: string;
+	bucket: string;
+	stage: string;
+	kind: "failure" | "success";
+	summary: string;
+	signals: string[];
+	fixes: string[];
+	timestamp: string;
+}
 export interface LlmOptions {
 	model?: string;
 	temperature?: number;
@@ -48,7 +85,17 @@ export function createLlm(
 	options: LlmOptions = {},
 ): BaseChatModel & { keyName?: string } {
 	const { extra = {}, ...rest } = options;
-	const cfg = loadConfig();
+
+	// Infer domain from sessionId (usually runDir path)
+	let domainId: string | undefined;
+	if (options.sessionId?.includes("/")) {
+		const parts = options.sessionId.split(path.sep);
+		const runsIdx = parts.lastIndexOf("runs");
+		if (runsIdx !== -1 && parts[runsIdx + 1]) {
+			domainId = parts[runsIdx + 1];
+		}
+	}
+	const cfg = loadConfig(domainId);
 
 	const { name: keyName, key: apiKey } = acquireKey(options.sessionId);
 
@@ -56,7 +103,7 @@ export function createLlm(
 		"SYSTEM",
 		"CORE",
 		"API_CHECK",
-		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}...`,
+		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}... (Domain: ${domainId || "default"})`,
 	);
 
 	const llm = new ChatGoogleGenerativeAI({
@@ -76,16 +123,32 @@ export function createLlm(
 export class AssetStore {
 	runDir: string;
 	cfg: AppConfig;
+	domainId: string;
+
 	constructor(runId: string) {
-		const c = loadConfig();
+		if (!runId.includes("/")) {
+			throw new Error(
+				`CRITICAL: Naming Boundary Violation. runId must be 'domain_id/run_id', got: '${runId}'`,
+			);
+		}
+		const [domainId, id] = runId.split("/");
+		if (!domainId || !id) {
+			throw new Error(`CRITICAL: Malformed runId: '${runId}'`);
+		}
+		this.domainId = domainId;
+		const c = loadConfig(domainId);
 		this.cfg = c;
-		this.runDir = path.join(ROOT, c.workflow.paths.runs_dir, runId);
+		this.runDir = path.join(ROOT, c.workflow.paths.runs_dir, domainId, id);
 		fs.ensureDirSync(this.runDir);
 	}
 	loadState(): Partial<AgentState> {
 		let state: Partial<AgentState> = {};
 		const stateJson = path.join(this.runDir, this.cfg.workflow.filenames.state);
 		if (fs.existsSync(stateJson)) state = fs.readJsonSync(stateJson);
+
+		const originalScriptLines =
+			state.script?.lines?.map((l) => ({ ...l })) || [];
+
 		const stages = [
 			RunStage.RESEARCH,
 			RunStage.CONTENT,
@@ -101,6 +164,18 @@ export class AssetStore {
 			if (fs.existsSync(outputPath))
 				Object.assign(state, yaml.load(fs.readFileSync(outputPath, "utf-8")));
 		}
+
+		const scriptLines = state.script?.lines;
+		if (scriptLines && originalScriptLines.length === scriptLines.length) {
+			for (let i = 0; i < scriptLines.length; i++) {
+				const line = scriptLines[i];
+				const origLine = originalScriptLines[i];
+				if (line && origLine && line.duration === 0 && origLine.duration > 0) {
+					line.duration = origLine.duration;
+				}
+			}
+		}
+
 		return state;
 	}
 	updateState(patches: Partial<AgentState>) {
@@ -187,38 +262,79 @@ export abstract class BaseAgent {
 				? `\n\n[ACE Intelligence - Strategic Instructions]\n${bullets.map((b) => `- ${b.content} (ID: ${b.id})`).join("\n")}`
 				: "";
 
-		if (process.env.SKIP_LLM === "true") {
+		if (
+			process.env.SKIP_LLM === "true" &&
+			this.name !== "audit" &&
+			this.name !== "auditor"
+		) {
 			const prev = this.store.load<unknown>(this.name, "output");
 			if (prev) return prev as T;
 			throw new Error("No previous data for LLM bypass");
 		}
 
-		const llm = createLlm({
-			...this.opts,
-			sessionId: this.store.runDir,
-		});
-		const keyName = llm.keyName || "unknown";
-		const quotaContext = getQuotaContext(keyName, "gemini");
-		const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
+		let res: { content: unknown; response_metadata: unknown } | null = null;
+		let attempts = 0;
+		const maxAttempts = 5;
+		let lastKeyName = "unknown";
+		let lastFailure: FailureClassification | undefined;
+		while (attempts < maxAttempts) {
+			const llm = createLlm({
+				...this.opts,
+				sessionId: this.store.runDir,
+			});
+			const keyName = llm.keyName || "unknown";
+			lastKeyName = keyName;
+			const quotaContext = getQuotaContext(keyName, "gemini");
+			const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
+			await waitIfRateLimited(keyName);
 
-		Logger.info(
-			"SYSTEM",
-			"CORE",
-			"LLM_INVOKE",
-			`Invoking LLM with prompt: ${userPrompt.slice(0, 500)}...`,
-		);
-		const res = await llm.invoke(
-			[
-				{ role: "system", content: finalSystemPrompt },
-				{ role: "user", content: userPrompt },
-			],
-			callOpts as Record<string, unknown>,
-		);
+			try {
+				res = await llm.invoke(
+					[
+						{ role: "system", content: finalSystemPrompt },
+						{ role: "user", content: userPrompt },
+					],
+					callOpts as Record<string, unknown>,
+				);
+				break;
+			} catch (err: unknown) {
+				attempts++;
+				const errMsg = err instanceof Error ? err.message : String(err);
+				const isRateLimit =
+					errMsg.includes("429") ||
+					errMsg.toLowerCase().includes("quota") ||
+					errMsg.toLowerCase().includes("rate limit");
+				const isInvalidKey =
+					errMsg.toLowerCase().includes("api_key_invalid") ||
+					errMsg.toLowerCase().includes("api key not found");
+				lastFailure = classifyFailureMessage(errMsg);
+
+				if (isRateLimit || isInvalidKey) {
+					const sleepMs = isInvalidKey ? 2000 : 10000;
+					Logger.warn(
+						"SYSTEM",
+						"CORE",
+						"LLM_RATE_LIMIT",
+						`Error for key ${keyName} (${isInvalidKey ? "invalid key" : "rate limit"}). Attempt ${attempts}/${maxAttempts}. Rotating key and sleeping ${sleepMs / 1000}s... Error: ${errMsg.slice(0, 150)}`,
+					);
+					markKeyRateLimited(keyName);
+					await new Promise((resolve) => setTimeout(resolve, sleepMs));
+				} else {
+					throw err;
+				}
+			}
+		}
+
+		if (!res) {
+			throw new QuotaExhaustionError(
+				`CRITICAL: LLM invocation failed after ${maxAttempts} attempts due to rate limit/quota exhaustion. Cached-output fallback is prohibited.`,
+			);
+		}
 
 		const metadata = res.response_metadata as Record<string, unknown>;
-		if (keyName) {
+		if (lastKeyName && lastKeyName !== "unknown") {
 			updateFromHeaders(
-				keyName,
+				lastKeyName,
 				(metadata?.headers || {}) as Record<string, unknown>,
 			);
 		}
@@ -228,11 +344,14 @@ export abstract class BaseAgent {
 			content = res.content;
 		} else if (Array.isArray(res.content)) {
 			content = res.content
-				.map((c) =>
+				.map((c: unknown) =>
 					typeof c === "string"
 						? c
-						: "text" in c && typeof c.text === "string"
-							? c.text
+						: c &&
+								typeof c === "object" &&
+								"text" in c &&
+								typeof (c as { text: unknown }).text === "string"
+							? (c as { text: string }).text
 							: "",
 				)
 				.join("");
@@ -343,8 +462,20 @@ function repairJson(text: string): string {
 
 export function parseLlmJson<T>(text: string, schema?: z.ZodSchema<T>): T {
 	const repaired = repairJson(text);
-	const json = JSON.parse(repaired);
-	return schema ? schema.parse(json) : (json as T);
+	try {
+		const json = JSON.parse(repaired);
+		return schema ? schema.parse(json) : (json as T);
+	} catch (err) {
+		Logger.error(
+			"SYSTEM",
+			"CORE",
+			"PARSE_FAIL",
+			`Failed to parse JSON. Error: ${err instanceof Error ? err.message : String(err)}`,
+		);
+		Logger.error("SYSTEM", "CORE", "PARSE_FAIL", `Original Text:\n${text}`);
+		Logger.error("SYSTEM", "CORE", "PARSE_FAIL", `Repaired Text:\n${repaired}`);
+		throw err;
+	}
 }
 export async function runMcpTool(
 	serverName: string,
@@ -379,7 +510,7 @@ export function resolvePath(p: string): string {
 	return path.resolve(ROOT, p);
 }
 export function getCurrentDateString(): string {
-	return new Date().toISOString().slice(0, 10);
+	return getRunIdDateString();
 }
 export function getRunIdDateString(): string {
 	const d = new Date();
@@ -391,8 +522,19 @@ export function getRunIdDateString(): string {
 export function getMemoryEssenceFile(store: AssetStore): string {
 	const cfg = store.cfg;
 	const isCognitive = store.runDir.includes("humanity_observatory");
-	const subDir = isCognitive ? "humanity_observatory" : "daily_pulse";
-	const essenceFile = path.join(ROOT, "data", "memory", subDir, "essences.json");
+	const isByosanMoney = store.runDir.includes("byosan_money");
+	const subDir = isCognitive
+		? "humanity_observatory"
+		: isByosanMoney
+			? "byosan_money"
+			: "daily_pulse";
+	const essenceFile = path.join(
+		ROOT,
+		"data",
+		"memory",
+		subDir,
+		"essences.json",
+	);
 
 	if (!isCognitive && !fs.existsSync(essenceFile)) {
 		const legacyFile = path.isAbsolute(cfg.workflow.memory.essence_file)
@@ -406,34 +548,99 @@ export function getMemoryEssenceFile(store: AssetStore): string {
 	return essenceFile;
 }
 
+export function getLoopMemoryFile(store: AssetStore): string {
+	const isCognitive = store.runDir.includes("humanity_observatory");
+	const isByosanMoney = store.runDir.includes("byosan_money");
+	const subDir = isCognitive
+		? "humanity_observatory"
+		: isByosanMoney
+			? "byosan_money"
+			: "daily_pulse";
+	return path.join(ROOT, "data", "memory", subDir, "loop_journal.json");
+}
+
+export function appendLoopMemory(
+	store: AssetStore,
+	entry: LoopMemoryEntry,
+): void {
+	const file = getLoopMemoryFile(store);
+	const dir = path.dirname(file);
+	const data = fs.existsSync(file)
+		? (fs.readJsonSync(file) as { entries?: LoopMemoryEntry[] })
+		: { entries: [] as LoopMemoryEntry[] };
+
+	const entries = Array.isArray(data.entries) ? data.entries : [];
+	const nextEntry = {
+		...entry,
+		timestamp: entry.timestamp || new Date().toISOString(),
+	};
+	const deduped = entries.filter(
+		(existing) =>
+			!(
+				existing.run_id === nextEntry.run_id &&
+				existing.stage === nextEntry.stage &&
+				existing.kind === nextEntry.kind &&
+				existing.summary === nextEntry.summary
+			),
+	);
+	const capped = [...deduped, nextEntry].slice(-30);
+	fs.ensureDirSync(dir);
+	fs.writeJsonSync(file, { entries: capped }, { spaces: 2 });
+}
+
 export function loadMemoryContext(store: AssetStore): string {
 	const essenceFile = getMemoryEssenceFile(store);
+	const loopFile = getLoopMemoryFile(store);
 
-	if (!fs.existsSync(essenceFile)) return "";
+	if (!fs.existsSync(essenceFile) && !fs.existsSync(loopFile)) return "";
 
-	const essencesData = fs.readJsonSync(essenceFile) as {
-		essences: Array<{
-			topic: string;
-			timestamp: string;
-			key_insights: string[];
-			universal_principles: string[];
-		}>;
-	};
+	const essencesData = fs.existsSync(essenceFile)
+		? (fs.readJsonSync(essenceFile) as {
+				essences: Array<{
+					topic: string;
+					timestamp: string;
+					key_insights: string[];
+					universal_principles: string[];
+				}>;
+			})
+		: {
+				essences: [],
+			};
+	const loopData = fs.existsSync(loopFile)
+		? (fs.readJsonSync(loopFile) as {
+				entries?: Array<LoopMemoryEntry>;
+			})
+		: { entries: [] as LoopMemoryEntry[] };
 
-	if (!essencesData.essences || essencesData.essences.length === 0) return "";
+	const recentEssences = Array.isArray(essencesData.essences)
+		? essencesData.essences.slice(-5).reverse()
+		: [];
+	const recentLoopEntries = Array.isArray(loopData.entries)
+		? loopData.entries.slice(-3).reverse()
+		: [];
 
-	const recent = essencesData.essences.slice(-5).reverse();
-	return recent
+	if (recentEssences.length === 0 && recentLoopEntries.length === 0) return "";
+
+	const loopText = recentLoopEntries
+		.map((entry) => {
+			const signals =
+				entry.signals.length > 0 ? entry.signals.join(" / ") : "なし";
+			const fixes = entry.fixes.length > 0 ? entry.fixes.join(" / ") : "なし";
+			return `【Loop ${entry.kind}: ${entry.stage}】\n${entry.summary}\n兆候: ${signals}\n対策: ${fixes}`;
+		})
+		.join("\n\n");
+	const essenceText = recentEssences
 		.map(
 			(e) =>
 				`【${e.topic}】\n${e.key_insights.slice(0, 2).join("\n")}\n原則: ${e.universal_principles[0] || ""}`,
 		)
 		.join("\n\n");
+	return [loopText, essenceText].filter(Boolean).join("\n\n");
 }
 
 export function fetchRecentThemes(store: AssetStore, days = 7): string {
 	const cfg = loadConfig();
-	const runsDir = path.join(ROOT, cfg.workflow.paths.runs_dir);
+	const runsDir = path.join(ROOT, cfg.workflow.paths.runs_dir, store.domainId);
 
 	if (!fs.existsSync(runsDir)) {
 		Logger.warn("SYSTEM", "CORE", "FETCH_THEMES", "Runs directory not found");
@@ -463,8 +670,14 @@ export function fetchRecentThemes(store: AssetStore, days = 7): string {
 				if (categories.length > 0) {
 					themes.push({ date: dir, categories });
 				}
-			} else if (output.selected_topic && output.angle) {
-				const angle = String(output.angle).toLowerCase();
+			} else if (
+				output.director_data &&
+				typeof output.director_data === "object" &&
+				"angle" in output.director_data
+			) {
+				const angle = String(
+					(output.director_data as { angle?: unknown }).angle ?? "",
+				).toLowerCase();
 				const category = inferCategoryFromAngle(angle);
 				themes.push({ date: dir, categories: [category] });
 			}

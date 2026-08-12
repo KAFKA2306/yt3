@@ -1,0 +1,45 @@
+You are working in /home/kafka/2511youtuber/v3/yt3.
+
+Goal:
+Make the improvement loop measurement-grade by fixing the evidence plumbing for reproducibility, diversity, autonomy, and video quality.
+
+Context:
+- The repo already has a continuous-improvement doc and a baseline report.
+- The current baseline shows gaps in config/prompt hashing, diversity persistence, thumbnail/video scoring, and autonomy attribution.
+- Do not rewrite the whole system. Make the smallest useful code changes that improve measurement fidelity.
+
+Priority tasks:
+1. Add config/prompt provenance to run evidence.
+   - Extend `RunEvidence` if needed.
+   - Record `config_hash` and `prompt_hash` in every `run_evidence.json`.
+   - Prefer deterministic hashes derived from the actual config and prompt sources used by the run.
+   - If some call sites cannot supply hashes yet, add safe defaults and leave a clear gap note in the evidence.
+
+2. Persist creative freshness evidence reliably.
+   - Ensure `runs/<bucket>/<date>/audit/creative_freshness_report.json` is written for every run that can be scored.
+   - If it is already written in one path, verify the other paths cannot skip it.
+   - Make the report discoverable from the improvement report and the daily status reports.
+
+3. Capture video-quality evidence.
+   - Add `thumbnail_iqa` and `thumbnail_continuity` to run evidence or a closely related audit artifact.
+   - Reuse the existing QA/continuity audits instead of inventing a new scoring model.
+   - Keep the output machine-readable.
+
+4. Improve autonomy attribution.
+   - Distinguish timer-driven runs, manual runs, retry runs, and auto-heal runs in logs or evidence.
+   - Make it possible to tell whether the system was autonomous without reading raw free-form log text.
+
+5. Fix the improvement report.
+   - Make `src/scripts/improve_report.ts` read the actual evidence artifacts instead of using placeholder zeroes where data exists.
+   - Report gaps explicitly when data is missing.
+   - Keep 7-day and 30-day windows.
+
+Constraints:
+- Preserve existing behavior unless the change is directly about measurement.
+- Prefer reusing existing files and fields over inventing a second parallel system.
+- Do not claim a metric is available unless the artifact exists.
+- Keep file formats stable and documented.
+
+Expected output:
+- Implement the smallest set of code/doc changes that improves the measurement loop.
+- Summarize which artifacts now exist, which metrics are still missing, and what remains for the next round.

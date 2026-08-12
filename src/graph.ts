@@ -1,3 +1,4 @@
+import path from "node:path";
 import { END, START, StateGraph } from "@langchain/langgraph";
 import { AuditAgent } from "./domain/agents/audit.js";
 import { ScriptSmith } from "./domain/agents/content.js";
@@ -11,6 +12,7 @@ import { TrendScout } from "./domain/agents/research.js";
 import { WebSearchAgent } from "./domain/agents/web_search.js";
 import type {
 	AgentState,
+	AuditCheck,
 	DirectorData,
 	EnrichedResearch,
 	Metadata,
@@ -21,6 +23,11 @@ import type {
 } from "./domain/types.js";
 import type { AssetStore } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
+import {
+	classifyFailureMessage,
+	resolveDailyLogPath,
+	writeRunEvidence,
+} from "./io/utils/stability.js";
 
 export type WorkflowPhase =
 	| "problem-exploration"
@@ -138,7 +145,7 @@ export function createGraph(store: AssetStore) {
 			EnrichedResearch | undefined
 		>,
 		audit_results: { reducer, default: () => undefined } as ChannelReducer<
-			any | undefined
+			Record<string, AuditCheck> | undefined
 		>,
 	};
 	const research = new TrendScout(store);
@@ -221,8 +228,46 @@ export function createGraph(store: AssetStore) {
 			"PUBLISH",
 			"Uploading video to YouTube and social channels",
 		);
-		const res = await publish.run(state);
-		return { publish_results: res, status: "published" };
+		const runId = state.run_id || path.basename(store.runDir);
+		try {
+			const res = await publish.run(state);
+			writeRunEvidence(store.runDir, {
+				run_id: runId,
+				bucket: state.bucket || cfg.workflow.default_bucket || "daily_pulse",
+				status: "SUCCESS",
+				disposition: "success",
+				log_path: resolveDailyLogPath(runId),
+				evidence_paths: [
+					path.join(store.runDir, "state.json"),
+					path.join(store.runDir, "publish", "receipt.json"),
+				],
+				artifact_paths: [state.video_path || ""].filter(Boolean),
+				note: "Graph publish step completed successfully with receipt evidence.",
+			});
+			return { publish_results: res, status: "published" };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			const failure = classifyFailureMessage(message);
+			writeRunEvidence(store.runDir, {
+				run_id: runId,
+				bucket: state.bucket || cfg.workflow.default_bucket || "daily_pulse",
+				status:
+					failure.disposition === "blocked"
+						? "PUBLISH_BLOCKED"
+						: failure.disposition === "retryable"
+							? "RETRYABLE"
+							: failure.disposition === "pending"
+								? "PENDING"
+								: "FAILED",
+				disposition: failure.disposition,
+				log_path: resolveDailyLogPath(runId),
+				evidence_paths: [path.join(store.runDir, "state.json")],
+				artifact_paths: [state.video_path || ""].filter(Boolean),
+				failure,
+				note: "Graph publish step failed and was classified.",
+			});
+			throw error;
+		}
 	});
 	workflow.addNode("notebooklm", async (state: AgentState) => {
 		AgentLogger.transition(

@@ -1,15 +1,24 @@
+import path from "node:path";
 import { NotebookLMAgent } from "./domain/agents/notebooklm.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import type { AgentState } from "./domain/types.js";
 import { AssetStore, getRunIdDateString } from "./io/core.js";
 import { AgentLogger } from "./io/utils/logger.js";
+import {
+	classifyFailureMessage,
+	resolveDailyLogPath,
+	writeRunEvidence,
+} from "./io/utils/stability.js";
 
 async function main() {
 	const args = process.argv.slice(2);
 	const notebookTitle = args[0] || `Notebook-${getRunIdDateString()}`;
 	const sourceUrl = args[1];
 
-	const runId = `nlm-${getRunIdDateString()}`;
+	let runId = process.env.RUN_ID || `nlm/${getRunIdDateString()}`;
+	if (!runId.includes("/")) {
+		runId = `nlm/${runId}`;
+	}
 	const store = new AssetStore(runId);
 	AgentLogger.init();
 
@@ -86,13 +95,35 @@ async function main() {
 				context: { youtube_id: publishResult.youtube?.video_id },
 			},
 		);
+		writeRunEvidence(store.runDir, {
+			run_id: runId,
+			bucket: "notebooklm",
+			status: "SUCCESS",
+			disposition: "success",
+			log_path: resolveDailyLogPath(runId),
+			evidence_paths: [
+				path.join(store.runDir, "state.json"),
+				path.join(store.runDir, "publish", "receipt.json"),
+			],
+			artifact_paths: [video.video_path],
+			note: "NotebookLM standalone workflow completed successfully.",
+		});
 	} catch (err: unknown) {
-		AgentLogger.error(
-			"SYSTEM",
-			"NLM_WORKFLOW",
-			"FAILED",
-			(err as { message: string }).message,
-		);
+		const error = err as Error;
+		const failure = classifyFailureMessage(error.message);
+		AgentLogger.error("SYSTEM", "NLM_WORKFLOW", "FAILED", error.message);
+
+		writeRunEvidence(store.runDir, {
+			run_id: runId,
+			bucket: "notebooklm",
+			status: failure.disposition === "blocked" ? "PUBLISH_BLOCKED" : "PENDING",
+			disposition: failure.disposition,
+			log_path: resolveDailyLogPath(runId),
+			evidence_paths: [path.join(store.runDir, "state.json")],
+			artifact_paths: [],
+			failure,
+			note: "NotebookLM workflow failed. Fallback reuse is prohibited.",
+		});
 		process.exit(1);
 	}
 }

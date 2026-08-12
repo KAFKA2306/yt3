@@ -8,6 +8,8 @@ const UNITS = [
 	{ file: "yt3-automation.timer", enable: true },
 	{ file: "yt3-aim.service", enable: true },
 	{ file: "yt3-discord.service", enable: true },
+	{ file: "yt3-asmr-autonomous.service", enable: false },
+	{ file: "yt3-asmr-autonomous.timer", enable: true },
 ];
 async function main() {
 	fs.ensureDirSync(SYSTEMD_USER_DIR);

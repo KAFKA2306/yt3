@@ -1,9 +1,17 @@
+import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
 import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
+import { sendAlert } from "../../io/utils/discord.js";
+import { ensureYouTubeVideoVisibility } from "../../io/utils/youtube_visibility.js";
 import type { AgentState, AppConfig, PublishResults } from "../types.js";
 import { validateCredentials } from "../validation.js";
+import {
+	assertYouTubeChannelMatchesProfile,
+	getYouTubeProfile,
+	hydrateOAuthCredentials,
+} from "../youtube_profiles.js";
 export class PublishAgent extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.PUBLISH);
@@ -19,37 +27,124 @@ export class PublishAgent extends BaseAgent {
 			validateCredentials(enabledProviders);
 		}
 		if (enabledProviders.youtube) {
-			const profile = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
-			if (!profile || profile === "default" || profile === "config/.env") {
+			const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+			if (
+				!profileName ||
+				profileName === "default" ||
+				profileName === "config/.env"
+			) {
 				throw new Error(
-					"YouTube publish requires an explicit channel profile (set YOUTUBE_CHANNEL_PROFILE to byosan_money or yawa_archive_asmr)",
+					"YouTube publish requires an explicit channel profile (set YOUTUBE_CHANNEL_PROFILE to byosan, yawa, or humanity)",
 				);
 			}
 
-			const expectedTitle = process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
-			const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
-			if (!expectedTitle && !expectedId) {
-				throw new Error(
-					"YouTube publish requires YOUTUBE_EXPECTED_CHANNEL_TITLE or YOUTUBE_EXPECTED_CHANNEL_ID",
-				);
-			}
+			getYouTubeProfile(profileName);
 		}
 	}
 	async run(state: AgentState): Promise<PublishResults> {
-		this.logInput({ video_path: state.video_path, metadata: state.metadata });
+		const publishVideoPath = this.resolvePublishVideoPath(state);
+		if (publishVideoPath) {
+			this.store.updateState({ publish_video_path: publishVideoPath });
+		}
+		this.assertNoFallbackPublish(state, publishVideoPath);
+		this.logInput({
+			video_path: state.video_path,
+			publish_video_path: publishVideoPath,
+			metadata: state.metadata,
+		});
 		const results: PublishResults = {};
 		const ytStep = this.config.steps.youtube;
-		if (ytStep?.enabled)
-			results.youtube = await this.uploadToYouTube(state, this.config);
+		if (ytStep?.enabled) {
+			results.youtube = await this.uploadToYouTube(state, this.config, {
+				publishVideoPath,
+			});
+			if (results.youtube?.status === "uploaded") {
+				const videoId = results.youtube.video_id;
+				const channelTitle = results.youtube.channel_title;
+				const videoUrl = videoId
+					? `https://www.youtube.com/watch?v=${videoId}`
+					: "N/A";
+				await sendAlert(
+					`✅ **Successfully Published** video to ${channelTitle}!`,
+					"publish",
+					{
+						title: state.metadata?.title || "N/A",
+						videoId: videoId || "N/A",
+						url: videoUrl,
+						runId: state.run_id,
+					},
+				);
+			}
+		}
 		const twStep = this.config.steps.twitter;
-		if (twStep?.enabled)
+		if (twStep?.enabled) {
 			results.twitter = await this.postToTwitter(state, this.config);
+			if (results.twitter?.status === "posted") {
+				await sendAlert(
+					"🐦 **Successfully Posted** to Twitter (X)!",
+					"publish",
+					{
+						tweetId: results.twitter.tweet_id || "N/A",
+						title: state.metadata?.title || "N/A",
+						runId: state.run_id,
+					},
+				);
+			}
+		}
 		this.logOutput(results);
+		if (Object.keys(results).length > 0) {
+			const receiptPath = path.join(
+				this.store.runDir,
+				"publish",
+				"receipt.json",
+			);
+			fs.ensureDirSync(path.dirname(receiptPath));
+			fs.writeJsonSync(receiptPath, results, { spaces: 2 });
+		}
 		return results;
+	}
+	private assertNoFallbackPublish(
+		state: AgentState,
+		publishVideoPath?: string,
+	): void {
+		const metadata = state.metadata;
+		const metadataText = [
+			metadata?.title,
+			metadata?.description,
+			metadata?.thumbnail_title,
+			...(metadata?.tags || []),
+		]
+			.filter(Boolean)
+			.join("\n")
+			.toLowerCase();
+		if (
+			/\bfallback\b/.test(metadataText) ||
+			metadataText.includes("reused because") ||
+			metadataText.includes("cached fallback")
+		) {
+			throw new Error(
+				"YouTube publish blocked: fallback metadata is prohibited and must be deleted, not published.",
+			);
+		}
+
+		const bucket = state.bucket || "";
+		const isNotebookLmPulseBucket =
+			bucket === "daily_pulse_nlm" || bucket === "pulse_nlm";
+		const videoPath = publishVideoPath || state.video_path || "";
+		if (
+			isNotebookLmPulseBucket &&
+			videoPath &&
+			!path.resolve(videoPath).startsWith(path.resolve(this.store.runDir))
+		) {
+			throw new Error(
+				"YouTube publish blocked: NotebookLM pulse publishing cannot reuse videos outside the current run directory.",
+			);
+		}
 	}
 	private async uploadToYouTube(
 		state: AgentState,
 		cfg: AppConfig,
+		options: { publishVideoPath?: string } = {},
 	): Promise<PublishResults["youtube"]> {
 		const ytCfg = cfg.steps.youtube;
 		if (!ytCfg) throw new Error("YouTube config missing");
@@ -59,18 +154,36 @@ export class PublishAgent extends BaseAgent {
 			);
 		}
 
+		const profile = getYouTubeProfile(
+			process.env.YOUTUBE_CHANNEL_PROFILE?.trim(),
+		);
+		const bucketAllowed =
+			state.bucket === profile.bucket ||
+			(profile.bucket === "daily_pulse" && state.bucket === "daily_pulse_nlm");
+		if (!bucketAllowed) {
+			throw new Error(
+				`YouTube publish blocked: run bucket '${state.bucket}' does not match profile bucket '${profile.bucket}' for '${profile.profileName}'`,
+			);
+		}
+
 		console.log(
 			`[PUBLISH:CONFIG] visibility=${ytCfg.default_visibility} source=config/default.yaml`,
 		);
+		console.log(
+			`[PUBLISH:DESTINATION] bucket=${state.bucket} expected_bucket=${profile.bucket} profile=${profile.profileName}`,
+		);
 
-		const auth = this.createYouTubeClient();
+		const auth = await this.createYouTubeClient();
 		const youtube = google.youtube({
 			version: "v3",
 			auth,
 		});
-		await this.verifyYouTubeChannel(youtube);
-		const { video_path: videoPath, thumbnail_path: thumbnailPath } = state;
+		await this.verifyYouTubeChannel(auth);
+		const { thumbnail_path: thumbnailPath } = state;
+		const videoPath =
+			options.publishVideoPath || this.resolvePublishVideoPath(state);
 		if (!videoPath) throw new Error("Video path missing");
+		console.log(`[PUBLISH:VIDEO] source=${videoPath}`);
 		const res = await youtube.videos.insert({
 			part: ["snippet", "status"],
 			requestBody: this.createYouTubeSnippet(state, ytCfg),
@@ -79,8 +192,20 @@ export class PublishAgent extends BaseAgent {
 		const videoId = res.data.id;
 		const snippet = res.data.snippet;
 		const status = res.data.status;
+		if (!videoId) {
+			throw new Error("YouTube upload response is missing video id");
+		}
+		if (!snippet?.channelId) {
+			throw new Error("YouTube upload response is missing channelId");
+		}
+		if (!snippet.channelTitle) {
+			throw new Error("YouTube upload response is missing channelTitle");
+		}
+		if (!status?.privacyStatus) {
+			throw new Error("YouTube upload response is missing privacyStatus");
+		}
 
-		if (videoId && thumbnailPath) {
+		if (thumbnailPath) {
 			try {
 				await this.setYouTubeThumbnail(youtube, videoId, thumbnailPath);
 			} catch (error) {
@@ -89,13 +214,23 @@ export class PublishAgent extends BaseAgent {
 				);
 			}
 		}
+		const visibilityAttestation = await ensureYouTubeVideoVisibility(
+			auth,
+			videoId,
+			ytCfg.default_visibility,
+		);
+		fs.writeJsonSync(
+			path.join(this.store.runDir, "publish", "visibility_attestation.json"),
+			visibilityAttestation,
+			{ spaces: 2 },
+		);
 		return {
 			status: "uploaded",
-			video_id: videoId || "",
-			channel_id: snippet?.channelId || "",
-			channel_title: snippet?.channelTitle || "",
-			privacy_status: status?.privacyStatus || "",
-			published_at: snippet?.publishedAt || "",
+			video_id: videoId,
+			channel_id: snippet.channelId,
+			channel_title: snippet.channelTitle,
+			privacy_status: visibilityAttestation.current_privacy_status,
+			published_at: snippet.publishedAt ?? "",
 		};
 	}
 	private createYouTubeSnippet(
@@ -120,52 +255,13 @@ export class PublishAgent extends BaseAgent {
 		};
 	}
 	private async verifyYouTubeChannel(
-		youtube: ReturnType<typeof google.youtube>,
+		auth: InstanceType<typeof google.auth.OAuth2>,
 	) {
-		const profile = process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "unknown";
-		const expectedTitle = process.env.YOUTUBE_EXPECTED_CHANNEL_TITLE?.trim();
-		const expectedId = process.env.YOUTUBE_EXPECTED_CHANNEL_ID?.trim();
-		const requireMatch = process.env.YOUTUBE_REQUIRE_CHANNEL_MATCH === "true";
-
-		if (!expectedTitle && !expectedId && !requireMatch) {
-			throw new Error(
-				`YouTube channel preflight requires an explicit expected channel for profile "${profile}"`,
-			);
-		}
-
-		const res = await youtube.channels.list({
-			part: ["id", "snippet"],
-			mine: true,
-		});
-		const channel = res.data.items?.[0];
-		const actualTitle = channel?.snippet?.title?.trim();
-		const actualId = channel?.id?.trim();
-
-		if (!channel) {
-			throw new Error(
-				`YouTube channel preflight failed for profile "${profile}": no channel returned`,
-			);
-		}
-
-		if (expectedTitle && actualTitle !== expectedTitle) {
-			throw new Error(
-				`Wrong YouTube channel for profile "${profile}": expected "${expectedTitle}" but got "${actualTitle || "unknown"}"`,
-			);
-		}
-
-		if (expectedId && actualId !== expectedId) {
-			throw new Error(
-				`Wrong YouTube channel ID for profile "${profile}": expected "${expectedId}" but got "${actualId || "unknown"}"`,
-			);
-		}
-
-		if (requireMatch && !expectedTitle && !expectedId) {
-			throw new Error(
-				`YouTube channel preflight is required for profile "${profile}" but no expected channel was configured`,
-			);
-		}
+		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+		const profile = getYouTubeProfile(profileName);
+		await assertYouTubeChannelMatchesProfile(auth, profile);
 	}
-	private createYouTubeClient() {
+	private async createYouTubeClient() {
 		const clientId = process.env.YOUTUBE_CLIENT_ID;
 		const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
 		const redirectUri =
@@ -184,9 +280,21 @@ export class PublishAgent extends BaseAgent {
 			redirectUri,
 		});
 
-		const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-		if (refreshToken) {
-			client.setCredentials({ refresh_token: refreshToken });
+		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
+		if (!profileName) {
+			throw new Error(
+				"YouTube client initialization requires YOUTUBE_CHANNEL_PROFILE",
+			);
+		}
+
+		if (profileName === "humanity") {
+			const profile = getYouTubeProfile(profileName);
+			await hydrateOAuthCredentials(client, profile);
+		} else {
+			const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+			if (refreshToken) {
+				client.setCredentials({ refresh_token: refreshToken });
+			}
 		}
 
 		return client;
@@ -199,10 +307,58 @@ export class PublishAgent extends BaseAgent {
 		await youtube.thumbnails.set({
 			videoId: videoId,
 			media: {
-				mimeType: "image/png",
+				mimeType:
+					path.extname(thumbnailPath).toLowerCase() === ".jpg" ||
+					path.extname(thumbnailPath).toLowerCase() === ".jpeg"
+						? "image/jpeg"
+						: "image/png",
 				body: fs.createReadStream(thumbnailPath),
 			},
 		});
+		let thumbnailVariants: string[] = [];
+		for (let attempt = 0; attempt < 6; attempt++) {
+			const response = await youtube.videos.list({
+				part: ["snippet"],
+				id: [videoId],
+			});
+			thumbnailVariants = Object.keys(
+				response.data.items?.[0]?.snippet?.thumbnails ?? {},
+			);
+			if (
+				["default", "medium", "high"].every((key) =>
+					thumbnailVariants.includes(key),
+				)
+			) {
+				break;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 3000));
+		}
+		if (
+			!["default", "medium", "high"].every((key) =>
+				thumbnailVariants.includes(key),
+			)
+		) {
+			throw new Error(
+				`Thumbnail update could not be verified for ${videoId}; variants=${thumbnailVariants.join(",")}`,
+			);
+		}
+		fs.writeJsonSync(
+			path.join(this.store.runDir, "publish", "thumbnail_attestation.json"),
+			{
+				video_id: videoId,
+				source_path: thumbnailPath,
+				mime_type:
+					path.extname(thumbnailPath).toLowerCase() === ".jpg" ||
+					path.extname(thumbnailPath).toLowerCase() === ".jpeg"
+						? "image/jpeg"
+						: "image/png",
+				size_bytes: fs.statSync(thumbnailPath).size,
+				api_update_status: "succeeded",
+				thumbnail_variants: thumbnailVariants,
+				verified_at: new Date().toISOString(),
+			},
+			{ spaces: 2 },
+		);
 	}
 	private async postToTwitter(
 		state: AgentState,
@@ -212,7 +368,8 @@ export class PublishAgent extends BaseAgent {
 		if (!twCfg) throw new Error("Twitter config missing");
 
 		const client = this.createTwitterClient();
-		const { metadata, video_path: videoPath } = state;
+		const { metadata } = state;
+		const videoPath = this.resolvePublishVideoPath(state);
 		let mediaId: string | undefined;
 		if (videoPath && fs.existsSync(videoPath))
 			mediaId = await client.v1.uploadMedia(videoPath);
@@ -250,5 +407,35 @@ export class PublishAgent extends BaseAgent {
 	private createTweetText(metadata?: AgentState["metadata"]) {
 		const tags = (metadata?.tags || []).map((t) => `#${t}`).join(" ");
 		return `${metadata?.title || ""}\n\n${tags}`.substring(0, 280);
+	}
+
+	public previewPublishVideoPath(state: AgentState): string {
+		return this.resolvePublishVideoPath(state);
+	}
+
+	private resolvePublishVideoPath(state: AgentState): string {
+		const candidates = [
+			process.env.PUBLISH_VIDEO_PATH?.trim(),
+			state.publish_video_path?.trim(),
+			path.join(this.store.runDir, "publish_video.mp4"),
+			path.join(this.store.runDir, "media", "video", "publish_video.mp4"),
+			path.join(this.store.runDir, "video", "final_video.mp4"),
+			path.join(this.store.runDir, "media", "video", "video.mp4"),
+			state.video_path?.trim(),
+		].filter(Boolean) as string[];
+
+		for (const candidate of candidates) {
+			const resolved = path.isAbsolute(candidate)
+				? candidate
+				: path.join(this.store.runDir, candidate);
+			if (fs.existsSync(resolved)) {
+				if (resolved !== state.video_path) {
+					state.publish_video_path = resolved;
+				}
+				return resolved;
+			}
+		}
+
+		return state.video_path || "";
 	}
 }

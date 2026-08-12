@@ -8,8 +8,17 @@ import {
 } from "./types.js";
 
 const THRESHOLD = 0.3;
+const DAILY_LIMIT = 1000;
+const rateLimitedKeys = new Map<string, number>();
+const rateLimitBackoff = new Map<string, number>();
 
 export async function waitIfRateLimited(keyName: string): Promise<number> {
+	const cooldownExpiry = rateLimitedKeys.get(keyName) || 0;
+	const waitMs = Math.max(0, cooldownExpiry - Date.now());
+	if (waitMs > 0) {
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
+		return waitMs;
+	}
 	return 0;
 }
 
@@ -23,9 +32,16 @@ export function acquireKey(sessionId?: string) {
 	];
 
 	for (let i = 0; i < keyList.length; i++) {
-		const item = keyList[i]!;
+		const item = keyList[i];
+		if (!item) continue;
 		const val = process.env[item.env];
 		if (!val) continue;
+
+		// Check temporary rate-limit cooldown
+		const cooldownExpiry = rateLimitedKeys.get(item.name) || 0;
+		if (Date.now() < cooldownExpiry) {
+			continue;
+		}
 
 		const quota = Ledger.getQuota(item.name);
 		const resetDate = new Date(quota.reset_at).toDateString();
@@ -37,12 +53,12 @@ export function acquireKey(sessionId?: string) {
 			Ledger.saveQuotaLedger();
 		}
 
-		if (quota.requests < 18) {
+		if (quota.requests < DAILY_LIMIT) {
 			Logger.info(
 				"SYSTEM",
 				"CORE",
 				"API_ACQUIRE",
-				`Selected ${item.name} (${quota.requests}/18 requests used today)`,
+				`Selected ${item.name} (${quota.requests}/${DAILY_LIMIT} requests used today)`,
 			);
 			return { name: item.name, key: val, index: i + 1 };
 		}
@@ -66,6 +82,14 @@ export function updateFromHeaders(
 	key: string,
 	headers: Record<string, unknown>,
 ) {
+	Ledger.updateQuota(key, 1, 0);
+}
+
+export function markKeyRateLimited(key: string) {
+	const level = Math.min((rateLimitBackoff.get(key) || 0) + 1, 5);
+	rateLimitBackoff.set(key, level);
+	const cooldownMs = 60_000 * level;
+	rateLimitedKeys.set(key, Date.now() + cooldownMs);
 	Ledger.updateQuota(key, 1, 0);
 }
 

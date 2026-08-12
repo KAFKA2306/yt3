@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_ROOT="/home/kafka/2511youtuber/v3/yt3"
 LOG_DIR="${PROJECT_ROOT}/logs"
 PROMPT_FILE="${PROJECT_ROOT}/prompts/autonomous_asmr_12h.txt"
-PROGRESS_FILE="${PROJECT_ROOT}/runs/2026-05-10/MASTER_PROGRESS.md"
+PROGRESS_FILE="${PROJECT_ROOT}/asmr/yawa-archive/MASTER_PROGRESS.md"
 LOCK_FILE="/tmp/yt3-gemini-asmr.lock"
 
 cd "${PROJECT_ROOT}"
@@ -25,8 +25,9 @@ unset GOOGLE_GENAI_USE_VERTEXAI
 unset GOOGLE_CLOUD_PROJECT
 
 # 3. OAuth枠の事前確認
+BUN_BIN=$(which bun || echo "/home/kafka/.bun/bin/bun")
 GEMINI_BIN="/usr/local/bin/gemini"
-if ! "${GEMINI_BIN}" --version > /dev/null 2>&1; then
+if ! "${BUN_BIN}" "${GEMINI_BIN}" --version > /dev/null 2>&1; then
   msg="[中止] Gemini CLI の認証（OAuth）が有効ではないか、コマンドが見つかりません。"
   echo "${msg}" >> "${LOG_DIR}/gemini_asmr_12h.log"
   # 権限があれば追記
@@ -39,7 +40,7 @@ flock -n "${LOCK_FILE}" bash -c "
   {
     echo \"[INFO] 処理を開始します。\"
     # 非対話実行
-    ${GEMINI_BIN} -p \"\$(cat ${PROMPT_FILE})\"
+    \"${BUN_BIN}\" \"${GEMINI_BIN}\" -m gemini-2.5-flash -p \"\$(cat ${PROMPT_FILE})\"
   } >> \"${LOG_DIR}/gemini_asmr_12h.log\" 2>&1
 " || {
   msg="[スキップ] 他のプロセスが実行中のため終了します。"

@@ -1,0 +1,528 @@
+{
+	"schema_version": "byosan_money_power_macro_sources_v1",
+	"domain": "byosan_money",
+	"sources": [
+		{
+			"id": "boj-policy-meetings",
+			"name": "日本銀行 金融政策決定会合",
+			"url": "https://www.boj.or.jp/mopo/mpmsche_minu/index.htm",
+			"layer": "L1_central_bank",
+			"source_class": "central_bank",
+			"importance": "critical",
+			"region": "japan",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "ja",
+			"asset_linkage": ["rates", "fx", "equity"],
+			"kafka_use": [
+				"jgb_yield_regime",
+				"yen_regime",
+				"nikkei_valuation",
+				"bank_stocks",
+				"softbank_nav_discount"
+			]
+		},
+		{
+			"id": "boj-outlook",
+			"name": "日本銀行 経済・物価情勢の展望",
+			"url": "https://www.boj.or.jp/mopo/outlook/index.htm",
+			"layer": "L1_central_bank",
+			"source_class": "central_bank",
+			"importance": "critical",
+			"region": "japan",
+			"priority": "high",
+			"expected_cadence": "quarterly",
+			"language": "ja",
+			"asset_linkage": ["rates", "fx", "equity"],
+			"kafka_use": [
+				"jgb_yield_regime",
+				"yen_regime",
+				"nikkei_valuation",
+				"softbank_nav_discount"
+			]
+		},
+		{
+			"id": "boj-release-calendar",
+			"name": "日本銀行 公表予定",
+			"url": "https://www.boj.or.jp/research/rs_all/rel/index.htm",
+			"layer": "L1_central_bank",
+			"source_class": "central_bank",
+			"importance": "critical",
+			"region": "japan",
+			"priority": "medium",
+			"expected_cadence": "weekly",
+			"language": "ja",
+			"asset_linkage": ["rates", "fx"],
+			"kafka_use": ["jgb_yield_regime", "yen_regime", "event_calendar"]
+		},
+		{
+			"id": "fed-news-events",
+			"name": "Federal Reserve News & Events",
+			"url": "https://www.federalreserve.gov/newsevents.htm",
+			"layer": "L1_central_bank",
+			"source_class": "central_bank",
+			"importance": "critical",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "daily",
+			"language": "en",
+			"asset_linkage": ["rates", "fx", "equity", "credit"],
+			"kafka_use": [
+				"us_equity_discount_rate",
+				"nasdaq_swing_regime",
+				"ai_stock_duration_risk",
+				"usd_jpy",
+				"global_liquidity"
+			]
+		},
+		{
+			"id": "fed-fomc",
+			"name": "Federal Reserve FOMC",
+			"url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+			"layer": "L1_central_bank",
+			"source_class": "central_bank",
+			"importance": "critical",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "en",
+			"asset_linkage": ["rates", "fx", "equity", "credit"],
+			"kafka_use": [
+				"us_equity_discount_rate",
+				"nasdaq_swing_regime",
+				"usd_jpy",
+				"global_liquidity"
+			]
+		},
+		{
+			"id": "cao-monthly-economic-report",
+			"name": "内閣府 月例経済報告",
+			"url": "https://www5.cao.go.jp/keizai3/getsurei/getsurei-index.html",
+			"layer": "L2_state_policy",
+			"source_class": "fiscal_state",
+			"importance": "critical",
+			"region": "japan",
+			"priority": "high",
+			"expected_cadence": "monthly",
+			"language": "ja",
+			"asset_linkage": ["equity", "rates", "fx", "manufacturing"],
+			"kafka_use": [
+				"japan_reflation",
+				"manufacturing_capex",
+				"consumption_regime"
+			]
+		},
+		{
+			"id": "cao-cefp",
+			"name": "内閣府 経済財政諮問会議",
+			"url": "https://www5.cao.go.jp/keizai-shimon/index.html",
+			"layer": "L2_state_policy",
+			"source_class": "fiscal_state",
+			"importance": "critical",
+			"region": "japan",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "ja",
+			"asset_linkage": ["equity", "rates", "manufacturing", "ai_capex"],
+			"kafka_use": [
+				"japan_reflation",
+				"semiconductor_subsidy_theme",
+				"domestic_ai_policy"
+			]
+		},
+		{
+			"id": "kantei-prime-minister-actions",
+			"name": "首相官邸 総理の一日・会議開催情報",
+			"url": "https://www.kantei.go.jp/index.html",
+			"layer": "L2_state_policy",
+			"source_class": "fiscal_state",
+			"importance": "medium",
+			"region": "japan",
+			"priority": "medium",
+			"expected_cadence": "daily",
+			"language": "ja",
+			"asset_linkage": ["equity", "rates"],
+			"kafka_use": ["japan_reflation", "event_calendar"]
+		},
+		{
+			"id": "mof-jgb-auction-calendar",
+			"name": "財務省 国債入札カレンダー",
+			"url": "https://www.mof.go.jp/jgbs/auction/calendar/index.htm",
+			"layer": "L2_state_policy",
+			"source_class": "fiscal_state",
+			"importance": "critical",
+			"region": "japan",
+			"priority": "high",
+			"expected_cadence": "monthly",
+			"language": "ja",
+			"asset_linkage": ["rates", "fx"],
+			"kafka_use": ["jgb_supply_pressure", "yen_regime", "bank_stocks"]
+		},
+		{
+			"id": "meti-ai-semiconductor-frame",
+			"name": "経産省 AI・半導体産業基盤強化フレーム",
+			"url": "https://www.meti.go.jp/policy/mono_info_service/ai_semiconductor_frame/ai_semiconductor_frame.html",
+			"layer": "L2_state_policy",
+			"source_class": "fiscal_state",
+			"importance": "critical",
+			"region": "japan",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "ja",
+			"asset_linkage": ["ai_capex", "manufacturing", "equity"],
+			"kafka_use": [
+				"semiconductor_subsidy_theme",
+				"manufacturing_capex",
+				"domestic_ai_policy"
+			]
+		},
+		{
+			"id": "whitehouse-presidential-actions",
+			"name": "White House Presidential Actions",
+			"url": "https://www.whitehouse.gov/presidential-actions/",
+			"layer": "L2_state_policy",
+			"source_class": "us_executive_power",
+			"importance": "critical",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "daily",
+			"language": "en",
+			"asset_linkage": [
+				"equity",
+				"rates",
+				"fx",
+				"commodity",
+				"ai_capex",
+				"manufacturing"
+			],
+			"kafka_use": [
+				"tariff_inflation",
+				"ai_geopolitics",
+				"long_rate_risk",
+				"us_japan_supply_chain"
+			]
+		},
+		{
+			"id": "federal-register-executive-orders",
+			"name": "Federal Register Presidential Documents",
+			"url": "https://www.federalregister.gov/presidential-documents/executive-orders",
+			"layer": "L2_state_policy",
+			"source_class": "us_executive_power",
+			"importance": "critical",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "daily",
+			"language": "en",
+			"asset_linkage": ["equity", "rates", "fx", "commodity", "manufacturing"],
+			"kafka_use": ["tariff_inflation", "ai_geopolitics", "long_rate_risk"]
+		},
+		{
+			"id": "ustr-tariff-actions",
+			"name": "USTR Presidential Tariff Actions",
+			"url": "https://ustr.gov/issue-areas/enforcement/section-301-investigations/tariff-actions",
+			"layer": "L2_state_policy",
+			"source_class": "us_executive_power",
+			"importance": "critical",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "en",
+			"asset_linkage": ["equity", "fx", "commodity", "manufacturing"],
+			"kafka_use": [
+				"tariff_inflation",
+				"us_japan_supply_chain",
+				"semiconductor_export_control"
+			]
+		},
+		{
+			"id": "commerce-bis-news",
+			"name": "U.S. Commerce BIS Newsroom",
+			"url": "https://www.bis.doc.gov/index.php/about-bis/newsroom",
+			"layer": "L2_state_policy",
+			"source_class": "us_executive_power",
+			"importance": "critical",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "en",
+			"asset_linkage": ["ai_capex", "manufacturing", "equity"],
+			"kafka_use": [
+				"ai_geopolitics",
+				"semiconductor_export_control",
+				"us_japan_supply_chain"
+			]
+		},
+		{
+			"id": "treasury-press-releases",
+			"name": "U.S. Treasury Press Releases",
+			"url": "https://home.treasury.gov/news/press-releases",
+			"layer": "L2_state_policy",
+			"source_class": "us_executive_power",
+			"importance": "high",
+			"region": "us",
+			"priority": "medium",
+			"expected_cadence": "daily",
+			"language": "en",
+			"asset_linkage": ["rates", "fx", "credit"],
+			"kafka_use": ["long_rate_risk", "global_liquidity", "sanctions"]
+		},
+		{
+			"id": "openai-news",
+			"name": "OpenAI News",
+			"url": "https://openai.com/news/",
+			"layer": "L3_frontier_ai_lab",
+			"source_class": "frontier_ai_lab",
+			"importance": "critical",
+			"region": "global",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "en",
+			"asset_linkage": ["ai_capex", "equity"],
+			"kafka_use": [
+				"sbg_nav",
+				"ai_capex",
+				"enterprise_ai_adoption",
+				"labor_substitution",
+				"ai_governance",
+				"microsoft_azure_demand"
+			]
+		},
+		{
+			"id": "anthropic-news",
+			"name": "Anthropic Newsroom",
+			"url": "https://www.anthropic.com/news",
+			"layer": "L3_frontier_ai_lab",
+			"source_class": "frontier_ai_lab",
+			"importance": "critical",
+			"region": "global",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "en",
+			"asset_linkage": ["ai_capex", "equity"],
+			"kafka_use": [
+				"claude_code_productivity",
+				"agentic_workflow",
+				"enterprise_ai",
+				"ai_safety_regulation",
+				"amazon_google_ai_exposure"
+			]
+		},
+		{
+			"id": "nvidia-news",
+			"name": "NVIDIA Newsroom",
+			"url": "https://nvidianews.nvidia.com/",
+			"layer": "L3_frontier_ai_lab",
+			"source_class": "frontier_ai_lab",
+			"importance": "critical",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "en",
+			"asset_linkage": ["ai_capex", "equity", "manufacturing"],
+			"kafka_use": [
+				"ai_capex",
+				"semiconductor_supply_chain",
+				"data_center_power"
+			]
+		},
+		{
+			"id": "hyperscaler-ai-watch",
+			"name": "Hyperscaler AI Watch (Microsoft/AWS/Google Cloud AI Releases)",
+			"url": "https://news.microsoft.com/source/",
+			"layer": "L3_frontier_ai_lab",
+			"source_class": "frontier_ai_lab",
+			"importance": "medium",
+			"region": "us",
+			"priority": "medium",
+			"expected_cadence": "weekly",
+			"language": "en",
+			"asset_linkage": ["ai_capex", "equity"],
+			"kafka_use": [
+				"microsoft_azure_demand",
+				"amazon_google_ai_exposure",
+				"ai_capex",
+				"enterprise_ai_adoption"
+			]
+		},
+		{
+			"id": "dario-essays",
+			"name": "Dario Amodei Essays",
+			"url": "https://darioamodei.com/",
+			"layer": "L4_ai_power_ideology",
+			"source_class": "ai_power_ideology",
+			"importance": "high",
+			"region": "global",
+			"priority": "medium",
+			"expected_cadence": "irregular",
+			"language": "en",
+			"asset_linkage": ["ai_capex", "equity"],
+			"kafka_use": [
+				"ai_governance",
+				"ai_safety_regime",
+				"geopolitical_ai",
+				"long_form_thesis"
+			]
+		},
+		{
+			"id": "sam-altman-blog",
+			"name": "Sam Altman Blog",
+			"url": "https://blog.samaltman.com/",
+			"layer": "L4_ai_power_ideology",
+			"source_class": "ai_power_ideology",
+			"importance": "high",
+			"region": "global",
+			"priority": "high",
+			"expected_cadence": "irregular",
+			"language": "en",
+			"asset_linkage": ["ai_capex", "equity"],
+			"kafka_use": [
+				"openai_strategy",
+				"agi_governance",
+				"ai_democratization",
+				"ai_power_concentration",
+				"sbg_openai_valuation_narrative"
+			]
+		},
+		{
+			"id": "jri-reports",
+			"name": "日本総研 経済・政策レポート",
+			"url": "https://www.jri.co.jp/report/year/",
+			"source_class": "official_macro",
+			"region": "global",
+			"priority": "high",
+			"expected_cadence": "daily",
+			"language": "ja",
+			"asset_linkage": ["equity", "rates", "fx", "manufacturing"],
+			"kafka_use": ["japan_reflation", "yen_regime"]
+		},
+		{
+			"id": "yardeni-morning-briefing",
+			"name": "Yardeni Research Morning Briefings",
+			"url": "https://www.yardeniquicktakes.com/",
+			"source_class": "market_expectation",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "daily",
+			"language": "en",
+			"asset_linkage": ["equity", "rates", "ai_capex"],
+			"metric_tags": ["index_level", "index_earnings", "revenue"],
+			"kafka_use": ["us_equity_discount_rate", "nasdaq_swing_regime"]
+		},
+		{
+			"id": "yardeni-yri-earnings-outlook",
+			"name": "Yardeni Research YRI Earnings Outlook",
+			"url": "https://www.yardeni.com/charts/yri-earnings-outlook/",
+			"source_class": "market_metrics",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "weekly",
+			"language": "en",
+			"asset_linkage": ["equity"],
+			"metric_tags": [
+				"index_earnings",
+				"revenue",
+				"profit_margin",
+				"valuation"
+			],
+			"kafka_use": ["us_equity_discount_rate", "nasdaq_swing_regime"]
+		},
+		{
+			"id": "spglobal-sp500-eps-estimates",
+			"name": "S&P Global S&P 500 EPS Estimates",
+			"url": "https://www.spglobal.com/spdji/en/documents/additional-material/sp-500-eps-est.xlsx",
+			"collector": "spglobal_xlsx",
+			"source_class": "market_metrics",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "discontinued_static",
+			"language": "en",
+			"asset_linkage": ["equity"],
+			"metric_tags": [
+				"index_level",
+				"index_earnings",
+				"revenue",
+				"company_earnings"
+			],
+			"kafka_use": ["us_equity_discount_rate", "nasdaq_swing_regime"]
+		},
+		{
+			"id": "factset-earnings-insight",
+			"name": "FactSet Earnings Insight",
+			"url": "https://www.factset.com/earningsinsight",
+			"source_class": "earnings",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "weekly",
+			"language": "en",
+			"asset_linkage": ["equity", "ai_capex"],
+			"metric_tags": [
+				"company_earnings",
+				"index_earnings",
+				"revenue",
+				"profit_margin"
+			],
+			"kafka_use": ["us_equity_discount_rate", "nasdaq_swing_regime"]
+		},
+		{
+			"id": "factset-earnings-latest",
+			"name": "FactSet S&P 500 Earnings Season Preview (Latest)",
+			"url": "https://insight.factset.com/topic/earnings",
+			"source_class": "earnings",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "quarterly",
+			"language": "en",
+			"asset_linkage": ["equity", "ai_capex"],
+			"metric_tags": [
+				"company_earnings",
+				"index_earnings",
+				"revenue",
+				"profit_margin"
+			],
+			"kafka_use": ["us_equity_discount_rate", "nasdaq_swing_regime"]
+		},
+		{
+			"id": "cme-fedwatch",
+			"name": "CME FedWatch Tool (Fed Funds futures implied probabilities)",
+			"url": "https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html",
+			"source_class": "market_expectation",
+			"region": "us",
+			"priority": "high",
+			"expected_cadence": "daily",
+			"language": "en",
+			"asset_linkage": ["rates", "fx", "equity"],
+			"kafka_use": ["us_equity_discount_rate", "nasdaq_swing_regime"]
+		}
+	],
+	"coverage_requirements": {
+		"min_total_sources": 20,
+		"required_layers": [
+			"L1_central_bank",
+			"L2_state_policy",
+			"L3_frontier_ai_lab",
+			"L4_ai_power_ideology"
+		],
+		"required_source_classes": [
+			"central_bank",
+			"fiscal_state",
+			"us_executive_power",
+			"frontier_ai_lab",
+			"official_macro",
+			"market_metrics",
+			"earnings",
+			"market_expectation"
+		],
+		"critical_source_ids": [
+			"boj-policy-meetings",
+			"fed-news-events",
+			"fed-fomc",
+			"whitehouse-presidential-actions",
+			"openai-news",
+			"anthropic-news",
+			"nvidia-news",
+			"jri-reports",
+			"factset-earnings-insight",
+			"cme-fedwatch"
+		]
+	}
+}

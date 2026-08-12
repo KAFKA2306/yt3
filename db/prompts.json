@@ -1,36 +1,36 @@
 {
-  "nodes": [
-    {
-      "id": "voice_oneesan",
-      "type": "voice_identity",
-      "name": "年上お姉さん",
-      "caption": "年上お姉さん、やわらかい低めの声、近距離の囁き、呼吸は一定、速度はゆっくり、感情は包容と看病、語尾はやさしく伸ばす、章をまたいでも声質を変えない、疲れている相手を安心させる温度、耳元でも圧をかけすぎない、眠気を壊さない落ち着き",
-      "seed": 2306,
-      "tags": ["oneesan", "gentle", "mature", "asmr"]
-    },
-    {
-      "id": "project_oneesan_onsen",
-      "type": "project",
-      "name": "温泉看病お姉さん",
-      "description": "ADR-0007: 優しい年上お姉さんが、風邪ひいたあなたを温泉旅館で朝まで甘やかし看病してくれるASMR"
-    },
-    {
-      "id": "script_oneesan_yasuragi",
-      "type": "script",
-      "name": "お疲れさま。お姉さんに全部預けて？",
-      "path": "asmr/scripts/008-onesan-yasuragi/script.md"
-    }
-  ],
-  "edges": [
-    {
-      "source": "project_oneesan_onsen",
-      "target": "voice_oneesan",
-      "type": "USES_VOICE"
-    },
-    {
-      "source": "script_oneesan_yasuragi",
-      "target": "voice_oneesan",
-      "type": "USES_VOICE"
-    }
-  ]
+	"nodes": [
+		{
+			"id": "voice_oneesan",
+			"type": "voice_identity",
+			"name": "年上お姉さん",
+			"caption": "年上お姉さん、やわらかい低めの声、近距離の囁き、呼吸は一定、速度はゆっくり、感情は包容と看病、語尾はやさしく伸ばす、章をまたいでも声質を変えない、疲れている相手を安心させる温度、耳元でも圧をかけすぎない、眠気を壊さない落ち着き",
+			"seed": 2306,
+			"tags": ["oneesan", "gentle", "mature", "asmr"]
+		},
+		{
+			"id": "project_oneesan_onsen",
+			"type": "project",
+			"name": "温泉看病お姉さん",
+			"description": "ADR-0007: 優しい年上お姉さんが、風邪ひいたあなたを温泉旅館で朝まで甘やかし看病してくれるASMR"
+		},
+		{
+			"id": "script_oneesan_yasuragi",
+			"type": "script",
+			"name": "お疲れさま。お姉さんに全部預けて？",
+			"path": "asmr/scripts/008-onesan-yasuragi/script.md"
+		}
+	],
+	"edges": [
+		{
+			"source": "project_oneesan_onsen",
+			"target": "voice_oneesan",
+			"type": "USES_VOICE"
+		},
+		{
+			"source": "script_oneesan_yasuragi",
+			"target": "voice_oneesan",
+			"type": "USES_VOICE"
+		}
+	]
 }

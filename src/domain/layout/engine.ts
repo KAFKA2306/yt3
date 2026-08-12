@@ -1,8 +1,8 @@
 import sharp from "sharp";
 import { loadConfig, resolvePath } from "../../io/core.js";
 import type { OverlayConfig, Rect, Size } from "../config/base.js";
-import type { AppConfig, RenderPlan, Script } from "../types.js";
 import { ThumbnailRenderer } from "../media/thumbnail_renderer.js";
+import type { AppConfig, RenderPlan, Script } from "../types.js";
 import { generateASS } from "./ass.js";
 import { calculateBounds } from "./bounds.js";
 
@@ -12,8 +12,8 @@ export class LayoutEngine {
 	thumbRes: Size;
 	thumbRenderer: ThumbnailRenderer;
 
-	constructor() {
-		this.config = loadConfig();
+	constructor(config?: AppConfig) {
+		this.config = config || loadConfig();
 		this.thumbRenderer = new ThumbnailRenderer(this.config);
 		const parseRes = (s: string) => s.split("x").map(Number);
 		const v = parseRes(this.config.steps.video.resolution || "1920x1080");

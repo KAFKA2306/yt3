@@ -14,24 +14,60 @@
 			"category_id": "human_kindness",
 			"title": "人間への優しさと知性",
 			"criteria": [
-				{ "criterion_id": "no_roughness", "title": "雑な知性の排除", "expected_state": "難しい単語や学歴感を誇示せず、人間を雑に扱っていないこと", "critical": true, "determinism": "BOUNDED_PROBABILISTIC" },
-				{ "criterion_id": "lovable_clumsiness", "title": "愛おしい不器用さの描出", "expected_state": "人類のバグを『案外かわいい』と翻訳できていること", "critical": true, "determinism": "BOUNDED_PROBABILISTIC" }
+				{
+					"criterion_id": "no_roughness",
+					"title": "雑な知性の排除",
+					"expected_state": "難しい単語や学歴感を誇示せず、人間を雑に扱っていないこと",
+					"critical": true,
+					"determinism": "BOUNDED_PROBABILISTIC"
+				},
+				{
+					"criterion_id": "lovable_clumsiness",
+					"title": "愛おしい不器用さの描出",
+					"expected_state": "人類のバグを『案外かわいい』と翻訳できていること",
+					"critical": true,
+					"determinism": "BOUNDED_PROBABILISTIC"
+				}
 			]
 		},
 		{
 			"category_id": "brand_temperature",
 			"title": "ブランド温度感 (夏の夕方)",
 			"criteria": [
-				{ "criterion_id": "relief_ending", "title": "安堵感のある着地", "expected_state": "劣等感や敗北感ではなく、『理解された安心』が残ること", "critical": true, "determinism": "BOUNDED_PROBABILISTIC" },
-				{ "criterion_id": "reality_anchoring", "title": "生活への着地", "expected_state": "コンビニ、帰り道、アイスといった日常の断片が溶け込んでいること", "critical": true, "determinism": "BOUNDED_PROBABILISTIC" }
+				{
+					"criterion_id": "relief_ending",
+					"title": "安堵感のある着地",
+					"expected_state": "劣等感や敗北感ではなく、『理解された安心』が残ること",
+					"critical": true,
+					"determinism": "BOUNDED_PROBABILISTIC"
+				},
+				{
+					"criterion_id": "reality_anchoring",
+					"title": "生活への着地",
+					"expected_state": "コンビニ、帰り道、アイスといった日常の断片が溶け込んでいること",
+					"critical": true,
+					"determinism": "BOUNDED_PROBABILISTIC"
+				}
 			]
 		},
 		{
 			"category_id": "cognitive_integrity",
 			"title": "知的整合性",
 			"criteria": [
-				{ "criterion_id": "anti_success_mindset", "title": "成功者マインドの排除", "expected_state": "強くなることの要求や、攻略法、自己責任論が含まれていないこと", "critical": true, "determinism": "BOUNDED_PROBABILISTIC" },
-				{ "criterion_id": "unresolved_wonder", "title": "未解決の驚異", "expected_state": "完璧に完結せず、心地よい問いが残っていること", "critical": true, "determinism": "BOUNDED_PROBABILISTIC" }
+				{
+					"criterion_id": "anti_success_mindset",
+					"title": "成功者マインドの排除",
+					"expected_state": "強くなることの要求や、攻略法、自己責任論が含まれていないこと",
+					"critical": true,
+					"determinism": "BOUNDED_PROBABILISTIC"
+				},
+				{
+					"criterion_id": "unresolved_wonder",
+					"title": "未解決の驚異",
+					"expected_state": "完璧に完結せず、心地よい問いが残っていること",
+					"critical": true,
+					"determinism": "BOUNDED_PROBABILISTIC"
+				}
 			]
 		}
 	]

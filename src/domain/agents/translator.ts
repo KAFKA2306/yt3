@@ -17,19 +17,9 @@ export class TranslatorAgent extends BaseAgent {
 
 		const userPrompt = `Title: "${englishTitle}"`;
 
-		try {
-			return await this.runLlm(systemPrompt, userPrompt, (text) => {
-				const parsed = parseLlmJson<{ japanese_title: string }>(text);
-				return parsed.japanese_title;
-			});
-		} catch (error) {
-			AgentLogger.error(
-				this.name,
-				"TRANSLATE",
-				"ERROR",
-				`Translation failed: ${error}`,
-			);
-			return englishTitle;
-		}
+		return await this.runLlm(systemPrompt, userPrompt, (text) => {
+			const parsed = parseLlmJson<{ japanese_title: string }>(text);
+			return parsed.japanese_title;
+		});
 	}
 }

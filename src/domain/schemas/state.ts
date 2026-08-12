@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { GenerationDynamicsSchema } from "./generation_dynamics.js";
 import { NewsItemSchema, WebSearchResultSchema } from "../types.js";
+import { GenerationDynamicsSchema } from "./generation_dynamics.js";
 import { StrategicInsightSchema } from "./research.js";
 import { MetadataSchema, ScriptSchema } from "./script.js";
 
@@ -34,6 +34,7 @@ export const AgentStateSchema = z.object({
 	script: ScriptSchema.optional(),
 	audio_paths: z.array(z.string()).optional(),
 	video_path: z.string().optional(),
+	publish_video_path: z.string().optional(),
 	thumbnail_path: z.string().optional(),
 	status: z.string().optional(),
 	metadata: MetadataSchema.optional(),
