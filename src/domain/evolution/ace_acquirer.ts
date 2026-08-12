@@ -1,6 +1,6 @@
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
-import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import {
 	AgentLogger as Logger,
@@ -67,7 +67,7 @@ Focus on areas like viewer retention, emotional hooks, or structural surprises t
 		const playbook = new ContextPlaybook();
 		for (const h of hypotheses) {
 			playbook.addBullet({
-				id: uuidv4(),
+				id: randomUUID(),
 				content: h.content,
 				source: "Acquisition",
 				confidence: 0.5,
