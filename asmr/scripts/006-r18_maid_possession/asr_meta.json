@@ -1,6 +1,6 @@
 {
-  "language": "ja",
-  "language_probability": 1,
-  "segments": 76,
-  "model": "small"
+	"language": "ja",
+	"language_probability": 1,
+	"segments": 76,
+	"model": "small"
 }
