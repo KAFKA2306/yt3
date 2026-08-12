@@ -1,532 +1,862 @@
 {
-  "schemaVersion": "byosan_feature_v1",
-  "runId": "byosan_money/2026-08-01-sp500-47-anthropic",
-  "asOf": "2026-08-01",
-  "angle": "47.4%という指数見出しを、2社の非営業評価益と2社除外後の本業成長に分解する二段オチ",
-  "searchQuery": "S&P 500 Q2 2026 earnings 47.4 Amazon Anthropic valuation gain",
-  "title": "S&P500利益47.4%増の正体──Amazon「626億ドル利益」とAnthropic評価益",
-  "thumbnailTitle": "利益 +47.4%!?\n正体は2社",
-  "thumbnail": {
-    "eyebrow": "S&P 500 Q2 決算",
-    "lead": "利益",
-    "accent": "+47.4%",
-    "reaction": "!?",
-    "secondLine": "正体は「2社」",
-    "calloutTop": "Anthropic評価益 505億ドル",
-    "calloutBottom": "除くと +28.8%"
-  },
-  "descriptionLead": "S&P 500の2026年Q2利益成長率は47.4%。しかしAlphabetとAmazonを除くと28.8%です。Amazonの純利益626億ドル、Anthropic関連の505億ドル評価益、本業の営業利益43%増を一次資料で分解します。",
-  "descriptionBullets": [
-    "47.4%は2026年7月31日時点のブレンデッド値（発表済み61%）",
-    "AlphabetとAmazonを除くと利益成長率は28.8%",
-    "Amazonの505億ドルはAnthropic優先株の上方調整、534億ドルはその他利益の合計",
-    "評価益等を除くEPS約2.0〜2.2ドルは秒算マネーの概算で、Amazon公表の非GAAP指標ではありません",
-    "9.6%／19.7%は公正価値をSeries H評価額で割った単純換算で、正式持分率ではありません"
-  ],
-  "disclaimer": "本動画は公開資料に基づく情報提供を目的とし、特定の金融商品の売買を推奨するものではありません。非上場証券の評価、税効果、希薄化、転換条件には不確実性があります。",
-  "hookPromises": ["47.4", "28.8", "626", "505"],
-  "noveltyQueries": [
-    "site:youtube.com/watch \"47.4%\" \"S&P 500\" earnings Anthropic Amazon",
-    "site:youtube.com/watch S&P500 利益 47.4% Anthropic Amazon 2026",
-    "site:youtube.com/watch Amazon Anthropic 505億ドル 評価益 2026"
-  ],
-  "tags": [
-    "S&P500",
-    "Amazon",
-    "Anthropic",
-    "Alphabet",
-    "米国株",
-    "決算",
-    "AWS",
-    "FactSet",
-    "AI投資",
-    "秒算マネー"
-  ],
-  "sources": [
-    {
-      "id": "factset_0724",
-      "name": "FactSet Earnings Insight — July 24, 2026",
-      "url": "https://advantage.factset.com/hubfs/Website/Resources%20Section/Research%20Desk/Earnings%20Insight/EarningsInsight_072426.pdf"
-    },
-    {
-      "id": "factset_0731",
-      "name": "FactSet Earnings Insight — July 31, 2026",
-      "url": "https://advantage.factset.com/hubfs/Website/Resources%20Section/Research%20Desk/Earnings%20Insight/EarningsInsight_073126.pdf"
-    },
-    {
-      "id": "amazon_10q",
-      "name": "Amazon Form 10-Q — Quarter ended June 30, 2026",
-      "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000026/amzn-20260630.htm"
-    },
-    {
-      "id": "alphabet_10q",
-      "name": "Alphabet Form 10-Q — Quarter ended June 30, 2026",
-      "url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm"
-    },
-    {
-      "id": "anthropic_series_h",
-      "name": "Anthropic Series H funding announcement — May 28, 2026",
-      "url": "https://www.anthropic.com/news/series-h"
-    }
-  ],
-  "claims": [
-    {
-      "claim": "FactSetの2026年7月31日時点のS&P 500 Q2ブレンデッド利益成長率は47.4%、AlphabetとAmazonを除くと28.8%",
-      "sourceIds": ["factset_0731"],
-      "status": "verified"
-    },
-    {
-      "claim": "Amazon Q2純利益は626.47億ドル、希薄化後EPSは5.75ドル、営業利益は前年比43.2%増",
-      "sourceIds": ["amazon_10q"],
-      "status": "verified"
-    },
-    {
-      "claim": "AmazonはAnthropic優先株をQ2に約505億ドル上方調整し、Q2その他利益は534.15億ドル",
-      "sourceIds": ["amazon_10q"],
-      "status": "verified"
-    },
-    {
-      "claim": "AmazonのAWS売上は前年比37%増、AWS営業利益は101.60億ドルから166.21億ドルへ増加",
-      "sourceIds": ["amazon_10q"],
-      "status": "verified"
-    },
-    {
-      "claim": "Alphabet Q2 EPSは9.11ドル、OI&Eは980億ドル、株式評価益は990.31億ドル",
-      "sourceIds": ["alphabet_10q", "factset_0724"],
-      "status": "verified"
-    },
-    {
-      "claim": "AmazonのAnthropic優先株925億ドルは9650億ドル評価額の約9.6%、転換社債979億ドルを含む単純換算は約19.7%",
-      "sourceIds": ["amazon_10q", "anthropic_series_h"],
-      "status": "derived_with_caveat"
-    },
-    {
-      "claim": "Anthropic関連評価益等を除くAmazon EPSは概算2.0〜2.2ドル",
-      "sourceIds": ["amazon_10q"],
-      "status": "analyst_estimate_not_company_non_gaap"
-    }
-  ],
-  "segments": [
-    {
-      "chapter": "47.4%の二重の錯覚",
-      "speaker": "春日部つむぎ",
-      "emotion": "shock",
-      "section": "BREAKING DOWN THE NUMBER",
-      "headline": "利益 +47.4%!?",
-      "subheadline": "2社を除くと +28.8%",
-      "visualType": "hero",
-      "stats": [
-        {"label": "S&P 500 Q2", "value": "+47.4%", "detail": "FactSet blended", "color": "cyan"},
-        {"label": "除く Alphabet + Amazon", "value": "+28.8%", "detail": "それでも強い", "color": "amber"}
-      ],
-      "source": "FactSet • 2026-07-31",
-      "text": "S&P 500の利益、47.4パーセント増。ところがAlphabetとAmazonを消すと28.8パーセント。約19ポイントは、2社で膨らみました。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "reveal",
-      "section": "THE SECOND SURPRISE",
-      "headline": "Amazon純利益 626億ドル",
-      "subheadline": "Anthropic評価益 505億ドル",
-      "visualType": "comparison",
-      "stats": [
-        {"label": "Amazon 純利益", "value": "$62.647B", "detail": "Q2 2026", "color": "white"},
-        {"label": "Anthropic優先株 上方調整", "value": "$50.5B", "detail": "非現金の評価益", "color": "amber"}
-      ],
-      "source": "Amazon 10-Q • 2026-06-30",
-      "text": "さらにAmazon純利益626億ドルの裏側に、Anthropicの505億ドル評価益。今日は、この二重の錯覚をほどきます。"
-    },
-    {
-      "speaker": "ずんだもん",
-      "emotion": "curious",
-      "section": "QUESTION",
-      "headline": "47.4%＝全社が絶好調？",
-      "subheadline": "指数の見出しを、そのまま信じていい？",
-      "visualType": "question",
-      "stats": [
-        {"label": "見出し", "value": "47.4%", "detail": "記録的", "color": "cyan"},
-        {"label": "中身", "value": "?", "detail": "持続可能性は別", "color": "amber"}
-      ],
-      "source": "検証ポイント",
-      "text": "え、47.4パーセントって、指数全体がものすごく稼いだ数字じゃないのだ？"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "analytical",
-      "section": "HOW THE NUMBER MOVED",
-      "headline": "23.2 → 37.9 → 47.4",
-      "subheadline": "Alphabet、そしてAmazon",
-      "visualType": "timeline",
-      "stats": [
-        {"label": "6/30 予想", "value": "23.2%", "detail": "期末時点", "color": "muted"},
-        {"label": "7/24", "value": "37.9%", "detail": "Alphabet後", "color": "cyan"},
-        {"label": "7/31", "value": "47.4%", "detail": "Amazon後", "color": "amber"}
-      ],
-      "source": "FactSet • 2026-07-24 / 07-31",
-      "text": "6月30日の予想は23.2パーセント。7月24日、Alphabet決算で37.9パーセント。7月31日、Amazonが加わって47.4パーセントです。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "caution",
-      "section": "METHODOLOGY",
-      "headline": "まだ61%が発表済み",
-      "subheadline": "実績＋未発表企業の予想＝ブレンデッド",
-      "visualType": "progress",
-      "stats": [
-        {"label": "S&P 500 発表済み", "value": "61%", "detail": "2026-07-31時点", "color": "cyan"},
-        {"label": "未発表", "value": "39%", "detail": "予想値を使用", "color": "muted"}
-      ],
-      "source": "FactSet methodology",
-      "text": "ただし、7月31日時点で発表済みは61パーセント。実績と未発表企業の予想を混ぜたブレンデッド値で、最終確定値ではありません。"
-    },
-    {
-      "chapter": "Amazon 626億ドルの内訳",
-      "speaker": "ずんだもん",
-      "emotion": "shock",
-      "section": "AMAZON Q2",
-      "headline": "一週間で +9.5pt",
-      "subheadline": "Amazon本業が爆発した？",
-      "visualType": "delta",
-      "stats": [
-        {"label": "7/24", "value": "37.9%", "detail": "S&P利益成長", "color": "muted"},
-        {"label": "7/31", "value": "47.4%", "detail": "+9.5pt", "color": "amber"}
-      ],
-      "source": "FactSet • weekly change",
-      "text": "一週間で約9.5ポイントも上がったのだ。Amazonの本業が爆発したのだ？"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "reveal",
-      "section": "GAAP RESULT",
-      "headline": "純利益 $62.647B",
-      "subheadline": "希薄化後EPS $5.75",
-      "visualType": "statement",
-      "stats": [
-        {"label": "純利益", "value": "$62.647B", "detail": "前年 $18.164B", "color": "cyan"},
-        {"label": "Diluted EPS", "value": "$5.75", "detail": "前年 $1.68", "color": "white"}
-      ],
-      "source": "Amazon 10-Q • Consolidated Statements",
-      "text": "Amazonの第2四半期純利益は626億4700万ドル、1株利益は5ドル75セント。でも、その中心には現金収入ではない評価益があります。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "reveal",
-      "section": "ANTHROPIC MARK-UP",
-      "headline": "$50.5B 上方調整",
-      "subheadline": "非議決権優先株の価格変化",
-      "visualType": "spotlight",
-      "stats": [
-        {"label": "Q2 上方調整", "value": "$50.5B", "detail": "Anthropic優先株が主因", "color": "amber"},
-        {"label": "現金流入", "value": "$0", "detail": "非現金の会計利益", "color": "muted"}
-      ],
-      "source": "Amazon 10-Q • Note 3 / Anthropic",
-      "text": "Anthropicの資金調達で、非議決権優先株の帳簿価値を505億ドル引き上げた。これは現金505億ドルが入った、という意味ではありません。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "analytical",
-      "section": "DO NOT MIX THESE",
-      "headline": "505億 ≠ 534億",
-      "subheadline": "評価項目と損益行を分ける",
-      "visualType": "comparison",
-      "stats": [
-        {"label": "Anthropic優先株 上方調整", "value": "$50.5B", "detail": "個別の評価項目", "color": "amber"},
-        {"label": "その他利益 合計", "value": "$53.415B", "detail": "他項目も含む損益行", "color": "cyan"}
-      ],
-      "source": "Amazon 10-Q • Other income",
-      "text": "505億と534億は同じ数字ではありません。前者がAnthropic優先株の値上がり。後者は他の評価項目も含む、その他利益の合計です。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "analytical",
-      "section": "NORMALIZED LENS",
-      "headline": "EPS $5.75 → 約$2.1",
-      "subheadline": "会社非開示の概算レンジ $2.0〜$2.2",
-      "visualType": "formula",
-      "stats": [
-        {"label": "GAAP EPS", "value": "$5.75", "detail": "評価益込み", "color": "cyan"},
-        {"label": "概算EPS", "value": "$2.0–2.2", "detail": "評価益等を除く試算", "color": "amber"}
-      ],
-      "source": "秒算マネー試算 • Amazon非公表",
-      "text": "では評価益等を外すと。税効果を概算したAmazonのEPSは、およそ2ドル0セントから2ドル20セント。これは会社公表の非GAAP指標ではなく、比較用の試算です。"
-    },
-    {
-      "speaker": "ずんだもん",
-      "emotion": "caution",
-      "section": "FALSE DICHOTOMY",
-      "headline": "なら、本業は弱い？",
-      "subheadline": "評価益が大きい＝事業が弱い、ではない",
-      "visualType": "question",
-      "stats": [
-        {"label": "紙の利益", "value": "大", "detail": "評価益", "color": "amber"},
-        {"label": "本業", "value": "?", "detail": "別に検証", "color": "cyan"}
-      ],
-      "source": "次の検証",
-      "text": "じゃあAmazonの決算は、ほぼ紙の利益で、本業は弱かったのだ？"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "confident",
-      "section": "CORE BUSINESS",
-      "headline": "営業利益 +43%",
-      "subheadline": "AWS売上 +37% / AWS営業利益 約+64%",
-      "visualType": "bars",
-      "stats": [
-        {"label": "全社 営業利益", "value": "+43%", "detail": "$19.2B → $27.5B", "color": "cyan"},
-        {"label": "AWS 売上", "value": "+37%", "detail": "顧客利用増", "color": "white"},
-        {"label": "AWS 営業利益", "value": "+64%", "detail": "$10.2B → $16.6B", "color": "amber"}
-      ],
-      "source": "Amazon 10-Q • Segment results",
-      "text": "そこも違います。営業利益は192億ドルから275億ドルへ43パーセント増。AWS売上は37パーセント増、AWS営業利益は約64パーセント増でした。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "warm",
-      "section": "THE RIGHT CONCLUSION",
-      "headline": "二つとも本当",
-      "subheadline": "評価益が巨大 ／ 本業も強い",
-      "visualType": "dual",
-      "stats": [
-        {"label": "会計", "value": "評価益で膨張", "detail": "持続性に注意", "color": "amber"},
-        {"label": "事業", "value": "実際に成長", "detail": "営業利益とAWS", "color": "cyan"}
-      ],
-      "source": "Amazon 10-Q • two-lens analysis",
-      "text": "結論は二択じゃない。評価益が純利益を膨らませた。そして本業も強い。この二つが同時に成立します。"
-    },
-    {
-      "chapter": "Alphabetでも起きた歪み",
-      "speaker": "春日部つむぎ",
-      "emotion": "analytical",
-      "section": "ONE WEEK EARLIER",
-      "headline": "Alphabet EPS $9.11",
-      "subheadline": "OI&E $98.0B / 株式評価益 $99.0B",
-      "visualType": "statement",
-      "stats": [
-        {"label": "Diluted EPS", "value": "$9.11", "detail": "予想 $2.88", "color": "cyan"},
-        {"label": "その他損益", "value": "$98.0B", "detail": "非営業", "color": "amber"},
-        {"label": "株式評価益", "value": "$99.0B", "detail": "主にSpaceX等", "color": "white"}
-      ],
-      "source": "Alphabet 10-Q / FactSet • 2026 Q2",
-      "text": "さらに前週のAlphabet。1株利益は9ドル11セント。その他損益980億ドルに株式評価益990億ドルが入り、主因はSpaceXと別の非上場企業でした。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "caution",
-      "section": "JULY 24 SNAPSHOT",
-      "headline": "Alphabetを除くと",
-      "subheadline": "利益成長 37.9→25.9 / EPS上振れ 39.3→12.6",
-      "visualType": "beforeAfter",
-      "stats": [
-        {"label": "利益成長率", "value": "37.9→25.9%", "detail": "Alphabet除外", "color": "cyan"},
-        {"label": "EPS上振れ率", "value": "39.3→12.6%", "detail": "Alphabet除外", "color": "amber"}
-      ],
-      "source": "FactSet • 2026-07-24",
-      "text": "FactSetによれば、Alphabetを除くだけで7月24日の利益成長率は37.9から25.9パーセントへ。EPS上振れ率は39.3から12.6パーセントへ下がりました。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "reveal",
-      "section": "JULY 31 SNAPSHOT",
-      "headline": "2社を除くと +28.8%",
-      "subheadline": "見出しの約19ポイントは2社の影響",
-      "visualType": "beforeAfter",
-      "stats": [
-        {"label": "見出し", "value": "+47.4%", "detail": "Alphabet + Amazon込み", "color": "cyan"},
-        {"label": "2社除外", "value": "+28.8%", "detail": "なお20%超", "color": "amber"}
-      ],
-      "source": "FactSet • 2026-07-31",
-      "text": "7月31日時点では、AlphabetとAmazonを両方除くと、47.4パーセントは28.8パーセントになります。見出しの約19ポイントは、2社の影響です。"
-    },
-    {
-      "speaker": "ずんだもん",
-      "emotion": "relieved",
-      "section": "WHAT REMAINS",
-      "headline": "+28.8%も十分に高い",
-      "subheadline": "全部が会計マジック、でもない",
-      "visualType": "spotlight",
-      "stats": [
-        {"label": "2社除外後", "value": "+28.8%", "detail": "2四半期連続20%超", "color": "cyan"}
-      ],
-      "source": "FactSet • underlying breadth",
-      "text": "でも28.8パーセントも十分に高いのだ。全部が会計マジック、という話でもないのだね。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "confident",
-      "section": "BREADTH CHECK",
-      "headline": "売上も +14.1%",
-      "subheadline": "利益だけではない基礎体力",
-      "visualType": "bars",
-      "stats": [
-        {"label": "7/24 売上成長", "value": "+13.2%", "detail": "blended", "color": "muted"},
-        {"label": "7/31 売上成長", "value": "+14.1%", "detail": "blended", "color": "cyan"},
-        {"label": "2社除外後 利益", "value": "+28.8%", "detail": "本業側も強い", "color": "amber"}
-      ],
-      "source": "FactSet • Revenue growth",
-      "text": "その通り。売上成長率は7月24日の13.2から、7月31日には14.1パーセント。2社を外しても利益は20パーセント超で、基礎体力も強い。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "caution",
-      "section": "DO NOT ANNUALIZE THE HEADLINE",
-      "headline": "47.4%は持続成長率ではない",
-      "subheadline": "途中経過・会計評価・前年比の混合物",
-      "visualType": "risk",
-      "stats": [
-        {"label": "途中経過", "value": "61%", "detail": "発表済み", "color": "muted"},
-        {"label": "非営業評価益", "value": "巨大", "detail": "2社で指数を押上げ", "color": "amber"},
-        {"label": "持続性", "value": "未証明", "detail": "来期に反転も", "color": "cyan"}
-      ],
-      "source": "FactSet methodology / SEC filings",
-      "text": "だから47.4パーセントを、来期も続く成長率として使うのは危険。途中経過と予想、そして非営業の評価益が混ざった数字です。"
-    },
-    {
-      "chapter": "AmazonのAnthropic持分を試算",
-      "speaker": "春日部つむぎ",
-      "emotion": "reveal",
-      "section": "PREFERRED STOCK",
-      "headline": "$92.5B ÷ $965B",
-      "subheadline": "約9.6%相当",
-      "visualType": "formula",
-      "stats": [
-        {"label": "優先株 帳簿価額", "value": "$92.5B", "detail": "Amazon 10-Q", "color": "cyan"},
-        {"label": "Anthropic post-money", "value": "$965B", "detail": "Series H", "color": "white"},
-        {"label": "単純換算", "value": "9.6%", "detail": "公式持分率ではない", "color": "amber"}
-      ],
-      "source": "Amazon 10-Q + Anthropic Series H",
-      "text": "ここからがAnthropicのもう一つの衝撃。Amazonの非議決権優先株は925億ドル。Anthropicの9650億ドル評価額で割ると、約9.6パーセント相当です。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "analytical",
-      "section": "ECONOMIC EXPOSURE",
-      "headline": "優先株＋転換社債 ≈19.7%",
-      "subheadline": "$92.5B + $97.9B = $190.4B",
-      "visualType": "stack",
-      "stats": [
-        {"label": "非議決権優先株", "value": "$92.5B", "detail": "carrying value", "color": "cyan"},
-        {"label": "転換社債", "value": "$97.9B", "detail": "estimated fair value", "color": "white"},
-        {"label": "単純換算", "value": "19.7%", "detail": "$190.4B / $965B", "color": "amber"}
-      ],
-      "source": "Amazon 10-Q • balance-sheet values",
-      "text": "転換社債の推定公正価値979億ドルも足すと、経済的エクスポージャーは約19.7パーセント相当。ただし、これは持分率の公式開示ではありません。"
-    },
-    {
-      "speaker": "ずんだもん",
-      "emotion": "curious",
-      "section": "IMPORTANT CAVEAT",
-      "headline": "19.7%を『所有率』と呼べる？",
-      "subheadline": "答えは、まだNO",
-      "visualType": "question",
-      "stats": [
-        {"label": "経済的換算", "value": "19.7%", "detail": "比較用", "color": "amber"},
-        {"label": "正式なFD持分率", "value": "非開示", "detail": "ownership capも非開示", "color": "cyan"}
-      ],
-      "source": "Amazon 10-Q • disclosure boundary",
-      "text": "19.7パーセントなら、AmazonがAnthropicの約5分の1を持つ、と言っていいのだ？"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "caution",
-      "section": "CAP TABLE REALITY",
-      "headline": "正式持分率は非開示",
-      "subheadline": "証券の種類・希薄化・転換条件・上限",
-      "visualType": "risk",
-      "stats": [
-        {"label": "議決権", "value": "なし", "detail": "preferred / common", "color": "muted"},
-        {"label": "持分上限", "value": "あり", "detail": "割合は非開示", "color": "amber"},
-        {"label": "完全希薄化後", "value": "非開示", "detail": "公式比率なし", "color": "cyan"}
-      ],
-      "source": "Amazon 10-Q • Anthropic note",
-      "text": "言い切れません。種類の違う証券、希薄化、優先権、転換条件がある。転換には持分上限もあり、その割合は非開示。19.7パーセントは比較用の単純換算です。"
-    },
-    {
-      "chapter": "評価益のリスクと投資家の見方",
-      "speaker": "春日部つむぎ",
-      "emotion": "caution",
-      "section": "LEVEL 3 VALUATION",
-      "headline": "非上場株は Level 3",
-      "subheadline": "流動性や権利差を推定する",
-      "visualType": "risk",
-      "stats": [
-        {"label": "観測可能な材料", "value": "資金調達価格", "detail": "observable change", "color": "cyan"},
-        {"label": "推定が必要", "value": "流動性・権利", "detail": "management assumptions", "color": "amber"},
-        {"label": "現金化", "value": "未実現", "detail": "cash ≠ gain", "color": "white"}
-      ],
-      "source": "Amazon 10-Q • Level 3 measurement",
-      "text": "さらに非上場株の評価はレベル3。資金調達価格を使っても、流動性や証券ごとの権利差を経営側が推定します。帳簿の利益と現金は別です。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "serious",
-      "section": "ASYMMETRIC RISK",
-      "headline": "次のラウンドで反転も",
-      "subheadline": "上なら利益、下なら損失",
-      "visualType": "risk",
-      "stats": [
-        {"label": "Up round", "value": "評価益", "detail": "指数利益を押上げ", "color": "cyan"},
-        {"label": "Down round", "value": "評価損", "detail": "逆回転", "color": "amber"},
-        {"label": "IPO後", "value": "制約あり", "detail": "lock-up / securities laws", "color": "muted"}
-      ],
-      "source": "Amazon 10-Q • liquidity-event terms",
-      "text": "次の資金調達が上なら利益、下なら損失。IPO後もロックアップと売却制約がある。指数利益が、非上場AI企業の評価額に揺さぶられる構造です。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "confident",
-      "section": "INVESTOR CHECKLIST",
-      "headline": "見るべきは3つ",
-      "subheadline": "指数・本業・キャッシュ化条件",
-      "visualType": "checklist",
-      "stats": [
-        {"label": "01", "value": "2社除外後", "detail": "指数の基礎体力", "color": "cyan"},
-        {"label": "02", "value": "営業利益 / AWS", "detail": "Amazon本業", "color": "white"},
-        {"label": "03", "value": "資金調達 / IPO条件", "detail": "Anthropic評価の出口", "color": "amber"}
-      ],
-      "source": "秒算マネー • monitoring framework",
-      "text": "投資家が見るべきは三つ。指数利益は2社除外後で見る。Amazonは営業利益とAWSを見る。Anthropicは評価額だけでなく、資金調達とキャッシュ化条件を見る。"
-    },
-    {
-      "speaker": "ずんだもん",
-      "emotion": "warm",
-      "section": "BALANCED TAKE",
-      "headline": "見出しは割り引く",
-      "subheadline": "でも本業の強さは消さない",
-      "visualType": "dual",
-      "stats": [
-        {"label": "47.4%", "value": "そのまま使わない", "detail": "持続性なし", "color": "amber"},
-        {"label": "28.8%", "value": "無視しない", "detail": "基礎利益は強い", "color": "cyan"}
-      ],
-      "source": "FactSet • balanced interpretation",
-      "text": "47.4パーセントをそのまま来年の成長率に置くのは危険。でも28.8パーセントが残るなら、米国企業の利益基盤も無視できないのだ。"
-    },
-    {
-      "chapter": "秒算マネーの結論",
-      "speaker": "春日部つむぎ",
-      "emotion": "warm",
-      "section": "BYOSAN MONEY VERDICT",
-      "headline": "見出しは歪む。地合いは偽物ではない",
-      "subheadline": "会計の花火と、本業の成長を分ける",
-      "visualType": "verdict",
-      "stats": [
-        {"label": "会計の花火", "value": "$149.5B", "detail": "Alphabet株式益 + Amazon上方調整", "color": "amber"},
-        {"label": "残る成長", "value": "+28.8%", "detail": "2社除外後", "color": "cyan"}
-      ],
-      "source": "FactSet + SEC filings • final synthesis",
-      "text": "秒算マネーの結論。見出しは歪んでいる。でも、地合いまで偽物ではない。会計の花火と本業の成長を分けて見れば、決算シーズンの本当の強さが見えます。"
-    },
-    {
-      "speaker": "春日部つむぎ",
-      "emotion": "joy",
-      "section": "FOLLOW THE NEXT UPDATE",
-      "headline": "次のFactSet更新も追う",
-      "subheadline": "数字の中身を、秒でほどく",
-      "visualType": "outro",
-      "stats": [
-        {"label": "NEXT", "value": "47.4%はどう動く？", "detail": "確定値まで検証", "color": "cyan"}
-      ],
-      "source": "秒算マネー",
-      "text": "この分析が役に立ったら、次のFactSet更新で47.4パーセントがどう動くか、いっしょに追いましょう。数字の中身を秒でほどく、秒算マネーでした。"
-    }
-  ]
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-08-01-sp500-47-anthropic",
+	"asOf": "2026-08-01",
+	"angle": "47.4%という指数見出しを、2社の非営業評価益と2社除外後の本業成長に分解する二段オチ",
+	"searchQuery": "S&P 500 Q2 2026 earnings 47.4 Amazon Anthropic valuation gain",
+	"title": "S&P500利益47.4%増の正体──Amazon「626億ドル利益」とAnthropic評価益",
+	"thumbnailTitle": "利益 +47.4%!?\n正体は2社",
+	"thumbnail": {
+		"eyebrow": "S&P 500 Q2 決算",
+		"lead": "利益",
+		"accent": "+47.4%",
+		"reaction": "!?",
+		"secondLine": "正体は「2社」",
+		"calloutTop": "Anthropic評価益 505億ドル",
+		"calloutBottom": "除くと +28.8%"
+	},
+	"descriptionLead": "S&P 500の2026年Q2利益成長率は47.4%。しかしAlphabetとAmazonを除くと28.8%です。Amazonの純利益626億ドル、Anthropic関連の505億ドル評価益、本業の営業利益43%増を一次資料で分解します。",
+	"descriptionBullets": [
+		"47.4%は2026年7月31日時点のブレンデッド値（発表済み61%）",
+		"AlphabetとAmazonを除くと利益成長率は28.8%",
+		"Amazonの505億ドルはAnthropic優先株の上方調整、534億ドルはその他利益の合計",
+		"評価益等を除くEPS約2.0〜2.2ドルは秒算マネーの概算で、Amazon公表の非GAAP指標ではありません",
+		"9.6%／19.7%は公正価値をSeries H評価額で割った単純換算で、正式持分率ではありません"
+	],
+	"disclaimer": "本動画は公開資料に基づく情報提供を目的とし、特定の金融商品の売買を推奨するものではありません。非上場証券の評価、税効果、希薄化、転換条件には不確実性があります。",
+	"hookPromises": ["47.4", "28.8", "626", "505"],
+	"noveltyQueries": [
+		"site:youtube.com/watch \"47.4%\" \"S&P 500\" earnings Anthropic Amazon",
+		"site:youtube.com/watch S&P500 利益 47.4% Anthropic Amazon 2026",
+		"site:youtube.com/watch Amazon Anthropic 505億ドル 評価益 2026"
+	],
+	"tags": [
+		"S&P500",
+		"Amazon",
+		"Anthropic",
+		"Alphabet",
+		"米国株",
+		"決算",
+		"AWS",
+		"FactSet",
+		"AI投資",
+		"秒算マネー"
+	],
+	"sources": [
+		{
+			"id": "factset_0724",
+			"name": "FactSet Earnings Insight — July 24, 2026",
+			"url": "https://advantage.factset.com/hubfs/Website/Resources%20Section/Research%20Desk/Earnings%20Insight/EarningsInsight_072426.pdf"
+		},
+		{
+			"id": "factset_0731",
+			"name": "FactSet Earnings Insight — July 31, 2026",
+			"url": "https://advantage.factset.com/hubfs/Website/Resources%20Section/Research%20Desk/Earnings%20Insight/EarningsInsight_073126.pdf"
+		},
+		{
+			"id": "amazon_10q",
+			"name": "Amazon Form 10-Q — Quarter ended June 30, 2026",
+			"url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000026/amzn-20260630.htm"
+		},
+		{
+			"id": "alphabet_10q",
+			"name": "Alphabet Form 10-Q — Quarter ended June 30, 2026",
+			"url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm"
+		},
+		{
+			"id": "anthropic_series_h",
+			"name": "Anthropic Series H funding announcement — May 28, 2026",
+			"url": "https://www.anthropic.com/news/series-h"
+		}
+	],
+	"claims": [
+		{
+			"claim": "FactSetの2026年7月31日時点のS&P 500 Q2ブレンデッド利益成長率は47.4%、AlphabetとAmazonを除くと28.8%",
+			"sourceIds": ["factset_0731"],
+			"status": "verified"
+		},
+		{
+			"claim": "Amazon Q2純利益は626.47億ドル、希薄化後EPSは5.75ドル、営業利益は前年比43.2%増",
+			"sourceIds": ["amazon_10q"],
+			"status": "verified"
+		},
+		{
+			"claim": "AmazonはAnthropic優先株をQ2に約505億ドル上方調整し、Q2その他利益は534.15億ドル",
+			"sourceIds": ["amazon_10q"],
+			"status": "verified"
+		},
+		{
+			"claim": "AmazonのAWS売上は前年比37%増、AWS営業利益は101.60億ドルから166.21億ドルへ増加",
+			"sourceIds": ["amazon_10q"],
+			"status": "verified"
+		},
+		{
+			"claim": "Alphabet Q2 EPSは9.11ドル、OI&Eは980億ドル、株式評価益は990.31億ドル",
+			"sourceIds": ["alphabet_10q", "factset_0724"],
+			"status": "verified"
+		},
+		{
+			"claim": "AmazonのAnthropic優先株925億ドルは9650億ドル評価額の約9.6%、転換社債979億ドルを含む単純換算は約19.7%",
+			"sourceIds": ["amazon_10q", "anthropic_series_h"],
+			"status": "derived_with_caveat"
+		},
+		{
+			"claim": "Anthropic関連評価益等を除くAmazon EPSは概算2.0〜2.2ドル",
+			"sourceIds": ["amazon_10q"],
+			"status": "analyst_estimate_not_company_non_gaap"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "47.4%の二重の錯覚",
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "BREAKING DOWN THE NUMBER",
+			"headline": "利益 +47.4%!?",
+			"subheadline": "2社を除くと +28.8%",
+			"visualType": "hero",
+			"stats": [
+				{
+					"label": "S&P 500 Q2",
+					"value": "+47.4%",
+					"detail": "FactSet blended",
+					"color": "cyan"
+				},
+				{
+					"label": "除く Alphabet + Amazon",
+					"value": "+28.8%",
+					"detail": "それでも強い",
+					"color": "amber"
+				}
+			],
+			"source": "FactSet • 2026-07-31",
+			"text": "S&P 500の利益、47.4パーセント増。ところがAlphabetとAmazonを消すと28.8パーセント。約19ポイントは、2社で膨らみました。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "THE SECOND SURPRISE",
+			"headline": "Amazon純利益 626億ドル",
+			"subheadline": "Anthropic評価益 505億ドル",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "Amazon 純利益",
+					"value": "$62.647B",
+					"detail": "Q2 2026",
+					"color": "white"
+				},
+				{
+					"label": "Anthropic優先株 上方調整",
+					"value": "$50.5B",
+					"detail": "非現金の評価益",
+					"color": "amber"
+				}
+			],
+			"source": "Amazon 10-Q • 2026-06-30",
+			"text": "さらにAmazon純利益626億ドルの裏側に、Anthropicの505億ドル評価益。今日は、この二重の錯覚をほどきます。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "QUESTION",
+			"headline": "47.4%＝全社が絶好調？",
+			"subheadline": "指数の見出しを、そのまま信じていい？",
+			"visualType": "question",
+			"stats": [
+				{
+					"label": "見出し",
+					"value": "47.4%",
+					"detail": "記録的",
+					"color": "cyan"
+				},
+				{
+					"label": "中身",
+					"value": "?",
+					"detail": "持続可能性は別",
+					"color": "amber"
+				}
+			],
+			"source": "検証ポイント",
+			"text": "え、47.4パーセントって、指数全体がものすごく稼いだ数字じゃないのだ？"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "HOW THE NUMBER MOVED",
+			"headline": "23.2 → 37.9 → 47.4",
+			"subheadline": "Alphabet、そしてAmazon",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "6/30 予想",
+					"value": "23.2%",
+					"detail": "期末時点",
+					"color": "muted"
+				},
+				{
+					"label": "7/24",
+					"value": "37.9%",
+					"detail": "Alphabet後",
+					"color": "cyan"
+				},
+				{
+					"label": "7/31",
+					"value": "47.4%",
+					"detail": "Amazon後",
+					"color": "amber"
+				}
+			],
+			"source": "FactSet • 2026-07-24 / 07-31",
+			"text": "6月30日の予想は23.2パーセント。7月24日、Alphabet決算で37.9パーセント。7月31日、Amazonが加わって47.4パーセントです。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "METHODOLOGY",
+			"headline": "まだ61%が発表済み",
+			"subheadline": "実績＋未発表企業の予想＝ブレンデッド",
+			"visualType": "progress",
+			"stats": [
+				{
+					"label": "S&P 500 発表済み",
+					"value": "61%",
+					"detail": "2026-07-31時点",
+					"color": "cyan"
+				},
+				{
+					"label": "未発表",
+					"value": "39%",
+					"detail": "予想値を使用",
+					"color": "muted"
+				}
+			],
+			"source": "FactSet methodology",
+			"text": "ただし、7月31日時点で発表済みは61パーセント。実績と未発表企業の予想を混ぜたブレンデッド値で、最終確定値ではありません。"
+		},
+		{
+			"chapter": "Amazon 626億ドルの内訳",
+			"speaker": "ずんだもん",
+			"emotion": "shock",
+			"section": "AMAZON Q2",
+			"headline": "一週間で +9.5pt",
+			"subheadline": "Amazon本業が爆発した？",
+			"visualType": "delta",
+			"stats": [
+				{
+					"label": "7/24",
+					"value": "37.9%",
+					"detail": "S&P利益成長",
+					"color": "muted"
+				},
+				{
+					"label": "7/31",
+					"value": "47.4%",
+					"detail": "+9.5pt",
+					"color": "amber"
+				}
+			],
+			"source": "FactSet • weekly change",
+			"text": "一週間で約9.5ポイントも上がったのだ。Amazonの本業が爆発したのだ？"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "GAAP RESULT",
+			"headline": "純利益 $62.647B",
+			"subheadline": "希薄化後EPS $5.75",
+			"visualType": "statement",
+			"stats": [
+				{
+					"label": "純利益",
+					"value": "$62.647B",
+					"detail": "前年 $18.164B",
+					"color": "cyan"
+				},
+				{
+					"label": "Diluted EPS",
+					"value": "$5.75",
+					"detail": "前年 $1.68",
+					"color": "white"
+				}
+			],
+			"source": "Amazon 10-Q • Consolidated Statements",
+			"text": "Amazonの第2四半期純利益は626億4700万ドル、1株利益は5ドル75セント。でも、その中心には現金収入ではない評価益があります。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "ANTHROPIC MARK-UP",
+			"headline": "$50.5B 上方調整",
+			"subheadline": "非議決権優先株の価格変化",
+			"visualType": "spotlight",
+			"stats": [
+				{
+					"label": "Q2 上方調整",
+					"value": "$50.5B",
+					"detail": "Anthropic優先株が主因",
+					"color": "amber"
+				},
+				{
+					"label": "現金流入",
+					"value": "$0",
+					"detail": "非現金の会計利益",
+					"color": "muted"
+				}
+			],
+			"source": "Amazon 10-Q • Note 3 / Anthropic",
+			"text": "Anthropicの資金調達で、非議決権優先株の帳簿価値を505億ドル引き上げた。これは現金505億ドルが入った、という意味ではありません。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "DO NOT MIX THESE",
+			"headline": "505億 ≠ 534億",
+			"subheadline": "評価項目と損益行を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "Anthropic優先株 上方調整",
+					"value": "$50.5B",
+					"detail": "個別の評価項目",
+					"color": "amber"
+				},
+				{
+					"label": "その他利益 合計",
+					"value": "$53.415B",
+					"detail": "他項目も含む損益行",
+					"color": "cyan"
+				}
+			],
+			"source": "Amazon 10-Q • Other income",
+			"text": "505億と534億は同じ数字ではありません。前者がAnthropic優先株の値上がり。後者は他の評価項目も含む、その他利益の合計です。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "NORMALIZED LENS",
+			"headline": "EPS $5.75 → 約$2.1",
+			"subheadline": "会社非開示の概算レンジ $2.0〜$2.2",
+			"visualType": "formula",
+			"stats": [
+				{
+					"label": "GAAP EPS",
+					"value": "$5.75",
+					"detail": "評価益込み",
+					"color": "cyan"
+				},
+				{
+					"label": "概算EPS",
+					"value": "$2.0–2.2",
+					"detail": "評価益等を除く試算",
+					"color": "amber"
+				}
+			],
+			"source": "秒算マネー試算 • Amazon非公表",
+			"text": "では評価益等を外すと。税効果を概算したAmazonのEPSは、およそ2ドル0セントから2ドル20セント。これは会社公表の非GAAP指標ではなく、比較用の試算です。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "FALSE DICHOTOMY",
+			"headline": "なら、本業は弱い？",
+			"subheadline": "評価益が大きい＝事業が弱い、ではない",
+			"visualType": "question",
+			"stats": [
+				{
+					"label": "紙の利益",
+					"value": "大",
+					"detail": "評価益",
+					"color": "amber"
+				},
+				{ "label": "本業", "value": "?", "detail": "別に検証", "color": "cyan" }
+			],
+			"source": "次の検証",
+			"text": "じゃあAmazonの決算は、ほぼ紙の利益で、本業は弱かったのだ？"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "CORE BUSINESS",
+			"headline": "営業利益 +43%",
+			"subheadline": "AWS売上 +37% / AWS営業利益 約+64%",
+			"visualType": "bars",
+			"stats": [
+				{
+					"label": "全社 営業利益",
+					"value": "+43%",
+					"detail": "$19.2B → $27.5B",
+					"color": "cyan"
+				},
+				{
+					"label": "AWS 売上",
+					"value": "+37%",
+					"detail": "顧客利用増",
+					"color": "white"
+				},
+				{
+					"label": "AWS 営業利益",
+					"value": "+64%",
+					"detail": "$10.2B → $16.6B",
+					"color": "amber"
+				}
+			],
+			"source": "Amazon 10-Q • Segment results",
+			"text": "そこも違います。営業利益は192億ドルから275億ドルへ43パーセント増。AWS売上は37パーセント増、AWS営業利益は約64パーセント増でした。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "THE RIGHT CONCLUSION",
+			"headline": "二つとも本当",
+			"subheadline": "評価益が巨大 ／ 本業も強い",
+			"visualType": "dual",
+			"stats": [
+				{
+					"label": "会計",
+					"value": "評価益で膨張",
+					"detail": "持続性に注意",
+					"color": "amber"
+				},
+				{
+					"label": "事業",
+					"value": "実際に成長",
+					"detail": "営業利益とAWS",
+					"color": "cyan"
+				}
+			],
+			"source": "Amazon 10-Q • two-lens analysis",
+			"text": "結論は二択じゃない。評価益が純利益を膨らませた。そして本業も強い。この二つが同時に成立します。"
+		},
+		{
+			"chapter": "Alphabetでも起きた歪み",
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "ONE WEEK EARLIER",
+			"headline": "Alphabet EPS $9.11",
+			"subheadline": "OI&E $98.0B / 株式評価益 $99.0B",
+			"visualType": "statement",
+			"stats": [
+				{
+					"label": "Diluted EPS",
+					"value": "$9.11",
+					"detail": "予想 $2.88",
+					"color": "cyan"
+				},
+				{
+					"label": "その他損益",
+					"value": "$98.0B",
+					"detail": "非営業",
+					"color": "amber"
+				},
+				{
+					"label": "株式評価益",
+					"value": "$99.0B",
+					"detail": "主にSpaceX等",
+					"color": "white"
+				}
+			],
+			"source": "Alphabet 10-Q / FactSet • 2026 Q2",
+			"text": "さらに前週のAlphabet。1株利益は9ドル11セント。その他損益980億ドルに株式評価益990億ドルが入り、主因はSpaceXと別の非上場企業でした。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "JULY 24 SNAPSHOT",
+			"headline": "Alphabetを除くと",
+			"subheadline": "利益成長 37.9→25.9 / EPS上振れ 39.3→12.6",
+			"visualType": "beforeAfter",
+			"stats": [
+				{
+					"label": "利益成長率",
+					"value": "37.9→25.9%",
+					"detail": "Alphabet除外",
+					"color": "cyan"
+				},
+				{
+					"label": "EPS上振れ率",
+					"value": "39.3→12.6%",
+					"detail": "Alphabet除外",
+					"color": "amber"
+				}
+			],
+			"source": "FactSet • 2026-07-24",
+			"text": "FactSetによれば、Alphabetを除くだけで7月24日の利益成長率は37.9から25.9パーセントへ。EPS上振れ率は39.3から12.6パーセントへ下がりました。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "JULY 31 SNAPSHOT",
+			"headline": "2社を除くと +28.8%",
+			"subheadline": "見出しの約19ポイントは2社の影響",
+			"visualType": "beforeAfter",
+			"stats": [
+				{
+					"label": "見出し",
+					"value": "+47.4%",
+					"detail": "Alphabet + Amazon込み",
+					"color": "cyan"
+				},
+				{
+					"label": "2社除外",
+					"value": "+28.8%",
+					"detail": "なお20%超",
+					"color": "amber"
+				}
+			],
+			"source": "FactSet • 2026-07-31",
+			"text": "7月31日時点では、AlphabetとAmazonを両方除くと、47.4パーセントは28.8パーセントになります。見出しの約19ポイントは、2社の影響です。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "relieved",
+			"section": "WHAT REMAINS",
+			"headline": "+28.8%も十分に高い",
+			"subheadline": "全部が会計マジック、でもない",
+			"visualType": "spotlight",
+			"stats": [
+				{
+					"label": "2社除外後",
+					"value": "+28.8%",
+					"detail": "2四半期連続20%超",
+					"color": "cyan"
+				}
+			],
+			"source": "FactSet • underlying breadth",
+			"text": "でも28.8パーセントも十分に高いのだ。全部が会計マジック、という話でもないのだね。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "BREADTH CHECK",
+			"headline": "売上も +14.1%",
+			"subheadline": "利益だけではない基礎体力",
+			"visualType": "bars",
+			"stats": [
+				{
+					"label": "7/24 売上成長",
+					"value": "+13.2%",
+					"detail": "blended",
+					"color": "muted"
+				},
+				{
+					"label": "7/31 売上成長",
+					"value": "+14.1%",
+					"detail": "blended",
+					"color": "cyan"
+				},
+				{
+					"label": "2社除外後 利益",
+					"value": "+28.8%",
+					"detail": "本業側も強い",
+					"color": "amber"
+				}
+			],
+			"source": "FactSet • Revenue growth",
+			"text": "その通り。売上成長率は7月24日の13.2から、7月31日には14.1パーセント。2社を外しても利益は20パーセント超で、基礎体力も強い。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "DO NOT ANNUALIZE THE HEADLINE",
+			"headline": "47.4%は持続成長率ではない",
+			"subheadline": "途中経過・会計評価・前年比の混合物",
+			"visualType": "risk",
+			"stats": [
+				{
+					"label": "途中経過",
+					"value": "61%",
+					"detail": "発表済み",
+					"color": "muted"
+				},
+				{
+					"label": "非営業評価益",
+					"value": "巨大",
+					"detail": "2社で指数を押上げ",
+					"color": "amber"
+				},
+				{
+					"label": "持続性",
+					"value": "未証明",
+					"detail": "来期に反転も",
+					"color": "cyan"
+				}
+			],
+			"source": "FactSet methodology / SEC filings",
+			"text": "だから47.4パーセントを、来期も続く成長率として使うのは危険。途中経過と予想、そして非営業の評価益が混ざった数字です。"
+		},
+		{
+			"chapter": "AmazonのAnthropic持分を試算",
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "PREFERRED STOCK",
+			"headline": "$92.5B ÷ $965B",
+			"subheadline": "約9.6%相当",
+			"visualType": "formula",
+			"stats": [
+				{
+					"label": "優先株 帳簿価額",
+					"value": "$92.5B",
+					"detail": "Amazon 10-Q",
+					"color": "cyan"
+				},
+				{
+					"label": "Anthropic post-money",
+					"value": "$965B",
+					"detail": "Series H",
+					"color": "white"
+				},
+				{
+					"label": "単純換算",
+					"value": "9.6%",
+					"detail": "公式持分率ではない",
+					"color": "amber"
+				}
+			],
+			"source": "Amazon 10-Q + Anthropic Series H",
+			"text": "ここからがAnthropicのもう一つの衝撃。Amazonの非議決権優先株は925億ドル。Anthropicの9650億ドル評価額で割ると、約9.6パーセント相当です。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "ECONOMIC EXPOSURE",
+			"headline": "優先株＋転換社債 ≈19.7%",
+			"subheadline": "$92.5B + $97.9B = $190.4B",
+			"visualType": "stack",
+			"stats": [
+				{
+					"label": "非議決権優先株",
+					"value": "$92.5B",
+					"detail": "carrying value",
+					"color": "cyan"
+				},
+				{
+					"label": "転換社債",
+					"value": "$97.9B",
+					"detail": "estimated fair value",
+					"color": "white"
+				},
+				{
+					"label": "単純換算",
+					"value": "19.7%",
+					"detail": "$190.4B / $965B",
+					"color": "amber"
+				}
+			],
+			"source": "Amazon 10-Q • balance-sheet values",
+			"text": "転換社債の推定公正価値979億ドルも足すと、経済的エクスポージャーは約19.7パーセント相当。ただし、これは持分率の公式開示ではありません。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "IMPORTANT CAVEAT",
+			"headline": "19.7%を『所有率』と呼べる？",
+			"subheadline": "答えは、まだNO",
+			"visualType": "question",
+			"stats": [
+				{
+					"label": "経済的換算",
+					"value": "19.7%",
+					"detail": "比較用",
+					"color": "amber"
+				},
+				{
+					"label": "正式なFD持分率",
+					"value": "非開示",
+					"detail": "ownership capも非開示",
+					"color": "cyan"
+				}
+			],
+			"source": "Amazon 10-Q • disclosure boundary",
+			"text": "19.7パーセントなら、AmazonがAnthropicの約5分の1を持つ、と言っていいのだ？"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "CAP TABLE REALITY",
+			"headline": "正式持分率は非開示",
+			"subheadline": "証券の種類・希薄化・転換条件・上限",
+			"visualType": "risk",
+			"stats": [
+				{
+					"label": "議決権",
+					"value": "なし",
+					"detail": "preferred / common",
+					"color": "muted"
+				},
+				{
+					"label": "持分上限",
+					"value": "あり",
+					"detail": "割合は非開示",
+					"color": "amber"
+				},
+				{
+					"label": "完全希薄化後",
+					"value": "非開示",
+					"detail": "公式比率なし",
+					"color": "cyan"
+				}
+			],
+			"source": "Amazon 10-Q • Anthropic note",
+			"text": "言い切れません。種類の違う証券、希薄化、優先権、転換条件がある。転換には持分上限もあり、その割合は非開示。19.7パーセントは比較用の単純換算です。"
+		},
+		{
+			"chapter": "評価益のリスクと投資家の見方",
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "LEVEL 3 VALUATION",
+			"headline": "非上場株は Level 3",
+			"subheadline": "流動性や権利差を推定する",
+			"visualType": "risk",
+			"stats": [
+				{
+					"label": "観測可能な材料",
+					"value": "資金調達価格",
+					"detail": "observable change",
+					"color": "cyan"
+				},
+				{
+					"label": "推定が必要",
+					"value": "流動性・権利",
+					"detail": "management assumptions",
+					"color": "amber"
+				},
+				{
+					"label": "現金化",
+					"value": "未実現",
+					"detail": "cash ≠ gain",
+					"color": "white"
+				}
+			],
+			"source": "Amazon 10-Q • Level 3 measurement",
+			"text": "さらに非上場株の評価はレベル3。資金調達価格を使っても、流動性や証券ごとの権利差を経営側が推定します。帳簿の利益と現金は別です。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "ASYMMETRIC RISK",
+			"headline": "次のラウンドで反転も",
+			"subheadline": "上なら利益、下なら損失",
+			"visualType": "risk",
+			"stats": [
+				{
+					"label": "Up round",
+					"value": "評価益",
+					"detail": "指数利益を押上げ",
+					"color": "cyan"
+				},
+				{
+					"label": "Down round",
+					"value": "評価損",
+					"detail": "逆回転",
+					"color": "amber"
+				},
+				{
+					"label": "IPO後",
+					"value": "制約あり",
+					"detail": "lock-up / securities laws",
+					"color": "muted"
+				}
+			],
+			"source": "Amazon 10-Q • liquidity-event terms",
+			"text": "次の資金調達が上なら利益、下なら損失。IPO後もロックアップと売却制約がある。指数利益が、非上場AI企業の評価額に揺さぶられる構造です。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "INVESTOR CHECKLIST",
+			"headline": "見るべきは3つ",
+			"subheadline": "指数・本業・キャッシュ化条件",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "01",
+					"value": "2社除外後",
+					"detail": "指数の基礎体力",
+					"color": "cyan"
+				},
+				{
+					"label": "02",
+					"value": "営業利益 / AWS",
+					"detail": "Amazon本業",
+					"color": "white"
+				},
+				{
+					"label": "03",
+					"value": "資金調達 / IPO条件",
+					"detail": "Anthropic評価の出口",
+					"color": "amber"
+				}
+			],
+			"source": "秒算マネー • monitoring framework",
+			"text": "投資家が見るべきは三つ。指数利益は2社除外後で見る。Amazonは営業利益とAWSを見る。Anthropicは評価額だけでなく、資金調達とキャッシュ化条件を見る。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "warm",
+			"section": "BALANCED TAKE",
+			"headline": "見出しは割り引く",
+			"subheadline": "でも本業の強さは消さない",
+			"visualType": "dual",
+			"stats": [
+				{
+					"label": "47.4%",
+					"value": "そのまま使わない",
+					"detail": "持続性なし",
+					"color": "amber"
+				},
+				{
+					"label": "28.8%",
+					"value": "無視しない",
+					"detail": "基礎利益は強い",
+					"color": "cyan"
+				}
+			],
+			"source": "FactSet • balanced interpretation",
+			"text": "47.4パーセントをそのまま来年の成長率に置くのは危険。でも28.8パーセントが残るなら、米国企業の利益基盤も無視できないのだ。"
+		},
+		{
+			"chapter": "秒算マネーの結論",
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "BYOSAN MONEY VERDICT",
+			"headline": "見出しは歪む。地合いは偽物ではない",
+			"subheadline": "会計の花火と、本業の成長を分ける",
+			"visualType": "verdict",
+			"stats": [
+				{
+					"label": "会計の花火",
+					"value": "$149.5B",
+					"detail": "Alphabet株式益 + Amazon上方調整",
+					"color": "amber"
+				},
+				{
+					"label": "残る成長",
+					"value": "+28.8%",
+					"detail": "2社除外後",
+					"color": "cyan"
+				}
+			],
+			"source": "FactSet + SEC filings • final synthesis",
+			"text": "秒算マネーの結論。見出しは歪んでいる。でも、地合いまで偽物ではない。会計の花火と本業の成長を分けて見れば、決算シーズンの本当の強さが見えます。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "FOLLOW THE NEXT UPDATE",
+			"headline": "次のFactSet更新も追う",
+			"subheadline": "数字の中身を、秒でほどく",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "NEXT",
+					"value": "47.4%はどう動く？",
+					"detail": "確定値まで検証",
+					"color": "cyan"
+				}
+			],
+			"source": "秒算マネー",
+			"text": "この分析が役に立ったら、次のFactSet更新で47.4パーセントがどう動くか、いっしょに追いましょう。数字の中身を秒でほどく、秒算マネーでした。"
+		}
+	]
 }

@@ -1,61 +1,61 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Prompt Manifest v1",
-  "type": "object",
-  "required": [
-    "schema_version",
-    "artifact_type",
-    "domain",
-    "path",
-    "provenance",
-    "generator",
-    "allowed_editors"
-  ],
-  "properties": {
-    "schema_version": {
-      "const": "prompt_manifest_v1"
-    },
-    "artifact_type": {
-      "const": "system_prompt"
-    },
-    "domain": {
-      "type": "string"
-    },
-    "path": {
-      "type": "string"
-    },
-    "provenance": {
-      "type": "object",
-      "required": ["source"],
-      "properties": {
-        "source": {
-          "type": "string"
-        },
-        "source_hash": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": true
-    },
-    "generator": {
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": true
-    },
-    "allowed_editors": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    }
-  },
-  "additionalProperties": false
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "Prompt Manifest v1",
+	"type": "object",
+	"required": [
+		"schema_version",
+		"artifact_type",
+		"domain",
+		"path",
+		"provenance",
+		"generator",
+		"allowed_editors"
+	],
+	"properties": {
+		"schema_version": {
+			"const": "prompt_manifest_v1"
+		},
+		"artifact_type": {
+			"const": "system_prompt"
+		},
+		"domain": {
+			"type": "string"
+		},
+		"path": {
+			"type": "string"
+		},
+		"provenance": {
+			"type": "object",
+			"required": ["source"],
+			"properties": {
+				"source": {
+					"type": "string"
+				},
+				"source_hash": {
+					"type": "string"
+				}
+			},
+			"additionalProperties": true
+		},
+		"generator": {
+			"type": "object",
+			"required": ["name"],
+			"properties": {
+				"name": {
+					"type": "string"
+				},
+				"version": {
+					"type": "string"
+				}
+			},
+			"additionalProperties": true
+		},
+		"allowed_editors": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		}
+	},
+	"additionalProperties": false
 }

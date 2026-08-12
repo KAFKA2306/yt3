@@ -14,7 +14,11 @@
 			"name": "Humanity Audit",
 			"description": "Ensures humans are treated as lovable/clumsy, not broken or targets for correction.",
 			"criteria": [
-				{ "id": "not_broken", "title": "壊れた存在として扱わない", "critical": true },
+				{
+					"id": "not_broken",
+					"title": "壊れた存在として扱わない",
+					"critical": true
+				},
 				{ "id": "no_judgement", "title": "裁きではなく理解", "critical": true }
 			]
 		},
@@ -23,8 +27,16 @@
 			"name": "Reality Grounding Audit",
 			"description": "Ensures the 'temperature of life' exists via mundane fragments.",
 			"criteria": [
-				{ "id": "mundane_fragments", "title": "生活の断片の存在", "critical": true },
-				{ "id": "sensory_details", "title": "身体感覚・動作の描写", "critical": false }
+				{
+					"id": "mundane_fragments",
+					"title": "生活の断片の存在",
+					"critical": true
+				},
+				{
+					"id": "sensory_details",
+					"title": "身体感覚・動作の描写",
+					"critical": false
+				}
 			]
 		},
 		{
@@ -32,8 +44,16 @@
 			"name": "Cognitive Tone Audit",
 			"description": "Eliminates 'intellectual-sounding' slop and abstraction inflation.",
 			"criteria": [
-				{ "id": "no_ted_talk_tone", "title": "TED的・LinkedIn的トーンの排除", "critical": true },
-				{ "id": "concrete_density", "title": "具体的名詞の密度", "critical": true }
+				{
+					"id": "no_ted_talk_tone",
+					"title": "TED的・LinkedIn的トーンの排除",
+					"critical": true
+				},
+				{
+					"id": "concrete_density",
+					"title": "具体的名詞の密度",
+					"critical": true
+				}
 			]
 		},
 		{
@@ -42,7 +62,11 @@
 			"description": "Rejects stylish despair and cynical aesthetics.",
 			"criteria": [
 				{ "id": "no_cynicism", "title": "冷笑の排除", "critical": true },
-				{ "id": "no_aesthetic_despair", "title": "絶望の美学化禁止", "critical": true }
+				{
+					"id": "no_aesthetic_despair",
+					"title": "絶望の美学化禁止",
+					"critical": true
+				}
 			]
 		},
 		{
@@ -50,8 +74,16 @@
 			"name": "Emotional Afterglow Audit",
 			"description": "Ensures the viewer feels understood and lighter after watching.",
 			"criteria": [
-				{ "id": "shame_reduction", "title": "羞恥心・自己否定の軽減", "critical": true },
-				{ "id": "increased_warmth", "title": "人類への温かさの増幅", "critical": true }
+				{
+					"id": "shame_reduction",
+					"title": "羞恥心・自己否定の軽減",
+					"critical": true
+				},
+				{
+					"id": "increased_warmth",
+					"title": "人類への温かさの増幅",
+					"critical": true
+				}
 			]
 		},
 		{
@@ -60,7 +92,11 @@
 			"description": "Verifies the sequence: Mundane -> Structure -> Understanding -> Smile -> Unresolved.",
 			"criteria": [
 				{ "id": "sequence_check", "title": "基本構成の遵守", "critical": true },
-				{ "id": "no_perfect_answer", "title": "完璧な答えの排除", "critical": true }
+				{
+					"id": "no_perfect_answer",
+					"title": "完璧な答えの排除",
+					"critical": true
+				}
 			]
 		},
 		{
@@ -76,7 +112,11 @@
 			"name": "Humanity Preservation Audit",
 			"description": "Maintains long-term love for humanity.",
 			"criteria": [
-				{ "id": "love_for_ordinary", "title": "普通の人への愛着", "critical": true }
+				{
+					"id": "love_for_ordinary",
+					"title": "普通の人への愛着",
+					"critical": true
+				}
 			]
 		}
 	]

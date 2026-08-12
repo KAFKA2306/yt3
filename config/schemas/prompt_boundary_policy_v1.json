@@ -1,134 +1,134 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Prompt Boundary Policy v1",
-  "type": "object",
-  "required": [
-    "schema_version",
-    "monitor_roots",
-    "editable_paths",
-    "readonly_paths",
-    "deny_symlink_outside_repo",
-    "hooks"
-  ],
-  "properties": {
-    "schema_version": {
-      "const": "prompt_boundary_policy_v1"
-    },
-    "monitor_roots": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "editable_paths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "readonly_paths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "deny_symlink_outside_repo": {
-      "type": "boolean"
-    },
-    "hooks": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "purpose",
-          "input_scope",
-          "deny_scope",
-          "forbidden",
-          "operation",
-          "audit"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "purpose": {
-            "type": "string"
-          },
-          "input_scope": {
-            "type": "object",
-            "required": ["include"],
-            "properties": {
-              "include": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "deny_scope": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "forbidden": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "operation": {
-            "type": "object",
-            "required": ["mode"],
-            "properties": {
-              "mode": {
-                "type": "string"
-              }
-            }
-          },
-          "audit": {
-            "type": "object",
-            "required": [
-              "emit_diff",
-              "emit_changed_lines",
-              "require_scope_validation",
-              "use_content_hash_snapshot",
-              "use_delete_detection",
-              "use_rename_detection",
-              "use_symlink_validation",
-              "use_git_evidence"
-            ],
-            "properties": {
-              "emit_diff": {
-                "type": "boolean"
-              },
-              "emit_changed_lines": {
-                "type": "boolean"
-              },
-              "require_scope_validation": {
-                "type": "boolean"
-              },
-              "use_content_hash_snapshot": {
-                "type": "boolean"
-              },
-              "use_delete_detection": {
-                "type": "boolean"
-              },
-              "use_rename_detection": {
-                "type": "boolean"
-              },
-              "use_symlink_validation": {
-                "type": "boolean"
-              },
-              "use_git_evidence": {
-                "type": "boolean"
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "Prompt Boundary Policy v1",
+	"type": "object",
+	"required": [
+		"schema_version",
+		"monitor_roots",
+		"editable_paths",
+		"readonly_paths",
+		"deny_symlink_outside_repo",
+		"hooks"
+	],
+	"properties": {
+		"schema_version": {
+			"const": "prompt_boundary_policy_v1"
+		},
+		"monitor_roots": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"editable_paths": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"readonly_paths": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"deny_symlink_outside_repo": {
+			"type": "boolean"
+		},
+		"hooks": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": [
+					"id",
+					"purpose",
+					"input_scope",
+					"deny_scope",
+					"forbidden",
+					"operation",
+					"audit"
+				],
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"purpose": {
+						"type": "string"
+					},
+					"input_scope": {
+						"type": "object",
+						"required": ["include"],
+						"properties": {
+							"include": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"deny_scope": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"forbidden": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"operation": {
+						"type": "object",
+						"required": ["mode"],
+						"properties": {
+							"mode": {
+								"type": "string"
+							}
+						}
+					},
+					"audit": {
+						"type": "object",
+						"required": [
+							"emit_diff",
+							"emit_changed_lines",
+							"require_scope_validation",
+							"use_content_hash_snapshot",
+							"use_delete_detection",
+							"use_rename_detection",
+							"use_symlink_validation",
+							"use_git_evidence"
+						],
+						"properties": {
+							"emit_diff": {
+								"type": "boolean"
+							},
+							"emit_changed_lines": {
+								"type": "boolean"
+							},
+							"require_scope_validation": {
+								"type": "boolean"
+							},
+							"use_content_hash_snapshot": {
+								"type": "boolean"
+							},
+							"use_delete_detection": {
+								"type": "boolean"
+							},
+							"use_rename_detection": {
+								"type": "boolean"
+							},
+							"use_symlink_validation": {
+								"type": "boolean"
+							},
+							"use_git_evidence": {
+								"type": "boolean"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
