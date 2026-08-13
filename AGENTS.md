@@ -1,197 +1,344 @@
-# Antigravity Audit Rule
+# YT3 Agent Operating Contract
 
-Before searching for `.agy`, always verify whether Antigravity CLI (`agy`) is installed.
+This file is the execution contract for autonomous agents working in this repository.
 
-Mandatory checks:
+`README.md` is for human orientation. `AGENTS.md` defines how an agent investigates, changes, verifies, reports, and stops.
+
+## 1. Mission
+
+Operate YT3 as a reproducible, evidence-backed media production system.
+
+Optimize the **execution loop**, not isolated prompt quality:
+
+```text
+request
+  -> inspect current state
+  -> select canonical workline
+  -> implement the smallest sufficient change
+  -> validate deterministically
+  -> inspect evidence
+  -> improve the harness when failures recur
+  -> stop at a fixed point
+```
+
+A task is not complete because code was written. Completion requires evidence that the requested outcome exists in the current repository/runtime state.
+
+## 2. Source-of-Truth Precedence
+
+When sources disagree, use this order:
+
+1. current tool/runtime observations
+2. current repository code and configuration
+3. `Taskfile.yml` for executable entry points
+4. deterministic tests, audits, receipts, and CI results
+5. current ADRs and standards under `docs/`
+6. `GEMINI.md`
+7. `README.md`, `.claude/CLAUDE.md`, memories, issues, and historical prose
+8. inference
+
+Never let stale documentation override current executable reality.
+
+Before using a command mentioned in prose, verify that the command exists in `Taskfile.yml` or the current package/tooling configuration.
+
+## 3. Claim Provenance
+
+Every material claim must be one of:
+
+- **VERIFIED** — directly observed with a tool, file read, command result, API response, deterministic artifact, or CI result.
+- **OBSERVED** — explicitly supplied by the user or by an authoritative external input.
+- **INFERRED** — a hypothesis derived from evidence; label it as inference.
+- **UNVERIFIED** — not inspected yet; do not present it as fact.
+- **FABRICATED** — forbidden.
+
+Rules:
+
+- Never claim a file, branch, service, model, artifact, upload, publication, or test result without inspecting evidence.
+- Never convert “not checked” into “absent”.
+- Never convert “command returned” into “outcome succeeded” without checking the relevant postcondition.
+- Never report PASS for a verifier that was not actually executed.
+
+## 4. Antigravity Audit Rule
+
+Before concluding that Antigravity is absent, inspect the canonical runtime identifier `agy`.
+
+Mandatory checks when Antigravity is relevant:
 
 1. `which agy`
 2. `agy --version`
 3. `agy --help`
 4. `agy /usage`
-5. Search `Taskfile`, systemd services, tmux launchers, shell scripts, and cron jobs for `agy`
+5. inspect `Taskfile.yml`, systemd services, tmux launchers, shell scripts, and cron jobs for `agy`
 
-Never infer that Antigravity is absent merely because `.agy` does not exist.
+`.agy` is not the canonical runtime identifier. Failure to find `.agy` does not prove that Antigravity is unavailable.
 
-The canonical runtime identifier is `agy`, not `.agy`.
+## 5. Canonical Workline Rule
 
-If `.agy` is not found but `agy` exists, continue investigation using the installed CLI and its integrations.
+Before creating new work, inspect the current repository state.
 
-Failure to check `agy` before concluding Antigravity is absent is considered an audit failure.
+Priority:
 
-## Project Principle
+1. continue the existing canonical PR/branch for the requested outcome
+2. otherwise continue the relevant unresolved Issue
+3. only then create one new branch and one PR
 
-This project treats LLMs not as one-shot text generators, but as components inside an iterative execution and improvement system.
+Do not create parallel branches, duplicate PRs, duplicate implementation paths, or competing state stores for the same outcome.
 
-The core design practice is **loop engineering**.
+If an existing branch or PR is clearly superseded, consolidate into one canonical workline and clean up the duplicate when safe.
 
-## Layered Terminology
+## 6. Contract Before Change
 
-Use the following labels when describing the system:
+For non-trivial work, reduce the request to:
 
-* 実行層: `agent loop`
-* 検証層: `closed-loop agent workflow`
-* 継続改善層: `agent improvement loop` / `harness design`
+- **Contract** — what must change and what must not change
+- **Outcome** — the observable state that should exist afterward
+- **Acceptance Criteria** — deterministic checks that prove the outcome
+- **Evidence** — concrete files, commands, artifacts, receipts, CI runs, or external state
+- **Stopping Condition** — the fixed point after which no additional work is required
 
-## Definition: Loop Engineering
+Do not expand scope merely because adjacent improvements are possible.
 
-Loop engineering is the practice of connecting model outputs, tool execution, validation, feedback, evaluation, and implementation changes into a single iterative system.
+## 7. Repository Entry Point
 
-The objective is not merely to write better prompts, but to continuously improve the **execution harness** around the model.
+`Taskfile.yml` is the canonical executable interface.
 
-In this project, the execution harness includes:
+Start with:
 
-* instructions
-* tools
-* routing
-* output requirements
-* validation checks
-* feedback collection
-* evals
-* implementation changes
-* trace analysis
-
-The LLM should therefore be understood as one part of a broader closed-loop system.
-
-## Core Loop
-
-The agent workflow should follow this loop:
-
-```text
-model output
-  → tool execution
-  → validation
-  → feedback
-  → evaluation
-  → implementation change
-  → improved execution harness
-  → next model output
+```bash
+task --list
 ```
 
-This loop should continue until the system reaches a final output, a handoff condition, a tool-calling condition, or a defined stopping condition.
+Use defined tasks instead of inventing direct script commands.
 
-## Execution Harness
+For routine code validation, the current canonical tasks are:
 
-The execution harness is the surrounding system that constrains, observes, evaluates, and improves the model's behavior.
-
-It is not limited to prompts.
-
-The harness includes:
-
-```text
-instructions + tools + routing + output schema + validation + evals + traces + implementation changes
+```bash
+task lint
+task test
 ```
 
-When the model fails, do not immediately assume that the model itself is the only problem.
+Use narrower domain audits when the change affects their contract, for example:
 
-First inspect:
-
-1. Was the instruction underspecified?
-2. Was the tool interface ambiguous?
-3. Was the output requirement weak?
-4. Was validation missing?
-5. Was the stopping condition unclear?
-6. Was feedback not converted into an implementation change?
-7. Was the eval too weak to catch the failure?
-
-## Agent Loop Reference
-
-The agent loop should be interpreted as an execution system with explicit decision points.
-
-A typical loop is:
-
-```text
-Call LLM
-  → inspect output
-  → if final output: stop
-  → if handoff: switch agent
-  → if tool calls: execute tools
-  → append tool results
-  → call LLM again
-  → stop if max_turns is exceeded
+```bash
+task harness:doctor:quick
+task harness:doctor
+task audit:today
+task audit:publish-routing
+task audit:no-fallback
+task audit:ontology
+task stability:ready
+task daily:check
 ```
 
-The important design point is that tool execution and model reasoning are not separate isolated events.
+Do not assume commands documented elsewhere still exist. Verify them against the current Taskfile first.
 
-They are connected inside one controlled loop.
+`task test` and CI currently tolerate a “No tests found” condition. That is not evidence that a changed behavior is covered; add or run a relevant deterministic verifier when behavior materially changes.
 
-## Tool Use Reference
+## 8. Builder / Auditor Separation
 
-When the model requests a tool, the application must:
+Treat implementation and acceptance as separate roles even when one agent performs both sequentially.
 
-1. detect the tool request
-2. execute the requested tool
-3. collect the tool result
-4. return the result to the model
-5. let the model continue reasoning or produce a final answer
+### Builder
 
-The application is responsible for controlling this loop safely.
+The Builder may:
 
-The model should not be treated as if it directly owns the environment.
+- inspect the repository
+- modify code, configuration, tests, prompts, docs, and workflows
+- create artifacts required by the task
+- run deterministic validation
+- open/update the canonical PR
 
-## Improvement Flywheel
+The Builder must not declare success solely from its own implementation intent.
 
-The system should continuously improve through the following flywheel:
+### Auditor
 
-```text
-traces
-  → feedback
-  → evals
-  → Codex handoff
-  → harness changes
-  → better execution harness
-  → better future traces
-```
+The Auditor must independently check:
 
-Traces reveal where the agent failed.
+- the requested outcome exists
+- acceptance criteria are satisfied
+- evidence corresponds to the current head SHA/state
+- no unrelated regressions or cross-channel contamination were introduced
+- publication/external side effects, if requested, have receipts
+- cleanup is complete
 
-Feedback explains what was wrong or missing.
+If implementation and audit use the same evidence-free assumption, the separation has failed.
 
-Evals make the failure reproducible.
+## 9. Fail-Closed Behavior
 
-Codex or implementation work converts the lesson into code, validation, routing, prompt, or tool changes.
+Prefer loud, attributable failure over false success.
 
-Harness changes improve the next run.
+- Do not hide errors with fallback output that can be mistaken for success.
+- Do not catch and suppress failures merely to keep the pipeline green.
+- Do not invent substitute data when exact required inputs are missing.
+- Do not publish a fallback artifact as though it were the requested artifact.
+- A verifier timeout, crash, missing dependency, missing receipt, or ambiguous profile blocks the corresponding acceptance criterion.
 
-## Operating Rule
+Fix root causes. Repeated failures should produce durable harness changes: validation, schemas, routing, retries, evals, observability, or implementation changes.
 
-Do not solve recurring failures with ad hoc prompting alone.
+## 10. Channel Isolation Is a Hard Boundary
 
-For repeated failures, prefer durable harness changes:
+Never mix these profiles:
 
-* add a validation check
-* tighten the output schema
-* improve tool descriptions
-* add routing rules
-* add stopping conditions
-* add retry logic
-* add eval cases
-* improve trace inspection
-* modify implementation behavior
+| profile | brand | bucket |
+|---|---|---|
+| `byosan` | 秒算マネー | `byosan_money` |
+| `yawa` | 夜話アーカイブ ASMR | `yawa_archive` |
+| `humanity` | 雨晴はうの人類観測所 | `humanity_observatory` |
 
-## Design Goal
+For Humanity, the expected channel handle is `@humanity_observatory`.
 
-The goal is not:
+Before any publish operation, verify profile, environment file, bucket, channel identity, artifact identity, and target visibility from current configuration/runtime evidence.
 
-```text
-better prompt
-```
+Cross-profile paths, tokens, prompts, voices, palettes, receipts, and publication targets are contamination unless explicitly designed as shared infrastructure.
 
-The goal is:
+## 11. Publishing Is an Irreversible Side Effect
 
-```text
-better loop
-```
+Implementation, testing, and local production do not imply authorization to publish.
 
-A successful system is one where each run produces information that can improve the next run.
+Publish only when the user request explicitly includes publication or the active canonical task already has an unambiguous publication contract.
 
-## Summary
+Before publication:
 
-Loop engineering means designing and improving the iterative system around the LLM.
+1. run the relevant publish-routing/profile audit
+2. identify the exact artifact to publish
+3. verify the exact target channel/profile
+4. verify required zero-trust audits
+5. publish through the Taskfile entry point
+6. capture the publication receipt (`videoId`, `channelId`, visibility/status)
+7. re-read external state when possible
 
-It is the practice of building a reliable agent loop where:
+Without a receipt, publication is not VERIFIED.
 
-```text
-LLM output → tools → validation → feedback → evals → implementation change
-```
+## 12. Minimal, Reversible Changes
 
-becomes a continuous improvement mechanism for the execution harness.
+Prefer the smallest change that satisfies the contract.
+
+- preserve existing IDs and provenance unless replacement is required
+- avoid speculative abstractions and future-proofing
+- remove obsolete helpers introduced by the work
+- do not create a second configuration source when one already exists
+- do not edit generated artifacts as a substitute for fixing their generator
+- do not change unrelated valid branches, issues, assets, or workflows
+
+For destructive or external changes, verify the target twice: once before the action and once after.
+
+## 13. Investigation Before Implementation
+
+Before editing:
+
+1. inspect relevant Issue/PR/branch state
+2. inspect the actual implementation and configuration
+3. inspect relevant tests/audits
+4. inspect CI/workflow definitions if CI is part of acceptance
+5. inspect primary/external sources when the task depends on current facts or third-party behavior
+6. identify the authoritative state store and generated projections
+
+Do not design from filenames, comments, stale docs, screenshots, or memory alone when inspectable evidence exists.
+
+## 14. Validation Ladder
+
+Use the cheapest deterministic check that can falsify the change, then escalate.
+
+Typical order:
+
+1. targeted unit/schema/contract test
+2. targeted domain audit
+3. `task lint`
+4. `task test`
+5. `task harness:doctor:quick` when relevant
+6. full harness/domain audit when relevant
+7. CI on the exact PR head SHA
+8. external postcondition/receipt when the task changes external state
+
+Do not run expensive end-to-end production merely because it exists. Run it only when the acceptance criteria require it.
+
+## 15. Git and PR Protocol
+
+For repository changes:
+
+1. begin from the latest intended base
+2. reuse the canonical branch if one exists
+3. otherwise create one descriptive branch
+4. keep the diff focused on the contract
+5. include tests/audits with behavior changes where practical
+6. open or update one canonical PR
+7. wait for/check CI on the exact head SHA
+8. inspect failed jobs rather than retrying blindly
+9. merge only when acceptance criteria and repository policy permit
+10. close the linked Issue when the outcome is actually complete
+11. verify the merged base SHA
+12. remove the merged/unneeded work branch when possible
+
+If a host-side safety check rejects a write, re-fetch current state and retry the exact canonical action once. Do not create a duplicate branch/PR as a workaround.
+
+## 16. Cleanup Is Part of Completion
+
+Before final reporting, inspect for residue created by the work:
+
+- temporary files
+- debug output
+- staging chunks
+- abandoned generated intermediates
+- obsolete helper workflows/scripts
+- superseded PRs
+- merged/unneeded branches
+- stale issue state
+
+Do not delete unrelated valid work.
+
+If unfinished work must remain, keep exactly one canonical workline with the blocker and next action recorded.
+
+## 17. Secrets, Private Data, and Metadata
+
+- Never expose secrets, OAuth credentials, private tokens, local absolute paths, or private intermediate metadata in public artifacts.
+- Treat `.env*`, credentials, receipts, and account/channel identifiers according to their intended visibility.
+- Do not copy production secrets into tests, fixtures, docs, screenshots, or prompts.
+- User-facing media must not leak internal IDs, temporary filenames, private paths, or agent-only notes unless explicitly required.
+
+## 18. Documentation Discipline
+
+Documentation must describe current behavior, not intended future behavior.
+
+- Human onboarding belongs in `README.md`.
+- Agent execution rules belong here.
+- Domain standards belong under `docs/standard/` or the relevant ADR.
+- Reusable agent skills belong in skill files rather than inflating this root contract.
+
+When documentation conflicts with executable reality, fix the stale documentation or record the discrepancy. Do not silently follow it.
+
+Maintain skill instructions in concise imperative English unless domain-facing content requires Japanese.
+
+## 19. No External Agent Handoff Dependency
+
+Do not make ChatGPT Work, Codex, or another external agent workspace a required step in the repository execution loop.
+
+The canonical loop must remain reproducible from repository state, declared tools, Taskfile entry points, tests/audits, CI, and explicit external-service receipts.
+
+Implementation work may be performed by any capable agent, but acceptance must remain tool- and evidence-based rather than product-dependent.
+
+## 20. Final Report Contract
+
+Report only verified state relevant to the task:
+
+- target Issue/PR/repository URL
+- what changed
+- tests/audits executed and their result
+- PR and commit/merge SHA/URL
+- external receipt if external state changed
+- cleanup performed
+- blocker and exact next action if unfinished
+
+Do not include completion theater, unsupported confidence, or long narratives about work that did not change the outcome.
+
+## 21. Stopping Rule
+
+Stop when all of the following are true:
+
+- requested outcome exists
+- acceptance criteria pass
+- evidence points to the current final state
+- CI/external receipts required by the contract are verified
+- linked Issue/PR state is correct
+- task-created residue is cleaned up
+- no known blocker remains
+
+At that point, further changes are scope expansion, not completion.
