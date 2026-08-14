@@ -167,7 +167,7 @@ export class PublishAgent extends BaseAgent {
 		}
 
 		console.log(
-			`[PUBLISH:CONFIG] visibility=${ytCfg.default_visibility} source=config/default.yaml`,
+			`[PUBLISH:CONFIG] upload_visibility=private requested_visibility=${ytCfg.default_visibility} source=config/default.yaml`,
 		);
 		console.log(
 			`[PUBLISH:DESTINATION] bucket=${state.bucket} expected_bucket=${profile.bucket} profile=${profile.profileName}`,
@@ -204,6 +204,18 @@ export class PublishAgent extends BaseAgent {
 		if (!status?.privacyStatus) {
 			throw new Error("YouTube upload response is missing privacyStatus");
 		}
+		if (status.privacyStatus !== "private") {
+			throw new Error(
+				`YouTube upload must stage private; insert returned privacyStatus=${status.privacyStatus}`,
+			);
+		}
+
+		const privateAttestation = await ensureYouTubeVideoVisibility(
+			auth,
+			videoId,
+			"private",
+		);
+		console.log(`[PUBLISH:PRIVATE_VERIFIED] video_id=${videoId}`);
 
 		if (thumbnailPath) {
 			try {
@@ -214,14 +226,21 @@ export class PublishAgent extends BaseAgent {
 				);
 			}
 		}
-		const visibilityAttestation = await ensureYouTubeVideoVisibility(
-			auth,
-			videoId,
-			ytCfg.default_visibility,
-		);
+		const visibilityAttestation =
+			ytCfg.default_visibility === "private"
+				? privateAttestation
+				: await ensureYouTubeVideoVisibility(
+						auth,
+						videoId,
+						ytCfg.default_visibility,
+					);
 		fs.writeJsonSync(
 			path.join(this.store.runDir, "publish", "visibility_attestation.json"),
-			visibilityAttestation,
+			{
+				...visibilityAttestation,
+				staged_private: true,
+				private_verified_at: privateAttestation.verified_at,
+			},
 			{ spaces: 2 },
 		);
 		return {
@@ -249,7 +268,7 @@ export class PublishAgent extends BaseAgent {
 				categoryId: (ytCfg.category_id || 24).toString(),
 			},
 			status: {
-				privacyStatus: ytCfg.default_visibility,
+				privacyStatus: "private",
 				selfDeclaredMadeForKids: false,
 			},
 		};
