@@ -22,6 +22,7 @@ const FORBIDDEN_CODE_PATTERNS = [
 	/PUBLISH_FALLBACK/,
 	/buildFallback[A-Za-z0-9_]*/,
 	/findLatestVideoForBucket/,
+	/ls\s+-td[^\n]*runs\/[^\n]*\|\s*head\s+-n\s*1/,
 	/kind:\s*["']fallback["']/,
 	/usedFallback/,
 ];
@@ -53,7 +54,7 @@ function scanForbiddenCode(): Check {
 			const relativePath = path.relative(ROOT, filePath);
 			if (ALLOWED_PATTERN_FILES.has(relativePath)) continue;
 			if (
-				!/\.(ts|tsx|js|json|ya?ml)$/.test(filePath) &&
+				!/\.(ts|tsx|js|json|ya?ml|sh)$/.test(filePath) &&
 				relativePath !== "Taskfile.yml"
 			) {
 				continue;
@@ -65,7 +66,10 @@ function scanForbiddenCode(): Check {
 		}
 	}
 	return matches.length === 0
-		? pass("forbidden_code_patterns", "no fallback implementation hooks found")
+		? pass(
+				"forbidden_code_patterns",
+				"no fallback implementation or implicit latest-run selection hooks found",
+			)
 		: fail("forbidden_code_patterns", matches.join("; "));
 }
 

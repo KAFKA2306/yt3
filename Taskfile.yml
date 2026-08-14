@@ -148,7 +148,7 @@ tasks:
 
   test:
     desc: "Run unit tests"
-    cmds: ["SKIP_LLM=true bun test || echo 'No tests found'"]
+    cmds: ["SKIP_LLM=true DRY_RUN=true bun test"]
 
   clean:
     desc: "Reset logs and temporary artifacts"

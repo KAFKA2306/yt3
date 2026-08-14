@@ -137,37 +137,13 @@ notify_failure() {
 
 notify_success() {
   local duration=$1
-  local latest_run=$2
-  local title="Unknown Title"
-  local video_url=""
-  local proof_state="publish proof missing"
-  local receipt_path="${latest_run}publish/receipt.json"
+  local msg="✅ **YT3 Automation SUCCESS**\n🧾 **Proof**: per-publish receipts and alerts are authoritative; aggregate cron does not infer a run\n⏱️ **Duration**: ${duration}s"
 
-  if [ -f "${latest_run}content/output.yaml" ]; then
-    title=$(grep -oP 'title:\s*\K.+' "${latest_run}content/output.yaml" | head -n 1 || echo "Unknown Title")
-  fi
-  if [ -f "${receipt_path}" ]; then
-    local video_id
-    video_id=$(grep -oP '"video_id"\s*:\s*"\K[^"]+' "${receipt_path}" | head -n 1 || echo "")
-    if [ -n "${video_id}" ]; then
-      video_url="https://youtu.be/${video_id}"
-      proof_state="publish proof present"
-    fi
-  fi
-
-  local msg
-  local alert_type="success"
-  if [ -n "${video_url}" ]; then
-    msg="✅ **YT3 Automation SUCCESS**\n🎬 **Title**: ${title}\n🔗 **URL**: ${video_url}\n🧾 **Proof**: ${proof_state}\n⏱️ **Duration**: ${duration}s"
-  else
-    alert_type="warn"
-    msg="⚠️ **YT3 Automation COMPLETE WITHOUT PUBLISH PROOF**\n🎬 **Title**: ${title}\n🧾 **Proof**: ${proof_state}\n⏱️ **Duration**: ${duration}s"
-  fi
-  printf '[%s] %s  %s\n' "$(timestamp)" "${alert_type^^}" "${msg}"
+  printf '[%s] SUCCESS  %s\n' "$(timestamp)" "${msg}"
   if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
     (
       cd "${repo_dir}"
-      DISCORD_ALERT_TYPE="${alert_type}" DISCORD_ALERT_MESSAGE="${msg}" "${bun_bin}" src/scripts/send_discord_alert.ts >/dev/null 2>&1 || true
+      DISCORD_ALERT_TYPE="success" DISCORD_ALERT_MESSAGE="${msg}" "${bun_bin}" src/scripts/send_discord_alert.ts >/dev/null 2>&1 || true
     )
   fi
 }
@@ -268,9 +244,7 @@ printf '[%s] INFO  starting unified agentic loop (pid=%s)\n' "$(timestamp)" "$$"
 
 if (cd "${repo_dir}" && task loop); then
   run_exit=0
-  
-  latest_run=$(ls -td "${repo_dir}/runs/"*/ | head -n 1 || echo "")
-  notify_success "${SECONDS}" "${latest_run}"
+  notify_success "${SECONDS}"
 else
   run_exit=$?
   notify_failure "${run_exit}" "${SECONDS}"
