@@ -27,11 +27,16 @@ tasks:
     cmds: ["bun --env-file=config/.env src/pulse_to_video_workflow.ts"]
 
   publish:
-    desc: "Publish to YouTube (PROFILE=byosan|yawa|humanity)"
-    vars:
-      ENV: '{{if eq .PROFILE "byosan"}}config/.env.byosan{{else if eq .PROFILE "yawa"}}config/.env.yawa{{else}}config/.env{{end}}'
+    desc: "Publish to YouTube (PROFILE=byosan|yawa|humanity; required)"
     cmds:
-      - ENV_FILE={{.ENV}} YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
+      - |
+        case "{{.PROFILE}}" in
+          byosan) ENV_FILE=config/.env.byosan ;;
+          yawa) ENV_FILE=config/.env.yawa ;;
+          humanity) ENV_FILE=config/.env ;;
+          *) echo "PROFILE must be exactly one of: byosan, yawa, humanity" >&2; exit 2 ;;
+        esac
+        ENV_FILE="$ENV_FILE" YOUTUBE_CHANNEL_PROFILE="{{.PROFILE}}" bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
 
   publish:byosan:
     desc: "Publish to 秒算マネー"
@@ -46,11 +51,16 @@ tasks:
     cmds: ["task publish PROFILE=humanity -- {{.CLI_ARGS}}"]
 
   auth:
-    desc: "YouTube OAuth (PROFILE=byosan|yawa|humanity)"
-    vars:
-      ENV: '{{if eq .PROFILE "byosan"}}config/.env.byosan{{else if eq .PROFILE "yawa"}}config/.env.yawa{{else}}config/.env{{end}}'
+    desc: "YouTube OAuth (PROFILE=byosan|yawa|humanity; required)"
     cmds:
-      - ENV_FILE={{.ENV}} YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/youtube_oauth.ts {{.CLI_ARGS}}
+      - |
+        case "{{.PROFILE}}" in
+          byosan) ENV_FILE=config/.env.byosan ;;
+          yawa) ENV_FILE=config/.env.yawa ;;
+          humanity) ENV_FILE=config/.env ;;
+          *) echo "PROFILE must be exactly one of: byosan, yawa, humanity" >&2; exit 2 ;;
+        esac
+        ENV_FILE="$ENV_FILE" YOUTUBE_CHANNEL_PROFILE="{{.PROFILE}}" bun src/scripts/youtube_oauth.ts {{.CLI_ARGS}}
 
   report:
     desc: "Generate executive report"
