@@ -26,6 +26,13 @@ interface AudioChunkManifest {
 	text_preview: string;
 }
 
+export interface MediaResult {
+	audio_paths: string[];
+	thumbnail_path: string;
+	video_path: string;
+	asset_version?: string;
+}
+
 export class VisualDirector extends BaseAgent {
 	private ttsOrchestrator: TtsOrchestrator;
 	private videoComposer: VideoComposer;
@@ -71,13 +78,7 @@ export class VisualDirector extends BaseAgent {
 		title: string,
 		thumbnailTitle?: string,
 		options: { style?: string; bucket?: string } = {},
-	): Promise<{
-		audio_paths: string[];
-		thumbnail_path: string;
-		video_path: string;
-		asset_version?: string;
-		script?: Script;
-	}> {
+	): Promise<MediaResult & { script?: Script }> {
 		AgentLogger.info(
 			this.name,
 			"START",
@@ -194,11 +195,11 @@ export class VisualDirector extends BaseAgent {
 			);
 
 			if (!fs.existsSync(audioPath)) {
-				const audio = await this.ttsOrchestrator.synthesize({
+				const synthesis = await this.ttsOrchestrator.synthesize({
 					text: cleanText,
 					speakerId,
 				});
-				fs.writeFileSync(audioPath, audio);
+				fs.writeFileSync(audioPath, synthesis.audio);
 			}
 
 			audio_paths.push(audioPath);
