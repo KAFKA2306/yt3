@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
       with:
@@ -27,8 +27,13 @@ jobs:
     - name: Biome Check
       run: bun x biome check .
 
+    - name: Publish Safety Audits
+      run: |
+        bun src/scripts/audit_publish_routing.ts
+        bun src/scripts/audit_no_fallback_policy.ts
+
     - name: Run Tests
-      run: bun test || echo "No tests found"
+      run: bun test
       env:
         SKIP_LLM: true
         DRY_RUN: true
