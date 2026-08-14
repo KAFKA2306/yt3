@@ -32,12 +32,6 @@ export interface TtsOrchestrationConfig {
 	};
 }
 
-export interface TtsSynthesisResult {
-	audio: Buffer;
-	speakerId: number;
-	usedSubstituteVoice: boolean;
-}
-
 export class TtsOrchestrator {
 	private ttsUrl: string;
 	private speakers: Record<string, number>;
@@ -57,22 +51,14 @@ export class TtsOrchestrator {
 		});
 	}
 
-	async synthesize(request: TtsRequest): Promise<TtsSynthesisResult> {
+	async synthesize(request: TtsRequest): Promise<Buffer> {
 		this.assertSpeakerId(request.speakerId);
 		const queryResponse = await this.getAudioQuery(
 			request.text,
 			request.speakerId,
 		);
 		this.applyVoiceControls(queryResponse, request.voice);
-		const synthesisBuffer = await this.synthesizeAudio(
-			queryResponse,
-			request.speakerId,
-		);
-		return {
-			audio: synthesisBuffer,
-			speakerId: request.speakerId,
-			usedSubstituteVoice: false,
-		};
+		return this.synthesizeAudio(queryResponse, request.speakerId);
 	}
 
 	private applyVoiceControls(
