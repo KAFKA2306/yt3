@@ -201,10 +201,6 @@ tasks:
     desc: "Run quick repository doctor"
     cmds: ["bun src/scripts/harness_doctor.ts --quick"]
 
-  stability:ready:
-    desc: "Check latest three daily runs for evidence"
-    cmds: ["bun src/scripts/stability_ready.ts"]
-
   daily:guarantee-status:
     desc: "Generate the daily guarantee status artifact"
     cmds: ["bun src/scripts/daily_guarantee_status.ts"]
@@ -214,11 +210,10 @@ tasks:
     cmds: ["DAILY_LAST3=1 bun src/scripts/daily_guarantee_status.ts"]
 
   daily:report:
-    desc: "Regenerate daily audit and readiness artifacts"
+    desc: "Regenerate daily audit and stability artifacts"
     cmds:
       - task audit:today
       - bun src/scripts/stability_summary.ts
-      - bun src/scripts/stability_ready.ts
       - bun src/scripts/daily_guarantee_status.ts
 
   improve:report:
