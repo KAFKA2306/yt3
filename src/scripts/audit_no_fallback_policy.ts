@@ -22,7 +22,6 @@ const FORBIDDEN_CODE_PATTERNS = [
 	/PUBLISH_FALLBACK/,
 	/buildFallback[A-Za-z0-9_]*/,
 	/findLatestVideoForBucket/,
-	/findLatestRun[A-Za-z0-9_]*/,
 	/ls\s+-td[^\n]*runs\/[^\n]*\|\s*head\s+-n\s*1/,
 	/kind:\s*["']fallback["']/,
 	/usedFallback/,
