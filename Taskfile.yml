@@ -84,6 +84,10 @@ tasks:
       ENV: '{{if eq .PROFILE "byosan"}}config/.env.byosan{{else if eq .PROFILE "yawa"}}config/.env.yawa{{else}}config/.env{{end}}'
     cmds:
       - ENV_FILE={{.ENV}} YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_latest_movie.ts {{.CLI_ARGS}}
+  publish:job:
+    desc: "Execute a contract-bound publish job (Usage: task publish:job -- --job=examples/job.yaml)"
+    cmds:
+      - bun src/scripts/publish_job.ts {{.CLI_ARGS}}
   movie:status:
     desc: "Report the status of all movie receipts without changing state"
     cmds:

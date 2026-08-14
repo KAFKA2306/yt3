@@ -57,7 +57,9 @@ const envFilePath = process.env.ENV_FILE
 		? process.env.ENV_FILE
 		: path.join(ROOT, process.env.ENV_FILE)
 	: path.join(ROOT, "config/.env");
-dotenv.config({ path: envFilePath, override: true });
+// Job-scoped safety gates are supplied by the contract runner. Profile files
+// fill missing values but must not overwrite the caller's process environment.
+dotenv.config({ path: envFilePath, override: false });
 
 export { Logger as AgentLogger };
 export type { AgentState };
@@ -372,6 +374,10 @@ function cleanCodeBlock(text: string): string {
 		throw new Error(`Expected string for cleanCodeBlock, got ${typeof text}`);
 	}
 	const stripped = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+	const fencedJson = stripped.match(
+		/```(?:json|javascript|js)?\s*([\s\S]*?)```/i,
+	);
+	if (fencedJson?.[1]) return fencedJson[1].trim();
 
 	const firstBrace = stripped.indexOf("{");
 	const firstBracket = stripped.indexOf("[");

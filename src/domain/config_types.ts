@@ -150,6 +150,7 @@ export interface AppConfig {
 			resolution: string;
 			fps: number;
 			effects: OverlayConfig[];
+			allow_static_visual_pacing?: boolean;
 			background_color?: string;
 			intro_seconds?: number;
 			thumbnail_overlay?: { enabled: boolean };

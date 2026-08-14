@@ -1,0 +1,14 @@
+schema_version: yt3.publish-job.v1
+job_id: kioxia-nand-2026-08-14
+profile: byosan
+bucket: byosan_money
+run_id: 2026-08-14-kioxia-nand
+mission_file: prompts/kioxia_nand_2026-08-14.md
+target_visibility: public
+thumbnail_required: true
+captions:
+  required: true
+  path: runs/byosan_money/2026-08-14-kioxia-nand/subtitles.vtt
+  language: ja
+  name: Japanese
+allow_publicize: true

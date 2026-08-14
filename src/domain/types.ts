@@ -112,6 +112,15 @@ export const PublishResultsSchema = z.object({
 			channel_title: z.string().optional(),
 			privacy_status: z.string().optional(),
 			published_at: z.string().optional(),
+			receipt_status: z.enum(["VERIFIED"]).optional(),
+			job_fingerprint: z.string().optional(),
+			target_visibility: z.string().optional(),
+			staging_privacy_status: z.string().optional(),
+			processing_status: z.string().optional(),
+			custom_thumbnail_verified: z.boolean().optional(),
+			captions_verified: z.boolean().optional(),
+			publish_at: z.string().optional(),
+			remote_audit: z.record(z.string(), z.unknown()).optional(),
 		})
 		.optional(),
 	twitter: z

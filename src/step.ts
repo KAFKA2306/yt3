@@ -77,7 +77,7 @@ async function runStep(
 		research: () => {
 			const b = bucket || state.bucket || store.cfg.workflow.default_bucket;
 			const l = state.limit || researchCfg?.default_limit || 3;
-			return new TrendScout(store).run(b, l);
+			return new TrendScout(store).run(b, l, state.mission_file);
 		},
 		content: () => {
 			if (!state.director_data) throw new Error("director_data is missing");

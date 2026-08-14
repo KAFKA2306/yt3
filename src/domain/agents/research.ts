@@ -45,6 +45,23 @@ interface Mission {
 	angles: Array<{ name: string; focus: string }>;
 }
 
+type ConsolidatedResearchOutput = {
+	selected_topics: Array<{
+		category: string;
+		selected_topic: string;
+		reason: string;
+		angle: string;
+		search_query: string;
+		results: Array<{
+			angle: string;
+			title_hook: string;
+			key_questions: string[];
+			news: NewsItem[];
+			byosan_angle?: z.infer<typeof ByosanAngleCandidateSchema>;
+		}>;
+	}>;
+};
+
 export class TrendScout extends BaseAgent {
 	constructor(store: AssetStore) {
 		const cfg = loadConfig();
@@ -56,6 +73,7 @@ export class TrendScout extends BaseAgent {
 		bucket: string,
 		limit?: number,
 		missionFile?: string,
+		researchAttempt = 0,
 	): Promise<ResearchResult> {
 		const cached = this.store.load<ResearchResult>(this.name, "output");
 		if (cached) return cached;
@@ -96,56 +114,83 @@ export class TrendScout extends BaseAgent {
 				"Using pulse.md as primary source",
 			);
 		}
+		if (researchAttempt > 0) {
+			userPrompt += `
 
-		const research = await this.runLlm<{
-			selected_topics: Array<{
-				category: string;
-				selected_topic: string;
-				reason: string;
-				angle: string;
-				search_query: string;
-				results: Array<{
+[BYOSAN RESEARCH REPAIR ATTEMPT ${researchAttempt}]
+The previous candidate set failed the deterministic angle gate. Return at least five byosan_angle candidates now. Each candidate must have at least two independently retrieved sources from distinct publishers, at least two concrete numbers, an array of risks, and a counterfactual that explicitly uses exclusion, subtraction, or a changed denominator. Do not reuse the prior invalid candidate set.`;
+		}
+
+		let research: ConsolidatedResearchOutput;
+		try {
+			research = await this.runLlm<{
+				selected_topics: Array<{
+					category: string;
+					selected_topic: string;
+					reason: string;
 					angle: string;
-					title_hook: string;
-					key_questions: string[];
-					news: NewsItem[];
-					byosan_angle?: z.infer<typeof ByosanAngleCandidateSchema>;
+					search_query: string;
+					results: Array<{
+						angle: string;
+						title_hook: string;
+						key_questions: string[];
+						news: NewsItem[];
+						byosan_angle?: z.infer<typeof ByosanAngleCandidateSchema>;
+					}>;
 				}>;
-			}>;
-		}>(
-			promptCfg.consolidated_research.system
-				.replace(
-					"{regions}",
-					researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
-				)
-				.replace("{current_date}", currentDate),
-			userPrompt,
-			(t) =>
-				parseLlmJson(
-					t,
-					z.object({
-						selected_topics: z.array(
-							z.object({
-								category: z.string(),
-								selected_topic: z.string(),
-								reason: z.string(),
-								angle: z.string(),
-								search_query: z.string(),
-								results: z.array(
-									z.object({
-										angle: z.string(),
-										title_hook: z.string(),
-										key_questions: z.array(z.string()),
-										news: z.array(NewsItemSchema),
-										byosan_angle: ByosanAngleCandidateSchema.optional(),
-									}),
-								),
-							}),
-						),
-					}),
-				),
-			{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
-		);
+			}>(
+				promptCfg.consolidated_research.system
+					.replace(
+						"{regions}",
+						researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
+					)
+					.replace("{current_date}", currentDate),
+				userPrompt,
+				(t) =>
+					parseLlmJson(
+						t,
+						z.object({
+							selected_topics: z.array(
+								z.object({
+									category: z.string(),
+									selected_topic: z.string(),
+									reason: z.string(),
+									angle: z.string(),
+									search_query: z.string(),
+									results: z.array(
+										z.object({
+											angle: z.string(),
+											title_hook: z.string(),
+											key_questions: z.array(z.string()),
+											news: z.array(NewsItemSchema),
+											byosan_angle: ByosanAngleCandidateSchema.optional(),
+										}),
+									),
+								}),
+							),
+						}),
+					),
+				{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
+			);
+		} catch (error) {
+			const message = String(error);
+			const recoverableStructuredOutputError =
+				/JSON|ZodError|expected|invalid|too_small|Unexpected/i.test(message);
+			if (
+				bucket === "byosan_money" &&
+				recoverableStructuredOutputError &&
+				researchAttempt < 2
+			) {
+				Logger.warn(
+					this.name,
+					"RESEARCH",
+					"STRUCTURED_OUTPUT_RETRY",
+					`Retrying malformed or schema-invalid research output (${researchAttempt + 1}/2): ${message.slice(0, 240)}`,
+				);
+				return this.run(bucket, limit, missionFile, researchAttempt + 1);
+			}
+			throw error;
+		}
 
 		const allTopics = research.selected_topics || [];
 		const candidateLocations = allTopics.flatMap((topic) =>
@@ -186,6 +231,15 @@ export class TrendScout extends BaseAgent {
 				angleDecision.decision !== "PASS" ||
 				angleDecision.selectedIndex === null
 			) {
+				if (researchAttempt < 2) {
+					Logger.warn(
+						this.name,
+						"RESEARCH",
+						"REPAIR",
+						`Angle gate stopped; requesting a fresh candidate set (attempt ${researchAttempt + 1}/2)`,
+					);
+					return this.run(bucket, limit, missionFile, researchAttempt + 1);
+				}
 				throw new Error(
 					`BYOSAN_ANGLE_STOP: ${angleDecision.reason}. See research/angle_decision.json`,
 				);
@@ -298,9 +352,10 @@ export class TrendScout extends BaseAgent {
 		return `
 
 [BYOSAN SHARP-ANGLE STRUCTURED OUTPUT]
-Return at least five total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
+Return at least five total results across selected_topics and cover at least three distinct publishers. Do not count the mission text, internal instructions, or the source registry itself as a news source. Use Google Search Retrieval and cite real public URLs for claims. Every results item MUST include a byosan_angle object with exactly these camelCase fields and types:
 topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks.
-numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. counterfactual must be testable by exclusion, subtraction, or a changed denominator. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.`;
+numbers must be an array of at least two concrete numerical strings. risks must be an array of one or more strings. sources must be an array of at least two objects using exactly these keys: id, name, url, optional publishedAt, tier, supports. url must be an absolute https URL; never use absolute_url, source_identifier, or an internal instruction as a URL. tier must be exactly one of L1, L2, L3, L4, L5, unknown; never append a description. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. counterfactual must be testable by exclusion, subtraction, or a changed denominator.
+Before submitting JSON, run this checklist for every result: sources.length >= 2, numbers.length >= 2, risks is an array, every source has a real URL and supports array. If any candidate fails, add another independently retrieved source with a different publisher or remove that candidate; never return a one-source or one-number candidate. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.`;
 	}
 
 	private getPastRunsState(): Array<{

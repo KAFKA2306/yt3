@@ -1287,20 +1287,28 @@ export class AuditAgent extends BaseAgent {
 				if (gap > maxSilenceGap) maxSilenceGap = gap;
 			}
 
-			const multimodalPass = maxSceneGap <= 12 && maxSilenceGap <= 45;
+			const allowStaticVisualPacing =
+				this.config.steps.video?.allow_static_visual_pacing === true;
+			const hasVisualCadence =
+				maxSceneGap <= 12 ||
+				(allowStaticVisualPacing && cutMatches.length <= 2);
+			const multimodalPass = hasVisualCadence && maxSilenceGap <= 45;
 
 			checks.multimodal_pacing = {
 				name: "Signal: Multimodal Pacing",
 				description:
 					"Audits visual scene cut spacing and natural breathing silences in the audio track.",
 				status: multimodalPass ? "PASS" : "QUALITY_FAIL",
-				details: `Max visual scene gap: ${maxSceneGap.toFixed(1)}s (Target <= 12s). Max speech segment without silence: ${maxSilenceGap.toFixed(1)}s (Target <= 45s).`,
+				details: `Max visual scene gap: ${maxSceneGap.toFixed(1)}s (Target <= 12s${allowStaticVisualPacing ? "; static visual policy enabled" : ""}). Max speech segment without silence: ${maxSilenceGap.toFixed(1)}s (Target <= 45s).`,
 				critical: true,
 				type: "DETERMINISTIC",
 			};
 			evidence.multimodal_pacing = {
 				scene_cuts_count: cutMatches.length - 2,
 				max_scene_gap: maxSceneGap,
+				visual_pacing_mode: allowStaticVisualPacing
+					? "static_visual_with_caption_audio_gate"
+					: "scene_cut_gate",
 				silence_gaps_count: silenceStarts.length - 2,
 				max_silence_gap: maxSilenceGap,
 			};

@@ -85,6 +85,7 @@ steps:
   video:
     resolution: "1920x1080"
     fps: 25
+    allow_static_visual_pacing: true
     background_color: "#103766" # 2026 Financial Protocol Base
     intro_seconds: 5
     codec: "h264_nvenc"

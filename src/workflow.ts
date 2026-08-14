@@ -13,6 +13,7 @@ import type {
 } from "./domain/types.js";
 import { type AssetStore, appendLoopMemory } from "./io/core.js";
 
+import { readVerifiedReceipt } from "./domain/publish_contract.js";
 import { AgentLogger } from "./io/utils/logger.js";
 import {
 	classifyFailureMessage,
@@ -368,12 +369,15 @@ export async function runSequentialWorkflow(
 		return state;
 	}
 
-	// Save publish/receipt.json
-	fs.writeJsonSync(
-		path.join(store.runDir, "publish", "receipt.json"),
-		publishResults,
-		{ spaces: 2 },
-	);
+	// A contract-bound publish already wrote an atomic verified receipt. Never
+	// downgrade it back to the legacy API-response shape during finalization.
+	if (!readVerifiedReceipt(store.runDir)) {
+		fs.writeJsonSync(
+			path.join(store.runDir, "publish", "receipt.json"),
+			publishResults,
+			{ spaces: 2 },
+		);
+	}
 
 	// Finalize generation dynamics: publish_state, audience_response_state, evolution_state
 	AgentLogger.info(
