@@ -36,8 +36,6 @@ export interface TtsSynthesisResult {
 	audio: Buffer;
 	speakerId: number;
 	usedSubstituteVoice: boolean;
-	/** @deprecated Use usedSubstituteVoice. Kept for clean-checkout compatibility. */
-	usedFallback: boolean;
 }
 
 export class TtsOrchestrator {
@@ -74,7 +72,6 @@ export class TtsOrchestrator {
 			audio: synthesisBuffer,
 			speakerId: request.speakerId,
 			usedSubstituteVoice: false,
-			usedFallback: false,
 		};
 	}
 
