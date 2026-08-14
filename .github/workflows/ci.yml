@@ -19,21 +19,21 @@ jobs:
         bun-version: latest
 
     - name: Install dependencies
-      run: bun install --frozen-lockfile
+      run: bun run setup
 
     - name: TypeScript Check
-      run: bun x tsc --noEmit
+      run: bun run typecheck
 
     - name: Biome Check
-      run: bun x biome check .
+      run: bun run lint
 
     - name: Publish Safety Audits
       run: |
-        bun src/scripts/audit_publish_routing.ts
-        bun src/scripts/audit_no_fallback_policy.ts
+        bun run audit:publish-routing
+        bun run audit:no-fallback
 
     - name: Run Tests
-      run: bun test
+      run: bun run test
       env:
         SKIP_LLM: true
         DRY_RUN: true
