@@ -8,8 +8,7 @@ This repository uses evidence-driven daily operations.
 - [`content_freshness_metrics.md`](./content_freshness_metrics.md): deterministic freshness gate and thresholds
 - [`../prompts/audit_log_llm.txt`](../prompts/audit_log_llm.txt): strict prompt for fact-only log auditing
 - [`../logs/daily_guarantee_status.md`](../logs/daily_guarantee_status.md): combined status for metrics, freshness, and readiness
-- [`../logs/stability_ready.md`](../logs/stability_ready.md): latest 3 daily runs and evidence readiness
-- [`../logs/stability_summary.md`](../logs/stability_summary.md): 30-day failure classification and evidence readiness summary
+- [`../logs/stability_summary.md`](../logs/stability_summary.md): latest 3 readiness plus 30-day failure classification
 
 ## Publish
 
