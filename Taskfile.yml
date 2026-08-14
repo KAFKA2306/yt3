@@ -33,6 +33,18 @@ tasks:
     cmds:
       - ENV_FILE={{.ENV}} YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
 
+  publish:byosan:
+    desc: "Publish to 秒算マネー"
+    cmds: ["task publish PROFILE=byosan -- {{.CLI_ARGS}}"]
+
+  publish:yawa:
+    desc: "Publish to 夜話アーカイブ"
+    cmds: ["task publish PROFILE=yawa -- {{.CLI_ARGS}}"]
+
+  publish:humanity:
+    desc: "Publish to 人類観測所"
+    cmds: ["task publish PROFILE=humanity -- {{.CLI_ARGS}}"]
+
   auth:
     desc: "YouTube OAuth (PROFILE=byosan|yawa|humanity)"
     vars:
