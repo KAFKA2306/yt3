@@ -27,7 +27,6 @@ const FORBIDDEN_CODE_PATTERNS = [
 ];
 const ALLOWED_PATTERN_FILES = new Set([
 	"src/scripts/audit_no_fallback_policy.ts",
-	"src/scripts/delete_fallback_videos.ts",
 ]);
 
 function pass(name: string, details: string): Check {
@@ -61,9 +60,7 @@ function scanForbiddenCode(): Check {
 			}
 			const text = fs.readFileSync(filePath, "utf8");
 			for (const pattern of FORBIDDEN_CODE_PATTERNS) {
-				if (pattern.test(text)) {
-					matches.push(`${relativePath}: ${pattern}`);
-				}
+				if (pattern.test(text)) matches.push(`${relativePath}: ${pattern}`);
 			}
 		}
 	}
@@ -116,8 +113,7 @@ function auditFallbackReceipts(): Check {
 
 function formatMarkdown(checks: Check[]): string {
 	const lines = ["# No Fallback Policy Audit", ""];
-	lines.push(`Generated: ${new Date().toISOString()}`);
-	lines.push("");
+	lines.push(`Generated: ${new Date().toISOString()}`, "");
 	for (const check of checks) {
 		lines.push(`- ${check.status} ${check.name}: ${check.details}`);
 	}
@@ -128,21 +124,15 @@ async function main() {
 	const checks = [scanForbiddenCode(), auditFallbackReceipts()];
 	const outDir = path.join(ROOT, "logs");
 	await fs.ensureDir(outDir);
-	await fs.writeJson(
-		path.join(outDir, "no_fallback_policy_audit.json"),
-		checks,
-		{
-			spaces: 2,
-		},
-	);
+	await fs.writeJson(path.join(outDir, "no_fallback_policy_audit.json"), checks, {
+		spaces: 2,
+	});
 	await fs.writeFile(
 		path.join(outDir, "no_fallback_policy_audit.md"),
 		`${formatMarkdown(checks)}\n`,
 	);
 	console.log(formatMarkdown(checks));
-	if (checks.some((check) => check.status === "FAIL")) {
-		process.exit(1);
-	}
+	if (checks.some((check) => check.status === "FAIL")) process.exit(1);
 }
 
 main().catch((error: unknown) => {
