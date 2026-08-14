@@ -2,13 +2,12 @@ import os from "node:os";
 import path from "node:path";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
-import type { Metadata, RenderPlan, Script } from "../../domain/types.js";
+import type { RenderPlan, Script } from "../../domain/types.js";
 import {
 	type AssetStore,
 	BaseAgent,
 	RunStage,
 	appendLoopMemory,
-	loadConfig,
 } from "../../io/core.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
 import { AgentLogger } from "../../io/utils/logger.js";
@@ -17,10 +16,7 @@ import { LayoutEngine } from "../layout/engine.js";
 import { ThumbnailGenerator } from "../media/thumbnail_generator.js";
 import { VideoComposer } from "../media/video_composer.js";
 
-/**
- * Audio chunk manifest entry for Zero-Trust Audit.
- */
-export interface AudioChunkManifest {
+interface AudioChunkManifest {
 	index: number;
 	script_speaker: string;
 	tts_requested_voice_id: number;
@@ -30,9 +26,6 @@ export interface AudioChunkManifest {
 	text_preview: string;
 }
 
-/**
- * Result of the media generation phase.
- */
 export interface MediaResult {
 	audio_paths: string[];
 	thumbnail_path: string;
@@ -40,9 +33,6 @@ export interface MediaResult {
 	asset_version?: string;
 }
 
-/**
- * VisualDirector: Orchestrates media generation including TTS and Video Composition.
- */
 export class VisualDirector extends BaseAgent {
 	private ttsOrchestrator: TtsOrchestrator;
 	private videoComposer: VideoComposer;
@@ -83,21 +73,12 @@ export class VisualDirector extends BaseAgent {
 		this.speakers = cfg.providers.tts.voicevox.speakers || {};
 	}
 
-	/**
-	 * Runs the media generation phase.
-	 */
 	async run(
 		script: Script,
 		title: string,
 		thumbnailTitle?: string,
 		options: { style?: string; bucket?: string } = {},
-	): Promise<{
-		audio_paths: string[];
-		thumbnail_path: string;
-		video_path: string;
-		asset_version?: string;
-		script?: Script;
-	}> {
+	): Promise<MediaResult & { script?: Script }> {
 		AgentLogger.info(
 			this.name,
 			"START",
@@ -105,30 +86,19 @@ export class VisualDirector extends BaseAgent {
 			`Generating media for ${title}`,
 		);
 
-		// 1. Setup Directories
 		const audioDir = this.store.audioDir();
 		const videoDir = this.store.videoDir();
 		await fs.ensureDir(audioDir);
 		await fs.ensureDir(videoDir);
 
-		// 2. TTS Generation
-		const audio_paths = await this.synthesizeAudio(
-			script,
-			audioDir,
-			options.style,
-		);
-
-		// 3. Audio Post-Processing (Merge & Normalize)
+		const audio_paths = await this.synthesizeAudio(script, audioDir);
 		const fullAudioPath = await this.mergeAudio(audio_paths, audioDir);
 
-		// 4. Subtitle and Plan Generation
 		const videoPlan = await this.layout.createVideoRenderPlan();
 		const durations = await this.getAudioDurations(audio_paths);
 		for (let i = 0; i < script.lines.length; i++) {
 			const line = script.lines[i];
-			if (line) {
-				line.duration = durations[i] || 0;
-			}
+			if (line) line.duration = durations[i] || 0;
 		}
 		const subtitlePath = await this.generateSubtitles(
 			script,
@@ -136,7 +106,6 @@ export class VisualDirector extends BaseAgent {
 			videoPlan,
 		);
 
-		// 5. Thumbnail Generation
 		const thumbnailPath = path.join(
 			this.store.runDir,
 			this.store.cfg.workflow.filenames.thumbnail,
@@ -166,16 +135,13 @@ export class VisualDirector extends BaseAgent {
 			throw error;
 		}
 
-		// 6. Video Composition
 		const videoPath = path.join(
 			videoDir,
 			this.store.cfg.workflow.filenames.video,
 		);
-
-		// Humanity Observatory Design System Override
 		const composerConfig = { ...this.videoComposer.config };
 		if (options.bucket === "humanity_observatory") {
-			composerConfig.background_color = "#FFFDF8"; // Default humanity white
+			composerConfig.background_color = "#FFFDF8";
 		} else if (options.style === "quiet_observation") {
 			composerConfig.background_color = "#0A0A12";
 		}
@@ -201,7 +167,6 @@ export class VisualDirector extends BaseAgent {
 	private async synthesizeAudio(
 		script: Script,
 		audioDir: string,
-		style?: string,
 	): Promise<string[]> {
 		const audio_paths: string[] = [];
 		const manifestChunks: AudioChunkManifest[] = [];
@@ -214,7 +179,6 @@ export class VisualDirector extends BaseAgent {
 				audioDir,
 				`${String(i).padStart(3, "0")}.wav`,
 			);
-
 			const speakerId = this.speakers[line.speaker];
 			if (speakerId === undefined) {
 				throw new Error(
@@ -236,17 +200,6 @@ export class VisualDirector extends BaseAgent {
 					speakerId,
 				});
 				fs.writeFileSync(audioPath, synthesis.audio);
-				audio_paths.push(audioPath);
-				manifestChunks.push({
-					index: i,
-					script_speaker: line.speaker,
-					tts_requested_voice_id: speakerId,
-					resolved_voice_id: synthesis.speakerId,
-					no_fallback_used: !synthesis.usedSubstituteVoice,
-					output_path: audioPath,
-					text_preview: cleanText.slice(0, 50),
-				});
-				continue;
 			}
 
 			audio_paths.push(audioPath);
@@ -261,7 +214,6 @@ export class VisualDirector extends BaseAgent {
 			});
 		}
 
-		// Save Canonical Audio Manifest for Audit
 		const manifestPath = path.join(audioDir, "manifest.json");
 		AgentLogger.info(
 			this.name,
@@ -269,7 +221,6 @@ export class VisualDirector extends BaseAgent {
 			"MANIFEST",
 			`Writing manifest to ${manifestPath} (${manifestChunks.length} chunks)`,
 		);
-
 		fs.writeJsonSync(
 			manifestPath,
 			{
@@ -286,8 +237,7 @@ export class VisualDirector extends BaseAgent {
 	private async getAudioDurations(audioPaths: string[]): Promise<number[]> {
 		const durations: number[] = [];
 		for (const audioPath of audioPaths) {
-			const duration = await this.getAudioDuration(audioPath);
-			durations.push(duration);
+			durations.push(await this.getAudioDuration(audioPath));
 		}
 		return durations;
 	}
@@ -323,13 +273,9 @@ export class VisualDirector extends BaseAgent {
 			audioDir,
 			this.store.cfg.workflow.filenames.audio_full,
 		);
-
 		const audioCmd = ffmpeg();
-		for (const audioPath of audioPaths) {
-			audioCmd.input(audioPath);
-		}
+		for (const audioPath of audioPaths) audioCmd.input(audioPath);
 
-		// Step 1: Merge
 		await new Promise<void>((resolve, reject) => {
 			audioCmd
 				.on("error", reject)
@@ -337,7 +283,6 @@ export class VisualDirector extends BaseAgent {
 				.mergeToFile(tempMergedPath, os.tmpdir());
 		});
 
-		// Step 2: Normalize
 		await new Promise<void>((resolve, reject) => {
 			ffmpeg(tempMergedPath)
 				.audioFilters("loudnorm=I=-14:TP=-3.0:LRA=11")

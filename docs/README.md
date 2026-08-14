@@ -13,8 +13,15 @@ This repository uses evidence-driven daily operations.
 
 ## Publish
 
-- `task publish:latest PROFILE=[byosan|yawa|humanity]`: publish the latest generated movie for a profile with receipt and evidence files
-- `task movie:status` or `bun run movie:status`: report the status of all movie receipts and write `logs/movie_status.md` and `logs/movie_status.json`
+Use an explicit run ID. The safe channel-specific entrypoints all delegate to the same publisher:
+
+- `task publish:byosan -- <run_id>`
+- `task publish:yawa -- <run_id>`
+- `task publish:humanity -- <run_id>`
+- `PROFILE=[byosan|yawa|humanity] task publish -- <run_id>`: generic entrypoint
+- `task movie:status`: report movie receipt status without changing remote state
+
+There is no latest-run inference path.
 
 ## Standards
 
