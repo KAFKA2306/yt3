@@ -55,9 +55,6 @@ const EXPECTED_ENV_EXAMPLES: Record<string, YouTubeProfileName> = {
 	"config/.env.yawa.example": "yawa",
 };
 
-const CANONICAL_PUBLISH_COMMAND =
-	"ENV_FILE={{.ENV}} YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}";
-
 function flattenCmds(cmds: unknown): string[] {
 	if (typeof cmds === "string") return [cmds];
 	if (!Array.isArray(cmds)) return [];
@@ -112,7 +109,48 @@ function assertProfileRegistry() {
 					`YouTube profile registry mismatch for ${profileName}.${field}: expected '${wanted}', got '${actual}'`,
 				);
 			}
+	}
+}
+}
+
+function assertFailClosedProfileTask(
+	taskName: string,
+	task: TaskDefinition,
+	executable: string,
+) {
+	const command = getSingleCommand(taskName, task);
+
+	if (task.vars?.ENV) {
+		throw new Error(
+			`Task ${taskName} must not use a templated ENV fallback selector`,
+		);
+	}
+
+	for (const [profileName, profile] of Object.entries(EXPECTED_PROFILES)) {
+		if (!command.includes(`${profileName}) ENV_FILE=${profile.envFile}`)) {
+			throw new Error(
+				`Task ${taskName} is missing exact routing for ${profileName} -> ${profile.envFile}`,
+			);
 		}
+	}
+
+	if (!command.includes('*) echo "PROFILE must be exactly one of: byosan, yawa, humanity" >&2; exit 2')) {
+		throw new Error(
+			`Task ${taskName} must reject missing or unknown PROFILE values`,
+		);
+	}
+
+	const canonicalInvocation = `ENV_FILE="$ENV_FILE" YOUTUBE_CHANNEL_PROFILE="{{.PROFILE}}" bun ${executable} {{.CLI_ARGS}}`;
+	if (!command.includes(canonicalInvocation)) {
+		throw new Error(
+			`Task ${taskName} must invoke only ${executable} after exact profile routing`,
+		);
+	}
+
+	if (command.includes("{{else}}config/.env")) {
+		throw new Error(
+			`Task ${taskName} contains a forbidden fallback to config/.env`,
+		);
 	}
 }
 
@@ -121,25 +159,19 @@ function assertCanonicalPublishTask(tasks: Record<string, TaskDefinition>) {
 	if (!task) {
 		throw new Error("Taskfile.yml is missing canonical task publish");
 	}
+	assertFailClosedProfileTask(
+		"publish",
+		task,
+		"src/scripts/publish_youtube.ts",
+	);
+}
 
-	const command = getSingleCommand("publish", task);
-	if (command !== CANONICAL_PUBLISH_COMMAND) {
-		throw new Error(
-			`Canonical publish task must call only src/scripts/publish_youtube.ts with explicit profile/env routing, got: ${command}`,
-		);
+function assertCanonicalAuthTask(tasks: Record<string, TaskDefinition>) {
+	const task = tasks.auth;
+	if (!task) {
+		throw new Error("Taskfile.yml is missing canonical task auth");
 	}
-
-	const envSelector = task.vars?.ENV;
-	if (typeof envSelector !== "string") {
-		throw new Error("Canonical publish task must define the ENV selector");
-	}
-	for (const profile of Object.values(EXPECTED_PROFILES)) {
-		if (!envSelector.includes(profile.envFile)) {
-			throw new Error(
-				`Canonical publish ENV selector is missing ${profile.envFile}`,
-			);
-		}
-	}
+	assertFailClosedProfileTask("auth", task, "src/scripts/youtube_oauth.ts");
 }
 
 function assertSafeAliases(tasks: Record<string, TaskDefinition>) {
@@ -188,6 +220,7 @@ async function main() {
 	}
 
 	assertCanonicalPublishTask(taskfile.tasks);
+	assertCanonicalAuthTask(taskfile.tasks);
 	assertSafeAliases(taskfile.tasks);
 
 	for (const [envPath, profileName] of Object.entries(
