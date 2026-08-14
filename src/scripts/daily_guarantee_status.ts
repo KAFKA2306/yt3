@@ -79,7 +79,7 @@ function formatMarkdown(report: GuaranteeReport): string {
 				if (fs.existsSync(reportPath)) {
 					freshnessReports.push(`\`${path.relative(ROOT, reportPath)}\``);
 				}
-		}
+			}
 		}
 		if (freshnessReports.length > 0) {
 			lines.push(`- Freshness reports: ${freshnessReports.join(", ")}`);
@@ -117,7 +117,11 @@ function formatMarkdown(report: GuaranteeReport): string {
 }
 
 async function main() {
-	const metricsDocPath = path.join(ROOT, "docs", "content_freshness_metrics.md");
+	const metricsDocPath = path.join(
+		ROOT,
+		"docs",
+		"content_freshness_metrics.md",
+	);
 	const freshnessDocPath = path.join(ROOT, "docs", "daily_guarantee.md");
 	const stabilitySummaryPath = path.join(ROOT, "logs", "stability_summary.md");
 	const latestRuns = buildLatestRuns();
@@ -142,7 +146,10 @@ async function main() {
 	await fs.writeJson(path.join(outDir, "daily_guarantee_status.json"), report, {
 		spaces: 2,
 	});
-	await fs.writeFile(path.join(outDir, "daily_guarantee_status.md"), `${markdown}\n`);
+	await fs.writeFile(
+		path.join(outDir, "daily_guarantee_status.md"),
+		`${markdown}\n`,
+	);
 	console.log(markdown);
 	if (!report.all_latest_runs_ready && process.env.DAILY_LAST3 !== "1") {
 		process.exit(1);
