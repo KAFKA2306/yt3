@@ -1,28 +1,23 @@
-You are working in /home/kafka/2511youtuber/v3/yt3.
-
 Goal:
-Freeze the operating flow, define a reproducible improvement loop, and make the repo easier to measure and tune for success rate, autonomy, diversity, and video quality.
+Improve yt3 from evidence while keeping the operating path small and reproducible.
 
 Read first:
 - docs/standard/continuous-improvement-loop.md
 - docs/content_freshness_metrics.md
 - docs/daily_guarantee.md
-- docs/standard/system-audit-protocol.md
 - Taskfile.yml
 - logs/stability_summary.md
 - logs/daily_guarantee_status.md
-- logs/stability_ready.md
 
 Rules:
-- Prefer the smallest useful change.
-- Do not break existing behavior.
+- Prefer deletion and consolidation over new state files.
 - Do not count task exit code alone as success.
-- Use evidence files and publish receipts when judging outcomes.
-- Make the loop more machine-readable if a low-friction change is obvious.
-- If you add a command entry, keep it aligned with the docs.
+- Use run_evidence.json and publish receipts when judging outcomes.
+- Change the smallest useful surface and verify it.
+- Do not create a second artifact for information already present in stability_summary.json.
 
 Requested output:
-1. Fix or add the canonical improvement entrypoint.
-2. Improve the work-order docs if needed.
-3. Point out any metric gaps that still need code changes.
-4. Summarize what changed and how to measure it next week.
+1. Identify the weakest measurable part of the current loop.
+2. Make one bounded improvement.
+3. Verify it with the existing checks.
+4. Record the changed files and remaining gap.

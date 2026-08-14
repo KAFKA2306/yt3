@@ -11,7 +11,7 @@ type ReadinessItem = {
 	evidence_ready: boolean;
 	present_buckets?: string[];
 	absent_buckets?: string[];
-	missing_paths?: string[];
+	evidence_missing?: string[];
 };
 
 type GuaranteeReport = {
@@ -19,7 +19,6 @@ type GuaranteeReport = {
 	metrics_doc_path: string;
 	freshness_doc_path: string;
 	stability_summary_path: string;
-	stability_ready_path: string;
 	latest_runs: ReadinessItem[];
 	latest_channel_urls: Array<{
 		channel_label: string;
@@ -41,22 +40,9 @@ function readJson<T>(filePath: string): T | undefined {
 }
 
 function buildLatestRuns(): ReadinessItem[] {
-	const readinessPath = path.join(ROOT, "logs", "stability_ready.json");
 	const summaryPath = path.join(ROOT, "logs", "stability_summary.json");
-	const readiness = readJson<ReadinessItem[]>(readinessPath) || [];
-	const summaries =
-		readJson<
-			Array<{ date: string; log_path: string; evidence_ready: boolean }>
-		>(summaryPath) || [];
-	const byDate = new Map(readiness.map((item) => [item.date, item]));
-	return summaries.slice(0, 3).map((summary) => ({
-		date: summary.date,
-		log_path: summary.log_path,
-		evidence_ready: summary.evidence_ready,
-		present_buckets: byDate.get(summary.date)?.present_buckets || [],
-		absent_buckets: byDate.get(summary.date)?.absent_buckets || [],
-		missing_paths: byDate.get(summary.date)?.missing_paths || [],
-	}));
+	const summaries = readJson<ReadinessItem[]>(summaryPath) || [];
+	return summaries.slice(0, 3);
 }
 
 function formatMarkdown(report: GuaranteeReport): string {
@@ -69,7 +55,6 @@ function formatMarkdown(report: GuaranteeReport): string {
 	lines.push(`- Metrics doc: \`${report.metrics_doc_path}\``);
 	lines.push(`- Freshness doc: \`${report.freshness_doc_path}\``);
 	lines.push(`- Stability summary: \`${report.stability_summary_path}\``);
-	lines.push(`- Stability ready: \`${report.stability_ready_path}\``);
 	lines.push("");
 	lines.push("## Latest 3 Runs");
 	for (const item of report.latest_runs) {
@@ -99,9 +84,9 @@ function formatMarkdown(report: GuaranteeReport): string {
 		if (freshnessReports.length > 0) {
 			lines.push(`- Freshness reports: ${freshnessReports.join(", ")}`);
 		}
-		if (item.missing_paths?.length) {
+		if (item.evidence_missing?.length) {
 			lines.push(
-				`- Missing evidence: ${item.missing_paths
+				`- Missing evidence: ${item.evidence_missing
 					.slice(0, 6)
 					.map((p) => `\`${p}\``)
 					.join(", ")}`,
@@ -139,7 +124,6 @@ async function main() {
 	);
 	const freshnessDocPath = path.join(ROOT, "docs", "daily_guarantee.md");
 	const stabilitySummaryPath = path.join(ROOT, "logs", "stability_summary.md");
-	const stabilityReadyPath = path.join(ROOT, "logs", "stability_ready.md");
 	const latestRuns = buildLatestRuns();
 	const latestChannelUrls = await getLatestPublishedChannelUrls();
 	const report: GuaranteeReport = {
@@ -147,7 +131,6 @@ async function main() {
 		metrics_doc_path: metricsDocPath,
 		freshness_doc_path: freshnessDocPath,
 		stability_summary_path: stabilitySummaryPath,
-		stability_ready_path: stabilityReadyPath,
 		latest_runs: latestRuns,
 		latest_channel_urls: latestChannelUrls,
 		all_latest_runs_ready:

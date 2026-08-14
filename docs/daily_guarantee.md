@@ -10,8 +10,7 @@ This repository treats "daily interestingness" as an operational guarantee with 
 
 ## Operational Checks
 
-- `logs/stability_summary.md` summarizes the last 30 days of failures by cause.
-- `logs/stability_ready.md` shows whether the latest 3 daily runs have concrete evidence.
+- `logs/stability_summary.md` contains both the latest 3-run evidence readiness and the 30-day failure classification.
 - `logs/daily_guarantee_status.md` combines the metric definition with the current readiness verdict.
 - `logs/daily_guarantee_status.md` also lists the latest published URL for `秒算マネー` and `人類観測所` separately.
 - `logs/public_visibility_audit.md` lists whether each published video is actually public.
@@ -19,13 +18,10 @@ This repository treats "daily interestingness" as an operational guarantee with 
 
 ## Current State
 
-- The system is ready to report daily stability once 3 real days of evidence exist.
-- Today, the latest 3 runs still have `evidence_ready=false`.
-- The readiness checks intentionally fail until that condition changes.
+Readiness is derived from concrete run evidence. The latest three runs must each have a run directory and pass the evidence checks before the daily guarantee is considered ready.
 
 ## How To Verify
 
 1. Read `docs/content_freshness_metrics.md`.
-2. Read `logs/daily_guarantee_status.md`.
-3. Read `logs/stability_ready.md`.
-4. Confirm the latest 3 runs all report `evidence_ready: yes`.
+2. Read `logs/stability_summary.md` and confirm the latest 3 runs report `evidence_ready: yes`.
+3. Read `logs/daily_guarantee_status.md` for the combined verdict and latest published URLs.
