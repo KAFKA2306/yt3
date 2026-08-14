@@ -12,6 +12,8 @@ type DailySummary = {
 	date: string;
 	status: string;
 	log_path: string;
+	present_buckets: string[];
+	absent_buckets: string[];
 	evidence_ready: boolean;
 	evidence_missing: string[];
 	terminal_line: string;
@@ -38,9 +40,15 @@ type FailureEvent = {
 const ROOT = process.cwd();
 const PROOF_FILE = "run_evidence.json";
 
+function collectPresentBuckets(date: string): string[] {
+	return STABILITY_BUCKETS.filter(
+		(bucket) => findRunDirsForDate(bucket, date).length > 0,
+	);
+}
+
 function collectEvidencePaths(date: string): string[] {
 	const paths: string[] = [];
-	for (const bucket of STABILITY_BUCKETS) {
+	for (const bucket of collectPresentBuckets(date)) {
 		for (const runDir of findRunDirsForDate(bucket, date)) {
 			const candidate = path.join(runDir, PROOF_FILE);
 			if (fs.existsSync(candidate)) paths.push(candidate);
@@ -51,7 +59,7 @@ function collectEvidencePaths(date: string): string[] {
 
 function collectMissingProof(date: string): string[] {
 	const missing: string[] = [];
-	for (const bucket of STABILITY_BUCKETS) {
+	for (const bucket of collectPresentBuckets(date)) {
 		for (const runDir of findRunDirsForDate(bucket, date)) {
 			const candidate = path.join(runDir, PROOF_FILE);
 			if (fs.existsSync(candidate)) continue;
@@ -67,15 +75,15 @@ function buildSummary(logPath: string): DailySummary {
 	const date = path.basename(logPath, ".log");
 	const logText = fs.readFileSync(logPath, "utf8");
 	const classified = classifyLogText(logText);
+	const presentBuckets = collectPresentBuckets(date);
+	const absentBuckets = STABILITY_BUCKETS.filter(
+		(bucket) => !presentBuckets.includes(bucket),
+	);
 	const evidencePaths = collectEvidencePaths(date);
 	const evidenceReady =
-		evidencePaths.length > 0 &&
-		STABILITY_BUCKETS.filter(
-			(bucket) => findRunDirsForDate(bucket, date).length > 0,
-		).every((bucket) =>
-			findRunDirsForDate(bucket, date).every((runDir) =>
-				isEvidenceReady(runDir),
-			),
+		presentBuckets.length > 0 &&
+		presentBuckets.every((bucket) =>
+			findRunDirsForDate(bucket, date).every((runDir) => isEvidenceReady(runDir)),
 		);
 	const failure =
 		classified.failure?.category === "proof_gap" && evidenceReady
@@ -89,6 +97,8 @@ function buildSummary(logPath: string): DailySummary {
 				? "success"
 				: classified.status,
 		log_path: logPath,
+		present_buckets: presentBuckets,
+		absent_buckets: absentBuckets,
 		evidence_ready: evidenceReady,
 		evidence_missing: collectMissingProof(date),
 		terminal_line: classified.terminal_line,
@@ -145,6 +155,12 @@ function formatMarkdown(
 		lines.push(`### ${item.date}`);
 		lines.push(`- Status: \`${item.status}\``);
 		lines.push(`- Log: \`${item.log_path}\``);
+		lines.push(
+			`- Present buckets: ${item.present_buckets.length ? item.present_buckets.map((p) => `\`${p}\``).join(", ") : "(none found)"}`,
+		);
+		lines.push(
+			`- Absent buckets: ${item.absent_buckets.length ? item.absent_buckets.map((p) => `\`${p}\``).join(", ") : "(none)"}`,
+		);
 		lines.push(`- Evidence ready: \`${item.evidence_ready ? "yes" : "no"}\``);
 		lines.push(
 			`- Evidence: ${item.evidence_paths.length > 0 ? item.evidence_paths.map((p) => `\`${p}\``).join(", ") : "(none found)"}`,
@@ -166,6 +182,16 @@ function formatMarkdown(
 	}
 
 	lines.push("");
+	lines.push("## Latest 3 Readiness");
+	lines.push(
+		`- ready: ${summaries.length >= 3 && summaries.slice(0, 3).every((item) => item.evidence_ready) ? "yes" : "no"}`,
+	);
+	lines.push(`- checked_runs: ${Math.min(summaries.length, 3)}`);
+	lines.push(
+		`- all_latest_runs_have_run_dirs: ${summaries.length >= 3 && summaries.slice(0, 3).every((item) => item.present_buckets.length > 0) ? "yes" : "no"}`,
+	);
+
+	lines.push("");
 	lines.push("## 30-Day Failure Classification");
 	const counts = new Map<string, number>();
 	const dispositionCounts = new Map<string, number>();
@@ -178,13 +204,10 @@ function formatMarkdown(
 		);
 		retryableCounts.set(
 			item.retryable ? "retryable" : "non_retryable",
-			(retryableCounts.get(item.retryable ? "retryable" : "non_retryable") ||
-				0) + 1,
+			(retryableCounts.get(item.retryable ? "retryable" : "non_retryable") || 0) + 1,
 		);
 	}
-	for (const [key, count] of [...counts.entries()].sort(
-		(a, b) => b[1] - a[1],
-	)) {
+	for (const [key, count] of [...counts.entries()].sort((a, b) => b[1] - a[1])) {
 		lines.push(`- ${key}: ${count}`);
 	}
 
@@ -242,17 +265,10 @@ async function main() {
 	await fs.writeJson(path.join(outDir, "stability_summary.json"), summaries, {
 		spaces: 2,
 	});
-	await fs.writeFile(
-		path.join(outDir, "stability_summary.md"),
-		`${markdown}\n`,
-	);
-	await fs.writeJson(
-		path.join(outDir, "stability_failures.json"),
-		failureEvents,
-		{
-			spaces: 2,
-		},
-	);
+	await fs.writeFile(path.join(outDir, "stability_summary.md"), `${markdown}\n`);
+	await fs.writeJson(path.join(outDir, "stability_failures.json"), failureEvents, {
+		spaces: 2,
+	});
 	console.log(markdown);
 }
 
