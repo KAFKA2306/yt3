@@ -83,7 +83,9 @@ function buildSummary(logPath: string): DailySummary {
 	const evidenceReady =
 		presentBuckets.length > 0 &&
 		presentBuckets.every((bucket) =>
-			findRunDirsForDate(bucket, date).every((runDir) => isEvidenceReady(runDir)),
+			findRunDirsForDate(bucket, date).every((runDir) =>
+				isEvidenceReady(runDir),
+			),
 		);
 	const failure =
 		classified.failure?.category === "proof_gap" && evidenceReady
@@ -204,10 +206,13 @@ function formatMarkdown(
 		);
 		retryableCounts.set(
 			item.retryable ? "retryable" : "non_retryable",
-			(retryableCounts.get(item.retryable ? "retryable" : "non_retryable") || 0) + 1,
+			(retryableCounts.get(item.retryable ? "retryable" : "non_retryable") ||
+				0) + 1,
 		);
 	}
-	for (const [key, count] of [...counts.entries()].sort((a, b) => b[1] - a[1])) {
+	for (const [key, count] of [...counts.entries()].sort(
+		(a, b) => b[1] - a[1],
+	)) {
 		lines.push(`- ${key}: ${count}`);
 	}
 
@@ -265,10 +270,17 @@ async function main() {
 	await fs.writeJson(path.join(outDir, "stability_summary.json"), summaries, {
 		spaces: 2,
 	});
-	await fs.writeFile(path.join(outDir, "stability_summary.md"), `${markdown}\n`);
-	await fs.writeJson(path.join(outDir, "stability_failures.json"), failureEvents, {
-		spaces: 2,
-	});
+	await fs.writeFile(
+		path.join(outDir, "stability_summary.md"),
+		`${markdown}\n`,
+	);
+	await fs.writeJson(
+		path.join(outDir, "stability_failures.json"),
+		failureEvents,
+		{
+			spaces: 2,
+		},
+	);
 	console.log(markdown);
 }
 
