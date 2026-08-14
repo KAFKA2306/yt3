@@ -13,8 +13,8 @@ This repository uses evidence-driven daily operations.
 
 ## Publish
 
-- `task publish:latest PROFILE=[byosan|yawa|humanity]`: publish the latest generated movie for a profile with receipt and evidence files
-- `task movie:status` or `bun run movie:status`: report the status of all movie receipts and write `logs/movie_status.md` and `logs/movie_status.json`
+- `PROFILE=[byosan|yawa|humanity] task publish -- <run_id>`: publish an explicit run; do not infer a latest run
+- `task movie:status`: report movie receipt status without changing remote state
 
 ## Standards
 
