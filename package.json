@@ -12,7 +12,6 @@
 		"audit:ontology": "bun src/scripts/audit_ontology_standard.ts",
 		"audit:byosan-money": "bun scripts/audit_byosan_money_zero_trust.ts",
 		"stability:summary": "bun src/scripts/stability_summary.ts",
-		"stability:ready": "bun src/scripts/stability_ready.ts",
 		"daily:guarantee-status": "bun src/scripts/daily_guarantee_status.ts",
 		"daily:last3": "DAILY_LAST3=1 bun src/scripts/daily_guarantee_status.ts",
 		"movie:status": "bun src/scripts/movie_status.ts",
