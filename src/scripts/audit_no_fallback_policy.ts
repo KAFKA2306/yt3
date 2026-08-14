@@ -124,9 +124,13 @@ async function main() {
 	const checks = [scanForbiddenCode(), auditFallbackReceipts()];
 	const outDir = path.join(ROOT, "logs");
 	await fs.ensureDir(outDir);
-	await fs.writeJson(path.join(outDir, "no_fallback_policy_audit.json"), checks, {
-		spaces: 2,
-	});
+	await fs.writeJson(
+		path.join(outDir, "no_fallback_policy_audit.json"),
+		checks,
+		{
+			spaces: 2,
+		},
+	);
 	await fs.writeFile(
 		path.join(outDir, "no_fallback_policy_audit.md"),
 		`${formatMarkdown(checks)}\n`,
