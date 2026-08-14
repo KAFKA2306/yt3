@@ -109,8 +109,8 @@ function assertProfileRegistry() {
 					`YouTube profile registry mismatch for ${profileName}.${field}: expected '${wanted}', got '${actual}'`,
 				);
 			}
+		}
 	}
-}
 }
 
 function assertFailClosedProfileTask(
@@ -134,7 +134,11 @@ function assertFailClosedProfileTask(
 		}
 	}
 
-	if (!command.includes('*) echo "PROFILE must be exactly one of: byosan, yawa, humanity" >&2; exit 2')) {
+	if (
+		!command.includes(
+			'*) echo "PROFILE must be exactly one of: byosan, yawa, humanity" >&2; exit 2',
+		)
+	) {
 		throw new Error(
 			`Task ${taskName} must reject missing or unknown PROFILE values`,
 		);
