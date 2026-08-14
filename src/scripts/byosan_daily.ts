@@ -308,7 +308,7 @@ export async function runByosanDaily(): Promise<void> {
 		console.log(`PRODUCTION_PASS_NO_PUBLISH=${runId}`);
 		return;
 	}
-	runCommand(process.execPath, ["src/scripts/publish_latest_movie.ts", runId], {
+	runCommand(process.execPath, ["src/scripts/publish_youtube.ts", runId], {
 		...process.env,
 		ENV_FILE: "config/.env.byosan",
 		YOUTUBE_CHANNEL_PROFILE: "byosan",
