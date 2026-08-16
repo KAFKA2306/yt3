@@ -758,6 +758,66 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 	return `${header}${events.join("\n")}\n`;
 }
 
+let cachedVideoEncoderArgs: string[] | null = null;
+
+function videoEncoderArgs(): string[] {
+	if (cachedVideoEncoderArgs) return cachedVideoEncoderArgs;
+	const nvencProbe = spawnSync(
+		"ffmpeg",
+		[
+			"-hide_banner",
+			"-loglevel",
+			"error",
+			"-f",
+			"lavfi",
+			"-i",
+			"color=c=black:s=64x64:d=0.05",
+			"-frames:v",
+			"1",
+			"-c:v",
+			"h264_nvenc",
+			"-f",
+			"null",
+			"-",
+		],
+		{ stdio: "ignore" },
+	);
+	if (nvencProbe.status === 0) {
+		cachedVideoEncoderArgs = [
+			"-c:v",
+			"h264_nvenc",
+			"-preset",
+			"p5",
+			"-rc",
+			"vbr",
+			"-cq",
+			"15",
+			"-b:v",
+			"16M",
+			"-maxrate",
+			"24M",
+			"-bufsize",
+			"32M",
+		];
+		console.log("[VIDEO_ENCODER] h264_nvenc");
+	} else {
+		cachedVideoEncoderArgs = [
+			"-c:v",
+			"libx264",
+			"-preset",
+			"medium",
+			"-crf",
+			"16",
+			"-maxrate",
+			"24M",
+			"-bufsize",
+			"32M",
+		];
+		console.log("[VIDEO_ENCODER] libx264 (NVENC unavailable)");
+	}
+	return cachedVideoEncoderArgs;
+}
+
 function renderVisualSegment(segment: TimedSegment): void {
 	const filter = [
 		"scale=1920:1080:flags=lanczos",
@@ -783,20 +843,7 @@ function renderVisualSegment(segment: TimedSegment): void {
 			"-vf",
 			filter,
 			"-an",
-			"-c:v",
-			"h264_nvenc",
-			"-preset",
-			"p5",
-			"-rc",
-			"vbr",
-			"-cq",
-			"15",
-			"-b:v",
-			"16M",
-			"-maxrate",
-			"24M",
-			"-bufsize",
-			"32M",
+			...videoEncoderArgs(),
 			"-r",
 			String(FPS),
 			"-g",

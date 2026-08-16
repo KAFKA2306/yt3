@@ -2,27 +2,28 @@
 	"schemaVersion": "byosan_feature_v1",
 	"runId": "byosan_money/2026-08-16-china-ai-quant",
 	"asOf": "2026-08-16",
-	"angle": "中国AIを評価せず、公開された使用量・価格・算力・国産チップ・AI売上・業務効果の数量だけを一次資料で並べる",
-	"searchQuery": "中国 AI 2026 token 使用量 算力 AI売上 国産AIチップ 一次資料",
-	"title": "中国AIの数字を一次資料だけで見る──豆包120兆Token/日、Baidu AI Cloud Infra 88億元",
-	"thumbnailTitle": "120兆Token/日\n2185 EFLOPS",
+	"angle": "NVIDIAの最先端GPUに勝てるかではなく、安いTokenを大量かつ継続的に供給できるかを、算力・token/day・価格・国産accelerator出荷/配備・AI売上の一次公開値だけで検証する",
+	"searchQuery": "中国AI NVIDIA Token 120兆 算力 国産AIチップ AI売上 2026 一次資料",
+	"title": "中国AIはNVIDIAに勝つ必要がない――安いTokenを大量生産できる国は、もう負けているのか？",
+	"thumbnailTitle": "NVIDIA不要？\n120兆Token/日",
 	"thumbnail": {
 		"eyebrow": "中国AI 2026",
-		"lead": "1日",
-		"accent": "120兆",
+		"lead": "NVIDIA",
+		"accent": "不要？",
 		"reaction": "!",
-		"secondLine": "Token実使用",
+		"secondLine": "120兆Token/日",
 		"calloutTop": "智能算力 2185 EFLOPS",
-		"calloutBottom": "AI Cloud 88億元"
+		"calloutBottom": "Zhenwu 56万個超"
 	},
-	"descriptionLead": "2026年8月16日時点で、中国政府・企業IR・公式製品ドキュメントから確認できる中国AI関連の数量だけを整理します。評価、スコア、将来予測は入れません。",
+	"descriptionLead": "中国AIはNVIDIAの最先端GPUに追いつかなければ失敗するのか。2026年8月16日時点の一次資料から、算力・Token使用量・価格・国産accelerator・実導入・AI売上を同じ軸で確認します。評価・スコア・将来予測は置きません。",
 	"descriptionBullets": [
 		"火山引擎は2026年FORCE大会で豆包大模型の日平均使用量を120兆tokensと掲載",
 		"工業和信息化部は2026年6月末の中国の智能算力を2185 EFLOPS（FP16）と公表",
 		"AlibabaはZhenwu累計出荷56万個超、外部顧客400社超、20業界超と公表",
 		"BaiduはQ1 2026のAI Cloud Infra売上88億元、前年同期比79%増と公表",
 		"KuaishouはQ1 2026のKling AI売上6.5億元超、前年同期比300%超と公表",
-		"一次資料を確認できなかったworkload share、歩留まり、HBM量、実コストは今回の動画では扱わない"
+		"一次資料を確認できなかったworkload share、歩留まり、HBM量、実コストは今回の動画では扱わない",
+		"生データ: https://kafka2306.github.io/semiconductor-earnings-model/china-ai/"
 	],
 	"disclaimer": "本動画は公開一次資料に記載された数量を整理する情報提供です。企業間の優劣、投資判断、将来の市場シェアや技術覇権を評価・予測するものではありません。",
 	"hookPromises": ["120兆", "2185", "56万", "88億元"],
@@ -181,12 +182,12 @@
 	],
 	"segments": [
 		{
-			"chapter": "公開値だけで見る中国AI",
+			"chapter": "中国AIはNVIDIAに勝つ必要がない？",
 			"speaker": "春日部つむぎ",
 			"emotion": "shock",
-			"section": "THE NUMBER",
-			"headline": "豆包 120兆Token/日",
-			"subheadline": "算力 2185・Zhenwu 56万・Baidu 88億元",
+			"section": "THE QUESTION",
+			"headline": "NVIDIAに勝つ必要はない？",
+			"subheadline": "まず 120兆Token/日を見る",
 			"visualType": "hero",
 			"stats": [
 				{
@@ -203,14 +204,14 @@
 				}
 			],
 			"source": "火山引擎・工信部",
-			"text": "中国AIを、評価なしで数字だけ見ます。豆包は1日120兆Token、中国の智能算力は2185 EFLOPS。"
+			"text": "中国AIはNVIDIAの最先端GPUに勝たなければ失敗する。本当にそうでしょうか。今日は性能ランキングではなく、安いTokenを大量に供給できているかを公開数字だけで見ます。"
 		},
 		{
 			"speaker": "春日部つむぎ",
 			"emotion": "reveal",
-			"section": "FOUR OBSERVATIONS",
-			"headline": "56万個と88億元",
-			"subheadline": "国産チップ出荷とAI Cloud売上",
+			"section": "THE OBSERVABLES",
+			"headline": "56万個と88億元まで追う",
+			"subheadline": "chip出荷・実導入・AI売上",
 			"visualType": "comparison",
 			"stats": [
 				{
@@ -227,32 +228,33 @@
 				}
 			],
 			"source": "Alibaba・Baidu",
-			"text": "さらにAlibabaのZhenwuは56万個超を出荷。BaiduのAI Cloud Infraは四半期88億元です。ここまでが冒頭の4つの公開値です。"
+			"text": "見るのはモデル順位ではありません。Tokenの使用量と価格、国内算力、国産chipの出荷と配備、そしてAI売上です。冒頭の公開値は120兆、2185、56万、88億元です。",
+			"chapter": "成功条件を数量へ落とす"
 		},
 		{
-			"chapter": "まず使用量",
+			"chapter": "論評ではなく観測する",
 			"speaker": "ずんだもん",
 			"emotion": "curious",
-			"section": "SCOPE",
-			"headline": "何を数える？",
-			"subheadline": "Token・価格・算力・出荷・売上",
+			"section": "METHOD",
+			"headline": "勝敗ではなく反証する",
+			"subheadline": "同じ指標を次回も取り直す",
 			"visualType": "question",
 			"stats": [
 				{
-					"label": "扱うもの",
-					"value": "公開数量",
-					"detail": "一次資料に限定",
-					"color": "white"
+					"label": "観測軸",
+					"value": "6系統",
+					"detail": "算力→Token→価格→chip→導入→売上",
+					"color": "cyan"
 				},
 				{
-					"label": "扱わないもの",
-					"value": "評価・予測",
-					"detail": "スコアなし",
+					"label": "データ",
+					"value": "一次資料",
+					"detail": "推定で欠損を埋めない",
 					"color": "muted"
 				}
 			],
-			"source": "本動画の集計方針",
-			"text": "性能ランキングや覇権予想はやらないのだ？"
+			"source": "China AI Quantitative Monitor",
+			"text": "目的は今日の勝者を決めることではないのだ。同じ指標を次回も取り直して、この仮説を反証できる状態にするのだ。"
 		},
 		{
 			"speaker": "春日部つむぎ",
@@ -679,26 +681,27 @@
 		{
 			"speaker": "春日部つむぎ",
 			"emotion": "joy",
-			"section": "CLOSE",
-			"headline": "数字は更新する",
-			"subheadline": "結論ではなく時系列を残す",
+			"section": "MONITOR",
+			"headline": "次回も同じ6軸を見る",
+			"subheadline": "China AI Quantitative Monitor",
 			"visualType": "closing",
 			"stats": [
 				{
-					"label": "次回更新",
-					"value": "新しい一次開示",
-					"detail": "同じ指標へ追記",
+					"label": "今回",
+					"value": "2026-08-16",
+					"detail": "一次資料snapshot",
 					"color": "cyan"
 				},
 				{
-					"label": "評価スコア",
-					"value": "なし",
-					"detail": "数量を保存",
-					"color": "muted"
+					"label": "次回",
+					"value": "同じ指標",
+					"detail": "増減だけを追記",
+					"color": "amber"
 				}
 			],
-			"source": "秒算マネー",
-			"text": "今回は結論を置かず、2026年8月16日時点の公開数量を固定しました。新しい一次開示が出たら、同じ系列に追記します。"
+			"source": "kafka2306.github.io/semiconductor-earnings-model/china-ai/",
+			"text": "結論を固定せず、同じ数字を取り直します。算力、Token、価格、国産chip、実導入、AI売上。この6軸を同じ公開ページへ積み上げます。",
+			"chapter": "同じ数字をまた取りに行く"
 		}
 	]
 }
