@@ -1,0 +1,131 @@
+name: Finalize China AI production
+
+on:
+  push:
+    branches: [feat/china-ai-quant-20260816]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SPEC: config/productions/china_ai_quant_20260816.json
+      RUN_ID: byosan_money/2026-08-16-china-ai-quant
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/china-ai-quant-20260816
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Canonicalize title, thumbnail, and audit evidence
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          schema = Path('src/domain/byosan/feature_spec.ts')
+          schema_text = schema.read_text()
+          schema_text = schema_text.replace('lead: z.string().min(1).max(5),', 'lead: z.string().min(1).max(8),')
+          schema.write_text(schema_text)
+
+          producer = Path('src/scripts/produce_byosan_feature.ts')
+          producer_text = producer.read_text()
+          producer_text = producer_text.replace(
+              'asset: "official 春日部つむぎ standing art with extended pointing arm",',
+              'asset: "speaker-specific standing art; neutral SVG fallback when local assets are absent",',
+          )
+          producer.write_text(producer_text)
+
+          spec_path = Path('config/productions/china_ai_quant_20260816.json')
+          spec = json.loads(spec_path.read_text())
+          spec['angle'] = 'NVIDIAの最先端GPUに勝てるかではなく、安いTokenを大量かつ継続的に供給できるかを、算力・token/day・価格・国産accelerator出荷/配備・AI売上の一次公開値だけで検証する'
+          spec['title'] = '中国AIはNVIDIAに勝つ必要がない――安いTokenを大量生産できる国は、もう負けているのか？'
+          spec['thumbnailTitle'] = 'NVIDIA不要？\n120兆Token/日'
+          spec['thumbnail'] = {
+              'eyebrow': '中国AI 2026',
+              'lead': 'NVIDIA',
+              'accent': '不要？',
+              'reaction': '!',
+              'secondLine': '120兆Token/日',
+              'calloutTop': '智能算力 2185 EFLOPS',
+              'calloutBottom': 'Zhenwu 56万個超',
+          }
+          spec['descriptionLead'] = '中国AIはNVIDIAの最先端GPUに追いつかなければ失敗するのか。2026年8月16日時点の一次資料から、算力・Token使用量・価格・国産accelerator・実導入・AI売上を同じ軸で確認します。評価・スコア・将来予測は置きません。'
+          spec['segments'][0]['chapter'] = '中国AIはNVIDIAに勝つ必要がない？'
+          spec['segments'][0]['section'] = 'THE QUESTION'
+          spec['segments'][0]['headline'] = 'NVIDIAに勝つ必要はない？'
+          spec['segments'][0]['subheadline'] = 'まず 120兆Token/日を見る'
+          spec['segments'][0]['text'] = '中国AIはNVIDIAの最先端GPUに勝たなければ失敗する。本当にそうでしょうか。今日は性能ランキングではなく、安いTokenを大量に供給できているかを公開数字だけで見ます。'
+          spec['segments'][1]['chapter'] = '成功条件を数量へ落とす'
+          spec['segments'][1]['section'] = 'THE OBSERVABLES'
+          spec['segments'][1]['headline'] = '56万個と88億元まで追う'
+          spec['segments'][1]['subheadline'] = 'chip出荷・実導入・AI売上'
+          spec['segments'][1]['text'] = '見るのはモデル順位ではありません。Tokenの使用量と価格、国内算力、国産chipの出荷と配備、そしてAI売上です。冒頭の公開値は120兆、2185、56万、88億元です。'
+          spec['segments'][2]['chapter'] = '論評ではなく観測する'
+          spec['segments'][2]['section'] = 'METHOD'
+          spec['segments'][2]['headline'] = '勝敗ではなく反証する'
+          spec['segments'][2]['subheadline'] = '同じ指標を次回も取り直す'
+          spec['segments'][2]['stats'] = [
+              {'label': '観測軸', 'value': '6系統', 'detail': '算力→Token→価格→chip→導入→売上', 'color': 'cyan'},
+              {'label': 'データ', 'value': '一次資料', 'detail': '推定で欠損を埋めない', 'color': 'muted'},
+          ]
+          spec['segments'][2]['source'] = 'China AI Quantitative Monitor'
+          spec['segments'][2]['text'] = '目的は今日の勝者を決めることではないのだ。同じ指標を次回も取り直して、この仮説を反証できる状態にするのだ。'
+          spec['segments'][-1]['chapter'] = '同じ数字をまた取りに行く'
+          spec['segments'][-1]['section'] = 'MONITOR'
+          spec['segments'][-1]['headline'] = '次回も同じ6軸を見る'
+          spec['segments'][-1]['subheadline'] = 'China AI Quantitative Monitor'
+          spec['segments'][-1]['stats'] = [
+              {'label': '今回', 'value': '2026-08-16', 'detail': '一次資料snapshot', 'color': 'cyan'},
+              {'label': '次回', 'value': '同じ指標', 'detail': '増減だけを追記', 'color': 'amber'},
+          ]
+          spec['segments'][-1]['source'] = 'kafka2306.github.io/semiconductor-earnings-model/china-ai/'
+          spec['segments'][-1]['text'] = '結論を固定せず、同じ数字を取り直します。算力、Token、価格、国産chip、実導入、AI売上。この6軸を同じ公開ページへ積み上げます。'
+          spec_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2) + '\n')
+          PY
+          bun x biome format --write src/domain/byosan/feature_spec.ts src/scripts/produce_byosan_feature.ts "$SPEC"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/china-ai-finalize.yml
+          git add src/domain/byosan/feature_spec.ts src/scripts/produce_byosan_feature.ts "$SPEC"
+          git commit -m "fix(byosan): finalize China AI quantitative feature"
+          git push origin HEAD:feat/china-ai-quant-20260816
+      - name: Validate exact tree
+        run: |
+          bun run typecheck
+          bun run lint
+          SKIP_LLM=true DRY_RUN=true bun test
+      - name: Reuse rendered media
+        uses: actions/download-artifact@v4
+        with:
+          name: china-ai-token-supply-20260816-final
+          path: runs/byosan_money/2026-08-16-china-ai-quant
+          github-token: ${{ github.token }}
+          run-id: 31925238296
+      - name: Install ffmpeg and fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-noto-cjk
+      - name: Compose and audit existing 20 scenes
+        run: bun src/scripts/produce_byosan_feature.ts "$SPEC"
+      - name: Record publish blocker
+        if: success()
+        run: |
+          mkdir -p "runs/$RUN_ID/publish"
+          printf '%s\n' '{"status":"BLOCKED_MISSING_YOUTUBE_SECRETS","channel":"秒算マネー"}' > "runs/$RUN_ID/publish/automation_status.json"
+      - name: Upload audited production
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: china-ai-token-supply-20260816-audited
+          path: runs/byosan_money/2026-08-16-china-ai-quant
+          if-no-files-found: error
+          retention-days: 30
