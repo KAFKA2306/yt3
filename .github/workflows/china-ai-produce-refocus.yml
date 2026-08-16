@@ -83,6 +83,50 @@ jobs:
             git push origin HEAD:feat/china-ai-quant-20260816
           fi
 
+      - name: Remove final-compose NVENC hard dependency
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("src/scripts/produce_byosan_feature.ts")
+          text = p.read_text()
+          old = '''\t\t\t"-c:v",
+          \t\t\t"h264_nvenc",
+          \t\t\t"-preset",
+          \t\t\t"p6",
+          \t\t\t"-rc",
+          \t\t\t"cbr",
+          \t\t\t"-b:v",
+          \t\t\t"8M",
+          \t\t\t"-maxrate",
+          \t\t\t"8M",
+          \t\t\t"-bufsize",
+          \t\t\t"16M",
+          \t\t\t"-profile:v",
+          \t\t\t"high",
+          \t\t\t"-g",
+          \t\t\t"15",
+          \t\t\t"-bf",
+          \t\t\t"2",'''.replace("          ", "")
+          new = '''\t\t\t...videoEncoderArgs(),
+          \t\t\t"-profile:v",
+          \t\t\t"high",
+          \t\t\t"-g",
+          \t\t\t"15",
+          \t\t\t"-bf",
+          \t\t\t"2",'''.replace("          ", "")
+          if old in text:
+              p.write_text(text.replace(old, new, 1))
+          elif "composeFinal" in text and '"h264_nvenc"' in text[text.index("function composeFinal"):]:
+              raise SystemExit("composeFinal still contains NVENC but expected block did not match")
+          PY
+          bun x biome format --write src/scripts/produce_byosan_feature.ts
+          git add src/scripts/produce_byosan_feature.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(byosan): reuse encoder fallback for final compose"
+            git push origin HEAD:feat/china-ai-quant-20260816
+          fi
+
       - name: Validate repository
         run: |
           bun run typecheck
