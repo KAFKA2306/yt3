@@ -487,7 +487,23 @@ function sceneSvg(
 	</svg>`);
 }
 
-async function characterBuffer(
+function fallbackCharacterSvg(speaker: FeatureSegment["speaker"]): Buffer {
+	const isZundamon = speaker === "ずんだもん";
+	const accent = isZundamon ? "#84CC55" : "#40D9FF";
+	const accent2 = isZundamon ? "#D7F76D" : "#9D7BFF";
+	return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="720" height="900" viewBox="0 0 720 900">
+		<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${accent}"/><stop offset="1" stop-color="${accent2}"/></linearGradient></defs>
+		<circle cx="360" cy="300" r="220" fill="${accent}" fill-opacity="0.10" stroke="${accent}" stroke-opacity="0.28" stroke-width="4"/>
+		<circle cx="360" cy="292" r="126" fill="url(#g)"/>
+		<circle cx="322" cy="278" r="12" fill="#07111F"/><circle cx="398" cy="278" r="12" fill="#07111F"/>
+		<path d="M326 333 Q360 360 394 333" fill="none" stroke="#07111F" stroke-width="10" stroke-linecap="round"/>
+		<path d="M138 840 Q174 515 360 492 Q546 515 582 840 Z" fill="url(#g)" opacity="0.92"/>
+		<rect x="110" y="730" width="500" height="96" rx="48" fill="#07111F" fill-opacity="0.92" stroke="${accent}" stroke-width="3"/>
+		<text x="360" y="792" text-anchor="middle" font-family="Noto Sans CJK JP, sans-serif" font-size="42" font-weight="800" fill="#F7FBFF">${speaker}</text>
+	</svg>`);
+}
+
+async function characterSourceBuffer(
 	speaker: FeatureSegment["speaker"],
 ): Promise<Buffer> {
 	const source =
@@ -497,7 +513,15 @@ async function characterBuffer(
 					PROJECT_ROOT,
 					"assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v2.0.png",
 				);
-	return sharp(source)
+	if (await fs.pathExists(source)) return fs.readFile(source);
+	console.warn(`[CHARACTER_FALLBACK] ${speaker}: ${source}`);
+	return fallbackCharacterSvg(speaker);
+}
+
+async function characterBuffer(
+	speaker: FeatureSegment["speaker"],
+): Promise<Buffer> {
+	return sharp(await characterSourceBuffer(speaker))
 		.trim({ background: { r: 255, g: 255, b: 255, alpha: 0 } })
 		.resize({
 			height: speaker === "ずんだもん" ? 650 : 720,
@@ -534,12 +558,7 @@ async function renderThumbnail(
 ): Promise<{ png: string; jpg: string }> {
 	const thumbnailPng = path.join(runDir, "thumbnail.png");
 	const thumbnailJpg = path.join(runDir, "thumbnail_youtube.jpg");
-	const character = await sharp(
-		path.join(
-			PROJECT_ROOT,
-			"assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v2.0.png",
-		),
-	)
+	const character = await sharp(await characterSourceBuffer("春日部つむぎ"))
 		.trim({ background: { r: 255, g: 255, b: 255, alpha: 0 } })
 		.resize({ height: 930, fit: "inside", withoutEnlargement: false })
 		.png()
@@ -739,6 +758,70 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 	return `${header}${events.join("\n")}\n`;
 }
 
+let cachedVideoEncoderArgs: string[] | null = null;
+
+function videoEncoderArgs(): string[] {
+	if (cachedVideoEncoderArgs) return cachedVideoEncoderArgs;
+	const nvencProbe = spawnSync(
+		"ffmpeg",
+		[
+			"-hide_banner",
+			"-loglevel",
+			"error",
+			"-f",
+			"lavfi",
+			"-i",
+			"color=c=black:s=64x64:d=0.05",
+			"-frames:v",
+			"1",
+			"-c:v",
+			"h264_nvenc",
+			"-f",
+			"null",
+			"-",
+		],
+		{ stdio: "ignore" },
+	);
+	if (nvencProbe.status === 0) {
+		cachedVideoEncoderArgs = [
+			"-c:v",
+			"h264_nvenc",
+			"-preset",
+			"p5",
+			"-rc",
+			"vbr",
+			"-cq",
+			"15",
+			"-b:v",
+			"16M",
+			"-maxrate",
+			"24M",
+			"-bufsize",
+			"32M",
+		];
+		console.log("[VIDEO_ENCODER] h264_nvenc");
+	} else {
+		cachedVideoEncoderArgs = [
+			"-c:v",
+			"libx264",
+			"-preset",
+			"fast",
+			"-b:v",
+			"10M",
+			"-minrate",
+			"10M",
+			"-maxrate",
+			"10M",
+			"-bufsize",
+			"20M",
+			"-x264-params",
+			"nal-hrd=cbr:force-cfr=1:filler=1",
+		];
+		console.log("[VIDEO_ENCODER] libx264 (NVENC unavailable)");
+	}
+	return cachedVideoEncoderArgs;
+}
+
 function renderVisualSegment(segment: TimedSegment): void {
 	const filter = [
 		"scale=1920:1080:flags=lanczos",
@@ -764,20 +847,7 @@ function renderVisualSegment(segment: TimedSegment): void {
 			"-vf",
 			filter,
 			"-an",
-			"-c:v",
-			"h264_nvenc",
-			"-preset",
-			"p5",
-			"-rc",
-			"vbr",
-			"-cq",
-			"15",
-			"-b:v",
-			"16M",
-			"-maxrate",
-			"24M",
-			"-bufsize",
-			"32M",
+			...videoEncoderArgs(),
 			"-r",
 			String(FPS),
 			"-g",
@@ -908,18 +978,7 @@ function composeFinal(
 			"-map",
 			"[a]",
 			"-shortest",
-			"-c:v",
-			"h264_nvenc",
-			"-preset",
-			"p6",
-			"-rc",
-			"cbr",
-			"-b:v",
-			"8M",
-			"-maxrate",
-			"8M",
-			"-bufsize",
-			"16M",
+			...videoEncoderArgs(),
 			"-profile:v",
 			"high",
 			"-g",
@@ -1327,7 +1386,8 @@ async function auditProduction(
 				? "PASS"
 				: "FAIL",
 			evidence: {
-				asset: "official 春日部つむぎ standing art with extended pointing arm",
+				asset:
+					"speaker-specific standing art; neutral SVG fallback when local assets are absent",
 				synchronization:
 					"speaker-specific cutout, pointer line, emotion label, and stat target on every scene",
 			},

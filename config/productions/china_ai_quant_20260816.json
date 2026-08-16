@@ -1,0 +1,707 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-08-16-china-ai-quant",
+	"asOf": "2026-08-16",
+	"angle": "NVIDIAの最先端GPUに勝てるかではなく、安いTokenを大量かつ継続的に供給できるかを、算力・token/day・価格・国産accelerator出荷/配備・AI売上の一次公開値だけで検証する",
+	"searchQuery": "中国AI NVIDIA Token 120兆 算力 国産AIチップ AI売上 2026 一次資料",
+	"title": "中国AIはNVIDIAに勝つ必要がない――安いTokenを大量生産できる国は、もう負けているのか？",
+	"thumbnailTitle": "NVIDIA不要？\n120兆Token/日",
+	"thumbnail": {
+		"eyebrow": "中国AI 2026",
+		"lead": "NVIDIA",
+		"accent": "不要？",
+		"reaction": "!",
+		"secondLine": "120兆Token/日",
+		"calloutTop": "智能算力 2185 EFLOPS",
+		"calloutBottom": "Zhenwu 56万個超"
+	},
+	"descriptionLead": "中国AIはNVIDIAの最先端GPUに追いつかなければ失敗するのか。2026年8月16日時点の一次資料から、算力・Token使用量・価格・国産accelerator・実導入・AI売上を同じ軸で確認します。評価・スコア・将来予測は置きません。",
+	"descriptionBullets": [
+		"火山引擎は2026年FORCE大会で豆包大模型の日平均使用量を120兆tokensと掲載",
+		"工業和信息化部は2026年6月末の中国の智能算力を2185 EFLOPS（FP16）と公表",
+		"AlibabaはZhenwu累計出荷56万個超、外部顧客400社超、20業界超と公表",
+		"BaiduはQ1 2026のAI Cloud Infra売上88億元、前年同期比79%増と公表",
+		"KuaishouはQ1 2026のKling AI売上6.5億元超、前年同期比300%超と公表",
+		"一次資料を確認できなかったworkload share、歩留まり、HBM量、実コストは今回の動画では扱わない",
+		"生データ: https://kafka2306.github.io/semiconductor-earnings-model/china-ai/"
+	],
+	"disclaimer": "本動画は『NVIDIAに性能で勝たなくても、安いTokenを大量供給できればAI産業は成立しうる』という仮説を、公開一次資料の数量で検証する情報提供です。企業間の優劣、投資判断、将来の市場シェアや技術覇権を断定・予測するものではありません。",
+	"hookPromises": ["120兆", "2185", "56万", "88億元"],
+	"noveltyQueries": [
+		"site:youtube.com/watch 中国AI NVIDIA 勝たなくていい 120兆 Token 2185 EFLOPS",
+		"site:youtube.com/watch 中国AI 安いToken 120兆 Zhenwu 56万 Baidu 88億元",
+		"site:youtube.com/watch 中国AI Token 算力 国産チップ AI売上 一次資料 2026"
+	],
+	"tags": [
+		"中国AI",
+		"豆包",
+		"DeepSeek",
+		"Huawei",
+		"Alibaba",
+		"Baidu",
+		"Kuaishou",
+		"AI Cloud",
+		"AI半導体",
+		"Token",
+		"算力",
+		"秒算マネー"
+	],
+	"sources": [
+		{
+			"id": "miit_h1_2026",
+			"name": "工業和信息化部 2026年上半年工業和信息化発展記者会見",
+			"url": "https://cqca.miit.gov.cn/xwdt/bsxx/art/2026/art_056ab89b9bea45d1a4161e2c56293896.html"
+		},
+		{
+			"id": "miit_2025_ai",
+			"name": "工業和信息化部 2025年工業和信息化発展主要目標任務",
+			"url": "https://www.miit.gov.cn/xwfb/bldhd/art/2026/art_4ba01aa6d2f54ced8ba3490ea4fb52c4.html"
+		},
+		{
+			"id": "volc_force_2026",
+			"name": "火山引擎 FORCE 2026",
+			"url": "https://www.volcengine.com/event/force-2606"
+		},
+		{
+			"id": "volc_2025_tokens",
+			"name": "火山引擎 豆包1.5深度思考モデル発表",
+			"url": "https://developer.volcengine.com/articles/7496711749128618020"
+		},
+		{
+			"id": "deepseek_pricing",
+			"name": "DeepSeek API Models & Pricing",
+			"url": "https://api-docs.deepseek.com/quick_start/pricing/"
+		},
+		{
+			"id": "huawei_token_plan",
+			"name": "Huawei Cloud MaaS Token Plan",
+			"url": "https://support.huaweicloud.com/Token-plan-maas/tokenplan-maas-0001.html"
+		},
+		{
+			"id": "huawei_waic_2026",
+			"name": "Huawei Atlas 950 SuperPoD at WAIC 2026",
+			"url": "https://www.huawei.com/cn/news/2026/7/atlas-950-superpod"
+		},
+		{
+			"id": "alibaba_fy2026",
+			"name": "Alibaba 2026年3月四半期・2026年度業績",
+			"url": "https://www.alibabagroup.com/zh-HK/document-1991237455038119936"
+		},
+		{
+			"id": "alibaba_zhenwu",
+			"name": "Alibaba Zhenwu M890 and Cloud Stack",
+			"url": "https://www.alibabagroup.com/en-US/document-1994119844504535040"
+		},
+		{
+			"id": "baidu_q1_2026",
+			"name": "Baidu Q1 2026 Results",
+			"url": "https://ir.baidu.com/news-releases/news-release-details/baidu-announces-first-quarter-2026-results/"
+		},
+		{
+			"id": "kuaishou_q1_2026",
+			"name": "Kuaishou Q1 2026 Results",
+			"url": "https://ir.kuaishou.com/news-releases/news-release-details/kuaishou-technology-announces-first-quarter-2026-unaudited"
+		},
+		{
+			"id": "miit_apec_2026",
+			"name": "工業和信息化部 2026年APECデジタル・AI閣僚会議記者会見",
+			"url": "https://www.miit.gov.cn/xwfb/bldhd/art/2026/art_d109e2b6dc4844cc902a1f6f49712f67.html"
+		}
+	],
+	"claims": [
+		{
+			"claim": "火山引擎FORCE 2026は豆包大模型の日平均token使用量を120兆、百万input tokensの価格を0.15元から、初期限流を500万TPMと掲載",
+			"sourceIds": ["volc_force_2026"],
+			"status": "verified"
+		},
+		{
+			"claim": "火山引擎は2025年3月末の豆包大模型の日平均token呼出量を12.7兆超、2024年12月比3倍、約1年前比106倍と公表",
+			"sourceIds": ["volc_2025_tokens"],
+			"status": "verified"
+		},
+		{
+			"claim": "DeepSeek V4-FlashとV4-Proは1M context、最大384K outputを持ち、V4-Flashのcache miss inputは1M tokens当たり0.14ドル、outputは0.28ドル",
+			"sourceIds": ["deepseek_pricing"],
+			"status": "verified"
+		},
+		{
+			"claim": "Huawei Cloud Token PlanはLite 5000万tokens 59元、Standard 1.3億 149元、Pro 3.8億 399元、Max 8.8億 799元",
+			"sourceIds": ["huawei_token_plan"],
+			"status": "verified"
+		},
+		{
+			"claim": "中国の智能算力は2026年6月末に2185 EFLOPS（FP16）、全国算力施設の全体上架率は71.4%",
+			"sourceIds": ["miit_h1_2026"],
+			"status": "verified"
+		},
+		{
+			"claim": "2026年6月末の智能算力地域比率は東部55.9%、中部10.6%、西部32.6%、東北0.9%",
+			"sourceIds": ["miit_h1_2026"],
+			"status": "verified"
+		},
+		{
+			"claim": "2025年の中国の智能算力は1590 EFLOPS、AI企業は6200社超、AI核心産業規模は1.2兆元を突破",
+			"sourceIds": ["miit_2025_ai", "miit_apec_2026"],
+			"status": "verified"
+		},
+		{
+			"claim": "Alibaba Cloud Intelligence Groupの2026年3月四半期売上は416.26億元、外部商業化売上は前年同期比40%増",
+			"sourceIds": ["alibaba_fy2026"],
+			"status": "verified"
+		},
+		{
+			"claim": "Alibabaの2026年3月四半期AI関連製品売上は89.71億元で、11四半期連続の三桁前年同期比成長",
+			"sourceIds": ["alibaba_fy2026"],
+			"status": "verified"
+		},
+		{
+			"claim": "AlibabaはZhenwu累計出荷56万個超、外部顧客400社超、導入20業界超と公表",
+			"sourceIds": ["alibaba_zhenwu"],
+			"status": "verified"
+		},
+		{
+			"claim": "Zhenwu M890は前世代比3倍性能、144GB on-chip memory、800GB/s inter-chip bandwidth、ICN Switch 1.0は25.6Tbps",
+			"sourceIds": ["alibaba_zhenwu"],
+			"status": "verified"
+		},
+		{
+			"claim": "Huaweiは昇腾384 SuperPoDの商用導入750セット超、20超業界、3000超パートナー、7000超ソリューション、2000超政企顧客を公表",
+			"sourceIds": ["huawei_waic_2026"],
+			"status": "verified"
+		},
+		{
+			"claim": "Baidu Q1 2026のCore AI-powered Business売上は136億元、AI Cloud Infraは88億元で前年同期比79%増、GPU Cloudは184%増",
+			"sourceIds": ["baidu_q1_2026"],
+			"status": "verified"
+		},
+		{
+			"claim": "Kuaishou Q1 2026のKling AI売上は6.5億元超で前年同期比300%超、2026年3月ARRは約5億ドル",
+			"sourceIds": ["kuaishou_q1_2026"],
+			"status": "verified"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "中国AIはNVIDIAに勝つ必要がない？",
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "THE QUESTION",
+			"headline": "NVIDIAに勝つ必要はない？",
+			"subheadline": "まず 120兆Token/日を見る",
+			"visualType": "hero",
+			"stats": [
+				{
+					"label": "豆包 日平均",
+					"value": "120兆 Token",
+					"detail": "FORCE 2026",
+					"color": "cyan"
+				},
+				{
+					"label": "中国 智能算力",
+					"value": "2185 EFLOPS",
+					"detail": "2026年6月末 FP16",
+					"color": "amber"
+				}
+			],
+			"source": "火山引擎・工信部",
+			"text": "中国AIはNVIDIAの最先端GPUに勝たなければ失敗する。本当にそうでしょうか。今日は性能ランキングではなく、安いTokenを大量に供給できているかを公開数字だけで見ます。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "THE OBSERVABLES",
+			"headline": "56万個と88億元まで追う",
+			"subheadline": "chip出荷・実導入・AI売上",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "Zhenwu累計出荷",
+					"value": "56万個超",
+					"detail": "Alibaba公表",
+					"color": "cyan"
+				},
+				{
+					"label": "Baidu AI Cloud",
+					"value": "88億元",
+					"detail": "Q1 2026",
+					"color": "amber"
+				}
+			],
+			"source": "Alibaba・Baidu",
+			"text": "順位ではなく供給を見る。Token120兆、算力2185、国産chip56万、AI売上88億元。この4つから始めます。",
+			"chapter": "成功条件を数量へ落とす"
+		},
+		{
+			"chapter": "論評ではなく観測する",
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "METHOD",
+			"headline": "勝敗ではなく反証する",
+			"subheadline": "同じ指標を次回も取り直す",
+			"visualType": "question",
+			"stats": [
+				{
+					"label": "観測軸",
+					"value": "6系統",
+					"detail": "算力→Token→価格→chip→導入→売上",
+					"color": "cyan"
+				},
+				{
+					"label": "データ",
+					"value": "一次資料",
+					"detail": "推定で欠損を埋めない",
+					"color": "muted"
+				}
+			],
+			"source": "China AI Quantitative Monitor",
+			"text": "目的は今日の勝者を決めることではないのだ。同じ指標を次回も取り直して、この仮説を反証できる状態にするのだ。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "DOUBAO TOKENS",
+			"headline": "2025年3月 12.7兆超",
+			"subheadline": "2026年FORCEでは120兆/日",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "2025年3月末",
+					"value": ">12.7兆/日",
+					"detail": "2024年12月比3倍",
+					"color": "muted"
+				},
+				{
+					"label": "2026 FORCE",
+					"value": "120兆/日",
+					"detail": "日平均使用量",
+					"color": "cyan"
+				}
+			],
+			"source": "火山引擎公式",
+			"text": "はい。火山引擎の公開値を時系列で置きます。2025年3月末は12.7兆超、2026年FORCEでは日平均120兆Tokenです。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "DOUBAO ACCESS",
+			"headline": "0.15元から",
+			"subheadline": "初期限流 500万TPM",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "百万input tokens",
+					"value": "0.15元から",
+					"detail": "FORCE掲載価格",
+					"color": "cyan"
+				},
+				{
+					"label": "初期限流",
+					"value": "500万 TPM",
+					"detail": "FORCE掲載値",
+					"color": "amber"
+				}
+			],
+			"source": "火山引擎 FORCE 2026",
+			"text": "同じ公式ページには、百万input tokensが0.15元から、初期限流が500万TPMと掲載されています。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "DEEPSEEK PRICE",
+			"headline": "Flash: $0.14 input",
+			"subheadline": "outputは $0.28 / 1M tokens",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "Flash cache miss input",
+					"value": "$0.14",
+					"detail": "per 1M tokens",
+					"color": "cyan"
+				},
+				{
+					"label": "Flash output",
+					"value": "$0.28",
+					"detail": "per 1M tokens",
+					"color": "amber"
+				},
+				{
+					"label": "Flash cache hit",
+					"value": "$0.0028",
+					"detail": "per 1M tokens",
+					"color": "muted"
+				}
+			],
+			"source": "DeepSeek API Docs",
+			"text": "DeepSeek V4-Flashは、100万Tokenでcache miss入力0.14ドル、出力0.28ドルです。"
+		},
+		{
+			"chapter": "定額Token",
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "HUAWEI TOKEN PLAN",
+			"headline": "5000万Token 59元/月",
+			"subheadline": "Maxは8.8億Token 799元/月",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "Lite",
+					"value": "5000万 / 59元",
+					"detail": "1 subscription month",
+					"color": "cyan"
+				},
+				{
+					"label": "Max",
+					"value": "8.8億 / 799元",
+					"detail": "1 subscription month",
+					"color": "amber"
+				}
+			],
+			"source": "Huawei Cloud MaaS",
+			"text": "Huawei Cloudの個人向けToken Planは、Liteが月5000万Tokenで59元、Maxが8.8億Tokenで799元です。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "COMPUTE",
+			"headline": "Tokenの土台は？",
+			"subheadline": "中国全体の智能算力を確認",
+			"visualType": "question",
+			"stats": [
+				{
+					"label": "2025年",
+					"value": "1590 EFLOPS",
+					"detail": "工信部公表",
+					"color": "muted"
+				},
+				{
+					"label": "2026年6月末",
+					"value": "2185 EFLOPS",
+					"detail": "FP16",
+					"color": "cyan"
+				}
+			],
+			"source": "工業和信息化部",
+			"text": "次は使われる側の算力なのだ。2025年の1590から、2026年6月末は2185 EFLOPSと公表されているのだ。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "REGIONAL COMPUTE",
+			"headline": "東部55.9%・西部32.6%",
+			"subheadline": "中部10.6%・東北0.9%",
+			"visualType": "distribution",
+			"stats": [
+				{
+					"label": "東部",
+					"value": "55.9%",
+					"detail": "智能算力比率",
+					"color": "cyan"
+				},
+				{
+					"label": "西部",
+					"value": "32.6%",
+					"detail": "智能算力比率",
+					"color": "amber"
+				},
+				{
+					"label": "中部 / 東北",
+					"value": "10.6 / 0.9%",
+					"detail": "智能算力比率",
+					"color": "muted"
+				}
+			],
+			"source": "工業和信息化部 • 2026-06末",
+			"text": "地域別では東部55.9%、西部32.6%、中部10.6%、東北0.9%。全国算力施設の全体上架率は71.4%です。"
+		},
+		{
+			"chapter": "産業の母数",
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "AI INDUSTRY",
+			"headline": "核心産業 1.2兆元突破",
+			"subheadline": "AI企業 6200社超",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "AI核心産業規模",
+					"value": ">1.2兆元",
+					"detail": "2025年",
+					"color": "cyan"
+				},
+				{
+					"label": "AI企業",
+					"value": ">6200社",
+					"detail": "2025年",
+					"color": "amber"
+				}
+			],
+			"source": "工業和信息化部 • 2025 / 2026-07",
+			"text": "2025年について工信部は、AI企業6200社超、AI核心産業規模1.2兆元突破と公表しています。"
+		},
+		{
+			"chapter": "売上に移る",
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "ALIBABA CLOUD",
+			"headline": "Cloud売上 416.26億元",
+			"subheadline": "外部商業化売上 +40% YoY",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "Cloud Intelligence",
+					"value": "416.26億元",
+					"detail": "2026年3月四半期",
+					"color": "cyan"
+				},
+				{
+					"label": "外部商業化売上",
+					"value": "+40%",
+					"detail": "前年同期比",
+					"color": "amber"
+				}
+			],
+			"source": "Alibaba FY2026 Results",
+			"text": "Alibaba Cloudは四半期416.26億元なのだ。次にAI製品売上を見るのだ。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "ALIBABA AI REVENUE",
+			"headline": "AI関連製品 89.71億元",
+			"subheadline": "11四半期連続 三桁成長",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "AI関連製品売上",
+					"value": "89.71億元",
+					"detail": "2026年3月四半期",
+					"color": "cyan"
+				},
+				{
+					"label": "連続期間",
+					"value": "11四半期",
+					"detail": "三桁YoY成長",
+					"color": "amber"
+				}
+			],
+			"source": "Alibaba FY2026 Results",
+			"text": "AlibabaのAI関連製品売上は同四半期89.71億元で、前年同期比の三桁成長が11四半期連続と開示されています。"
+		},
+		{
+			"chapter": "国産チップ数量",
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "ZHENWU SHIPMENTS",
+			"headline": "Zhenwu 56万個超",
+			"subheadline": "外部顧客400社超・20業界超",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "累計出荷",
+					"value": "56万個超",
+					"detail": "Zhenwu",
+					"color": "cyan"
+				},
+				{
+					"label": "外部顧客",
+					"value": "400社超",
+					"detail": "20業界超",
+					"color": "amber"
+				}
+			],
+			"source": "Alibaba / T-Head",
+			"text": "AlibabaのT-HeadはZhenwuを累計56万個超出荷。外部顧客は400社超、導入業界は20業界超と公表しています。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "ZHENWU M890",
+			"headline": "144GB on-chip memory",
+			"subheadline": "800GB/s inter-chip bandwidth",
+			"visualType": "hardware",
+			"stats": [
+				{
+					"label": "M890 performance",
+					"value": "前世代比 3×",
+					"detail": "Alibaba公表",
+					"color": "cyan"
+				},
+				{
+					"label": "on-chip memory",
+					"value": "144 GB",
+					"detail": "M890",
+					"color": "white"
+				},
+				{
+					"label": "ICN Switch 1.0",
+					"value": "25.6 Tbps",
+					"detail": "aggregate bandwidth",
+					"color": "amber"
+				}
+			],
+			"source": "Alibaba / T-Head",
+			"text": "Zhenwu M890は前世代比3倍性能、144GBメモリ。ICN Switch 1.0は25.6Tbpsです。"
+		},
+		{
+			"chapter": "Huawei実導入",
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "ASCEND DEPLOYMENT",
+			"headline": "昇腾384 750セット超",
+			"subheadline": "20超業界で商用導入",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "昇腾384 SuperPoD",
+					"value": "750セット超",
+					"detail": "商用導入",
+					"color": "cyan"
+				},
+				{
+					"label": "導入業界",
+					"value": "20超",
+					"detail": "Huawei公表",
+					"color": "amber"
+				}
+			],
+			"source": "Huawei • 2026-07-17",
+			"text": "Huaweiは昇腾384 SuperPoDを750セット超商用導入し、20を超える業界で使われていると公表しています。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "ATLAS 950",
+			"headline": "公開実機 1024 cards",
+			"subheadline": "1 EFLOPS FP8・2 EFLOPS FP4",
+			"visualType": "hardware",
+			"stats": [
+				{
+					"label": "展示cluster",
+					"value": "1024 cards",
+					"detail": "Atlas 950 SuperPoD",
+					"color": "cyan"
+				},
+				{
+					"label": "FP8 / FP4",
+					"value": "1 / 2 EFLOPS",
+					"detail": "公称算力",
+					"color": "amber"
+				},
+				{
+					"label": "unified memory",
+					"value": "256 TB",
+					"detail": "global addressing",
+					"color": "white"
+				}
+			],
+			"source": "Huawei • WAIC 2026",
+			"text": "Atlas 950は1024枚。FP8で1、FP4で2 EFLOPS。統一メモリは256TBです。"
+		},
+		{
+			"chapter": "Baidu AI売上",
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "BAIDU Q1 2026",
+			"headline": "AI事業 136億元",
+			"subheadline": "AI Cloud Infra 88億元",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "Core AI-powered",
+					"value": "136億元",
+					"detail": "Q1 2026",
+					"color": "cyan"
+				},
+				{
+					"label": "AI Cloud Infra",
+					"value": "88億元",
+					"detail": "+79% YoY",
+					"color": "amber"
+				}
+			],
+			"source": "Baidu IR • Q1 2026",
+			"text": "Baidu Q1はAI事業136億元、AI Cloudは88億元で前年比79%増です。"
+		},
+		{
+			"chapter": "Kling直接売上",
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "KLING AI",
+			"headline": "Q1売上 6.5億元超",
+			"subheadline": "2026年3月 ARR 約5億ドル",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "Kling AI revenue",
+					"value": ">6.5億元",
+					"detail": "Q1 2026",
+					"color": "cyan"
+				},
+				{
+					"label": "YoY",
+					"value": ">+300%",
+					"detail": "Q1 2026",
+					"color": "amber"
+				},
+				{
+					"label": "March ARR",
+					"value": "約$5億",
+					"detail": "2026年3月",
+					"color": "white"
+				}
+			],
+			"source": "Kuaishou IR • Q1 2026",
+			"text": "KuaishouのKling AIはQ1売上6.5億元超、前年同期比300%超。2026年3月の年換算売上ランレートは約5億ドルです。"
+		},
+		{
+			"chapter": "最後に欠損を残す",
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "WHAT IS NOT HERE",
+			"headline": "一次資料を確認できない値は空欄",
+			"subheadline": "workload share・yield・実costは今回未採用",
+			"visualType": "warning",
+			"stats": [
+				{
+					"label": "workload share",
+					"value": "扱わない",
+					"detail": "一次公開値を未確認",
+					"color": "muted"
+				},
+				{
+					"label": "yield / HBM量",
+					"value": "扱わない",
+					"detail": "一次公開値を未確認",
+					"color": "muted"
+				}
+			],
+			"source": "2026-08-16一次資料確認",
+			"text": "つまり、分からない数字を推定で埋めないのだ。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "MONITOR",
+			"headline": "次回も同じ6軸を見る",
+			"subheadline": "China AI Quantitative Monitor",
+			"visualType": "closing",
+			"stats": [
+				{
+					"label": "今回",
+					"value": "2026-08-16",
+					"detail": "一次資料snapshot",
+					"color": "cyan"
+				},
+				{
+					"label": "次回",
+					"value": "同じ指標",
+					"detail": "増減だけを追記",
+					"color": "amber"
+				}
+			],
+			"source": "kafka2306.github.io/semiconductor-earnings-model/china-ai/",
+			"text": "結論を固定せず、同じ数字を取り直します。算力、Token、価格、国産chip、実導入、AI売上。この6軸を同じ公開ページへ積み上げます。",
+			"chapter": "同じ数字をまた取りに行く"
+		}
+	]
+}

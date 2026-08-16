@@ -56,7 +56,7 @@ export const ByosanFeatureClaimSchema = z.object({
 
 export const ByosanThumbnailSchema = z.object({
 	eyebrow: z.string().min(2).max(18),
-	lead: z.string().min(1).max(5),
+	lead: z.string().min(1).max(8),
 	accent: z.string().min(1).max(10),
 	reaction: z.string().min(1).max(4),
 	secondLine: z.string().min(2).max(12),
@@ -182,7 +182,7 @@ export function parseAndAuditByosanFeatureSpec(
 
 export function centerLockedMotionFilter(fps = 30): string {
 	return [
-		`zoompan=z='min(max(pzoom,1)+0.00008,1.025)'`,
+		`zoompan=z='min(max(pzoom,1)+0.00008,1.06)'`,
 		"x='iw/2-(iw/zoom/2)'",
 		"y='ih/2-(ih/zoom/2)'",
 		`d=1:s=1920x1080:fps=${fps}`,
