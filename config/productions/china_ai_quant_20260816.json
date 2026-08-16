@@ -228,7 +228,7 @@
 				}
 			],
 			"source": "Alibaba・Baidu",
-			"text": "見るのはToken、価格、算力、国産chip、AI売上。公開値は120兆、2185、56万、88億元です。",
+			"text": "順位ではなく供給を見る。Token120兆、算力2185、国産chip56万、AI売上88億元。この4つから始めます。",
 			"chapter": "成功条件を数量へ落とす"
 		},
 		{
@@ -332,7 +332,7 @@
 				}
 			],
 			"source": "DeepSeek API Docs",
-			"text": "V4-Flashは100万tokens当たり、cache miss入力0.14ドル、出力0.28ドルです。"
+			"text": "DeepSeek V4-Flashは、100万Tokenでcache miss入力0.14ドル、出力0.28ドルです。"
 		},
 		{
 			"chapter": "定額Token",
@@ -461,7 +461,7 @@
 				}
 			],
 			"source": "Alibaba FY2026 Results",
-			"text": "Alibaba Cloud Intelligence Groupの四半期売上は416.26億元です。"
+			"text": "Alibaba Cloudは四半期416.26億元なのだ。次にAI製品売上を見るのだ。"
 		},
 		{
 			"speaker": "春日部つむぎ",
@@ -595,7 +595,7 @@
 				}
 			],
 			"source": "Huawei • WAIC 2026",
-			"text": "Atlas 950は1024 cards。FP8 1 EFLOPS、FP4 2 EFLOPS、メモリ256TBです。"
+			"text": "Atlas 950は1024枚。FP8で1、FP4で2 EFLOPS。統一メモリは256TBです。"
 		},
 		{
 			"chapter": "Baidu AI売上",
@@ -620,7 +620,7 @@
 				}
 			],
 			"source": "Baidu IR • Q1 2026",
-			"text": "Baidu Q1 2026のAI Cloud Infraは88億元、前年比79%増。Core AI事業は136億元です。"
+			"text": "Baidu Q1はAI事業136億元、AI Cloudは88億元で前年比79%増です。"
 		},
 		{
 			"chapter": "Kling直接売上",
