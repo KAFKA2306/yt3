@@ -1,0 +1,119 @@
+name: Finalize China AI production quality
+
+on:
+  push:
+    branches: [feat/china-ai-quant-20260816]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SPEC: config/productions/china_ai_quant_20260816.json
+      RUN_ID: byosan_money/2026-08-16-china-ai-quant
+      ENV_FILE: config/.env.byosan
+      YOUTUBE_CHANNEL_PROFILE: byosan
+      YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+      YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/china-ai-quant-20260816
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Make CPU fallback satisfy production bitrate gate
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/scripts/produce_byosan_feature.ts')
+          text = p.read_text()
+          old = '''\t\t\tcachedVideoEncoderArgs = [
+          \t\t\t"-c:v",
+          \t\t\t"libx264",
+          \t\t\t"-preset",
+          \t\t\t"medium",
+          \t\t\t"-crf",
+          \t\t\t"16",
+          \t\t\t"-maxrate",
+          \t\t\t"24M",
+          \t\t\t"-bufsize",
+          \t\t\t"32M",
+          \t\t];'''.replace('          ', '')
+          new = '''\t\t\tcachedVideoEncoderArgs = [
+          \t\t\t"-c:v",
+          \t\t\t"libx264",
+          \t\t\t"-preset",
+          \t\t\t"fast",
+          \t\t\t"-b:v",
+          \t\t\t"10M",
+          \t\t\t"-minrate",
+          \t\t\t"10M",
+          \t\t\t"-maxrate",
+          \t\t\t"10M",
+          \t\t\t"-bufsize",
+          \t\t\t"20M",
+          \t\t\t"-x264-params",
+          \t\t\t"nal-hrd=cbr:force-cfr=1:filler=1",
+          \t\t];'''.replace('          ', '')
+          if old not in text:
+              raise SystemExit('libx264 fallback block not found')
+          p.write_text(text.replace(old, new, 1))
+          PY
+          bun x biome format --write src/scripts/produce_byosan_feature.ts
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/china-ai-finalize.yml
+          git add src/scripts/produce_byosan_feature.ts
+          git commit -m "fix(byosan): preserve publish bitrate on CPU fallback"
+          git push origin HEAD:feat/china-ai-quant-20260816
+      - name: Validate exact tree
+        run: |
+          bun run typecheck
+          bun run lint
+          SKIP_LLM=true DRY_RUN=true bun test
+      - name: Install media runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-noto-cjk curl
+          docker run -d --name voicevox -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+          for i in {1..60}; do curl -fsS http://127.0.0.1:50121/version && exit 0; sleep 2; done
+          docker logs voicevox
+          exit 1
+      - name: Produce and audit video
+        run: bun src/scripts/produce_byosan_feature.ts "$SPEC"
+      - name: Publish when Byosan credentials exist
+        shell: bash
+        run: |
+          mkdir -p "runs/$RUN_ID/publish"
+          if [[ -z "$YOUTUBE_CLIENT_ID" || -z "$YOUTUBE_CLIENT_SECRET" || -z "$YOUTUBE_REFRESH_TOKEN" ]]; then
+            printf '%s\n' '{"status":"BLOCKED_MISSING_YOUTUBE_SECRETS","channel":"秒算マネー"}' > "runs/$RUN_ID/publish/automation_status.json"
+            exit 0
+          fi
+          umask 077
+          cat > "$ENV_FILE" <<EOF
+          ENV_FILE=$ENV_FILE
+          YOUTUBE_CHANNEL_PROFILE=byosan
+          YOUTUBE_CLIENT_ID=$YOUTUBE_CLIENT_ID
+          YOUTUBE_CLIENT_SECRET=$YOUTUBE_CLIENT_SECRET
+          YOUTUBE_REFRESH_TOKEN=$YOUTUBE_REFRESH_TOKEN
+          EOF
+          bun src/scripts/audit_publish_routing.ts
+          bun src/scripts/publish_youtube.ts "$RUN_ID"
+          bun src/scripts/public_visibility_audit.ts
+          rm -f "$ENV_FILE"
+      - name: Upload final production evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: china-ai-token-supply-20260816-final
+          path: runs/byosan_money/2026-08-16-china-ai-quant
+          if-no-files-found: error
+          retention-days: 30
