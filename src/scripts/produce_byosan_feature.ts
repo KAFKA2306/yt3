@@ -1382,7 +1382,8 @@ async function auditProduction(
 				? "PASS"
 				: "FAIL",
 			evidence: {
-				asset: "official 春日部つむぎ standing art with extended pointing arm",
+				asset:
+					"speaker-specific standing art; neutral SVG fallback when local assets are absent",
 				synchronization:
 					"speaker-specific cutout, pointer line, emotion label, and stat target on every scene",
 			},

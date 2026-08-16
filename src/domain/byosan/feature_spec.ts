@@ -56,7 +56,7 @@ export const ByosanFeatureClaimSchema = z.object({
 
 export const ByosanThumbnailSchema = z.object({
 	eyebrow: z.string().min(2).max(18),
-	lead: z.string().min(1).max(5),
+	lead: z.string().min(1).max(8),
 	accent: z.string().min(1).max(10),
 	reaction: z.string().min(1).max(4),
 	secondLine: z.string().min(2).max(12),
