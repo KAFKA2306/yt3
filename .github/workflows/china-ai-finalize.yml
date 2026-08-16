@@ -33,21 +33,21 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           p = Path('src/scripts/produce_byosan_feature.ts')
           text = p.read_text()
-          old = '''\t\t\tcachedVideoEncoderArgs = [
-          \t\t\t"-c:v",
-          \t\t\t"libx264",
-          \t\t\t"-preset",
-          \t\t\t"medium",
-          \t\t\t"-crf",
-          \t\t\t"16",
-          \t\t\t"-maxrate",
-          \t\t\t"24M",
-          \t\t\t"-bufsize",
-          \t\t\t"32M",
-          \t\t];'''.replace('          ', '')
-          new = '''\t\t\tcachedVideoEncoderArgs = [
+          pattern = re.compile(
+              r'(\t} else \{\n)'
+              r'\t\tcachedVideoEncoderArgs = \[\n'
+              r'\t\t\t"-c:v",\n'
+              r'\t\t\t"libx264",\n'
+              r'.*?'
+              r'\t\t\];\n'
+              r'(\t\tconsole\.log\("\[VIDEO_ENCODER\] libx264 \(NVENC unavailable\)"\);)',
+              re.S,
+          )
+          replacement = '''\1\t\tcachedVideoEncoderArgs = [
           \t\t\t"-c:v",
           \t\t\t"libx264",
           \t\t\t"-preset",
@@ -62,10 +62,12 @@ jobs:
           \t\t\t"20M",
           \t\t\t"-x264-params",
           \t\t\t"nal-hrd=cbr:force-cfr=1:filler=1",
-          \t\t];'''.replace('          ', '')
-          if old not in text:
-              raise SystemExit('libx264 fallback block not found')
-          p.write_text(text.replace(old, new, 1))
+          \t\t];
+          \2'''.replace('          ', '')
+          updated, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'expected one libx264 fallback block, got {count}')
+          p.write_text(updated)
           PY
           bun x biome format --write src/scripts/produce_byosan_feature.ts
           git config user.name github-actions[bot]
