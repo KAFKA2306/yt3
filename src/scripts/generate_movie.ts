@@ -145,11 +145,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
 			buildGeneratorCommand(plan, scene, scenePaths[index] as string, config),
 		);
 		const concatFile = path.join(sceneDir, "concat.txt");
-		const ffmpegCommand = buildFfmpegCommand(
-			concatFile,
-			output,
-			config.ffmpeg,
-		);
+		const ffmpegCommand = buildFfmpegCommand(concatFile, output, config.ffmpeg);
 
 		if (args.dryRun) {
 			console.log(
@@ -182,9 +178,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
 			scenes: plan.scenes.map((scene, index) => ({
 				id: scene.id,
 				output: scenePaths[index],
-				prompt_sha256: createHash("sha256")
-					.update(scene.prompt)
-					.digest("hex"),
+				prompt_sha256: createHash("sha256").update(scene.prompt).digest("hex"),
 			})),
 		};
 		await writeFile(
