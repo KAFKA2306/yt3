@@ -805,13 +805,17 @@ function videoEncoderArgs(): string[] {
 			"-c:v",
 			"libx264",
 			"-preset",
-			"medium",
-			"-crf",
-			"16",
+			"fast",
+			"-b:v",
+			"10M",
+			"-minrate",
+			"10M",
 			"-maxrate",
-			"24M",
+			"10M",
 			"-bufsize",
-			"32M",
+			"20M",
+			"-x264-params",
+			"nal-hrd=cbr:force-cfr=1:filler=1",
 		];
 		console.log("[VIDEO_ENCODER] libx264 (NVENC unavailable)");
 	}
