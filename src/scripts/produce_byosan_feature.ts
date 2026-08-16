@@ -487,9 +487,7 @@ function sceneSvg(
 	</svg>`);
 }
 
-function fallbackCharacterSvg(
-	speaker: FeatureSegment["speaker"],
-): Buffer {
+function fallbackCharacterSvg(speaker: FeatureSegment["speaker"]): Buffer {
 	const isZundamon = speaker === "ずんだもん";
 	const accent = isZundamon ? "#84CC55" : "#40D9FF";
 	const accent2 = isZundamon ? "#D7F76D" : "#9D7BFF";
@@ -560,9 +558,7 @@ async function renderThumbnail(
 ): Promise<{ png: string; jpg: string }> {
 	const thumbnailPng = path.join(runDir, "thumbnail.png");
 	const thumbnailJpg = path.join(runDir, "thumbnail_youtube.jpg");
-	const character = await sharp(
-		await characterSourceBuffer("春日部つむぎ"),
-	)
+	const character = await sharp(await characterSourceBuffer("春日部つむぎ"))
 		.trim({ background: { r: 255, g: 255, b: 255, alpha: 0 } })
 		.resize({ height: 930, fit: "inside", withoutEnlargement: false })
 		.png()
