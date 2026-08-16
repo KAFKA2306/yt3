@@ -228,7 +228,7 @@
 				}
 			],
 			"source": "Alibaba・Baidu",
-			"text": "見るのはモデル順位ではありません。Token使用量、価格、国内算力、国産chipの出荷・配備、AI売上です。公開値は120兆、2185、56万、88億元です。",
+			"text": "見るのはToken、価格、算力、国産chip、AI売上。公開値は120兆、2185、56万、88億元です。",
 			"chapter": "成功条件を数量へ落とす"
 		},
 		{
@@ -332,7 +332,7 @@
 				}
 			],
 			"source": "DeepSeek API Docs",
-			"text": "DeepSeek V4-Flashは100万tokens当たり、cache miss input 0.14ドル、output 0.28ドル、cache hit 0.0028ドルです。"
+			"text": "V4-Flashは100万tokens当たり、cache miss入力0.14ドル、出力0.28ドルです。"
 		},
 		{
 			"chapter": "定額Token",
@@ -461,7 +461,7 @@
 				}
 			],
 			"source": "Alibaba FY2026 Results",
-			"text": "企業のAI売上を見るのだ。Alibaba Cloud Intelligence Groupの四半期売上は416.26億元なのだ。"
+			"text": "Alibaba Cloud Intelligence Groupの四半期売上は416.26億元です。"
 		},
 		{
 			"speaker": "春日部つむぎ",
@@ -595,7 +595,7 @@
 				}
 			],
 			"source": "Huawei • WAIC 2026",
-			"text": "Atlas 950 SuperPoD実機は1024 cards。公称でFP8 1 EFLOPS、FP4 2 EFLOPS、統一メモリ256TBです。"
+			"text": "Atlas 950は1024 cards。FP8 1 EFLOPS、FP4 2 EFLOPS、メモリ256TBです。"
 		},
 		{
 			"chapter": "Baidu AI売上",
@@ -620,7 +620,7 @@
 				}
 			],
 			"source": "Baidu IR • Q1 2026",
-			"text": "BaiduのQ1 2026はCore AI事業136億元、AI Cloud Infra 88億元。Cloud Infraは前年比79%増です。"
+			"text": "Baidu Q1 2026のAI Cloud Infraは88億元、前年比79%増。Core AI事業は136億元です。"
 		},
 		{
 			"chapter": "Kling直接売上",
