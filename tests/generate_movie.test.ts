@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
+	type RuntimeConfig,
 	buildConcatFile,
 	buildFfmpegCommand,
 	buildGeneratorCommand,
 	parseMoviePlan,
-	type RuntimeConfig,
 } from "../src/scripts/generate_movie.js";
 
 const CONFIG: RuntimeConfig = {
@@ -23,6 +23,8 @@ const PLAN = parseMoviePlan(
 		],
 	}),
 );
+const FIRST_SCENE = PLAN.scenes[0];
+if (!FIRST_SCENE) throw new Error("test plan must contain a scene");
 
 describe("code-only movie generation", () => {
 	test("parses a non-empty scene plan", () => {
@@ -39,7 +41,7 @@ describe("code-only movie generation", () => {
 	test("builds generator argv without a shell command string", () => {
 		const command = buildGeneratorCommand(
 			PLAN,
-			PLAN.scenes[0]!,
+			FIRST_SCENE,
 			"/tmp/001-intro.mp4",
 			CONFIG,
 		);
@@ -59,7 +61,9 @@ describe("code-only movie generation", () => {
 	});
 
 	test("builds fail-fast ffmpeg concat argv", () => {
-		expect(buildFfmpegCommand("/tmp/concat.txt", "movie.mp4", "ffmpeg")).toEqual([
+		expect(
+			buildFfmpegCommand("/tmp/concat.txt", "movie.mp4", "ffmpeg"),
+		).toEqual([
 			"ffmpeg",
 			"-y",
 			"-f",
