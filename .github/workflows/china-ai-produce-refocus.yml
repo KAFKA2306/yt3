@@ -41,7 +41,7 @@ jobs:
           spec.thumbnailTitle = "NVIDIAに勝たなくていい？\n120兆Token/日";
           spec.thumbnail = {
             eyebrow: "中国AI 2026",
-            lead: "NVIDIAに",
+            lead: "GPUに",
             accent: "勝たなくていい？",
             reaction: "?",
             secondLine: "120兆Token/日",
