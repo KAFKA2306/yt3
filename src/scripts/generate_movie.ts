@@ -75,14 +75,35 @@ export function buildConcatFile(scenePaths: string[]): string {
 	return `${scenePaths.map((scene) => `file '${quoteConcatPath(path.resolve(scene))}'`).join("\n")}\n`;
 }
 
-export function buildFfmpegCommand(concatFile: string, output: string, ffmpeg: string): string[] {
-	return [ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", concatFile, "-c", "copy", output];
+export function buildFfmpegCommand(
+	concatFile: string,
+	output: string,
+	ffmpeg: string,
+): string[] {
+	return [
+		ffmpeg,
+		"-y",
+		"-f",
+		"concat",
+		"-safe",
+		"0",
+		"-i",
+		concatFile,
+		"-c",
+		"copy",
+		output,
+	];
 }
 
 async function run(command: string[]): Promise<void> {
-	const process = Bun.spawn(command, { stdin: "ignore", stdout: "inherit", stderr: "inherit" });
-	const exitCode = await process.exited;
-	if (exitCode !== 0) throw new Error(`command failed (${exitCode}): ${command[0]}`);
+	const child = Bun.spawn(command, {
+		stdin: "ignore",
+		stdout: "inherit",
+		stderr: "inherit",
+	});
+	const exitCode = await child.exited;
+	if (exitCode !== 0)
+		throw new Error(`command failed (${exitCode}): ${command[0]}`);
 }
 
 function parseArgs(argv: string[]): { planFile: string; dryRun: boolean } {
@@ -104,25 +125,46 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
 		const planFile = path.resolve(args.planFile);
 		const planText = await readFile(planFile, "utf8");
 		const plan = parseMoviePlan(planText);
-		const output = path.resolve(path.dirname(planFile), plan.output);
+		const output = path.resolve(plan.output);
 		const stem = path.basename(output, path.extname(output));
 		const sceneDir = path.join(path.dirname(output), `${stem}.scenes`);
 		const config: RuntimeConfig = {
-			hfCacheHubRoot: path.resolve(process.env.HF_CACHE_HUB_ROOT ?? "../hf-cache-hub"),
+			hfCacheHubRoot: path.resolve(
+				process.env.HF_CACHE_HUB_ROOT ?? "../hf-cache-hub",
+			),
 			python: process.env.VIDEO_PYTHON ?? "python3",
 			ffmpeg: process.env.FFMPEG_BIN ?? "ffmpeg",
 		};
 		const scenePaths = plan.scenes.map((scene, index) =>
-			path.join(sceneDir, `${String(index + 1).padStart(3, "0")}-${scene.id}.mp4`),
+			path.join(
+				sceneDir,
+				`${String(index + 1).padStart(3, "0")}-${scene.id}.mp4`,
+			),
 		);
 		const generatorCommands = plan.scenes.map((scene, index) =>
 			buildGeneratorCommand(plan, scene, scenePaths[index] as string, config),
 		);
 		const concatFile = path.join(sceneDir, "concat.txt");
-		const ffmpegCommand = buildFfmpegCommand(concatFile, output, config.ffmpeg);
+		const ffmpegCommand = buildFfmpegCommand(
+			concatFile,
+			output,
+			config.ffmpeg,
+		);
 
 		if (args.dryRun) {
-			console.log(JSON.stringify({ status: "READY", plan: planFile, output, generatorCommands, ffmpegCommand }, null, 2));
+			console.log(
+				JSON.stringify(
+					{
+						status: "READY",
+						plan: planFile,
+						output,
+						generatorCommands,
+						ffmpegCommand,
+					},
+					null,
+					2,
+				),
+			);
 			return 0;
 		}
 
@@ -137,10 +179,26 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
 			plan_sha256: createHash("sha256").update(planText).digest("hex"),
 			output,
 			model: plan.model ?? null,
-			scenes: plan.scenes.map((scene, index) => ({ id: scene.id, output: scenePaths[index], prompt: scene.prompt })),
+			scenes: plan.scenes.map((scene, index) => ({
+				id: scene.id,
+				output: scenePaths[index],
+				prompt_sha256: createHash("sha256")
+					.update(scene.prompt)
+					.digest("hex"),
+			})),
 		};
-		await writeFile(`${output}.json`, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-		console.log(JSON.stringify({ status: "DONE", output, manifest: `${output}.json` }, null, 2));
+		await writeFile(
+			`${output}.json`,
+			`${JSON.stringify(manifest, null, 2)}\n`,
+			"utf8",
+		);
+		console.log(
+			JSON.stringify(
+				{ status: "DONE", output, manifest: `${output}.json` },
+				null,
+				2,
+			),
+		);
 		return 0;
 	} catch (error) {
 		console.error(error instanceof Error ? error.message : String(error));
