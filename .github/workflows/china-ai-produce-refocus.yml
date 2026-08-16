@@ -1,0 +1,130 @@
+name: China AI refocus and produce
+
+on:
+  push:
+    branches: [feat/china-ai-quant-20260816]
+
+permissions:
+  contents: write
+
+jobs:
+  produce:
+    runs-on: ubuntu-24.04
+    env:
+      SPEC: config/productions/china_ai_quant_20260816.json
+      RUN_ID: byosan_money/2026-08-16-china-ai-quant
+      ENV_FILE: config/.env.byosan
+      YOUTUBE_CHANNEL_PROFILE: byosan
+      YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+      YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/china-ai-quant-20260816
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Refocus quantitative hypothesis
+        shell: bash
+        run: |
+          bun - <<'BUN'
+          const p = process.env.SPEC;
+          const spec = await Bun.file(p).json();
+          spec.angle = "NVIDIAとの性能勝負ではなく、中国が安いTokenを大量かつ継続的に供給できる体制が公開数量に現れているかを、評価スコアなしで検証する";
+          spec.title = "中国AIはNVIDIAに勝たなくていい？──1日120兆Token、2185 EFLOPSを数字だけで検証";
+          spec.thumbnailTitle = "NVIDIAに勝たなくていい？\n120兆Token/日";
+          spec.thumbnail = {
+            eyebrow: "中国AI 2026",
+            lead: "NVIDIAに",
+            accent: "勝たなくていい？",
+            reaction: "?",
+            secondLine: "120兆Token/日",
+            calloutTop: "智能算力 2185 EFLOPS",
+            calloutBottom: "Zhenwu 56万個超",
+          };
+          spec.descriptionLead = "中国AIはNVIDIAに性能で勝たなくても、安いTokenを大量かつ継続的に供給できれば産業として成立するのか。2026年8月16日時点の一次資料だけで、Token使用量・価格・算力・国産accelerator・deployment・AI売上を検証します。採点や将来予測はしません。";
+          spec.disclaimer = "本動画は『NVIDIAに性能で勝たなくても、安いTokenを大量供給できればAI産業は成立しうる』という仮説を、公開一次資料の数量で検証する情報提供です。企業間の優劣、投資判断、将来の市場シェアや技術覇権を断定・予測するものではありません。";
+          spec.noveltyQueries = [
+            "site:youtube.com/watch 中国AI NVIDIA 勝たなくていい 120兆 Token 2185 EFLOPS",
+            "site:youtube.com/watch 中国AI 安いToken 120兆 Zhenwu 56万 Baidu 88億元",
+            "site:youtube.com/watch 中国AI Token 算力 国産チップ AI売上 一次資料 2026",
+          ];
+          const s0 = spec.segments[0];
+          s0.chapter = "NVIDIAに勝たなくていい？";
+          s0.section = "THE QUESTION";
+          s0.headline = "NVIDIAに勝たなくていい？";
+          s0.subheadline = "120兆Token/日・2185 EFLOPS";
+          s0.text = "中国AIはNVIDIAに性能で勝たなくても、安いTokenを大量生産できれば成立するのか。豆包は1日120兆Token、中国の智能算力は2185 EFLOPSです。";
+          const s2 = spec.segments[2];
+          s2.chapter = "仮説を数字で検証";
+          s2.section = "TEST, NOT SCORE";
+          s2.headline = "勝敗ではなく供給能力";
+          s2.subheadline = "Token・価格・算力・出荷・売上";
+          s2.text = "今日は勝敗を採点しないのだ。安いTokenを大量かつ継続的に供給できる体制が、公開数量に出ているかだけを見るのだ。";
+          const last = spec.segments.at(-1);
+          last.section = "WHAT TO WATCH";
+          last.headline = "NVIDIAより見る数字";
+          last.subheadline = "Token → deployment → revenue";
+          last.text = "NVIDIAに勝ったかではなく、Tokenがどれだけ供給され、使われ、国産computeが導入され、売上になったか。同じ系列を次回も更新します。";
+          await Bun.write(p, JSON.stringify(spec, null, "\t") + "\n");
+          BUN
+          bun x biome format --write "$SPEC"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$SPEC"
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(byosan): test China AI cheap-token hypothesis"
+            git push origin HEAD:feat/china-ai-quant-20260816
+          fi
+
+      - name: Validate repository
+        run: |
+          bun run typecheck
+          bun run lint
+          SKIP_LLM=true DRY_RUN=true bun test
+
+      - name: Install media runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-noto-cjk curl
+          docker run -d --name voicevox -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+          for i in {1..60}; do curl -fsS http://127.0.0.1:50121/version && exit 0; sleep 2; done
+          docker logs voicevox
+          exit 1
+
+      - name: Produce and audit video
+        run: bun src/scripts/produce_byosan_feature.ts "$SPEC"
+
+      - name: Publish to Byosan when credentials exist
+        shell: bash
+        run: |
+          mkdir -p "runs/$RUN_ID/publish"
+          if [[ -n "$YOUTUBE_CLIENT_ID" && -n "$YOUTUBE_CLIENT_SECRET" && -n "$YOUTUBE_REFRESH_TOKEN" ]]; then
+            cat > "$ENV_FILE" <<EOF
+          ENV_FILE=$ENV_FILE
+          YOUTUBE_CHANNEL_PROFILE=byosan
+          YOUTUBE_CLIENT_ID=$YOUTUBE_CLIENT_ID
+          YOUTUBE_CLIENT_SECRET=$YOUTUBE_CLIENT_SECRET
+          YOUTUBE_REFRESH_TOKEN=$YOUTUBE_REFRESH_TOKEN
+          EOF
+            bun src/scripts/audit_publish_routing.ts
+            RUN_ID="$RUN_ID" bun src/scripts/publish_youtube.ts "$RUN_ID"
+          else
+            printf '%s\n' '{"status":"BLOCKED","reason":"GitHub Actions does not have YOUTUBE_CLIENT_ID/YOUTUBE_CLIENT_SECRET/YOUTUBE_REFRESH_TOKEN"}' > "runs/$RUN_ID/publish/blocker.json"
+            echo "YouTube publish blocked: credentials unavailable in GitHub Actions"
+          fi
+
+      - name: Upload production evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: china-ai-quant-20260816-refocused
+          path: runs/byosan_money/2026-08-16-china-ai-quant
+          if-no-files-found: error
+          retention-days: 30
