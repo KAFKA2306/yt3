@@ -74,6 +74,16 @@ tasks:
     desc: "Batch publish existing runs-nlm videos"
     cmds: ["bun --env-file=config/.env src/scripts/post_nlm_videos.ts"]
 
+  movie:generate:
+    desc: "Generate and concatenate scene videos from a JSON plan (PLAN=...)"
+    cmds:
+      - |
+        if [ -z "{{.PLAN}}" ]; then
+          echo "PLAN is required" >&2
+          exit 2
+        fi
+        bun src/scripts/generate_movie.ts --plan "{{.PLAN}}" {{.CLI_ARGS}}
+
   movie:status:
     desc: "Report movie receipt status without changing state"
     cmds: ["bun src/scripts/movie_status.ts"]
