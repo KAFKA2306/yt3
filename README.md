@@ -1,5 +1,7 @@
 # YT3 — Auditable Autonomous Media Operations
 
+[![CI](https://github.com/KAFKA2306/yt3/actions/workflows/ci.yml/badge.svg)](https://github.com/KAFKA2306/yt3/actions/workflows/ci.yml)
+
 **動画を自動生成できることより、間違った事実・間違ったチャンネル・未監査の動画を自動公開しないことの方が難しい。**
 
 YT3 は、調査・台本・音声/映像制作・監査・YouTube公開を自動化しながら、**どの事実を使い、どのchannelへ出し、何を検証して公開を許可したかを追跡できるmedia production system**です。
