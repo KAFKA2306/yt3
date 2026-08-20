@@ -68,7 +68,7 @@ tasks:
 
   notebooklm:
     desc: "Run NotebookLM workflow"
-    cmds: ["bun --env-file=config/.env src/notebooklm_workflow.ts"]
+    cmds: ["bun --env-file=config/.env src/notebooklm_workflow.ts {{.CLI_ARGS}}"]
 
   publish:nlm:
     desc: "Batch publish existing runs-nlm videos"
