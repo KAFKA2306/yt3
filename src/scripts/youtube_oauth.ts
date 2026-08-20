@@ -15,7 +15,9 @@ import {
 
 const envFile = process.env.ENV_FILE?.trim();
 if (!envFile) throw new Error("ENV_FILE is required for YouTube OAuth setup");
-const envFilePath = path.isAbsolute(envFile) ? envFile : path.join(process.cwd(), envFile);
+const envFilePath = path.isAbsolute(envFile)
+	? envFile
+	: path.join(process.cwd(), envFile);
 dotenv.config({ path: envFilePath, override: true });
 const verifyOnly = process.argv.includes("--verify-only");
 
@@ -54,7 +56,9 @@ async function waitForOAuthCode(redirectUri: string): Promise<string> {
 					return;
 				}
 				res.setHeader("Content-Type", "text/html; charset=utf-8");
-				res.end("<html><body>Authentication successful. You can close this tab.</body></html>");
+				res.end(
+					"<html><body>Authentication successful. You can close this tab.</body></html>",
+				);
 				server.close(() => resolve(code));
 			} catch (error) {
 				reject(error);
@@ -62,7 +66,9 @@ async function waitForOAuthCode(redirectUri: string): Promise<string> {
 			}
 		});
 		server.on("error", reject);
-		server.listen(port, () => console.log(`OAuth callback listening on :${port}`));
+		server.listen(port, () =>
+			console.log(`OAuth callback listening on :${port}`),
+		);
 	});
 }
 
