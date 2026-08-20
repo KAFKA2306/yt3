@@ -258,10 +258,13 @@ export class PublishAgent extends BaseAgent {
 		if (reusable) {
 			videoId = reusable.result.video_id || "";
 			channelId = reusable.result.channel_id || "";
-			channelTitle = reusable.result.channel_title || profile.expectedChannelTitle;
+			channelTitle =
+				reusable.result.channel_title || profile.expectedChannelTitle;
 			publishedAt = reusable.result.published_at || "";
 			if (!videoId || !channelId) {
-				throw new Error("Canonical reusable publication is missing remote identity");
+				throw new Error(
+					"Canonical reusable publication is missing remote identity",
+				);
 			}
 			if (
 				observedPrivacy !== "private" &&
@@ -306,7 +309,8 @@ export class PublishAgent extends BaseAgent {
 					artifact_sha256: artifactSha256,
 					requested_visibility: requestedVisibility,
 					phase: "UNCERTAIN_REMOTE_COMMIT",
-					failure_reason: error instanceof Error ? error.message : String(error),
+					failure_reason:
+						error instanceof Error ? error.message : String(error),
 				});
 				throw error;
 			}
@@ -325,9 +329,12 @@ export class PublishAgent extends BaseAgent {
 					video_id: videoId || undefined,
 					channel_id: channelId || undefined,
 					channel_title: channelTitle || undefined,
-					failure_reason: "YouTube upload response is missing remote identity/status",
+					failure_reason:
+						"YouTube upload response is missing remote identity/status",
 				});
-				throw new Error("YouTube upload response is missing remote identity/status");
+				throw new Error(
+					"YouTube upload response is missing remote identity/status",
+				);
 			}
 			if (status.privacyStatus !== "private") {
 				transitionPublication(this.store.runDir, {
@@ -358,7 +365,9 @@ export class PublishAgent extends BaseAgent {
 			});
 		}
 
-		let privateAttestation: Awaited<ReturnType<typeof ensureYouTubeVideoVisibility>>;
+		let privateAttestation: Awaited<
+			ReturnType<typeof ensureYouTubeVideoVisibility>
+		>;
 		try {
 			privateAttestation = await ensureYouTubeVideoVisibility(
 				auth,
