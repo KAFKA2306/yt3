@@ -92,6 +92,10 @@ tasks:
     desc: "Audit published video visibility"
     cmds: ["bun src/scripts/public_visibility_audit.ts"]
 
+  analytics:refresh:
+    desc: "Refresh authorized YouTube Analytics and purge data past the 30-day authorization boundary"
+    cmds: ["bun src/scripts/refresh_youtube_analytics.ts"]
+
   db:backfill:
     desc: "Backfill historic runs into the Evolution Database"
     cmds: ["bun src/scripts/backfill_db.ts"]
