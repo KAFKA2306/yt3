@@ -68,7 +68,7 @@ tasks:
 
   notebooklm:
     desc: "Run NotebookLM workflow"
-    cmds: ["bun --env-file=config/.env src/notebooklm_workflow.ts {{.CLI_ARGS}}"]
+    cmds: ["bun --env-file=config/.env src/notebooklm_workflow.ts"]
 
   publish:nlm:
     desc: "Batch publish existing runs-nlm videos"
@@ -91,6 +91,10 @@ tasks:
   publish:visibility-audit:
     desc: "Audit published video visibility"
     cmds: ["bun src/scripts/public_visibility_audit.ts"]
+
+  analytics:refresh:
+    desc: "Refresh authorized YouTube Analytics and purge data past the 30-day authorization boundary"
+    cmds: ["bun src/scripts/refresh_youtube_analytics.ts"]
 
   db:backfill:
     desc: "Backfill historic runs into the Evolution Database"
