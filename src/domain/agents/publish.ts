@@ -5,6 +5,14 @@ import { TwitterApi } from "twitter-api-v2";
 import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
 import { sendAlert } from "../../io/utils/discord.js";
 import { ensureYouTubeVideoVisibility } from "../../io/utils/youtube_visibility.js";
+import {
+	asDancerPublicationState,
+	buildYouTubeStatus,
+	tryReuseVerifiedDancerUpload,
+	uploadAndVerifyCaption,
+	verifyScheduledPublish,
+	writeDancerUploadCheckpoint,
+} from "../dancer_publication.js";
 import type { AgentState, AppConfig, PublishResults } from "../types.js";
 import { validateCredentials } from "../validation.js";
 import {
@@ -12,6 +20,7 @@ import {
 	getYouTubeProfile,
 	hydrateOAuthCredentials,
 } from "../youtube_profiles.js";
+
 export class PublishAgent extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.PUBLISH);
@@ -37,10 +46,10 @@ export class PublishAgent extends BaseAgent {
 					"YouTube publish requires an explicit channel profile (set YOUTUBE_CHANNEL_PROFILE to byosan, yawa, or humanity)",
 				);
 			}
-
 			getYouTubeProfile(profileName);
 		}
 	}
+
 	async run(state: AgentState): Promise<PublishResults> {
 		const publishVideoPath = this.resolvePublishVideoPath(state);
 		if (publishVideoPath) {
@@ -65,7 +74,7 @@ export class PublishAgent extends BaseAgent {
 					? `https://www.youtube.com/watch?v=${videoId}`
 					: "N/A";
 				await sendAlert(
-					`✅ **Successfully Published** video to ${channelTitle}!`,
+					`✅ **Successfully uploaded** video to ${channelTitle}!`,
 					"publish",
 					{
 						title: state.metadata?.title || "N/A",
@@ -99,10 +108,21 @@ export class PublishAgent extends BaseAgent {
 				"receipt.json",
 			);
 			fs.ensureDirSync(path.dirname(receiptPath));
-			fs.writeJsonSync(receiptPath, results, { spaces: 2 });
+			const dancer = asDancerPublicationState(state);
+			fs.writeJsonSync(
+				receiptPath,
+				{
+					...results,
+					...(dancer.source_artifact_sha256
+						? { source_artifact_sha256: dancer.source_artifact_sha256 }
+						: {}),
+				},
+				{ spaces: 2 },
+			);
 		}
 		return results;
 	}
+
 	private assertNoFallbackPublish(
 		state: AgentState,
 		publishVideoPath?: string,
@@ -141,6 +161,7 @@ export class PublishAgent extends BaseAgent {
 			);
 		}
 	}
+
 	private async uploadToYouTube(
 		state: AgentState,
 		cfg: AppConfig,
@@ -174,11 +195,20 @@ export class PublishAgent extends BaseAgent {
 		);
 
 		const auth = await this.createYouTubeClient();
-		const youtube = google.youtube({
-			version: "v3",
-			auth,
-		});
+		const youtube = google.youtube({ version: "v3", auth });
 		await this.verifyYouTubeChannel(auth);
+		const reusable = await tryReuseVerifiedDancerUpload(
+			youtube,
+			state,
+			this.store.runDir,
+			profile,
+		);
+		if (reusable) {
+			console.log(`[PUBLISH:IDEMPOTENT_REUSE] video_id=${reusable.video_id}`);
+			return reusable;
+		}
+
+		const dancer = asDancerPublicationState(state);
 		const { thumbnail_path: thumbnailPath } = state;
 		const videoPath =
 			options.publishVideoPath || this.resolvePublishVideoPath(state);
@@ -192,18 +222,14 @@ export class PublishAgent extends BaseAgent {
 		const videoId = res.data.id;
 		const snippet = res.data.snippet;
 		const status = res.data.status;
-		if (!videoId) {
+		if (!videoId)
 			throw new Error("YouTube upload response is missing video id");
-		}
-		if (!snippet?.channelId) {
+		if (!snippet?.channelId)
 			throw new Error("YouTube upload response is missing channelId");
-		}
-		if (!snippet.channelTitle) {
+		if (!snippet.channelTitle)
 			throw new Error("YouTube upload response is missing channelTitle");
-		}
-		if (!status?.privacyStatus) {
+		if (!status?.privacyStatus)
 			throw new Error("YouTube upload response is missing privacyStatus");
-		}
 		if (status.privacyStatus !== "private") {
 			throw new Error(
 				`YouTube upload must stage private; insert returned privacyStatus=${status.privacyStatus}`,
@@ -216,30 +242,55 @@ export class PublishAgent extends BaseAgent {
 			"private",
 		);
 		console.log(`[PUBLISH:PRIVATE_VERIFIED] video_id=${videoId}`);
+		writeDancerUploadCheckpoint(this.store.runDir, state, {
+			video_id: videoId,
+			channel_id: snippet.channelId,
+			channel_title: snippet.channelTitle,
+			published_at: snippet.publishedAt ?? "",
+			verified_private_at: privateAttestation.verified_at,
+		});
 
 		if (thumbnailPath) {
 			try {
 				await this.setYouTubeThumbnail(youtube, videoId, thumbnailPath);
 			} catch (error) {
+				if (dancer.source_manifest_path) throw error;
 				console.warn(
 					`YouTube thumbnail upload skipped for ${videoId}: ${(error as Error).message}`,
 				);
 			}
 		}
-		const visibilityAttestation =
-			ytCfg.default_visibility === "private"
-				? privateAttestation
-				: await ensureYouTubeVideoVisibility(
-						auth,
-						videoId,
-						ytCfg.default_visibility,
-					);
+		if (dancer.caption_path) {
+			await uploadAndVerifyCaption(
+				youtube,
+				videoId,
+				dancer.caption_path,
+				this.store.runDir,
+			);
+		}
+
+		let visibilityAttestation = privateAttestation;
+		if (dancer.publish_at) {
+			await verifyScheduledPublish(
+				youtube,
+				videoId,
+				dancer.publish_at,
+				this.store.runDir,
+			);
+		} else if (ytCfg.default_visibility !== "private") {
+			visibilityAttestation = await ensureYouTubeVideoVisibility(
+				auth,
+				videoId,
+				ytCfg.default_visibility,
+			);
+		}
 		fs.writeJsonSync(
 			path.join(this.store.runDir, "publish", "visibility_attestation.json"),
 			{
 				...visibilityAttestation,
 				staged_private: true,
 				private_verified_at: privateAttestation.verified_at,
+				...(dancer.publish_at ? { scheduled_for: dancer.publish_at } : {}),
 			},
 			{ spaces: 2 },
 		);
@@ -252,6 +303,7 @@ export class PublishAgent extends BaseAgent {
 			published_at: snippet.publishedAt ?? "",
 		};
 	}
+
 	private createYouTubeSnippet(
 		state: AgentState,
 		ytCfg: NonNullable<AppConfig["steps"]["youtube"]>,
@@ -267,12 +319,10 @@ export class PublishAgent extends BaseAgent {
 				tags: [...(ytCfg.default_tags || []), ...(metadata?.tags || [])],
 				categoryId: (ytCfg.category_id || 24).toString(),
 			},
-			status: {
-				privacyStatus: "private",
-				selfDeclaredMadeForKids: false,
-			},
+			status: buildYouTubeStatus(state),
 		};
 	}
+
 	private async verifyYouTubeChannel(
 		auth: InstanceType<typeof google.auth.OAuth2>,
 	) {
@@ -280,6 +330,7 @@ export class PublishAgent extends BaseAgent {
 		const profile = getYouTubeProfile(profileName);
 		await assertYouTubeChannelMatchesProfile(auth, profile);
 	}
+
 	private async createYouTubeClient() {
 		const clientId = process.env.YOUTUBE_CLIENT_ID;
 		const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
@@ -298,7 +349,6 @@ export class PublishAgent extends BaseAgent {
 			clientSecret,
 			redirectUri,
 		});
-
 		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
 		if (!profileName) {
 			throw new Error(
@@ -306,25 +356,22 @@ export class PublishAgent extends BaseAgent {
 			);
 		}
 
-		if (profileName === "humanity") {
-			const profile = getYouTubeProfile(profileName);
-			await hydrateOAuthCredentials(client, profile);
-		} else {
-			const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-			if (refreshToken) {
-				client.setCredentials({ refresh_token: refreshToken });
-			}
-		}
-
+		const profile = getYouTubeProfile(profileName);
+		await hydrateOAuthCredentials(client, profile);
 		return client;
 	}
+
 	private async setYouTubeThumbnail(
 		youtube: ReturnType<typeof google.youtube>,
 		videoId: string,
 		thumbnailPath: string,
 	) {
+		const sizeBytes = fs.statSync(thumbnailPath).size;
+		if (sizeBytes > 2 * 1024 * 1024) {
+			throw new Error(`YouTube thumbnail exceeds 2 MB: ${sizeBytes} bytes`);
+		}
 		await youtube.thumbnails.set({
-			videoId: videoId,
+			videoId,
 			media: {
 				mimeType:
 					path.extname(thumbnailPath).toLowerCase() === ".jpg" ||
@@ -347,9 +394,8 @@ export class PublishAgent extends BaseAgent {
 				["default", "medium", "high"].every((key) =>
 					thumbnailVariants.includes(key),
 				)
-			) {
+			)
 				break;
-			}
 			await new Promise((resolve) => setTimeout(resolve, 3000));
 		}
 		if (
@@ -371,7 +417,7 @@ export class PublishAgent extends BaseAgent {
 					path.extname(thumbnailPath).toLowerCase() === ".jpeg"
 						? "image/jpeg"
 						: "image/png",
-				size_bytes: fs.statSync(thumbnailPath).size,
+				size_bytes: sizeBytes,
 				api_update_status: "succeeded",
 				thumbnail_variants: thumbnailVariants,
 				verified_at: new Date().toISOString(),
@@ -379,13 +425,13 @@ export class PublishAgent extends BaseAgent {
 			{ spaces: 2 },
 		);
 	}
+
 	private async postToTwitter(
 		state: AgentState,
 		cfg: AppConfig,
 	): Promise<PublishResults["twitter"]> {
 		const twCfg = cfg.steps.twitter;
 		if (!twCfg) throw new Error("Twitter config missing");
-
 		const client = this.createTwitterClient();
 		const { metadata } = state;
 		const videoPath = this.resolvePublishVideoPath(state);
@@ -401,6 +447,7 @@ export class PublishAgent extends BaseAgent {
 		const res = await client.v2.tweet(tweetPayload as { text: string });
 		return { status: "posted", tweet_id: res.data.id || "" };
 	}
+
 	private createTwitterClient() {
 		const appKey = process.env.X_API_KEY || process.env.TWITTER_API_KEY;
 		const appSecret =
@@ -409,20 +456,14 @@ export class PublishAgent extends BaseAgent {
 			process.env.X_ACCESS_TOKEN || process.env.TWITTER_ACCESS_TOKEN;
 		const accessSecret =
 			process.env.X_ACCESS_SECRET || process.env.TWITTER_ACCESS_TOKEN_SECRET;
-
 		if (!appKey || !appSecret || !accessToken || !accessSecret) {
 			throw new Error(
 				"Twitter authentication failed: unable to initialize Twitter client",
 			);
 		}
-
-		return new TwitterApi({
-			appKey,
-			appSecret,
-			accessToken,
-			accessSecret,
-		});
+		return new TwitterApi({ appKey, appSecret, accessToken, accessSecret });
 	}
+
 	private createTweetText(metadata?: AgentState["metadata"]) {
 		const tags = (metadata?.tags || []).map((t) => `#${t}`).join(" ");
 		return `${metadata?.title || ""}\n\n${tags}`.substring(0, 280);
@@ -448,13 +489,10 @@ export class PublishAgent extends BaseAgent {
 				? candidate
 				: path.join(this.store.runDir, candidate);
 			if (fs.existsSync(resolved)) {
-				if (resolved !== state.video_path) {
-					state.publish_video_path = resolved;
-				}
+				if (resolved !== state.video_path) state.publish_video_path = resolved;
 				return resolved;
 			}
 		}
-
 		return state.video_path || "";
 	}
 }

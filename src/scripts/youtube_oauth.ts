@@ -14,23 +14,17 @@ import {
 } from "../domain/youtube_profiles.js";
 
 const envFile = process.env.ENV_FILE?.trim();
-if (!envFile) {
-	throw new Error("ENV_FILE is required for YouTube OAuth setup");
-}
-
+if (!envFile) throw new Error("ENV_FILE is required for YouTube OAuth setup");
 const envFilePath = path.isAbsolute(envFile)
 	? envFile
 	: path.join(process.cwd(), envFile);
-
 dotenv.config({ path: envFilePath, override: true });
-
 const verifyOnly = process.argv.includes("--verify-only");
 
 async function waitForOAuthCode(redirectUri: string): Promise<string> {
 	const url = new URL(redirectUri);
 	const port = Number(url.port || (url.protocol === "https:" ? 443 : 80));
 	const pathname = url.pathname || "/oauth2callback";
-
 	return await new Promise<string>((resolve, reject) => {
 		const server = http.createServer((req, res) => {
 			try {
@@ -39,17 +33,14 @@ async function waitForOAuthCode(redirectUri: string): Promise<string> {
 					res.end("Missing callback URL");
 					return;
 				}
-
 				const callbackUrl = new URL(req.url, `http://127.0.0.1:${port}`);
 				if (callbackUrl.pathname !== pathname) {
 					res.statusCode = 404;
 					res.end("Not Found");
 					return;
 				}
-
 				const code = callbackUrl.searchParams.get("code");
 				const error = callbackUrl.searchParams.get("error");
-
 				if (error) {
 					res.statusCode = 400;
 					res.end(`OAuth error: ${error}`);
@@ -57,7 +48,6 @@ async function waitForOAuthCode(redirectUri: string): Promise<string> {
 					server.close();
 					return;
 				}
-
 				if (!code) {
 					res.statusCode = 400;
 					res.end("Missing OAuth code");
@@ -65,7 +55,6 @@ async function waitForOAuthCode(redirectUri: string): Promise<string> {
 					server.close();
 					return;
 				}
-
 				res.setHeader("Content-Type", "text/html; charset=utf-8");
 				res.end(
 					"<html><body>Authentication successful. You can close this tab.</body></html>",
@@ -76,18 +65,16 @@ async function waitForOAuthCode(redirectUri: string): Promise<string> {
 				server.close();
 			}
 		});
-
 		server.on("error", reject);
-		server.listen(port, () => {
-			console.log(`OAuth callback listening on :${port}`);
-		});
+		server.listen(port, () =>
+			console.log(`OAuth callback listening on :${port}`),
+		);
 	});
 }
 
 async function main() {
 	const profile = getYouTubeProfile();
 	assertProfileEnvFile(profile, process.env.ENV_FILE);
-
 	const clientId = process.env.YOUTUBE_CLIENT_ID;
 	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
 	if (!clientId || !clientSecret) {
@@ -95,14 +82,8 @@ async function main() {
 			`YouTube auth failed for profile '${profile.profileName}': YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET are required`,
 		);
 	}
-
 	const redirectUri = resolveYouTubeRedirectUri();
-	const auth = new google.auth.OAuth2({
-		clientId,
-		clientSecret,
-		redirectUri,
-	});
-
+	const auth = new google.auth.OAuth2({ clientId, clientSecret, redirectUri });
 	if (verifyOnly) {
 		await hydrateOAuthCredentials(auth, profile);
 		const result = await assertYouTubeChannelMatchesProfile(auth, profile);
@@ -119,21 +100,20 @@ async function main() {
 		scope: [
 			"https://www.googleapis.com/auth/youtube",
 			"https://www.googleapis.com/auth/youtube.upload",
+			"https://www.googleapis.com/auth/youtube.force-ssl",
+			"https://www.googleapis.com/auth/youtube.readonly",
+			"https://www.googleapis.com/auth/yt-analytics.readonly",
 		],
 	});
-
 	console.log("\nOPEN THIS URL:\n");
 	console.log(authUrl);
 	console.log("");
-
 	const code = await waitForOAuthCode(redirectUri);
 	const { tokens } = await auth.getToken(code);
 	auth.setCredentials(tokens);
-
 	const tokenPath = resolveTokenPath(profile);
 	await fs.ensureDir(path.dirname(tokenPath));
 	await fs.writeJson(tokenPath, tokens, { spaces: 2 });
-
 	const result = await assertYouTubeChannelMatchesProfile(auth, profile);
 	console.log("CHANNEL:");
 	console.log(result.actual.title);
