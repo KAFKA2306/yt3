@@ -18,22 +18,8 @@ jobs:
       with:
         bun-version: latest
 
-    - name: Install dependencies
+    - name: Install dependencies without lock drift
       run: bun run setup
 
-    - name: TypeScript Check
-      run: bun run typecheck
-
-    - name: Biome Check
-      run: bun run lint
-
-    - name: Publish Safety Audits
-      run: |
-        bun run audit:publish-routing
-        bun run audit:no-fallback
-
-    - name: Run Tests
-      run: bun run test
-      env:
-        SKIP_LLM: true
-        DRY_RUN: true
+    - name: Canonical quality gate
+      run: bun run check
