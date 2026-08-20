@@ -34,6 +34,11 @@ export type CanonicalPublicationState = z.infer<
 	typeof CanonicalPublicationStateSchema
 >;
 
+export type CanonicalPublicationReuse = {
+	state: CanonicalPublicationState;
+	result: NonNullable<PublishResults["youtube"]>;
+};
+
 const AuditCheckSchema = z
 	.object({
 		status: z.string(),
@@ -125,7 +130,7 @@ export async function tryReuseCanonicalPublication(
 	runDir: string,
 	artifactSha256: string,
 	profile: YouTubeProfile,
-): Promise<PublishResults["youtube"] | null> {
+): Promise<CanonicalPublicationReuse | null> {
 	const stored = loadPublicationState(runDir);
 	if (!stored || stored.artifact_sha256 !== artifactSha256 || !stored.video_id) {
 		return null;
@@ -145,23 +150,17 @@ export async function tryReuseCanonicalPublication(
 			`Canonical publish state points to the wrong channel: expected ${profile.expectedChannelId}, got ${item.snippet?.channelId || "missing"}`,
 		);
 	}
-	transitionPublication(runDir, {
-		run_id: stored.run_id,
-		artifact_sha256: stored.artifact_sha256,
-		requested_visibility: stored.requested_visibility,
-		phase: "VERIFIED",
-		video_id: stored.video_id,
-		channel_id: item.snippet.channelId,
-		channel_title: item.snippet.channelTitle ?? profile.expectedChannelTitle,
-		observed_visibility: item.status?.privacyStatus ?? "unknown",
-	});
 	return {
-		status: "uploaded",
-		video_id: stored.video_id,
-		channel_id: item.snippet.channelId,
-		channel_title: item.snippet.channelTitle ?? profile.expectedChannelTitle,
-		privacy_status: item.status?.privacyStatus ?? "unknown",
-		published_at: item.snippet.publishedAt ?? "",
+		state: stored,
+		result: {
+			status: "uploaded",
+			video_id: stored.video_id,
+			channel_id: item.snippet.channelId,
+			channel_title:
+				item.snippet.channelTitle ?? profile.expectedChannelTitle,
+			privacy_status: item.status?.privacyStatus ?? "unknown",
+			published_at: item.snippet.publishedAt ?? "",
+		},
 	};
 }
 
