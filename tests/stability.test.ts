@@ -12,8 +12,12 @@ const TEMP_DIR = path.join(__dirname, "temp_stability_test_cwd");
 
 type AnalyticsRow = {
 	views: number;
+	engaged_views: number;
 	likes: number;
-	satisfaction_score: number;
+	subscribers_gained: number;
+	subscribers_lost: number;
+	subscribers_net: number | null;
+	satisfaction_score: number | null;
 };
 
 afterAll(async () => {
@@ -41,7 +45,6 @@ describe("Stability and Audit Helpers", () => {
 		const bucketDir = path.join(TEMP_DIR, "runs", "byosan_money");
 		await fs.ensureDir(bucketDir);
 
-		// Create test run dirs
 		await fs.ensureDir(path.join(bucketDir, "2026-07-05"));
 		await fs.ensureDir(path.join(bucketDir, "2026-07-05-june-swoon-femo"));
 		await fs.ensureDir(path.join(bucketDir, "2026-07-06"));
@@ -63,11 +66,9 @@ describe("Stability and Audit Helpers", () => {
 		);
 		await fs.ensureDir(runDir);
 
-		// Initially, it has nothing, so it should not be ready
 		expect(isEvidenceReady(runDir)).toBe(false);
 		expect(getMissingEvidence(runDir)).toContain("run_evidence.json");
 
-		// Add malformed run_evidence
 		const evidencePath = path.join(runDir, "run_evidence.json");
 		await fs.writeFile(evidencePath, "invalid json");
 		expect(isEvidenceReady(runDir)).toBe(false);
@@ -75,7 +76,6 @@ describe("Stability and Audit Helpers", () => {
 			"run_evidence.json (invalid JSON)",
 		);
 
-		// Add valid run_evidence with failed status
 		const failedEvidence = {
 			run_id: "byosan_money/2026-07-10-test",
 			bucket: "byosan_money",
@@ -88,7 +88,6 @@ describe("Stability and Audit Helpers", () => {
 		let missing = getMissingEvidence(runDir);
 		expect(missing).toContain("evidence status=failed disposition=fatal");
 
-		// Fix status but keep other stages missing
 		const successEvidence = {
 			run_id: "byosan_money/2026-07-10-test",
 			bucket: "byosan_money",
@@ -104,38 +103,22 @@ describe("Stability and Audit Helpers", () => {
 		expect(missing).toContain("research");
 		expect(missing).toContain("audit/report.json");
 
-		// Add research file
 		await fs.writeJson(path.join(runDir, "research.json"), {});
-		// Add video file
 		await fs.ensureDir(path.join(runDir, "video"));
 		await fs.writeFile(path.join(runDir, "video", "final_video.mp4"), "");
-		// Add publish receipt
 		await fs.ensureDir(path.join(runDir, "publish"));
 		await fs.writeJson(path.join(runDir, "publish", "receipt.json"), {});
-		// Add audit report
 		await fs.ensureDir(path.join(runDir, "audit"));
 		await fs.writeJson(path.join(runDir, "audit", "report.json"), {
 			decision: "PASS",
 		});
 
-		// Now it should be ready!
 		expect(isEvidenceReady(runDir)).toBe(true);
 		expect(getMissingEvidence(runDir).length).toBe(0);
 	});
 });
 
 describe("YouTube Analytics Seam", () => {
-	test("calculateSatisfactionScore calculates proxy value correctly", () => {
-		const {
-			calculateSatisfactionScore,
-		} = require("../src/scripts/ingest_youtube_analytics.ts");
-		// likes=10, comments=5, shares=2, views=100
-		// score = (10 + 5*2 + 2*5) / 100 = (10 + 10 + 10) / 100 = 0.3
-		expect(calculateSatisfactionScore(10, 5, 2, 100)).toBe(0.3);
-		expect(calculateSatisfactionScore(0, 0, 0, 100)).toBe(0);
-		expect(calculateSatisfactionScore(10, 5, 2, 0)).toBe(0);
-	});
-
 	test("discoverVideos finds receipts in mock run directories", async () => {
 		const {
 			discoverVideos,
@@ -160,7 +143,7 @@ describe("YouTube Analytics Seam", () => {
 		expect(match?.channelId).toBe("UCYtjO-PYBfdG3MuPLXfhA-Q");
 	});
 
-	test("saveAnalyticsRecord inserts and updates SQLite records", async () => {
+	test("saveAnalyticsRecord persists only raw official metrics", async () => {
 		const {
 			saveAnalyticsRecord,
 		} = require("../src/scripts/ingest_youtube_analytics.ts");
@@ -168,7 +151,6 @@ describe("YouTube Analytics Seam", () => {
 		const testDbPath = path.join(TEMP_DIR, "test_evolution.db");
 
 		const db = new Database(testDbPath);
-		// Create the table
 		db.exec(`
 			CREATE TABLE IF NOT EXISTS youtube_analytics (
 				video_id TEXT NOT NULL,
@@ -191,16 +173,17 @@ describe("YouTube Analytics Seam", () => {
 		const record = {
 			video_id: "XYZ789",
 			channel_id: "UCYtjO-PYBfdG3MuPLXfhA-Q",
-			age_window: "24h" as const,
+			age_window: "published_day" as const,
 			views: 150,
+			engaged_views: 140,
 			watch_time_minutes: 4.5,
 			average_view_duration_seconds: 1.8,
 			average_view_percentage: 45.0,
 			likes: 12,
 			comments: 3,
 			shares: 1,
-			subscribers_net: 5,
-			satisfaction_score: 0.155,
+			subscribers_gained: 5,
+			subscribers_lost: 1,
 		};
 
 		saveAnalyticsRecord(db, record);
@@ -210,10 +193,13 @@ describe("YouTube Analytics Seam", () => {
 			.get() as AnalyticsRow;
 		expect(row).toBeDefined();
 		expect(row.views).toBe(150);
+		expect(row.engaged_views).toBe(140);
 		expect(row.likes).toBe(12);
-		expect(row.satisfaction_score).toBe(0.155);
+		expect(row.subscribers_gained).toBe(5);
+		expect(row.subscribers_lost).toBe(1);
+		expect(row.subscribers_net).toBeNull();
+		expect(row.satisfaction_score).toBeNull();
 
-		// Conflict update
 		record.views = 200;
 		record.likes = 15;
 		saveAnalyticsRecord(db, record);
@@ -223,6 +209,7 @@ describe("YouTube Analytics Seam", () => {
 			.get() as AnalyticsRow;
 		expect(updatedRow.views).toBe(200);
 		expect(updatedRow.likes).toBe(15);
+		expect(updatedRow.satisfaction_score).toBeNull();
 
 		db.close();
 	});
