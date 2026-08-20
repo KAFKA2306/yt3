@@ -11,6 +11,7 @@ import {
 	tryReuseVerifiedDancerUpload,
 	uploadAndVerifyCaption,
 	verifyScheduledPublish,
+	writeDancerUploadCheckpoint,
 } from "../dancer_publication.js";
 import type { AgentState, AppConfig, PublishResults } from "../types.js";
 import { validateCredentials } from "../validation.js";
@@ -236,6 +237,13 @@ export class PublishAgent extends BaseAgent {
 			"private",
 		);
 		console.log(`[PUBLISH:PRIVATE_VERIFIED] video_id=${videoId}`);
+		writeDancerUploadCheckpoint(this.store.runDir, state, {
+			video_id: videoId,
+			channel_id: snippet.channelId,
+			channel_title: snippet.channelTitle,
+			published_at: snippet.publishedAt ?? "",
+			verified_private_at: privateAttestation.verified_at,
+		});
 
 		if (thumbnailPath) {
 			try {
