@@ -148,8 +148,8 @@ async function main() {
 	const freshnessDocPath = path.join(ROOT, "docs", "daily_guarantee.md");
 	const stabilitySummaryPath = path.join(ROOT, "logs", "stability_summary.md");
 	const latestRuns = buildLatestRuns();
-	const latestChannelUrls = (await getLatestPublishedChannelUrls()).filter((item) =>
-		isCanonicalActiveRunId(ROOT, item.run_id),
+	const latestChannelUrls = (await getLatestPublishedChannelUrls()).filter(
+		(item) => isCanonicalActiveRunId(ROOT, item.run_id),
 	);
 	const report: GuaranteeReport = {
 		generated_at: new Date().toISOString(),
