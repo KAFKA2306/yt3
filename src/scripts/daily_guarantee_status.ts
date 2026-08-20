@@ -39,10 +39,51 @@ function readJson<T>(filePath: string): T | undefined {
 	return fs.readJsonSync(filePath) as T;
 }
 
+function isCanonicalActiveRunDir(runDir: string): boolean {
+	const statePath = path.join(runDir, "state.json");
+	if (!fs.existsSync(statePath)) return false;
+	try {
+		const state = fs.readJsonSync(statePath) as {
+			run_id?: unknown;
+			bucket?: unknown;
+		};
+		return (
+			typeof state.run_id === "string" &&
+			state.run_id.length > 0 &&
+			typeof state.bucket === "string" &&
+			state.bucket.length > 0
+		);
+	} catch {
+		return false;
+	}
+}
+
+function isCanonicalActiveRunId(runId: string): boolean {
+	if (!runId.includes("/")) return false;
+	return isCanonicalActiveRunDir(path.join(ROOT, "runs", runId));
+}
+
 function buildLatestRuns(): ReadinessItem[] {
 	const summaryPath = path.join(ROOT, "logs", "stability_summary.json");
 	const summaries = readJson<ReadinessItem[]>(summaryPath) || [];
-	return summaries.slice(0, 3);
+	return summaries.slice(0, 3).map((item) => {
+		const originalPresent = item.present_buckets || [];
+		const present = originalPresent.filter((bucket) =>
+			findRunDirsForDate(bucket, item.date).some(isCanonicalActiveRunDir),
+		);
+		const removedLegacy = originalPresent.filter(
+			(bucket) => !present.includes(bucket),
+		);
+		const absent = Array.from(
+			new Set([...(item.absent_buckets || []), ...removedLegacy]),
+		);
+		return {
+			...item,
+			present_buckets: present,
+			absent_buckets: absent,
+			evidence_ready: item.evidence_ready && removedLegacy.length === 0,
+		};
+	});
 }
 
 function formatMarkdown(report: GuaranteeReport): string {
@@ -63,14 +104,16 @@ function formatMarkdown(report: GuaranteeReport): string {
 		lines.push(`- Log: \`${item.log_path}\``);
 		lines.push(`- Evidence ready: \`${item.evidence_ready ? "yes" : "no"}\``);
 		lines.push(
-			`- Present buckets: ${item.present_buckets?.length ? item.present_buckets.map((p) => `\`${p}\``).join(", ") : "(unknown)"}`,
+			`- Present buckets: ${item.present_buckets?.length ? item.present_buckets.map((p) => `\`${p}\``).join(", ") : "(none)"}`,
 		);
 		lines.push(
 			`- Absent buckets: ${item.absent_buckets?.length ? item.absent_buckets.map((p) => `\`${p}\``).join(", ") : "(none)"}`,
 		);
 		const freshnessReports: string[] = [];
 		for (const bucket of item.present_buckets || []) {
-			for (const runDir of findRunDirsForDate(bucket, item.date)) {
+			for (const runDir of findRunDirsForDate(bucket, item.date).filter(
+				isCanonicalActiveRunDir,
+			)) {
 				const reportPath = path.join(
 					runDir,
 					"audit",
@@ -96,7 +139,7 @@ function formatMarkdown(report: GuaranteeReport): string {
 	lines.push("");
 	lines.push("## Latest Channel URLs");
 	if (report.latest_channel_urls.length === 0) {
-		lines.push("- (no published URLs found)");
+		lines.push("- (no published URLs found from canonical active runs)");
 	} else {
 		for (const item of report.latest_channel_urls) {
 			lines.push(`- ${item.channel_label}: \`${item.public_url}\``);
@@ -125,7 +168,9 @@ async function main() {
 	const freshnessDocPath = path.join(ROOT, "docs", "daily_guarantee.md");
 	const stabilitySummaryPath = path.join(ROOT, "logs", "stability_summary.md");
 	const latestRuns = buildLatestRuns();
-	const latestChannelUrls = await getLatestPublishedChannelUrls();
+	const latestChannelUrls = (await getLatestPublishedChannelUrls()).filter((item) =>
+		isCanonicalActiveRunId(item.run_id),
+	);
 	const report: GuaranteeReport = {
 		generated_at: new Date().toISOString(),
 		metrics_doc_path: metricsDocPath,
