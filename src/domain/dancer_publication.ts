@@ -13,6 +13,14 @@ export type DancerPublicationState = AgentState & {
 };
 
 type StoredReceipt = PublishResults & { source_artifact_sha256?: string };
+type UploadCheckpoint = {
+	source_artifact_sha256: string;
+	video_id: string;
+	channel_id: string;
+	channel_title: string;
+	published_at: string;
+	verified_private_at: string;
+};
 
 export function asDancerPublicationState(state: AgentState): DancerPublicationState {
 	return state as DancerPublicationState;
@@ -41,6 +49,64 @@ export function buildYouTubeStatus(state: AgentState) {
 	return status;
 }
 
+export function writeDancerUploadCheckpoint(
+	runDir: string,
+	state: AgentState,
+	input: Omit<UploadCheckpoint, "source_artifact_sha256">,
+): void {
+	const dancer = asDancerPublicationState(state);
+	if (!dancer.source_manifest_path || !dancer.source_artifact_sha256) return;
+	const publishDir = path.join(runDir, "publish");
+	fs.ensureDirSync(publishDir);
+	fs.writeJsonSync(
+		path.join(publishDir, "upload_attestation.json"),
+		{ source_artifact_sha256: dancer.source_artifact_sha256, ...input },
+		{ spaces: 2 },
+	);
+}
+
+function storedUploadForHash(
+	runDir: string,
+	sourceArtifactSha256: string,
+): {
+	videoId: string;
+	channelId?: string;
+	channelTitle?: string;
+	publishedAt?: string;
+} | null {
+	const receiptPath = path.join(runDir, "publish", "receipt.json");
+	if (fs.existsSync(receiptPath)) {
+		const receipt = fs.readJsonSync(receiptPath) as StoredReceipt;
+		if (
+			receipt.source_artifact_sha256 === sourceArtifactSha256 &&
+			receipt.youtube?.video_id
+		) {
+			return {
+				videoId: receipt.youtube.video_id,
+				channelId: receipt.youtube.channel_id,
+				channelTitle: receipt.youtube.channel_title,
+				publishedAt: receipt.youtube.published_at,
+			};
+		}
+	}
+	const checkpointPath = path.join(runDir, "publish", "upload_attestation.json");
+	if (fs.existsSync(checkpointPath)) {
+		const checkpoint = fs.readJsonSync(checkpointPath) as UploadCheckpoint;
+		if (
+			checkpoint.source_artifact_sha256 === sourceArtifactSha256 &&
+			checkpoint.video_id
+		) {
+			return {
+				videoId: checkpoint.video_id,
+				channelId: checkpoint.channel_id,
+				channelTitle: checkpoint.channel_title,
+				publishedAt: checkpoint.published_at,
+			};
+		}
+	}
+	return null;
+}
+
 export async function tryReuseVerifiedDancerUpload(
 	youtube: ReturnType<typeof google.youtube>,
 	state: AgentState,
@@ -49,27 +115,23 @@ export async function tryReuseVerifiedDancerUpload(
 ): Promise<PublishResults["youtube"] | null> {
 	const dancer = asDancerPublicationState(state);
 	if (!dancer.source_manifest_path || !dancer.source_artifact_sha256) return null;
-	const receiptPath = path.join(runDir, "publish", "receipt.json");
-	if (!fs.existsSync(receiptPath)) return null;
-	const receipt = fs.readJsonSync(receiptPath) as StoredReceipt;
-	if (receipt.source_artifact_sha256 !== dancer.source_artifact_sha256) return null;
-	const videoId = receipt.youtube?.video_id;
-	if (!videoId) return null;
-	const response = await youtube.videos.list({ part: ["snippet", "status"], id: [videoId] });
+	const stored = storedUploadForHash(runDir, dancer.source_artifact_sha256);
+	if (!stored) return null;
+	const response = await youtube.videos.list({ part: ["snippet", "status"], id: [stored.videoId] });
 	const item = response.data.items?.[0];
 	if (!item) return null;
 	if (item.snippet?.channelId !== profile.expectedChannelId) {
 		throw new Error(
-			`Stored publish receipt points to the wrong channel: expected ${profile.expectedChannelId}, got ${item.snippet?.channelId || "missing"}`,
+			`Stored dancer upload points to the wrong channel: expected ${profile.expectedChannelId}, got ${item.snippet?.channelId || "missing"}`,
 		);
 	}
 	return {
 		status: "uploaded",
-		video_id: videoId,
+		video_id: stored.videoId,
 		channel_id: item.snippet.channelId,
-		channel_title: item.snippet.channelTitle ?? profile.expectedChannelTitle,
+		channel_title: item.snippet.channelTitle ?? stored.channelTitle ?? profile.expectedChannelTitle,
 		privacy_status: item.status?.privacyStatus ?? "unknown",
-		published_at: item.snippet.publishedAt ?? receipt.youtube?.published_at ?? "",
+		published_at: item.snippet.publishedAt ?? stored.publishedAt ?? "",
 	};
 }
 
