@@ -132,7 +132,11 @@ export async function tryReuseCanonicalPublication(
 	profile: YouTubeProfile,
 ): Promise<CanonicalPublicationReuse | null> {
 	const stored = loadPublicationState(runDir);
-	if (!stored || stored.artifact_sha256 !== artifactSha256 || !stored.video_id) {
+	if (
+		!stored ||
+		stored.artifact_sha256 !== artifactSha256 ||
+		!stored.video_id
+	) {
 		return null;
 	}
 	const response = await youtube.videos.list({
@@ -156,8 +160,7 @@ export async function tryReuseCanonicalPublication(
 			status: "uploaded",
 			video_id: stored.video_id,
 			channel_id: item.snippet.channelId,
-			channel_title:
-				item.snippet.channelTitle ?? profile.expectedChannelTitle,
+			channel_title: item.snippet.channelTitle ?? profile.expectedChannelTitle,
 			privacy_status: item.status?.privacyStatus ?? "unknown",
 			published_at: item.snippet.publishedAt ?? "",
 		},
