@@ -1,6 +1,10 @@
 import path from "node:path";
 import fs from "fs-extra";
 import {
+	isCanonicalActiveRunDir,
+	isCanonicalActiveRunId,
+} from "../io/utils/run_discovery.js";
+import {
 	findRunDirsForDate,
 	getLatestPublishedChannelUrls,
 } from "../io/utils/stability.js";
@@ -37,30 +41,6 @@ const ROOT = process.cwd();
 function readJson<T>(filePath: string): T | undefined {
 	if (!fs.existsSync(filePath)) return undefined;
 	return fs.readJsonSync(filePath) as T;
-}
-
-function isCanonicalActiveRunDir(runDir: string): boolean {
-	const statePath = path.join(runDir, "state.json");
-	if (!fs.existsSync(statePath)) return false;
-	try {
-		const state = fs.readJsonSync(statePath) as {
-			run_id?: unknown;
-			bucket?: unknown;
-		};
-		return (
-			typeof state.run_id === "string" &&
-			state.run_id.length > 0 &&
-			typeof state.bucket === "string" &&
-			state.bucket.length > 0
-		);
-	} catch {
-		return false;
-	}
-}
-
-function isCanonicalActiveRunId(runId: string): boolean {
-	if (!runId.includes("/")) return false;
-	return isCanonicalActiveRunDir(path.join(ROOT, "runs", runId));
 }
 
 function buildLatestRuns(): ReadinessItem[] {
@@ -169,7 +149,7 @@ async function main() {
 	const stabilitySummaryPath = path.join(ROOT, "logs", "stability_summary.md");
 	const latestRuns = buildLatestRuns();
 	const latestChannelUrls = (await getLatestPublishedChannelUrls()).filter((item) =>
-		isCanonicalActiveRunId(item.run_id),
+		isCanonicalActiveRunId(ROOT, item.run_id),
 	);
 	const report: GuaranteeReport = {
 		generated_at: new Date().toISOString(),
