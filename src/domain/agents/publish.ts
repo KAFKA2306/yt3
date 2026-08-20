@@ -296,24 +296,26 @@ export class PublishAgent extends BaseAgent {
 				requested_visibility: requestedVisibility,
 				phase: "PRIVATE_UPLOAD_INTENT",
 			});
-			let res: Awaited<ReturnType<typeof youtube.videos.insert>>;
-			try {
-				res = await youtube.videos.insert({
-					part: ["snippet", "status"],
-					requestBody: this.createYouTubeSnippet(state, ytCfg),
-					media: { body: fs.createReadStream(videoPath) },
-				});
-			} catch (error) {
-				transitionPublication(this.store.runDir, {
-					run_id: state.run_id,
-					artifact_sha256: artifactSha256,
-					requested_visibility: requestedVisibility,
-					phase: "UNCERTAIN_REMOTE_COMMIT",
-					failure_reason:
-						error instanceof Error ? error.message : String(error),
-				});
-				throw error;
-			}
+			const insertPrivateVideo = async () => {
+				try {
+					return await youtube.videos.insert({
+						part: ["snippet", "status"],
+						requestBody: this.createYouTubeSnippet(state, ytCfg),
+						media: { body: fs.createReadStream(videoPath) },
+					});
+				} catch (error) {
+					transitionPublication(this.store.runDir, {
+						run_id: state.run_id,
+						artifact_sha256: artifactSha256,
+						requested_visibility: requestedVisibility,
+						phase: "UNCERTAIN_REMOTE_COMMIT",
+						failure_reason:
+							error instanceof Error ? error.message : String(error),
+					});
+					throw error;
+				}
+			};
+			const res = await insertPrivateVideo();
 			const snippet = res.data.snippet;
 			const status = res.data.status;
 			videoId = res.data.id || "";
