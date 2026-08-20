@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: yt3-fast-check
+        name: YT3 fast deterministic quality gate
+        entry: bun run check:fast
+        language: system
+        pass_filenames: false
+        stages: [pre-commit, pre-push]

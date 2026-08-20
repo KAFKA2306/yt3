@@ -8,11 +8,18 @@ import { ensureYouTubeVideoVisibility } from "../../io/utils/youtube_visibility.
 import {
 	asDancerPublicationState,
 	buildYouTubeStatus,
-	tryReuseVerifiedDancerUpload,
 	uploadAndVerifyCaption,
 	verifyScheduledPublish,
 	writeDancerUploadCheckpoint,
 } from "../dancer_publication.js";
+import {
+	assertFactualIntegrityGate,
+	assertNoLegacyPublishState,
+	loadPublicationState,
+	sha256File,
+	transitionPublication,
+	tryReuseCanonicalPublication,
+} from "../publication_state.js";
 import type { AgentState, AppConfig, PublishResults } from "../types.js";
 import { validateCredentials } from "../validation.js";
 import {
@@ -194,59 +201,210 @@ export class PublishAgent extends BaseAgent {
 			`[PUBLISH:DESTINATION] bucket=${state.bucket} expected_bucket=${profile.bucket} profile=${profile.profileName}`,
 		);
 
-		const auth = await this.createYouTubeClient();
-		const youtube = google.youtube({ version: "v3", auth });
-		await this.verifyYouTubeChannel(auth);
-		const reusable = await tryReuseVerifiedDancerUpload(
-			youtube,
-			state,
-			this.store.runDir,
-			profile,
-		);
-		if (reusable) {
-			console.log(`[PUBLISH:IDEMPOTENT_REUSE] video_id=${reusable.video_id}`);
-			return reusable;
-		}
-
 		const dancer = asDancerPublicationState(state);
 		const { thumbnail_path: thumbnailPath } = state;
 		const videoPath =
 			options.publishVideoPath || this.resolvePublishVideoPath(state);
 		if (!videoPath) throw new Error("Video path missing");
-		console.log(`[PUBLISH:VIDEO] source=${videoPath}`);
-		const res = await youtube.videos.insert({
-			part: ["snippet", "status"],
-			requestBody: this.createYouTubeSnippet(state, ytCfg),
-			media: { body: fs.createReadStream(videoPath) },
-		});
-		const videoId = res.data.id;
-		const snippet = res.data.snippet;
-		const status = res.data.status;
-		if (!videoId)
-			throw new Error("YouTube upload response is missing video id");
-		if (!snippet?.channelId)
-			throw new Error("YouTube upload response is missing channelId");
-		if (!snippet.channelTitle)
-			throw new Error("YouTube upload response is missing channelTitle");
-		if (!status?.privacyStatus)
-			throw new Error("YouTube upload response is missing privacyStatus");
-		if (status.privacyStatus !== "private") {
+		if (!fs.existsSync(videoPath)) {
+			throw new Error(`Video path does not exist: ${videoPath}`);
+		}
+		const artifactSha256 =
+			dancer.source_artifact_sha256 || sha256File(videoPath);
+		const requestedVisibility = dancer.publish_at
+			? "scheduled"
+			: ytCfg.default_visibility;
+		console.log(`[PUBLISH:VIDEO] source=${videoPath} sha256=${artifactSha256}`);
+
+		const auth = await this.createYouTubeClient();
+		const youtube = google.youtube({ version: "v3", auth });
+		await this.verifyYouTubeChannel(auth);
+
+		const reusable = await tryReuseCanonicalPublication(
+			youtube,
+			this.store.runDir,
+			artifactSha256,
+			profile,
+		);
+		if (reusable?.state.phase === "VERIFIED") {
+			console.log(
+				`[PUBLISH:IDEMPOTENT_REUSE] video_id=${reusable.result.video_id}`,
+			);
+			return reusable.result;
+		}
+		const stored = loadPublicationState(this.store.runDir);
+		if (
+			stored &&
+			!stored.video_id &&
+			(stored.phase === "PRIVATE_UPLOAD_INTENT" ||
+				stored.phase === "UNCERTAIN_REMOTE_COMMIT")
+		) {
 			throw new Error(
-				`YouTube upload must stage private; insert returned privacyStatus=${status.privacyStatus}`,
+				`Canonical publish state is ${stored.phase} without a verified video id; refusing videos.insert until the remote commit is resolved`,
 			);
 		}
+		if (!stored) assertNoLegacyPublishState(this.store.runDir);
 
-		const privateAttestation = await ensureYouTubeVideoVisibility(
-			auth,
-			videoId,
-			"private",
-		);
+		if (dancer.publish_at || ytCfg.default_visibility !== "private") {
+			assertFactualIntegrityGate(this.store.runDir, state);
+		}
+
+		let videoId: string;
+		let channelId: string;
+		let channelTitle: string;
+		let publishedAt: string;
+		let observedPrivacy = reusable?.result.privacy_status ?? "unknown";
+
+		if (reusable) {
+			videoId = reusable.result.video_id || "";
+			channelId = reusable.result.channel_id || "";
+			channelTitle =
+				reusable.result.channel_title || profile.expectedChannelTitle;
+			publishedAt = reusable.result.published_at || "";
+			if (!videoId || !channelId) {
+				throw new Error(
+					"Canonical reusable publication is missing remote identity",
+				);
+			}
+			if (
+				observedPrivacy !== "private" &&
+				ytCfg.default_visibility !== "private" &&
+				!dancer.publish_at &&
+				observedPrivacy === ytCfg.default_visibility
+			) {
+				transitionPublication(this.store.runDir, {
+					run_id: state.run_id,
+					artifact_sha256: artifactSha256,
+					requested_visibility: requestedVisibility,
+					phase: "VERIFIED",
+					video_id: videoId,
+					channel_id: channelId,
+					channel_title: channelTitle,
+					observed_visibility: observedPrivacy,
+				});
+				return reusable.result;
+			}
+			if (observedPrivacy !== "private") {
+				throw new Error(
+					`Resumable publication expected private staging, got ${observedPrivacy}`,
+				);
+			}
+		} else {
+			transitionPublication(this.store.runDir, {
+				run_id: state.run_id,
+				artifact_sha256: artifactSha256,
+				requested_visibility: requestedVisibility,
+				phase: "PRIVATE_UPLOAD_INTENT",
+			});
+			const insertPrivateVideo = async () => {
+				try {
+					return await youtube.videos.insert({
+						part: ["snippet", "status"],
+						requestBody: this.createYouTubeSnippet(state, ytCfg),
+						media: { body: fs.createReadStream(videoPath) },
+					});
+				} catch (error) {
+					transitionPublication(this.store.runDir, {
+						run_id: state.run_id,
+						artifact_sha256: artifactSha256,
+						requested_visibility: requestedVisibility,
+						phase: "UNCERTAIN_REMOTE_COMMIT",
+						failure_reason:
+							error instanceof Error ? error.message : String(error),
+					});
+					throw error;
+				}
+			};
+			const res = await insertPrivateVideo();
+			const snippet = res.data.snippet;
+			const status = res.data.status;
+			videoId = res.data.id || "";
+			channelId = snippet?.channelId || "";
+			channelTitle = snippet?.channelTitle || "";
+			publishedAt = snippet?.publishedAt ?? "";
+			if (!videoId || !channelId || !channelTitle || !status?.privacyStatus) {
+				transitionPublication(this.store.runDir, {
+					run_id: state.run_id,
+					artifact_sha256: artifactSha256,
+					requested_visibility: requestedVisibility,
+					phase: "UNCERTAIN_REMOTE_COMMIT",
+					video_id: videoId || undefined,
+					channel_id: channelId || undefined,
+					channel_title: channelTitle || undefined,
+					failure_reason:
+						"YouTube upload response is missing remote identity/status",
+				});
+				throw new Error(
+					"YouTube upload response is missing remote identity/status",
+				);
+			}
+			if (status.privacyStatus !== "private") {
+				transitionPublication(this.store.runDir, {
+					run_id: state.run_id,
+					artifact_sha256: artifactSha256,
+					requested_visibility: requestedVisibility,
+					phase: "UNCERTAIN_REMOTE_COMMIT",
+					video_id: videoId,
+					channel_id: channelId,
+					channel_title: channelTitle,
+					observed_visibility: status.privacyStatus,
+					failure_reason: `insert returned ${status.privacyStatus} instead of private`,
+				});
+				throw new Error(
+					`YouTube upload must stage private; insert returned privacyStatus=${status.privacyStatus}`,
+				);
+			}
+			observedPrivacy = status.privacyStatus;
+			transitionPublication(this.store.runDir, {
+				run_id: state.run_id,
+				artifact_sha256: artifactSha256,
+				requested_visibility: requestedVisibility,
+				phase: "PRIVATE_UPLOADED",
+				video_id: videoId,
+				channel_id: channelId,
+				channel_title: channelTitle,
+				observed_visibility: observedPrivacy,
+			});
+		}
+
+		let privateAttestation: Awaited<
+			ReturnType<typeof ensureYouTubeVideoVisibility>
+		>;
+		try {
+			privateAttestation = await ensureYouTubeVideoVisibility(
+				auth,
+				videoId,
+				"private",
+			);
+		} catch (error) {
+			transitionPublication(this.store.runDir, {
+				run_id: state.run_id,
+				artifact_sha256: artifactSha256,
+				requested_visibility: requestedVisibility,
+				phase: "UNCERTAIN_REMOTE_COMMIT",
+				video_id: videoId,
+				channel_id: channelId,
+				channel_title: channelTitle,
+				failure_reason: error instanceof Error ? error.message : String(error),
+			});
+			throw error;
+		}
 		console.log(`[PUBLISH:PRIVATE_VERIFIED] video_id=${videoId}`);
+		transitionPublication(this.store.runDir, {
+			run_id: state.run_id,
+			artifact_sha256: artifactSha256,
+			requested_visibility: requestedVisibility,
+			phase: "REMOTE_VERIFIED",
+			video_id: videoId,
+			channel_id: channelId,
+			channel_title: channelTitle,
+			observed_visibility: privateAttestation.current_privacy_status,
+		});
 		writeDancerUploadCheckpoint(this.store.runDir, state, {
 			video_id: videoId,
-			channel_id: snippet.channelId,
-			channel_title: snippet.channelTitle,
-			published_at: snippet.publishedAt ?? "",
+			channel_id: channelId,
+			channel_title: channelTitle,
+			published_at: publishedAt,
 			verified_private_at: privateAttestation.verified_at,
 		});
 
@@ -284,6 +442,16 @@ export class PublishAgent extends BaseAgent {
 				ytCfg.default_visibility,
 			);
 		}
+		transitionPublication(this.store.runDir, {
+			run_id: state.run_id,
+			artifact_sha256: artifactSha256,
+			requested_visibility: requestedVisibility,
+			phase: "VISIBILITY_APPLIED",
+			video_id: videoId,
+			channel_id: channelId,
+			channel_title: channelTitle,
+			observed_visibility: visibilityAttestation.current_privacy_status,
+		});
 		fs.writeJsonSync(
 			path.join(this.store.runDir, "publish", "visibility_attestation.json"),
 			{
@@ -294,13 +462,23 @@ export class PublishAgent extends BaseAgent {
 			},
 			{ spaces: 2 },
 		);
+		transitionPublication(this.store.runDir, {
+			run_id: state.run_id,
+			artifact_sha256: artifactSha256,
+			requested_visibility: requestedVisibility,
+			phase: "VERIFIED",
+			video_id: videoId,
+			channel_id: channelId,
+			channel_title: channelTitle,
+			observed_visibility: visibilityAttestation.current_privacy_status,
+		});
 		return {
 			status: "uploaded",
 			video_id: videoId,
-			channel_id: snippet.channelId,
-			channel_title: snippet.channelTitle,
+			channel_id: channelId,
+			channel_title: channelTitle,
 			privacy_status: visibilityAttestation.current_privacy_status,
-			published_at: snippet.publishedAt ?? "",
+			published_at: publishedAt,
 		};
 	}
 

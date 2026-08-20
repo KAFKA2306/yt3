@@ -165,14 +165,20 @@ tasks:
       - uv run --no-project --with faster-whisper python3 .claude/skills/audio-production/scripts/run_asr.py --input-wav "{{.FILE}}" --output-dir "{{.OUT}}" --model base
 
   lint:
-    desc: "Type-check and lint"
-    cmds:
-      - bun x --bun tsc --noEmit
-      - bun x --bun biome check src
+    desc: "Run the canonical Biome lint/format owner"
+    cmds: ["bun run lint"]
 
   test:
     desc: "Run unit tests"
     cmds: ["SKIP_LLM=true DRY_RUN=true bun test"]
+
+  check:fast:
+    desc: "Run the fast deterministic quality gate used by prek/pre-commit"
+    cmds: ["bun run check:fast"]
+
+  check:
+    desc: "Run the full canonical CI quality gate"
+    cmds: ["bun run check"]
 
   clean:
     desc: "Reset logs and temporary artifacts"
