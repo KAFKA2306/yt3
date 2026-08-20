@@ -210,7 +210,8 @@ export class PublishAgent extends BaseAgent {
 
 		const dancer = asDancerPublicationState(state);
 		const { thumbnail_path: thumbnailPath } = state;
-		const videoPath = options.publishVideoPath || this.resolvePublishVideoPath(state);
+		const videoPath =
+			options.publishVideoPath || this.resolvePublishVideoPath(state);
 		if (!videoPath) throw new Error("Video path missing");
 		console.log(`[PUBLISH:VIDEO] source=${videoPath}`);
 		const res = await youtube.videos.insert({
@@ -221,10 +222,14 @@ export class PublishAgent extends BaseAgent {
 		const videoId = res.data.id;
 		const snippet = res.data.snippet;
 		const status = res.data.status;
-		if (!videoId) throw new Error("YouTube upload response is missing video id");
-		if (!snippet?.channelId) throw new Error("YouTube upload response is missing channelId");
-		if (!snippet.channelTitle) throw new Error("YouTube upload response is missing channelTitle");
-		if (!status?.privacyStatus) throw new Error("YouTube upload response is missing privacyStatus");
+		if (!videoId)
+			throw new Error("YouTube upload response is missing video id");
+		if (!snippet?.channelId)
+			throw new Error("YouTube upload response is missing channelId");
+		if (!snippet.channelTitle)
+			throw new Error("YouTube upload response is missing channelTitle");
+		if (!status?.privacyStatus)
+			throw new Error("YouTube upload response is missing privacyStatus");
 		if (status.privacyStatus !== "private") {
 			throw new Error(
 				`YouTube upload must stage private; insert returned privacyStatus=${status.privacyStatus}`,
@@ -339,10 +344,16 @@ export class PublishAgent extends BaseAgent {
 			);
 		}
 
-		const client = new google.auth.OAuth2({ clientId, clientSecret, redirectUri });
+		const client = new google.auth.OAuth2({
+			clientId,
+			clientSecret,
+			redirectUri,
+		});
 		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
 		if (!profileName) {
-			throw new Error("YouTube client initialization requires YOUTUBE_CHANNEL_PROFILE");
+			throw new Error(
+				"YouTube client initialization requires YOUTUBE_CHANNEL_PROFILE",
+			);
 		}
 
 		const profile = getYouTubeProfile(profileName);
@@ -372,12 +383,26 @@ export class PublishAgent extends BaseAgent {
 		});
 		let thumbnailVariants: string[] = [];
 		for (let attempt = 0; attempt < 6; attempt++) {
-			const response = await youtube.videos.list({ part: ["snippet"], id: [videoId] });
-			thumbnailVariants = Object.keys(response.data.items?.[0]?.snippet?.thumbnails ?? {});
-			if (["default", "medium", "high"].every((key) => thumbnailVariants.includes(key))) break;
+			const response = await youtube.videos.list({
+				part: ["snippet"],
+				id: [videoId],
+			});
+			thumbnailVariants = Object.keys(
+				response.data.items?.[0]?.snippet?.thumbnails ?? {},
+			);
+			if (
+				["default", "medium", "high"].every((key) =>
+					thumbnailVariants.includes(key),
+				)
+			)
+				break;
 			await new Promise((resolve) => setTimeout(resolve, 3000));
 		}
-		if (!["default", "medium", "high"].every((key) => thumbnailVariants.includes(key))) {
+		if (
+			!["default", "medium", "high"].every((key) =>
+				thumbnailVariants.includes(key),
+			)
+		) {
 			throw new Error(
 				`Thumbnail update could not be verified for ${videoId}; variants=${thumbnailVariants.join(",")}`,
 			);
@@ -411,7 +436,8 @@ export class PublishAgent extends BaseAgent {
 		const { metadata } = state;
 		const videoPath = this.resolvePublishVideoPath(state);
 		let mediaId: string | undefined;
-		if (videoPath && fs.existsSync(videoPath)) mediaId = await client.v1.uploadMedia(videoPath);
+		if (videoPath && fs.existsSync(videoPath))
+			mediaId = await client.v1.uploadMedia(videoPath);
 		const tweetText = this.createTweetText(metadata);
 		const tweetPayload = { text: tweetText } as {
 			text: string;
@@ -424,8 +450,10 @@ export class PublishAgent extends BaseAgent {
 
 	private createTwitterClient() {
 		const appKey = process.env.X_API_KEY || process.env.TWITTER_API_KEY;
-		const appSecret = process.env.X_API_SECRET || process.env.TWITTER_API_SECRET;
-		const accessToken = process.env.X_ACCESS_TOKEN || process.env.TWITTER_ACCESS_TOKEN;
+		const appSecret =
+			process.env.X_API_SECRET || process.env.TWITTER_API_SECRET;
+		const accessToken =
+			process.env.X_ACCESS_TOKEN || process.env.TWITTER_ACCESS_TOKEN;
 		const accessSecret =
 			process.env.X_ACCESS_SECRET || process.env.TWITTER_ACCESS_TOKEN_SECRET;
 		if (!appKey || !appSecret || !accessToken || !accessSecret) {
