@@ -52,13 +52,16 @@ async function main() {
 		db.close();
 	}
 
-	const child = Bun.spawn(
-		["bun", "src/scripts/ingest_youtube_analytics.ts"],
-		{ cwd: process.cwd(), stdout: "inherit", stderr: "inherit" },
-	);
+	const child = Bun.spawn(["bun", "src/scripts/ingest_youtube_analytics.ts"], {
+		cwd: process.cwd(),
+		stdout: "inherit",
+		stderr: "inherit",
+	});
 	const exitCode = await child.exited;
 	if (exitCode !== 0) {
-		throw new Error(`YouTube Analytics refresh failed with exit code ${exitCode}`);
+		throw new Error(
+			`YouTube Analytics refresh failed with exit code ${exitCode}`,
+		);
 	}
 }
 
