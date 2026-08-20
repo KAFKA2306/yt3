@@ -1,5 +1,5 @@
-import path from "node:path";
 import { Database } from "bun:sqlite";
+import path from "node:path";
 import dotenv from "dotenv";
 import fs from "fs-extra";
 import { google } from "googleapis";
@@ -117,8 +117,13 @@ export function discoverVideos(baseDir = process.cwd()): PublishedVideo[] {
 					};
 				};
 				const youtube = receipt.youtube;
-				if (!youtube?.video_id || !youtube.channel_id || !youtube.published_at) continue;
-				const schedulePath = path.join(runDir, "publish", "schedule_attestation.json");
+				if (!youtube?.video_id || !youtube.channel_id || !youtube.published_at)
+					continue;
+				const schedulePath = path.join(
+					runDir,
+					"publish",
+					"schedule_attestation.json",
+				);
 				const schedule = fs.existsSync(schedulePath)
 					? (fs.readJsonSync(schedulePath) as { publish_at?: string })
 					: {};
@@ -132,7 +137,9 @@ export function discoverVideos(baseDir = process.cwd()): PublishedVideo[] {
 					privacyStatus: youtube.privacy_status || "unknown",
 				});
 			} catch (error) {
-				console.warn(`Skipping unreadable receipt ${receiptPath}: ${(error as Error).message}`);
+				console.warn(
+					`Skipping unreadable receipt ${receiptPath}: ${(error as Error).message}`,
+				);
 			}
 		}
 	}
@@ -142,7 +149,8 @@ export function discoverVideos(baseDir = process.cwd()): PublishedVideo[] {
 async function getOAuthClient(profileName: YouTubeProfileName) {
 	const profile = YOUTUBE_PROFILES[profileName];
 	const envPath = path.join(ROOT, profile.envFile);
-	if (!fs.existsSync(envPath)) throw new Error(`Profile env file missing: ${profile.envFile}`);
+	if (!fs.existsSync(envPath))
+		throw new Error(`Profile env file missing: ${profile.envFile}`);
 	dotenv.config({ path: envPath, override: true });
 	const clientId = process.env.YOUTUBE_CLIENT_ID;
 	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
@@ -164,14 +172,21 @@ async function verifyAuthorizationAndVideo(
 	videoId: string,
 ): Promise<boolean> {
 	const youtube = google.youtube({ version: "v3", auth });
-	const channels = await youtube.channels.list({ mine: true, part: ["id"], maxResults: 1 });
+	const channels = await youtube.channels.list({
+		mine: true,
+		part: ["id"],
+		maxResults: 1,
+	});
 	const actualChannelId = channels.data.items?.[0]?.id;
 	if (actualChannelId !== expectedChannelId) {
 		throw new Error(
 			`Analytics authorization channel mismatch: expected ${expectedChannelId}, got ${actualChannelId || "missing"}`,
 		);
 	}
-	const videos = await youtube.videos.list({ part: ["id", "status"], id: [videoId] });
+	const videos = await youtube.videos.list({
+		part: ["id", "status"],
+		id: [videoId],
+	});
 	return Boolean(videos.data.items?.[0]);
 }
 
@@ -200,10 +215,15 @@ async function fetchAnalytics(
 	};
 	const analyticsDir = path.join(runDir, "analytics");
 	fs.ensureDirSync(analyticsDir);
-	fs.writeJsonSync(path.join(analyticsDir, `${window.name}.json`), raw, { spaces: 2 });
+	fs.writeJsonSync(path.join(analyticsDir, `${window.name}.json`), raw, {
+		spaces: 2,
+	});
 
 	const row = response.data.rows?.[0];
-	if (!row) throw new Error(`No analytics data returned for ${videoId} / ${window.name}`);
+	if (!row)
+		throw new Error(
+			`No analytics data returned for ${videoId} / ${window.name}`,
+		);
 	return {
 		video_id: videoId,
 		channel_id: channelId,
@@ -223,16 +243,19 @@ async function fetchAnalytics(
 
 function ensureAnalyticsColumns(db: Database) {
 	const columns = new Set(
-		(db.query("PRAGMA table_info(youtube_analytics)").all() as Array<{ name: string }>).map(
-			(row) => row.name,
-		),
+		(
+			db.query("PRAGMA table_info(youtube_analytics)").all() as Array<{
+				name: string;
+			}>
+		).map((row) => row.name),
 	);
 	for (const [name, type] of [
 		["engaged_views", "INTEGER"],
 		["subscribers_gained", "INTEGER"],
 		["subscribers_lost", "INTEGER"],
 	] as const) {
-		if (!columns.has(name)) db.exec(`ALTER TABLE youtube_analytics ADD COLUMN ${name} ${type}`);
+		if (!columns.has(name))
+			db.exec(`ALTER TABLE youtube_analytics ADD COLUMN ${name} ${type}`);
 	}
 }
 
@@ -307,9 +330,13 @@ async function main() {
 					video.videoId,
 				);
 				if (!exists) {
-					db.prepare("DELETE FROM youtube_analytics WHERE video_id = ?").run(video.videoId);
+					db.prepare("DELETE FROM youtube_analytics WHERE video_id = ?").run(
+						video.videoId,
+					);
 					fs.removeSync(path.join(video.runDir, "analytics"));
-					console.warn(`Deleted stale analytics because video no longer exists: ${video.videoId}`);
+					console.warn(
+						`Deleted stale analytics because video no longer exists: ${video.videoId}`,
+					);
 					continue;
 				}
 				for (const window of windows) {
