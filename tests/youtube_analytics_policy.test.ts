@@ -47,18 +47,14 @@ describe("YouTube Analytics 30-day storage boundary", () => {
 
 		const db = new Database(":memory:");
 		createAnalyticsTable(db);
-		db.prepare(
-			"INSERT INTO youtube_analytics VALUES (?, ?, ?, ?, ?)",
-		).run(
+		db.prepare("INSERT INTO youtube_analytics VALUES (?, ?, ?, ?, ?)").run(
 			"video-stale",
 			"channel-1",
 			"first_7d",
 			100,
 			"2026-06-01 00:00:00",
 		);
-		db.prepare(
-			"INSERT INTO youtube_analytics VALUES (?, ?, ?, ?, ?)",
-		).run(
+		db.prepare("INSERT INTO youtube_analytics VALUES (?, ?, ?, ?, ?)").run(
 			"video-fresh",
 			"channel-1",
 			"first_7d",
@@ -73,13 +69,13 @@ describe("YouTube Analytics 30-day storage boundary", () => {
 		);
 		expect(purged).toBe(1);
 		expect(
-			db
-				.query("SELECT count(*) AS n FROM youtube_analytics")
-				.get() as { n: number },
+			db.query("SELECT count(*) AS n FROM youtube_analytics").get() as {
+				n: number;
+			},
 		).toEqual({ n: 1 });
-		expect(
-			fs.existsSync(path.join(runDir, "analytics", "first_7d.json")),
-		).toBe(false);
+		expect(fs.existsSync(path.join(runDir, "analytics", "first_7d.json"))).toBe(
+			false,
+		);
 		db.close();
 	});
 });
