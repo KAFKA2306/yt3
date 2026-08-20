@@ -4,7 +4,7 @@ import fs from "fs-extra";
 import { getYouTubeProfile } from "../domain/youtube_profiles.js";
 import { type AgentState, AssetStore } from "../io/core.js";
 
-type DancerManifest = {
+export type DancerManifest = {
 	schema_version: number;
 	run_id: string;
 	selected?: { video_path?: string; video_sha256?: string };
@@ -21,10 +21,28 @@ type DancerManifest = {
 		thumbnail_title?: string;
 		path?: string;
 	};
+	presentation_audit?: { passed?: boolean };
 	caption_path?: string | null;
 	publish_at?: string | null;
 	compliance?: { passed?: boolean; contains_synthetic_media?: boolean };
 };
+
+export function validateDancerManifest(manifest: DancerManifest): void {
+	if (manifest.schema_version !== 1)
+		throw new Error(
+			`Unsupported dancer manifest schema: ${manifest.schema_version}`,
+		);
+	if (!manifest.run_id || !/^dancer-[a-f0-9]{20}$/.test(manifest.run_id))
+		throw new Error(`Invalid dancer run id: ${manifest.run_id || "missing"}`);
+	if (manifest.presentation_audit?.passed !== true)
+		throw new Error(
+			"Dancer manifest did not pass the metadata/thumbnail contradiction gate",
+		);
+	if (manifest.compliance?.passed !== true)
+		throw new Error(
+			"Dancer manifest did not pass the rights/provenance compliance gate",
+		);
+}
 
 function sha256(filePath: string): string {
 	const hash = crypto.createHash("sha256");
@@ -52,16 +70,8 @@ function main() {
 	const profile = getYouTubeProfile(profileArg);
 	const manifestPath = requireFile(manifestArg, "manifest path");
 	const manifest = fs.readJsonSync(manifestPath) as DancerManifest;
-	if (manifest.schema_version !== 1)
-		throw new Error(
-			`Unsupported dancer manifest schema: ${manifest.schema_version}`,
-		);
-	if (!manifest.run_id || !/^dancer-[a-f0-9]{20}$/.test(manifest.run_id))
-		throw new Error(`Invalid dancer run id: ${manifest.run_id || "missing"}`);
-	if (manifest.compliance?.passed !== true)
-		throw new Error(
-			"Dancer manifest did not pass the rights/provenance compliance gate",
-		);
+	validateDancerManifest(manifest);
+
 	const videoPath = requireFile(
 		manifest.selected?.video_path,
 		"selected video",
@@ -142,9 +152,11 @@ function main() {
 	);
 }
 
-try {
-	main();
-} catch (error) {
-	console.error(error instanceof Error ? error.message : error);
-	process.exit(1);
+if (import.meta.main) {
+	try {
+		main();
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : error);
+		process.exit(1);
+	}
 }
