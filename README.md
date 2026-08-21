@@ -21,7 +21,7 @@ source / event
   -> script
   -> media production
   -> deterministic/editorial audit
-  -> factual-integrity gate
+  -> product release gate
   -> channel-routing verification
   -> private upload
   -> remote read-back
@@ -37,26 +37,41 @@ The core rules are:
 - **One operator surface.** `Taskfile.yml` owns executable entry points.
 - **Channel identity is a hard boundary.** 秒算マネー, 夜話アーカイブ, and 人類観測所 must not be mixed.
 - **State is for resumption; evidence is for proof.** Generated artifacts and attestations do not become competing workflow states.
+- **Merge and release are different decisions.** Repository readiness does not imply that any concrete product run is releasable.
 - **Publication is a separate side effect.** A rendered file is not a YouTube receipt, and a receipt is not remote visibility verification.
 
-## Setup and quality gates
+## Setup and PR merge gate
 
-Install the exact dependency graph committed in `bun.lock`, then run the canonical quality gate:
+Install the exact dependency graph committed in `bun.lock`, then run the explicit PR merge gate:
 
 ```bash
 task setup
-task check
+task check:merge
 ```
 
 For a faster deterministic preflight:
 
 ```bash
-task check:fast
+task check:merge:fast
 ```
 
-`check:fast` includes lint, typecheck, the repository-contract audit, publish-routing audit, and no-fallback audit. The repository-contract audit verifies that local executables referenced by Taskfile/package scripts exist and that the maintained entry-point documentation does not point at missing tasks or files.
+The merge gate checks repository/source state only: lint, types, repository contract, static publish routing, source-level no-fallback policy, and tests. It deliberately does **not** depend on production OAuth credentials, a specific `RUN_ID`, historical runtime receipts, or current YouTube state.
 
-Quality-gate ownership is documented in [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
+`task check` and `task check:fast` remain compatibility aliases. Quality-gate ownership is documented in [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
+
+## Product release gate
+
+A concrete run is checked separately before publication:
+
+```bash
+task release:check PROFILE=byosan -- <run-id> [video-path]
+task release:check PROFILE=yawa -- <run-id> [video-path]
+task release:check PROFILE=humanity -- <run-id> [video-path]
+```
+
+The product release gate verifies the selected profile/bucket, canonical run state, artifact existence and SHA-256 identity, no-fallback metadata, publication-state conflicts, and factual-integrity evidence when the configured visibility is non-private.
+
+Passing `release:check` does not publish anything. The canonical `publish` path runs the same product release gate before OAuth/channel verification or any YouTube publication step.
 
 ## Production
 
@@ -97,7 +112,7 @@ task publish PROFILE=yawa -- <run-id> [video-path]
 task publish PROFILE=humanity -- <run-id> [video-path]
 ```
 
-Unknown profiles fail closed. Before upload, YT3 verifies the intended profile against the authenticated YouTube channel. If a prior upload intent has uncertain remote commit state, the publisher stops rather than issuing another upload blindly.
+Unknown profiles fail closed. Before upload, YT3 executes the product release gate and then verifies the intended profile against the authenticated YouTube channel. If a prior upload intent has uncertain remote commit state, the publisher stops rather than issuing another upload blindly.
 
 ## Publication state
 
@@ -107,7 +122,7 @@ Do not compress these stages into one `done` flag:
 SCRIPT_DONE
 MEDIA_GENERATED
 AUDIT_PASSED
-FACTUAL_INTEGRITY_PASS
+PRODUCT_RELEASE_GATE_PASS
 ROUTING_VERIFIED
 PRIVATE_UPLOADED
 REMOTE_VERIFIED
@@ -115,7 +130,19 @@ VISIBILITY_APPLIED
 VISIBILITY_VERIFIED
 ```
 
-`runs/<domain>/<run>/publish/state.json` is the canonical publication state. Thumbnail, caption, visibility attestations, and `receipt.json` are evidence attached to that state rather than independent state machines.
+`runs/<domain>/<run>/publish/state.json` is the canonical publication state. Thumbnail, caption, factual-integrity, visibility attestations, and `receipt.json` are evidence attached to that state rather than independent state machines.
+
+## No-fallback scopes
+
+Source policy and runtime cleanup are separate concerns:
+
+```bash
+task audit:no-fallback:source
+task audit:no-fallback:runtime
+task audit:no-fallback
+```
+
+Only the source scope belongs to the PR merge gate. Historical runtime deletion evidence remains an operational audit and cannot block an unrelated code change from merging.
 
 ## Evidence layout
 
@@ -123,10 +150,10 @@ VISIBILITY_VERIFIED
 runs/<domain>/<run>/state.json             production state
 runs/<domain>/<run>/audit/                 audit results and raw evidence
 runs/<domain>/<run>/publish/state.json     canonical publication state
-runs/<domain>/<run>/publish/*.json         publication attestations and receipt
+runs/<domain>/<run>/publish/*.json         release/publication attestations and receipt
 runs/<domain>/<run>/run_evidence.json      cross-stage run evidence
-db/                                         cross-run evolution/audit data
-docs/                                       maintained standards and ADRs
+db/                                        cross-run evolution/audit data
+docs/                                      maintained standards and ADRs
 ```
 
 The system audit protocol is [docs/standard/system-audit-protocol.md](docs/standard/system-audit-protocol.md). Humanity Observatory has a separate domain standard at [docs/standard/humanity-observatory-audit-standard.md](docs/standard/humanity-observatory-audit-standard.md).
@@ -143,9 +170,10 @@ task byosan:daily
 task pulse:auto
 ```
 
-Publication:
+Release and publication:
 
 ```bash
+task release:check PROFILE=byosan -- <run-id>
 task publish:byosan -- <run-id>
 task publish:yawa -- <run-id>
 task publish:humanity -- <run-id>
@@ -159,6 +187,8 @@ Audit and status:
 task audit:today
 task audit:publish-routing
 task audit:byosan-money
+task audit:no-fallback:source
+task audit:no-fallback:runtime
 task audit:no-fallback
 task audit:repo-contract
 task publish:visibility-audit
@@ -181,7 +211,7 @@ Local service availability is environment-dependent; documentation is not eviden
 ## Repository map
 
 ```text
-src/          production, audit, publish, and workflow implementation
+src/          production, audit, release, publish, and workflow implementation
 config/       channel, environment, and domain configuration
 runs/         runtime state and evidence
 audits/       repository-level verification evidence
@@ -197,13 +227,15 @@ bun.lock      reproducible dependency graph
 
 ## Completion boundary
 
-YT3 is complete only to the highest stage for which current evidence exists. A render does not imply publication, and an upload ID does not imply requested visibility.
+A merged PR proves repository acceptance only. A passed product release gate proves local release readiness only. Publication is verified only after remote receipt/read-back evidence exists.
 
 For any run, the operator should be able to answer:
 
 - What facts were used?
 - Which artifacts were generated?
 - Which checks passed or blocked progression?
+- Did the PR merge gate pass for the code revision?
+- Did the product release gate pass for this exact run/artifact?
 - Which channel was intended and authenticated?
 - Was a remote video already created?
 - What is its current visibility?
