@@ -30,8 +30,20 @@ tasks:
     desc: "Run Daily Pulse to NotebookLM automation"
     cmds: ["bun --env-file=config/.env src/pulse_to_video_workflow.ts"]
 
+  release:check:
+    desc: "Check run-specific product release conditions without external publication (PROFILE required)"
+    cmds:
+      - |
+        case "{{.PROFILE}}" in
+          byosan) ENV_FILE=config/.env.byosan ;;
+          yawa) ENV_FILE=config/.env.yawa ;;
+          humanity) ENV_FILE=config/.env ;;
+          *) echo "PROFILE must be exactly one of: byosan, yawa, humanity" >&2; exit 2 ;;
+        esac
+        ENV_FILE="$ENV_FILE" YOUTUBE_CHANNEL_PROFILE="{{.PROFILE}}" bun --env-file="$ENV_FILE" src/scripts/check_product_release.ts {{.CLI_ARGS}}
+
   publish:
-    desc: "Publish to YouTube (PROFILE=byosan|yawa|humanity; required)"
+    desc: "Publish to YouTube after the product release gate (PROFILE=byosan|yawa|humanity; required)"
     cmds:
       - |
         case "{{.PROFILE}}" in
@@ -176,13 +188,21 @@ tasks:
     desc: "Run unit tests"
     cmds: ["SKIP_LLM=true DRY_RUN=true bun test"]
 
+  check:merge:fast:
+    desc: "Run the fast deterministic PR merge gate"
+    cmds: ["bun run check:merge:fast"]
+
+  check:merge:
+    desc: "Run the full PR merge gate used by CI"
+    cmds: ["bun run check:merge"]
+
   check:fast:
-    desc: "Run the fast deterministic quality gate used by prek/pre-commit"
-    cmds: ["bun run check:fast"]
+    desc: "Compatibility alias for check:merge:fast"
+    cmds: ["task check:merge:fast"]
 
   check:
-    desc: "Run the full canonical CI quality gate"
-    cmds: ["bun run check"]
+    desc: "Compatibility alias for check:merge"
+    cmds: ["task check:merge"]
 
   clean:
     desc: "Reset logs and temporary artifacts"
@@ -207,11 +227,19 @@ tasks:
     cmds:
       - bun scripts/audit_byosan_money_zero_trust.ts
       - bun src/scripts/audit_byosan_source_registry.ts
-      - bun src/scripts/audit_no_fallback_policy.ts
+      - bun src/scripts/audit_no_fallback_policy.ts --scope=source
+
+  audit:no-fallback:source:
+    desc: "Audit source code for forbidden fallback implementations"
+    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope=source"]
+
+  audit:no-fallback:runtime:
+    desc: "Audit runtime deletion evidence for historical fallback publications"
+    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope=runtime"]
 
   audit:no-fallback:
-    desc: "Audit the no-fallback policy"
-    cmds: ["bun src/scripts/audit_no_fallback_policy.ts"]
+    desc: "Run both source and runtime no-fallback audits"
+    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope=all"]
 
   audit:repo-contract:
     desc: "Verify Taskfile executables and documented repository entry points"
