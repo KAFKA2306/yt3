@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { assertProductReleaseGate } from "../domain/product_release_gate.js";
-import { AgentStateSchema, type AgentState } from "../domain/types.js";
+import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import {
 	assertProfileEnvFile,
 	getYouTubeProfile,
@@ -41,18 +41,25 @@ async function main() {
 		runName,
 	);
 	if (!fs.existsSync(runDir)) {
-		throw new Error(`Product release blocked: run directory does not exist: ${runDir}`);
+		throw new Error(
+			`Product release blocked: run directory does not exist: ${runDir}`,
+		);
 	}
 
 	const statePath = path.join(runDir, cfg.workflow.filenames.state);
 	if (!fs.existsSync(statePath)) {
-		throw new Error(`Product release blocked: state file does not exist: ${statePath}`);
+		throw new Error(
+			`Product release blocked: state file does not exist: ${statePath}`,
+		);
 	}
-	const state = AgentStateSchema.passthrough().parse(fs.readJsonSync(statePath)) as AgentState & {
+	const state = AgentStateSchema.passthrough().parse(
+		fs.readJsonSync(statePath),
+	) as AgentState & {
 		source_manifest_path?: string;
 	};
 	const publishVideoPath = process.argv[3]?.trim() || undefined;
-	const requireFactualIntegrity = cfg.steps.youtube?.default_visibility !== "private";
+	const requireFactualIntegrity =
+		cfg.steps.youtube?.default_visibility !== "private";
 
 	const result = assertProductReleaseGate({
 		runDir,
