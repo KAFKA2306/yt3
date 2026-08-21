@@ -5,6 +5,10 @@ tasks:
     cmds: ["task --list"]
     silent: true
 
+  setup:
+    desc: "Install dependencies from the committed Bun lockfile"
+    cmds: ["bun run setup"]
+
   loop:
     desc: "Autonomous Daily Loop: Health Check -> Content -> Audit"
     cmds: ["bun src/scripts/agentic_orchestrator.ts"]
@@ -134,7 +138,7 @@ tasks:
   bootstrap:
     desc: "Install dependencies and start services"
     cmds:
-      - bun install
+      - task setup
       - task up
 
   nav:fetch:
@@ -201,7 +205,7 @@ tasks:
   audit:byosan-money:
     desc: "Run 秒算マネー source-policy audit"
     cmds:
-      - bun run audit:byosan-money
+      - bun scripts/audit_byosan_money_zero_trust.ts
       - bun src/scripts/audit_byosan_source_registry.ts
       - bun src/scripts/audit_no_fallback_policy.ts
 
@@ -209,9 +213,9 @@ tasks:
     desc: "Audit the no-fallback policy"
     cmds: ["bun src/scripts/audit_no_fallback_policy.ts"]
 
-  audit:ontology:
-    desc: "Audit ontology governance"
-    cmds: ["bun run audit:ontology"]
+  audit:repo-contract:
+    desc: "Verify Taskfile executables and documented repository entry points"
+    cmds: ["bun src/scripts/audit_repository_contract.ts"]
 
   harness:doctor:
     desc: "Run full repository doctor"
