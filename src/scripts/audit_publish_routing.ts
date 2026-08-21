@@ -158,7 +158,9 @@ function assertFailClosedProfileTask(
 	}
 }
 
-function assertCanonicalReleaseCheckTask(tasks: Record<string, TaskDefinition>) {
+function assertCanonicalReleaseCheckTask(
+	tasks: Record<string, TaskDefinition>,
+) {
 	const task = tasks["release:check"];
 	if (!task) {
 		throw new Error("Taskfile.yml is missing canonical task release:check");
@@ -187,11 +189,7 @@ function assertCanonicalAuthTask(tasks: Record<string, TaskDefinition>) {
 	if (!task) {
 		throw new Error("Taskfile.yml is missing canonical task auth");
 	}
-	assertFailClosedProfileTask(
-		"auth",
-		task,
-		"bun src/scripts/youtube_oauth.ts",
-	);
+	assertFailClosedProfileTask("auth", task, "bun src/scripts/youtube_oauth.ts");
 }
 
 function assertSafeAliases(tasks: Record<string, TaskDefinition>) {
