@@ -22,15 +22,11 @@ dotenv.config({ path: envFilePath, override: true });
 
 async function runBunScript(script: string, args: string[]): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
-		const child = spawn(
-			"bun",
-			[`--env-file=${envFile}`, script, ...args].filter(Boolean),
-			{
-				cwd: process.cwd(),
-				env: process.env,
-				stdio: "inherit",
-			},
-		);
+		const child = spawn("bun", [`--env-file=${envFile}`, script, ...args], {
+			cwd: process.cwd(),
+			env: process.env,
+			stdio: "inherit",
+		});
 
 		child.on("error", reject);
 		child.on("exit", (code) => {
@@ -61,10 +57,10 @@ async function main() {
 		console.log(`PUBLISH_VIDEO_PATH=${publishVideoPathArg}`);
 	}
 
-	await runBunScript(
-		"src/scripts/check_product_release.ts",
-		[runId, publishVideoPathArg || ""].filter(Boolean),
-	);
+	await runBunScript("src/scripts/check_product_release.ts", [
+		runId,
+		publishVideoPathArg || "",
+	]);
 
 	const clientId = process.env.YOUTUBE_CLIENT_ID;
 	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
@@ -88,10 +84,12 @@ async function main() {
 	console.log(result.actual.title);
 	console.log(result.actual.handle ?? "");
 
-	await runBunScript(
-		"src/step.ts",
-		["publish", runId, publishVideoPathArg || ""].filter(Boolean),
-	);
+	await runBunScript("src/step.ts", [
+		"publish",
+		runId,
+		"",
+		publishVideoPathArg || "",
+	]);
 }
 
 main().catch((error) => {
