@@ -1,19 +1,15 @@
 # YT3 Agent Operating Contract
 
-This file is the execution contract for autonomous agents working in this repository.
-
-`README.md` is for human orientation. `AGENTS.md` defines how an agent investigates, changes, verifies, reports, and stops.
+This file defines how autonomous agents inspect, change, verify, and report work in this repository. `README.md` is human orientation; `Taskfile.yml` is the canonical executable interface.
 
 ## 1. Mission
 
 Operate YT3 as a reproducible, evidence-backed media production system.
 
-Optimize the **execution loop**, not isolated prompt quality:
-
 ```text
 request
   -> inspect current state
-  -> select canonical workline
+  -> select one canonical workline
   -> implement the smallest sufficient change
   -> validate deterministically
   -> inspect evidence
@@ -21,102 +17,67 @@ request
   -> stop at a fixed point
 ```
 
-A task is not complete because code was written. Completion requires evidence that the requested outcome exists in the current repository/runtime state.
+Code written is not completion. Completion requires evidence that the requested outcome exists in the current repository/runtime state.
 
-## 2. Source-of-Truth Precedence
+## 2. Source-of-truth precedence
 
 When sources disagree, use this order:
 
 1. current tool/runtime observations
 2. current repository code and configuration
-3. `Taskfile.yml` for executable entry points
-4. deterministic tests, audits, receipts, and CI results
-5. current ADRs and standards under `docs/`
+3. `Taskfile.yml` executable entry points
+4. deterministic tests, audits, receipts, and CI
+5. maintained ADRs and standards under `docs/`
 6. `GEMINI.md`
-7. `README.md`, `.claude/CLAUDE.md`, memories, issues, and historical prose
+7. README, local agent notes, issues, and historical prose
 8. inference
 
-Never let stale documentation override current executable reality.
+Never let stale prose override current executable reality. Before using a documented command, verify that its Taskfile task still exists.
 
-Before using a command mentioned in prose, verify that the command exists in `Taskfile.yml` or the current package/tooling configuration.
+## 3. Claim provenance
 
-## 3. Claim Provenance
+Material claims must be classified as:
 
-Every material claim must be one of:
+- **VERIFIED** — directly observed with a tool, file read, deterministic artifact, API response, or CI result
+- **OBSERVED** — explicit user or authoritative external input
+- **INFERRED** — a conclusion derived from evidence and labeled as inference
+- **UNVERIFIED** — not inspected yet
+- **FABRICATED** — forbidden
 
-- **VERIFIED** — directly observed with a tool, file read, command result, API response, deterministic artifact, or CI result.
-- **OBSERVED** — explicitly supplied by the user or by an authoritative external input.
-- **INFERRED** — a hypothesis derived from evidence; label it as inference.
-- **UNVERIFIED** — not inspected yet; do not present it as fact.
-- **FABRICATED** — forbidden.
+Do not convert “not checked” into “absent”, or “command returned” into “outcome succeeded”. Never report PASS for a verifier that was not executed.
 
-Rules:
+## 4. Canonical workline
 
-- Never claim a file, branch, service, model, artifact, upload, publication, or test result without inspecting evidence.
-- Never convert “not checked” into “absent”.
-- Never convert “command returned” into “outcome succeeded” without checking the relevant postcondition.
-- Never report PASS for a verifier that was not actually executed.
+Before creating work:
 
-## 4. Antigravity Audit Rule
+1. continue an existing canonical PR/branch for the requested outcome;
+2. otherwise continue the relevant unresolved Issue;
+3. only then create one new branch and one PR.
 
-Before concluding that Antigravity is absent, inspect the canonical runtime identifier `agy`.
+Do not create parallel implementation paths or competing state stores for the same outcome. Superseded work should be consolidated and removed when safe.
 
-Mandatory checks when Antigravity is relevant:
+## 5. Contract before change
 
-1. `which agy`
-2. `agy --version`
-3. `agy --help`
-4. `agy /usage`
-5. inspect `Taskfile.yml`, systemd services, tmux launchers, shell scripts, and cron jobs for `agy`
+For non-trivial work, identify:
 
-`.agy` is not the canonical runtime identifier. Failure to find `.agy` does not prove that Antigravity is unavailable.
+- **Contract** — what must change and what must remain unchanged
+- **Outcome** — observable state required afterward
+- **Acceptance criteria** — deterministic checks that prove it
+- **Evidence** — files, commands, CI runs, receipts, or external state
+- **Stopping condition** — the fixed point after which more work is scope expansion
 
-## 5. Canonical Workline Rule
+## 6. Repository entry point
 
-Before creating new work, inspect the current repository state.
-
-Priority:
-
-1. continue the existing canonical PR/branch for the requested outcome
-2. otherwise continue the relevant unresolved Issue
-3. only then create one new branch and one PR
-
-Do not create parallel branches, duplicate PRs, duplicate implementation paths, or competing state stores for the same outcome.
-
-If an existing branch or PR is clearly superseded, consolidate into one canonical workline and clean up the duplicate when safe.
-
-## 6. Contract Before Change
-
-For non-trivial work, reduce the request to:
-
-- **Contract** — what must change and what must not change
-- **Outcome** — the observable state that should exist afterward
-- **Acceptance Criteria** — deterministic checks that prove the outcome
-- **Evidence** — concrete files, commands, artifacts, receipts, CI runs, or external state
-- **Stopping Condition** — the fixed point after which no additional work is required
-
-Do not expand scope merely because adjacent improvements are possible.
-
-## 7. Repository Entry Point
-
-`Taskfile.yml` is the canonical executable interface.
-
-Start with:
+`Taskfile.yml` is the operator interface.
 
 ```bash
 task --list
+task setup
+task check:fast
+task check
 ```
 
-Use defined tasks instead of inventing direct script commands.
-
-For routine code validation, the current canonical tasks are:
-
-```bash
-task lint
-task test
-```
-
-Use narrower domain audits when the change affects their contract, for example:
+Use narrower checks when relevant:
 
 ```bash
 task harness:doctor:quick
@@ -124,57 +85,34 @@ task harness:doctor
 task audit:today
 task audit:publish-routing
 task audit:no-fallback
-task audit:ontology
-task stability:ready
-task daily:check
+task audit:repo-contract
+task daily:last3
+task daily:guarantee-status
 ```
 
-Do not assume commands documented elsewhere still exist. Verify them against the current Taskfile first.
+Internal package scripts and `src/scripts/*` files support Taskfile and CI; they are not competing human-facing command surfaces.
 
-`task test` and CI currently tolerate a “No tests found” condition. That is not evidence that a changed behavior is covered; add or run a relevant deterministic verifier when behavior materially changes.
-
-## 8. Builder / Auditor Separation
+## 7. Builder and auditor separation
 
 Treat implementation and acceptance as separate roles even when one agent performs both sequentially.
 
-### Builder
+The builder may inspect, modify, test, and open/update the canonical PR. The auditor independently verifies that the requested outcome exists, evidence belongs to the current head state, required checks pass, unrelated channel state was not contaminated, and cleanup is complete.
 
-The Builder may:
+Implementation intent is not acceptance evidence.
 
-- inspect the repository
-- modify code, configuration, tests, prompts, docs, and workflows
-- create artifacts required by the task
-- run deterministic validation
-- open/update the canonical PR
+## 8. Fail closed
 
-The Builder must not declare success solely from its own implementation intent.
+Prefer attributable failure over false success.
 
-### Auditor
+- Do not hide errors with fallback output that resembles success.
+- Do not suppress verifier failures to keep a pipeline green.
+- Do not invent substitute data for missing required inputs.
+- Do not publish fallback media as the requested artifact.
+- Missing dependency, timeout, crash, missing receipt, or ambiguous profile blocks the corresponding criterion.
 
-The Auditor must independently check:
+Repeated failures should produce a durable harness improvement: validation, schema, routing, retry policy, eval, observability, or implementation change.
 
-- the requested outcome exists
-- acceptance criteria are satisfied
-- evidence corresponds to the current head SHA/state
-- no unrelated regressions or cross-channel contamination were introduced
-- publication/external side effects, if requested, have receipts
-- cleanup is complete
-
-If implementation and audit use the same evidence-free assumption, the separation has failed.
-
-## 9. Fail-Closed Behavior
-
-Prefer loud, attributable failure over false success.
-
-- Do not hide errors with fallback output that can be mistaken for success.
-- Do not catch and suppress failures merely to keep the pipeline green.
-- Do not invent substitute data when exact required inputs are missing.
-- Do not publish a fallback artifact as though it were the requested artifact.
-- A verifier timeout, crash, missing dependency, missing receipt, or ambiguous profile blocks the corresponding acceptance criterion.
-
-Fix root causes. Repeated failures should produce durable harness changes: validation, schemas, routing, retries, evals, observability, or implementation changes.
-
-## 10. Channel Isolation Is a Hard Boundary
+## 9. Channel isolation
 
 Never mix these profiles:
 
@@ -186,159 +124,105 @@ Never mix these profiles:
 
 For Humanity, the expected channel handle is `@humanity_observatory`.
 
-Before any publish operation, verify profile, environment file, bucket, channel identity, artifact identity, and target visibility from current configuration/runtime evidence.
+Before publication, verify profile, environment, bucket, authenticated channel, artifact identity, intended visibility, and required audit evidence.
 
-Cross-profile paths, tokens, prompts, voices, palettes, receipts, and publication targets are contamination unless explicitly designed as shared infrastructure.
+## 10. Publishing is an irreversible side effect
 
-## 11. Publishing Is an Irreversible Side Effect
+Implementation and local production do not authorize publication.
 
-Implementation, testing, and local production do not imply authorization to publish.
+Publish only when the user request or active canonical contract explicitly requires it. Use the Taskfile publication path, capture the remote receipt, and read back remote identity/visibility when possible.
 
-Publish only when the user request explicitly includes publication or the active canonical task already has an unambiguous publication contract.
+Without a remote receipt, publication is not VERIFIED.
 
-Before publication:
-
-1. run the relevant publish-routing/profile audit
-2. identify the exact artifact to publish
-3. verify the exact target channel/profile
-4. verify required zero-trust audits
-5. publish through the Taskfile entry point
-6. capture the publication receipt (`videoId`, `channelId`, visibility/status)
-7. re-read external state when possible
-
-Without a receipt, publication is not VERIFIED.
-
-## 12. Minimal, Reversible Changes
+## 11. Minimal and reversible changes
 
 Prefer the smallest change that satisfies the contract.
 
-- preserve existing IDs and provenance unless replacement is required
-- avoid speculative abstractions and future-proofing
-- remove obsolete helpers introduced by the work
-- do not create a second configuration source when one already exists
-- do not edit generated artifacts as a substitute for fixing their generator
-- do not change unrelated valid branches, issues, assets, or workflows
+- preserve stable IDs and provenance unless replacement is required
+- avoid speculative abstractions
+- remove obsolete helpers introduced or exposed by the work
+- do not create a second configuration or state source
+- fix generators rather than hand-editing their generated output
+- do not change unrelated valid work
 
-For destructive or external changes, verify the target twice: once before the action and once after.
+For destructive or external changes, verify the target before and after the action.
 
-## 13. Investigation Before Implementation
+## 12. Investigation before implementation
 
-Before editing:
+Before editing, inspect the relevant repository state, implementation/configuration, tests/audits, and CI definitions. Inspect primary external sources when the task depends on current third-party behavior. Identify authoritative state stores and generated projections before changing either.
 
-1. inspect relevant Issue/PR/branch state
-2. inspect the actual implementation and configuration
-3. inspect relevant tests/audits
-4. inspect CI/workflow definitions if CI is part of acceptance
-5. inspect primary/external sources when the task depends on current facts or third-party behavior
-6. identify the authoritative state store and generated projections
+Do not design from filenames, stale comments, screenshots, memory, or issue prose when inspectable evidence exists.
 
-Do not design from filenames, comments, stale docs, screenshots, or memory alone when inspectable evidence exists.
+## 13. Validation ladder
 
-## 14. Validation Ladder
-
-Use the cheapest deterministic check that can falsify the change, then escalate.
-
-Typical order:
+Use the cheapest deterministic check that can falsify the change, then escalate:
 
 1. targeted unit/schema/contract test
 2. targeted domain audit
-3. `task lint`
-4. `task test`
+3. `task check:fast`
+4. `task check`
 5. `task harness:doctor:quick` when relevant
-6. full harness/domain audit when relevant
+6. full domain/harness audit when relevant
 7. CI on the exact PR head SHA
-8. external postcondition/receipt when the task changes external state
+8. external postcondition/receipt for external state changes
 
-Do not run expensive end-to-end production merely because it exists. Run it only when the acceptance criteria require it.
+Do not run expensive production merely because it exists.
 
-## 15. Git and PR Protocol
+## 14. Git and PR protocol
 
 For repository changes:
 
-1. begin from the latest intended base
-2. reuse the canonical branch if one exists
-3. otherwise create one descriptive branch
-4. keep the diff focused on the contract
-5. include tests/audits with behavior changes where practical
-6. open or update one canonical PR
-7. wait for/check CI on the exact head SHA
-8. inspect failed jobs rather than retrying blindly
-9. merge only when acceptance criteria and repository policy permit
-10. close the linked Issue when the outcome is actually complete
-11. verify the merged base SHA
-12. remove the merged/unneeded work branch when possible
+1. start from the latest intended base;
+2. reuse the canonical branch when one exists;
+3. otherwise create one descriptive branch;
+4. keep the diff focused;
+5. include tests/audits for material behavior changes where practical;
+6. open or update one canonical PR;
+7. inspect CI on the exact head SHA;
+8. diagnose failed jobs rather than retrying blindly;
+9. merge only when acceptance criteria and repository policy allow it;
+10. verify the merged base and clean up the workline when possible.
 
-If a host-side safety check rejects a write, re-fetch current state and retry the exact canonical action once. Do not create a duplicate branch/PR as a workaround.
+If a host-side safety check rejects a write, re-fetch state and retry the same canonical action once. Do not create a duplicate branch/PR as a workaround.
 
-## 16. Cleanup Is Part of Completion
+## 15. Cleanup
 
-Before final reporting, inspect for residue created by the work:
+Before final reporting, inspect for temporary files, debug output, staging chunks, abandoned generated intermediates, one-time workflows/scripts, superseded PRs, and stale task/document references.
 
-- temporary files
-- debug output
-- staging chunks
-- abandoned generated intermediates
-- obsolete helper workflows/scripts
-- superseded PRs
-- merged/unneeded branches
-- stale issue state
+If unfinished work must remain, keep one canonical workline with the blocker and exact next action recorded.
 
-Do not delete unrelated valid work.
+## 16. Secrets and private data
 
-If unfinished work must remain, keep exactly one canonical workline with the blocker and next action recorded.
+Never expose secrets, OAuth credentials, private tokens, local absolute paths, or private intermediate metadata in public artifacts. Do not copy production credentials or account identifiers into tests, docs, prompts, or screenshots.
 
-## 17. Secrets, Private Data, and Metadata
+## 17. Documentation discipline
 
-- Never expose secrets, OAuth credentials, private tokens, local absolute paths, or private intermediate metadata in public artifacts.
-- Treat `.env*`, credentials, receipts, and account/channel identifiers according to their intended visibility.
-- Do not copy production secrets into tests, fixtures, docs, screenshots, or prompts.
-- User-facing media must not leak internal IDs, temporary filenames, private paths, or agent-only notes unless explicitly required.
+Documentation describes current behavior, not intended future behavior.
 
-## 18. Documentation Discipline
+- human onboarding: `README.md`
+- agent execution rules: `AGENTS.md`
+- standards: `docs/standard/`
+- architectural decisions: `docs/adr/`
+- reusable agent skills: skill files
 
-Documentation must describe current behavior, not intended future behavior.
+`task audit:repo-contract` protects the maintained entry-point documentation from drifting toward missing files or tasks.
 
-- Human onboarding belongs in `README.md`.
-- Agent execution rules belong here.
-- Domain standards belong under `docs/standard/` or the relevant ADR.
-- Reusable agent skills belong in skill files rather than inflating this root contract.
+## 18. No external-agent dependency
 
-When documentation conflicts with executable reality, fix the stale documentation or record the discrepancy. Do not silently follow it.
+Do not make ChatGPT Work, Codex, or another agent workspace a required execution step. The canonical loop must remain reproducible from repository state, declared tools, Taskfile tasks, tests/audits, CI, and explicit external-service receipts.
 
-Maintain skill instructions in concise imperative English unless domain-facing content requires Japanese.
-
-## 19. No External Agent Handoff Dependency
-
-Do not make ChatGPT Work, Codex, or another external agent workspace a required step in the repository execution loop.
-
-The canonical loop must remain reproducible from repository state, declared tools, Taskfile entry points, tests/audits, CI, and explicit external-service receipts.
-
-Implementation work may be performed by any capable agent, but acceptance must remain tool- and evidence-based rather than product-dependent.
-
-## 20. Final Report Contract
+## 19. Final report contract
 
 Report only verified state relevant to the task:
 
-- target Issue/PR/repository URL
+- target repository/PR
 - what changed
-- tests/audits executed and their result
-- PR and commit/merge SHA/URL
+- deterministic checks executed and their result
+- commit/PR/merge state
 - external receipt if external state changed
 - cleanup performed
 - blocker and exact next action if unfinished
 
-Do not include completion theater, unsupported confidence, or long narratives about work that did not change the outcome.
+## 20. Stopping rule
 
-## 21. Stopping Rule
-
-Stop when all of the following are true:
-
-- requested outcome exists
-- acceptance criteria pass
-- evidence points to the current final state
-- CI/external receipts required by the contract are verified
-- linked Issue/PR state is correct
-- task-created residue is cleaned up
-- no known blocker remains
-
-At that point, further changes are scope expansion, not completion.
+Stop when the requested outcome exists, acceptance evidence belongs to the current final state, required CI/external postconditions are verified, task-created residue is removed, and no known blocker remains. Further work is then scope expansion.
