@@ -46,7 +46,11 @@ Material claims must be classified as:
 
 Do not convert “not checked” into “absent”, or “command returned” into “outcome succeeded”. Never report PASS for a verifier that was not executed.
 
-## 4. Canonical workline
+## 4. Antigravity runtime evidence
+
+When Antigravity is relevant, `agy` is the canonical runtime identifier. Before claiming it is absent or unavailable, inspect `which agy`, `agy --version`, `agy --help`, and `agy /usage`, then inspect Taskfile/systemd/tmux/shell/cron integration as applicable. Absence of a `.agy` path is not evidence that the runtime is absent.
+
+## 5. Canonical workline
 
 Before creating work:
 
@@ -56,7 +60,7 @@ Before creating work:
 
 Do not create parallel implementation paths or competing state stores for the same outcome. Superseded work should be consolidated and removed when safe.
 
-## 5. Contract before change
+## 6. Contract before change
 
 For non-trivial work, identify:
 
@@ -66,7 +70,7 @@ For non-trivial work, identify:
 - **Evidence** — files, commands, CI runs, receipts, or external state
 - **Stopping condition** — the fixed point after which more work is scope expansion
 
-## 6. Repository entry point
+## 7. Repository entry point
 
 `Taskfile.yml` is the operator interface.
 
@@ -92,7 +96,7 @@ task daily:guarantee-status
 
 Internal package scripts and `src/scripts/*` files support Taskfile and CI; they are not competing human-facing command surfaces.
 
-## 7. Builder and auditor separation
+## 8. Builder and auditor separation
 
 Treat implementation and acceptance as separate roles even when one agent performs both sequentially.
 
@@ -100,7 +104,7 @@ The builder may inspect, modify, test, and open/update the canonical PR. The aud
 
 Implementation intent is not acceptance evidence.
 
-## 8. Fail closed
+## 9. Fail closed
 
 Prefer attributable failure over false success.
 
@@ -112,7 +116,7 @@ Prefer attributable failure over false success.
 
 Repeated failures should produce a durable harness improvement: validation, schema, routing, retry policy, eval, observability, or implementation change.
 
-## 9. Channel isolation
+## 10. Channel isolation
 
 Never mix these profiles:
 
@@ -126,7 +130,7 @@ For Humanity, the expected channel handle is `@humanity_observatory`.
 
 Before publication, verify profile, environment, bucket, authenticated channel, artifact identity, intended visibility, and required audit evidence.
 
-## 10. Publishing is an irreversible side effect
+## 11. Publishing is an irreversible side effect
 
 Implementation and local production do not authorize publication.
 
@@ -134,7 +138,7 @@ Publish only when the user request or active canonical contract explicitly requi
 
 Without a remote receipt, publication is not VERIFIED.
 
-## 11. Minimal and reversible changes
+## 12. Minimal and reversible changes
 
 Prefer the smallest change that satisfies the contract.
 
@@ -147,13 +151,13 @@ Prefer the smallest change that satisfies the contract.
 
 For destructive or external changes, verify the target before and after the action.
 
-## 12. Investigation before implementation
+## 13. Investigation before implementation
 
 Before editing, inspect the relevant repository state, implementation/configuration, tests/audits, and CI definitions. Inspect primary external sources when the task depends on current third-party behavior. Identify authoritative state stores and generated projections before changing either.
 
 Do not design from filenames, stale comments, screenshots, memory, or issue prose when inspectable evidence exists.
 
-## 13. Validation ladder
+## 14. Validation ladder
 
 Use the cheapest deterministic check that can falsify the change, then escalate:
 
@@ -168,12 +172,12 @@ Use the cheapest deterministic check that can falsify the change, then escalate:
 
 Do not run expensive production merely because it exists.
 
-## 14. Git and PR protocol
+## 15. Git and PR protocol
 
 For repository changes:
 
 1. start from the latest intended base;
-2. reuse the canonical branch when one exists;
+2. reuse the canonical branch if one exists;
 3. otherwise create one descriptive branch;
 4. keep the diff focused;
 5. include tests/audits for material behavior changes where practical;
@@ -185,17 +189,17 @@ For repository changes:
 
 If a host-side safety check rejects a write, re-fetch state and retry the same canonical action once. Do not create a duplicate branch/PR as a workaround.
 
-## 15. Cleanup
+## 16. Cleanup
 
 Before final reporting, inspect for temporary files, debug output, staging chunks, abandoned generated intermediates, one-time workflows/scripts, superseded PRs, and stale task/document references.
 
 If unfinished work must remain, keep one canonical workline with the blocker and exact next action recorded.
 
-## 16. Secrets and private data
+## 17. Secrets and private data
 
 Never expose secrets, OAuth credentials, private tokens, local absolute paths, or private intermediate metadata in public artifacts. Do not copy production credentials or account identifiers into tests, docs, prompts, or screenshots.
 
-## 17. Documentation discipline
+## 18. Documentation discipline
 
 Documentation describes current behavior, not intended future behavior.
 
@@ -207,11 +211,11 @@ Documentation describes current behavior, not intended future behavior.
 
 `task audit:repo-contract` protects the maintained entry-point documentation from drifting toward missing files or tasks.
 
-## 18. No external-agent dependency
+## 19. No external-agent dependency
 
 Do not make ChatGPT Work, Codex, or another agent workspace a required execution step. The canonical loop must remain reproducible from repository state, declared tools, Taskfile tasks, tests/audits, CI, and explicit external-service receipts.
 
-## 19. Final report contract
+## 20. Final report contract
 
 Report only verified state relevant to the task:
 
@@ -223,6 +227,6 @@ Report only verified state relevant to the task:
 - cleanup performed
 - blocker and exact next action if unfinished
 
-## 20. Stopping rule
+## 21. Stopping rule
 
 Stop when the requested outcome exists, acceptance evidence belongs to the current final state, required CI/external postconditions are verified, task-created residue is removed, and no known blocker remains. Further work is then scope expansion.
