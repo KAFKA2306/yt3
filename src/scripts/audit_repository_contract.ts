@@ -40,9 +40,7 @@ function localExecutablePaths(command: string): string[] {
 	const matches = command.matchAll(
 		/((?:\.claude|src|scripts|hooks)\/[A-Za-z0-9_./-]+\.(?:ts|js|mjs|cjs|py|sh))/g,
 	);
-	return [...matches].flatMap((match) =>
-		match[1] ? [match[1]] : [],
-	);
+	return [...matches].flatMap((match) => (match[1] ? [match[1]] : []));
 }
 
 function auditTaskfile(): Set<string> {
