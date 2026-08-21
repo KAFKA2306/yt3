@@ -138,10 +138,10 @@ function auditDocumentedTasks(
 	text: string,
 	taskNames: Set<string>,
 ) {
-	const taskReference = /\btask\s+([A-Za-z0-9:_-]+)/g;
+	const taskReference = /(?:^|\n)\s*task\s+([A-Za-z0-9:_-]+)|`task\s+([A-Za-z0-9:_-]+)/gm;
 	for (const match of text.matchAll(taskReference)) {
-		const taskName = match[1];
-		if (taskName.startsWith("-")) continue;
+		const taskName = match[1] ?? match[2];
+		if (!taskName || taskName.startsWith("-")) continue;
 		if (!taskNames.has(taskName)) {
 			record(relativePath, `documents missing Taskfile task ${taskName}`);
 		}
