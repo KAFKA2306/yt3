@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { assertProductReleaseGate } from "../domain/product_release_gate.js";
-import { AgentStateSchema } from "../domain/types.js";
+import { AgentStateSchema, type AgentState } from "../domain/types.js";
 import {
 	assertProfileEnvFile,
 	getYouTubeProfile,
@@ -48,9 +48,9 @@ async function main() {
 	if (!fs.existsSync(statePath)) {
 		throw new Error(`Product release blocked: state file does not exist: ${statePath}`);
 	}
-	const state = AgentStateSchema.passthrough().parse(fs.readJsonSync(statePath)) as ReturnType<
-		typeof AgentStateSchema.parse
-	> & { source_manifest_path?: string };
+	const state = AgentStateSchema.passthrough().parse(fs.readJsonSync(statePath)) as AgentState & {
+		source_manifest_path?: string;
+	};
 	const publishVideoPath = process.argv[3]?.trim() || undefined;
 	const requireFactualIntegrity = cfg.steps.youtube?.default_visibility !== "private";
 
