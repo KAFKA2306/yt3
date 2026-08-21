@@ -65,7 +65,7 @@ function auditTaskfile(): Set<string> {
 			const command =
 				typeof commandDefinition === "string"
 					? commandDefinition
-					: commandDefinition.cmd ?? "";
+					: (commandDefinition.cmd ?? "");
 			for (const executablePath of localExecutablePaths(command)) {
 				const base = executablePath.startsWith(".") ? "." : taskDir;
 				const resolved = path.normalize(path.join(base, executablePath));
@@ -97,7 +97,9 @@ function auditPackageScripts() {
 		return;
 	}
 
-	for (const [scriptName, command] of Object.entries(packageJson.scripts ?? {})) {
+	for (const [scriptName, command] of Object.entries(
+		packageJson.scripts ?? {},
+	)) {
 		for (const executablePath of localExecutablePaths(command)) {
 			if (!exists(executablePath)) {
 				record(
@@ -138,7 +140,8 @@ function auditDocumentedTasks(
 	text: string,
 	taskNames: Set<string>,
 ) {
-	const taskReference = /(?:^|\n)\s*task\s+([A-Za-z0-9:_-]+)|`task\s+([A-Za-z0-9:_-]+)/gm;
+	const taskReference =
+		/(?:^|\n)\s*task\s+([A-Za-z0-9:_-]+)|`task\s+([A-Za-z0-9:_-]+)/gm;
 	for (const match of text.matchAll(taskReference)) {
 		const taskName = match[1] ?? match[2];
 		if (!taskName || taskName.startsWith("-")) continue;
