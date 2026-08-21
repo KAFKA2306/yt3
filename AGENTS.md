@@ -80,23 +80,41 @@ task daily:guarantee-status
 
 Internal package scripts and `src/scripts/*` support Taskfile and CI. They are not a second human-facing command surface unless the repository explicitly makes them one.
 
-## 5. PR merge and product release are separate gates
+## 5. Repository acceptance and product evidence are orthogonal
 
-Never use one gate as evidence for the other.
+Maintain independent verdicts for repository state and product/runtime state. Never derive one from the other.
+
+| evidence/state | proves | does not prove |
+|---|---|---|
+| `task check:merge` / green CI | repository revision satisfies merge criteria | product works, is complete, is releasable, or was released |
+| target machine/service unavailable | target-environment behavior is UNVERIFIED | repository revision is unmergeable |
+| deterministic simulator/mock/contract test passes | tested repository contract holds | real target behavior occurred |
+| `task release:check` passes | concrete artifact passes local release preflight | remote publication occurred |
+| remote receipt/read-back passes | specified external postcondition occurred | repository/source quality |
 
 ### Merge gate
 
-`task check:merge` decides whether a repository revision is acceptable to merge. It is limited to repository/source invariants and deterministic tests. It must not depend on production credentials, a concrete `RUN_ID`, current YouTube state, or historical runtime cleanup receipts.
+`task check:merge` decides whether a repository revision is acceptable to merge. It is limited to repository/source invariants and deterministic tests executable in the supported development/CI environment.
 
-A green CI run proves only that merge criteria passed for that commit.
+**The absence of a real machine, production credential, concrete run, or reachable production service is not a merge blocker.** Do not report “cannot merge because the real environment is unavailable”. Hardware/service-specific code must expose a deterministic merge-time boundary that can be checked without the target environment: typed interfaces, schema/contract tests, fixtures, mocks, emulators, simulators, static checks, or another reproducible substitute appropriate to that boundary.
 
-### Product release gate
+If behavior can only be proven on the real target, keep that product/runtime criterion **UNVERIFIED** and move it to product qualification or release verification. Do not convert missing target-environment evidence into a repository failure.
+
+The merge gate must not depend on production credentials, a concrete `RUN_ID`, current YouTube state, historical runtime cleanup receipts, or availability of a particular production machine.
+
+A green CI run proves only that merge criteria passed for that exact commit.
+
+### Product qualification and release
+
+Product completion is a separate claim. It requires direct evidence for the product acceptance criteria in the environment where those criteria are defined.
+
+**Green CI is never sufficient evidence that the product is complete.** Do not report “finished”, “production verified”, “works on the real machine”, or equivalent product-level success solely from repository tests or CI.
 
 `task release:check PROFILE=<profile> -- <run-id> [video-path]` evaluates one concrete run/artifact before it may cross the publication boundary. It checks run/profile alignment, artifact identity, factual-integrity evidence, fallback prohibition, and publication-conflict state.
 
 A passing release check does not prove publication occurred. Remote channel identity, publication receipt, and final visibility require separate evidence.
 
-Do not run product-release checks merely to prove a code PR is mergeable. Do not treat a merge-gate PASS as release evidence.
+Do not run product-release checks merely to prove a code PR is mergeable. Do not treat a merge-gate PASS as product qualification or release evidence.
 
 ## 6. Fail closed at real boundaries
 
@@ -107,6 +125,8 @@ Prefer attributable failure over false success.
 - do not invent substitute data for required missing inputs
 - do not publish fallback media as the requested artifact
 - missing dependencies, timeouts, crashes, missing receipts, or ambiguous profiles block only the criterion they prevent proving
+
+A missing real environment blocks only claims that require that environment. It must not contaminate independent repository acceptance criteria.
 
 When a failure pattern repeats, improve the durable harness: validation, schema, routing, retry policy, eval, observability, or implementation. Do not accumulate ad-hoc recovery paths.
 
@@ -155,12 +175,15 @@ For repository changes, escalate only as needed:
 6. full domain/harness audit when relevant
 7. CI on the exact PR head SHA
 
+These steps establish repository evidence. They do not establish product completion unless a product acceptance criterion explicitly is identical to one of those checks.
+
 For an explicitly requested product release, use a separate ladder after the repository revision is known:
 
 1. `task release:check PROFILE=<profile> -- <run-id> [video-path]`
-2. authenticated channel verification
-3. remote publication action when authorized
-4. remote receipt/read-back/visibility verification
+2. target/runtime qualification required by the product contract
+3. authenticated channel verification
+4. remote publication action when authorized
+5. remote receipt/read-back/visibility verification
 
 Implementation intent is not acceptance evidence. Treat builder and auditor as separate roles even when the same agent performs them sequentially.
 
@@ -174,8 +197,10 @@ For repository changes:
 4. update the canonical PR rather than opening a competing one;
 5. inspect CI for the exact head SHA;
 6. diagnose failures rather than retrying blindly;
-7. merge only when merge acceptance criteria and repository policy allow it;
+7. merge when repository merge acceptance criteria and policy pass, regardless of whether unrelated product/runtime verification is currently possible;
 8. after merge, verify the intended base state and remove task-created residue when possible.
+
+Do not hold a merge open solely because target hardware or a production environment is unavailable. Record the unverified product criterion separately and preserve its exact verification action.
 
 Before final reporting, inspect for temporary files, debug output, staging chunks, abandoned intermediates, one-time workflows/scripts, superseded worklines, and stale task/document references.
 
@@ -202,13 +227,15 @@ Do not make ChatGPT Work, Codex, or another external agent workspace a required 
 
 Never expose secrets, OAuth credentials, private tokens, local absolute paths, or private intermediate metadata in public artifacts. Do not copy production credentials or account identifiers into tests, docs, prompts, or screenshots.
 
-Work is complete only when:
+Repository work is complete when:
 
-- the requested outcome exists in the final state;
-- acceptance evidence belongs to that final state;
-- required CI and external postconditions are verified;
+- the requested repository outcome exists in the final state;
+- merge acceptance evidence belongs to that final state;
+- required repository CI is verified;
 - task-created residue is removed or intentionally retained on the canonical workline;
-- no known blocker remains.
+- no repository-level blocker remains.
+
+Product completion is a different verdict. Report it only when every product-level acceptance criterion has direct evidence from the required runtime, artifact, service, or external postcondition. If the required environment was unavailable, report that criterion as UNVERIFIED; do not downgrade repository mergeability and do not upgrade product status from CI.
 
 Report only verified state relevant to the task:
 
@@ -216,9 +243,10 @@ Report only verified state relevant to the task:
 - what changed
 - deterministic checks actually executed and their results
 - commit/PR/merge state
+- product/runtime qualification only when actually executed
 - product release result only when a concrete run was checked
 - external receipt only when external state changed
 - cleanup performed
 - blocker and exact next action if unfinished
 
-Stop at this fixed point. Further work is scope expansion.
+Stop at the fixed point for the requested scope. Further work is scope expansion.
