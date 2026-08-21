@@ -134,7 +134,9 @@ async function main() {
 			"check",
 			"src",
 		]);
-		runCommand(results, "ontology", "bun", ["run", "audit:ontology"]);
+		runCommand(results, "repository-contract", "bun", [
+			"src/scripts/audit_repository_contract.ts",
+		]);
 	}
 
 	print(results, jsonMode);
