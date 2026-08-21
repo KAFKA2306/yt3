@@ -70,12 +70,15 @@ export function assertProductReleaseGate(
 
 	assertNoFallbackMetadata(state);
 
-	const artifactPath = publishVideoPath || state.publish_video_path || state.video_path;
+	const artifactPath =
+		publishVideoPath || state.publish_video_path || state.video_path;
 	if (!artifactPath) {
 		throw new Error("Product release blocked: video path is missing");
 	}
 	if (!fs.existsSync(artifactPath)) {
-		throw new Error(`Product release blocked: video path does not exist: ${artifactPath}`);
+		throw new Error(
+			`Product release blocked: video path does not exist: ${artifactPath}`,
+		);
 	}
 
 	const artifactSha256 = sha256File(artifactPath);
