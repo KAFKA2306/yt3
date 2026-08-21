@@ -46,7 +46,9 @@ function resolveScope(args: string[]): AuditScope {
 		?.slice("--scope=".length);
 	if (!raw) return "all";
 	if (raw === "source" || raw === "runtime" || raw === "all") return raw;
-	throw new Error(`Unknown audit scope '${raw}'. Expected source, runtime, or all.`);
+	throw new Error(
+		`Unknown audit scope '${raw}'. Expected source, runtime, or all.`,
+	);
 }
 
 function listFiles(target: string): string[] {
