@@ -141,20 +141,23 @@ function formatMarkdown(scope: AuditScope, checks: Check[]): string {
 	return lines.join("\n");
 }
 
+function outputStem(scope: AuditScope): string {
+	return scope === "all"
+		? "no_fallback_policy_audit"
+		: `no_fallback_policy_audit.${scope}`;
+}
+
 async function main() {
 	const scope = resolveScope(process.argv.slice(2));
 	const checks = checksForScope(scope);
 	const outDir = path.join(ROOT, "logs");
+	const stem = outputStem(scope);
 	await fs.ensureDir(outDir);
-	await fs.writeJson(
-		path.join(outDir, `no_fallback_policy_audit.${scope}.json`),
-		checks,
-		{
-			spaces: 2,
-		},
-	);
+	await fs.writeJson(path.join(outDir, `${stem}.json`), checks, {
+		spaces: 2,
+	});
 	await fs.writeFile(
-		path.join(outDir, `no_fallback_policy_audit.${scope}.md`),
+		path.join(outDir, `${stem}.md`),
 		`${formatMarkdown(scope, checks)}\n`,
 	);
 	console.log(formatMarkdown(scope, checks));
