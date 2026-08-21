@@ -116,7 +116,7 @@ function assertProfileRegistry() {
 function assertFailClosedProfileTask(
 	taskName: string,
 	task: TaskDefinition,
-	executable: string,
+	invocation: string,
 ) {
 	const command = getSingleCommand(taskName, task);
 
@@ -144,10 +144,10 @@ function assertFailClosedProfileTask(
 		);
 	}
 
-	const canonicalInvocation = `ENV_FILE="$ENV_FILE" YOUTUBE_CHANNEL_PROFILE="{{.PROFILE}}" bun ${executable} {{.CLI_ARGS}}`;
+	const canonicalInvocation = `ENV_FILE="$ENV_FILE" YOUTUBE_CHANNEL_PROFILE="{{.PROFILE}}" ${invocation} {{.CLI_ARGS}}`;
 	if (!command.includes(canonicalInvocation)) {
 		throw new Error(
-			`Task ${taskName} must invoke only ${executable} after exact profile routing`,
+			`Task ${taskName} must invoke only '${invocation}' after exact profile routing`,
 		);
 	}
 
@@ -158,6 +158,20 @@ function assertFailClosedProfileTask(
 	}
 }
 
+function assertCanonicalReleaseCheckTask(
+	tasks: Record<string, TaskDefinition>,
+) {
+	const task = tasks["release:check"];
+	if (!task) {
+		throw new Error("Taskfile.yml is missing canonical task release:check");
+	}
+	assertFailClosedProfileTask(
+		"release:check",
+		task,
+		'bun --env-file="$ENV_FILE" src/scripts/check_product_release.ts',
+	);
+}
+
 function assertCanonicalPublishTask(tasks: Record<string, TaskDefinition>) {
 	const task = tasks.publish;
 	if (!task) {
@@ -166,7 +180,7 @@ function assertCanonicalPublishTask(tasks: Record<string, TaskDefinition>) {
 	assertFailClosedProfileTask(
 		"publish",
 		task,
-		"src/scripts/publish_youtube.ts",
+		"bun src/scripts/publish_youtube.ts",
 	);
 }
 
@@ -175,7 +189,7 @@ function assertCanonicalAuthTask(tasks: Record<string, TaskDefinition>) {
 	if (!task) {
 		throw new Error("Taskfile.yml is missing canonical task auth");
 	}
-	assertFailClosedProfileTask("auth", task, "src/scripts/youtube_oauth.ts");
+	assertFailClosedProfileTask("auth", task, "bun src/scripts/youtube_oauth.ts");
 }
 
 function assertSafeAliases(tasks: Record<string, TaskDefinition>) {
@@ -223,6 +237,7 @@ async function main() {
 		throw new Error("Taskfile.yml does not contain a tasks section");
 	}
 
+	assertCanonicalReleaseCheckTask(taskfile.tasks);
 	assertCanonicalPublishTask(taskfile.tasks);
 	assertCanonicalAuthTask(taskfile.tasks);
 	assertSafeAliases(taskfile.tasks);

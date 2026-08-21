@@ -2,8 +2,8 @@ repos:
   - repo: local
     hooks:
       - id: yt3-fast-check
-        name: YT3 fast deterministic quality gate
-        entry: bun run check:fast
+        name: YT3 fast PR merge gate
+        entry: bun run check:merge:fast
         language: system
         pass_filenames: false
         stages: [pre-commit, pre-push]
