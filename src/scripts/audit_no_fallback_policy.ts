@@ -7,6 +7,8 @@ type Check = {
 	details: string;
 };
 
+type AuditScope = "source" | "runtime" | "all";
+
 const ROOT = process.cwd();
 const SOURCE_ROOTS = [
 	"src",
@@ -36,6 +38,15 @@ function pass(name: string, details: string): Check {
 
 function fail(name: string, details: string): Check {
 	return { name, status: "FAIL", details };
+}
+
+function resolveScope(args: string[]): AuditScope {
+	const raw = args
+		.find((arg) => arg.startsWith("--scope="))
+		?.slice("--scope=".length);
+	if (!raw) return "all";
+	if (raw === "source" || raw === "runtime" || raw === "all") return raw;
+	throw new Error(`Unknown audit scope '${raw}'. Expected source, runtime, or all.`);
 }
 
 function listFiles(target: string): string[] {
@@ -115,9 +126,15 @@ function auditFallbackReceipts(): Check {
 		: fail("fallback_receipts_deleted", failures.join("; "));
 }
 
-function formatMarkdown(checks: Check[]): string {
+function checksForScope(scope: AuditScope): Check[] {
+	if (scope === "source") return [scanForbiddenCode()];
+	if (scope === "runtime") return [auditFallbackReceipts()];
+	return [scanForbiddenCode(), auditFallbackReceipts()];
+}
+
+function formatMarkdown(scope: AuditScope, checks: Check[]): string {
 	const lines = ["# No Fallback Policy Audit", ""];
-	lines.push(`Generated: ${new Date().toISOString()}`, "");
+	lines.push(`Scope: ${scope}`, `Generated: ${new Date().toISOString()}`, "");
 	for (const check of checks) {
 		lines.push(`- ${check.status} ${check.name}: ${check.details}`);
 	}
@@ -125,21 +142,22 @@ function formatMarkdown(checks: Check[]): string {
 }
 
 async function main() {
-	const checks = [scanForbiddenCode(), auditFallbackReceipts()];
+	const scope = resolveScope(process.argv.slice(2));
+	const checks = checksForScope(scope);
 	const outDir = path.join(ROOT, "logs");
 	await fs.ensureDir(outDir);
 	await fs.writeJson(
-		path.join(outDir, "no_fallback_policy_audit.json"),
+		path.join(outDir, `no_fallback_policy_audit.${scope}.json`),
 		checks,
 		{
 			spaces: 2,
 		},
 	);
 	await fs.writeFile(
-		path.join(outDir, "no_fallback_policy_audit.md"),
-		`${formatMarkdown(checks)}\n`,
+		path.join(outDir, `no_fallback_policy_audit.${scope}.md`),
+		`${formatMarkdown(scope, checks)}\n`,
 	);
-	console.log(formatMarkdown(checks));
+	console.log(formatMarkdown(scope, checks));
 	if (checks.some((check) => check.status === "FAIL")) process.exit(1);
 }
 
