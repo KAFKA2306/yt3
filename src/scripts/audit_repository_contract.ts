@@ -40,7 +40,9 @@ function localExecutablePaths(command: string): string[] {
 	const matches = command.matchAll(
 		/((?:\.claude|src|scripts|hooks)\/[A-Za-z0-9_./-]+\.(?:ts|js|mjs|cjs|py|sh))/g,
 	);
-	return [...matches].map((match) => match[1]);
+	return [...matches].flatMap((match) =>
+		match[1] ? [match[1]] : [],
+	);
 }
 
 function auditTaskfile(): Set<string> {
@@ -114,7 +116,8 @@ function auditPackageScripts() {
 function auditMarkdownLinks(relativePath: string, text: string) {
 	const markdownLink = /\[[^\]]+\]\(([^)]+)\)/g;
 	for (const match of text.matchAll(markdownLink)) {
-		const target = match[1].trim();
+		const target = match[1]?.trim();
+		if (!target) continue;
 		if (
 			target.startsWith("http://") ||
 			target.startsWith("https://") ||
@@ -124,7 +127,7 @@ function auditMarkdownLinks(relativePath: string, text: string) {
 			continue;
 		}
 
-		const fileTarget = target.split("#", 1)[0];
+		const fileTarget = target.split("#", 1).at(0);
 		if (!fileTarget) continue;
 		const resolved = path.normalize(
 			path.join(path.dirname(relativePath), fileTarget),
