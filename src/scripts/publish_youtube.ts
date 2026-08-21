@@ -33,9 +33,7 @@ async function runBunScript(script: string, args: string[]): Promise<void> {
 			if (code === 0) {
 				resolve();
 			} else {
-				reject(
-					new Error(`${script} failed with exit code ${code ?? "null"}`),
-				);
+				reject(new Error(`${script} failed with exit code ${code ?? "null"}`));
 			}
 		});
 	});
