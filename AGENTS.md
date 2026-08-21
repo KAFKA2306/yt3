@@ -77,8 +77,8 @@ For non-trivial work, identify:
 ```bash
 task --list
 task setup
-task check:fast
-task check
+task check:merge:fast
+task check:merge
 ```
 
 Use narrower checks when relevant:
@@ -88,7 +88,8 @@ task harness:doctor:quick
 task harness:doctor
 task audit:today
 task audit:publish-routing
-task audit:no-fallback
+task audit:no-fallback:source
+task audit:no-fallback:runtime
 task audit:repo-contract
 task daily:last3
 task daily:guarantee-status
@@ -96,7 +97,23 @@ task daily:guarantee-status
 
 Internal package scripts and `src/scripts/*` files support Taskfile and CI; they are not competing human-facing command surfaces.
 
-## 8. Builder and auditor separation
+## 8. Merge acceptance and product release are independent
+
+Never use one gate as evidence for the other.
+
+### PR merge gate
+
+`task check:merge` decides whether the repository revision is acceptable to merge. It is restricted to repository/source state and deterministic tests. It must not require production credentials, a concrete `RUN_ID`, current YouTube state, or historical runtime cleanup receipts.
+
+A green CI run means **merge criteria passed for that commit**. It does not mean a video is ready or authorized for publication.
+
+### Product release gate
+
+`task release:check PROFILE=<profile> -- <run-id> [video-path]` decides whether one concrete run/artifact is locally ready to cross the publication boundary. It evaluates run/profile alignment, artifact identity, factual-integrity evidence, fallback prohibition, and canonical publication conflict state.
+
+A passing release preflight does not mean publication occurred. Remote channel identity and post-publication visibility still require separate evidence.
+
+## 9. Builder and auditor separation
 
 Treat implementation and acceptance as separate roles even when one agent performs both sequentially.
 
@@ -104,7 +121,7 @@ The builder may inspect, modify, test, and open/update the canonical PR. The aud
 
 Implementation intent is not acceptance evidence.
 
-## 9. Fail closed
+## 10. Fail closed
 
 Prefer attributable failure over false success.
 
@@ -116,7 +133,7 @@ Prefer attributable failure over false success.
 
 Repeated failures should produce a durable harness improvement: validation, schema, routing, retry policy, eval, observability, or implementation change.
 
-## 10. Channel isolation
+## 11. Channel isolation
 
 Never mix these profiles:
 
@@ -128,17 +145,17 @@ Never mix these profiles:
 
 For Humanity, the expected channel handle is `@humanity_observatory`.
 
-Before publication, verify profile, environment, bucket, authenticated channel, artifact identity, intended visibility, and required audit evidence.
+Before publication, verify profile, environment, bucket, authenticated channel, artifact identity, intended visibility, and required audit evidence. Static profile routing is a merge-time repository invariant; concrete run/channel identity is a release-time invariant.
 
-## 11. Publishing is an irreversible side effect
+## 12. Publishing is an irreversible side effect
 
-Implementation and local production do not authorize publication.
+Implementation and local production do not authorize publication. A merged PR does not authorize publication either.
 
-Publish only when the user request or active canonical contract explicitly requires it. Use the Taskfile publication path, capture the remote receipt, and read back remote identity/visibility when possible.
+Publish only when the user request or active canonical contract explicitly requires it. Use the Taskfile publication path. The canonical YouTube publisher executes the product release gate before OAuth/channel verification and remote publication work.
 
-Without a remote receipt, publication is not VERIFIED.
+Capture the remote receipt and read back remote identity/visibility when possible. Without a remote receipt, publication is not VERIFIED.
 
-## 12. Minimal and reversible changes
+## 13. Minimal and reversible changes
 
 Prefer the smallest change that satisfies the contract.
 
@@ -151,28 +168,34 @@ Prefer the smallest change that satisfies the contract.
 
 For destructive or external changes, verify the target before and after the action.
 
-## 13. Investigation before implementation
+## 14. Investigation before implementation
 
 Before editing, inspect the relevant repository state, implementation/configuration, tests/audits, and CI definitions. Inspect primary external sources when the task depends on current third-party behavior. Identify authoritative state stores and generated projections before changing either.
 
 Do not design from filenames, stale comments, screenshots, memory, or issue prose when inspectable evidence exists.
 
-## 14. Validation ladder
+## 15. Validation ladder
 
-Use the cheapest deterministic check that can falsify the change, then escalate:
+For repository changes, use the cheapest deterministic check that can falsify the change, then escalate:
 
 1. targeted unit/schema/contract test
 2. targeted domain audit
-3. `task check:fast`
-4. `task check`
+3. `task check:merge:fast`
+4. `task check:merge`
 5. `task harness:doctor:quick` when relevant
 6. full domain/harness audit when relevant
 7. CI on the exact PR head SHA
-8. external postcondition/receipt for external state changes
 
-Do not run expensive production merely because it exists.
+For a requested product release, start a separate release ladder only after the repository revision is known:
 
-## 15. Git and PR protocol
+1. `task release:check PROFILE=<profile> -- <run-id> [video-path]`
+2. authenticated channel verification
+3. remote publication action when explicitly authorized
+4. remote receipt/read-back/visibility evidence
+
+Do not run production release checks merely to prove a PR is mergeable, and do not treat a merge-gate PASS as product release evidence.
+
+## 16. Git and PR protocol
 
 For repository changes:
 
@@ -184,38 +207,41 @@ For repository changes:
 6. open or update one canonical PR;
 7. inspect CI on the exact head SHA;
 8. diagnose failed jobs rather than retrying blindly;
-9. merge only when acceptance criteria and repository policy allow it;
+9. merge only when merge acceptance criteria and repository policy allow it;
 10. verify the merged base and clean up the workline when possible.
+
+Product release readiness is not a condition for merging a code PR unless the PR contract explicitly changes a production artifact and requires that external postcondition.
 
 If a host-side safety check rejects a write, re-fetch state and retry the same canonical action once. Do not create a duplicate branch/PR as a workaround.
 
-## 16. Cleanup
+## 17. Cleanup
 
 Before final reporting, inspect for temporary files, debug output, staging chunks, abandoned generated intermediates, one-time workflows/scripts, superseded PRs, and stale task/document references.
 
 If unfinished work must remain, keep one canonical workline with the blocker and exact next action recorded.
 
-## 17. Secrets and private data
+## 18. Secrets and private data
 
 Never expose secrets, OAuth credentials, private tokens, local absolute paths, or private intermediate metadata in public artifacts. Do not copy production credentials or account identifiers into tests, docs, prompts, or screenshots.
 
-## 18. Documentation discipline
+## 19. Documentation discipline
 
 Documentation describes current behavior, not intended future behavior.
 
 - human onboarding: `README.md`
 - agent execution rules: `AGENTS.md`
+- gate ownership: `docs/QUALITY_GATES.md`
 - standards: `docs/standard/`
 - architectural decisions: `docs/adr/`
 - reusable agent skills: skill files
 
 `task audit:repo-contract` protects the maintained entry-point documentation from drifting toward missing files or tasks.
 
-## 19. No external-agent dependency
+## 20. No external-agent dependency
 
 Do not make ChatGPT Work, Codex, or another agent workspace a required execution step. The canonical loop must remain reproducible from repository state, declared tools, Taskfile tasks, tests/audits, CI, and explicit external-service receipts.
 
-## 20. Final report contract
+## 21. Final report contract
 
 Report only verified state relevant to the task:
 
@@ -223,10 +249,11 @@ Report only verified state relevant to the task:
 - what changed
 - deterministic checks executed and their result
 - commit/PR/merge state
-- external receipt if external state changed
+- product release gate result only when a concrete run was actually checked
+- external receipt only if external state changed
 - cleanup performed
 - blocker and exact next action if unfinished
 
-## 21. Stopping rule
+## 22. Stopping rule
 
 Stop when the requested outcome exists, acceptance evidence belongs to the current final state, required CI/external postconditions are verified, task-created residue is removed, and no known blocker remains. Further work is then scope expansion.
