@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "Auditable autonomous media operations for research, production, publishing, and post-publication verification.",
 	"scripts": {
-		"setup": "bun install --frozen-lockfile",
+		"setup": "bun ci",
 		"test": "bun test",
 		"lint": "bun biome check .",
 		"format": "bun biome format --write src tests",
