@@ -9,8 +9,11 @@
 		"format": "bun biome format --write src tests",
 		"typecheck": "bun x tsc --noEmit",
 		"audit:repo-contract": "bun src/scripts/audit_repository_contract.ts",
-		"check:fast": "bun run lint && bun run typecheck && bun run audit:repo-contract && bun src/scripts/audit_publish_routing.ts && bun src/scripts/audit_no_fallback_policy.ts",
-		"check": "bun run check:fast && SKIP_LLM=true DRY_RUN=true bun run test"
+		"audit:no-fallback:source": "bun src/scripts/audit_no_fallback_policy.ts --scope=source",
+		"check:merge:fast": "bun run lint && bun run typecheck && bun run audit:repo-contract && bun src/scripts/audit_publish_routing.ts && bun run audit:no-fallback:source",
+		"check:merge": "bun run check:merge:fast && SKIP_LLM=true DRY_RUN=true bun run test",
+		"check:fast": "bun run check:merge:fast",
+		"check": "bun run check:merge"
 	},
 	"repository": {
 		"type": "git",
