@@ -56,8 +56,6 @@ If a behavior can only be proven on the real target, that criterion belongs to p
 
 GitHub Actions runs `bun run check:merge`. The pre-commit/pre-push hook runs `bun run check:merge:fast`.
 
-`task check` and `task check:fast` remain compatibility aliases, but new automation and documentation should use the explicit `check:merge*` names.
-
 A passing merge gate proves repository acceptance for that exact commit and nothing more.
 
 ## Gate 2: product qualification and release
