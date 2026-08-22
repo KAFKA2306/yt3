@@ -10,11 +10,9 @@ import {
 	buildYouTubeStatus,
 	uploadAndVerifyCaption,
 	verifyScheduledPublish,
-	writeDancerUploadCheckpoint,
 } from "../dancer_publication.js";
 import {
 	assertFactualIntegrityGate,
-	assertNoLegacyPublishState,
 	loadPublicationState,
 	sha256File,
 	transitionPublication,
@@ -154,12 +152,9 @@ export class PublishAgent extends BaseAgent {
 			);
 		}
 
-		const bucket = state.bucket || "";
-		const isNotebookLmPulseBucket =
-			bucket === "daily_pulse_nlm" || bucket === "pulse_nlm";
 		const videoPath = publishVideoPath || state.video_path || "";
 		if (
-			isNotebookLmPulseBucket &&
+			state.bucket === "pulse_nlm" &&
 			videoPath &&
 			!path.resolve(videoPath).startsWith(path.resolve(this.store.runDir))
 		) {
@@ -185,10 +180,7 @@ export class PublishAgent extends BaseAgent {
 		const profile = getYouTubeProfile(
 			process.env.YOUTUBE_CHANNEL_PROFILE?.trim(),
 		);
-		const bucketAllowed =
-			state.bucket === profile.bucket ||
-			(profile.bucket === "daily_pulse" && state.bucket === "daily_pulse_nlm");
-		if (!bucketAllowed) {
+		if (state.bucket !== profile.bucket) {
 			throw new Error(
 				`YouTube publish blocked: run bucket '${state.bucket}' does not match profile bucket '${profile.bucket}' for '${profile.profileName}'`,
 			);
@@ -243,7 +235,6 @@ export class PublishAgent extends BaseAgent {
 				`Canonical publish state is ${stored.phase} without a verified video id; refusing videos.insert until the remote commit is resolved`,
 			);
 		}
-		if (!stored) assertNoLegacyPublishState(this.store.runDir);
 
 		if (dancer.publish_at || ytCfg.default_visibility !== "private") {
 			assertFactualIntegrityGate(this.store.runDir, state);
@@ -399,13 +390,6 @@ export class PublishAgent extends BaseAgent {
 			channel_id: channelId,
 			channel_title: channelTitle,
 			observed_visibility: privateAttestation.current_privacy_status,
-		});
-		writeDancerUploadCheckpoint(this.store.runDir, state, {
-			video_id: videoId,
-			channel_id: channelId,
-			channel_title: channelTitle,
-			published_at: publishedAt,
-			verified_private_at: privateAttestation.verified_at,
 		});
 
 		if (thumbnailPath) {
@@ -578,7 +562,7 @@ export class PublishAgent extends BaseAgent {
 		}
 		if (
 			!["default", "medium", "high"].every((key) =>
-				thumbnailVariants.includes(key),
+					thumbnailVariants.includes(key),
 			)
 		) {
 			throw new Error(
