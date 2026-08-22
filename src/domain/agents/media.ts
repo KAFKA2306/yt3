@@ -47,10 +47,7 @@ export class VisualDirector extends BaseAgent {
 		this.ttsOrchestrator = new TtsOrchestrator({
 			ttsUrl: cfg.providers.tts.voicevox.url,
 			speakers: cfg.providers.tts.voicevox.speakers,
-			timeout: {
-				query: 30000,
-				synthesis: 60000,
-			},
+			timeout: { query: 30000, synthesis: 60000 },
 		});
 		this.layout = new LayoutEngine(cfg);
 		this.validator = new IqaValidator(cfg);
@@ -85,7 +82,6 @@ export class VisualDirector extends BaseAgent {
 			"RUN",
 			`Generating media for ${title}`,
 		);
-
 		const audioDir = this.store.audioDir();
 		const videoDir = this.store.videoDir();
 		await fs.ensureDir(audioDir);
@@ -93,7 +89,6 @@ export class VisualDirector extends BaseAgent {
 
 		const audio_paths = await this.synthesizeAudio(script, audioDir);
 		const fullAudioPath = await this.mergeAudio(audio_paths, audioDir);
-
 		const videoPlan = await this.layout.createVideoRenderPlan();
 		const durations = await this.getAudioDurations(audio_paths);
 		for (let i = 0; i < script.lines.length; i++) {
@@ -120,7 +115,7 @@ export class VisualDirector extends BaseAgent {
 			const errMsg = error instanceof Error ? error.message : String(error);
 			appendLoopMemory(this.store, {
 				run_id: this.store.runDir.split(path.sep).slice(-2).join("/"),
-				bucket: options.bucket || "daily_pulse",
+				bucket: options.bucket || this.store.domainId,
 				stage: "media",
 				kind: "failure",
 				summary:
@@ -140,12 +135,11 @@ export class VisualDirector extends BaseAgent {
 			this.store.cfg.workflow.filenames.video,
 		);
 		const composerConfig = { ...this.videoComposer.config };
-		if (options.bucket === "humanity_observatory") {
+		if ((options.bucket || this.store.domainId) === "humanity_observatory") {
 			composerConfig.background_color = "#FFFDF8";
 		} else if (options.style === "quiet_observation") {
 			composerConfig.background_color = "#0A0A12";
 		}
-
 		const dynamicComposer = new VideoComposer(composerConfig);
 		await dynamicComposer.compose(
 			fullAudioPath,
@@ -154,12 +148,10 @@ export class VisualDirector extends BaseAgent {
 			videoPath,
 			videoPlan,
 		);
-
 		return {
 			audio_paths,
 			thumbnail_path: thumbnailPath,
 			video_path: videoPath,
-			asset_version: "humanity-scenes-v1",
 			script,
 		};
 	}
@@ -170,11 +162,9 @@ export class VisualDirector extends BaseAgent {
 	): Promise<string[]> {
 		const audio_paths: string[] = [];
 		const manifestChunks: AudioChunkManifest[] = [];
-
 		for (let i = 0; i < script.lines.length; i++) {
 			const line = script.lines[i];
 			if (!line) continue;
-
 			const audioPath = path.join(
 				audioDir,
 				`${String(i).padStart(3, "0")}.wav`,
@@ -185,7 +175,6 @@ export class VisualDirector extends BaseAgent {
 					`CRITICAL: Unknown speaker '${line.speaker}' in script. No fallback allowed.`,
 				);
 			}
-
 			const cleanText = this.cleanScriptText(line.text);
 			AgentLogger.info(
 				this.name,
@@ -193,7 +182,6 @@ export class VisualDirector extends BaseAgent {
 				"GENERATE",
 				`[${i + 1}/${script.lines.length}] ${line.speaker} (ID: ${speakerId}): ${cleanText.slice(0, 30)}...`,
 			);
-
 			if (!fs.existsSync(audioPath)) {
 				const synthesis = await this.ttsOrchestrator.synthesize({
 					text: cleanText,
@@ -201,7 +189,6 @@ export class VisualDirector extends BaseAgent {
 				});
 				fs.writeFileSync(audioPath, synthesis.audio);
 			}
-
 			audio_paths.push(audioPath);
 			manifestChunks.push({
 				index: i,
@@ -213,16 +200,8 @@ export class VisualDirector extends BaseAgent {
 				text_preview: cleanText.slice(0, 50),
 			});
 		}
-
-		const manifestPath = path.join(audioDir, "manifest.json");
-		AgentLogger.info(
-			this.name,
-			"AUDIO",
-			"MANIFEST",
-			`Writing manifest to ${manifestPath} (${manifestChunks.length} chunks)`,
-		);
 		fs.writeJsonSync(
-			manifestPath,
+			path.join(audioDir, "manifest.json"),
 			{
 				total_chunks: manifestChunks.length,
 				chunks: manifestChunks,
@@ -230,7 +209,6 @@ export class VisualDirector extends BaseAgent {
 			},
 			{ spaces: 2 },
 		);
-
 		return audio_paths;
 	}
 
@@ -275,14 +253,12 @@ export class VisualDirector extends BaseAgent {
 		);
 		const audioCmd = ffmpeg();
 		for (const audioPath of audioPaths) audioCmd.input(audioPath);
-
 		await new Promise<void>((resolve, reject) => {
 			audioCmd
 				.on("error", reject)
 				.on("end", () => resolve())
 				.mergeToFile(tempMergedPath, os.tmpdir());
 		});
-
 		await new Promise<void>((resolve, reject) => {
 			ffmpeg(tempMergedPath)
 				.audioFilters("loudnorm=I=-14:TP=-3.0:LRA=11")
@@ -293,7 +269,6 @@ export class VisualDirector extends BaseAgent {
 				})
 				.save(fullAudioPath);
 		});
-
 		return fullAudioPath;
 	}
 
