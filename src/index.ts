@@ -15,30 +15,22 @@ import {
 	writeRunEvidence,
 } from "./io/utils/stability.js";
 
-async function main() {
-	const defaultRunId = getRunIdDateString();
-	const RUN_ID = process.env.RUN_ID || defaultRunId;
-	let runId = RUN_ID === "latest" ? defaultRunId : RUN_ID;
-
-	const BUCKET = process.env.BUCKET || loadConfig().workflow.default_bucket;
-	if (BUCKET === "humanity_observatory") {
-		if (RUN_ID.includes("/") && !RUN_ID.startsWith("humanity_observatory/")) {
-			throw new Error(
-				`Domain mismatch: BUCKET is ${BUCKET} but RUN_ID starts with a different prefix: ${RUN_ID}`,
-			);
-		}
-		runId = RUN_ID.startsWith("humanity_observatory/")
-			? RUN_ID
-			: `humanity_observatory/${runId}`;
-	} else {
-		if (RUN_ID.includes("/") && !RUN_ID.startsWith(`${BUCKET}/`)) {
-			throw new Error(
-				`Domain mismatch: BUCKET is ${BUCKET} but RUN_ID starts with a different prefix: ${RUN_ID}`,
-			);
-		}
-		runId = RUN_ID.startsWith(`${BUCKET}/`) ? RUN_ID : `${BUCKET}/${runId}`;
+function resolveRunId(bucket: string): string {
+	const raw = process.env.RUN_ID?.trim() || getRunIdDateString();
+	if (!raw.includes("/")) return `${bucket}/${raw}`;
+	const [domain, name, ...rest] = raw.split("/");
+	if (domain !== bucket || !name || rest.length > 0) {
+		throw new Error(
+			`Domain mismatch: BUCKET is '${bucket}' but RUN_ID is '${raw}'`,
+		);
 	}
+	return raw;
+}
 
+async function main() {
+	const bucket = process.env.BUCKET?.trim() || "byosan_money";
+	loadConfig(bucket);
+	const runId = resolveRunId(bucket);
 	const store = new AssetStore(runId);
 	AgentLogger.init();
 
@@ -49,41 +41,42 @@ async function main() {
 			"INIT",
 			`Starting AI YouTuber Pipeline (RunID: ${runId})`,
 		);
-		const MISSION_FILE = process.env.MISSION_FILE;
+		const missionFile = process.env.MISSION_FILE;
 		const { runSequentialWorkflow } = await import("./workflow.js");
 		const { runHumanityObservatoryWorkflow } = await import(
 			"./humanity_observatory_workflow.js"
 		);
 
-		const initialState = {
+		const initialState: Partial<AgentState> = {
 			run_id: runId,
-			bucket: BUCKET,
-			mission_file: MISSION_FILE,
+			bucket,
+			mission_file: missionFile,
 		};
-
 		const finalState =
-			BUCKET === "humanity_observatory"
+			bucket === "humanity_observatory"
 				? await runHumanityObservatoryWorkflow(store, initialState)
 				: await runSequentialWorkflow(store, initialState);
 
 		const finalTitle = finalState.metadata?.title || "Unknown Title";
-		const publishReceiptPath = path.join(
-			store.runDir,
-			"publish",
-			"receipt.json",
-		);
-		const publishReceipt = fs.existsSync(publishReceiptPath)
-			? fs.readJsonSync(publishReceiptPath)
+		const publishStatePath = path.join(store.runDir, "publish", "state.json");
+		const receiptPath = path.join(store.runDir, "publish", "receipt.json");
+		const publicationState = fs.existsSync(publishStatePath)
+			? fs.readJsonSync(publishStatePath)
+			: undefined;
+		const receipt = fs.existsSync(receiptPath)
+			? fs.readJsonSync(receiptPath)
 			: undefined;
 		const finalVideoId =
-			typeof publishReceipt?.youtube?.video_id === "string"
-				? publishReceipt.youtube.video_id
-				: finalState.publish_results?.youtube?.video_id;
+			typeof receipt?.youtube?.video_id === "string"
+				? receipt.youtube.video_id
+				: undefined;
 		const finalUrl = finalVideoId
 			? `https://www.youtube.com/watch?v=${finalVideoId}`
 			: "(No URL Available)";
 		const hasPublishProof =
-			Boolean(finalVideoId) && fs.existsSync(publishReceiptPath);
+			Boolean(finalVideoId) &&
+			publicationState?.phase === "VERIFIED" &&
+			publicationState?.video_id === finalVideoId;
 
 		AgentLogger.info(
 			"SYSTEM",
@@ -100,81 +93,70 @@ async function main() {
 		);
 
 		if (finalState.status === "SUCCESS" && hasPublishProof) {
-			fs.writeFileSync(
-				path.join(store.runDir, "SUCCESS"),
-				`Published at ${new Date().toISOString()}\nVideo: ${finalUrl}`,
-			);
 			writeRunEvidence(store.runDir, {
 				run_id: runId,
-				bucket: BUCKET,
+				bucket,
 				status: finalState.status,
 				disposition: "success",
 				log_path: resolveDailyLogPath(runId),
 				evidence_paths: [
-					path.join(store.runDir, "SUCCESS"),
 					path.join(store.runDir, "state.json"),
-					path.join(store.runDir, "publish", "receipt.json"),
+					publishStatePath,
+					receiptPath,
 				],
-				artifact_paths: [
-					finalUrl !== "(No URL Available)" ? finalUrl : "",
-				].filter(Boolean),
-				note: "Pipeline completed with machine-verifiable success evidence.",
+				artifact_paths: [finalUrl],
+				note: "Pipeline completed with canonical publication state and receipt evidence.",
 			});
 			console.log(`\n${"=".repeat(80)}`);
 			console.log("🚀 PIPELINE SUCCESSFUL");
 			console.log(`🎬 TITLE: ${finalTitle}`);
 			console.log(`🔗 URL:   ${finalUrl}`);
 			console.log(`${"=".repeat(80)}\n`);
-		} else if (finalState.status === "SUCCESS" && !hasPublishProof) {
+			return;
+		}
+
+		if (finalState.status === "SUCCESS") {
 			writeRunEvidence(store.runDir, {
 				run_id: runId,
-				bucket: BUCKET,
+				bucket,
 				status: "PENDING",
 				disposition: "pending",
 				log_path: resolveDailyLogPath(runId),
 				evidence_paths: [path.join(store.runDir, "state.json")],
 				artifact_paths: [],
-				note: "Pipeline reported success, but no publish proof was present; treating this as evidence gap.",
+				note: "Pipeline reported success without a VERIFIED canonical publication state and matching receipt.",
 			});
 			console.log(`\n${"!".repeat(80)}`);
-			console.log("⚠️ PIPELINE REPORTED SUCCESS WITHOUT PUBLISH PROOF");
-			console.log(`🎬 TITLE: ${finalTitle}`);
-			console.log(`🔗 URL:   ${finalUrl}`);
+			console.log("⚠️ PIPELINE REPORTED SUCCESS WITHOUT VERIFIED PUBLICATION");
 			console.log(`${"!".repeat(80)}\n`);
-		} else {
-			const failure = classifyFailureMessage(finalState.status || "UNKNOWN");
-			writeRunEvidence(store.runDir, {
-				run_id: runId,
-				bucket: BUCKET,
-				status: finalState.status || "UNKNOWN",
-				disposition: failure.disposition,
-				log_path: resolveDailyLogPath(runId),
-				evidence_paths: [path.join(store.runDir, "state.json")],
-				artifact_paths: [],
-				failure,
-				note: "Run completed without success evidence; status is explicitly classified.",
-			});
-			console.log(`\n${"!".repeat(80)}`);
-			console.log(`⚠️ PIPELINE FAILED: ${finalState.status}`);
-			console.log(`${"!".repeat(80)}\n`);
-
-			await sendAlert(`⚠️ **Pipeline Failed** (Run: \`${runId}\`)`, "warn", {
-				status: finalState.status,
-				bucket: BUCKET,
-			});
-
-			if (failure.disposition === "fatal") {
-				process.exit(1);
-			}
+			return;
 		}
+
+		const failure = classifyFailureMessage(finalState.status || "UNKNOWN");
+		writeRunEvidence(store.runDir, {
+			run_id: runId,
+			bucket,
+			status: finalState.status || "UNKNOWN",
+			disposition: failure.disposition,
+			log_path: resolveDailyLogPath(runId),
+			evidence_paths: [path.join(store.runDir, "state.json")],
+			artifact_paths: [],
+			failure,
+			note: "Run completed without verified publication evidence; status is explicitly classified.",
+		});
+		await sendAlert(`⚠️ **Pipeline Failed** (Run: \`${runId}\`)`, "warn", {
+			status: finalState.status,
+			bucket,
+		});
+		if (failure.disposition === "fatal") process.exit(1);
 	} catch (err) {
 		const error = err as Error;
 		const failure = classifyFailureMessage(error.message);
 		appendLoopMemory(store, {
 			run_id: runId,
-			bucket: BUCKET,
+			bucket,
 			stage: "pipeline",
-			kind: failure.disposition === "success" ? "success" : "failure",
+			kind: "failure",
 			summary:
 				"Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
 			signals: [error.message],
@@ -187,7 +169,7 @@ async function main() {
 		AgentLogger.error("SYSTEM", "PIPE", "CRASH", error.message, error);
 		writeRunEvidence(store.runDir, {
 			run_id: runId,
-			bucket: BUCKET,
+			bucket,
 			status: "CRASH",
 			disposition: failure.disposition,
 			log_path: resolveDailyLogPath(runId),
@@ -200,9 +182,7 @@ async function main() {
 			message: error.message,
 			stack: error.stack?.slice(0, 500),
 		});
-		if (failure.disposition === "fatal") {
-			process.exit(1);
-		}
+		if (failure.disposition === "fatal") process.exit(1);
 	}
 }
 
