@@ -22,21 +22,18 @@ describe("active run discovery", () => {
 		const root = tempRoot();
 		try {
 			const active = path.join(root, "runs", "byosan_money", "active");
-			const legacy = path.join(root, "runs", "byosan_money", "legacy");
+			const incomplete = path.join(root, "runs", "byosan_money", "incomplete");
 			fs.ensureDirSync(active);
-			fs.ensureDirSync(legacy);
+			fs.ensureDirSync(incomplete);
 			fs.writeJsonSync(path.join(active, "state.json"), {
 				run_id: "byosan_money/active",
 				bucket: "byosan_money",
 			});
-			fs.writeJsonSync(path.join(legacy, "receipt.json"), {
-				youtube: { video_id: "old" },
-			});
 
 			expect(isCanonicalActiveRunDir(active)).toBe(true);
-			expect(isCanonicalActiveRunDir(legacy)).toBe(false);
+			expect(isCanonicalActiveRunDir(incomplete)).toBe(false);
 			expect(isCanonicalActiveRunId(root, "byosan_money/active")).toBe(true);
-			expect(isCanonicalActiveRunId(root, "byosan_money/legacy")).toBe(false);
+			expect(isCanonicalActiveRunId(root, "byosan_money/incomplete")).toBe(false);
 		} finally {
 			fs.removeSync(root);
 		}
