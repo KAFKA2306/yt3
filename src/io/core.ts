@@ -16,13 +16,11 @@ export function loadConfig(domainId?: string): AppConfig {
 	}
 
 	if (domainId) {
-		const mappedDomainId =
-			domainId === "daily_pulse" ? "byosan_money" : domainId;
 		const domainConfigPath = path.join(
 			ROOT,
 			"config",
 			"domains",
-			`${mappedDomainId}.yaml`,
+			`${domainId}.yaml`,
 		);
 		if (fs.existsSync(domainConfigPath)) {
 			return yaml.load(fs.readFileSync(domainConfigPath, "utf-8")) as AppConfig;
@@ -520,43 +518,23 @@ export function getRunIdDateString(): string {
 	return `${y}-${m}-${day}`;
 }
 export function getMemoryEssenceFile(store: AssetStore): string {
-	const cfg = store.cfg;
-	const isCognitive = store.runDir.includes("humanity_observatory");
-	const isByosanMoney = store.runDir.includes("byosan_money");
-	const subDir = isCognitive
-		? "humanity_observatory"
-		: isByosanMoney
-			? "byosan_money"
-			: "daily_pulse";
-	const essenceFile = path.join(
+	return path.join(
 		ROOT,
 		"data",
 		"memory",
-		subDir,
+		store.domainId,
 		"essences.json",
 	);
-
-	if (!isCognitive && !fs.existsSync(essenceFile)) {
-		const legacyFile = path.isAbsolute(cfg.workflow.memory.essence_file)
-			? cfg.workflow.memory.essence_file
-			: path.join(ROOT, cfg.workflow.memory.essence_file);
-		if (fs.existsSync(legacyFile)) {
-			fs.ensureDirSync(path.dirname(essenceFile));
-			fs.copySync(legacyFile, essenceFile);
-		}
-	}
-	return essenceFile;
 }
 
 export function getLoopMemoryFile(store: AssetStore): string {
-	const isCognitive = store.runDir.includes("humanity_observatory");
-	const isByosanMoney = store.runDir.includes("byosan_money");
-	const subDir = isCognitive
-		? "humanity_observatory"
-		: isByosanMoney
-			? "byosan_money"
-			: "daily_pulse";
-	return path.join(ROOT, "data", "memory", subDir, "loop_journal.json");
+	return path.join(
+		ROOT,
+		"data",
+		"memory",
+		store.domainId,
+		"loop_journal.json",
+	);
 }
 
 export function appendLoopMemory(
@@ -639,7 +617,7 @@ export function loadMemoryContext(store: AssetStore): string {
 }
 
 export function fetchRecentThemes(store: AssetStore, days = 7): string {
-	const cfg = loadConfig();
+	const cfg = store.cfg;
 	const runsDir = path.join(ROOT, cfg.workflow.paths.runs_dir, store.domainId);
 
 	if (!fs.existsSync(runsDir)) {
