@@ -246,7 +246,6 @@ export interface AppConfig {
 		notebooklm?: {
 			enabled: boolean;
 			video_style: string;
-			output_dir: string;
 			temperature: number;
 			notebook_ids: string[];
 		};
