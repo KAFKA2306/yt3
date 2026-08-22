@@ -75,7 +75,6 @@ export function eligibleWindows(
 		startDate: string;
 		endDate: string;
 	}> = [];
-	// Analytics is date-based and can lag. Do not label this as an exact rolling 24h window.
 	if (ageHours >= 48) {
 		windows.push({ name: "published_day", startDate, endDate: startDate });
 	}
@@ -265,13 +264,12 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 		INSERT INTO youtube_analytics (
 			video_id, channel_id, age_window, views, engaged_views,
 			watch_time_minutes, average_view_duration_seconds, average_view_percentage,
-			likes, comments, shares, subscribers_gained, subscribers_lost,
-			subscribers_net, satisfaction_score, recorded_at
+			likes, comments, shares, subscribers_gained, subscribers_lost, recorded_at
 		) VALUES (
 			$video_id, $channel_id, $age_window, $views, $engaged_views,
 			$watch_time_minutes, $average_view_duration_seconds, $average_view_percentage,
 			$likes, $comments, $shares, $subscribers_gained, $subscribers_lost,
-			NULL, NULL, datetime('now')
+			datetime('now')
 		) ON CONFLICT(video_id, age_window) DO UPDATE SET
 			views = excluded.views,
 			engaged_views = excluded.engaged_views,
@@ -283,8 +281,6 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 			shares = excluded.shares,
 			subscribers_gained = excluded.subscribers_gained,
 			subscribers_lost = excluded.subscribers_lost,
-			subscribers_net = NULL,
-			satisfaction_score = NULL,
 			recorded_at = datetime('now')
 	`);
 	insert.run({
