@@ -54,8 +54,6 @@ export interface DesignTokens {
 	font_display: string;
 	font_text: string;
 	font_japanese: string;
-
-	// Humanity Observatory (Cognitive) Palette
 	humanity_base_white: string;
 	humanity_soft_sky: string;
 	humanity_human_cream: string;
@@ -71,7 +69,6 @@ export interface AppConfig {
 		default_run_dir: string;
 		default_bucket: string;
 		checkpoint_enabled: boolean;
-		memory: { index_file: string; essence_file: string };
 		trend_settings: { enabled: boolean; regions: string[]; sources: string[] };
 		paths: {
 			lock_file: string;
@@ -92,11 +89,6 @@ export interface AppConfig {
 		};
 	};
 	steps: {
-		news: {
-			query_buckets: Record<string, string>;
-			fetch_count: number;
-			cooldown_hours: number;
-		};
 		research: {
 			recent_days: number;
 			essence_limit: number;
@@ -183,9 +175,7 @@ export interface AppConfig {
 			category_id: number;
 			default_visibility: string;
 		};
-		twitter?: {
-			enabled: boolean;
-		};
+		twitter?: { enabled: boolean };
 	};
 	providers: {
 		llm: {
@@ -215,9 +205,7 @@ export interface AppConfig {
 				enabled: boolean;
 				url: string;
 				speakers: Record<string, number>;
-				voice_audit?: {
-					allowed_duplicate_groups?: string[][];
-				};
+				voice_audit?: { allowed_duplicate_groups?: string[][] };
 			};
 		};
 		manager: {
@@ -227,28 +215,14 @@ export interface AppConfig {
 			user: string;
 		};
 	};
-	dashboard?: {
-		port: number;
-	};
-	logging: {
-		level: string;
-		format: string;
-		activity_log_file: string;
-	};
+	dashboard?: { port: number };
+	logging: { level: string; format: string; activity_log_file: string };
 	automation: {
 		enabled: boolean;
 		venv_activate: string;
 		log_dir: string;
 		services: Array<{ name: string; command: string[] }>;
 		schedules: Array<{ name: string; command: string[]; cron: string }>;
-	};
-	agents?: {
-		notebooklm?: {
-			enabled: boolean;
-			video_style: string;
-			temperature: number;
-			notebook_ids: string[];
-		};
 	};
 	mcp: McpConfig;
 	design_tokens: DesignTokens;
