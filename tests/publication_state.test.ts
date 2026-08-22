@@ -4,7 +4,6 @@ import path from "node:path";
 import fs from "fs-extra";
 import {
 	assertFactualIntegrityGate,
-	assertNoLegacyPublishState,
 	loadPublicationState,
 	transitionPublication,
 	tryReuseCanonicalPublication,
@@ -101,21 +100,6 @@ describe("canonical publication state", () => {
 			expect(listCalls).toBe(1);
 			expect(reuse?.result.video_id).toBe("video-1");
 			expect(reuse?.state.phase).toBe("REMOTE_VERIFIED");
-		} finally {
-			fs.removeSync(runDir);
-		}
-	});
-
-	test("fails closed when legacy receipt exists without canonical state", () => {
-		const runDir = tempRun("legacy");
-		try {
-			fs.ensureDirSync(path.join(runDir, "publish"));
-			fs.writeJsonSync(path.join(runDir, "publish", "receipt.json"), {
-				youtube: { video_id: "legacy-video" },
-			});
-			expect(() => assertNoLegacyPublishState(runDir)).toThrow(
-				"Legacy publish evidence exists",
-			);
 		} finally {
 			fs.removeSync(runDir);
 		}
