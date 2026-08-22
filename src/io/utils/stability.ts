@@ -44,21 +44,8 @@ export const STABILITY_BUCKETS = [
 	"pulse_nlm",
 ] as const;
 
-export function resolveCanonicalBucketName(bucket: string): string {
-	switch (bucket) {
-		case "daily_pulse":
-			return "byosan_money";
-		case "daily_pulse_nlm":
-		case "nlm":
-			return "pulse_nlm";
-		default:
-			return bucket;
-	}
-}
-
 export function findRunDirsForDate(bucket: string, date: string): string[] {
-	const canonicalBucket = resolveCanonicalBucketName(bucket);
-	const bucketDir = path.join(process.cwd(), "runs", canonicalBucket);
+	const bucketDir = path.join(process.cwd(), "runs", bucket);
 	if (!fs.existsSync(bucketDir)) return [];
 
 	return fs
@@ -81,7 +68,7 @@ export function findRunDirsForDate(bucket: string, date: string): string[] {
 export function findRunDirForDate(bucket: string, date: string): string {
 	return (
 		findRunDirsForDate(bucket, date)[0] ||
-		path.join(process.cwd(), "runs", resolveCanonicalBucketName(bucket), date)
+		path.join(process.cwd(), "runs", bucket, date)
 	);
 }
 
@@ -220,12 +207,11 @@ function computeConfigHash(bucket?: string): string {
 	let configPath = process.env.CONFIG_PATH;
 	if (!configPath || !fs.existsSync(configPath)) {
 		if (bucket) {
-			const mappedBucket = bucket === "daily_pulse" ? "byosan_money" : bucket;
 			const domainPath = path.join(
 				root,
 				"config",
 				"domains",
-				`${mappedBucket}.yaml`,
+				`${bucket}.yaml`,
 			);
 			if (fs.existsSync(domainPath)) {
 				configPath = domainPath;
@@ -251,12 +237,11 @@ function computePromptHash(bucket?: string): string {
 	let configPath = process.env.CONFIG_PATH;
 	if (!configPath || !fs.existsSync(configPath)) {
 		if (bucket) {
-			const mappedBucket = bucket === "daily_pulse" ? "byosan_money" : bucket;
 			const domainPath = path.join(
 				root,
 				"config",
 				"domains",
-				`${mappedBucket}.yaml`,
+				`${bucket}.yaml`,
 			);
 			if (fs.existsSync(domainPath)) {
 				configPath = domainPath;
@@ -567,7 +552,6 @@ function resolveChannelTitle(
 	if (channelTitle) return channelTitle;
 	switch (bucketName) {
 		case "byosan_money":
-		case "daily_pulse":
 			return "秒算マネー";
 		case "humanity_observatory":
 			return "雨晴はうの人類観測所";
@@ -581,7 +565,6 @@ function resolveChannelTitle(
 function resolveChannelLabelForBucket(bucketName: string): string {
 	switch (bucketName) {
 		case "byosan_money":
-		case "daily_pulse":
 			return "秒算マネー";
 		case "humanity_observatory":
 			return "人類観測所";
