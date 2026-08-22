@@ -9,7 +9,6 @@ import {
 	RunStage,
 	fetchRecentThemes,
 	getCurrentDateString,
-	loadConfig,
 	loadMemoryContext,
 	parseLlmJson,
 } from "../../io/core.js";
@@ -20,14 +19,10 @@ import {
 	selectByosanAngle,
 } from "../byosan/news_angle.js";
 import {
-	type EditorSelection,
-	EditorSelectionSchema,
 	type NewsItem,
 	NewsItemSchema,
-	type ResearchDeepDive,
-	ResearchDeepDiveSchema,
-	type ScriptLine,
 } from "../types.js";
+
 export interface ResearchResult {
 	director_data: {
 		angle: string;
@@ -39,19 +34,14 @@ export interface ResearchResult {
 	memory_context: string;
 	angle_decision?: ByosanAngleDecision;
 }
-interface Mission {
-	topic: string;
-	search_queries: string[];
-	angles: Array<{ name: string; focus: string }>;
-}
 
 export class TrendScout extends BaseAgent {
 	constructor(store: AssetStore) {
-		const cfg = loadConfig();
 		super(store, RunStage.RESEARCH, {
-			temperature: cfg.steps.research?.temperature || 0.5,
+			temperature: store.cfg.steps.research?.temperature || 0.5,
 		});
 	}
+
 	async run(
 		bucket: string,
 		limit?: number,
@@ -66,7 +56,6 @@ export class TrendScout extends BaseAgent {
 			limit: limit || researchCfg.default_limit || 3,
 		});
 		const recent = loadMemoryContext(this.store);
-
 		const promptCfg = this.loadPrompt<{
 			consolidated_research: { system: string; user_template: string };
 		}>(this.name);
@@ -75,25 +64,28 @@ export class TrendScout extends BaseAgent {
 		let userPrompt = promptCfg.consolidated_research.user_template
 			.replace(
 				"{regions}",
-				researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
+				researchCfg.regions.map((region) => region.lang).join(", "),
 			)
 			.replace("{recent_topics}", recent)
 			.replace("{recent_themes}", recentThemes)
 			.replace("{current_date}", currentDate);
 		userPrompt += this.buildSourceRegistryPrompt(bucket);
-		if (bucket === "byosan_money") {
-			userPrompt += this.buildSharpAnglePrompt();
-		}
+		if (bucket === "byosan_money") userPrompt += this.buildSharpAnglePrompt();
 
-		const pulseFile = missionFile || path.join(ROOT, "pulse.md");
-		if (fs.existsSync(pulseFile)) {
-			const customNewsContext = fs.readFileSync(pulseFile, "utf8");
-			userPrompt += `\n\n[DAILY PULSE SOVEREIGNTY DATA]\n${customNewsContext}\n(Analyze this data as the SOLE source of truth for today's video. You MUST format this data into the requested JSON schema without adding unrelated news.)`;
+		if (missionFile) {
+			const sourcePath = path.isAbsolute(missionFile)
+				? missionFile
+				: path.join(ROOT, missionFile);
+			if (!fs.existsSync(sourcePath)) {
+				throw new Error(`MISSION_FILE does not exist: ${sourcePath}`);
+			}
+			const missionEvidence = fs.readFileSync(sourcePath, "utf8");
+			userPrompt += `\n\n[MISSION EVIDENCE]\n${missionEvidence}\n(Use this supplied evidence as the primary source for the requested run. Preserve the requested JSON schema and do not add unrelated claims.)`;
 			Logger.info(
 				this.name,
 				"RESEARCH",
-				"PULSE",
-				"Using pulse.md as primary source",
+				"MISSION",
+				`Using explicit mission evidence: ${sourcePath}`,
 			);
 		}
 
@@ -116,13 +108,13 @@ export class TrendScout extends BaseAgent {
 			promptCfg.consolidated_research.system
 				.replace(
 					"{regions}",
-					researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
+					researchCfg.regions.map((region) => region.lang).join(", "),
 				)
 				.replace("{current_date}", currentDate),
 			userPrompt,
-			(t) =>
+			(text) =>
 				parseLlmJson(
-					t,
+					text,
 					z.object({
 						selected_topics: z.array(
 							z.object({
@@ -156,15 +148,12 @@ export class TrendScout extends BaseAgent {
 					candidate: result.byosan_angle,
 				}))
 				.filter(
-					(
-						entry,
-					): entry is typeof entry & {
+					(entry): entry is typeof entry & {
 						candidate: z.infer<typeof ByosanAngleCandidateSchema>;
 					} => Boolean(entry.candidate),
 				),
 		);
 		let angleDecision: ByosanAngleDecision | undefined;
-
 		let selectedTopic = allTopics[0];
 		let selectedResult = selectedTopic?.results?.[0];
 
@@ -208,13 +197,13 @@ export class TrendScout extends BaseAgent {
 				search_query: selectedTopic?.search_query || "",
 				key_questions: allTopics
 					.flatMap((topic) => topic.results)
-					.flatMap((r) => r.key_questions)
+					.flatMap((item) => item.key_questions)
 					.slice(0, 5),
 			},
 			news: allTopics
 				.flatMap((topic) => topic.results)
-				.flatMap((r) => r.news)
-				.filter((n: NewsItem) => n?.title),
+				.flatMap((item) => item.news)
+				.filter((item) => item?.title),
 			memory_context: recent,
 			angle_decision: angleDecision,
 		};
@@ -223,10 +212,7 @@ export class TrendScout extends BaseAgent {
 	}
 
 	private buildSourceRegistryPrompt(bucket: string): string {
-		if (!["byosan_money", "daily_pulse", "daily_pulse_nlm"].includes(bucket)) {
-			return "";
-		}
-
+		if (bucket !== "byosan_money") return "";
 		const registryPath = path.join(
 			ROOT,
 			"config",
@@ -249,9 +235,7 @@ export class TrendScout extends BaseAgent {
 				priority?: string;
 				kafka_use?: string[];
 			}>;
-			coverage_requirements?: {
-				critical_source_ids?: string[];
-			};
+			coverage_requirements?: { critical_source_ids?: string[] };
 		};
 		const sources = registry.sources || [];
 		const criticalIds = new Set(
@@ -270,7 +254,6 @@ export class TrendScout extends BaseAgent {
 				"Byosan source registry has insufficient source coverage; research cannot continue.",
 			);
 		}
-
 		const sourceLines = selectedSources.map((source) =>
 			[
 				source.id,
@@ -285,11 +268,10 @@ export class TrendScout extends BaseAgent {
 				.filter(Boolean)
 				.join(" | "),
 		);
-
 		return [
 			"",
 			"[BYOSAN POWER MACRO SOURCE REGISTRY]",
-			"Use this registry as the approved source universe. Prefer L1-L3 primary sources. If current facts cannot be grounded in this registry or the supplied DAILY PULSE SOVEREIGNTY DATA, stop with an explicit evidence gap instead of inventing or reusing fallback content.",
+			"Use this registry as the approved source universe. Prefer L1-L3 primary sources. If current facts cannot be grounded in this registry or explicit MISSION EVIDENCE, stop with an evidence gap instead of inventing or reusing fallback content.",
 			...sourceLines,
 		].join("\n");
 	}
@@ -301,53 +283,5 @@ export class TrendScout extends BaseAgent {
 Return at least five total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
 topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks.
 numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. counterfactual must be testable by exclusion, subtraction, or a changed denominator. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.`;
-	}
-
-	private getPastRunsState(): Array<{
-		run_id: string;
-		title: string;
-		script: string;
-	}> {
-		const pastRuns: Array<{ run_id: string; title: string; script: string }> =
-			[];
-		try {
-			const runsDir = path.join(ROOT, "runs");
-			if (!fs.existsSync(runsDir)) return pastRuns;
-			const dirs = fs.readdirSync(runsDir).filter((name) => {
-				const fullPath = path.join(runsDir, name);
-				return (
-					fs.statSync(fullPath).isDirectory() &&
-					name !== "runs" &&
-					name !== "audit-demo" &&
-					name !== "--run-id"
-				);
-			});
-			for (const dir of dirs) {
-				const statePath = path.join(runsDir, dir, "state.json");
-				if (fs.existsSync(statePath)) {
-					try {
-						const runState = fs.readJsonSync(statePath);
-						const title =
-							runState.script?.title || runState.metadata?.title || "";
-						const lines = runState.script?.lines || [];
-						const scriptText = lines
-							.map((l: ScriptLine) => `${l.speaker}: ${l.text}`)
-							.join("\n");
-						if (title || scriptText) {
-							pastRuns.push({
-								run_id: dir,
-								title,
-								script: scriptText.substring(0, 1000),
-							});
-						}
-					} catch {
-						// ignore individual parsing failures
-					}
-				}
-			}
-		} catch (e) {
-			console.error("Failed to read past runs states:", e);
-		}
-		return pastRuns;
 	}
 }
