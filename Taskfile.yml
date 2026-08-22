@@ -78,10 +78,6 @@ tasks:
     desc: "Generate executive report"
     cmds: ["bun --env-file=config/.env src/report_workflow.ts {{.CLI_ARGS}}"]
 
-  notebooklm:
-    desc: "Run NotebookLM workflow"
-    cmds: ["bun --env-file=config/.env src/notebooklm_workflow.ts {{.CLI_ARGS}}"]
-
   movie:generate:
     desc: "Generate and concatenate scene videos from a JSON plan (PLAN=...)"
     cmds:
