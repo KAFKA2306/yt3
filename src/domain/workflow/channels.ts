@@ -22,7 +22,7 @@ export function getChannels(cfg: AppConfig) {
 		run_id: { reducer, default: () => "" },
 		bucket: {
 			reducer,
-			default: () => cfg.workflow.default_bucket || "daily_pulse",
+			default: () => cfg.workflow.default_bucket || "byosan_money",
 		},
 		limit: { reducer, default: () => cfg.steps.research?.default_limit || 3 },
 		director_data: { reducer, default: () => undefined } as ChannelReducer<
