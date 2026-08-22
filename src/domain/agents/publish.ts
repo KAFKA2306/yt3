@@ -42,13 +42,9 @@ export class PublishAgent extends BaseAgent {
 		}
 		if (enabledProviders.youtube) {
 			const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
-			if (
-				!profileName ||
-				profileName === "default" ||
-				profileName === "config/.env"
-			) {
+			if (!profileName) {
 				throw new Error(
-					"YouTube publish requires an explicit channel profile (set YOUTUBE_CHANNEL_PROFILE to byosan, yawa, or humanity)",
+					"YouTube publish requires an explicit channel profile (byosan, yawa, or humanity)",
 				);
 			}
 			getYouTubeProfile(profileName);
@@ -60,7 +56,7 @@ export class PublishAgent extends BaseAgent {
 		if (publishVideoPath) {
 			this.store.updateState({ publish_video_path: publishVideoPath });
 		}
-		this.assertNoFallbackPublish(state, publishVideoPath);
+		this.assertNoFallbackPublish(state);
 		this.logInput({
 			video_path: state.video_path,
 			publish_video_path: publishVideoPath,
@@ -128,10 +124,7 @@ export class PublishAgent extends BaseAgent {
 		return results;
 	}
 
-	private assertNoFallbackPublish(
-		state: AgentState,
-		publishVideoPath?: string,
-	): void {
+	private assertNoFallbackPublish(state: AgentState): void {
 		const metadata = state.metadata;
 		const metadataText = [
 			metadata?.title,
@@ -151,17 +144,6 @@ export class PublishAgent extends BaseAgent {
 				"YouTube publish blocked: fallback metadata is prohibited and must be deleted, not published.",
 			);
 		}
-
-		const videoPath = publishVideoPath || state.video_path || "";
-		if (
-			state.bucket === "pulse_nlm" &&
-			videoPath &&
-			!path.resolve(videoPath).startsWith(path.resolve(this.store.runDir))
-		) {
-			throw new Error(
-				"YouTube publish blocked: NotebookLM pulse publishing cannot reuse videos outside the current run directory.",
-			);
-		}
 	}
 
 	private async uploadToYouTube(
@@ -173,7 +155,7 @@ export class PublishAgent extends BaseAgent {
 		if (!ytCfg) throw new Error("YouTube config missing");
 		if (!ytCfg.default_visibility) {
 			throw new Error(
-				"YouTube publish failed: steps.youtube.default_visibility is missing in config/default.yaml",
+				`YouTube publish failed: steps.youtube.default_visibility is missing for domain '${this.store.domainId}'`,
 			);
 		}
 
@@ -187,7 +169,7 @@ export class PublishAgent extends BaseAgent {
 		}
 
 		console.log(
-			`[PUBLISH:CONFIG] upload_visibility=private requested_visibility=${ytCfg.default_visibility} source=config/default.yaml`,
+			`[PUBLISH:CONFIG] domain=${this.store.domainId} upload_visibility=private requested_visibility=${ytCfg.default_visibility}`,
 		);
 		console.log(
 			`[PUBLISH:DESTINATION] bucket=${state.bucket} expected_bucket=${profile.bucket} profile=${profile.profileName}`,
@@ -195,8 +177,7 @@ export class PublishAgent extends BaseAgent {
 
 		const dancer = asDancerPublicationState(state);
 		const { thumbnail_path: thumbnailPath } = state;
-		const videoPath =
-			options.publishVideoPath || this.resolvePublishVideoPath(state);
+		const videoPath = options.publishVideoPath || this.resolvePublishVideoPath(state);
 		if (!videoPath) throw new Error("Video path missing");
 		if (!fs.existsSync(videoPath)) {
 			throw new Error(`Video path does not exist: ${videoPath}`);
@@ -287,29 +268,27 @@ export class PublishAgent extends BaseAgent {
 				requested_visibility: requestedVisibility,
 				phase: "PRIVATE_UPLOAD_INTENT",
 			});
-			const insertPrivateVideo = async () => {
-				try {
-					return await youtube.videos.insert({
-						part: ["snippet", "status"],
-						requestBody: this.createYouTubeSnippet(state, ytCfg),
-						media: { body: fs.createReadStream(videoPath) },
-					});
-				} catch (error) {
-					transitionPublication(this.store.runDir, {
-						run_id: state.run_id,
-						artifact_sha256: artifactSha256,
-						requested_visibility: requestedVisibility,
-						phase: "UNCERTAIN_REMOTE_COMMIT",
-						failure_reason:
-							error instanceof Error ? error.message : String(error),
-					});
-					throw error;
-				}
-			};
-			const res = await insertPrivateVideo();
-			const snippet = res.data.snippet;
-			const status = res.data.status;
-			videoId = res.data.id || "";
+			let response;
+			try {
+				response = await youtube.videos.insert({
+					part: ["snippet", "status"],
+					requestBody: this.createYouTubeSnippet(state, ytCfg),
+					media: { body: fs.createReadStream(videoPath) },
+				});
+			} catch (error) {
+				transitionPublication(this.store.runDir, {
+					run_id: state.run_id,
+					artifact_sha256: artifactSha256,
+					requested_visibility: requestedVisibility,
+					phase: "UNCERTAIN_REMOTE_COMMIT",
+					failure_reason:
+						error instanceof Error ? error.message : String(error),
+				});
+				throw error;
+			}
+			const snippet = response.data.snippet;
+			const status = response.data.status;
+			videoId = response.data.id || "";
 			channelId = snippet?.channelId || "";
 			channelTitle = snippet?.channelTitle || "";
 			publishedAt = snippet?.publishedAt ?? "";
@@ -499,13 +478,11 @@ export class PublishAgent extends BaseAgent {
 		const redirectUri =
 			process.env.YOUTUBE_REDIRECT_URI ||
 			"http://localhost:3000/oauth2callback";
-
 		if (!clientId || !clientSecret) {
 			throw new Error(
 				"YouTube authentication failed: unable to initialize YouTube client",
 			);
 		}
-
 		const client = new google.auth.OAuth2({
 			clientId,
 			clientSecret,
@@ -517,7 +494,6 @@ export class PublishAgent extends BaseAgent {
 				"YouTube client initialization requires YOUTUBE_CHANNEL_PROFILE",
 			);
 		}
-
 		const profile = getYouTubeProfile(profileName);
 		await hydrateOAuthCredentials(client, profile);
 		return client;
@@ -562,7 +538,7 @@ export class PublishAgent extends BaseAgent {
 		}
 		if (
 			!["default", "medium", "high"].every((key) =>
-					thumbnailVariants.includes(key),
+				thumbnailVariants.includes(key),
 			)
 		) {
 			throw new Error(
@@ -598,36 +574,34 @@ export class PublishAgent extends BaseAgent {
 		const { metadata } = state;
 		const videoPath = this.resolvePublishVideoPath(state);
 		let mediaId: string | undefined;
-		if (videoPath && fs.existsSync(videoPath))
+		if (videoPath && fs.existsSync(videoPath)) {
 			mediaId = await client.v1.uploadMedia(videoPath);
+		}
 		const tweetText = this.createTweetText(metadata);
 		const tweetPayload = { text: tweetText } as {
 			text: string;
 			media?: { media_ids: string[] };
 		};
 		if (mediaId) tweetPayload.media = { media_ids: [mediaId] };
-		const res = await client.v2.tweet(tweetPayload as { text: string });
-		return { status: "posted", tweet_id: res.data.id || "" };
+		const response = await client.v2.tweet(tweetPayload as { text: string });
+		return { status: "posted", tweet_id: response.data.id || "" };
 	}
 
 	private createTwitterClient() {
-		const appKey = process.env.X_API_KEY || process.env.TWITTER_API_KEY;
-		const appSecret =
-			process.env.X_API_SECRET || process.env.TWITTER_API_SECRET;
-		const accessToken =
-			process.env.X_ACCESS_TOKEN || process.env.TWITTER_ACCESS_TOKEN;
-		const accessSecret =
-			process.env.X_ACCESS_SECRET || process.env.TWITTER_ACCESS_TOKEN_SECRET;
+		const appKey = process.env.X_API_KEY;
+		const appSecret = process.env.X_API_SECRET;
+		const accessToken = process.env.X_ACCESS_TOKEN;
+		const accessSecret = process.env.X_ACCESS_SECRET;
 		if (!appKey || !appSecret || !accessToken || !accessSecret) {
 			throw new Error(
-				"Twitter authentication failed: unable to initialize Twitter client",
+				"X authentication failed: X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, and X_ACCESS_SECRET are required",
 			);
 		}
 		return new TwitterApi({ appKey, appSecret, accessToken, accessSecret });
 	}
 
 	private createTweetText(metadata?: AgentState["metadata"]) {
-		const tags = (metadata?.tags || []).map((t) => `#${t}`).join(" ");
+		const tags = (metadata?.tags || []).map((tag) => `#${tag}`).join(" ");
 		return `${metadata?.title || ""}\n\n${tags}`.substring(0, 280);
 	}
 
@@ -636,25 +610,15 @@ export class PublishAgent extends BaseAgent {
 	}
 
 	private resolvePublishVideoPath(state: AgentState): string {
-		const candidates = [
-			process.env.PUBLISH_VIDEO_PATH?.trim(),
-			state.publish_video_path?.trim(),
-			path.join(this.store.runDir, "publish_video.mp4"),
-			path.join(this.store.runDir, "media", "video", "publish_video.mp4"),
-			path.join(this.store.runDir, "video", "final_video.mp4"),
-			path.join(this.store.runDir, "media", "video", "video.mp4"),
-			state.video_path?.trim(),
-		].filter(Boolean) as string[];
-
-		for (const candidate of candidates) {
-			const resolved = path.isAbsolute(candidate)
-				? candidate
-				: path.join(this.store.runDir, candidate);
-			if (fs.existsSync(resolved)) {
-				if (resolved !== state.video_path) state.publish_video_path = resolved;
-				return resolved;
-			}
-		}
-		return state.video_path || "";
+		const candidate =
+			process.env.PUBLISH_VIDEO_PATH?.trim() ||
+			state.publish_video_path?.trim() ||
+			state.video_path?.trim();
+		if (!candidate) return "";
+		const resolved = path.isAbsolute(candidate)
+			? candidate
+			: path.join(this.store.runDir, candidate);
+		state.publish_video_path = resolved;
+		return resolved;
 	}
 }
