@@ -1,59 +1,49 @@
 # YT3 Agent Operating Contract
 
-`AGENTS.md` defines repository-wide rules for autonomous work. `README.md` is human orientation; `Taskfile.yml` is the canonical executable interface.
+`Taskfile.yml` is the canonical executable interface. `README.md` is human orientation. This file defines repository-wide rules for autonomous work.
 
-The objective is not to produce plausible changes. It is to leave YT3 in a verified state with the smallest sufficient diff, one canonical workline, and evidence that belongs to the final state.
+The objective is to leave YT3 in a verified state with the smallest sufficient diff, one canonical workline, and evidence that belongs to the final state.
 
 ## 1. Evidence decides current state
 
-Use the most direct current evidence available. When sources conflict, prefer:
+Prefer, in order:
 
 1. current runtime/tool observations
-2. current repository code and configuration
+2. current repository code/configuration
 3. `Taskfile.yml` and executable checks
-4. deterministic tests, audits, receipts, and CI
-5. maintained ADRs and standards under `docs/`
-6. `GEMINI.md`
-7. README, issues, local agent notes, and historical prose
-8. inference
+4. deterministic tests, audits, receipts, and exact-head CI
+5. maintained standards/ADRs
+6. prose and historical context
+7. inference
 
-Do not let stale prose override executable reality. Verify a documented task or path before relying on it.
+Use these labels when material:
 
-For material claims, distinguish:
+- **VERIFIED** — directly observed from code, tools, deterministic evidence, API/read-back, or CI
+- **OBSERVED** — explicitly supplied by the user or an authoritative source
+- **INFERRED** — derived from evidence
+- **UNVERIFIED** — required evidence was not obtained
 
-- **VERIFIED** — directly observed from a tool, file, deterministic artifact, API response, receipt, or CI result
-- **OBSERVED** — explicitly supplied by the user or an authoritative external source
-- **INFERRED** — derived from evidence and identified as inference
-- **UNVERIFIED** — not inspected yet
-- **FABRICATED** — forbidden
+Never turn “not checked” into “absent”, and never report a verifier as passing unless it ran against the state being reported.
 
-“Not checked” is not “absent”. A command returning is not proof that its intended postcondition exists. Never report a verifier as passing unless it actually ran against the state being reported.
+## 2. Keep one canonical workline
 
-## 2. Define the contract before non-trivial changes
-
-Identify five things before editing:
-
-- **Contract** — what must change and what must remain unchanged
-- **Outcome** — the observable state required afterward
-- **Acceptance** — deterministic checks that can falsify the change
-- **Evidence** — files, commands, CI runs, receipts, or external read-backs that prove the outcome
-- **Stop condition** — the fixed point after which additional work is scope expansion
-
-Prefer the smallest reversible change that satisfies this contract.
-
-## 3. Keep one canonical workline
-
-Before creating work:
+Before editing:
 
 1. continue the existing PR/branch for the requested outcome;
 2. otherwise continue the relevant unresolved Issue;
-3. only then create one new branch and one PR.
+3. only then create one branch and one PR.
 
-Do not create parallel implementation paths, duplicate PRs, or competing state stores for the same outcome. Consolidate superseded work when safe.
+Do not create duplicate implementation paths, state stores, PRs, or fallback workflows for the same outcome. Prefer deletion and consolidation over compatibility layers when the old path is no longer required.
 
-If a host-side safety check rejects a write, re-fetch current state and retry the same canonical action once. Do not bypass the rejection by creating another branch or PR.
+For non-trivial changes define:
 
-## 4. Use Taskfile as the operator interface
+- contract
+- observable outcome
+- deterministic acceptance checks
+- evidence
+- stop condition
+
+## 3. Use the canonical operator surface
 
 Start with:
 
@@ -64,75 +54,43 @@ task check:merge:fast
 task check:merge
 ```
 
-Relevant narrower checks include:
+Useful targeted checks:
 
 ```bash
 task audit:repo-contract
 task audit:publish-routing
-task audit:no-fallback:source
-task audit:no-fallback:runtime
-task harness:doctor:quick
-task harness:doctor
+task audit:no-fallback SCOPE=source
+task audit:no-fallback SCOPE=runtime
 task audit:today
 task daily:last3
 task daily:guarantee-status
 ```
 
-Internal package scripts and `src/scripts/*` support Taskfile and CI. They are not a second human-facing command surface unless the repository explicitly makes them one.
+Internal `src/scripts/*` and package scripts support Taskfile/CI; they are not a second human-facing interface unless explicitly documented as one.
 
-## 5. Repository acceptance and product evidence are orthogonal
+## 4. Repository, product, and publication are separate verdicts
 
-Maintain independent verdicts for repository state and product/runtime state. Never derive one from the other.
-
-| evidence/state | proves | does not prove |
+| evidence | proves | does not prove |
 |---|---|---|
-| `task check:merge` / green CI | repository revision satisfies merge criteria | product works, is complete, is releasable, or was released |
-| target machine/service unavailable | target-environment behavior is UNVERIFIED | repository revision is unmergeable |
-| deterministic simulator/mock/contract test passes | tested repository contract holds | real target behavior occurred |
-| `task release:check` passes | concrete artifact passes local release preflight | remote publication occurred |
-| remote receipt/read-back passes | specified external postcondition occurred | repository/source quality |
+| `task check:merge` / green exact-head CI | repository revision satisfies merge criteria | product works, is release-ready, or was published |
+| target machine/service unavailable | target-specific criterion is UNVERIFIED | repository is unmergeable |
+| deterministic test/mock/simulation | tested repository contract holds | real target behavior occurred |
+| `task release:check PROFILE=<profile> -- <run-id> [video-path]` | exact artifact passes local release preflight | remote publication occurred |
+| remote receipt/read-back | specified external postcondition occurred | source quality or mergeability |
 
-### Merge gate
+The merge gate must not depend on production credentials, a concrete run, current YouTube state, historical runtime cleanup, or a particular production machine.
 
-`task check:merge` decides whether a repository revision is acceptable to merge. It is limited to repository/source invariants and deterministic tests executable in the supported development/CI environment.
+Product criteria that require a real target remain **UNVERIFIED** until tested there. Do not downgrade repository mergeability because the target is unavailable, and do not upgrade product status because CI is green.
 
-**The absence of a real machine, production credential, concrete run, or reachable production service is not a merge blocker.** Do not report “cannot merge because the real environment is unavailable”. Hardware/service-specific code must expose a deterministic merge-time boundary that can be checked without the target environment: typed interfaces, schema/contract tests, fixtures, mocks, emulators, simulators, static checks, or another reproducible substitute appropriate to that boundary.
-
-If behavior can only be proven on the real target, keep that product/runtime criterion **UNVERIFIED** and move it to product qualification or release verification. Do not convert missing target-environment evidence into a repository failure.
-
-The merge gate must not depend on production credentials, a concrete `RUN_ID`, current YouTube state, historical runtime cleanup receipts, or availability of a particular production machine.
-
-A green CI run proves only that merge criteria passed for that exact commit.
-
-### Product qualification and release
-
-Product completion is a separate claim. It requires direct evidence for the product acceptance criteria in the environment where those criteria are defined.
-
-**Green CI is never sufficient evidence that the product is complete.** Do not report “finished”, “production verified”, “works on the real machine”, or equivalent product-level success solely from repository tests or CI.
-
-`task release:check PROFILE=<profile> -- <run-id> [video-path]` evaluates one concrete run/artifact before it may cross the publication boundary. It checks run/profile alignment, artifact identity, factual-integrity evidence, fallback prohibition, and publication-conflict state.
-
-A passing release check does not prove publication occurred. Remote channel identity, publication receipt, and final visibility require separate evidence.
-
-Do not run product-release checks merely to prove a code PR is mergeable. Do not treat a merge-gate PASS as product qualification or release evidence.
-
-## 6. Fail closed at real boundaries
-
-Prefer attributable failure over false success.
+## 5. Fail closed at real boundaries
 
 - do not hide errors behind fallback output that resembles success
-- do not suppress verifier failures to keep pipelines green
 - do not invent substitute data for required missing inputs
+- do not suppress verifier failures to keep pipelines green
 - do not publish fallback media as the requested artifact
-- missing dependencies, timeouts, crashes, missing receipts, or ambiguous profiles block only the criterion they prevent proving
+- ambiguous profile, missing evidence, missing receipt, uncertain remote state, or failed read-back blocks only the criterion it prevents proving
 
-A missing real environment blocks only claims that require that environment. It must not contaminate independent repository acceptance criteria.
-
-When a failure pattern repeats, improve the durable harness: validation, schema, routing, retry policy, eval, observability, or implementation. Do not accumulate ad-hoc recovery paths.
-
-## 7. Preserve channel and publication isolation
-
-These profiles are distinct products:
+These YouTube profiles are distinct products:
 
 | profile | brand | bucket |
 |---|---|---|
@@ -140,113 +98,63 @@ These profiles are distinct products:
 | `yawa` | 夜話アーカイブ ASMR | `yawa_archive` |
 | `humanity` | 雨晴はうの人類観測所 | `humanity_observatory` |
 
-For Humanity, the expected channel handle is `@humanity_observatory`.
+Publication is an irreversible external side effect. Use only the canonical Taskfile publication path, with an explicit profile and run. A code change, merge, rendered video, or local release preflight does not authorize or prove publication.
 
-Static routing is a merge-time repository invariant. Concrete run, artifact, authenticated channel, intended visibility, and publication evidence are release-time invariants.
+Without remote receipt/read-back evidence, publication is not VERIFIED.
 
-Publishing is an irreversible external side effect. A code change, green CI, merged PR, produced video, or passing release preflight does not by itself authorize publication. Publish only when the active user request or canonical contract explicitly requires it, through the Taskfile publication path. Capture the remote receipt and read back remote identity/visibility when possible.
+## 6. Change source, then validate
 
-Without a remote receipt, publication is not VERIFIED.
+Inspect implementation, configuration, tests/audits, CI, and authoritative state before editing. Fix the source of truth rather than generated projections or stale documentation.
 
-## 8. Change source, not projections
+Prefer:
 
-Before editing, inspect the relevant implementation, configuration, tests/audits, CI definitions, and authoritative state stores. When current third-party behavior matters, inspect primary external evidence.
+- one source of truth
+- typed boundaries and parse-once validation
+- generators over hand-edited generated output
+- deletion of obsolete helpers exposed by the change
+- no speculative abstractions
+- no duplicate configuration/state
 
-Then:
+Repository validation ladder:
 
-- preserve stable IDs and provenance unless replacement is required
-- fix generators rather than hand-editing generated output
-- avoid speculative abstractions and duplicate configuration/state sources
-- remove obsolete helpers exposed by the change when safe
-- do not alter unrelated valid work
-- verify destructive or external targets before and after mutation
-
-Do not design from filenames, screenshots, stale comments, memory, or issue prose when direct evidence is available.
-
-## 9. Validate from cheap to expensive
-
-For repository changes, escalate only as needed:
-
-1. targeted unit/schema/contract test
+1. targeted unit/schema/contract test when useful
 2. targeted domain audit
 3. `task check:merge:fast`
 4. `task check:merge`
-5. `task harness:doctor:quick` when relevant
-6. full domain/harness audit when relevant
-7. CI on the exact PR head SHA
+5. exact-head GitHub CI
 
-These steps establish repository evidence. They do not establish product completion unless a product acceptance criterion explicitly is identical to one of those checks.
-
-For an explicitly requested product release, use a separate ladder after the repository revision is known:
+For an explicitly requested product release, use a separate ladder after repository acceptance:
 
 1. `task release:check PROFILE=<profile> -- <run-id> [video-path]`
-2. target/runtime qualification required by the product contract
+2. required target/runtime qualification
 3. authenticated channel verification
-4. remote publication action when authorized
+4. authorized remote side effect
 5. remote receipt/read-back/visibility verification
 
-Implementation intent is not acceptance evidence. Treat builder and auditor as separate roles even when the same agent performs them sequentially.
+Implementation intent is not acceptance evidence.
 
-## 10. Git, CI, and cleanup
+## 7. Git, cleanup, and reporting
 
 For repository changes:
 
-1. start from the latest intended base and canonical branch;
+1. start from the intended current base;
 2. keep the diff focused;
-3. add or update deterministic tests/audits for material behavior changes where practical;
-4. update the canonical PR rather than opening a competing one;
-5. inspect CI for the exact head SHA;
-6. diagnose failures rather than retrying blindly;
-7. merge when repository merge acceptance criteria and policy pass, regardless of whether unrelated product/runtime verification is currently possible;
-8. after merge, verify the intended base state and remove task-created residue when possible.
+3. update the canonical PR rather than creating a competing one;
+4. diagnose CI failures instead of retrying blindly;
+5. inspect CI for the exact PR head SHA;
+6. merge when repository acceptance passes;
+7. verify the intended base state afterward.
 
-Do not hold a merge open solely because target hardware or a production environment is unavailable. Record the unverified product criterion separately and preserve its exact verification action.
+Before final reporting, remove temporary workflows, scripts, debug output, abandoned intermediates, superseded paths, and stale task/document references. Branch deletion is not part of the agent responsibility when the connection lacks that capability.
 
-Before final reporting, inspect for temporary files, debug output, staging chunks, abandoned intermediates, one-time workflows/scripts, superseded worklines, and stale task/document references.
+Documentation must describe current executable behavior. Maintained boundaries are:
 
-If unfinished work must remain, leave exactly one canonical workline with the blocker and next executable action recorded.
+- `README.md` — human onboarding
+- `AGENTS.md` — repository-wide agent rules
+- `docs/QUALITY_GATES.md` — gate ownership
+- `docs/standard/` — operational standards
+- `docs/adr/` — architecture decisions
 
-## 11. Documentation and tooling boundaries
+Never expose secrets, OAuth credentials, private tokens, or private local metadata in public artifacts.
 
-Documentation describes current behavior, not intended future behavior.
-
-- human onboarding: `README.md`
-- repository-wide agent rules: `AGENTS.md`
-- gate ownership: `docs/QUALITY_GATES.md`
-- standards: `docs/standard/`
-- architectural decisions: `docs/adr/`
-- reusable agent procedures: skill files
-
-`task audit:repo-contract` protects maintained entry-point documentation from drifting toward missing tasks or files.
-
-Agent-local accelerators such as prompt frameworks, editor integrations, LSPs, or external agent workspaces are optional implementation aids. They are not repository dependencies unless an executable repository workflow explicitly requires them. Do not add or restore a tool solely to satisfy one agent's preferred environment.
-
-Do not make ChatGPT Work, Codex, or another external agent workspace a required execution step. The canonical loop must remain reproducible from repository state, declared dependencies, Taskfile tasks, tests/audits, CI, and explicit external-service receipts.
-
-## 12. Secrets, completion, and reporting
-
-Never expose secrets, OAuth credentials, private tokens, local absolute paths, or private intermediate metadata in public artifacts. Do not copy production credentials or account identifiers into tests, docs, prompts, or screenshots.
-
-Repository work is complete when:
-
-- the requested repository outcome exists in the final state;
-- merge acceptance evidence belongs to that final state;
-- required repository CI is verified;
-- task-created residue is removed or intentionally retained on the canonical workline;
-- no repository-level blocker remains.
-
-Product completion is a different verdict. Report it only when every product-level acceptance criterion has direct evidence from the required runtime, artifact, service, or external postcondition. If the required environment was unavailable, report that criterion as UNVERIFIED; do not downgrade repository mergeability and do not upgrade product status from CI.
-
-Report only verified state relevant to the task:
-
-- repository and canonical PR/workline
-- what changed
-- deterministic checks actually executed and their results
-- commit/PR/merge state
-- product/runtime qualification only when actually executed
-- product release result only when a concrete run was checked
-- external receipt only when external state changed
-- cleanup performed
-- blocker and exact next action if unfinished
-
-Stop at the fixed point for the requested scope. Further work is scope expansion.
+Final reporting should state only verified facts relevant to the task: repository/PR, what changed, deterministic checks actually run, exact-head CI, merge state, and any separately verified product/runtime/external result. Stop when the requested scope reaches its fixed point.
