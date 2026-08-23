@@ -1,0 +1,47 @@
+name: Cleanup final fix
+
+on:
+  push:
+    branches:
+      - cleanup/remove-all-legacy
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup/remove-all-legacy
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun ci
+      - name: Let TypeScript infer videos.insert response
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/domain/agents/publish.ts')
+          lines = path.read_text().splitlines(keepends=True)
+          start = next(i for i, line in enumerate(lines) if 'let response: Awaited<ReturnType<typeof youtube.videos.insert>>;' in line)
+          lines[start] = '\t\t\tconst response = await (async () => {\n'
+          assign = next(i for i in range(start + 1, len(lines)) if 'response = await youtube.videos.insert({' in lines[i])
+          lines[assign] = lines[assign].replace('response = await', 'return await', 1)
+          snippet = next(i for i in range(assign + 1, len(lines)) if 'const snippet = response.data.snippet;' in lines[i])
+          lines.insert(snippet, '\t\t\t})();\n')
+          path.write_text(''.join(lines))
+          PY
+          bun biome format --write src/domain/agents/publish.ts
+      - name: Commit final source fix
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/domain/agents/publish.ts
+          git diff --cached --quiet && exit 0
+          git commit -m 'refactor: infer YouTube insert response directly'
+          git push origin HEAD:cleanup/remove-all-legacy
