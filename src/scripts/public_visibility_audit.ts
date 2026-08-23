@@ -2,9 +2,9 @@ import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
+	type YouTubeProfileName,
 	createYouTubeOAuthClient,
 	getYouTubeProfileForChannel,
-	type YouTubeProfileName,
 } from "../domain/youtube_profiles.js";
 import {
 	type YouTubeVisibilityAttestation,
