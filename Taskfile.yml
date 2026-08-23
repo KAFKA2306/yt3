@@ -11,7 +11,10 @@ tasks:
 
   loop:
     desc: "Run the daily production loop and audit"
-    cmds: ["bun src/scripts/agentic_orchestrator.ts"]
+    cmds:
+      - task byosan:daily
+      - PROFILE=humanity task run
+      - bun src/scripts/audit_today.ts --gate
 
   run:
     desc: "Run the canonical workflow (PROFILE=byosan|humanity; default byosan)"
