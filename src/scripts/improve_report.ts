@@ -55,7 +55,10 @@ function buildWindow(summaries: DailySummary[], days: number): WindowReport {
 	const readyRuns = runDirs.filter(isEvidenceReady);
 	const missingEvidence = Object.fromEntries(
 		runDirs
-			.map((runDir) => [path.relative(ROOT, runDir), getMissingEvidence(runDir)] as const)
+			.map(
+				(runDir) =>
+					[path.relative(ROOT, runDir), getMissingEvidence(runDir)] as const,
+			)
 			.filter(([, missing]) => missing.length > 0),
 	);
 
