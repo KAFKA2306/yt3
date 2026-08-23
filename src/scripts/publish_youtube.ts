@@ -1,13 +1,8 @@
 import path from "node:path";
-import { google } from "googleapis";
 import { PublishAgent } from "../domain/agents/publish.js";
 import { assertProductReleaseGate } from "../domain/product_release_gate.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
-import {
-	assertYouTubeChannelMatchesProfile,
-	hydrateOAuthCredentials,
-	loadYouTubeProfileEnv,
-} from "../domain/youtube_profiles.js";
+import { loadYouTubeProfileEnv } from "../domain/youtube_profiles.js";
 import { AssetStore } from "../io/core.js";
 import {
 	classifyFailureMessage,
@@ -51,27 +46,6 @@ async function main() {
 		requireFactualIntegrity:
 			store.cfg.steps.youtube?.default_visibility !== "private",
 	});
-
-	const clientId = process.env.YOUTUBE_CLIENT_ID;
-	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-	if (!clientId || !clientSecret) {
-		throw new Error(
-			`YouTube publish failed for profile '${profile.profileName}': YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET are required`,
-		);
-	}
-
-	const auth = new google.auth.OAuth2({
-		clientId,
-		clientSecret,
-		redirectUri:
-			process.env.YOUTUBE_REDIRECT_URI ||
-			"http://localhost:3310/oauth2callback",
-	});
-	await hydrateOAuthCredentials(auth, profile);
-	const channel = await assertYouTubeChannelMatchesProfile(auth, profile);
-	console.log(
-		`CHANNEL: ${channel.actual.title} ${channel.actual.handle ?? ""}`.trim(),
-	);
 
 	try {
 		const results = await new PublishAgent(store).run(state);
