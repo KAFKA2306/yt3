@@ -25,7 +25,6 @@ if (!envFile) {
 const envFilePath = path.isAbsolute(envFile)
 	? envFile
 	: path.join(process.cwd(), envFile);
-
 dotenv.config({ path: envFilePath, override: true });
 
 async function runProductReleaseCheck(
@@ -47,7 +46,12 @@ async function runProductReleaseCheck(
 		child.on("error", reject);
 		child.on("exit", (code) => {
 			if (code === 0) resolve();
-			else reject(new Error(`product release check failed with exit code ${code ?? "null"}`));
+			else
+				reject(
+					new Error(
+						`product release check failed with exit code ${code ?? "null"}`,
+					),
+				);
 		});
 	});
 }
@@ -90,11 +94,14 @@ async function main() {
 		clientId,
 		clientSecret,
 		redirectUri:
-			process.env.YOUTUBE_REDIRECT_URI || "http://localhost:3310/oauth2callback",
+			process.env.YOUTUBE_REDIRECT_URI ||
+			"http://localhost:3310/oauth2callback",
 	});
 	await hydrateOAuthCredentials(auth, profile);
 	const channel = await assertYouTubeChannelMatchesProfile(auth, profile);
-	console.log(`CHANNEL: ${channel.actual.title} ${channel.actual.handle ?? ""}`.trim());
+	console.log(
+		`CHANNEL: ${channel.actual.title} ${channel.actual.handle ?? ""}`.trim(),
+	);
 
 	const store = new AssetStore(runId);
 	const state = AgentStateSchema.passthrough().parse(
