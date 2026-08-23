@@ -19,7 +19,6 @@ workflow:
     lock_file: "logs/cron.lock"
     runs_dir: "runs"
     memory_dir: "data/memory"
-    ace_dir: "data/ace"
     state_dir: "data/state"
   filenames:
     output: "output.yaml"
