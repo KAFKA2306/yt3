@@ -55,10 +55,6 @@ tasks:
     desc: "Refresh authorized YouTube Analytics and purge data past the 30-day authorization boundary"
     cmds: ["bun src/scripts/refresh_youtube_analytics.ts"]
 
-  db:backfill:
-    desc: "Backfill historic runs into the Evolution Database"
-    cmds: ["bun src/scripts/backfill_db.ts"]
-
   db:evolution:
     desc: "Run Evolution operations"
     cmds: ["bun src/scripts/evolution_ops.ts {{.CLI_ARGS}}"]
