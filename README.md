@@ -59,43 +59,23 @@ Use explicit run IDs when resuming or publishing. Publication never infers an un
 
 ## Release and publication
 
-Profiles are explicit:
-
 | profile | brand | bucket |
 |---|---|---|
 | `byosan` | 秒算マネー | `byosan_money` |
 | `yawa` | 夜話アーカイブ ASMR | `yawa_archive` |
 | `humanity` | 雨晴はうの人類観測所 | `humanity_observatory` |
 
-Check one exact run/artifact without publishing:
-
 ```bash
 task release:check PROFILE=byosan -- <run-id> [video-path]
-```
-
-Publish through the single canonical command:
-
-```bash
 task publish PROFILE=byosan -- <run-id> [video-path]
-task publish PROFILE=yawa -- <run-id> [video-path]
-task publish PROFILE=humanity -- <run-id> [video-path]
-```
-
-OAuth uses the same profile registry:
-
-```bash
 task auth PROFILE=byosan
-task auth PROFILE=yawa
-task auth PROFILE=humanity
 ```
 
-Unknown profiles fail closed. Before any YouTube side effect, publication runs the product release gate and verifies the authenticated channel against the selected profile. An unresolved remote upload intent blocks another upload.
+Use `PROFILE=yawa` or `PROFILE=humanity` for the other channels. Unknown profiles fail closed. Before any YouTube side effect, publication runs the product release gate and verifies the authenticated channel against the selected profile. An unresolved remote upload intent blocks another upload.
 
 ## Publication evidence
 
 `runs/<domain>/<run>/publish/state.json` is the canonical publication state. Receipts and attestations are evidence attached to it, not competing state machines.
-
-Important evidence paths:
 
 ```text
 runs/<domain>/<run>/state.json
@@ -114,7 +94,9 @@ A generated media file is not proof of publication. A local receipt is not proof
 task audit:today
 task audit:publish-routing
 task audit:byosan-money
-task audit:no-fallback:source
+task audit:no-fallback SCOPE=source
+task audit:no-fallback SCOPE=runtime
+task audit:no-fallback
 task publish:visibility-audit
 task daily:guarantee-status
 task daily:last3
@@ -122,12 +104,7 @@ task daily:report
 task improve:report
 ```
 
-Historical runtime cleanup is separate from the PR merge gate:
-
-```bash
-task audit:no-fallback:runtime
-task audit:no-fallback
-```
+`SCOPE=source` is the repository invariant; `SCOPE=runtime` checks historical production cleanup. Runtime cleanup is not a PR merge blocker.
 
 ## Other operator surfaces
 
