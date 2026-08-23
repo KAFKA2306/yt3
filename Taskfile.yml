@@ -14,12 +14,8 @@ tasks:
     cmds: ["bun src/scripts/agentic_orchestrator.ts"]
 
   run:
-    desc: "Run the full workflow"
-    cmds: ["bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
-
-  run:humanity:
-    desc: "Run the Humanity Observatory workflow"
-    cmds: ["ENV_FILE=config/.env YOUTUBE_CHANNEL_PROFILE=humanity BUCKET=humanity_observatory bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
+    desc: "Run the canonical workflow (PROFILE=byosan|humanity; default byosan)"
+    cmds: ["YOUTUBE_CHANNEL_PROFILE=${PROFILE:-byosan} bun src/index.ts {{.CLI_ARGS}}"]
 
   byosan:daily:
     desc: "Research, produce, audit, and publish one 秒算マネー feature"
@@ -95,12 +91,6 @@ tasks:
     desc: "Start the dashboard and API server"
     cmds: ["bun src/server.ts"]
 
-  bootstrap:
-    desc: "Install dependencies and start services"
-    cmds:
-      - task setup
-      - task up
-
   asr:
     desc: "Transcribe audio (FILE=... OUT=...)"
     cmds:
@@ -158,10 +148,6 @@ tasks:
   daily:guarantee-status:
     desc: "Generate the daily guarantee status artifact"
     cmds: ["bun src/scripts/daily_guarantee_status.ts"]
-
-  daily:last3:
-    desc: "Show the latest three daily runs"
-    cmds: ["DAILY_LAST3=1 bun src/scripts/daily_guarantee_status.ts"]
 
   daily:report:
     desc: "Regenerate daily audit and stability artifacts"

@@ -4,12 +4,15 @@ import fs from "fs-extra";
 import { sendAlert } from "../io/utils/discord.js";
 import { AgentLogger } from "../io/utils/logger.js";
 
-async function runTask(taskName: string): Promise<boolean> {
+async function runTask(
+	taskName: string,
+	env: NodeJS.ProcessEnv = {},
+): Promise<boolean> {
 	AgentLogger.info("SYSTEM", "LOOP", "TASK_START", `Running task: ${taskName}`);
 	return new Promise((resolve) => {
 		const proc = spawn("task", [taskName], {
 			stdio: "inherit",
-			env: { ...process.env, FORCE_COLOR: "1" },
+			env: { ...process.env, ...env, FORCE_COLOR: "1" },
 		});
 		proc.on("close", (code) => {
 			const ok = code === 0;
@@ -42,9 +45,9 @@ function auditPassed(): boolean {
 async function main() {
 	AgentLogger.init();
 	const results = new Map<string, boolean>();
-	for (const taskName of ["byosan:daily", "run:humanity", "audit:today"]) {
-		results.set(taskName, await runTask(taskName));
-	}
+	results.set("byosan:daily", await runTask("byosan:daily"));
+	results.set("run[humanity]", await runTask("run", { PROFILE: "humanity" }));
+	results.set("audit:today", await runTask("audit:today"));
 
 	const failures = [...results]
 		.filter(([, ok]) => !ok)
