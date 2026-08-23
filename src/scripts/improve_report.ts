@@ -3,15 +3,12 @@ import fs from "fs-extra";
 import {
 	STABILITY_BUCKETS,
 	findRunDirsForDate,
+	getLatestDailyLogs,
 	getMissingEvidence,
 	isEvidenceReady,
 } from "../io/utils/stability.js";
 
 const ROOT = process.cwd();
-
-type DailySummary = {
-	date: string;
-};
 
 type WindowReport = {
 	days: number;
@@ -37,6 +34,18 @@ function ageDays(date: string): number {
 	return (Date.now() - timestamp) / 86_400_000;
 }
 
+function collectDates(days: number): string[] {
+	return [
+		...new Set(
+			getLatestDailyLogs(1000)
+				.map((logPath) => path.basename(logPath, ".log"))
+				.filter((date) => ageDays(date) <= days),
+		),
+	]
+		.sort()
+		.reverse();
+}
+
 function collectRunDirs(dates: string[]): string[] {
 	const dirs = new Set<string>();
 	for (const date of dates) {
@@ -47,10 +56,8 @@ function collectRunDirs(dates: string[]): string[] {
 	return [...dirs];
 }
 
-function buildWindow(summaries: DailySummary[], days: number): WindowReport {
-	const dates = summaries
-		.filter((summary) => ageDays(summary.date) <= days)
-		.map((summary) => summary.date);
+function buildWindow(days: number): WindowReport {
+	const dates = collectDates(days);
 	const runDirs = collectRunDirs(dates);
 	const readyRuns = runDirs.filter(isEvidenceReady);
 	const missingEvidence = Object.fromEntries(
@@ -88,17 +95,12 @@ function formatWindow(label: string, report: WindowReport): string[] {
 }
 
 async function main() {
-	const summaryPath = path.join(ROOT, "logs", "stability_summary.json");
-	const summaries: DailySummary[] = fs.existsSync(summaryPath)
-		? fs.readJsonSync(summaryPath)
-		: [];
-
 	const report: ImprovementReport = {
 		generated_at: new Date().toISOString(),
 		buckets: STABILITY_BUCKETS,
 		windows: {
-			last_7_days: buildWindow(summaries, 7),
-			last_30_days: buildWindow(summaries, 30),
+			last_7_days: buildWindow(7),
+			last_30_days: buildWindow(30),
 		},
 	};
 

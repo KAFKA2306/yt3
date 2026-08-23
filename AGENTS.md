@@ -62,7 +62,7 @@ task audit:publish-routing
 task audit:no-fallback SCOPE=source
 task audit:no-fallback SCOPE=runtime
 task audit:today
-task daily:guarantee-status
+task stability:report
 ```
 
 Internal `src/scripts/*` and package scripts support Taskfile/CI; they are not a second human-facing interface unless explicitly documented as one.

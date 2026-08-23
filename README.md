@@ -100,10 +100,11 @@ task audit:no-fallback SCOPE=source
 task audit:no-fallback SCOPE=runtime
 task audit:no-fallback
 task publish:visibility-audit
-task daily:guarantee-status
-task daily:report
+task stability:report
 task improve:report
 ```
+
+`logs/stability_summary.json` is the canonical cross-run readiness state. `improve:report` derives its 7-day and 30-day evidence metrics directly from daily logs and run evidence; it does not depend on other generated reports.
 
 `SCOPE=source` is the repository invariant; `SCOPE=runtime` checks historical production cleanup. Runtime cleanup is not a PR merge blocker.
 
