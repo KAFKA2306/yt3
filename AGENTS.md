@@ -62,7 +62,6 @@ task audit:publish-routing
 task audit:no-fallback SCOPE=source
 task audit:no-fallback SCOPE=runtime
 task audit:today
-task daily:last3
 task daily:guarantee-status
 ```
 
