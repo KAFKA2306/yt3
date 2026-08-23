@@ -10,7 +10,7 @@ tasks:
     cmds: ["bun run setup"]
 
   loop:
-    desc: "Autonomous Daily Loop: Health Check -> Content -> Audit"
+    desc: "Run the daily production loop and audit"
     cmds: ["bun src/scripts/agentic_orchestrator.ts"]
 
   run:
@@ -37,10 +37,6 @@ tasks:
   auth:
     desc: "YouTube OAuth (PROFILE=byosan|yawa|humanity; required)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/youtube_oauth.ts {{.CLI_ARGS}}"]
-
-  report:
-    desc: "Generate executive report"
-    cmds: ["bun --env-file=config/.env src/report_workflow.ts {{.CLI_ARGS}}"]
 
   movie:generate:
     desc: "Generate and concatenate scene videos from a JSON plan (PLAN=...)"
