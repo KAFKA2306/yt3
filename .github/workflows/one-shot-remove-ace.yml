@@ -1,0 +1,66 @@
+name: One-shot remove ACE prompt injection
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  simplify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/remove-ace-prompt-injection
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun ci
+      - name: Remove ACE prompt path
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          core = Path('src/io/core.ts')
+          text = core.read_text()
+          text = text.replace('import { ContextPlaybook } from "../domain/evolution/context_playbook.js";\n', '')
+          marker = '\t\tconst playbook = new ContextPlaybook();'
+          if marker in text:
+              start = text.index(marker)
+              end = text.index('\n\t\tif (', start)
+              text = text[:start] + text[end + 1:]
+          text = text.replace('${systemPrompt}\\n\\n${aceContext}\\n\\n${quotaContext}', '${systemPrompt}\\n\\n${quotaContext}')
+          if 'ContextPlaybook' in text or 'aceContext' in text or '[ACE Intelligence' in text:
+              raise SystemExit('stale ACE prompt injection remains in core.ts')
+          core.write_text(text)
+
+          config_types = Path('src/domain/config_types.ts')
+          text = config_types.read_text().replace('\t\t\tace_dir: string;\n', '')
+          config_types.write_text(text)
+
+          for name in ['config/domains/byosan_money.yaml', 'config/domains/humanity_observatory.yaml']:
+              path = Path(name)
+              lines = [line for line in path.read_text().splitlines() if 'ace_dir:' not in line]
+              path.write_text('\n'.join(lines) + '\n')
+
+          for name in [
+              'src/domain/evolution/context_playbook.ts',
+              'src/domain/evolution/types.ts',
+              'data/ace/audit.json',
+              'data/ace/playbook.json',
+          ]:
+              path = Path(name)
+              if path.exists():
+                  path.unlink()
+          PY
+          bun x biome format --write src/io/core.ts src/domain/config_types.ts
+      - name: Commit cleanup
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m 'refactor: remove ACE prompt injection'
+          git push origin HEAD:refactor/remove-ace-prompt-injection
