@@ -101,28 +101,6 @@ tasks:
       - task setup
       - task up
 
-  nav:fetch:
-    desc: "Fetch latest market prices and FX for SBG NAV"
-    dir: sbg-nav-audit
-    cmds:
-      - python3 scripts/fetch_prices.py
-      - python3 scripts/fetch_fx.py
-
-  nav:calculate:
-    desc: "Calculate SBG NAV and discount"
-    dir: sbg-nav-audit
-    cmds: ["python3 scripts/calculate_nav.py"]
-
-  nav:audit:
-    desc: "Audit SBG NAV data"
-    dir: sbg-nav-audit
-    cmds: ["python3 scripts/run_audit.py"]
-
-  nav:report:
-    desc: "Export SBG NAV audit report"
-    dir: sbg-nav-audit
-    cmds: ["python3 scripts/export_report.py"]
-
   asr:
     desc: "Transcribe audio (FILE=... OUT=...)"
     cmds:

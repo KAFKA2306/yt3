@@ -1,6 +1,0 @@
-# SBG NAV Audit - FX Configuration
-
-pairs:
-  - base: USD
-    quote: JPY
-    provider: alpha_vantage # Example
