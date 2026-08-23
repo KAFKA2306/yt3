@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "fs-extra";
+import { loadYouTubeProfileEnv } from "./domain/youtube_profiles.js";
 import {
 	type AgentState,
 	AssetStore,
@@ -21,14 +22,19 @@ function resolveRunId(bucket: string): string {
 	const [domain, name, ...rest] = raw.split("/");
 	if (domain !== bucket || !name || rest.length > 0) {
 		throw new Error(
-			`Domain mismatch: BUCKET is '${bucket}' but RUN_ID is '${raw}'`,
+			`Domain mismatch: profile bucket is '${bucket}' but RUN_ID is '${raw}'`,
 		);
 	}
 	return raw;
 }
 
 async function main() {
-	const bucket = process.env.BUCKET?.trim() || "byosan_money";
+	const requestedProfile = process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "byosan";
+	if (requestedProfile === "yawa") {
+		throw new Error("PROFILE=yawa uses the ASMR workflow, not src/index.ts");
+	}
+	const profile = loadYouTubeProfileEnv(requestedProfile);
+	const bucket = profile.bucket;
 	loadConfig(bucket);
 	const runId = resolveRunId(bucket);
 	const store = new AssetStore(runId);
