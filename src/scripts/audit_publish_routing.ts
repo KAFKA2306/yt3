@@ -51,7 +51,9 @@ function assertProfileRegistry() {
 		(typeof YOUTUBE_PROFILES)[YouTubeProfileName],
 	][]) {
 		if (profile.profileName !== name) {
-			throw new Error(`Profile key/name mismatch: ${name}/${profile.profileName}`);
+			throw new Error(
+				`Profile key/name mismatch: ${name}/${profile.profileName}`,
+			);
 		}
 		for (const [field, value] of [
 			["bucket", profile.bucket],
@@ -83,7 +85,9 @@ function assertProfileRegistry() {
 		}
 		const example = fs.readFileSync(examplePath, "utf8");
 		if (!example.includes(`YOUTUBE_CHANNEL_PROFILE=${name}`)) {
-			throw new Error(`${examplePath} must pin YOUTUBE_CHANNEL_PROFILE=${name}`);
+			throw new Error(
+				`${examplePath} must pin YOUTUBE_CHANNEL_PROFILE=${name}`,
+			);
 		}
 	}
 }
@@ -108,7 +112,9 @@ function assertPublishAliases(tasks: Record<string, TaskDefinition>) {
 		const command = singleCommand(taskName, tasks[taskName]);
 		const expected = `task publish PROFILE=${profile} -- {{.CLI_ARGS}}`;
 		if (command !== expected) {
-			throw new Error(`Alias ${taskName} must be '${expected}', got '${command}'`);
+			throw new Error(
+				`Alias ${taskName} must be '${expected}', got '${command}'`,
+			);
 		}
 	}
 }
