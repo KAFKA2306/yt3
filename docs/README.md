@@ -1,6 +1,6 @@
 # Docs Index
 
-This directory contains the maintained operational standards and architecture decisions for YT3. Runtime state and generated evidence belong under `runs/`, `audits/`, `artifacts/`, and `logs/`; this index links only to version-controlled documentation.
+This directory contains maintained operational standards and architecture decisions for YT3. Runtime state and generated evidence belong under `runs/`, `audits/`, `artifacts/`, and `logs/`.
 
 ## Operations
 
@@ -19,14 +19,12 @@ This directory contains the maintained operational standards and architecture de
 
 ## Publication
 
-Use an explicit run ID. The safe channel-specific entry points delegate to the same publisher:
+Use an explicit profile and run ID through the single publisher:
 
 ```bash
-task publish:byosan -- <run-id>
-task publish:yawa -- <run-id>
-task publish:humanity -- <run-id>
 task publish PROFILE=byosan -- <run-id>
-task movie:status
+task publish PROFILE=yawa -- <run-id>
+task publish PROFILE=humanity -- <run-id>
 ```
 
 There is no latest-run inference path.
