@@ -6,53 +6,18 @@ import {
 	type YouTubeProfileName,
 } from "../domain/youtube_profiles.js";
 
-type ExpectedProfile = {
-	bucket: string;
-	envFile: string;
-	expectedChannelTitle: string;
-	expectedChannelHandle: string;
-	expectedChannelId: string;
-};
+type TaskDefinition = { cmds?: unknown };
 
-type TaskDefinition = {
-	cmds?: unknown;
-	vars?: Record<string, unknown>;
-};
+const PROFILE_TASKS = {
+	"release:check": "bun src/scripts/check_product_release.ts",
+	publish: "bun src/scripts/publish_youtube.ts",
+	auth: "bun src/scripts/youtube_oauth.ts",
+} as const;
 
-const EXPECTED_PROFILES: Record<YouTubeProfileName, ExpectedProfile> = {
-	byosan: {
-		bucket: "byosan_money",
-		envFile: "config/.env.byosan",
-		expectedChannelTitle: "秒算マネー",
-		expectedChannelHandle: "@byosan-money",
-		expectedChannelId: "UCYtjO-PYBfdG3MuPLXfhA-Q",
-	},
-	yawa: {
-		bucket: "yawa_archive",
-		envFile: "config/.env.yawa",
-		expectedChannelTitle: "夜話アーカイブ ASMR",
-		expectedChannelHandle: "@yawa_archive",
-		expectedChannelId: "UCtq3BVv6SBCFjtPiDoetizw",
-	},
-	humanity: {
-		bucket: "humanity_observatory",
-		envFile: "config/.env",
-		expectedChannelTitle: "雨晴はうの人類観測所",
-		expectedChannelHandle: "@humanity_observatory",
-		expectedChannelId: "UCMDrWHL4Jc6gtmfoqaW7sxg",
-	},
-};
-
-const EXPECTED_ALIASES: Record<string, YouTubeProfileName> = {
+const PUBLISH_ALIASES: Record<string, YouTubeProfileName> = {
 	"publish:byosan": "byosan",
 	"publish:yawa": "yawa",
 	"publish:humanity": "humanity",
-};
-
-const EXPECTED_ENV_EXAMPLES: Record<string, YouTubeProfileName> = {
-	"config/.env.example": "humanity",
-	"config/.env.byosan.example": "byosan",
-	"config/.env.yawa.example": "yawa",
 };
 
 function flattenCmds(cmds: unknown): string[] {
@@ -63,8 +28,8 @@ function flattenCmds(cmds: unknown): string[] {
 	);
 }
 
-function getSingleCommand(taskName: string, task: TaskDefinition): string {
-	const commands = flattenCmds(task.cmds);
+function singleCommand(taskName: string, task?: TaskDefinition): string {
+	const commands = flattenCmds(task?.cmds);
 	if (commands.length !== 1) {
 		throw new Error(
 			`Task ${taskName} must have exactly one command, got ${commands.length}`,
@@ -74,180 +39,88 @@ function getSingleCommand(taskName: string, task: TaskDefinition): string {
 }
 
 function assertProfileRegistry() {
-	for (const [profileName, expected] of Object.entries(EXPECTED_PROFILES) as [
+	const seen = {
+		bucket: new Set<string>(),
+		envFile: new Set<string>(),
+		tokenPath: new Set<string>(),
+		channelId: new Set<string>(),
+	};
+
+	for (const [name, profile] of Object.entries(YOUTUBE_PROFILES) as [
 		YouTubeProfileName,
-		ExpectedProfile,
+		(typeof YOUTUBE_PROFILES)[YouTubeProfileName],
 	][]) {
-		const profile = YOUTUBE_PROFILES[profileName];
-		if (!profile) {
-			throw new Error(
-				`Missing YouTube profile registry entry for ${profileName}`,
-			);
+		if (profile.profileName !== name) {
+			throw new Error(`Profile key/name mismatch: ${name}/${profile.profileName}`);
 		}
-
-		for (const [field, actual, wanted] of [
-			["bucket", profile.bucket, expected.bucket],
-			["envFile", profile.envFile, expected.envFile],
-			[
-				"expectedChannelTitle",
-				profile.expectedChannelTitle,
-				expected.expectedChannelTitle,
-			],
-			[
-				"expectedChannelHandle",
-				profile.expectedChannelHandle,
-				expected.expectedChannelHandle,
-			],
-			[
-				"expectedChannelId",
-				profile.expectedChannelId,
-				expected.expectedChannelId,
-			],
+		for (const [field, value] of [
+			["bucket", profile.bucket],
+			["envFile", profile.envFile],
+			["tokenPath", profile.tokenPath],
+			["expectedChannelTitle", profile.expectedChannelTitle],
+			["expectedChannelHandle", profile.expectedChannelHandle],
+			["expectedChannelId", profile.expectedChannelId],
 		] as const) {
-			if (actual !== wanted) {
-				throw new Error(
-					`YouTube profile registry mismatch for ${profileName}.${field}: expected '${wanted}', got '${actual}'`,
-				);
+			if (!value.trim()) throw new Error(`Profile ${name}.${field} is empty`);
+		}
+
+		for (const [field, value] of [
+			["bucket", profile.bucket],
+			["envFile", profile.envFile],
+			["tokenPath", profile.tokenPath],
+			["channelId", profile.expectedChannelId],
+		] as const) {
+			const values = seen[field];
+			if (values.has(value)) {
+				throw new Error(`Duplicate YouTube profile ${field}: ${value}`);
 			}
+			values.add(value);
+		}
+
+		const examplePath = `${profile.envFile}.example`;
+		if (!fs.existsSync(examplePath)) {
+			throw new Error(`Missing profile environment example: ${examplePath}`);
+		}
+		const example = fs.readFileSync(examplePath, "utf8");
+		if (!example.includes(`YOUTUBE_CHANNEL_PROFILE=${name}`)) {
+			throw new Error(`${examplePath} must pin YOUTUBE_CHANNEL_PROFILE=${name}`);
 		}
 	}
 }
 
-function assertFailClosedProfileTask(
-	taskName: string,
-	task: TaskDefinition,
-	invocation: string,
-) {
-	const command = getSingleCommand(taskName, task);
-
-	if (task.vars?.ENV) {
-		throw new Error(
-			`Task ${taskName} must not use a templated ENV fallback selector`,
-		);
-	}
-
-	for (const [profileName, profile] of Object.entries(EXPECTED_PROFILES)) {
-		if (!command.includes(`${profileName}) ENV_FILE=${profile.envFile}`)) {
-			throw new Error(
-				`Task ${taskName} is missing exact routing for ${profileName} -> ${profile.envFile}`,
-			);
-		}
-	}
-
-	if (
-		!command.includes(
-			'*) echo "PROFILE must be exactly one of: byosan, yawa, humanity" >&2; exit 2',
-		)
-	) {
-		throw new Error(
-			`Task ${taskName} must reject missing or unknown PROFILE values`,
-		);
-	}
-
-	const canonicalInvocation = `ENV_FILE="$ENV_FILE" YOUTUBE_CHANNEL_PROFILE="{{.PROFILE}}" ${invocation} {{.CLI_ARGS}}`;
-	if (!command.includes(canonicalInvocation)) {
-		throw new Error(
-			`Task ${taskName} must invoke only '${invocation}' after exact profile routing`,
-		);
-	}
-
-	if (command.includes("{{else}}config/.env")) {
-		throw new Error(
-			`Task ${taskName} contains a forbidden fallback to config/.env`,
-		);
-	}
-}
-
-function assertCanonicalReleaseCheckTask(
-	tasks: Record<string, TaskDefinition>,
-) {
-	const task = tasks["release:check"];
-	if (!task) {
-		throw new Error("Taskfile.yml is missing canonical task release:check");
-	}
-	assertFailClosedProfileTask(
-		"release:check",
-		task,
-		'bun --env-file="$ENV_FILE" src/scripts/check_product_release.ts',
-	);
-}
-
-function assertCanonicalPublishTask(tasks: Record<string, TaskDefinition>) {
-	const task = tasks.publish;
-	if (!task) {
-		throw new Error("Taskfile.yml is missing canonical task publish");
-	}
-	assertFailClosedProfileTask(
-		"publish",
-		task,
-		"bun src/scripts/publish_youtube.ts",
-	);
-}
-
-function assertCanonicalAuthTask(tasks: Record<string, TaskDefinition>) {
-	const task = tasks.auth;
-	if (!task) {
-		throw new Error("Taskfile.yml is missing canonical task auth");
-	}
-	assertFailClosedProfileTask("auth", task, "bun src/scripts/youtube_oauth.ts");
-}
-
-function assertSafeAliases(tasks: Record<string, TaskDefinition>) {
-	for (const [taskName, profileName] of Object.entries(EXPECTED_ALIASES)) {
-		const task = tasks[taskName];
-		if (!task) {
-			throw new Error(`Taskfile.yml is missing safe entrypoint ${taskName}`);
-		}
-		const command = getSingleCommand(taskName, task);
-		const expected = `task publish PROFILE=${profileName} -- {{.CLI_ARGS}}`;
+function assertProfileTasks(tasks: Record<string, TaskDefinition>) {
+	for (const [taskName, invocation] of Object.entries(PROFILE_TASKS)) {
+		const command = singleCommand(taskName, tasks[taskName]);
+		const expected = `YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} ${invocation} {{.CLI_ARGS}}`;
 		if (command !== expected) {
 			throw new Error(
-				`Safe entrypoint ${taskName} must delegate only to canonical publish; expected '${expected}', got '${command}'`,
+				`Task ${taskName} must delegate profile resolution to the registry; expected '${expected}', got '${command}'`,
 			);
+		}
+		if (command.includes("ENV_FILE=")) {
+			throw new Error(`Task ${taskName} must not resolve environment files`);
 		}
 	}
 }
 
-function assertEnvExampleContains(
-	envPath: string,
-	profileName: YouTubeProfileName,
-) {
-	const text = fs.readFileSync(envPath, "utf8");
-	if (!text.includes(`YOUTUBE_CHANNEL_PROFILE=${profileName}`)) {
-		throw new Error(
-			`${envPath} must pin YOUTUBE_CHANNEL_PROFILE=${profileName} for publish routing safety`,
-		);
-	}
-	if (text.includes("YOUTUBE_EXPECTED_")) {
-		throw new Error(
-			`${envPath} still contains deprecated YOUTUBE_EXPECTED_* fields`,
-		);
+function assertPublishAliases(tasks: Record<string, TaskDefinition>) {
+	for (const [taskName, profile] of Object.entries(PUBLISH_ALIASES)) {
+		const command = singleCommand(taskName, tasks[taskName]);
+		const expected = `task publish PROFILE=${profile} -- {{.CLI_ARGS}}`;
+		if (command !== expected) {
+			throw new Error(`Alias ${taskName} must be '${expected}', got '${command}'`);
+		}
 	}
 }
 
 async function main() {
 	assertProfileRegistry();
-
-	const taskfilePath = path.join(process.cwd(), "Taskfile.yml");
-	const taskfile = yaml.load(fs.readFileSync(taskfilePath, "utf8")) as {
-		tasks?: Record<string, TaskDefinition>;
-	};
-
-	if (!taskfile.tasks) {
-		throw new Error("Taskfile.yml does not contain a tasks section");
-	}
-
-	assertCanonicalReleaseCheckTask(taskfile.tasks);
-	assertCanonicalPublishTask(taskfile.tasks);
-	assertCanonicalAuthTask(taskfile.tasks);
-	assertSafeAliases(taskfile.tasks);
-
-	for (const [envPath, profileName] of Object.entries(
-		EXPECTED_ENV_EXAMPLES,
-	) as [string, YouTubeProfileName][]) {
-		assertEnvExampleContains(envPath, profileName);
-	}
-
+	const taskfile = yaml.load(
+		fs.readFileSync(path.join(process.cwd(), "Taskfile.yml"), "utf8"),
+	) as { tasks?: Record<string, TaskDefinition> };
+	if (!taskfile.tasks) throw new Error("Taskfile.yml has no tasks section");
+	assertProfileTasks(taskfile.tasks);
+	assertPublishAliases(taskfile.tasks);
 	console.log("publish routing audit: PASS");
 }
 
