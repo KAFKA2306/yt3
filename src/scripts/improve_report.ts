@@ -41,7 +41,9 @@ function collectDates(days: number): string[] {
 				.map((logPath) => path.basename(logPath, ".log"))
 				.filter((date) => ageDays(date) <= days),
 		),
-	].sort().reverse();
+	]
+		.sort()
+		.reverse();
 }
 
 function collectRunDirs(dates: string[]): string[] {
