@@ -5,7 +5,6 @@ import { z } from "zod";
 import {
 	type AssetStore,
 	BaseAgent,
-	QuotaExhaustionError,
 	ROOT,
 	RunStage,
 	parseLlmJson,
@@ -23,29 +22,6 @@ import type {
 	ScriptLine,
 } from "../types.js";
 import { compareVoiceMaps, getCanonicalVoiceMap } from "../voice_registry.js";
-
-const SemanticAuditResultSchema = z.object({
-	content_structure: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	brand_voice: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	entity_density: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	abstract_noun_ratio: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-});
 
 const HumanityAuditResultSchema = z.object({
 	humanity: z.object({
@@ -136,15 +112,6 @@ export class AuditAgent extends BaseAgent {
 
 		// 2.5 CREATIVE FRESHNESS AUDIT (DETERMINISTIC / RECENT-RUN COMPARISON)
 		Object.assign(results, this.auditCreativeFreshness(state, evidence));
-
-		// 3. SEMANTIC AUDIT (BOUNDED PROBABILISTIC / LLM)
-		if (
-			state.script &&
-			state.metadata &&
-			state.bucket !== "humanity_observatory"
-		) {
-			Object.assign(results, await this.auditSemantics(state, evidence));
-		}
 
 		// 4. VOICE ROLE INTEGRITY (Speaker Assignment Audit)
 		if (state.script) {
@@ -1796,94 +1763,6 @@ export class AuditAgent extends BaseAgent {
 				type: "DETERMINISTIC",
 			},
 		};
-	}
-
-	private async auditSemantics(
-		state: AgentState,
-		evidence: Record<string, unknown>,
-	): Promise<Record<string, AuditCheck>> {
-		const system = `You are a Bounded Classifier for "Byosan Money" operating under the AUDIT DRIVEN MEDIA SYSTEM CONTRACT.
-
-	Your supreme mandate:
-	1. FACTS FIRST. STRUCTURE LATER. Concrete events must precede and anchor any background structure.
-	2. HUMAN RELEVANCE. Every fact must translate to daily life, money, work, or future uncertainty.
-	3. SPECIFICITY. Maximize density of named entities, numbers, and dates. 
-	4. ANTI-ABSTRACT. Penalize generalized macro explanations or philosophical filler.
-
-	Output MUST be a single JSON object with this structure:
-	{
-	"content_structure": { "passed": boolean, "score": number, "feedback": string },
-	"brand_voice": { "passed": boolean, "score": number, "feedback": string },
-	"entity_density": { "passed": boolean, "score": number, "feedback": string },
-	"abstract_noun_ratio": { "passed": boolean, "score": number, "feedback": string }
-	}
-	Output JSON strictly.`;
-
-		try {
-			const res = await this.runLlm(
-				system,
-				JSON.stringify(state.script?.lines),
-				(t) => parseLlmJson(t, SemanticAuditResultSchema),
-				{ temperature: 0 },
-			);
-			evidence.semantic = res;
-
-			return {
-				semantic_structure: {
-					name: "Probabilistic: Narrative Structure",
-					description:
-						"FACTS FIRST verification. Concrete events must precede structure.",
-					status: res.content_structure.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.content_structure.score}/100. ${res.content_structure.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				semantic_brand: {
-					name: "Probabilistic: Brand Voice",
-					description: "Verifies High Pace and Human Relevance.",
-					status: res.brand_voice.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.brand_voice.score}/100. ${res.brand_voice.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				semantic_entity_density: {
-					name: "Probabilistic: Entity Density",
-					description: "Verifies high density of specific named entities.",
-					status: res.entity_density.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.entity_density.score}/100. ${res.entity_density.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				semantic_abstract_ratio: {
-					name: "Probabilistic: Abstract Noun Ratio",
-					description:
-						"Penalizes intellectual essays or philosophical framing.",
-					status: res.abstract_noun_ratio.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.abstract_noun_ratio.score}/100. ${res.abstract_noun_ratio.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-			};
-		} catch (e) {
-			evidence.semantic_error = String(e);
-			const isQuota =
-				e instanceof QuotaExhaustionError ||
-				String(e).includes("429") ||
-				String(e).toLowerCase().includes("quota exhaustion") ||
-				String(e).includes("LLM invocation failed after 5 attempts");
-			return {
-				semantic_infra: {
-					name: "Probabilistic: Semantic Verifier Health",
-					description: "Integrity of the LLM-based semantic audit.",
-					status: isQuota ? "PASS" : "QUALITY_FAIL",
-					details: isQuota
-						? `Bypassed due quota exhaustion: ${String(e)}`
-						: `Semantic Audit Failed: ${String(e)}`,
-					critical: !isQuota,
-					type: "DETERMINISTIC",
-				},
-			};
-		}
 	}
 
 	private getPastRunsState(): Array<{
