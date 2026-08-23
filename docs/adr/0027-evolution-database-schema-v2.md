@@ -4,16 +4,17 @@
 Accepted
 
 ## Purpose
-Store run history, artifacts, strategy state, and audit evidence in `db/evolution.db`.
+Define the runtime SQLite schema for run history, artifacts, strategy state, analytics, and audit evidence.
 
 ## Canonical Rules
-1. `db/evolution.db` is the persistent schema store.
-2. `runs` and `raw_artifacts` anchor traceability.
-3. `strategy_genomes`, `collapse_signals`, and `mutation_plans` support evolution tracking.
-4. `audit_checks` stores the structured audit outcomes.
-5. Schema changes must stay aligned with code and backfill scripts.
+1. `db/schema.sql` is the repository source of truth for the SQLite schema.
+2. `db/*.db` is runtime state and is not tracked as repository evidence.
+3. `runs/<bucket>/<run>/` remains the source evidence for run and publication facts.
+4. Database ingestion must derive values from source evidence; synthetic historical metrics are prohibited.
+5. `strategy_genomes`, `collapse_signals`, and `mutation_plans` may support runtime evolution tracking without replacing run evidence.
 
 ## Required References
-- `db/evolution.db`
+- `db/schema.sql`
+- `runs/<bucket>/<run>/`
 - `src/server.ts`
-- `src/scripts/backfill_db.ts`
+- `src/scripts/ingest_youtube_analytics.ts`
