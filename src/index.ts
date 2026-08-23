@@ -29,7 +29,8 @@ function resolveRunId(bucket: string): string {
 }
 
 async function main() {
-	const requestedProfile = process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "byosan";
+	const requestedProfile =
+		process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "byosan";
 	if (requestedProfile === "yawa") {
 		throw new Error("PROFILE=yawa uses the ASMR workflow, not src/index.ts");
 	}
