@@ -32,7 +32,7 @@
 ### 5. 実行インフラ：Standardized Runtime
 - `src/humanity_observatory_workflow.ts` による専用ランタイム。
 - `data/humanity_pulse.md` をシードとした自律生成。
-- `task run:humanity` によるワンコマンド実行。
+- `PROFILE=humanity task run` で canonical production entrypoint を共有する。
 
 ## 帰結
 - 思想と実装が完全に同期され、レガシーな仮称（思考断面・認知ノイズ倶楽部）を排除した。
