@@ -1,24 +1,16 @@
 import http from "node:http";
 import path from "node:path";
 import { URL } from "node:url";
-import dotenv from "dotenv";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
-	assertProfileEnvFile,
 	assertYouTubeChannelMatchesProfile,
-	getYouTubeProfile,
 	hydrateOAuthCredentials,
+	loadYouTubeProfileEnv,
 	resolveTokenPath,
 	resolveYouTubeRedirectUri,
 } from "../domain/youtube_profiles.js";
 
-const envFile = process.env.ENV_FILE?.trim();
-if (!envFile) throw new Error("ENV_FILE is required for YouTube OAuth setup");
-const envFilePath = path.isAbsolute(envFile)
-	? envFile
-	: path.join(process.cwd(), envFile);
-dotenv.config({ path: envFilePath, override: true });
 const verifyOnly = process.argv.includes("--verify-only");
 
 async function waitForOAuthCode(redirectUri: string): Promise<string> {
@@ -73,8 +65,7 @@ async function waitForOAuthCode(redirectUri: string): Promise<string> {
 }
 
 async function main() {
-	const profile = getYouTubeProfile();
-	assertProfileEnvFile(profile, process.env.ENV_FILE);
+	const profile = loadYouTubeProfileEnv();
 	const clientId = process.env.YOUTUBE_CLIENT_ID;
 	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
 	if (!clientId || !clientSecret) {
