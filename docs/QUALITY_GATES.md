@@ -1,174 +1,109 @@
 # YT3 quality gates
 
-YT3 keeps repository acceptance and product/runtime evidence orthogonal. Neither may be inferred from the other.
+YT3 keeps three verdicts separate:
 
-Two forbidden conclusions define the boundary:
+1. **repository acceptance** — is this revision mergeable?
+2. **product release readiness** — is this exact run/artifact locally releasable?
+3. **external verification** — did the intended remote side effect actually occur?
 
-- **“The real machine/environment is unavailable, therefore this code cannot be merged.”** Forbidden. Missing target-environment evidence makes the relevant product/runtime criterion UNVERIFIED; it does not make repository acceptance fail.
-- **“CI is green, therefore the product is complete.”** Forbidden. CI proves repository acceptance criteria only; product completion requires direct product/runtime evidence.
+Never infer one from another.
 
-## Evidence model
-
-| evidence/state | valid conclusion | invalid conclusion |
-|---|---|---|
-| `check:merge` / green CI | revision satisfies repository merge criteria | product is complete, works on target, is releasable, or was released |
-| target machine/service unavailable | target-specific criterion remains UNVERIFIED | revision is unmergeable |
-| simulator/mock/contract test passes | deterministic repository boundary holds | target behavior actually occurred |
-| `release:check` passes | concrete artifact passes local release preflight | remote publication occurred |
-| target/runtime verification passes | tested product criterion holds on that target | unrelated repository criteria pass |
-| remote receipt/read-back passes | specified external postcondition occurred | source quality or mergeability |
-
-## Gate 1: repository merge acceptance
-
-The merge gate answers one question: **does this repository revision satisfy the source/repository contract?**
-
-Canonical commands:
+## Repository merge gate
 
 ```bash
 task check:merge:fast
 task check:merge
 ```
 
-`check:merge:fast` checks repository/source state such as:
+`check:merge:fast` checks:
 
-- Biome formatting and lint
-- TypeScript type safety
+- Biome formatting/lint
+- TypeScript types
 - repository executable/documentation contract
 - static YouTube profile/routing contract
-- source-level no-fallback policy
+- source no-fallback policy
 
 `check:merge` adds the Bun test suite under `SKIP_LLM=true DRY_RUN=true`.
 
-### Environment-independence rule
+CI runs the same full merge gate. A passing exact-head CI run proves repository acceptance for that revision only.
 
-The merge gate must be reproducible in the supported development/CI environment. It must not require:
+The merge gate must not require:
 
-- a particular production machine or device
-- production OAuth credentials
-- a specific `RUN_ID`
-- current YouTube remote state
-- historical `runs/` cleanup receipts
-- whether a concrete video is currently ready to publish
+- production credentials
+- a concrete `RUN_ID`
+- current YouTube state
+- historical runtime cleanup receipts
+- a particular production machine/device
 
-Hardware/service-specific code must expose a deterministic merge-time boundary: typed interfaces, schema/contract tests, fixtures, mocks, emulators, simulators, static checks, or another reproducible substitute appropriate to the boundary.
+If a criterion can only be tested on the real target, it remains **UNVERIFIED** until product qualification. Missing target access is not a repository merge failure.
 
-If a behavior can only be proven on the real target, that criterion belongs to product/runtime qualification. Until the target is available, mark it **UNVERIFIED**. Do not hold the PR unmergeable solely because the target environment cannot be exercised.
-
-GitHub Actions runs `bun run check:merge`. The pre-commit/pre-push hook runs `bun run check:merge:fast`.
-
-A passing merge gate proves repository acceptance for that exact commit and nothing more.
-
-## Gate 2: product qualification and release
-
-Product completion answers a different question: **do the product acceptance criteria have direct evidence in the environment where they are defined?**
-
-Green CI is never sufficient evidence for this verdict.
-
-For YT3 publication, the canonical local preflight is:
+## Product release gate
 
 ```bash
 task release:check PROFILE=byosan -- <run-id> [video-path]
-task release:check PROFILE=yawa -- <run-id> [video-path]
-task release:check PROFILE=humanity -- <run-id> [video-path]
 ```
 
-The release gate is run-specific. It verifies:
+Use `PROFILE=yawa` or `PROFILE=humanity` for the other channels.
 
-- explicit profile and exact profile-to-environment routing
-- run bucket matches the selected channel profile
-- run directory and canonical state exist
-- selected video artifact exists and has a stable SHA-256 identity
-- fallback-labeled metadata is prohibited
-- canonical publication state does not point at a different artifact
-- unresolved `PRIVATE_UPLOAD_INTENT` / `UNCERTAIN_REMOTE_COMMIT` state without a verified video ID blocks another release
-- factual-integrity evidence passes when configured visibility is non-private
+The release gate verifies one exact run/artifact:
 
-Passing local release preflight does not establish product completion by itself when the product contract requires target/runtime checks beyond that preflight.
+- explicit profile and canonical profile routing
+- run bucket/profile agreement
+- canonical run state
+- artifact existence and SHA-256 identity
+- no fallback-labeled metadata
+- no conflicting or uncertain canonical publication state
+- factual-integrity evidence when configured visibility is non-private
 
-`src/scripts/publish_youtube.ts` executes the release gate before OAuth/channel verification or YouTube publication. After local preflight, the publication path still verifies authenticated channel identity, stages upload state, reads back remote identity/visibility, applies requested visibility, and records publication evidence.
+Passing this gate does not prove publication occurred.
 
-Those are product/release conditions, not PR merge conditions.
+`task publish PROFILE=<profile> -- <run-id> [video-path]` runs the same release gate before OAuth/channel verification or any YouTube side effect, then records canonical publication evidence and remote read-back state.
 
-## Product status must remain explicit
+## No-fallback audit
 
-Use separate states rather than one overloaded “done” flag:
-
-- **repository mergeable** — merge gate passed for the exact revision
-- **product criteria verified** — required product/runtime checks passed
-- **release-ready** — concrete artifact passed its release preflight
-- **released/externally applied** — remote side effect has a receipt/read-back
-- **UNVERIFIED** — required evidence could not be obtained
-
-Do not translate `UNVERIFIED` into failure outside the criterion it belongs to. Do not translate repository success into product success.
-
-## Runtime policy audits are operational evidence
-
-The no-fallback audit has independent scopes:
+One operator command owns all scopes:
 
 ```bash
-task audit:no-fallback:source
-task audit:no-fallback:runtime
-task audit:no-fallback
+task audit:no-fallback SCOPE=source
+task audit:no-fallback SCOPE=runtime
+task audit:no-fallback              # all
 ```
 
-`source` is a merge-time invariant. `runtime` checks historical production deletion evidence. The combined task is useful for operations and audits, but runtime receipt state is intentionally not a PR merge blocker.
+`source` is a merge-time repository invariant. `runtime` checks historical production cleanup evidence and is intentionally not a PR merge blocker.
 
-## Ownership matrix
+## Ownership
 
-| concern | owner | merge gate | product/release |
+| concern | owner | merge gate | release/product |
 |---|---|---:|---:|
 | formatting + lint | Biome | yes | no |
 | TypeScript types | TypeScript compiler | yes | no |
 | executable/docs contract | repository audit | yes | no |
-| static channel routing | repository audit | yes | inherited invariant |
-| source no-fallback policy | repository audit | yes | inherited invariant |
-| unit/contract/simulation tests | repository checks | yes | not target evidence |
-| target machine/runtime behavior | product qualification | no | yes when required |
-| concrete run state | product release gate | no | yes |
-| artifact identity | product release gate | no | yes |
-| factual-integrity evidence | product release gate | no | yes |
-| canonical publication conflict state | product release gate | no | yes |
-| authenticated remote channel | YouTube publication path | no | yes |
-| remote visibility/read-back | YouTube publication path | no | yes |
-| historical fallback deletion receipts | runtime audit | no | operational |
+| static channel routing | repository audit | yes | inherited |
+| source no-fallback policy | repository audit | yes | inherited |
+| unit/contract tests | repository checks | yes | not target evidence |
+| target runtime behavior | product qualification | no | when required |
+| concrete run/artifact | product release gate | no | yes |
+| authenticated channel | publication path | no | yes |
+| remote receipt/read-back | publication path | no | yes |
+| historical cleanup receipts | runtime audit | no | operational |
 
-## Fresh-clone contract
-
-A clean checkout needs Bun, then:
+## Fresh clone
 
 ```bash
 bun run setup
 bun run check:merge
 ```
 
-`setup` uses `bun ci` with the committed `bun.lock`; dependency-resolution drift therefore fails rather than silently rewriting the dependency graph.
+`setup` uses `bun ci` with committed `bun.lock`, so dependency drift does not silently rewrite the graph.
 
-A fresh clone must be capable of establishing mergeability without access to production hardware, production credentials, or a concrete release run.
+Zod remains the parser for untrusted API, artifact, configuration, and persisted-state boundaries. Parse once at the boundary and pass typed values inward.
 
-## Boundary validation
+## Tool ownership
 
-Zod remains the runtime boundary parser for untrusted API, artifact, configuration, and persisted-state inputs. New boundary work should parse once, then pass typed values inward.
+- **Biome** is the only lint/format owner.
+- **TypeScript** is the type owner.
+- **Oxlint** is not installed because it would duplicate lint ownership without a migration.
+- **Nx** is not installed because YT3 does not need a monorepo task graph.
+- `.pre-commit-config.yaml` delegates to `bun run check:merge:fast`; hooks do not implement a separate gate.
 
-For hardware/service boundaries, prefer deterministic repository-level contracts plus separate target qualification. The deterministic substitute proves interface and logic behavior; target qualification proves actual target behavior. Neither substitutes for the other.
-
-## Tool decisions
-
-### Oxlint: not installed
-
-Adding Oxlint would create a second lint owner beside Biome without a measured migration/parity phase. If Biome is replaced later, migrate rules first and remove overlap before making another linter canonical.
-
-### Nx: not installed
-
-YT3 is not a genuine multi-project monorepo with an Nx task-graph requirement. Adding Nx would increase orchestration surface without replacing a current bottleneck.
-
-### prek / pre-commit
-
-`.pre-commit-config.yaml` contains one local hook whose entry is `bun run check:merge:fast`. `prek` and upstream `pre-commit` can both consume the same configuration; neither defines a separate quality implementation.
-
-## CI evidence
-
-For repository-change PRs, inspect the GitHub Actions result on the exact PR head SHA before merge.
-
-A passing CI run means **repository merge acceptance passed for that revision**. It must never be reported as “product complete”, “production verified”, “works on the real machine”, “release verified”, or equivalent unless those separate criteria were directly checked.
-
-Conversely, inability to access the target machine, production service, or release credentials must never be reported as a reason the repository cannot merge when the repository merge gate itself passes.
+A green CI run must never be reported as product completion or production verification. Conversely, unavailable production hardware, credentials, or services must never be reported as a repository merge blocker when the merge gate itself passes.
