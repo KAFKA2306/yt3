@@ -47,10 +47,6 @@ tasks:
         fi
         bun src/scripts/generate_movie.ts --plan "{{.PLAN}}" {{.CLI_ARGS}}
 
-  movie:status:
-    desc: "Report movie receipt status without changing state"
-    cmds: ["bun src/scripts/movie_status.ts"]
-
   publish:visibility-audit:
     desc: "Audit published video visibility"
     cmds: ["bun src/scripts/public_visibility_audit.ts"]

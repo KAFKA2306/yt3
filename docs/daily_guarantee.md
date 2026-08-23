@@ -15,8 +15,7 @@ There is no second daily-readiness state file. Derived reports must not duplicat
 
 - `task stability:report` regenerates latest-run readiness and 30-day failure classification.
 - `task audit:today` checks today's production state.
-- `task publish:visibility-audit` verifies remote visibility separately from local readiness.
-- `task movie:status` inspects publication receipts and current YouTube state without mutating it.
+- `task publish:visibility-audit` reads current YouTube visibility separately from local readiness and is non-mutating unless repair mode is explicitly enabled.
 
 ## Current state
 
