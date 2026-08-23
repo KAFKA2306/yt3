@@ -148,22 +148,10 @@ tasks:
     desc: "Verify Taskfile executables and documented repository entry points"
     cmds: ["bun src/scripts/audit_repository_contract.ts"]
 
-  daily:guarantee-status:
-    desc: "Generate the daily guarantee status artifact"
-    cmds: ["bun src/scripts/daily_guarantee_status.ts"]
-
-  daily:report:
-    desc: "Regenerate daily audit and stability artifacts"
-    cmds:
-      - task audit:today
-      - bun src/scripts/stability_summary.ts
-      - bun src/scripts/daily_guarantee_status.ts
+  stability:report:
+    desc: "Regenerate the canonical cross-run stability report"
+    cmds: ["bun src/scripts/stability_summary.ts"]
 
   improve:report:
-    desc: "Generate improvement-loop inputs"
-    cmds:
-      - task daily:report
-      - task movie:status
-      - task audit:publish-routing
-      - task audit:no-fallback
-      - bun src/scripts/improve_report.ts
+    desc: "Generate the improvement report directly from run evidence"
+    cmds: ["bun src/scripts/improve_report.ts"]
