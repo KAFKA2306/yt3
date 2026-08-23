@@ -33,7 +33,9 @@ describe("active run discovery", () => {
 			expect(isCanonicalActiveRunDir(active)).toBe(true);
 			expect(isCanonicalActiveRunDir(incomplete)).toBe(false);
 			expect(isCanonicalActiveRunId(root, "byosan_money/active")).toBe(true);
-			expect(isCanonicalActiveRunId(root, "byosan_money/incomplete")).toBe(false);
+			expect(isCanonicalActiveRunId(root, "byosan_money/incomplete")).toBe(
+				false,
+			);
 		} finally {
 			fs.removeSync(root);
 		}
