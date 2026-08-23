@@ -9,24 +9,7 @@ export VIRTUAL_ENV="${repo_dir}/.venv"
 export PATH="${VIRTUAL_ENV}/bin:/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
 readonly bun_bin=$(which bun || echo "/home/kafka/.bun/bin/bun")
 
-# Determine environment file to use: priority: ENV_FILE > profile > config/.env.byosan
-ENV_FILE="${ENV_FILE:-}"
-if [ -z "${ENV_FILE}" ]; then
-  if [ -n "${YOUTUBE_CHANNEL_PROFILE:-}" ]; then
-    if [ "${YOUTUBE_CHANNEL_PROFILE}" = "byosan" ]; then
-      ENV_FILE="config/.env.byosan"
-    elif [ "${YOUTUBE_CHANNEL_PROFILE}" = "yawa" ]; then
-      ENV_FILE="config/.env.yawa"
-    elif [ "${YOUTUBE_CHANNEL_PROFILE}" = "humanity" ]; then
-      ENV_FILE="config/.env"
-    fi
-  fi
-fi
-
-if [ -z "${ENV_FILE}" ]; then
-  ENV_FILE="config/.env.byosan"
-fi
-
+readonly ENV_FILE="${ENV_FILE:-config/.env.byosan}"
 readonly resolved_env="${repo_dir}/${ENV_FILE}"
 
 # Load environment variables for Discord notifications from bash
@@ -41,7 +24,6 @@ readonly log_file="${daily_log_dir}/${today_date}.log"
 readonly latest_log="${repo_dir}/logs/latest.log"
 readonly status_file="${repo_dir}/data/state/last_run.json"
 readonly lock_file="${repo_dir}/logs/cron.lock"
-readonly uv_bin="${UV_BIN:-$(command -v uv || echo /root/.local/bin/uv)}"
 readonly node_bin="${NODE_BIN:-$(if [ -x /root/.nvm/versions/node/v22.17.1/bin/node ]; then echo /root/.nvm/versions/node/v22.17.1/bin/node; else command -v node; fi)}"
 readonly log_start_line="$(wc -l < "${log_file}" 2>/dev/null || echo 0)"
 
@@ -157,7 +139,7 @@ ensure_voicevox_running() {
   if ! check_voicevox; then
     printf '[%s] ERROR Voicevox is not responding. Starting Voicevox...\n' "$(timestamp)"
     # Try to start it using the task up command (Removing silent mode to log errors)
-    (cd "${repo_dir}" && docker rm -f voicevox-nemo || true && docker run -d --name voicevox-nemo --restart unless-stopped -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest && systemctl --user start yt3-aim.service && systemctl --user start yt3-discord.service)
+    (cd "${repo_dir}" && task up)
     
     # Log docker state for debugging
     printf '[%s] INFO  Current Docker state for Voicevox:\n' "$(timestamp)"
@@ -182,21 +164,6 @@ ensure_voicevox_running() {
     
     return 1
   fi
-  return 0
-}
-
-run_harness_doctor() {
-  if [ "${SKIP_HARNESS_DOCTOR:-false}" = "true" ]; then
-    printf '[%s] INFO  harness doctor skipped via SKIP_HARNESS_DOCTOR\n' "$(timestamp)"
-    return 0
-  fi
-
-  printf '[%s] INFO  running harness doctor...\n' "$(timestamp)"
-  if ! "${bun_bin}" src/scripts/harness_doctor.ts --quick; then
-    notify_critical "🚨 **YT3 Automation FATAL**: Harness doctor failed before workflow execution."
-    return 1
-  fi
-  printf '[%s] INFO  harness doctor passed.\n' "$(timestamp)"
   return 0
 }
 
@@ -238,7 +205,6 @@ run_exit=0
 
 # Check Voicevox before proceeding
 ensure_voicevox_running || exit 1
-run_harness_doctor || exit 1
 
 printf '[%s] INFO  starting unified agentic loop (pid=%s)\n' "$(timestamp)" "$$"
 
