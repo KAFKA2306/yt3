@@ -1,27 +1,23 @@
 # Continuous Improvement Loop
 
-YT3 improves from run evidence, not from task exit codes or duplicated status files.
+YT3 improves from run evidence, not task exit codes or duplicated status files.
 
-## Canonical evidence chain
+## Canonical evidence
 
-1. `runs/<bucket>/<date>/run_evidence.json` is the per-run proof artifact.
-2. `logs/stability_summary.json` is the canonical cross-run status artifact. It contains:
-   - latest run readiness
-   - present and absent buckets
-   - missing evidence
-   - 30-day failure classification inputs
-3. `logs/stability_summary.md` is the human-readable rendering of the same status.
-4. `logs/daily_guarantee_status.json` combines the stability summary with freshness documentation and latest publish proof.
-5. `logs/daily_guarantee_status.md` is its human-readable rendering.
+1. `runs/<bucket>/<run>/run_evidence.json` is the per-run proof artifact.
+2. `logs/stability_summary.json` is the canonical cross-run readiness artifact.
+3. `logs/stability_summary.md` is its human-readable rendering.
 
-Do not create another readiness artifact when the information can be derived from `stability_summary.json`.
+`logs/improvement_report.json` and `.md` are derived analysis only. They are rebuilt directly from daily logs and run evidence and do not become another readiness source of truth.
 
 ## Entry points
 
-- `task daily:report`: regenerate the daily audit, stability summary, and daily guarantee status.
-- `task improve:report`: regenerate the daily report plus the additional improvement inputs.
-- `task movie:status`: inspect movie receipts without mutating remote state.
-- `task audit:publish-routing`: verify exact publish routing.
+- `task stability:report` regenerates cross-run readiness and failure classification.
+- `task improve:report` regenerates 7-day and 30-day evidence metrics directly from source evidence.
+- `task movie:status` inspects movie receipts without mutating remote state.
+- `task audit:publish-routing` verifies exact publish routing.
+
+The improvement report does not run unrelated audits as hidden prerequisites. Run a targeted audit explicitly when its result is needed.
 
 ## Success rules
 
@@ -31,7 +27,7 @@ When publish is expected, the publish receipt and channel-specific proof must ag
 
 ## Improvement procedure
 
-1. Regenerate the canonical reports.
+1. Read canonical run evidence and the stability report.
 2. Identify one measurable failure or unnecessary state surface.
 3. Change one bounded part of the system.
 4. Run type checks, lint, tests, and the relevant static audit.
@@ -39,6 +35,6 @@ When publish is expected, the publish receipt and channel-specific proof must ag
 
 ## Logging rule
 
-Prefer one append-only operational log and one durable evidence bundle per run. Derived summaries should be regenerated from those sources rather than maintained independently.
+Prefer one append-only operational log and one durable evidence bundle per run. Derived summaries are regenerated from those sources rather than maintained independently.
 
-The default is consolidation: if two generated files encode the same readiness decision, keep the more complete source and delete the other path.
+If two generated files encode the same readiness decision, keep the more complete canonical source and delete the duplicate.
