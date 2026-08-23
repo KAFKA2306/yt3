@@ -290,26 +290,6 @@ async function main(): Promise<void> {
 
 	printSummary(results);
 
-	const aceDir = cfg.workflow.paths.ace_dir || "data/ace";
-	const logPath = path.join(process.cwd(), aceDir, "audit.json");
-	await fs.ensureDir(path.dirname(logPath));
-	await fs.writeJson(
-		logPath,
-		{
-			audit_timestamp: new Date().toISOString(),
-			total_images: results.length,
-			passed: results.filter((r) => r.passed).length,
-			failed: results.filter((r) => !r.passed).length,
-			results: results.map((r) => ({
-				...r,
-				imagePath: r.imagePath.replace(`${process.cwd()}/`, ""),
-			})),
-		},
-		{ spaces: 2 },
-	);
-
-	console.log(`\n${COLORS.cyan}📊 監査ログ: ${logPath}${COLORS.reset}`);
-
 	if (results.some((r) => !r.passed)) {
 		console.log(
 			`\n${COLORS.red}${COLORS.bold}⛔ 不合格あり。生成パイプラインの見直しが必要です。${COLORS.reset}`,
