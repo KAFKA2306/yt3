@@ -4,8 +4,6 @@ import fs from "fs-extra";
 import { sendAlert } from "../io/utils/discord.js";
 import { AgentLogger } from "../io/utils/logger.js";
 
-const ROOT = process.cwd();
-
 async function runTask(taskName: string): Promise<boolean> {
 	AgentLogger.info("SYSTEM", "LOOP", "TASK_START", `Running task: ${taskName}`);
 	return new Promise((resolve) => {
@@ -14,139 +12,57 @@ async function runTask(taskName: string): Promise<boolean> {
 			env: { ...process.env, FORCE_COLOR: "1" },
 		});
 		proc.on("close", (code) => {
-			if (code === 0) {
-				AgentLogger.info(
-					"SYSTEM",
-					"LOOP",
-					"TASK_DONE",
-					`Task ${taskName} exited 0 and completed.`,
-				);
-				resolve(true);
-			} else {
-				AgentLogger.error(
-					"SYSTEM",
-					"LOOP",
-					"TASK_FAIL",
-					`Task ${taskName} failed with code ${code}`,
-				);
-				resolve(false);
-			}
+			const ok = code === 0;
+			const message = `Task ${taskName} exited ${code ?? "null"}.`;
+			if (ok) AgentLogger.info("SYSTEM", "LOOP", "TASK_DONE", message);
+			else AgentLogger.error("SYSTEM", "LOOP", "TASK_FAIL", message);
+			resolve(ok);
 		});
 	});
 }
 
-async function main() {
-	AgentLogger.init();
-	AgentLogger.info(
-		"SYSTEM",
-		"LOOP",
-		"START",
-		"Starting Unified Unified Unified Loop...",
-	);
-
-	// 1. Health Check
-	const healthy = await runTask("harness:doctor:quick");
-	if (!healthy) {
-		const msg =
-			"Harness doctor failed. The execution environment is unhealthy.";
-		AgentLogger.error("SYSTEM", "LOOP", "BLOCKED", msg);
-		await sendAlert(`🚨 **YT3 Health Alert**: ${msg}`, "error");
-		console.error(
-			`FAILED: ${msg}\nActionable next step: Run 'task harness:doctor:quick' manually and fix configuration/dependencies.`,
+function auditPassed(): boolean {
+	const reportPath = path.join(process.cwd(), "logs", "audit_today.json");
+	if (!fs.existsSync(reportPath)) return false;
+	try {
+		const report = fs.readJsonSync(reportPath) as {
+			reports?: Array<{ audit_passed: boolean; evidence_ready: boolean }>;
+		};
+		return Boolean(
+			report.reports?.length &&
+				report.reports.every((item) => item.audit_passed && item.evidence_ready),
 		);
-		process.exit(1);
-	}
-
-	// 2. High-quality daily feature (Byosan Money)
-	AgentLogger.info(
-		"SYSTEM",
-		"LOOP",
-		"CHECK",
-		"Starting the structured 秒算マネー daily feature loop...",
-	);
-	const byosanSuccess = await runTask("byosan:daily");
-
-	// 3. Humanity Observatory (Humanity Observatory)
-	AgentLogger.info(
-		"SYSTEM",
-		"LOOP",
-		"CHECK",
-		"Starting Humanity Observatory workflow...",
-	);
-	const humanitySuccess = await runTask("run:humanity");
-
-	// 4. Audit
-	AgentLogger.info("SYSTEM", "LOOP", "AUDIT", "Running end-of-day audit...");
-	const auditSuccess = await runTask("audit:today");
-
-	// Read audit report to verify if today's runs passed
-	let auditPassed = false;
-	const auditReportJsonPath = path.join(ROOT, "logs", "audit_today.json");
-	if (fs.existsSync(auditReportJsonPath)) {
-		try {
-			const report = fs.readJsonSync(auditReportJsonPath) as {
-				reports: Array<{ audit_passed: boolean; evidence_ready: boolean }>;
-			};
-			// All reports must have audit_passed === true and evidence_ready === true
-			auditPassed = report.reports.every(
-				(r) => r.audit_passed && r.evidence_ready,
-			);
-		} catch (e) {
-			AgentLogger.error(
-				"SYSTEM",
-				"LOOP",
-				"FAIL",
-				`Failed to parse audit_today.json: ${(e as Error).message}`,
-			);
-		}
-	}
-
-	const overallSuccess =
-		byosanSuccess && humanitySuccess && auditSuccess && auditPassed;
-
-	if (overallSuccess) {
-		AgentLogger.info(
-			"SYSTEM",
-			"LOOP",
-			"FINISH",
-			"Unified Agentic Loop completed successfully.",
-		);
-		process.exit(0);
-	} else {
-		const failures: string[] = [];
-		if (!byosanSuccess) failures.push("byosan:daily task failed");
-		if (!humanitySuccess) failures.push("run:humanity task failed");
-		if (!auditSuccess) failures.push("audit:today task failed");
-		if (!auditPassed)
-			failures.push("today's audit checks failed or evidence is not ready");
-
-		const msg = `Unified Agentic Loop failed due to: ${failures.join(", ")}`;
-		AgentLogger.error("SYSTEM", "LOOP", "FAIL", msg);
-
-		await sendAlert(`❌ **YT3 Loop Failure**: ${msg}`, "error");
-
-		console.error(`FAILED: ${msg}`);
-		console.error("Actionable next steps:");
-		console.error(
-			"1. Inspect daily logs in logs/daily/ to check task error messages.",
-		);
-		console.error(
-			"2. Run 'task audit:today' or view logs/audit_today.md to see missing files/evidence.",
-		);
-		console.error(
-			"3. Resolve any blockages (e.g. check quotas, API status, or run manually).",
-		);
-
-		process.exit(1);
+	} catch {
+		return false;
 	}
 }
 
-main().catch(async (err) => {
-	AgentLogger.error("SYSTEM", "LOOP", "CRASH", err.message);
-	await sendAlert(
-		"🔥 **YT3 Loop Crash**: The meta-orchestrator failed.",
-		"error",
-		{ message: err.message },
-	);
+async function main() {
+	AgentLogger.init();
+	const results = new Map<string, boolean>();
+	for (const taskName of ["byosan:daily", "run:humanity", "audit:today"]) {
+		results.set(taskName, await runTask(taskName));
+	}
+
+	const failures = [...results]
+		.filter(([, ok]) => !ok)
+		.map(([taskName]) => `${taskName} failed`);
+	if (!auditPassed()) failures.push("audit evidence is not ready");
+
+	if (failures.length === 0) {
+		AgentLogger.info("SYSTEM", "LOOP", "FINISH", "Daily loop completed.");
+		return;
+	}
+
+	const message = `Daily loop failed: ${failures.join(", ")}`;
+	AgentLogger.error("SYSTEM", "LOOP", "FAIL", message);
+	await sendAlert(`❌ **YT3 Loop Failure**: ${message}`, "error");
+	process.exit(1);
+}
+
+main().catch(async (error: unknown) => {
+	const message = error instanceof Error ? error.message : String(error);
+	AgentLogger.error("SYSTEM", "LOOP", "CRASH", message);
+	await sendAlert("🔥 **YT3 Loop Crash**", "error", { message });
 	process.exit(1);
 });
