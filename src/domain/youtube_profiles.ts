@@ -54,6 +54,8 @@ export type YouTubeChannelIdentity = {
 	handle: string | null;
 };
 
+const profiles = Object.values(YOUTUBE_PROFILES);
+
 export function getYouTubeProfile(
 	profileName = process.env.YOUTUBE_CHANNEL_PROFILE,
 ): YouTubeProfile {
@@ -74,6 +76,27 @@ export function getYouTubeProfile(
 	}
 
 	return profile;
+}
+
+export function getYouTubeProfileForBucket(bucket: string): YouTubeProfile {
+	const profile = profiles.find((candidate) => candidate.bucket === bucket);
+	if (!profile) {
+		throw new Error(`No YouTube profile configured for bucket '${bucket}'`);
+	}
+	return profile;
+}
+
+export function getYouTubeProfileForChannel(
+	channelId?: string,
+	channelTitle?: string,
+): YouTubeProfile | null {
+	return (
+		profiles.find(
+			(profile) =>
+				(channelId && profile.expectedChannelId === channelId) ||
+				(channelTitle && profile.expectedChannelTitle === channelTitle),
+		) ?? null
+	);
 }
 
 export function loadYouTubeProfileEnv(
@@ -128,6 +151,27 @@ export async function hydrateOAuthCredentials(
 	throw new Error(
 		`YouTube credentials missing for profile '${profile.profileName}'. Set YOUTUBE_REFRESH_TOKEN or create ${profile.tokenPath}.`,
 	);
+}
+
+export async function createYouTubeOAuthClient(
+	profileName = process.env.YOUTUBE_CHANNEL_PROFILE,
+	options: { hydrate?: boolean } = {},
+) {
+	const profile = loadYouTubeProfileEnv(profileName);
+	const clientId = process.env.YOUTUBE_CLIENT_ID;
+	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+	if (!clientId || !clientSecret) {
+		throw new Error(
+			`YouTube OAuth client config missing for profile '${profile.profileName}'`,
+		);
+	}
+	const auth = new google.auth.OAuth2({
+		clientId,
+		clientSecret,
+		redirectUri: resolveYouTubeRedirectUri(),
+	});
+	if (options.hydrate !== false) await hydrateOAuthCredentials(auth, profile);
+	return { profile, auth };
 }
 
 export async function fetchCurrentChannelIdentity(
