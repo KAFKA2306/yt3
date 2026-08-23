@@ -5,12 +5,7 @@ import { ScriptSmith } from "./domain/agents/content.js";
 import { type MediaResult, VisualDirector } from "./domain/agents/media.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
-import { DynamicsOrchestrator } from "./domain/evolution/dynamics_orchestrator.js";
-import type {
-	AgentState,
-	ContentResult,
-	GenerationDynamics,
-} from "./domain/types.js";
+import type { AgentState, ContentResult } from "./domain/types.js";
 import { type AssetStore, appendLoopMemory } from "./io/core.js";
 import { sendAlert } from "./io/utils/discord.js";
 import { AgentLogger } from "./io/utils/logger.js";
@@ -27,11 +22,6 @@ export async function runSequentialWorkflow(
 	let state: AgentState = { ...initialState } as AgentState;
 	const bucket = state.bucket || store.domainId;
 	state.bucket = bucket;
-	const dynOrch = new DynamicsOrchestrator(store);
-	const dynPath = path.join(store.runDir, "generation_dynamics.json");
-	const dynamicsObj: Partial<GenerationDynamics> = fs.existsSync(dynPath)
-		? fs.readJsonSync(dynPath)
-		: {};
 
 	const researchJsonPath = path.join(store.runDir, "research.json");
 	if (fs.existsSync(researchJsonPath)) {
@@ -63,26 +53,6 @@ export async function runSequentialWorkflow(
 			memory_context: researchResults.memory_context,
 		};
 		fs.writeJsonSync(researchJsonPath, researchResults, { spaces: 2 });
-	}
-
-	if (
-		state.director_data &&
-		(!dynamicsObj.world_state || !dynamicsObj.selection_state)
-	) {
-		AgentLogger.info(
-			"SYSTEM",
-			"WORKFLOW",
-			"DYNAMICS",
-			"Synthesizing research dynamics...",
-		);
-		const { world_state, selection_state } =
-			await dynOrch.synthesizeResearchDynamics(
-				state.news || [],
-				state.director_data,
-			);
-		dynamicsObj.world_state = world_state;
-		dynamicsObj.selection_state = selection_state;
-		fs.writeJsonSync(dynPath, dynamicsObj, { spaces: 2 });
 	}
 
 	const metadataJsonPath = path.join(store.runDir, "metadata.json");
@@ -129,33 +99,6 @@ export async function runSequentialWorkflow(
 		store.save("content", "output", contentResults);
 		fs.writeJsonSync(metadataJsonPath, contentResults.metadata, { spaces: 2 });
 		invalidateMediaArtifacts(store);
-	}
-
-	if (
-		state.script &&
-		state.metadata &&
-		(!dynamicsObj.strategy_genome ||
-			!dynamicsObj.narrative_state ||
-			!dynamicsObj.generation_state ||
-			!dynamicsObj.attention_state)
-	) {
-		AgentLogger.info(
-			"SYSTEM",
-			"WORKFLOW",
-			"DYNAMICS",
-			"Synthesizing narrative dynamics...",
-		);
-		const {
-			strategy_genome,
-			narrative_state,
-			generation_state,
-			attention_state,
-		} = await dynOrch.synthesizeNarrativeDynamics(state.script, state.metadata);
-		dynamicsObj.strategy_genome = strategy_genome;
-		dynamicsObj.narrative_state = narrative_state;
-		dynamicsObj.generation_state = generation_state;
-		dynamicsObj.attention_state = attention_state;
-		fs.writeJsonSync(dynPath, dynamicsObj, { spaces: 2 });
 	}
 
 	const videoPath = path.join(
@@ -214,25 +157,6 @@ export async function runSequentialWorkflow(
 		store.save("media", "output", mediaResults);
 	}
 
-	state.generation_dynamics = dynOrch.calculateEvolution(
-		dynamicsObj.world_state as NonNullable<typeof dynamicsObj.world_state>,
-		dynamicsObj.selection_state as NonNullable<
-			typeof dynamicsObj.selection_state
-		>,
-		dynamicsObj.strategy_genome as NonNullable<
-			typeof dynamicsObj.strategy_genome
-		>,
-		dynamicsObj.narrative_state as NonNullable<
-			typeof dynamicsObj.narrative_state
-		>,
-		dynamicsObj.generation_state as NonNullable<
-			typeof dynamicsObj.generation_state
-		>,
-		dynamicsObj.attention_state as NonNullable<
-			typeof dynamicsObj.attention_state
-		>,
-		undefined,
-	);
 	store.updateState(state);
 
 	AgentLogger.info("SYSTEM", "WORKFLOW", "STEP", "Starting Quality Audit...");
@@ -352,27 +276,6 @@ export async function runSequentialWorkflow(
 		{ spaces: 2 },
 	);
 
-	const finalDynamics = dynOrch.calculateEvolution(
-		dynamicsObj.world_state as NonNullable<typeof dynamicsObj.world_state>,
-		dynamicsObj.selection_state as NonNullable<
-			typeof dynamicsObj.selection_state
-		>,
-		dynamicsObj.strategy_genome as NonNullable<
-			typeof dynamicsObj.strategy_genome
-		>,
-		dynamicsObj.narrative_state as NonNullable<
-			typeof dynamicsObj.narrative_state
-		>,
-		dynamicsObj.generation_state as NonNullable<
-			typeof dynamicsObj.generation_state
-		>,
-		dynamicsObj.attention_state as NonNullable<
-			typeof dynamicsObj.attention_state
-		>,
-		state.publish_results,
-	);
-	fs.writeJsonSync(dynPath, finalDynamics, { spaces: 2 });
-	state.generation_dynamics = finalDynamics;
 	store.updateState(state);
 
 	appendLoopMemory(store, {

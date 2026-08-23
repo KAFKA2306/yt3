@@ -12,7 +12,6 @@ import {
 } from "../../io/core.js";
 import { evaluateCreativeFreshness } from "../../io/utils/creative_freshness.js";
 import { ScriptIntegrityLinter } from "../../io/utils/qa/script_linter.js";
-import { DynamicsOrchestrator } from "../evolution/dynamics_orchestrator.js";
 import { AuditReportSchema } from "../types.js";
 import type {
 	AgentState,
@@ -24,7 +23,6 @@ import type {
 	ScriptLine,
 } from "../types.js";
 import { compareVoiceMaps, getCanonicalVoiceMap } from "../voice_registry.js";
-import { MetaAuditLayer } from "./meta_audit_layer.js";
 
 const SemanticAuditResultSchema = z.object({
 	content_structure: z.object({
@@ -248,12 +246,6 @@ export class AuditAgent extends BaseAgent {
 				await this.auditDeterministicRetention(state, evidence),
 			);
 		}
-
-		// 5.8 GENERATION DYNAMICS AUDIT (Anti-Collapse & Parameter Drift Audit)
-		Object.assign(results, this.auditGenerationDynamics(state, evidence));
-
-		// 5.9 META AUDIT LAYER (Process-Evolution-Centric Audit)
-		Object.assign(results, await this.auditMetaEvolution(state, evidence));
 
 		// 5.10 HUMANITY OBSERVATORY AUDIT (For 'Humanity Observatory' channel)
 		if (state.script && state.bucket === "humanity_observatory") {
@@ -518,192 +510,6 @@ export class AuditAgent extends BaseAgent {
 				type: "BOUNDED_PROBABILISTIC",
 			};
 		}
-
-		return checks;
-	}
-
-	private auditGenerationDynamics(
-		state: AgentState,
-		evidence: Record<string, unknown>,
-	): Record<string, AuditCheck> {
-		const checks: Record<string, AuditCheck> = {};
-		const dynamics = state.generation_dynamics;
-
-		if (!dynamics) {
-			checks.generation_dynamics_integrity = {
-				name: "Generation Dynamics Integrity",
-				description:
-					"Verifies that all 8 state steps of generation dynamics are populated.",
-				status: "QUALITY_FAIL",
-				details: "generation_dynamics state is missing from AgentState.",
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-			return checks;
-		}
-
-		evidence.generation_dynamics = dynamics;
-
-		// 1. Structural/Integrity Check
-		const requiredSteps = [
-			"world_state",
-			"selection_state",
-			"narrative_state",
-			"generation_state",
-			"attention_state",
-			"publish_state",
-			"audience_response_state",
-			"evolution_state",
-		];
-		const missingSteps = requiredSteps.filter((step) => !(step in dynamics));
-
-		if (missingSteps.length > 0) {
-			checks.generation_dynamics_integrity = {
-				name: "Generation Dynamics Integrity",
-				description:
-					"Verifies that all 8 state steps of generation dynamics are populated.",
-				status: "QUALITY_FAIL",
-				details: `Missing steps: ${missingSteps.join(", ")}`,
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-		} else {
-			checks.generation_dynamics_integrity = {
-				name: "Generation Dynamics Integrity",
-				description:
-					"Verifies that all 8 state steps of generation dynamics are populated.",
-				status: "PASS",
-				details:
-					"All 8 steps (world, selection, narrative, generation, attention, publish, audience, evolution) are structurally verified.",
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-		}
-
-		// 2. Anti-Collapse / Parameter Drift Check
-		const explorationMode = dynamics.evolution_state?.exploration_mode_active;
-		const strategyMutation = dynamics.evolution_state?.strategy_mutation;
-		const cadenceMutation = dynamics.evolution_state?.cadence_mutation;
-
-		if (explorationMode) {
-			checks.anti_collapse_drift = {
-				name: "Anti-Collapse Parameter Drift",
-				description:
-					"Audit for structural duplication or pattern locking in cadence or topic narrative strategies.",
-				status: "PASS",
-				details: `Parameter drift was detected, but Strategy Mutation Engine successfully triggered exploration. Strategy Mutation: "${strategyMutation}". Cadence Mutation: "${cadenceMutation}".`,
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-		} else {
-			checks.anti_collapse_drift = {
-				name: "Anti-Collapse Parameter Drift",
-				description:
-					"Audit for structural duplication or pattern locking in cadence or topic narrative strategies.",
-				status: "PASS",
-				details:
-					"No significant parameter drift detected. Strategy variance remains healthy.",
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-		}
-
-		// 3. Attention Fatigue Risk Check (Simulated entropy accumulation check)
-		const fatigue = dynamics.attention_state?.fatigue_risk || 0.0;
-		if (fatigue > 0.75) {
-			checks.attention_entropy_load = {
-				name: "Attention Entropy & Fatigue Risk",
-				description:
-					"Verifies viewer fatigue does not exceed quality thresholds (fatigue <= 0.75).",
-				status: "QUALITY_FAIL",
-				details: `High viewer fatigue risk detected (${fatigue}). Entropy accumulation is critical due to lack of new information, predictable syntax or high cadence repetition.`,
-				critical: true,
-				type: "BOUNDED_PROBABILISTIC",
-			};
-		} else {
-			checks.attention_entropy_load = {
-				name: "Attention Entropy & Fatigue Risk",
-				description:
-					"Verifies viewer fatigue does not exceed quality thresholds (fatigue <= 0.75).",
-				status: "PASS",
-				details: `Viewer fatigue risk is within healthy bounds (${fatigue}).`,
-				critical: true,
-				type: "BOUNDED_PROBABILISTIC",
-			};
-		}
-
-		return checks;
-	}
-
-	private async auditMetaEvolution(
-		state: AgentState,
-		evidence: Record<string, unknown>,
-	): Promise<Record<string, AuditCheck>> {
-		const checks: Record<string, AuditCheck> = {};
-
-		const currentDynamics = state.generation_dynamics;
-		if (!currentDynamics) {
-			checks.meta_evolution_readiness = {
-				name: "Meta Evolution: Dynamic Ledger Readiness",
-				description:
-					"Verifies state contains necessary dynamics for meta auditing.",
-				status: "QUALITY_FAIL",
-				details: "State generation_dynamics is not populated.",
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-			return checks;
-		}
-
-		const dynOrch = new DynamicsOrchestrator(this.store);
-		const metaLayer = new MetaAuditLayer(this.store);
-
-		const pastDynamics = dynOrch.getPastDynamics();
-		const metaReport = metaLayer.runMetaAudit(
-			state,
-			currentDynamics,
-			pastDynamics,
-		);
-		evidence.meta_audit = metaReport;
-
-		checks.meta_survivability = {
-			name: "Meta Evolution: Adaptive Survivability",
-			description:
-				"Evaluates overall system survivability under attention and algorithm shifts.",
-			status:
-				metaReport.survivability === "SURVIVABLE" ? "PASS" : "QUALITY_FAIL",
-			details: `Adaptive Survivability status evaluated as: ${metaReport.survivability}. Portfolio focus: stable (${metaReport.evolution_budget.portfolio_distribution.stable_content * 100}%), adjacent (${metaReport.evolution_budget.portfolio_distribution.adjacent_exploration * 100}%), radical (${metaReport.evolution_budget.portfolio_distribution.radical_experiment * 100}%).`,
-			critical: true,
-			type: "DETERMINISTIC",
-		};
-
-		checks.meta_strategy_convergence = {
-			name: "Meta Evolution: Anti-Convergence Auditor",
-			description:
-				"Checks if narrative or cadence patterns have locked or collapsed.",
-			status:
-				metaReport.strategy_convergence.status === "PASS"
-					? "PASS"
-					: "QUALITY_FAIL",
-			details: `Fear narrative ratio is ${metaReport.strategy_convergence.fear_narrative_ratio}. Emotional path entropy: ${metaReport.strategy_convergence.emotional_path_entropy}. Hook diversity: ${metaReport.strategy_convergence.hook_pattern_diversity}.`,
-			critical: true,
-			type: "DETERMINISTIC",
-		};
-
-		checks.meta_attention_entropy = {
-			name: "Meta Evolution: Attention Entropy & Fatigue",
-			description:
-				"Evaluates predictability accumulation to predict viewer fatigue.",
-			status:
-				metaReport.attention_entropy.status === "PASS"
-					? "PASS"
-					: metaReport.attention_entropy.status === "WARNING"
-						? "PASS"
-						: "QUALITY_FAIL",
-			details: `Viewer predictability score is ${metaReport.attention_entropy.audience_predictability_score} (status: ${metaReport.attention_entropy.status}). Cadence repeat count: ${metaReport.attention_entropy.repeated_cadence_count}. Opening rhythm repeat count: ${metaReport.attention_entropy.repeated_opening_rhythm_count}.`,
-			critical: true,
-			type: "BOUNDED_PROBABILISTIC",
-		};
 
 		return checks;
 	}

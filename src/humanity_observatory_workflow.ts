@@ -5,8 +5,7 @@ import { ScriptSmith } from "./domain/agents/content.js";
 import { type MediaResult, VisualDirector } from "./domain/agents/media.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
-import { DynamicsOrchestrator } from "./domain/evolution/dynamics_orchestrator.js";
-import type { AgentState, GenerationDynamics } from "./domain/types.js";
+import type { AgentState } from "./domain/types.js";
 import { type AssetStore, ROOT, loadConfig } from "./io/core.js";
 import { sendAlert } from "./io/utils/discord.js";
 import { AgentLogger } from "./io/utils/logger.js";
@@ -27,11 +26,6 @@ export async function runHumanityObservatoryWorkflow(
 	initialState: Partial<AgentState>,
 ) {
 	let state: AgentState = { ...initialState } as AgentState;
-	const dynOrch = new DynamicsOrchestrator(store);
-	const dynPath = path.join(store.runDir, "generation_dynamics.json");
-	const dynamicsObj: Partial<GenerationDynamics> = fs.existsSync(dynPath)
-		? fs.readJsonSync(dynPath)
-		: {};
 
 	// 1. Research (Trend discovery)
 	const researchJsonPath = path.join(store.runDir, "research.json");
@@ -59,25 +53,6 @@ export async function runHumanityObservatoryWorkflow(
 		);
 		state = { ...state, ...researchResults };
 		fs.writeJsonSync(researchJsonPath, researchResults, { spaces: 2 });
-	}
-
-	// Generate Phase 1 Dynamics: world_state & selection_state
-	if (
-		state.news &&
-		state.director_data &&
-		(!dynamicsObj.world_state || !dynamicsObj.selection_state)
-	) {
-		AgentLogger.info(
-			"SYSTEM",
-			"HUMANITY_OBSERVATORY",
-			"DYNAMICS",
-			"Synthesizing research dynamics...",
-		);
-		const { world_state, selection_state } =
-			await dynOrch.synthesizeResearchDynamics(state.news, state.director_data);
-		dynamicsObj.world_state = world_state;
-		dynamicsObj.selection_state = selection_state;
-		fs.writeJsonSync(dynPath, dynamicsObj, { spaces: 2 });
 	}
 
 	// 2. Scripting (Narrative construction)
@@ -129,34 +104,6 @@ export async function runHumanityObservatoryWorkflow(
 			contentResults.metadata,
 			{ spaces: 2 },
 		);
-	}
-
-	// Generate Phase 2 Dynamics: strategy_genome, narrative_state, generation_state & attention_state
-	if (
-		state.script &&
-		state.metadata &&
-		(!dynamicsObj.strategy_genome ||
-			!dynamicsObj.narrative_state ||
-			!dynamicsObj.generation_state ||
-			!dynamicsObj.attention_state)
-	) {
-		AgentLogger.info(
-			"SYSTEM",
-			"HUMANITY_OBSERVATORY",
-			"DYNAMICS",
-			"Synthesizing narrative dynamics...",
-		);
-		const {
-			strategy_genome,
-			narrative_state,
-			generation_state,
-			attention_state,
-		} = await dynOrch.synthesizeNarrativeDynamics(state.script, state.metadata);
-		dynamicsObj.strategy_genome = strategy_genome;
-		dynamicsObj.narrative_state = narrative_state;
-		dynamicsObj.generation_state = generation_state;
-		dynamicsObj.attention_state = attention_state;
-		fs.writeJsonSync(dynPath, dynamicsObj, { spaces: 2 });
 	}
 
 	// 3. Media Generation (Quiet Visuals & Whisper TTS)
@@ -223,28 +170,7 @@ export async function runHumanityObservatoryWorkflow(
 		store.save("media", "output", mediaResults);
 	}
 
-	// Generate Phase 3 Dynamics: publish_state, audience_response_state & evolution_state
-	if (
-		state.video_path &&
-		(!dynamicsObj.publish_state ||
-			!dynamicsObj.audience_response_state ||
-			!dynamicsObj.evolution_state)
-	) {
-		AgentLogger.info(
-			"SYSTEM",
-			"HUMANITY_OBSERVATORY",
-			"DYNAMICS",
-			"Synthesizing evolution dynamics...",
-		);
-		const dynamics = await dynOrch.synthesizeEvolutionDynamics(state);
-		dynamicsObj.publish_state = dynamics.publish_state;
-		dynamicsObj.audience_response_state = dynamics.audience_response_state;
-		dynamicsObj.evolution_state = dynamics.evolution_state;
-		fs.writeJsonSync(dynPath, dynamicsObj, { spaces: 2 });
-	}
-
 	// 4. Humanity Quality Audit (Zero-Trust Humanity Audit)
-	state.generation_dynamics = dynamicsObj as GenerationDynamics;
 	store.updateState(state);
 
 	AgentLogger.info(
