@@ -55,10 +55,6 @@ tasks:
     desc: "Refresh authorized YouTube Analytics and purge data past the 30-day authorization boundary"
     cmds: ["bun src/scripts/refresh_youtube_analytics.ts"]
 
-  db:evolution:
-    desc: "Run Evolution operations"
-    cmds: ["bun src/scripts/evolution_ops.ts {{.CLI_ARGS}}"]
-
   asmr:ops:
     desc: "Run ASMR archive/index operations"
     cmds: ["bun --env-file=config/.env src/scripts/asmr_ops.ts"]
