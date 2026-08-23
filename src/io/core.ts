@@ -5,7 +5,6 @@ import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import type { z } from "zod";
-import { ContextPlaybook } from "../domain/evolution/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 export const ROOT = process.cwd();
 
@@ -246,13 +245,6 @@ export abstract class BaseAgent {
 		parser: (text: string) => T,
 		callOpts: Record<string, unknown> = {},
 	): Promise<T> {
-		const playbook = new ContextPlaybook();
-		const bullets = playbook.getRankedBullets(5);
-		const aceContext =
-			bullets.length > 0
-				? `\n\n[ACE Intelligence - Strategic Instructions]\n${bullets.map((b) => `- ${b.content} (ID: ${b.id})`).join("\n")}`
-				: "";
-
 		if (
 			process.env.SKIP_LLM === "true" &&
 			this.name !== "audit" &&
@@ -276,7 +268,7 @@ export abstract class BaseAgent {
 			const keyName = llm.keyName || "unknown";
 			lastKeyName = keyName;
 			const quotaContext = getQuotaContext(keyName, "gemini");
-			const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
+			const finalSystemPrompt = `${systemPrompt}\n\n${quotaContext}`;
 			await waitIfRateLimited(keyName);
 
 			try {

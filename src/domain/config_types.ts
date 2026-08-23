@@ -74,7 +74,6 @@ export interface AppConfig {
 			lock_file: string;
 			runs_dir: string;
 			memory_dir: string;
-			ace_dir: string;
 			state_dir: string;
 		};
 		filenames: {
