@@ -106,13 +106,14 @@ task improve:report
 
 `logs/stability_summary.json` is the canonical cross-run readiness state. `improve:report` derives its 7-day and 30-day evidence metrics directly from daily logs and run evidence; it does not depend on other generated reports.
 
+`publish:visibility-audit` is the single operator read-back for current YouTube visibility. It is non-mutating unless repair mode is explicitly enabled.
+
 `SCOPE=source` is the repository invariant; `SCOPE=runtime` checks historical production cleanup. Runtime cleanup is not a PR merge blocker.
 
 ## Other operator surfaces
 
 ```bash
 task movie:generate PLAN=<plan.json>
-task movie:status
 task analytics:refresh
 task asmr:ops
 task asmr:publish
