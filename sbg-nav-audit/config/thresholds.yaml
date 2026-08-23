@@ -1,7 +1,0 @@
-# SBG NAV Audit - Thresholds for Audit
-
-anomalies:
-  nav_delta_limit: 0.10 # 10%
-  fx_delta_limit: 0.05  # 5%
-  asset_contribution_max: 1.0 # 100%
-  min_market_cap: 1000000 # Safety check
