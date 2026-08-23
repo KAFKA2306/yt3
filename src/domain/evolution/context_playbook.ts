@@ -3,8 +3,10 @@ import fs from "fs-extra";
 import { ROOT, loadConfig } from "../../io/core.js";
 import type { AppConfig } from "../types.js";
 import { type AceBullet, type Playbook, PlaybookSchema } from "./types.js";
+
 export class ContextPlaybook {
 	private playbookPath: string;
+
 	constructor(playbookPath?: string) {
 		const cfg =
 			(globalThis as unknown as Record<string, AppConfig>)._config ||
@@ -13,54 +15,15 @@ export class ContextPlaybook {
 		this.playbookPath =
 			playbookPath || path.join(ROOT, aceDir, "playbook.json");
 	}
+
 	load(): Playbook {
-		if (!fs.existsSync(this.playbookPath)) {
-			return { bullets: [] };
-		}
-		const data = fs.readJsonSync(this.playbookPath);
-		return PlaybookSchema.parse(data);
+		if (!fs.existsSync(this.playbookPath)) return { bullets: [] };
+		return PlaybookSchema.parse(fs.readJsonSync(this.playbookPath));
 	}
-	save(playbook: Playbook) {
-		fs.ensureDirSync(path.dirname(this.playbookPath));
-		fs.writeJsonSync(this.playbookPath, playbook, { spaces: 2 });
-	}
+
 	getRankedBullets(limit = 10): AceBullet[] {
-		const playbook = this.load();
-		return playbook.bullets
-			.sort((a, b) => b.confidence - a.confidence)
+		return this.load()
+			.bullets.sort((a, b) => b.confidence - a.confidence)
 			.slice(0, limit);
-	}
-	addBullet(bullet: AceBullet) {
-		const playbook = this.load();
-		const exists = playbook.bullets.some(
-			(b) => b.content.toLowerCase() === bullet.content.toLowerCase(),
-		);
-		if (!exists) {
-			const updatedPlaybook = {
-				...playbook,
-				bullets: [...playbook.bullets, bullet],
-			};
-			this.save(updatedPlaybook);
-		}
-	}
-	updateBullet(bulletId: string, updates: Partial<AceBullet>) {
-		const playbook = this.load();
-		const index = playbook.bullets.findIndex((b) => b.id === bulletId);
-		if (index !== -1) {
-			const updatedBullet = {
-				...playbook.bullets[index],
-				...updates,
-			} as AceBullet;
-			const updatedBullets = [
-				...playbook.bullets.slice(0, index),
-				updatedBullet,
-				...playbook.bullets.slice(index + 1),
-			];
-			const updatedPlaybook = {
-				...playbook,
-				bullets: updatedBullets,
-			};
-			this.save(updatedPlaybook);
-		}
 	}
 }
