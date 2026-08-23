@@ -18,10 +18,7 @@ import {
 	loadRecentByosanTitles,
 	selectByosanAngle,
 } from "../byosan/news_angle.js";
-import {
-	type NewsItem,
-	NewsItemSchema,
-} from "../types.js";
+import { type NewsItem, NewsItemSchema } from "../types.js";
 
 export interface ResearchResult {
 	director_data: {
@@ -148,7 +145,9 @@ export class TrendScout extends BaseAgent {
 					candidate: result.byosan_angle,
 				}))
 				.filter(
-					(entry): entry is typeof entry & {
+					(
+						entry,
+					): entry is typeof entry & {
 						candidate: z.infer<typeof ByosanAngleCandidateSchema>;
 					} => Boolean(entry.candidate),
 				),
