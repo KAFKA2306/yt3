@@ -337,10 +337,12 @@ export function isEvidenceReady(runDir: string): boolean {
 	if (!fs.existsSync(evidencePath)) return false;
 	try {
 		const evidence = fs.readJsonSync(evidencePath) as RunEvidence;
-		if (evidence.disposition !== "success" || !evidence.public_url) return false;
+		if (evidence.disposition !== "success" || !evidence.public_url)
+			return false;
 		const receiptPath = path.join(runDir, "publish", "receipt.json");
 		const publicationPath = path.join(runDir, "publish", "state.json");
-		if (!fs.existsSync(receiptPath) || !fs.existsSync(publicationPath)) return false;
+		if (!fs.existsSync(receiptPath) || !fs.existsSync(publicationPath))
+			return false;
 		const receipt = fs.readJsonSync(receiptPath) as {
 			youtube?: { video_id?: string };
 		};
@@ -385,9 +387,7 @@ export function getMissingEvidence(runDir: string): string[] {
 	const publicationPath = path.join(runDir, "publish", "state.json");
 	if (!fs.existsSync(receiptPath)) missing.push("publish/receipt.json");
 	if (!fs.existsSync(publicationPath)) missing.push("publish/state.json");
-	if (
-		!fs.existsSync(path.join(runDir, "media", "video", "video.mp4"))
-	) {
+	if (!fs.existsSync(path.join(runDir, "media", "video", "video.mp4"))) {
 		missing.push("media/video/video.mp4");
 	}
 	if (!fs.existsSync(path.join(runDir, "research.json"))) {

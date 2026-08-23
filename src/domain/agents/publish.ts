@@ -177,7 +177,8 @@ export class PublishAgent extends BaseAgent {
 
 		const dancer = asDancerPublicationState(state);
 		const { thumbnail_path: thumbnailPath } = state;
-		const videoPath = options.publishVideoPath || this.resolvePublishVideoPath(state);
+		const videoPath =
+			options.publishVideoPath || this.resolvePublishVideoPath(state);
 		if (!videoPath) throw new Error("Video path missing");
 		if (!fs.existsSync(videoPath)) {
 			throw new Error(`Video path does not exist: ${videoPath}`);
@@ -268,7 +269,7 @@ export class PublishAgent extends BaseAgent {
 				requested_visibility: requestedVisibility,
 				phase: "PRIVATE_UPLOAD_INTENT",
 			});
-			let response;
+			let response: Awaited<ReturnType<typeof youtube.videos.insert>>;
 			try {
 				response = await youtube.videos.insert({
 					part: ["snippet", "status"],

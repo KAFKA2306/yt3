@@ -511,23 +511,11 @@ export function getRunIdDateString(): string {
 	return `${y}-${m}-${day}`;
 }
 export function getMemoryEssenceFile(store: AssetStore): string {
-	return path.join(
-		ROOT,
-		"data",
-		"memory",
-		store.domainId,
-		"essences.json",
-	);
+	return path.join(ROOT, "data", "memory", store.domainId, "essences.json");
 }
 
 export function getLoopMemoryFile(store: AssetStore): string {
-	return path.join(
-		ROOT,
-		"data",
-		"memory",
-		store.domainId,
-		"loop_journal.json",
-	);
+	return path.join(ROOT, "data", "memory", store.domainId, "loop_journal.json");
 }
 
 export function appendLoopMemory(
