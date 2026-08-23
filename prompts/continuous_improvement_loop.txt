@@ -7,7 +7,6 @@ Read first:
 - docs/daily_guarantee.md
 - Taskfile.yml
 - logs/stability_summary.md
-- logs/daily_guarantee_status.md
 
 Rules:
 - Prefer deletion and consolidation over new state files.
