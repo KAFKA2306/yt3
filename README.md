@@ -50,10 +50,12 @@ See [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
 
 ```bash
 task loop
-task run
+task run                       # 秒算マネー by default
+PROFILE=humanity task run      # 人類観測所
 task byosan:daily
-task run:humanity
 ```
+
+`task run` resolves the workflow bucket and environment from `YOUTUBE_PROFILES`; it does not maintain a second profile-to-config mapping. 夜話アーカイブ uses the ASMR operator path rather than `src/index.ts`.
 
 Use explicit run IDs when resuming or publishing. Publication never infers an unrelated latest run.
 
@@ -99,7 +101,6 @@ task audit:no-fallback SCOPE=runtime
 task audit:no-fallback
 task publish:visibility-audit
 task daily:guarantee-status
-task daily:last3
 task daily:report
 task improve:report
 ```
@@ -114,7 +115,6 @@ task movie:status
 task analytics:refresh
 task asmr:ops
 task asmr:publish
-task bootstrap
 task up
 task down
 task serve
