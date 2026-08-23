@@ -191,8 +191,7 @@ export class AuditAgent extends BaseAgent {
 		// 1. SIGNAL AUDIT (DETERMINISTIC)
 		const signalResults = await this.auditSignals(state, evidence);
 		if (
-			(state.bucket === "humanity_observatory" ||
-				state.bucket === "daily_pulse") &&
+			state.bucket === "humanity_observatory" &&
 			signalResults.multimodal_pacing
 		) {
 			signalResults.multimodal_pacing.status = "PASS";

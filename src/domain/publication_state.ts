@@ -113,18 +113,6 @@ export function transitionPublication(
 	});
 }
 
-export function assertNoLegacyPublishState(runDir: string): void {
-	if (loadPublicationState(runDir)) return;
-	const legacyEvidence = ["receipt.json", "upload_attestation.json"]
-		.map((name) => path.join(runDir, "publish", name))
-		.filter((candidate) => fs.existsSync(candidate));
-	if (legacyEvidence.length > 0) {
-		throw new Error(
-			`Legacy publish evidence exists without canonical publish/state.json; refusing a new upload: ${legacyEvidence.join(", ")}`,
-		);
-	}
-}
-
 export async function tryReuseCanonicalPublication(
 	youtube: ReturnType<typeof google.youtube>,
 	runDir: string,

@@ -57,7 +57,7 @@ describe("Stability and Audit Helpers", () => {
 		expect(basenames).not.toContain("2026-07-06");
 	});
 
-	test("isEvidenceReady detects missing or invalid proof files and missing stages", async () => {
+	test("isEvidenceReady requires the canonical proof chain", async () => {
 		const runDir = path.join(
 			TEMP_DIR,
 			"runs",
@@ -86,7 +86,7 @@ describe("Stability and Audit Helpers", () => {
 		await fs.writeJson(evidencePath, failedEvidence, { spaces: 2 });
 		expect(isEvidenceReady(runDir)).toBe(false);
 		let missing = getMissingEvidence(runDir);
-		expect(missing).toContain("evidence status=failed disposition=fatal");
+		expect(missing).toContain("evidence disposition=fatal");
 
 		const successEvidence = {
 			run_id: "byosan_money/2026-07-10-test",
@@ -99,15 +99,22 @@ describe("Stability and Audit Helpers", () => {
 		expect(isEvidenceReady(runDir)).toBe(false);
 		missing = getMissingEvidence(runDir);
 		expect(missing).toContain("publish/receipt.json");
-		expect(missing).toContain("video (.mp4)");
-		expect(missing).toContain("research");
+		expect(missing).toContain("publish/state.json");
+		expect(missing).toContain("media/video/video.mp4");
+		expect(missing).toContain("research.json");
 		expect(missing).toContain("audit/report.json");
 
 		await fs.writeJson(path.join(runDir, "research.json"), {});
-		await fs.ensureDir(path.join(runDir, "video"));
-		await fs.writeFile(path.join(runDir, "video", "final_video.mp4"), "");
+		await fs.ensureDir(path.join(runDir, "media", "video"));
+		await fs.writeFile(path.join(runDir, "media", "video", "video.mp4"), "");
 		await fs.ensureDir(path.join(runDir, "publish"));
-		await fs.writeJson(path.join(runDir, "publish", "receipt.json"), {});
+		await fs.writeJson(path.join(runDir, "publish", "receipt.json"), {
+			youtube: { video_id: "123" },
+		});
+		await fs.writeJson(path.join(runDir, "publish", "state.json"), {
+			phase: "VERIFIED",
+			video_id: "123",
+		});
 		await fs.ensureDir(path.join(runDir, "audit"));
 		await fs.writeJson(path.join(runDir, "audit", "report.json"), {
 			decision: "PASS",

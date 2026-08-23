@@ -186,7 +186,10 @@ export function evaluateCreativeFreshness(
 	store: AssetStore,
 	state: AgentState,
 ): CreativeFreshnessMetrics {
-	const bucket = state.bucket || store.domainId || "daily_pulse";
+	const bucket = state.bucket || store.domainId;
+	if (!bucket) {
+		throw new Error("Creative freshness requires an explicit bucket");
+	}
 	const currentTitle = state.metadata?.title || state.script?.title || "";
 	const currentIntro = sampleIntro(state.script);
 	const currentTopic =

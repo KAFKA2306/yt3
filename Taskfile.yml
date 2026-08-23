@@ -26,10 +26,6 @@ tasks:
     cmds:
       - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
-  pulse:auto:
-    desc: "Run Daily Pulse to NotebookLM automation"
-    cmds: ["bun --env-file=config/.env src/pulse_to_video_workflow.ts"]
-
   release:check:
     desc: "Check run-specific product release conditions without external publication (PROFILE required)"
     cmds:
@@ -81,14 +77,6 @@ tasks:
   report:
     desc: "Generate executive report"
     cmds: ["bun --env-file=config/.env src/report_workflow.ts {{.CLI_ARGS}}"]
-
-  notebooklm:
-    desc: "Run NotebookLM workflow"
-    cmds: ["bun --env-file=config/.env src/notebooklm_workflow.ts {{.CLI_ARGS}}"]
-
-  publish:nlm:
-    desc: "Batch publish existing runs-nlm videos"
-    cmds: ["bun --env-file=config/.env src/scripts/post_nlm_videos.ts"]
 
   movie:generate:
     desc: "Generate and concatenate scene videos from a JSON plan (PLAN=...)"
@@ -195,14 +183,6 @@ tasks:
   check:merge:
     desc: "Run the full PR merge gate used by CI"
     cmds: ["bun run check:merge"]
-
-  check:fast:
-    desc: "Compatibility alias for check:merge:fast"
-    cmds: ["task check:merge:fast"]
-
-  check:
-    desc: "Compatibility alias for check:merge"
-    cmds: ["task check:merge"]
 
   clean:
     desc: "Reset logs and temporary artifacts"

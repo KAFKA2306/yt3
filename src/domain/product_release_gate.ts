@@ -2,7 +2,6 @@ import path from "node:path";
 import fs from "fs-extra";
 import {
 	assertFactualIntegrityGate,
-	assertNoLegacyPublishState,
 	loadPublicationState,
 	sha256File,
 } from "./publication_state.js";
@@ -98,7 +97,6 @@ export function assertProductReleaseGate(
 			`Product release blocked: canonical publish state is ${stored.phase} without a verified video id`,
 		);
 	}
-	if (!stored) assertNoLegacyPublishState(runDir);
 
 	let factualIntegrityAttestation: string | undefined;
 	if (requireFactualIntegrity) {

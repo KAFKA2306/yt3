@@ -9,33 +9,25 @@ import { ContextPlaybook } from "../domain/evolution/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 export const ROOT = process.cwd();
 
-export function loadConfig(domainId?: string): AppConfig {
+export function loadConfig(
+	domainId = process.env.BUCKET?.trim() || "byosan_money",
+): AppConfig {
 	const configPath = process.env.CONFIG_PATH;
 	if (configPath && fs.existsSync(configPath)) {
 		return yaml.load(fs.readFileSync(configPath, "utf-8")) as AppConfig;
 	}
 
-	if (domainId) {
-		const mappedDomainId =
-			domainId === "daily_pulse" ? "byosan_money" : domainId;
-		const domainConfigPath = path.join(
-			ROOT,
-			"config",
-			"domains",
-			`${mappedDomainId}.yaml`,
-		);
-		if (fs.existsSync(domainConfigPath)) {
-			return yaml.load(fs.readFileSync(domainConfigPath, "utf-8")) as AppConfig;
-		}
+	const domainConfigPath = path.join(
+		ROOT,
+		"config",
+		"domains",
+		`${domainId}.yaml`,
+	);
+	if (fs.existsSync(domainConfigPath)) {
+		return yaml.load(fs.readFileSync(domainConfigPath, "utf-8")) as AppConfig;
 	}
 
-	const defaultPath = path.join(ROOT, "config", "default.yaml");
-	if (fs.existsSync(defaultPath)) {
-		return yaml.load(fs.readFileSync(defaultPath, "utf-8")) as AppConfig;
-	}
-	throw new Error(
-		`CRITICAL: No configuration found. Domain: ${domainId || "none"}`,
-	);
+	throw new Error(`CRITICAL: No configuration found for domain '${domainId}'`);
 }
 
 import { AgentLogger as Logger } from "./utils/logger.js";
@@ -86,7 +78,6 @@ export function createLlm(
 ): BaseChatModel & { keyName?: string } {
 	const { extra = {}, ...rest } = options;
 
-	// Infer domain from sessionId (usually runDir path)
 	let domainId: string | undefined;
 	if (options.sessionId?.includes("/")) {
 		const parts = options.sessionId.split(path.sep);
@@ -103,7 +94,7 @@ export function createLlm(
 		"SYSTEM",
 		"CORE",
 		"API_CHECK",
-		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}... (Domain: ${domainId || "default"})`,
+		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}... (Domain: ${domainId || "byosan_money"})`,
 	);
 
 	const llm = new ChatGoogleGenerativeAI({
@@ -520,43 +511,11 @@ export function getRunIdDateString(): string {
 	return `${y}-${m}-${day}`;
 }
 export function getMemoryEssenceFile(store: AssetStore): string {
-	const cfg = store.cfg;
-	const isCognitive = store.runDir.includes("humanity_observatory");
-	const isByosanMoney = store.runDir.includes("byosan_money");
-	const subDir = isCognitive
-		? "humanity_observatory"
-		: isByosanMoney
-			? "byosan_money"
-			: "daily_pulse";
-	const essenceFile = path.join(
-		ROOT,
-		"data",
-		"memory",
-		subDir,
-		"essences.json",
-	);
-
-	if (!isCognitive && !fs.existsSync(essenceFile)) {
-		const legacyFile = path.isAbsolute(cfg.workflow.memory.essence_file)
-			? cfg.workflow.memory.essence_file
-			: path.join(ROOT, cfg.workflow.memory.essence_file);
-		if (fs.existsSync(legacyFile)) {
-			fs.ensureDirSync(path.dirname(essenceFile));
-			fs.copySync(legacyFile, essenceFile);
-		}
-	}
-	return essenceFile;
+	return path.join(ROOT, "data", "memory", store.domainId, "essences.json");
 }
 
 export function getLoopMemoryFile(store: AssetStore): string {
-	const isCognitive = store.runDir.includes("humanity_observatory");
-	const isByosanMoney = store.runDir.includes("byosan_money");
-	const subDir = isCognitive
-		? "humanity_observatory"
-		: isByosanMoney
-			? "byosan_money"
-			: "daily_pulse";
-	return path.join(ROOT, "data", "memory", subDir, "loop_journal.json");
+	return path.join(ROOT, "data", "memory", store.domainId, "loop_journal.json");
 }
 
 export function appendLoopMemory(
@@ -639,7 +598,7 @@ export function loadMemoryContext(store: AssetStore): string {
 }
 
 export function fetchRecentThemes(store: AssetStore, days = 7): string {
-	const cfg = loadConfig();
+	const cfg = store.cfg;
 	const runsDir = path.join(ROOT, cfg.workflow.paths.runs_dir, store.domainId);
 
 	if (!fs.existsSync(runsDir)) {

@@ -11,9 +11,6 @@ workflow:
   default_run_dir: "runs"
   default_bucket: "byosan_money"
   checkpoint_enabled: true
-  memory:
-    index_file: "data/memory/index.json"
-    essence_file: "data/memory/essences.json"
   trend_settings:
     enabled: true
     regions: ["JP", "US"]
@@ -35,16 +32,6 @@ workflow:
     video: "video.mp4"
 
 steps:
-  news:
-    query_buckets:
-      daily_pulse: "site:investing.com OR site:bloomberg.com OR site:reuters.com OR site:nikkei.com OR site:finance.yahoo.com top news headlines"
-      us_market_movers: "S&P500 Nasdaq Dow Jones Earnings Reports Guidance AI Stocks Mag7"
-      global_macro: "Fed FOMC ECB Rates Inflation CPI Jobs Report Unemployment US Economy"
-      tech_giants: "NVIDIA Microsoft Google Apple Tesla Amazon Meta TSMC ASML"
-      crypto_global: "Bitcoin Ethereum ETF SEC Regulation Crypto Markets Global Adoption"
-      geopolitics_money: "Oil Prices Gold Geopolitics Trade War US-China Relations Supply Chain"
-    fetch_count: 20
-    cooldown_hours: 12
   research:
     recent_days: 3
     essence_limit: 10
@@ -85,7 +72,7 @@ steps:
   video:
     resolution: "1920x1080"
     fps: 25
-    background_color: "#103766" # 2026 Financial Protocol Base
+    background_color: "#103766"
     intro_seconds: 5
     codec: "h264_nvenc"
     effects:
@@ -187,14 +174,6 @@ automation:
     - {name: "workflow_daily_0700_systemd", command: ["# Managed by systemd timer"], cron: "0 7 * * *"}
     - {name: "trend_workflow_hourly", command: ["npx", "tsx", "src/index.ts"], args: ["--trend-mode"], cron: "0 * * * *"}
 
-agents:
-  notebooklm:
-    enabled: true
-    video_style: "whiteboard"
-    output_dir: "runs-nlm"
-    temperature: 0.1
-    notebook_ids: []
-
 mcp:
   servers:
     context7:
@@ -271,7 +250,7 @@ prompts:
     consolidated_research:
       system: |
         あなたは「客観的ニュース・オブザーバー」兼「秒算マネー（Byosan Money）」の主任アナリストです。
-        最新の市場ニュース、または提供された[DAILY PULSE SOVEREIGNTY DATA]から、今日観測すべき「市場とマクロ経済の変化」を選定してください。
+        最新の市場ニュース、または提供された[CURRENT MARKET EVIDENCE]から、今日観測すべき「市場とマクロ経済の変化」を選定してください。
         一次情報なし断定禁止。Tier 1 source 以外の情報は推論扱いに留め、各主張には source_tier と URL または source_identifier を必須としてください。
         ただし、視聴者に愛されることを最優先にし、数字の量よりも「自分ごと化できる具体性」「感情が動く瞬間」「次に何をすればいいかの明快さ」を重視してください。
 
@@ -283,7 +262,7 @@ prompts:
         5. **市場心理 / 資金流動** (金余り、バブル、パニック、スマートマネーの動き)
 
         **【ミッション：ありのままの事実収集 × 適応的成長（Adaptive Growth）】**
-        1. 「今日、世界の資本と技術 of フローで何が起きているか」を客観的・データに基づいて特定してください。
+        1. 「今日、世界の資本と技術のフローで何が起きているか」を客観的・データに基づいて特定してください。
         2. **事実と数値の優先**: 可能な限り具体的な数値（金利パーセンテージ、投資額、業績データ）や固有名詞（企業名、政策決定者名）を収集してください。ただし、台本では数字を羅列するのではなく、生活への影響が伝わる最小限の数字に圧縮してください。
         3. **脱・終末美学**: 単なる破滅（Collapse）や恐怖を煽るアングルではなく、人類や企業が変化にいかに「適応し再構築されていくか（Adaptive Growth）」という視点を重視してください。
 
@@ -295,11 +274,11 @@ prompts:
               "category": "マクロ経済 | 企業財務 | 地政学 | テクノロジー | 市場心理",
               "selected_topic": "観測された主要トピックのタイトル",
               "reason": "事実に基づく選定理由（客観的なインパクトの大きさ）",
-              "angle": "ニュースが示す直接的な変化 of 方向性",
+              "angle": "ニュースが示す直接的な変化の方向性",
               "search_query": "収集に使用した検索クエリ",
               "results": [
                 {
-                  "angle": "観測 of 切り口（言語・地域）",
+                  "angle": "観測の切り口（言語・地域）",
                   "title_hook": "事実を端的に示す日本語タイトル",
                   "key_questions": ["観測された事実に関する具体的な問い"],
                   "news": [
@@ -310,7 +289,7 @@ prompts:
                       "published_at": "YYYY-MM-DD",
                       "claim_type": "fact | forecast | opinion",
                       "confidence": "high",
-                      "original_text": "原文 of 重要な事実箇所"
+                      "original_text": "原文の重要な事実箇所"
                     }
                   ]
                 }
@@ -334,31 +313,6 @@ prompts:
 
         上記を元に、最高精度の「ありのままの観測結果」を提供してください。
         必ず、異なる2つのカテゴリーから選定すること。
-
-    legacy_research:
-      system: |
-        あなたは金融YouTubeのディレクター兼リサーチャーです。
-        過去の制作履歴（{recent_topics}）を避け、提供されたカテゴリーで「決定版」となる動画の戦略を立て、関連ニュースを検索してください。
-        
-        google_searchツールを使用して最新の具体的事実を集めてください。
-        
-        出力JSON:
-        {
-          "director_data": {
-            "angle": "構造的分析と戦略的切り口",
-            "title_hook": "知的洞察を促すタイトル",
-            "search_query": "検索クエリ"
-          },
-          "news": [
-            { "title": "タイトル", "summary": "概要", "url": "URL" }
-          ]
-        }
-
-      user_template: |
-        カテゴリー: {category}
-
-        1. 提供されたカテゴリーについて、視聴者に価値をもたらす最も適切な切り口を選択してください。
-        2. 関連する最新ニュースを検索し、構造的な解説の裏付けとなる情報を3つ集めてください。
 
   content:
     outline:

@@ -57,7 +57,7 @@ task check:merge:fast
 
 The merge gate checks repository/source state only: lint, types, repository contract, static publish routing, source-level no-fallback policy, and tests. It deliberately does **not** depend on production OAuth credentials, a specific `RUN_ID`, historical runtime receipts, or current YouTube state.
 
-`task check` and `task check:fast` remain compatibility aliases. Quality-gate ownership is documented in [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
+Quality-gate ownership is documented in [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
 
 ## Product release gate
 
@@ -80,7 +80,6 @@ task loop
 task run
 task byosan:daily
 task run:humanity
-task pulse:auto
 ```
 
 Use explicit run IDs when resuming or publishing. Do not infer a publication target from an unrelated "latest" directory.
@@ -167,7 +166,6 @@ task loop
 task run
 task run:humanity
 task byosan:daily
-task pulse:auto
 ```
 
 Release and publication:
@@ -177,7 +175,6 @@ task release:check PROFILE=byosan -- <run-id>
 task publish:byosan -- <run-id>
 task publish:yawa -- <run-id>
 task publish:humanity -- <run-id>
-task publish:nlm
 task asmr:publish
 ```
 

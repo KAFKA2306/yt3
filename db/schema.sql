@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS strategy_genomes (
     intro_type TEXT NOT NULL,
     hook_pattern TEXT NOT NULL,
     narrative_weapon TEXT NOT NULL,
-    emotion_curve_json TEXT NOT NULL, -- e.g. ["fear", "surprise", "clarity"]
+    emotion_curve_json TEXT NOT NULL,
     cadence_profile TEXT NOT NULL,
     memory_anchor TEXT,
     memory_anchor_type TEXT,
@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS media_audits (
 CREATE TABLE IF NOT EXISTS youtube_analytics (
     video_id TEXT NOT NULL,
     channel_id TEXT NOT NULL,
-    age_window TEXT NOT NULL, -- 'published_day', 'first_7d'
+    age_window TEXT NOT NULL,
     views INTEGER NOT NULL,
     engaged_views INTEGER,
     watch_time_minutes REAL,
@@ -180,8 +180,6 @@ CREATE TABLE IF NOT EXISTS youtube_analytics (
     shares INTEGER,
     subscribers_gained INTEGER,
     subscribers_lost INTEGER,
-    subscribers_net INTEGER, -- legacy nullable field; ingestion leaves NULL
-    satisfaction_score REAL, -- legacy nullable field; ingestion leaves NULL
     recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (video_id, age_window)
 );
