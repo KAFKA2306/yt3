@@ -22,8 +22,8 @@ import type { AgentState, AppConfig, PublishResults } from "../types.js";
 import { validateCredentials } from "../validation.js";
 import {
 	assertYouTubeChannelMatchesProfile,
+	createYouTubeOAuthClient,
 	getYouTubeProfile,
-	hydrateOAuthCredentials,
 } from "../youtube_profiles.js";
 
 export class PublishAgent extends BaseAgent {
@@ -190,9 +190,9 @@ export class PublishAgent extends BaseAgent {
 			: ytCfg.default_visibility;
 		console.log(`[PUBLISH:VIDEO] source=${videoPath} sha256=${artifactSha256}`);
 
-		const auth = await this.createYouTubeClient();
+		const { auth } = await createYouTubeOAuthClient(profile.profileName);
 		const youtube = google.youtube({ version: "v3", auth });
-		await this.verifyYouTubeChannel(auth);
+		await assertYouTubeChannelMatchesProfile(auth, profile);
 
 		const reusable = await tryReuseCanonicalPublication(
 			youtube,
@@ -464,41 +464,6 @@ export class PublishAgent extends BaseAgent {
 			},
 			status: buildYouTubeStatus(state),
 		};
-	}
-
-	private async verifyYouTubeChannel(
-		auth: InstanceType<typeof google.auth.OAuth2>,
-	) {
-		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
-		const profile = getYouTubeProfile(profileName);
-		await assertYouTubeChannelMatchesProfile(auth, profile);
-	}
-
-	private async createYouTubeClient() {
-		const clientId = process.env.YOUTUBE_CLIENT_ID;
-		const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-		const redirectUri =
-			process.env.YOUTUBE_REDIRECT_URI ||
-			"http://localhost:3000/oauth2callback";
-		if (!clientId || !clientSecret) {
-			throw new Error(
-				"YouTube authentication failed: unable to initialize YouTube client",
-			);
-		}
-		const client = new google.auth.OAuth2({
-			clientId,
-			clientSecret,
-			redirectUri,
-		});
-		const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
-		if (!profileName) {
-			throw new Error(
-				"YouTube client initialization requires YOUTUBE_CHANNEL_PROFILE",
-			);
-		}
-		const profile = getYouTubeProfile(profileName);
-		await hydrateOAuthCredentials(client, profile);
-		return client;
 	}
 
 	private async setYouTubeThumbnail(

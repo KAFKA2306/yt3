@@ -1,12 +1,10 @@
 import { Database } from "bun:sqlite";
 import path from "node:path";
-import dotenv from "dotenv";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
-	YOUTUBE_PROFILES,
-	type YouTubeProfileName,
-	hydrateOAuthCredentials,
+	createYouTubeOAuthClient,
+	getYouTubeProfileForBucket,
 } from "../domain/youtube_profiles.js";
 
 const ROOT = process.cwd();
@@ -88,12 +86,6 @@ export function eligibleWindows(
 	return windows;
 }
 
-function profileForBucket(bucket: string): YouTubeProfileName {
-	if (bucket.includes("humanity")) return "humanity";
-	if (bucket.includes("yawa")) return "yawa";
-	return "byosan";
-}
-
 export function discoverVideos(baseDir = process.cwd()): PublishedVideo[] {
 	const videos: PublishedVideo[] = [];
 	const runsDir = path.join(baseDir, "runs");
@@ -143,26 +135,6 @@ export function discoverVideos(baseDir = process.cwd()): PublishedVideo[] {
 		}
 	}
 	return videos;
-}
-
-async function getOAuthClient(profileName: YouTubeProfileName) {
-	const profile = YOUTUBE_PROFILES[profileName];
-	const envPath = path.join(ROOT, profile.envFile);
-	if (!fs.existsSync(envPath))
-		throw new Error(`Profile env file missing: ${profile.envFile}`);
-	dotenv.config({ path: envPath, override: true });
-	const clientId = process.env.YOUTUBE_CLIENT_ID;
-	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-	if (!clientId || !clientSecret) {
-		throw new Error(`Missing OAuth client config in ${profile.envFile}`);
-	}
-	const auth = new google.auth.OAuth2(
-		clientId,
-		clientSecret,
-		process.env.YOUTUBE_REDIRECT_URI || "http://localhost:3310/oauth2callback",
-	);
-	await hydrateOAuthCredentials(auth, profile);
-	return { auth, profile };
 }
 
 async function verifyAuthorizationAndVideo(
@@ -312,9 +284,9 @@ async function main() {
 		for (const video of videos) {
 			const windows = eligibleWindows(video.publishedAt);
 			if (windows.length === 0) continue;
-			const profileName = profileForBucket(video.bucket);
+			const profile = getYouTubeProfileForBucket(video.bucket);
 			try {
-				const { auth, profile } = await getOAuthClient(profileName);
+				const { auth } = await createYouTubeOAuthClient(profile.profileName);
 				if (video.channelId !== profile.expectedChannelId) {
 					throw new Error(
 						`Receipt channel mismatch for ${video.videoId}: expected ${profile.expectedChannelId}, got ${video.channelId}`,
@@ -350,7 +322,7 @@ async function main() {
 				}
 			} catch (error) {
 				console.error(
-					`[FAIL_CLOSED] ${video.videoId} (${profileName}): ${(error as Error).message}`,
+					`[FAIL_CLOSED] ${video.videoId} (${profile.profileName}): ${(error as Error).message}`,
 				);
 			}
 		}
