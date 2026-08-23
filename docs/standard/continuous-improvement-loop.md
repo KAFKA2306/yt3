@@ -14,7 +14,7 @@ YT3 improves from run evidence, not task exit codes or duplicated status files.
 
 - `task stability:report` regenerates cross-run readiness and failure classification.
 - `task improve:report` regenerates 7-day and 30-day evidence metrics directly from source evidence.
-- `task movie:status` inspects movie receipts without mutating remote state.
+- `task publish:visibility-audit` is the single remote visibility read-back.
 - `task audit:publish-routing` verifies exact publish routing.
 
 The improvement report does not run unrelated audits as hidden prerequisites. Run a targeted audit explicitly when its result is needed.
