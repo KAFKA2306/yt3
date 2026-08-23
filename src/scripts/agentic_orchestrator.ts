@@ -30,7 +30,9 @@ function auditPassed(): boolean {
 		};
 		return Boolean(
 			report.reports?.length &&
-				report.reports.every((item) => item.audit_passed && item.evidence_ready),
+				report.reports.every(
+					(item) => item.audit_passed && item.evidence_ready,
+				),
 		);
 	} catch {
 		return false;
