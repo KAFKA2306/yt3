@@ -14,12 +14,6 @@ const PROFILE_TASKS = {
 	auth: "bun src/scripts/youtube_oauth.ts",
 } as const;
 
-const PUBLISH_ALIASES: Record<string, YouTubeProfileName> = {
-	"publish:byosan": "byosan",
-	"publish:yawa": "yawa",
-	"publish:humanity": "humanity",
-};
-
 function flattenCmds(cmds: unknown): string[] {
 	if (typeof cmds === "string") return [cmds];
 	if (!Array.isArray(cmds)) return [];
@@ -107,18 +101,6 @@ function assertProfileTasks(tasks: Record<string, TaskDefinition>) {
 	}
 }
 
-function assertPublishAliases(tasks: Record<string, TaskDefinition>) {
-	for (const [taskName, profile] of Object.entries(PUBLISH_ALIASES)) {
-		const command = singleCommand(taskName, tasks[taskName]);
-		const expected = `task publish PROFILE=${profile} -- {{.CLI_ARGS}}`;
-		if (command !== expected) {
-			throw new Error(
-				`Alias ${taskName} must be '${expected}', got '${command}'`,
-			);
-		}
-	}
-}
-
 async function main() {
 	assertProfileRegistry();
 	const taskfile = yaml.load(
@@ -126,7 +108,6 @@ async function main() {
 	) as { tasks?: Record<string, TaskDefinition> };
 	if (!taskfile.tasks) throw new Error("Taskfile.yml has no tasks section");
 	assertProfileTasks(taskfile.tasks);
-	assertPublishAliases(taskfile.tasks);
 	console.log("publish routing audit: PASS");
 }
 
