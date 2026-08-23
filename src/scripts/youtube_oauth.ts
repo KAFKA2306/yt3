@@ -2,11 +2,10 @@ import http from "node:http";
 import path from "node:path";
 import { URL } from "node:url";
 import fs from "fs-extra";
-import { google } from "googleapis";
 import {
 	assertYouTubeChannelMatchesProfile,
+	createYouTubeOAuthClient,
 	hydrateOAuthCredentials,
-	loadYouTubeProfileEnv,
 	resolveTokenPath,
 	resolveYouTubeRedirectUri,
 } from "../domain/youtube_profiles.js";
@@ -65,16 +64,10 @@ async function waitForOAuthCode(redirectUri: string): Promise<string> {
 }
 
 async function main() {
-	const profile = loadYouTubeProfileEnv();
-	const clientId = process.env.YOUTUBE_CLIENT_ID;
-	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-	if (!clientId || !clientSecret) {
-		throw new Error(
-			`YouTube auth failed for profile '${profile.profileName}': YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET are required`,
-		);
-	}
+	const { profile, auth } = await createYouTubeOAuthClient(undefined, {
+		hydrate: false,
+	});
 	const redirectUri = resolveYouTubeRedirectUri();
-	const auth = new google.auth.OAuth2({ clientId, clientSecret, redirectUri });
 	if (verifyOnly) {
 		await hydrateOAuthCredentials(auth, profile);
 		const result = await assertYouTubeChannelMatchesProfile(auth, profile);
