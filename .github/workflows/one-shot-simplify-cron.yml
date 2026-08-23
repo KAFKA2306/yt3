@@ -1,0 +1,54 @@
+name: One-shot cron simplifier
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  simplify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/simplify-cron-wrapper
+      - name: Simplify cron wrapper
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/io/utils/infra/run_workflow_cron.sh')
+          text = path.read_text()
+
+          start = text.index('# Determine environment file to use:')
+          end = text.index('readonly resolved_env=', start)
+          text = text[:start] + 'readonly ENV_FILE="${ENV_FILE:-config/.env.byosan}"\n' + text[end:]
+
+          text = text.replace('readonly uv_bin="${UV_BIN:-$(command -v uv || echo /root/.local/bin/uv)}"\n', '')
+
+          start = text.index('run_harness_doctor() {')
+          end = text.index('# State Management:', start)
+          text = text[:start] + text[end:]
+          text = text.replace('run_harness_doctor || exit 1\n', '')
+
+          old = '(cd "${repo_dir}" && docker rm -f voicevox-nemo || true && docker run -d --name voicevox-nemo --restart unless-stopped -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest && systemctl --user start yt3-aim.service && systemctl --user start yt3-discord.service)'
+          if old not in text:
+              raise SystemExit('Voicevox startup block not found')
+          text = text.replace(old, '(cd "${repo_dir}" && task up)', 1)
+
+          path.write_text(text)
+          PY
+          bash -n src/io/utils/infra/run_workflow_cron.sh
+          if grep -q 'harness_doctor' src/io/utils/infra/run_workflow_cron.sh; then
+            echo 'stale harness doctor reference remains' >&2
+            exit 1
+          fi
+      - name: Commit simplification
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/io/utils/infra/run_workflow_cron.sh
+          git diff --cached --quiet && exit 0
+          git commit -m 'refactor: simplify cron wrapper'
+          git push origin HEAD:refactor/simplify-cron-wrapper
