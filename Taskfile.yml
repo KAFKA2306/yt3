@@ -173,29 +173,13 @@ tasks:
       - bun src/scripts/audit_byosan_source_registry.ts
       - bun src/scripts/audit_no_fallback_policy.ts --scope=source
 
-  audit:no-fallback:source:
-    desc: "Audit source code for forbidden fallback implementations"
-    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope=source"]
-
-  audit:no-fallback:runtime:
-    desc: "Audit runtime deletion evidence for historical fallback publications"
-    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope=runtime"]
-
   audit:no-fallback:
-    desc: "Run both source and runtime no-fallback audits"
-    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope=all"]
+    desc: "Audit no-fallback policy (SCOPE=source|runtime|all; default all)"
+    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope={{.SCOPE}}"]
 
   audit:repo-contract:
     desc: "Verify Taskfile executables and documented repository entry points"
     cmds: ["bun src/scripts/audit_repository_contract.ts"]
-
-  harness:doctor:
-    desc: "Run full repository doctor"
-    cmds: ["bun src/scripts/harness_doctor.ts --full"]
-
-  harness:doctor:quick:
-    desc: "Run quick repository doctor"
-    cmds: ["bun src/scripts/harness_doctor.ts --quick"]
 
   daily:guarantee-status:
     desc: "Generate the daily guarantee status artifact"
