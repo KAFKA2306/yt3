@@ -1,0 +1,36 @@
+name: One-shot report prompt cleanup
+
+on:
+  push:
+    branches: [refactor/simplify-loop-status]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: ${{ !contains(github.event.head_commit.message, 'remove dead report prompts') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/simplify-loop-status
+      - name: Remove dead report prompts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('config/domains/byosan_money.yaml')
+          text = path.read_text()
+          marker = '\n  executive_reporter:'
+          if marker not in text:
+              raise SystemExit('report prompt marker not found')
+          path.write_text(text.split(marker, 1)[0].rstrip() + '\n')
+          PY
+      - name: Commit cleanup
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add config/domains/byosan_money.yaml
+          git diff --cached --quiet && exit 0
+          git commit -m 'refactor: remove dead report prompts'
+          git push origin HEAD:refactor/simplify-loop-status
