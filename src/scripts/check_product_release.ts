@@ -2,10 +2,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { assertProductReleaseGate } from "../domain/product_release_gate.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
-import {
-	assertProfileEnvFile,
-	getYouTubeProfile,
-} from "../domain/youtube_profiles.js";
+import { loadYouTubeProfileEnv } from "../domain/youtube_profiles.js";
 import { loadConfig } from "../io/core.js";
 
 function resolveRunId(rawRunId: string, bucket: string): string {
@@ -20,9 +17,7 @@ function resolveRunId(rawRunId: string, bucket: string): string {
 }
 
 async function main() {
-	const profile = getYouTubeProfile();
-	assertProfileEnvFile(profile, process.env.ENV_FILE);
-
+	const profile = loadYouTubeProfileEnv();
 	const rawRunId = process.env.RUN_ID || process.argv[2];
 	if (!rawRunId) {
 		throw new Error(

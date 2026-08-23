@@ -1,14 +1,12 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import dotenv from "dotenv";
 import { google } from "googleapis";
 import { PublishAgent } from "../domain/agents/publish.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import {
-	assertProfileEnvFile,
 	assertYouTubeChannelMatchesProfile,
-	getYouTubeProfile,
 	hydrateOAuthCredentials,
+	loadYouTubeProfileEnv,
 } from "../domain/youtube_profiles.js";
 import { AssetStore } from "../io/core.js";
 import {
@@ -17,26 +15,12 @@ import {
 	writeRunEvidence,
 } from "../io/utils/stability.js";
 
-const envFile = process.env.ENV_FILE?.trim();
-if (!envFile) {
-	throw new Error("ENV_FILE is required for YouTube publish");
-}
-
-const envFilePath = path.isAbsolute(envFile)
-	? envFile
-	: path.join(process.cwd(), envFile);
-dotenv.config({ path: envFilePath, override: true });
-
 async function runProductReleaseCheck(
 	runId: string,
 	publishVideoPath?: string,
 ): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
-		const args = [
-			`--env-file=${envFile}`,
-			"src/scripts/check_product_release.ts",
-			runId,
-		];
+		const args = ["src/scripts/check_product_release.ts", runId];
 		if (publishVideoPath) args.push(publishVideoPath);
 		const child = spawn("bun", args, {
 			cwd: process.cwd(),
@@ -68,9 +52,7 @@ function canonicalRunId(rawRunId: string, bucket: string): string {
 }
 
 async function main() {
-	const profile = getYouTubeProfile();
-	assertProfileEnvFile(profile, process.env.ENV_FILE);
-
+	const profile = loadYouTubeProfileEnv();
 	const rawRunId = process.env.RUN_ID || process.argv[2];
 	if (!rawRunId) {
 		throw new Error(
