@@ -1,7 +1,7 @@
-import { spawn } from "node:child_process";
 import path from "node:path";
 import { google } from "googleapis";
 import { PublishAgent } from "../domain/agents/publish.js";
+import { assertProductReleaseGate } from "../domain/product_release_gate.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import {
 	assertYouTubeChannelMatchesProfile,
@@ -14,31 +14,6 @@ import {
 	resolveDailyLogPath,
 	writeRunEvidence,
 } from "../io/utils/stability.js";
-
-async function runProductReleaseCheck(
-	runId: string,
-	publishVideoPath?: string,
-): Promise<void> {
-	await new Promise<void>((resolve, reject) => {
-		const args = ["src/scripts/check_product_release.ts", runId];
-		if (publishVideoPath) args.push(publishVideoPath);
-		const child = spawn("bun", args, {
-			cwd: process.cwd(),
-			env: process.env,
-			stdio: "inherit",
-		});
-		child.on("error", reject);
-		child.on("exit", (code) => {
-			if (code === 0) resolve();
-			else
-				reject(
-					new Error(
-						`product release check failed with exit code ${code ?? "null"}`,
-					),
-				);
-		});
-	});
-}
 
 function canonicalRunId(rawRunId: string, bucket: string): string {
 	const runId = rawRunId.includes("/") ? rawRunId : `${bucket}/${rawRunId}`;
@@ -61,8 +36,21 @@ async function main() {
 	}
 	const runId = canonicalRunId(rawRunId, profile.bucket);
 	const publishVideoPath = process.argv[3]?.trim() || undefined;
+	const store = new AssetStore(runId);
+	const state = AgentStateSchema.passthrough().parse(
+		store.loadState(),
+	) as AgentState;
+	if (publishVideoPath) state.publish_video_path = publishVideoPath;
 
-	await runProductReleaseCheck(runId, publishVideoPath);
+	assertProductReleaseGate({
+		runDir: store.runDir,
+		runId,
+		state,
+		profile,
+		publishVideoPath,
+		requireFactualIntegrity:
+			store.cfg.steps.youtube?.default_visibility !== "private",
+	});
 
 	const clientId = process.env.YOUTUBE_CLIENT_ID;
 	const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
@@ -84,12 +72,6 @@ async function main() {
 	console.log(
 		`CHANNEL: ${channel.actual.title} ${channel.actual.handle ?? ""}`.trim(),
 	);
-
-	const store = new AssetStore(runId);
-	const state = AgentStateSchema.passthrough().parse(
-		store.loadState(),
-	) as AgentState;
-	if (publishVideoPath) state.publish_video_path = publishVideoPath;
 
 	try {
 		const results = await new PublishAgent(store).run(state);
