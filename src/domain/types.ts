@@ -306,9 +306,6 @@ export type ZeroTrustAuditChecklist = z.infer<
 	typeof ZeroTrustAuditChecklistSchema
 >;
 
-export * from "./schemas/generation_dynamics.js";
-import { GenerationDynamicsSchema } from "./schemas/generation_dynamics.js";
-
 export const AgentStateSchema = z.object({
 	run_id: z.string(),
 	bucket: z.string(),
@@ -327,6 +324,5 @@ export const AgentStateSchema = z.object({
 	mission_file: z.string().optional(),
 	strategic_insight: StrategicInsightSchema.optional(),
 	audit_results: z.record(z.string(), AuditCheckSchema).optional(),
-	generation_dynamics: GenerationDynamicsSchema.optional(),
 });
 export type AgentState = z.infer<typeof AgentStateSchema>;
