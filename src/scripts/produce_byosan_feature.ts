@@ -428,7 +428,9 @@ function sceneSvg(
 		)
 		.join("");
 	const speakerColor =
-		segment.speaker === "ずんだもん" ? "#A9F07B" : VISUAL_IDENTITY.secondaryAccent;
+		segment.speaker === "ずんだもん"
+			? "#A9F07B"
+			: VISUAL_IDENTITY.secondaryAccent;
 	const accent =
 		segment.emotion === "caution" || segment.emotion === "serious"
 			? VISUAL_IDENTITY.warning
