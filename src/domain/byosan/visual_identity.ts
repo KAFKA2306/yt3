@@ -59,15 +59,22 @@ function toHex(value: number): string {
 		.toUpperCase();
 }
 
-export function mixHex(left: string, right: string, rightWeight: number): string {
+export function mixHex(
+	left: string,
+	right: string,
+	rightWeight: number,
+): string {
 	if (rightWeight < 0 || rightWeight > 1) {
 		throw new Error(`BYOSAN_VISUAL_IDENTITY_INVALID_WEIGHT: ${rightWeight}`);
 	}
 	const a = parseHex(left);
 	const b = parseHex(right);
-	const mixed = a.map(
-		(channel, index) => channel * (1 - rightWeight) + b[index]! * rightWeight,
-	);
+	const leftWeight = 1 - rightWeight;
+	const mixed = [
+		a[0] * leftWeight + b[0] * rightWeight,
+		a[1] * leftWeight + b[1] * rightWeight,
+		a[2] * leftWeight + b[2] * rightWeight,
+	];
 	return `#${mixed.map(toHex).join("")}`;
 }
 
@@ -90,7 +97,9 @@ function designTokens(input: unknown): RequiredDesignTokens {
 	return tokens as RequiredDesignTokens;
 }
 
-export function resolveByosanVisualIdentity(input: unknown): ByosanVisualIdentity {
+export function resolveByosanVisualIdentity(
+	input: unknown,
+): ByosanVisualIdentity {
 	const tokens = designTokens(input);
 	return {
 		background: mixHex(
