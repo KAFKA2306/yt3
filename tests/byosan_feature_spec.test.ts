@@ -25,7 +25,9 @@ describe("byosan feature specification", () => {
 
 	test("quantized center origins move monotonically without vertical sign reversal", () => {
 		const zooms = Array.from({ length: 901 }, (_, index) => 1 + index * 0.0002);
-		const verticalOrigins = zooms.map((zoom) => quantizedCenterOrigin(1080, zoom));
+		const verticalOrigins = zooms.map((zoom) =>
+			quantizedCenterOrigin(1080, zoom),
+		);
 		for (let index = 1; index < verticalOrigins.length; index++) {
 			expect(verticalOrigins[index]).toBeGreaterThanOrEqual(
 				verticalOrigins[index - 1] ?? 0,
