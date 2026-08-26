@@ -14,9 +14,7 @@ describe("byosan visual identity", () => {
 		const palette = resolveByosanVisualIdentity(config);
 		expect(palette.primaryAccent).toBe("#7DC8F7");
 		expect(palette.textPrimary).toBe("#FFFDF8");
-		expect(palette.secondaryAccent).toBe(
-			mixHex("#BFE7FF", "#FF9FB2", 0.35),
-		);
+		expect(palette.secondaryAccent).toBe(mixHex("#BFE7FF", "#FF9FB2", 0.35));
 		expect(palette.secondaryAccent).not.toBe("#FFB547");
 		expect(palette.background).not.toBe("#07111F");
 	});
