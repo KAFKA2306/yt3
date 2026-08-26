@@ -182,7 +182,9 @@ export function parseAndAuditByosanFeatureSpec(
 
 export function quantizedCenterOrigin(inputSize: number, zoom: number): number {
 	if (!(inputSize > 0) || !(zoom >= 1)) {
-		throw new Error(`Invalid center origin input: size=${inputSize} zoom=${zoom}`);
+		throw new Error(
+			`Invalid center origin input: size=${inputSize} zoom=${zoom}`,
+		);
 	}
 	return Math.floor((inputSize - inputSize / zoom) / 4) * 2;
 }
