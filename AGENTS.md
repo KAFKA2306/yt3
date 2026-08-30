@@ -67,6 +67,32 @@ task stability:report
 
 Internal `src/scripts/*` and package scripts support Taskfile/CI; they are not a second human-facing interface unless explicitly documented as one.
 
+### Production execution is a target-host operation
+
+An explicit request to run/start/`動かす` production means executing the canonical production task on the target runtime. Repository validation, CI, tests, mocks, or `DRY_RUN` are not substitutes for that request.
+
+For 秒算マネー, use only these Taskfile entry points:
+
+```bash
+# Prepare and pass the local product release gate without publishing.
+task byosan:prepare DATE=YYYY-MM-DD
+
+# Full daily production path, including publication when its gates permit it.
+task byosan:daily
+
+# Explicit publication of an already prepared run.
+task publish PROFILE=byosan -- byosan_money/YYYY-MM-DD-daily
+```
+
+Rules:
+
+- run production commands on the target host that owns the required `config/.env.byosan`, OAuth credentials, media/runtime dependencies, and local services;
+- if authorized target-host execution capability is available, use it instead of stopping at repository or CI evidence;
+- never reinterpret a requested production run as “run CI” or “verify the code”;
+- never create an ad-hoc GitHub Actions workflow merely to bypass the target-host boundary;
+- if the current tool context cannot execute on the target host, report the runtime result as **UNVERIFIED** and state that the production command was not executed;
+- repository acceptance may be VERIFIED while product/runtime/publication remains separately UNVERIFIED.
+
 ## 4. Repository, product, and publication are separate verdicts
 
 | evidence | proves | does not prove |
