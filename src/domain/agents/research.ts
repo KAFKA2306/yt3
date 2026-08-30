@@ -18,6 +18,7 @@ import {
 	loadRecentByosanTitles,
 	selectByosanAngle,
 } from "../byosan/news_angle.js";
+import { composeResearchMemoryContext } from "../byosan/power_macro_memory.js";
 import { type NewsItem, NewsItemSchema } from "../types.js";
 
 export interface ResearchResult {
@@ -53,6 +54,7 @@ export class TrendScout extends BaseAgent {
 			limit: limit || researchCfg.default_limit || 3,
 		});
 		const recent = loadMemoryContext(this.store);
+		const memoryContext = composeResearchMemoryContext(bucket, recent, ROOT);
 		const promptCfg = this.loadPrompt<{
 			consolidated_research: { system: string; user_template: string };
 		}>(this.name);
@@ -63,7 +65,7 @@ export class TrendScout extends BaseAgent {
 				"{regions}",
 				researchCfg.regions.map((region) => region.lang).join(", "),
 			)
-			.replace("{recent_topics}", recent)
+			.replace("{recent_topics}", memoryContext)
 			.replace("{recent_themes}", recentThemes)
 			.replace("{current_date}", currentDate);
 		userPrompt += this.buildSourceRegistryPrompt(bucket);
@@ -203,7 +205,7 @@ export class TrendScout extends BaseAgent {
 				.flatMap((topic) => topic.results)
 				.flatMap((item) => item.news)
 				.filter((item) => item?.title),
-			memory_context: recent,
+			memory_context: memoryContext,
 			angle_decision: angleDecision,
 		};
 		this.logOutput(result);
