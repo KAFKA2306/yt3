@@ -20,10 +20,7 @@ async function copyHistoryToTemp(): Promise<string> {
 	tempRoots.push(root);
 	const destination = getByosanPowerMacroHistoryPath(root);
 	await fs.ensureDir(path.dirname(destination));
-	await fs.copy(
-		getByosanPowerMacroHistoryPath(process.cwd()),
-		destination,
-	);
+	await fs.copy(getByosanPowerMacroHistoryPath(process.cwd()), destination);
 	return root;
 }
 
@@ -50,7 +47,11 @@ describe("Byosan Power Macro runtime memory", () => {
 		expect(byosan).toContain("[BYOSAN POWER MACRO LONG-TERM MEMORY]");
 		expect(byosan).toContain(recent);
 		expect(
-			composeResearchMemoryContext("humanity_observatory", recent, process.cwd()),
+			composeResearchMemoryContext(
+				"humanity_observatory",
+				recent,
+				process.cwd(),
+			),
 		).toBe(recent);
 	});
 
@@ -86,7 +87,9 @@ describe("Byosan Power Macro runtime memory", () => {
 			},
 			root,
 		);
-		const updated = (await fs.readJson(getByosanPowerMacroHistoryPath(root))) as {
+		const updated = (await fs.readJson(
+			getByosanPowerMacroHistoryPath(root),
+		)) as {
 			weeks: Array<{ week_end: string }>;
 			derived_from: { period_end: string };
 		};
