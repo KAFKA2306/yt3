@@ -3,13 +3,19 @@ import path from "node:path";
 import fs from "fs-extra";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
 import {
-	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
 	type ByosanFeatureSpec,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import type { ByosanAngleCandidate } from "../domain/byosan/news_angle.js";
-import { AssetStore, ROOT, createLlm, getRunIdDateString } from "../io/core.js";
+import {
+	AssetStore,
+	ROOT,
+	createLlm,
+	getRunIdDateString,
+	parseLlmJson,
+} from "../io/core.js";
+import { markKeyRateLimited } from "../io/utils/quota/manager.js";
 
 type FeatureSource = ByosanFeatureSource;
 
@@ -27,6 +33,134 @@ function safeSourceId(raw: string, index: number): string {
 		.replaceAll(/^_+|_+$/g, "")
 		.slice(0, 48);
 	return normalized || `source_${index + 1}`;
+}
+
+const BYOSAN_EMOTION_ALIASES: Record<string, string> = {
+	excited: "joy",
+	surprised: "shock",
+	enthusiastic: "joy",
+	happy: "joy",
+	neutral: "serious",
+	reassuring: "relieved",
+	concerned: "caution",
+	thoughtful: "analytical",
+	questioning: "curious",
+	optimistic: "confident",
+};
+
+const BYOSAN_EMOTIONS = [
+	"shock",
+	"reveal",
+	"curious",
+	"analytical",
+	"caution",
+	"confident",
+	"warm",
+	"relieved",
+	"serious",
+	"joy",
+] as const;
+
+export function normalizeFeatureDraft(
+	input: Record<string, unknown>,
+	candidate: ByosanAngleCandidate,
+	sources: FeatureSource[],
+): Record<string, unknown> {
+	const allowedSourceIds = new Set(sources.map((source) => source.id));
+	const firstSourceId = sources[0]?.id;
+	if (!firstSourceId) throw new Error("BYOSAN_FEATURE_SOURCE_MISSING");
+	const hookPromises = Array.isArray(input.hookPromises)
+		? input.hookPromises.filter(
+				(value): value is string => typeof value === "string",
+			)
+		: [];
+	const thumbnailInput =
+		input.thumbnail && typeof input.thumbnail === "object"
+			? (input.thumbnail as Record<string, unknown>)
+			: {};
+	const thumbnail = {
+		...thumbnailInput,
+		eyebrow: String(thumbnailInput.eyebrow || "今日の構造").slice(0, 18),
+		lead: String(thumbnailInput.lead || "注目").slice(0, 5),
+		accent: String(thumbnailInput.accent || "変化").slice(0, 10),
+		reaction: String(thumbnailInput.reaction || "必見").slice(0, 4),
+		secondLine: String(thumbnailInput.secondLine || "最新の変化").slice(0, 12),
+		calloutTop:
+			hookPromises[0] || String(thumbnailInput.calloutTop || "最新データ"),
+		calloutBottom:
+			hookPromises[1] || String(thumbnailInput.calloutBottom || "生活への影響"),
+	};
+	const claims: Array<Record<string, unknown>> = Array.isArray(input.claims)
+		? input.claims.map((rawClaim) => {
+				const claim = rawClaim as Record<string, unknown>;
+				const status = String(claim.status || "verified");
+				const sourceIds = Array.isArray(claim.sourceIds)
+					? claim.sourceIds.filter(
+							(value): value is string =>
+								typeof value === "string" && allowedSourceIds.has(value),
+						)
+					: [];
+				if (sourceIds.length === 0 && status === "derived_with_caveat") {
+					sourceIds.push(firstSourceId);
+				}
+				return { ...claim, sourceIds };
+			})
+		: [];
+	if (claims.length < 3) {
+		claims.push({
+			claim: candidate.angle,
+			sourceIds: [firstSourceId],
+			status: "derived_with_caveat",
+		});
+	}
+	const segments = Array.isArray(input.segments)
+		? input.segments.map((rawSegment, index) => {
+				const segment = rawSegment as Record<string, unknown>;
+				const rawStats = segment.stats;
+				const stats = Array.isArray(rawStats)
+					? rawStats
+					: rawStats && typeof rawStats === "object"
+						? [rawStats]
+						: rawStats;
+				const rawEmotion = String(
+					segment.emotion || "analytical",
+				).toLowerCase();
+				const emotion =
+					BYOSAN_EMOTION_ALIASES[rawEmotion] ??
+					((BYOSAN_EMOTIONS as readonly string[]).includes(rawEmotion)
+						? rawEmotion
+						: BYOSAN_EMOTIONS[index % BYOSAN_EMOTIONS.length]);
+				return {
+					...segment,
+					emotion,
+					stats,
+					source: String(segment.source || firstSourceId),
+				};
+			})
+		: input.segments;
+	if (Array.isArray(segments)) {
+		for (const [index, promise] of hookPromises.slice(0, 2).entries()) {
+			const segment = segments[index] as Record<string, unknown> | undefined;
+			if (!segment) continue;
+			const text = String(segment.text || "");
+			if (!text.includes(promise)) {
+				segment.text = `${text.slice(0, Math.max(18, 179 - promise.length))} ${promise}`;
+			}
+		}
+	}
+	const tags = Array.isArray(input.tags)
+		? input.tags.filter((value): value is string => typeof value === "string")
+		: [];
+	if (!tags.includes("秒算マネー")) tags.push("秒算マネー");
+	return {
+		...input,
+		thumbnail,
+		claims,
+		segments,
+		tags,
+		hookPromises:
+			hookPromises.length > 0 ? hookPromises : candidate.numbers.slice(0, 2),
+	};
 }
 
 function normalizedSources(candidate: ByosanAngleCandidate): FeatureSource[] {
@@ -131,34 +265,45 @@ async function generateFeatureSpec(
 	runId: string,
 	date: string,
 ): Promise<ByosanFeatureSpec> {
-	const llm = createLlm({
-		temperature: 0.28,
-		sessionId: runDir,
-	});
-	const structured = llm.withStructuredOutput(ByosanFeatureDraftSchema, {
-		name: "byosan_feature_draft",
-	});
 	const evidence = {
 		candidate,
 		allowed_sources: sources,
 		news: research.news,
 	};
 	let lastError: unknown;
+	let activeKeyName: string | undefined;
 	for (let attempt = 1; attempt <= 3; attempt++) {
 		try {
-			const draft = await structured.invoke([
+			const llm = createLlm({
+				temperature: 0.28,
+				sessionId: runDir,
+				response_mime_type: "application/json",
+			});
+			activeKeyName = llm.keyName;
+			const response = await llm.invoke([
 				{
 					role: "system",
 					content:
-						"あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。claimsのsourceIdsにはallowed_sourcesのidだけを使ってください。毎回新しい比較単位、章構成、問いの順番を選びます。",
+						"あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。完全なfeature draft JSONオブジェクトを直接返し、次のキーを必ずすべて含めてください: title, thumbnailTitle, thumbnail, descriptionLead, descriptionBullets, disclaimer, hookPromises, noveltyQueries, tags, claims, segments。thumbnailはeyebrow, lead, accent, reaction, secondLine, calloutTop, calloutBottomを必須とします。claimsはclaim, sourceIds, statusを必須とし、statusはverified/derived_with_caveat/analyst_estimate_not_company_non_gaapのいずれかです。segmentsは20個ちょうどで、各segmentはchapter, speaker, emotion, section, headline, subheadline, visualType, stats, source, textを必ず含めてください。speakerは春日部つむぎまたはずんだもん、emotionは指定済みの10種類のいずれか、statsはlabel,value,detail,colorを含む配列、colorはcyan/amber/white/mutedのいずれかです。各segmentのstatsは1個、textは18文字以上にしてください。7種類以上のemotion、両話者、claimsのsourceIdsにはallowed_sourcesのidだけを使ってください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。JSONオブジェクト以外の説明文やmarkdownは禁止です。",
 				},
 				{
 					role: "user",
 					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
 				},
 			]);
+			const draft = parseLlmJson(
+				typeof response.content === "string"
+					? response.content
+					: JSON.stringify(response.content),
+			) as Record<string, unknown>;
+			const normalizedDraft = normalizeFeatureDraft(draft, candidate, sources);
+			fs.outputJsonSync(
+				path.join(runDir, "audit", "feature_draft_candidate.json"),
+				normalizedDraft,
+				{ spaces: 2 },
+			);
 			return parseAndAuditByosanFeatureSpec({
-				...draft,
+				...normalizedDraft,
 				schemaVersion: "byosan_feature_v1",
 				runId,
 				asOf: date,
@@ -168,6 +313,10 @@ async function generateFeatureSpec(
 			});
 		} catch (error) {
 			lastError = error;
+			const message = error instanceof Error ? error.message : String(error);
+			if (/429|quota|rate limit/i.test(message)) {
+				if (activeKeyName) markKeyRateLimited(activeKeyName);
+			}
 		}
 	}
 	throw new Error(

@@ -5,6 +5,7 @@ import {
 	findRunDirsForDate,
 	getMissingEvidence,
 	isEvidenceReady,
+	classifyFailureMessage,
 } from "../src/io/utils/stability.ts";
 
 const originalCwd = process.cwd;
@@ -21,6 +22,17 @@ afterAll(async () => {
 });
 
 describe("Stability and Audit Helpers", () => {
+	test("classifies transient LLM provider outages as retryable", () => {
+		const result = classifyFailureMessage(
+			"503 Service Unavailable: model is currently experiencing high demand",
+		);
+		expect(result).toMatchObject({
+			disposition: "retryable",
+			retryable: true,
+			matchedRule: "provider_transient",
+		});
+	});
+
 	beforeAll(async () => {
 		await fs.ensureDir(TEMP_DIR);
 		Object.defineProperty(process, "cwd", {

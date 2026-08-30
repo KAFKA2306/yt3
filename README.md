@@ -20,7 +20,7 @@ task --list
 - `runs/`: Immutable run logs and artifacts.
 - `docs/standard/humanity-observatory-audit-standard.md`: Humanity Observatory System の編集監査基準書。
 
-For detailed audit protocols, see [docs/AUDIT_PROTOCOL.md](docs/AUDIT_PROTOCOL.md).
+For detailed audit protocols, see [docs/adr/0028-audit-protocol-v1.md](docs/adr/0028-audit-protocol-v1.md).
 
 ## 4. Contract-bound local LLM publishing
 

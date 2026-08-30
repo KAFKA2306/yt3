@@ -95,6 +95,17 @@ type Rule = {
 
 const RULES: Rule[] = [
 	{
+		patterns: [
+			/\b5(?:00|02|03|04|05)\b/,
+			/temporarily unavailable/i,
+			/high demand/i,
+		],
+		disposition: "retryable",
+		category: "provider_transient",
+		retryable: true,
+		matchedRule: "provider_transient",
+	},
+	{
 		patterns: [/429/, /rate limit/i, /quota/i, /too many requests/i],
 		disposition: "retryable",
 		category: "quota_or_rate_limit",

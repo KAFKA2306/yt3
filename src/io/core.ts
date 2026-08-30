@@ -309,6 +309,9 @@ export abstract class BaseAgent {
 				const isInvalidKey =
 					errMsg.toLowerCase().includes("api_key_invalid") ||
 					errMsg.toLowerCase().includes("api key not found");
+				const isTransientProviderFailure =
+					/\b5(?:00|02|03|04|05)\b/.test(errMsg) ||
+					/temporarily unavailable|high demand/i.test(errMsg);
 				lastFailure = classifyFailureMessage(errMsg);
 
 				if (isRateLimit || isInvalidKey) {
@@ -320,6 +323,15 @@ export abstract class BaseAgent {
 						`Error for key ${keyName} (${isInvalidKey ? "invalid key" : "rate limit"}). Attempt ${attempts}/${maxAttempts}. Rotating key and sleeping ${sleepMs / 1000}s... Error: ${errMsg.slice(0, 150)}`,
 					);
 					markKeyRateLimited(keyName);
+					await new Promise((resolve) => setTimeout(resolve, sleepMs));
+				} else if (isTransientProviderFailure) {
+					const sleepMs = Math.min(15000, 2000 * 2 ** (attempts - 1));
+					Logger.warn(
+						"SYSTEM",
+						"CORE",
+						"LLM_TRANSIENT_FAILURE",
+						`Transient provider failure. Attempt ${attempts}/${maxAttempts}; retrying in ${sleepMs / 1000}s: ${errMsg.slice(0, 150)}`,
+					);
 					await new Promise((resolve) => setTimeout(resolve, sleepMs));
 				} else {
 					throw err;
