@@ -101,6 +101,30 @@ Publication is an irreversible external side effect. Use only the canonical Task
 
 Without remote receipt/read-back evidence, publication is not VERIFIED.
 
+### 秒算マネー local-agent publish-ready handoff
+
+When the requested outcome is “leave 秒算マネー ready to publish and hand it to a local agent”, the local agent must use this exact boundary:
+
+```bash
+git pull
+task setup
+task byosan:prepare DATE=YYYY-MM-DD
+```
+
+Rules:
+
+1. `DATE` must be explicitly supplied in `YYYY-MM-DD` form. Do not infer “today” or substitute another date.
+2. `task byosan:prepare` is the canonical preparation path. It performs research, production, audit, and the product release gate, but must not perform the external YouTube publication side effect.
+3. If preparation or the release gate fails, stop. Do not bypass, weaken, retry around, or replace the failed gate with manual publication.
+4. A run is **publish-ready** only when the command succeeds and emits all of the following evidence for the same run:
+   - `[product-release-gate] PASS ... artifact_sha256=<sha256>`
+   - `PUBLISH_READY_RUN=<run-id>`
+   - `PUBLISH_COMMAND=task publish PROFILE=byosan -- <run-id>`
+5. Record the exact run id, artifact SHA-256, and printed publish command in the governing Issue or requested handoff surface, then stop. The local agent must not execute `PUBLISH_COMMAND` unless the user separately and explicitly authorizes publication.
+6. After explicit publication authorization, use only the exact canonical `task publish PROFILE=byosan -- <run-id>` path. Publication becomes VERIFIED only after remote receipt/read-back/visibility evidence is obtained.
+
+The stop condition for a preparation-only handoff is therefore: exact artifact generated, product release gate PASS, exact publish command recorded, and no remote publication performed.
+
 ## 6. Change source, then validate
 
 Inspect implementation, configuration, tests/audits, CI, and authoritative state before editing. Fix the source of truth rather than generated projections or stale documentation.
