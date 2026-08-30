@@ -9,7 +9,6 @@ import {
 	RunStage,
 	fetchRecentThemes,
 	getCurrentDateString,
-	loadConfig,
 	loadMemoryContext,
 	parseLlmJson,
 } from "../../io/core.js";
@@ -19,15 +18,9 @@ import {
 	loadRecentByosanTitles,
 	selectByosanAngle,
 } from "../byosan/news_angle.js";
-import {
-	type EditorSelection,
-	EditorSelectionSchema,
-	type NewsItem,
-	NewsItemSchema,
-	type ResearchDeepDive,
-	ResearchDeepDiveSchema,
-	type ScriptLine,
-} from "../types.js";
+import { composeResearchMemoryContext } from "../byosan/power_macro_memory.js";
+import { type NewsItem, NewsItemSchema } from "../types.js";
+
 export interface ResearchResult {
 	director_data: {
 		angle: string;
@@ -39,41 +32,18 @@ export interface ResearchResult {
 	memory_context: string;
 	angle_decision?: ByosanAngleDecision;
 }
-interface Mission {
-	topic: string;
-	search_queries: string[];
-	angles: Array<{ name: string; focus: string }>;
-}
-
-type ConsolidatedResearchOutput = {
-	selected_topics: Array<{
-		category: string;
-		selected_topic: string;
-		reason: string;
-		angle: string;
-		search_query: string;
-		results: Array<{
-			angle: string;
-			title_hook: string;
-			key_questions: string[];
-			news: NewsItem[];
-			byosan_angle?: z.infer<typeof ByosanAngleCandidateSchema>;
-		}>;
-	}>;
-};
 
 export class TrendScout extends BaseAgent {
 	constructor(store: AssetStore) {
-		const cfg = loadConfig();
 		super(store, RunStage.RESEARCH, {
-			temperature: cfg.steps.research?.temperature || 0.5,
+			temperature: store.cfg.steps.research?.temperature || 0.5,
 		});
 	}
+
 	async run(
 		bucket: string,
 		limit?: number,
 		missionFile?: string,
-		researchAttempt = 0,
 	): Promise<ResearchResult> {
 		const cached = this.store.load<ResearchResult>(this.name, "output");
 		if (cached) return cached;
@@ -84,7 +54,7 @@ export class TrendScout extends BaseAgent {
 			limit: limit || researchCfg.default_limit || 3,
 		});
 		const recent = loadMemoryContext(this.store);
-
+		const memoryContext = composeResearchMemoryContext(bucket, recent, ROOT);
 		const promptCfg = this.loadPrompt<{
 			consolidated_research: { system: string; user_template: string };
 		}>(this.name);
@@ -93,104 +63,80 @@ export class TrendScout extends BaseAgent {
 		let userPrompt = promptCfg.consolidated_research.user_template
 			.replace(
 				"{regions}",
-				researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
+				researchCfg.regions.map((region) => region.lang).join(", "),
 			)
-			.replace("{recent_topics}", recent)
+			.replace("{recent_topics}", memoryContext)
 			.replace("{recent_themes}", recentThemes)
 			.replace("{current_date}", currentDate);
 		userPrompt += this.buildSourceRegistryPrompt(bucket);
-		if (bucket === "byosan_money") {
-			userPrompt += this.buildSharpAnglePrompt();
-		}
+		if (bucket === "byosan_money") userPrompt += this.buildSharpAnglePrompt();
 
-		const pulseFile = missionFile || path.join(ROOT, "pulse.md");
-		if (fs.existsSync(pulseFile)) {
-			const customNewsContext = fs.readFileSync(pulseFile, "utf8");
-			userPrompt += `\n\n[DAILY PULSE SOVEREIGNTY DATA]\n${customNewsContext}\n(Analyze this data as the SOLE source of truth for today's video. You MUST format this data into the requested JSON schema without adding unrelated news.)`;
+		if (missionFile) {
+			const sourcePath = path.isAbsolute(missionFile)
+				? missionFile
+				: path.join(ROOT, missionFile);
+			if (!fs.existsSync(sourcePath)) {
+				throw new Error(`MISSION_FILE does not exist: ${sourcePath}`);
+			}
+			const missionEvidence = fs.readFileSync(sourcePath, "utf8");
+			userPrompt += `\n\n[MISSION EVIDENCE]\n${missionEvidence}\n(Use this supplied evidence as the primary source for the requested run. Preserve the requested JSON schema and do not add unrelated claims.)`;
 			Logger.info(
 				this.name,
 				"RESEARCH",
-				"PULSE",
-				"Using pulse.md as primary source",
+				"MISSION",
+				`Using explicit mission evidence: ${sourcePath}`,
 			);
 		}
-		if (researchAttempt > 0) {
-			userPrompt += `
 
-[BYOSAN RESEARCH REPAIR ATTEMPT ${researchAttempt}]
-The previous candidate set failed the deterministic angle gate. Return at least five byosan_angle candidates now. Each candidate must have at least two independently retrieved sources from distinct publishers, at least two concrete numbers, an array of risks, and a counterfactual that explicitly uses exclusion, subtraction, or a changed denominator. Do not reuse the prior invalid candidate set.`;
-		}
-
-		let research: ConsolidatedResearchOutput;
-		try {
-			research = await this.runLlm<{
-				selected_topics: Array<{
-					category: string;
-					selected_topic: string;
-					reason: string;
+		const research = await this.runLlm<{
+			selected_topics: Array<{
+				category: string;
+				selected_topic: string;
+				reason: string;
+				angle: string;
+				search_query: string;
+				results: Array<{
 					angle: string;
-					search_query: string;
-					results: Array<{
-						angle: string;
-						title_hook: string;
-						key_questions: string[];
-						news: NewsItem[];
-						byosan_angle?: z.infer<typeof ByosanAngleCandidateSchema>;
-					}>;
+					title_hook: string;
+					key_questions: string[];
+					news: NewsItem[];
+					byosan_angle?: z.infer<typeof ByosanAngleCandidateSchema>;
 				}>;
-			}>(
-				promptCfg.consolidated_research.system
-					.replace(
-						"{regions}",
-						researchCfg.regions.map((r: { lang: string }) => r.lang).join(", "),
-					)
-					.replace("{current_date}", currentDate),
-				userPrompt,
-				(t) =>
-					parseLlmJson(
-						t,
-						z.object({
-							selected_topics: z.array(
-								z.object({
-									category: z.string(),
-									selected_topic: z.string(),
-									reason: z.string(),
-									angle: z.string(),
-									search_query: z.string(),
-									results: z.array(
-										z.object({
-											angle: z.string(),
-											title_hook: z.string(),
-											key_questions: z.array(z.string()),
-											news: z.array(NewsItemSchema),
-											byosan_angle: ByosanAngleCandidateSchema.optional(),
-										}),
-									),
-								}),
-							),
-						}),
-					),
-				{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
-			);
-		} catch (error) {
-			const message = String(error);
-			const recoverableStructuredOutputError =
-				/JSON|ZodError|expected|invalid|too_small|Unexpected/i.test(message);
-			if (
-				bucket === "byosan_money" &&
-				recoverableStructuredOutputError &&
-				researchAttempt < 2
-			) {
-				Logger.warn(
-					this.name,
-					"RESEARCH",
-					"STRUCTURED_OUTPUT_RETRY",
-					`Retrying malformed or schema-invalid research output (${researchAttempt + 1}/2): ${message.slice(0, 240)}`,
-				);
-				return this.run(bucket, limit, missionFile, researchAttempt + 1);
-			}
-			throw error;
-		}
+			}>;
+		}>(
+			promptCfg.consolidated_research.system
+				.replace(
+					"{regions}",
+					researchCfg.regions.map((region) => region.lang).join(", "),
+				)
+				.replace("{current_date}", currentDate),
+			userPrompt,
+			(text) =>
+				parseLlmJson(
+					text,
+					z.object({
+						selected_topics: z.array(
+							z.object({
+								category: z.string(),
+								selected_topic: z.string(),
+								reason: z.string(),
+								angle: z.string(),
+								search_query: z.string(),
+								results: z.array(
+									z.object({
+										angle: z.string(),
+										title_hook: z.string(),
+										key_questions: z.array(z.string()),
+										news: z.array(NewsItemSchema),
+										byosan_angle: ByosanAngleCandidateSchema.optional(),
+									}),
+								),
+							}),
+						),
+					}),
+				),
+			{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
+		);
 
 		const allTopics = research.selected_topics || [];
 		const candidateLocations = allTopics.flatMap((topic) =>
@@ -209,7 +155,6 @@ The previous candidate set failed the deterministic angle gate. Return at least 
 				),
 		);
 		let angleDecision: ByosanAngleDecision | undefined;
-
 		let selectedTopic = allTopics[0];
 		let selectedResult = selectedTopic?.results?.[0];
 
@@ -231,15 +176,6 @@ The previous candidate set failed the deterministic angle gate. Return at least 
 				angleDecision.decision !== "PASS" ||
 				angleDecision.selectedIndex === null
 			) {
-				if (researchAttempt < 2) {
-					Logger.warn(
-						this.name,
-						"RESEARCH",
-						"REPAIR",
-						`Angle gate stopped; requesting a fresh candidate set (attempt ${researchAttempt + 1}/2)`,
-					);
-					return this.run(bucket, limit, missionFile, researchAttempt + 1);
-				}
 				throw new Error(
 					`BYOSAN_ANGLE_STOP: ${angleDecision.reason}. See research/angle_decision.json`,
 				);
@@ -262,14 +198,14 @@ The previous candidate set failed the deterministic angle gate. Return at least 
 				search_query: selectedTopic?.search_query || "",
 				key_questions: allTopics
 					.flatMap((topic) => topic.results)
-					.flatMap((r) => r.key_questions)
+					.flatMap((item) => item.key_questions)
 					.slice(0, 5),
 			},
 			news: allTopics
 				.flatMap((topic) => topic.results)
-				.flatMap((r) => r.news)
-				.filter((n: NewsItem) => n?.title),
-			memory_context: recent,
+				.flatMap((item) => item.news)
+				.filter((item) => item?.title),
+			memory_context: memoryContext,
 			angle_decision: angleDecision,
 		};
 		this.logOutput(result);
@@ -277,10 +213,7 @@ The previous candidate set failed the deterministic angle gate. Return at least 
 	}
 
 	private buildSourceRegistryPrompt(bucket: string): string {
-		if (!["byosan_money", "daily_pulse", "daily_pulse_nlm"].includes(bucket)) {
-			return "";
-		}
-
+		if (bucket !== "byosan_money") return "";
 		const registryPath = path.join(
 			ROOT,
 			"config",
@@ -303,9 +236,7 @@ The previous candidate set failed the deterministic angle gate. Return at least 
 				priority?: string;
 				kafka_use?: string[];
 			}>;
-			coverage_requirements?: {
-				critical_source_ids?: string[];
-			};
+			coverage_requirements?: { critical_source_ids?: string[] };
 		};
 		const sources = registry.sources || [];
 		const criticalIds = new Set(
@@ -324,7 +255,6 @@ The previous candidate set failed the deterministic angle gate. Return at least 
 				"Byosan source registry has insufficient source coverage; research cannot continue.",
 			);
 		}
-
 		const sourceLines = selectedSources.map((source) =>
 			[
 				source.id,
@@ -339,11 +269,10 @@ The previous candidate set failed the deterministic angle gate. Return at least 
 				.filter(Boolean)
 				.join(" | "),
 		);
-
 		return [
 			"",
 			"[BYOSAN POWER MACRO SOURCE REGISTRY]",
-			"Use this registry as the approved source universe. Prefer L1-L3 primary sources. If current facts cannot be grounded in this registry or the supplied DAILY PULSE SOVEREIGNTY DATA, stop with an explicit evidence gap instead of inventing or reusing fallback content.",
+			"Use this registry as the approved source universe. Prefer L1-L3 primary sources. If current facts cannot be grounded in this registry or explicit MISSION EVIDENCE, stop with an evidence gap instead of inventing or reusing fallback content.",
 			...sourceLines,
 		].join("\n");
 	}
@@ -352,57 +281,8 @@ The previous candidate set failed the deterministic angle gate. Return at least 
 		return `
 
 [BYOSAN SHARP-ANGLE STRUCTURED OUTPUT]
-Return at least five total results across selected_topics and cover at least three distinct publishers. Do not count the mission text, internal instructions, or the source registry itself as a news source. Use Google Search Retrieval and cite real public URLs for claims. Every results item MUST include a byosan_angle object with exactly these camelCase fields and types:
+Return at least five total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
 topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks.
-numbers must be an array of at least two concrete numerical strings. risks must be an array of one or more strings. sources must be an array of at least two objects using exactly these keys: id, name, url, optional publishedAt, tier, supports. url must be an absolute https URL; never use absolute_url, source_identifier, or an internal instruction as a URL. tier must be exactly one of L1, L2, L3, L4, L5, unknown; never append a description. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. counterfactual must be testable by exclusion, subtraction, or a changed denominator.
-Before submitting JSON, run this checklist for every result: sources.length >= 2, numbers.length >= 2, risks is an array, every source has a real URL and supports array. If any candidate fails, add another independently retrieved source with a different publisher or remove that candidate; never return a one-source or one-number candidate. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.`;
-	}
-
-	private getPastRunsState(): Array<{
-		run_id: string;
-		title: string;
-		script: string;
-	}> {
-		const pastRuns: Array<{ run_id: string; title: string; script: string }> =
-			[];
-		try {
-			const runsDir = path.join(ROOT, "runs");
-			if (!fs.existsSync(runsDir)) return pastRuns;
-			const dirs = fs.readdirSync(runsDir).filter((name) => {
-				const fullPath = path.join(runsDir, name);
-				return (
-					fs.statSync(fullPath).isDirectory() &&
-					name !== "runs" &&
-					name !== "audit-demo" &&
-					name !== "--run-id"
-				);
-			});
-			for (const dir of dirs) {
-				const statePath = path.join(runsDir, dir, "state.json");
-				if (fs.existsSync(statePath)) {
-					try {
-						const runState = fs.readJsonSync(statePath);
-						const title =
-							runState.script?.title || runState.metadata?.title || "";
-						const lines = runState.script?.lines || [];
-						const scriptText = lines
-							.map((l: ScriptLine) => `${l.speaker}: ${l.text}`)
-							.join("\n");
-						if (title || scriptText) {
-							pastRuns.push({
-								run_id: dir,
-								title,
-								script: scriptText.substring(0, 1000),
-							});
-						}
-					} catch {
-						// ignore individual parsing failures
-					}
-				}
-			}
-		} catch (e) {
-			console.error("Failed to read past runs states:", e);
-		}
-		return pastRuns;
+numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. counterfactual must be testable by exclusion, subtraction, or a changed denominator. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.`;
 	}
 }

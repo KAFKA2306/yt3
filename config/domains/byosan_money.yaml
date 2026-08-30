@@ -11,9 +11,6 @@ workflow:
   default_run_dir: "runs"
   default_bucket: "byosan_money"
   checkpoint_enabled: true
-  memory:
-    index_file: "data/memory/index.json"
-    essence_file: "data/memory/essences.json"
   trend_settings:
     enabled: true
     regions: ["JP", "US"]
@@ -22,7 +19,6 @@ workflow:
     lock_file: "logs/cron.lock"
     runs_dir: "runs"
     memory_dir: "data/memory"
-    ace_dir: "data/ace"
     state_dir: "data/state"
   filenames:
     output: "output.yaml"
@@ -35,16 +31,6 @@ workflow:
     video: "video.mp4"
 
 steps:
-  news:
-    query_buckets:
-      daily_pulse: "site:investing.com OR site:bloomberg.com OR site:reuters.com OR site:nikkei.com OR site:finance.yahoo.com top news headlines"
-      us_market_movers: "S&P500 Nasdaq Dow Jones Earnings Reports Guidance AI Stocks Mag7"
-      global_macro: "Fed FOMC ECB Rates Inflation CPI Jobs Report Unemployment US Economy"
-      tech_giants: "NVIDIA Microsoft Google Apple Tesla Amazon Meta TSMC ASML"
-      crypto_global: "Bitcoin Ethereum ETF SEC Regulation Crypto Markets Global Adoption"
-      geopolitics_money: "Oil Prices Gold Geopolitics Trade War US-China Relations Supply Chain"
-    fetch_count: 20
-    cooldown_hours: 12
   research:
     recent_days: 3
     essence_limit: 10
@@ -85,8 +71,7 @@ steps:
   video:
     resolution: "1920x1080"
     fps: 25
-    allow_static_visual_pacing: true
-    background_color: "#103766" # 2026 Financial Protocol Base
+    background_color: "#103766"
     intro_seconds: 5
     codec: "h264_nvenc"
     effects:
@@ -188,14 +173,6 @@ automation:
     - {name: "workflow_daily_0700_systemd", command: ["# Managed by systemd timer"], cron: "0 7 * * *"}
     - {name: "trend_workflow_hourly", command: ["npx", "tsx", "src/index.ts"], args: ["--trend-mode"], cron: "0 * * * *"}
 
-agents:
-  notebooklm:
-    enabled: true
-    video_style: "whiteboard"
-    output_dir: "runs-nlm"
-    temperature: 0.1
-    notebook_ids: []
-
 mcp:
   servers:
     context7:
@@ -272,7 +249,7 @@ prompts:
     consolidated_research:
       system: |
         あなたは「客観的ニュース・オブザーバー」兼「秒算マネー（Byosan Money）」の主任アナリストです。
-        最新の市場ニュース、または提供された[DAILY PULSE SOVEREIGNTY DATA]から、今日観測すべき「市場とマクロ経済の変化」を選定してください。
+        最新の市場ニュース、または提供された[CURRENT MARKET EVIDENCE]から、今日観測すべき「市場とマクロ経済の変化」を選定してください。
         一次情報なし断定禁止。Tier 1 source 以外の情報は推論扱いに留め、各主張には source_tier と URL または source_identifier を必須としてください。
         ただし、視聴者に愛されることを最優先にし、数字の量よりも「自分ごと化できる具体性」「感情が動く瞬間」「次に何をすればいいかの明快さ」を重視してください。
 
@@ -284,7 +261,7 @@ prompts:
         5. **市場心理 / 資金流動** (金余り、バブル、パニック、スマートマネーの動き)
 
         **【ミッション：ありのままの事実収集 × 適応的成長（Adaptive Growth）】**
-        1. 「今日、世界の資本と技術 of フローで何が起きているか」を客観的・データに基づいて特定してください。
+        1. 「今日、世界の資本と技術のフローで何が起きているか」を客観的・データに基づいて特定してください。
         2. **事実と数値の優先**: 可能な限り具体的な数値（金利パーセンテージ、投資額、業績データ）や固有名詞（企業名、政策決定者名）を収集してください。ただし、台本では数字を羅列するのではなく、生活への影響が伝わる最小限の数字に圧縮してください。
         3. **脱・終末美学**: 単なる破滅（Collapse）や恐怖を煽るアングルではなく、人類や企業が変化にいかに「適応し再構築されていくか（Adaptive Growth）」という視点を重視してください。
 
@@ -296,11 +273,11 @@ prompts:
               "category": "マクロ経済 | 企業財務 | 地政学 | テクノロジー | 市場心理",
               "selected_topic": "観測された主要トピックのタイトル",
               "reason": "事実に基づく選定理由（客観的なインパクトの大きさ）",
-              "angle": "ニュースが示す直接的な変化 of 方向性",
+              "angle": "ニュースが示す直接的な変化の方向性",
               "search_query": "収集に使用した検索クエリ",
               "results": [
                 {
-                  "angle": "観測 of 切り口（言語・地域）",
+                  "angle": "観測の切り口（言語・地域）",
                   "title_hook": "事実を端的に示す日本語タイトル",
                   "key_questions": ["観測された事実に関する具体的な問い"],
                   "news": [
@@ -311,7 +288,7 @@ prompts:
                       "published_at": "YYYY-MM-DD",
                       "claim_type": "fact | forecast | opinion",
                       "confidence": "high",
-                      "original_text": "原文 of 重要な事実箇所"
+                      "original_text": "原文の重要な事実箇所"
                     }
                   ]
                 }
@@ -335,31 +312,6 @@ prompts:
 
         上記を元に、最高精度の「ありのままの観測結果」を提供してください。
         必ず、異なる2つのカテゴリーから選定すること。
-
-    legacy_research:
-      system: |
-        あなたは金融YouTubeのディレクター兼リサーチャーです。
-        過去の制作履歴（{recent_topics}）を避け、提供されたカテゴリーで「決定版」となる動画の戦略を立て、関連ニュースを検索してください。
-        
-        google_searchツールを使用して最新の具体的事実を集めてください。
-        
-        出力JSON:
-        {
-          "director_data": {
-            "angle": "構造的分析と戦略的切り口",
-            "title_hook": "知的洞察を促すタイトル",
-            "search_query": "検索クエリ"
-          },
-          "news": [
-            { "title": "タイトル", "summary": "概要", "url": "URL" }
-          ]
-        }
-
-      user_template: |
-        カテゴリー: {category}
-
-        1. 提供されたカテゴリーについて、視聴者に価値をもたらす最も適切な切り口を選択してください。
-        2. 関連する最新ニュースを検索し、構造的な解説の裏付けとなる情報を3つ集めてください。
 
   content:
     outline:
@@ -530,126 +482,3 @@ prompts:
         "universal_principles": ["普遍的な原則1", "普遍的な原則2"],
         "connections": ["関連性1", "関連性2"]
       }
-
-  executive_reporter:
-    system: "あなたは最高投資責任者（CIO）直属のシニア・エグゼクティブ・リポーターです。複雑な情報を1つの強力なブリーフィングに凝縮してJSON形式で提供してください。"
-    user_template: |
-      あなたはヘッジファンドの「チーフ・アナリスト」です。各専門エージェントの分析結果を統合し、投資家向けの「エグゼクティブ・ブリーフィング（週次報告書）」を1ページで作成してください。
-
-      **【各エージェントの研究成果（参考）】**
-      {analyst_outputs}
-
-      **【レポート作成要件（プロンプト10に基づく）】**
-      1. 今週最も重要なマクロイベント3つ。
-      2. 注目の決算（予想付き）。
-      3. 資金流入が最も大きいセクター。
-      4. ロングアイデア1つとショートアイデア1つ（明確な価格水準付き）。
-      5. 今週の注目リスク。
-      6. すべての情報ソースのリンクを含めること。
-
-      形式：
-      1ページのエグゼクティブブリーフィングとして、簡潔かつ洞察に満ちた日本語でまとめること。
-
-      現在の日付: {current_date}
-
-  macro_regime_analyst:
-    system: "あなたはヘッジファンドのチーフ・投資ストラテジストです。提供された生データから、市場のコンセンサスを超えた『投資家のための知恵・アイデア・情報・示唆』を抽出してください。一般論への逃げを厳禁し、具体的かつ予見的な分析をJSON形式で提供せよ。"
-    user_template: |
-      あなたは投資のプロフェッショナルです。以下の最新データ（物理的・技術的な変化）を直視し、投資家がアップデートすべき『新しい現実のルール』を導き出してください。
-
-      **【最新ニュース・データ】**
-      {news_context}
-
-      **【分析の規律（Flowの決定はデータに任せる）】**
-      1. **情報の特定（Information/Delta）**: 今日の事実の中で、投資家が最も無視してはならない「不可逆的な変化（Delta）」を1つ特定せよ。
-      2. **波及する示唆（Implication）**: その変化が、今後数ヶ月〜1年以内に「どの業界のコスト構造や需要」を劇的に変えるか、二次的・三次的な波及効果を論理的に示唆せよ。
-      3. **投資アイデア（Investment Idea）**: その変化から導き出される、投資家が注目すべき「具体的な資産やセクター」とその「投資根拠（Rationale）」を提案せよ。
-      4. **本質的な知恵（Wisdom）**: この事象が教えてくれる、時代を生き抜くための『本質的な知恵』を定義せよ。
-
-      **【遵守事項】**
-      - 「インフレが〜」「金利が〜」といったマクロの定型文から始めないこと。物理的事実（スペック、数値、事件）から始めよ。
-      - 情報ソース（URL等）を必ず含めること。
-      - 必ず有効なJSON形式のみを出力し、説明文を含めないこと。
-      - キー名は以下の通りにすること：
-        * primary_delta: { event, magnitude, structural_shift }
-        * insights: [{ observation, implication, wisdom }] （配列）
-        * investment_ideas: [{ asset, rationale, backdoor_opportunity }] （配列）
-        * strategic_summary: 文字列
-        * sources: [URL配列]
-      - 日本語で回答すること。
-
-      現在の日付: {current_date}
-
-  fundamental_audit:
-    system: "あなたは高度なファンダメンタル分析を行うスペシャリストです。提供された指示に従い、正確で深い分析をJSON形式で提供してください。"
-    user_template: |
-      あなたはファンダメンタル分析のスペシャリストです。市場のセンチメントと実態の乖離、および配当リスクを調査してください。
-
-      **【分析タスク：センチメント vs ファンダメンタルズの歪み】**
-      1. 市場のセンチメント（ネガティブニュース、SNS、弱気な雰囲気）が強いファンダメンタルズと明らかに矛盾している銘柄を6つ探してください。
-      2. 各銘柄について、ティッカー、ネガティブなセンチメントの理由、なぜファンダメンタルズはそれと矛盾するのか、技術的なエントリー水準、情報ソースを提示してください。
-
-      **【分析タスク：配当危険レーダー】**
-      1. 見かけ上は魅力的な高配当（5%以上）だが、配当性向が高すぎる、フリーキャッシュフローがマイナス、負債が増加しているなどの減配リスクがある企業を5社探してください。
-      2. 各企業について、ティッカー、現在の配当利回り、減配確率、同じセクターのより安全な代替銘柄、情報ソースを提示してください。
-
-      **【遵守事項】**
-      - 日本語で回答すること。
-
-      現在の日付: {current_date}
-
-  risk_hedging:
-    system: "あなたは高度なリスク管理とデリバティブ戦略のスペシャリストです。提供された指示に従い、具体的で実用的なヘッジ案をJSON形式で提供してください。"
-    user_template: |
-      あなたはポートフォリオ・リスク管理のスペシャリストです。現在の市場環境において効率的なヘッジ戦略を設計してください。
-
-      **【現在のポートフォリオ状況（仮定または提供値）】**
-      {portfolio_context}
-
-      **【分析タスク：ポートフォリオのヘッジ戦略】**
-      1. 最新のオプションデータ、VIX、インバースETFを使い、効率的なヘッジ戦略を策定してください。
-      2. 推奨するヘッジ手段（プット・オプション、インバースETF等）、ヘッジサイズ（ポートフォリオ比率）、年間コスト見積もり、どのような状況でヘッジを発動すべきか、ボラティリティデータの情報ソースを提示してください。
-
-      **【遵守事項】**
-      - 日本語で回答すること。
-
-      現在の日付: {current_date}
-
-  event_driven_analyst:
-    system: "あなたは高度なイベント駆動型金融分析を行うスペシャリストです。提供された指示に従い、具体的でアクション可能な分析をJSON形式で提供してください。"
-    user_template: |
-      あなたはイベント駆動型戦略のクオンツ・アナリストです。ショートスクイーズ候補とM&A（買収）情報を調査し、投資アイデアを提示してください。
-
-      **【分析タスク：ショートスクイーズ候補】**
-      1. 最新のウェブデータを使い、空売り比率が高い（浮動株の20%以上）、借株金利が高い、かつ近くにカタリスト（材料）がある銘柄を5つ探してください。
-      2. 各銘柄について、ティッカー、空売り比率、Days to Cover、カタリスト、エントリー戦略、失敗リスク、情報ソースを提示してください。
-
-      **【分析タスク：M&Aレーダー】**
-      1. 最新の金融ニュースを調査し、買収の噂がある、または買収される可能性が高い企業を5社特定してください。
-      2. 業界の統合状況、アクティビストの有無などの背景を説明してください。
-      3. 各企業について、ティッカー、想定される買収企業、過去の同業界の買収プレミアム、規制リスク、情報ソースを提示してください。
-
-      **【遵守事項】**
-      - 日本語で回答すること。
-      - 最新の市場データを反映させること。
-
-      現在の日付: {current_date}
-
-  whale_watcher:
-    system: "あなたは高度なオンチェーン・データとクジラ（大口投資家）の動向分析を行うスペシャリストです。提供された指示に従い、正確で先見性のある分析をJSON形式で提供してください。"
-    user_template: |
-      あなたは「クジラ・ウォッチャー」です。大口投資家（ヘッジファンド、機関投資家、暗号資産クジラ）の最新の資金動向を調査し、マーケットの転換点や隠れたトレンドを特定してください。
-
-      **【分析タスク：機関投資家とクジラの資金流動】**
-      1. 最新の13F報告書、オンチェーンデータ、または大口の注文フローを調査し、現在クジラがどこに資金を移動させているか（セクター、特定のトークン、安全資産等）を特定してください。
-      2. 特に「異常な蓄積（アキュムレーション）」または「大規模な配布（ディストリビューション）」が見られる資産を4つ挙げてください。
-
-      **【分析タスク：スマート・マネーのシグナル】**
-      1. 最近のクジラのアクションから読み取れる、市場全体への示唆と今後2週間の予測を提示してください。
-      2. クライアントが取るべき具体的アクションを2つ提案してください。
-
-      **【遵守事項】**
-      - 各データポイントに可能な限り具体的な数値（購入額、保有期間の変化等）と情報ソースを含めること。
-      - 日本語で回答すること。
-
-      現在の日付: {current_date}

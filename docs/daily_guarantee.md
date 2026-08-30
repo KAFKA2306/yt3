@@ -1,31 +1,28 @@
 # Daily Guarantee
 
-This repository treats "daily interestingness" as an operational guarantee with evidence, not as an assumption.
+YT3 treats daily interestingness as an evidence-backed production requirement, not an assumption.
 
 ## Definition
 
-- `content_freshness_metrics.md` defines the deterministic freshness gate.
-- `creative_freshness_report.json` captures the per-run freshness evidence.
-- `run_evidence.json` is the proof artifact for a run. If it is missing, the run is not treated as proven.
+- `docs/content_freshness_metrics.md` defines the deterministic freshness gate.
+- `runs/<bucket>/<run>/audit/creative_freshness_report.json` records per-run freshness evidence.
+- `runs/<bucket>/<run>/run_evidence.json` is the proof artifact for a run.
+- `logs/stability_summary.json` is the canonical cross-run readiness state.
 
-## Operational Checks
+There is no second daily-readiness state file. Derived reports must not duplicate the verdict already represented by the stability summary.
 
-- `logs/stability_summary.md` summarizes the last 30 days of failures by cause.
-- `logs/stability_ready.md` shows whether the latest 3 daily runs have concrete evidence.
-- `logs/daily_guarantee_status.md` combines the metric definition with the current readiness verdict.
-- `logs/daily_guarantee_status.md` also lists the latest published URL for `秒算マネー` and `人類観測所` separately.
-- `logs/public_visibility_audit.md` lists whether each published video is actually public.
-- `task movie:status` or `bun run movie:status` reports the status of all movie receipts without changing state.
+## Operational checks
 
-## Current State
+- `task stability:report` regenerates latest-run readiness and 30-day failure classification.
+- `task audit:today` checks today's production state.
+- `task publish:visibility-audit` reads current YouTube visibility separately from local readiness and is non-mutating unless repair mode is explicitly enabled.
 
-- The system is ready to report daily stability once 3 real days of evidence exist.
-- Today, the latest 3 runs still have `evidence_ready=false`.
-- The readiness checks intentionally fail until that condition changes.
+## Current state
 
-## How To Verify
+Readiness is derived from concrete run evidence. A run is not proven when required evidence is missing, regardless of task exit status.
 
-1. Read `docs/content_freshness_metrics.md`.
-2. Read `logs/daily_guarantee_status.md`.
-3. Read `logs/stability_ready.md`.
-4. Confirm the latest 3 runs all report `evidence_ready: yes`.
+## How to verify
+
+1. Read `docs/content_freshness_metrics.md` for the content gate.
+2. Run `task stability:report` and inspect `logs/stability_summary.md`.
+3. Use `task publish:visibility-audit` when remote publication state matters.

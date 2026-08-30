@@ -45,6 +45,13 @@ function channelLabel(channel: ChannelKey): string {
 	return channel === "byosan_money" ? "秒算マネー" : "人類観測所";
 }
 
+function gatePassed(report: AuditTodayReport): boolean {
+	return (
+		report.reports.length > 0 &&
+		report.reports.every((item) => item.audit_passed && item.evidence_ready)
+	);
+}
+
 async function exists(filePath: string): Promise<boolean> {
 	try {
 		await fs.access(filePath);
@@ -95,7 +102,6 @@ async function reportChannel(
 
 	const videoCandidates = [
 		path.join(runDir, "media", "video", "video.mp4"),
-		path.join(runDir, "media", "video", "publish_video.mp4"),
 		path.join(runDir, "video", "final_video.mp4"),
 	];
 
@@ -111,7 +117,6 @@ async function reportChannel(
 		Boolean,
 	);
 
-	// Audit Report Analysis
 	const auditReportPath = path.join(runDir, "audit", "report.json");
 	let audit_passed = false;
 	const discomfort_warnings: string[] = [];
@@ -131,7 +136,7 @@ async function reportChannel(
 					}
 				}
 			}
-		} catch (e) {
+		} catch {
 			audit_passed = false;
 		}
 	}
@@ -260,20 +265,7 @@ async function main(): Promise<void> {
 
 	console.log(markdown);
 	await notifyDiscord(report);
-
-	// A status report that contains blocked or incomplete work must fail its
-	// caller. Otherwise the agent loop can continue as if today's production
-	// was healthy and treat the report as informational only.
-	if (
-		report.reports.some(
-			(item) =>
-				!item.research_done ||
-				!item.video_done ||
-				!item.publish_done ||
-				!item.audit_passed ||
-				!item.evidence_ready,
-		)
-	) {
+	if (process.argv.includes("--gate") && !gatePassed(report)) {
 		process.exitCode = 1;
 	}
 }

@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS strategy_genomes (
     intro_type TEXT NOT NULL,
     hook_pattern TEXT NOT NULL,
     narrative_weapon TEXT NOT NULL,
-    emotion_curve_json TEXT NOT NULL, -- e.g. ["fear", "surprise", "clarity"]
+    emotion_curve_json TEXT NOT NULL,
     cadence_profile TEXT NOT NULL,
     memory_anchor TEXT,
     memory_anchor_type TEXT,
@@ -165,20 +165,21 @@ CREATE TABLE IF NOT EXISTS media_audits (
     UNIQUE(run_id, media_type)
 );
 
--- 11. YouTube Analytics (Quality feedback loop data)
+-- 11. YouTube Analytics (raw API metrics; no unapproved derived score)
 CREATE TABLE IF NOT EXISTS youtube_analytics (
     video_id TEXT NOT NULL,
     channel_id TEXT NOT NULL,
-    age_window TEXT NOT NULL, -- '24h', '7d'
+    age_window TEXT NOT NULL,
     views INTEGER NOT NULL,
+    engaged_views INTEGER,
     watch_time_minutes REAL,
     average_view_duration_seconds REAL,
     average_view_percentage REAL,
     likes INTEGER,
     comments INTEGER,
     shares INTEGER,
-    subscribers_net INTEGER,
-    satisfaction_score REAL,
-    recorded_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    subscribers_gained INTEGER,
+    subscribers_lost INTEGER,
+    recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (video_id, age_window)
 );

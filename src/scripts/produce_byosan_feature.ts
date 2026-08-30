@@ -10,6 +10,7 @@ import {
 	centerLockedMotionFilter,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
+import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
 import { runAudioQA } from "../io/utils/audio_qa.js";
 import {
 	TtsOrchestrator,
@@ -41,12 +42,23 @@ const DEFAULT_SPEC = path.join(
 	"config/productions/sp500_anthropic_2026q2.json",
 );
 const HERO_SOURCE_NAME = "hero_imagegen_source.png";
+const VISUAL_IDENTITY = resolveByosanVisualIdentity(
+	yaml.load(
+		fs.readFileSync(
+			path.join(PROJECT_ROOT, "config/domains/byosan_money.yaml"),
+			"utf8",
+		),
+	),
+);
 
+// Keep the structured-output vocabulary backward compatible while mapping it
+// to semantic visual roles at the renderer boundary. Warm amber is reserved
+// for caution/serious states rather than ordinary emphasis.
 const COLORS: Record<StatColor, string> = {
-	cyan: "#40D9FF",
-	amber: "#FFB547",
-	white: "#F7FBFF",
-	muted: "#8FA7BF",
+	cyan: VISUAL_IDENTITY.primaryAccent,
+	amber: VISUAL_IDENTITY.secondaryAccent,
+	white: VISUAL_IDENTITY.textPrimary,
+	muted: VISUAL_IDENTITY.textMuted,
 };
 
 const EMOTION_LABELS: Record<string, string> = {
@@ -387,7 +399,7 @@ function statCard(
 	);
 	return `
 		<g>
-			<rect x="${x}" y="${y}" width="${width}" height="224" rx="28" fill="#0B1C2E" fill-opacity="0.94" stroke="${color}" stroke-opacity="0.44" stroke-width="2"/>
+			<rect x="${x}" y="${y}" width="${width}" height="224" rx="28" fill="${VISUAL_IDENTITY.surface}" fill-opacity="0.94" stroke="${color}" stroke-opacity="0.34" stroke-width="2"/>
 			<rect x="${x}" y="${y}" width="8" height="224" rx="4" fill="${color}"/>
 			<text x="${x + 30}" y="${y + 44}" class="stat-label">${xml(stat.label)}</text>
 			<text x="${x + 30}" y="${y + 112}" class="stat-value" font-size="${valueSize}" fill="${color}">${tspans(valueLines, x + 30, y + 112, 54)}</text>
@@ -415,58 +427,61 @@ function sceneSvg(
 			statCard(stat, 92 + cardIndex * (cardWidth + cardGap), 500, cardWidth),
 		)
 		.join("");
-	const speakerColor = segment.speaker === "ずんだもん" ? "#A9F07B" : "#FFB86B";
+	const speakerColor =
+		segment.speaker === "ずんだもん"
+			? "#A9F07B"
+			: VISUAL_IDENTITY.secondaryAccent;
 	const accent =
 		segment.emotion === "caution" || segment.emotion === "serious"
-			? "#FFB547"
-			: "#40D9FF";
+			? VISUAL_IDENTITY.warning
+			: VISUAL_IDENTITY.primaryAccent;
 	const emotionLabel = EMOTION_LABELS[segment.emotion] ?? "解説";
 	const questionMark =
 		segment.visualType === "question"
-			? '<text x="1560" y="550" font-family="Noto Sans CJK JP" font-size="310" font-weight="900" fill="#40D9FF" fill-opacity="0.12">?</text>'
+			? `<text x="1560" y="550" font-family="Noto Sans CJK JP" font-size="310" font-weight="900" fill="${VISUAL_IDENTITY.primaryAccent}" fill-opacity="0.10">?</text>`
 			: "";
 	return Buffer.from(`
 	<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
 		<defs>
 			<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-				<stop offset="0" stop-color="#07111F"/>
-				<stop offset="0.58" stop-color="#0A2037"/>
-				<stop offset="1" stop-color="#071827"/>
+				<stop offset="0" stop-color="${VISUAL_IDENTITY.background}"/>
+				<stop offset="0.58" stop-color="${VISUAL_IDENTITY.backgroundAlt}"/>
+				<stop offset="1" stop-color="${VISUAL_IDENTITY.background}"/>
 			</linearGradient>
 			<radialGradient id="glow" cx="0.78" cy="0.34" r="0.62">
-				<stop offset="0" stop-color="${accent}" stop-opacity="0.19"/>
-				<stop offset="1" stop-color="#07111F" stop-opacity="0"/>
+				<stop offset="0" stop-color="${accent}" stop-opacity="0.08"/>
+				<stop offset="1" stop-color="${VISUAL_IDENTITY.background}" stop-opacity="0"/>
 			</radialGradient>
 			<pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse">
-				<path d="M 56 0 L 0 0 0 56" fill="none" stroke="#7BC8FF" stroke-opacity="0.055" stroke-width="1"/>
+				<path d="M 56 0 L 0 0 0 56" fill="none" stroke="${VISUAL_IDENTITY.grid}" stroke-opacity="0.035" stroke-width="1"/>
 			</pattern>
 			<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-				<feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000814" flood-opacity="0.62"/>
+				<feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="${VISUAL_IDENTITY.shadow}" flood-opacity="0.42"/>
 			</filter>
 			<style>
 				text { font-family: '${FONT}', sans-serif; }
-				.brand { fill:#F7FBFF; font-size:25px; font-weight:800; letter-spacing:2px; }
-				.section { fill:#7FCDF5; font-size:22px; font-weight:700; letter-spacing:3px; }
-				.headline { fill:#F7FBFF; font-weight:900; letter-spacing:-1px; }
-				.subheadline { fill:#B8CADB; font-size:31px; font-weight:600; }
-				.stat-label { fill:#A9BED2; font-size:23px; font-weight:700; letter-spacing:1px; }
+				.brand { fill:${VISUAL_IDENTITY.textPrimary}; font-size:25px; font-weight:800; letter-spacing:2px; }
+				.section { fill:${VISUAL_IDENTITY.primaryAccent}; font-size:22px; font-weight:700; letter-spacing:3px; }
+				.headline { fill:${VISUAL_IDENTITY.textPrimary}; font-weight:900; letter-spacing:-1px; }
+				.subheadline { fill:${VISUAL_IDENTITY.textSecondary}; font-size:31px; font-weight:600; }
+				.stat-label { fill:${VISUAL_IDENTITY.textSecondary}; font-size:23px; font-weight:700; letter-spacing:1px; }
 				.stat-value { font-weight:900; letter-spacing:-1px; }
-				.stat-detail { fill:#8FA7BF; font-size:20px; font-weight:500; }
-				.source { fill:#7592AC; font-size:20px; font-weight:500; }
+				.stat-detail { fill:${VISUAL_IDENTITY.textMuted}; font-size:20px; font-weight:500; }
+				.source { fill:${VISUAL_IDENTITY.textMuted}; font-size:20px; font-weight:500; }
 			</style>
 		</defs>
 		<rect width="1920" height="1080" fill="url(#bg)"/>
 		<rect width="1920" height="1080" fill="url(#grid)"/>
 		<rect width="1920" height="1080" fill="url(#glow)"/>
-		<path d="M0 826 C280 774 390 856 650 792 S1050 816 1435 730 S1750 706 1920 650" fill="none" stroke="#40D9FF" stroke-opacity="0.12" stroke-width="3"/>
-		<rect x="0" y="858" width="1920" height="222" fill="#030A12" fill-opacity="0.72"/>
+		<path d="M0 826 C280 774 390 856 650 792 S1050 816 1435 730 S1750 706 1920 650" fill="none" stroke="${VISUAL_IDENTITY.primaryAccent}" stroke-opacity="0.08" stroke-width="3"/>
+		<rect x="0" y="858" width="1920" height="222" fill="${VISUAL_IDENTITY.shadow}" fill-opacity="0.62"/>
 		<rect x="0" y="0" width="12" height="1080" fill="${accent}"/>
 		<g transform="translate(92,62)">
-			<rect width="240" height="52" rx="26" fill="#0F2D48" stroke="#40D9FF" stroke-opacity="0.32"/>
+			<rect width="240" height="52" rx="26" fill="${VISUAL_IDENTITY.surface}" stroke="${VISUAL_IDENTITY.primaryAccent}" stroke-opacity="0.26"/>
 			<text x="28" y="35" class="brand">秒算マネー</text>
 		</g>
 		<text x="1440" y="96" class="section">${String(index + 1).padStart(2, "0")} / ${String(spec.segments.length).padStart(2, "0")}</text>
-		<rect x="1506" y="117" width="310" height="5" rx="3" fill="#19334C"/>
+		<rect x="1506" y="117" width="310" height="5" rx="3" fill="${VISUAL_IDENTITY.surfaceStrong}"/>
 		<rect x="1506" y="117" width="${Math.round(310 * ((index + 1) / spec.segments.length))}" height="5" rx="3" fill="${accent}"/>
 		<text x="92" y="181" class="section">${xml(segment.section)}</text>
 		<text x="92" y="290" class="headline" font-size="${headlineSize}">${tspans(headlineLines, 92, 290, headlineSize + 17)}</text>
@@ -474,20 +489,36 @@ function sceneSvg(
 		${cards}
 		${questionMark}
 		<g filter="url(#shadow)">
-			<ellipse cx="1650" cy="596" rx="218" ry="300" fill="${speakerColor}" fill-opacity="0.08" stroke="${speakerColor}" stroke-opacity="0.24" stroke-width="2"/>
-			<path d="M1462 697 C1510 650 1556 620 1614 610" fill="none" stroke="${speakerColor}" stroke-opacity="0.38" stroke-width="5" stroke-linecap="round"/>
+			<ellipse cx="1650" cy="596" rx="218" ry="300" fill="${speakerColor}" fill-opacity="0.06" stroke="${speakerColor}" stroke-opacity="0.20" stroke-width="2"/>
+			<path d="M1462 697 C1510 650 1556 620 1614 610" fill="none" stroke="${speakerColor}" stroke-opacity="0.30" stroke-width="5" stroke-linecap="round"/>
 			<circle cx="1462" cy="697" r="7" fill="${speakerColor}"/>
 		</g>
 		<g transform="translate(1510,164)">
-			<rect width="286" height="56" rx="28" fill="#07111F" stroke="${speakerColor}" stroke-width="2"/>
+			<rect width="286" height="56" rx="28" fill="${VISUAL_IDENTITY.background}" stroke="${speakerColor}" stroke-width="2"/>
 			<text x="24" y="37" font-size="23" font-weight="800" fill="${speakerColor}">${xml(segment.speaker)}</text>
-			<text x="250" y="37" text-anchor="end" font-size="21" font-weight="700" fill="#B8CADB">${xml(emotionLabel)}</text>
+			<text x="250" y="37" text-anchor="end" font-size="21" font-weight="700" fill="${VISUAL_IDENTITY.textSecondary}">${xml(emotionLabel)}</text>
 		</g>
 		<text x="92" y="824" class="source">SOURCE  ${xml(segment.source)}</text>
 	</svg>`);
 }
 
-async function characterBuffer(
+function fallbackCharacterSvg(speaker: FeatureSegment["speaker"]): Buffer {
+	const isZundamon = speaker === "ずんだもん";
+	const accent = isZundamon ? "#84CC55" : VISUAL_IDENTITY.primaryAccent;
+	const accent2 = isZundamon ? "#D7F76D" : VISUAL_IDENTITY.secondaryAccent;
+	return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="720" height="900" viewBox="0 0 720 900">
+		<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${accent}"/><stop offset="1" stop-color="${accent2}"/></linearGradient></defs>
+		<circle cx="360" cy="300" r="220" fill="${accent}" fill-opacity="0.10" stroke="${accent}" stroke-opacity="0.28" stroke-width="4"/>
+		<circle cx="360" cy="292" r="126" fill="url(#g)"/>
+		<circle cx="322" cy="278" r="12" fill="${VISUAL_IDENTITY.background}"/><circle cx="398" cy="278" r="12" fill="${VISUAL_IDENTITY.background}"/>
+		<path d="M326 333 Q360 360 394 333" fill="none" stroke="${VISUAL_IDENTITY.background}" stroke-width="10" stroke-linecap="round"/>
+		<path d="M138 840 Q174 515 360 492 Q546 515 582 840 Z" fill="url(#g)" opacity="0.92"/>
+		<rect x="110" y="730" width="500" height="96" rx="48" fill="${VISUAL_IDENTITY.background}" fill-opacity="0.92" stroke="${accent}" stroke-width="3"/>
+		<text x="360" y="792" text-anchor="middle" font-family="Noto Sans CJK JP, sans-serif" font-size="42" font-weight="800" fill="${VISUAL_IDENTITY.textPrimary}">${speaker}</text>
+	</svg>`);
+}
+
+async function characterSourceBuffer(
 	speaker: FeatureSegment["speaker"],
 ): Promise<Buffer> {
 	const source =
@@ -497,7 +528,15 @@ async function characterBuffer(
 					PROJECT_ROOT,
 					"assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v2.0.png",
 				);
-	return sharp(source)
+	if (await fs.pathExists(source)) return fs.readFile(source);
+	console.warn(`[CHARACTER_FALLBACK] ${speaker}: ${source}`);
+	return fallbackCharacterSvg(speaker);
+}
+
+async function characterBuffer(
+	speaker: FeatureSegment["speaker"],
+): Promise<Buffer> {
+	return sharp(await characterSourceBuffer(speaker))
 		.trim({ background: { r: 255, g: 255, b: 255, alpha: 0 } })
 		.resize({
 			height: speaker === "ずんだもん" ? 650 : 720,
@@ -534,12 +573,7 @@ async function renderThumbnail(
 ): Promise<{ png: string; jpg: string }> {
 	const thumbnailPng = path.join(runDir, "thumbnail.png");
 	const thumbnailJpg = path.join(runDir, "thumbnail_youtube.jpg");
-	const character = await sharp(
-		path.join(
-			PROJECT_ROOT,
-			"assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v2.0.png",
-		),
-	)
+	const character = await sharp(await characterSourceBuffer("春日部つむぎ"))
 		.trim({ background: { r: 255, g: 255, b: 255, alpha: 0 } })
 		.resize({ height: 930, fit: "inside", withoutEnlargement: false })
 		.png()
@@ -555,30 +589,30 @@ async function renderThumbnail(
 	<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
 		<defs>
 			<linearGradient id="shade" x1="0" x2="1">
-				<stop offset="0" stop-color="#020812" stop-opacity="0.98"/>
-				<stop offset="0.57" stop-color="#020812" stop-opacity="0.82"/>
-				<stop offset="0.78" stop-color="#020812" stop-opacity="0.14"/>
-				<stop offset="1" stop-color="#020812" stop-opacity="0.02"/>
+				<stop offset="0" stop-color="${VISUAL_IDENTITY.shadow}" stop-opacity="0.96"/>
+				<stop offset="0.57" stop-color="${VISUAL_IDENTITY.shadow}" stop-opacity="0.78"/>
+				<stop offset="0.78" stop-color="${VISUAL_IDENTITY.shadow}" stop-opacity="0.12"/>
+				<stop offset="1" stop-color="${VISUAL_IDENTITY.shadow}" stop-opacity="0.02"/>
 			</linearGradient>
-			<filter id="textShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="8" flood-color="#000" flood-opacity="0.95"/></filter>
+			<filter id="textShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="${VISUAL_IDENTITY.shadow}" flood-opacity="0.82"/></filter>
 			<style>text{font-family:'${FONT}',sans-serif}</style>
 		</defs>
 		<rect width="1920" height="1080" fill="url(#shade)"/>
-		<rect x="74" y="70" width="520" height="62" rx="31" fill="#113454" stroke="#40D9FF" stroke-width="2"/>
-		<text x="108" y="111" font-size="29" font-weight="800" fill="#F7FBFF" letter-spacing="2">${xml(thumbnail.eyebrow)}</text>
+		<rect x="74" y="70" width="520" height="62" rx="31" fill="${VISUAL_IDENTITY.surface}" stroke="${VISUAL_IDENTITY.primaryAccent}" stroke-width="2"/>
+		<text x="108" y="111" font-size="29" font-weight="800" fill="${VISUAL_IDENTITY.textPrimary}" letter-spacing="2">${xml(thumbnail.eyebrow)}</text>
 		<g filter="url(#textShadow)">
-			<text x="78" y="318" font-size="114" font-weight="900" fill="#F7FBFF">${xml(thumbnail.lead)}</text>
-			<text x="330" y="318" font-size="${accentSize}" font-weight="950" fill="#40D9FF">${xml(thumbnail.accent)}</text>
-			<text x="1010" y="318" font-size="118" font-weight="950" fill="#FFB547">${xml(thumbnail.reaction)}</text>
-			<text x="78" y="472" font-size="${secondLineSize}" font-weight="900" fill="#F7FBFF">${xml(thumbnail.secondLine)}</text>
+			<text x="78" y="318" font-size="114" font-weight="900" fill="${VISUAL_IDENTITY.textPrimary}">${xml(thumbnail.lead)}</text>
+			<text x="330" y="318" font-size="${accentSize}" font-weight="950" fill="${VISUAL_IDENTITY.primaryAccent}">${xml(thumbnail.accent)}</text>
+			<text x="1010" y="318" font-size="118" font-weight="950" fill="${VISUAL_IDENTITY.secondaryAccent}">${xml(thumbnail.reaction)}</text>
+			<text x="78" y="472" font-size="${secondLineSize}" font-weight="900" fill="${VISUAL_IDENTITY.textPrimary}">${xml(thumbnail.secondLine)}</text>
 		</g>
-		<rect x="78" y="550" width="940" height="92" rx="24" fill="#E9932F"/>
-		<text x="116" y="611" font-size="${calloutTopSize}" font-weight="900" fill="#07111F">${xml(thumbnail.calloutTop)}</text>
+		<rect x="78" y="550" width="940" height="92" rx="24" fill="${VISUAL_IDENTITY.lightSurface}"/>
+		<text x="116" y="611" font-size="${calloutTopSize}" font-weight="900" fill="${VISUAL_IDENTITY.darkText}">${xml(thumbnail.calloutTop)}</text>
 		<g transform="translate(78,695)">
-			<rect width="850" height="116" rx="28" fill="#07111F" fill-opacity="0.9" stroke="#40D9FF" stroke-width="3"/>
-			<text x="32" y="72" font-size="${calloutBottomSize}" font-weight="900" fill="#F7FBFF">${xml(thumbnail.calloutBottom)}</text>
+			<rect width="850" height="116" rx="28" fill="${VISUAL_IDENTITY.background}" fill-opacity="0.9" stroke="${VISUAL_IDENTITY.secondaryAccent}" stroke-width="3"/>
+			<text x="32" y="72" font-size="${calloutBottomSize}" font-weight="900" fill="${VISUAL_IDENTITY.textPrimary}">${xml(thumbnail.calloutBottom)}</text>
 		</g>
-		<text x="82" y="1002" font-size="31" font-weight="800" fill="#F7FBFF" letter-spacing="3">秒算マネー</text>
+		<text x="82" y="1002" font-size="31" font-weight="800" fill="${VISUAL_IDENTITY.textPrimary}" letter-spacing="3">秒算マネー</text>
 	</svg>`);
 	const composed = sharp(heroPath)
 		.resize(WIDTH, HEIGHT, { fit: "cover", position: "centre" })
@@ -611,10 +645,24 @@ async function ensureHeroSource(
 	if (await fs.pathExists(heroPath)) return heroPath;
 	await fs.ensureDir(path.dirname(heroPath));
 	const palettes = [
-		["#07111F", "#0B3555", "#40D9FF", "#FFB547"],
-		["#090B1A", "#24194D", "#9D7BFF", "#48E0C4"],
-		["#08130F", "#174B38", "#55E59A", "#FFD166"],
-		["#140A12", "#53213B", "#FF6B9D", "#6EE7F2"],
+		[
+			VISUAL_IDENTITY.background,
+			VISUAL_IDENTITY.surface,
+			VISUAL_IDENTITY.primaryAccent,
+			VISUAL_IDENTITY.secondaryAccent,
+		],
+		[
+			VISUAL_IDENTITY.background,
+			VISUAL_IDENTITY.backgroundAlt,
+			VISUAL_IDENTITY.secondaryAccent,
+			VISUAL_IDENTITY.primaryAccent,
+		],
+		[
+			VISUAL_IDENTITY.background,
+			VISUAL_IDENTITY.surfaceStrong,
+			VISUAL_IDENTITY.primaryAccent,
+			VISUAL_IDENTITY.textPrimary,
+		],
 	] as const;
 	const palette =
 		palettes[stableHash(spec.angle) % palettes.length] ?? palettes[0];
@@ -626,23 +674,23 @@ async function ensureHeroSource(
 	<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
 		<defs>
 			<radialGradient id="glow" cx="70%" cy="40%" r="75%">
-				<stop offset="0" stop-color="${accent}" stop-opacity="0.55"/>
-				<stop offset="0.48" stop-color="${mid}" stop-opacity="0.72"/>
+				<stop offset="0" stop-color="${accent}" stop-opacity="0.24"/>
+				<stop offset="0.48" stop-color="${mid}" stop-opacity="0.58"/>
 				<stop offset="1" stop-color="${dark}"/>
 			</radialGradient>
 			<linearGradient id="bar" x1="0" y1="1" x2="1" y2="0">
-				<stop offset="0" stop-color="${accent}" stop-opacity="0.2"/>
-				<stop offset="1" stop-color="${contrast}" stop-opacity="0.9"/>
+				<stop offset="0" stop-color="${accent}" stop-opacity="0.16"/>
+				<stop offset="1" stop-color="${contrast}" stop-opacity="0.72"/>
 			</linearGradient>
 		</defs>
 		<rect width="1920" height="1080" fill="url(#glow)"/>
-		<g opacity="0.15" stroke="${accent}" stroke-width="2">
+		<g opacity="0.08" stroke="${VISUAL_IDENTITY.grid}" stroke-width="2">
 			${Array.from({ length: 12 }, (_, index) => `<path d="M0 ${100 + index * 86} H1920"/>`).join("")}
 			${Array.from({ length: 20 }, (_, index) => `<path d="M${index * 104} 0 V1080"/>`).join("")}
 		</g>
-		<circle cx="${circleX}" cy="${circleY}" r="310" fill="none" stroke="${contrast}" stroke-opacity="0.38" stroke-width="44"/>
-		<circle cx="${circleX}" cy="${circleY}" r="195" fill="${dark}" fill-opacity="0.38" stroke="${accent}" stroke-opacity="0.6" stroke-width="8"/>
-		<g fill="url(#bar)" opacity="0.82">
+		<circle cx="${circleX}" cy="${circleY}" r="310" fill="none" stroke="${contrast}" stroke-opacity="0.22" stroke-width="44"/>
+		<circle cx="${circleX}" cy="${circleY}" r="195" fill="${dark}" fill-opacity="0.38" stroke="${accent}" stroke-opacity="0.42" stroke-width="8"/>
+		<g fill="url(#bar)" opacity="0.72">
 			<rect x="930" y="790" width="92" height="178" rx="18"/>
 			<rect x="1058" y="690" width="92" height="278" rx="18"/>
 			<rect x="1186" y="560" width="92" height="408" rx="18"/>
@@ -739,6 +787,70 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 	return `${header}${events.join("\n")}\n`;
 }
 
+let cachedVideoEncoderArgs: string[] | null = null;
+
+function videoEncoderArgs(): string[] {
+	if (cachedVideoEncoderArgs) return cachedVideoEncoderArgs;
+	const nvencProbe = spawnSync(
+		"ffmpeg",
+		[
+			"-hide_banner",
+			"-loglevel",
+			"error",
+			"-f",
+			"lavfi",
+			"-i",
+			"color=c=black:s=64x64:d=0.05",
+			"-frames:v",
+			"1",
+			"-c:v",
+			"h264_nvenc",
+			"-f",
+			"null",
+			"-",
+		],
+		{ stdio: "ignore" },
+	);
+	if (nvencProbe.status === 0) {
+		cachedVideoEncoderArgs = [
+			"-c:v",
+			"h264_nvenc",
+			"-preset",
+			"p5",
+			"-rc",
+			"vbr",
+			"-cq",
+			"15",
+			"-b:v",
+			"16M",
+			"-maxrate",
+			"24M",
+			"-bufsize",
+			"32M",
+		];
+		console.log("[VIDEO_ENCODER] h264_nvenc");
+	} else {
+		cachedVideoEncoderArgs = [
+			"-c:v",
+			"libx264",
+			"-preset",
+			"fast",
+			"-b:v",
+			"10M",
+			"-minrate",
+			"10M",
+			"-maxrate",
+			"10M",
+			"-bufsize",
+			"20M",
+			"-x264-params",
+			"nal-hrd=cbr:force-cfr=1:filler=1",
+		];
+		console.log("[VIDEO_ENCODER] libx264 (NVENC unavailable)");
+	}
+	return cachedVideoEncoderArgs;
+}
+
 function renderVisualSegment(segment: TimedSegment): void {
 	const filter = [
 		"scale=1920:1080:flags=lanczos",
@@ -764,20 +876,7 @@ function renderVisualSegment(segment: TimedSegment): void {
 			"-vf",
 			filter,
 			"-an",
-			"-c:v",
-			"h264_nvenc",
-			"-preset",
-			"p5",
-			"-rc",
-			"vbr",
-			"-cq",
-			"15",
-			"-b:v",
-			"16M",
-			"-maxrate",
-			"24M",
-			"-bufsize",
-			"32M",
+			...videoEncoderArgs(),
 			"-r",
 			String(FPS),
 			"-g",
@@ -908,18 +1007,7 @@ function composeFinal(
 			"-map",
 			"[a]",
 			"-shortest",
-			"-c:v",
-			"h264_nvenc",
-			"-preset",
-			"p6",
-			"-rc",
-			"cbr",
-			"-b:v",
-			"8M",
-			"-maxrate",
-			"8M",
-			"-bufsize",
-			"16M",
+			...videoEncoderArgs(),
 			"-profile:v",
 			"high",
 			"-g",
@@ -1214,8 +1302,8 @@ async function auditProduction(
 	const motionFilter = centerLockedMotionFilter(FPS);
 	const motionPolicyPass =
 		!motionFilter.match(/sin|cos/) &&
-		motionFilter.includes("iw/2-(iw/zoom/2)") &&
-		motionFilter.includes("ih/2-(ih/zoom/2)");
+		motionFilter.includes("floor((iw-iw/zoom)/4)*2") &&
+		motionFilter.includes("floor((ih-ih/zoom)/4)*2");
 	const requirements = {
 		audio_quality: {
 			status: audioQA.status === "PASS" ? "PASS" : "FAIL",
@@ -1298,8 +1386,9 @@ async function auditProduction(
 				scene_count: timed.length,
 				max_scene_seconds: maxSceneSeconds,
 				camera_motion:
-					"center-locked slow push-in; no lateral or vertical oscillation",
+					"center-locked slow push-in with even-pixel crop origins; no lateral or vertical oscillation",
 				filter: motionFilter,
+				even_pixel_center_origin: motionPolicyPass,
 				no_lateral_oscillation: motionPolicyPass,
 				freeze_segments: defects.freezeSegments,
 			},
@@ -1327,7 +1416,8 @@ async function auditProduction(
 				? "PASS"
 				: "FAIL",
 			evidence: {
-				asset: "official 春日部つむぎ standing art with extended pointing arm",
+				asset:
+					"speaker-specific standing art; neutral SVG fallback when local assets are absent",
 				synchronization:
 					"speaker-specific cutout, pointer line, emotion label, and stat target on every scene",
 			},

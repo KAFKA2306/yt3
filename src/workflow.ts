@@ -5,15 +5,9 @@ import { ScriptSmith } from "./domain/agents/content.js";
 import { type MediaResult, VisualDirector } from "./domain/agents/media.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
-import { DynamicsOrchestrator } from "./domain/evolution/dynamics_orchestrator.js";
-import type {
-	AgentState,
-	ContentResult,
-	GenerationDynamics,
-} from "./domain/types.js";
+import type { AgentState, ContentResult } from "./domain/types.js";
 import { type AssetStore, appendLoopMemory } from "./io/core.js";
-
-import { readVerifiedReceipt } from "./domain/publish_contract.js";
+import { sendAlert } from "./io/utils/discord.js";
 import { AgentLogger } from "./io/utils/logger.js";
 import {
 	classifyFailureMessage,
@@ -21,24 +15,14 @@ import {
 	writeRunEvidence,
 } from "./io/utils/stability.js";
 
-import { sendAlert } from "./io/utils/discord.js";
-
-/**
- * Sequential Pipeline: Decision-free execution of the video production loop.
- * Each stage produces artifacts and persists state.
- */
 export async function runSequentialWorkflow(
 	store: AssetStore,
 	initialState: Partial<AgentState>,
 ) {
 	let state: AgentState = { ...initialState } as AgentState;
-	const dynOrch = new DynamicsOrchestrator(store);
-	const dynPath = path.join(store.runDir, "generation_dynamics.json");
-	const dynamicsObj: Partial<GenerationDynamics> = fs.existsSync(dynPath)
-		? fs.readJsonSync(dynPath)
-		: {};
+	const bucket = state.bucket || store.domainId;
+	state.bucket = bucket;
 
-	// 1. Research (Trend discovery)
 	const researchJsonPath = path.join(store.runDir, "research.json");
 	if (fs.existsSync(researchJsonPath)) {
 		AgentLogger.info(
@@ -58,7 +42,7 @@ export async function runSequentialWorkflow(
 		AgentLogger.info("SYSTEM", "WORKFLOW", "STEP", "Starting Research...");
 		const research = new TrendScout(store);
 		const researchResults = await research.run(
-			state.bucket,
+			bucket,
 			state.limit,
 			state.mission_file,
 		);
@@ -71,28 +55,6 @@ export async function runSequentialWorkflow(
 		fs.writeJsonSync(researchJsonPath, researchResults, { spaces: 2 });
 	}
 
-	// Generate Phase 1 Dynamics: world_state & selection_state
-	if (
-		state.director_data &&
-		(!dynamicsObj.world_state || !dynamicsObj.selection_state)
-	) {
-		AgentLogger.info(
-			"SYSTEM",
-			"WORKFLOW",
-			"DYNAMICS",
-			"Synthesizing research dynamics...",
-		);
-		const { world_state, selection_state } =
-			await dynOrch.synthesizeResearchDynamics(
-				state.news || [],
-				state.director_data,
-			);
-		dynamicsObj.world_state = world_state;
-		dynamicsObj.selection_state = selection_state;
-		fs.writeJsonSync(dynPath, dynamicsObj, { spaces: 2 });
-	}
-
-	// 2. Script & Metadata (Narrative synthesis)
 	const metadataJsonPath = path.join(store.runDir, "metadata.json");
 	const contentOutputPath = path.join(
 		store.runDir,
@@ -139,35 +101,6 @@ export async function runSequentialWorkflow(
 		invalidateMediaArtifacts(store);
 	}
 
-	// Generate Phase 2 Dynamics: narrative_state, generation_state & attention_state
-	if (
-		state.script &&
-		state.metadata &&
-		(!dynamicsObj.strategy_genome ||
-			!dynamicsObj.narrative_state ||
-			!dynamicsObj.generation_state ||
-			!dynamicsObj.attention_state)
-	) {
-		AgentLogger.info(
-			"SYSTEM",
-			"WORKFLOW",
-			"DYNAMICS",
-			"Synthesizing narrative dynamics...",
-		);
-		const {
-			strategy_genome,
-			narrative_state,
-			generation_state,
-			attention_state,
-		} = await dynOrch.synthesizeNarrativeDynamics(state.script, state.metadata);
-		dynamicsObj.strategy_genome = strategy_genome;
-		dynamicsObj.narrative_state = narrative_state;
-		dynamicsObj.generation_state = generation_state;
-		dynamicsObj.attention_state = attention_state;
-		fs.writeJsonSync(dynPath, dynamicsObj, { spaces: 2 });
-	}
-
-	// 3. Media (TTS & Video Rendering)
 	const videoPath = path.join(
 		store.videoDir(),
 		store.cfg.workflow.filenames.video,
@@ -188,7 +121,6 @@ export async function runSequentialWorkflow(
 		if (!mediaResults) throw new Error("Failed to load cached media results");
 		state = { ...state, ...mediaResults };
 
-		// Map computed durations to cached script lines to satisfy Quality Audit requirements
 		if (state.script && mediaResults.audio_paths) {
 			const { execSync } = require("node:child_process");
 			for (let i = 0; i < state.script.lines.length; i++) {
@@ -225,53 +157,29 @@ export async function runSequentialWorkflow(
 		store.save("media", "output", mediaResults);
 	}
 
-	// 4. Audit (Strict Zero-Trust Quality Gate)
-	// Inject current dynamics into AgentState so AuditAgent can inspect it!
-	state.generation_dynamics = dynOrch.calculateEvolution(
-		dynamicsObj.world_state as NonNullable<typeof dynamicsObj.world_state>,
-		dynamicsObj.selection_state as NonNullable<
-			typeof dynamicsObj.selection_state
-		>,
-		dynamicsObj.strategy_genome as NonNullable<
-			typeof dynamicsObj.strategy_genome
-		>,
-		dynamicsObj.narrative_state as NonNullable<
-			typeof dynamicsObj.narrative_state
-		>,
-		dynamicsObj.generation_state as NonNullable<
-			typeof dynamicsObj.generation_state
-		>,
-		dynamicsObj.attention_state as NonNullable<
-			typeof dynamicsObj.attention_state
-		>,
-		undefined,
-	);
 	store.updateState(state);
 
 	AgentLogger.info("SYSTEM", "WORKFLOW", "STEP", "Starting Quality Audit...");
 	const auditor = new AuditAgent(store);
 	const auditResults = await auditor.run(state);
 	state = { ...state, audit_results: auditResults };
-
-	// Save audit/result.json
 	fs.writeJsonSync(
 		path.join(store.runDir, "audit", "result.json"),
 		auditResults,
 		{ spaces: 2 },
 	);
 
-	// Check Audit PASS/FAIL
 	const hasCriticalFailure = Object.values(auditResults).some(
-		(r) => r.critical && r.status !== "PASS",
+		(result) => result.critical && result.status !== "PASS",
 	);
 	if (hasCriticalFailure) {
 		const failingChecks = Object.values(auditResults)
-			.filter((r) => r.critical && r.status !== "PASS")
-			.map((r) => r.name);
+			.filter((result) => result.critical && result.status !== "PASS")
+			.map((result) => result.name);
 
 		appendLoopMemory(store, {
 			run_id: state.run_id,
-			bucket: state.bucket || "daily_pulse",
+			bucket,
 			stage: "audit",
 			kind: "failure",
 			summary:
@@ -284,14 +192,12 @@ export async function runSequentialWorkflow(
 			],
 			timestamp: new Date().toISOString(),
 		});
-
 		AgentLogger.error(
 			"SYSTEM",
 			"WORKFLOW",
 			"BLOCK",
 			`Publish blocked by Audit failure: ${failingChecks.join(", ")}`,
 		);
-
 		await sendAlert(
 			`🚨 **Publish Blocked** for run \`${state.run_id}\``,
 			"audit_fail",
@@ -300,13 +206,11 @@ export async function runSequentialWorkflow(
 				checks: failingChecks.join(", "),
 			},
 		);
-
 		invalidateContentArtifacts(store);
-
 		state.status = "PUBLISH_BLOCKED";
 		writeRunEvidence(store.runDir, {
 			run_id: state.run_id,
-			bucket: state.bucket || "daily_pulse",
+			bucket,
 			status: state.status,
 			disposition: "blocked",
 			log_path: resolveDailyLogPath(state.run_id),
@@ -320,7 +224,6 @@ export async function runSequentialWorkflow(
 		return state;
 	}
 
-	// 5. Publish (Upload to YouTube)
 	AgentLogger.info("SYSTEM", "WORKFLOW", "STEP", "Starting Publication...");
 	const publisher = new PublishAgent(store);
 	let publishResults: Awaited<ReturnType<PublishAgent["run"]>> | undefined;
@@ -332,7 +235,7 @@ export async function runSequentialWorkflow(
 		const failure = classifyFailureMessage(error.message);
 		appendLoopMemory(store, {
 			run_id: state.run_id,
-			bucket: state.bucket || "daily_pulse",
+			bucket,
 			stage: "publish",
 			kind: "failure",
 			summary:
@@ -354,7 +257,7 @@ export async function runSequentialWorkflow(
 						: "FAILED";
 		writeRunEvidence(store.runDir, {
 			run_id: state.run_id,
-			bucket: state.bucket || "daily_pulse",
+			bucket,
 			status: state.status,
 			disposition: failure.disposition,
 			log_path: resolveDailyLogPath(state.run_id),
@@ -363,55 +266,21 @@ export async function runSequentialWorkflow(
 			failure,
 			note: "Publish exception was caught and classified in workflow.ts.",
 		});
-		if (failure.disposition === "fatal") {
-			throw error;
-		}
+		if (failure.disposition === "fatal") throw error;
 		return state;
 	}
 
-	// A contract-bound publish already wrote an atomic verified receipt. Never
-	// downgrade it back to the legacy API-response shape during finalization.
-	if (!readVerifiedReceipt(store.runDir)) {
-		fs.writeJsonSync(
-			path.join(store.runDir, "publish", "receipt.json"),
-			publishResults,
-			{ spaces: 2 },
-		);
-	}
+	fs.writeJsonSync(
+		path.join(store.runDir, "publish", "receipt.json"),
+		publishResults,
+		{ spaces: 2 },
+	);
 
-	// Finalize generation dynamics: publish_state, audience_response_state, evolution_state
-	AgentLogger.info(
-		"SYSTEM",
-		"WORKFLOW",
-		"DYNAMICS",
-		"Finalizing dynamics & calculating mutations...",
-	);
-	const finalDynamics = dynOrch.calculateEvolution(
-		dynamicsObj.world_state as NonNullable<typeof dynamicsObj.world_state>,
-		dynamicsObj.selection_state as NonNullable<
-			typeof dynamicsObj.selection_state
-		>,
-		dynamicsObj.strategy_genome as NonNullable<
-			typeof dynamicsObj.strategy_genome
-		>,
-		dynamicsObj.narrative_state as NonNullable<
-			typeof dynamicsObj.narrative_state
-		>,
-		dynamicsObj.generation_state as NonNullable<
-			typeof dynamicsObj.generation_state
-		>,
-		dynamicsObj.attention_state as NonNullable<
-			typeof dynamicsObj.attention_state
-		>,
-		state.publish_results,
-	);
-	fs.writeJsonSync(dynPath, finalDynamics, { spaces: 2 });
-	state.generation_dynamics = finalDynamics;
 	store.updateState(state);
 
 	appendLoopMemory(store, {
 		run_id: state.run_id,
-		bucket: state.bucket || "daily_pulse",
+		bucket,
 		stage: "publish",
 		kind: "success",
 		summary:
@@ -431,16 +300,17 @@ export async function runSequentialWorkflow(
 	state.status = "SUCCESS";
 	writeRunEvidence(store.runDir, {
 		run_id: state.run_id,
-		bucket: state.bucket || "daily_pulse",
+		bucket,
 		status: state.status,
 		disposition: "success",
 		log_path: resolveDailyLogPath(state.run_id),
 		evidence_paths: [
 			path.join(store.runDir, "state.json"),
+			path.join(store.runDir, "publish", "state.json"),
 			path.join(store.runDir, "publish", "receipt.json"),
 		],
 		artifact_paths: [state.video_path || ""].filter(Boolean),
-		note: "Sequential workflow completed successfully with publish receipt evidence.",
+		note: "Sequential workflow completed successfully with canonical publication evidence.",
 	});
 	return state;
 }
@@ -452,11 +322,8 @@ function invalidateContentArtifacts(store: AssetStore) {
 		path.join(store.runDir, "media", store.cfg.workflow.filenames.output),
 		path.join(store.videoDir(), store.cfg.workflow.filenames.video),
 	];
-
 	for (const targetPath of paths) {
-		if (fs.existsSync(targetPath)) {
-			fs.removeSync(targetPath);
-		}
+		if (fs.existsSync(targetPath)) fs.removeSync(targetPath);
 	}
 }
 
@@ -472,10 +339,7 @@ function invalidateMediaArtifacts(store: AssetStore) {
 		path.join(store.runDir, store.cfg.workflow.filenames.thumbnail),
 		path.join(store.runDir, store.cfg.workflow.filenames.subtitles),
 	];
-
-	for (const p of paths) {
-		if (fs.existsSync(p)) {
-			fs.removeSync(p);
-		}
+	for (const targetPath of paths) {
+		if (fs.existsSync(targetPath)) fs.removeSync(targetPath);
 	}
 }

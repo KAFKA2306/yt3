@@ -2,139 +2,83 @@ version: '3'
 
 tasks:
   default:
-    cmds: 
-      - task --list
-      - task up
-      - task lint
-      - task test
+    cmds: ["task --list"]
     silent: true
 
-  # ============================================================================
-  # MAIN WORKFLOW
-  # ============================================================================
+  setup:
+    desc: "Install dependencies from the committed Bun lockfile"
+    cmds: ["bun run setup"]
+
   loop:
-    desc: "Autonomous Daily Loop: Health Check -> Content -> Audit"
-    cmds: ["bun src/scripts/agentic_orchestrator.ts"]
+    desc: "Run the daily production loop and audit"
+    cmds:
+      - task byosan:daily
+      - PROFILE=humanity task run
+      - bun src/scripts/audit_today.ts --gate
 
   run:
-    desc: "Run the full workflow (Production Mode)"
-    aliases: [r]
-    cmds: ["bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
-
-  run:humanity:
-    desc: "Run the Humanity Observatory workflow"
-    cmds: ["ENV_FILE=config/.env YOUTUBE_CHANNEL_PROFILE=humanity BUCKET=humanity_observatory bun --env-file=config/.env src/index.ts {{.CLI_ARGS}}"]
+    desc: "Run the canonical workflow (PROFILE=byosan|humanity; default byosan)"
+    cmds: ["YOUTUBE_CHANNEL_PROFILE=${PROFILE:-byosan} bun src/index.ts {{.CLI_ARGS}}"]
 
   byosan:daily:
-    desc: "Research, produce, audit, and publish one high-quality 秒算マネー feature"
+    desc: "Research, produce, audit, and publish one 秒算マネー feature"
     cmds:
       - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
-  pulse:auto:
-    desc: "Run full Daily Pulse to NotebookLM automation"
-    cmds: ["bun --env-file=config/.env src/pulse_to_video_workflow.ts"]
+  byosan:prepare:
+    desc: "Prepare one 秒算マネー run through the product release gate without publishing (DATE=YYYY-MM-DD required)"
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "DATE=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+      - BYOSAN_DATE={{.DATE}} BYOSAN_DAILY_NO_PUBLISH=true task byosan:daily
+      - task release:check PROFILE=byosan -- byosan_money/{{.DATE}}-daily
+      - |
+        echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
+        echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
 
-  # ============================================================================
-  # PUBLISHING & AUTH
-  # ============================================================================
+  release:check:
+    desc: "Check run-specific product release conditions without external publication (PROFILE required)"
+    cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/check_product_release.ts {{.CLI_ARGS}}"]
+
   publish:
-    desc: "Publish to YouTube (Usage: PROFILE=[byosan|yawa|humanity] task publish)"
-    vars:
-      ENV: '{{if eq .PROFILE "byosan"}}config/.env.byosan{{else if eq .PROFILE "yawa"}}config/.env.yawa{{else}}config/.env{{end}}'
-    cmds:
-      - ENV_FILE={{.ENV}} YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
-
-  publish:byosan:
-    desc: "Publish to the 秒算マネー channel"
-    cmds:
-      - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
-
-  publish:yawa:
-    desc: "Publish to the 夜話アーカイブ ASMR channel"
-    cmds:
-      - ENV_FILE=config/.env.yawa YOUTUBE_CHANNEL_PROFILE=yawa bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
-
-  publish:humanity:
-    desc: "Publish to the 人類観測所 channel"
-    cmds:
-      - ENV_FILE=config/.env YOUTUBE_CHANNEL_PROFILE=humanity bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}
+    desc: "Publish to YouTube after the product release gate (PROFILE=byosan|yawa|humanity; required)"
+    cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}"]
 
   auth:
-    desc: "YouTube OAuth (Usage: PROFILE=[byosan|yawa|humanity] task auth)"
-    vars:
-      ENV: '{{if eq .PROFILE "byosan"}}config/.env.byosan{{else if eq .PROFILE "yawa"}}config/.env.yawa{{else}}config/.env{{end}}'
-    cmds:
-      - ENV_FILE={{.ENV}} YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/youtube_oauth.ts {{.CLI_ARGS}}
+    desc: "YouTube OAuth (PROFILE=byosan|yawa|humanity; required)"
+    cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/youtube_oauth.ts {{.CLI_ARGS}}"]
 
-  report:
-    desc: "Generate full executive report (Macro, Fundamental, Risk, Event, Whale)"
-    cmds: ["bun --env-file=config/.env src/report_workflow.ts {{.CLI_ARGS}}"]
+  movie:generate:
+    desc: "Generate and concatenate scene videos from a JSON plan (PLAN=...)"
+    cmds:
+      - |
+        if [ -z "{{.PLAN}}" ]; then
+          echo "PLAN is required" >&2
+          exit 2
+        fi
+        bun src/scripts/generate_movie.ts --plan "{{.PLAN}}" {{.CLI_ARGS}}
 
-  notebooklm:
-    desc: "Run NotebookLM workflow: create, generate, download, and publish"
-    cmds: ["bun --env-file=config/.env src/notebooklm_workflow.ts {{.CLI_ARGS}}"]
-
-  publish:nlm:
-    desc: "Batch publish existing videos in runs-nlm/ to YouTube"
-    cmds: ["bun --env-file=config/.env src/scripts/post_nlm_videos.ts"]
-
-  publish:latest:
-    desc: "Publish the latest generated movie for the selected YouTube profile"
-    vars:
-      ENV: '{{if eq .PROFILE "byosan"}}config/.env.byosan{{else if eq .PROFILE "yawa"}}config/.env.yawa{{else}}config/.env{{end}}'
-    cmds:
-      - ENV_FILE={{.ENV}} YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_latest_movie.ts {{.CLI_ARGS}}
-  publish:job:
-    desc: "Execute a contract-bound publish job (Usage: task publish:job -- --job=examples/job.yaml)"
-    cmds:
-      - bun src/scripts/publish_job.ts {{.CLI_ARGS}}
-  movie:status:
-    desc: "Report the status of all movie receipts without changing state"
-    cmds:
-      - bun src/scripts/movie_status.ts
-  movie:status:byosan:
-    desc: "Report the status of 秒算マネー movie receipts without changing state"
-    cmds:
-      - MOVIE_STATUS_PROFILE=byosan bun src/scripts/movie_status.ts
   publish:visibility-audit:
-    desc: "Audit published videos for public visibility; set REPAIR=true to fix private videos"
-    cmds:
-      - bun src/scripts/public_visibility_audit.ts
-  publish:visibility-audit:byosan:
-    desc: "Audit 秒算マネー published videos for public visibility"
-    cmds:
-      - PUBLIC_VISIBILITY_PROFILE=byosan bun src/scripts/public_visibility_audit.ts
-  publish:delete-fallback:byosan:
-    desc: "Delete prohibited Fallback Daily Pulse videos from 秒算マネー and write deletion attestations"
-    cmds:
-      - bun src/scripts/delete_fallback_videos.ts
+    desc: "Audit published video visibility"
+    cmds: ["bun src/scripts/public_visibility_audit.ts"]
 
-  # ============================================================================
-  # EVOLUTION & OPS
-  # ============================================================================
-  db:backfill:
-    desc: "Backfill historic runs into the Evolution Database"
-    cmds: ["bun src/scripts/backfill_db.ts"]
-
-  db:evolution:
-    desc: "Run ACE Evolution operations (evaluate|evolve|acquire)"
-    cmds: ["bun src/scripts/evolution_ops.ts {{.CLI_ARGS}}"]
+  analytics:refresh:
+    desc: "Refresh authorized YouTube Analytics and purge data past the 30-day authorization boundary"
+    cmds: ["bun src/scripts/refresh_youtube_analytics.ts"]
 
   asmr:ops:
-    desc: "Autonomous ASMR Operations (Archive, Symlink, Index)"
-    cmds:
-      - bun --env-file=config/.env src/scripts/asmr_ops.ts
+    desc: "Run ASMR archive/index operations"
+    cmds: ["bun --env-file=config/.env src/scripts/asmr_ops.ts"]
 
   asmr:publish:
-    desc: "Batch publish all completed ASMR projects"
-    cmds:
-      - bun src/scripts/publish_batch.ts
+    desc: "Batch publish completed ASMR projects"
+    cmds: ["bun src/scripts/publish_batch.ts"]
 
-  # ============================================================================
-  # INFRASTRUCTURE
-  # ============================================================================
   up:
-    desc: "Start background services (Voicevox, Aim, Discord Bot)"
+    desc: "Start local services"
     cmds:
       - docker rm -f voicevox-nemo || true
       - docker run -d --name voicevox-nemo --restart unless-stopped -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest
@@ -142,73 +86,36 @@ tasks:
       - systemctl --user start yt3-discord.service
 
   down:
-    desc: "Stop all background services"
+    desc: "Stop local services"
     cmds:
       - docker stop voicevox-nemo || true
       - systemctl --user stop yt3-aim.service || true
       - systemctl --user stop yt3-discord.service || true
 
   serve:
-    desc: "Start the Evolution Dashboard and API Server"
+    desc: "Start the dashboard and API server"
     cmds: ["bun src/server.ts"]
 
-  serve:legacy:
-    desc: "Start the Legacy HTMX Dashboard (Deprecated)"
-    cmds: ["bun src/dashboard/server.ts"]
-
-  bootstrap:
-    desc: "Install dependencies and setup environment"
-    cmds:
-      - bun install
-      - task up
-
-  # ============================================================================
-  # SBG NAV AUDIT SYSTEM
-  # ============================================================================
-  nav:fetch:
-    desc: "Fetch latest market prices and FX for SBG NAV"
-    dir: sbg-nav-audit
-    cmds:
-      - python3 scripts/fetch_prices.py
-      - python3 scripts/fetch_fx.py
-
-  nav:calculate:
-    desc: "Calculate SBG NAV and Discount"
-    dir: sbg-nav-audit
-    cmds:
-      - python3 scripts/calculate_nav.py
-
-  nav:audit:
-    desc: "Run Zero-Trust audit on SBG NAV data"
-    dir: sbg-nav-audit
-    cmds:
-      - python3 scripts/run_audit.py
-
-  nav:report:
-    desc: "Export SBG NAV Audit report"
-    dir: sbg-nav-audit
-    cmds:
-      - python3 scripts/export_report.py
-
-  # ============================================================================
-  # UTILITIES
-  # ============================================================================
   asr:
-    desc: "Transcribe audio file using faster-whisper (Usage: FILE=[path] OUT=[dir] task asr)"
+    desc: "Transcribe audio (FILE=... OUT=...)"
     cmds:
-      - uv run --no-project --with faster-whisper python3 .claude/skills/audio-production/scripts/run_asr.py --input-wav "{{.FILE}}" --output-dir "{{.OUT}}" --model base
+      - uv run --no-project --with faster-whisper python3 scripts/run_asr.py --input-wav "{{.FILE}}" --output-dir "{{.OUT}}" --model base
 
   lint:
-    desc: "Type-check and Lint"
-    aliases: [l]
-    cmds:
-      - bun x --bun tsc --noEmit
-      - bun x --bun biome check src
+    desc: "Run the canonical Biome lint/format owner"
+    cmds: ["bun run lint"]
 
   test:
-    desc: "Run unit tests (bun test)"
-    aliases: [t]
-    cmds: ["SKIP_LLM=true bun test || echo 'No tests found'"]
+    desc: "Run unit tests"
+    cmds: ["SKIP_LLM=true DRY_RUN=true bun test"]
+
+  check:merge:fast:
+    desc: "Run the fast deterministic PR merge gate"
+    cmds: ["bun run check:merge:fast"]
+
+  check:merge:
+    desc: "Run the full PR merge gate used by CI"
+    cmds: ["bun run check:merge"]
 
   clean:
     desc: "Reset logs and temporary artifacts"
@@ -217,66 +124,36 @@ tasks:
       - touch logs/.gitkeep
 
   systemd:setup:
-    desc: "Install Systemd service and timer"
+    desc: "Install systemd service and timer"
     cmds: ["bun src/io/utils/infra/setup_systemd.ts"]
+
   audit:today:
-    desc: "Audit today's web search and video production status for 秒算マネー and 人類観測所"
-    cmds:
-      - bun src/scripts/audit_today.ts
+    desc: "Audit today's production status"
+    cmds: ["bun src/scripts/audit_today.ts"]
+
   audit:publish-routing:
-    desc: "Audit YouTube publish routing, profile identity, and env/task alignment"
-    cmds:
-      - bun src/scripts/audit_publish_routing.ts
+    desc: "Audit YouTube routing and profile identity"
+    cmds: ["bun src/scripts/audit_publish_routing.ts"]
+
   audit:byosan-money:
-    desc: "Run zero-trust source policy audit for 秒算マネー"
+    desc: "Run 秒算マネー source-policy audit"
     cmds:
-      - bun run audit:byosan-money
+      - bun scripts/audit_byosan_money_zero_trust.ts
       - bun src/scripts/audit_byosan_source_registry.ts
-      - bun src/scripts/audit_no_fallback_policy.ts
+      - bun src/scripts/audit_no_fallback_policy.ts --scope=source
+
   audit:no-fallback:
-    desc: "Audit that fallback generation, fallback publishing, and fallback success are prohibited"
-    cmds:
-      - bun src/scripts/audit_no_fallback_policy.ts
-  audit:ontology:
-    desc: "Audit ontology standard alignment and governance"
-    cmds:
-      - bun run audit:ontology
-  harness:doctor:
-    desc: "Run repository doctor and full validation checks"
-    cmds:
-      - bun src/scripts/harness_doctor.ts --full
-  harness:doctor:quick:
-    desc: "Run quick repository doctor checks"
-    cmds:
-      - bun src/scripts/harness_doctor.ts --quick
-  stability:ready:
-    desc: "Check whether the latest 3 daily runs have concrete evidence"
-    cmds:
-      - bun src/scripts/stability_ready.ts
-  daily:guarantee-status:
-    desc: "Generate the single daily status artifact tying metrics, freshness, and readiness together"
-    cmds:
-      - bun src/scripts/daily_guarantee_status.ts
-  daily:check:
-    desc: "Short alias for the daily guarantee status check"
-    cmds:
-      - task daily:guarantee-status
-  daily:last3:
-    desc: "Show the latest 3 daily runs with evidence paths"
-    cmds:
-      - DAILY_LAST3=1 bun src/scripts/daily_guarantee_status.ts
-  daily:report:
-    desc: "Regenerate the daily audit, stability, readiness, and guarantee artifacts"
-    cmds:
-      - task audit:today
-      - bun src/scripts/stability_summary.ts
-      - bun src/scripts/stability_ready.ts
-      - bun src/scripts/daily_guarantee_status.ts
+    desc: "Audit no-fallback policy (SCOPE=source|runtime|all; default all)"
+    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope={{.SCOPE}}"]
+
+  audit:repo-contract:
+    desc: "Verify Taskfile executables and documented repository entry points"
+    cmds: ["bun src/scripts/audit_repository_contract.ts"]
+
+  stability:report:
+    desc: "Regenerate the canonical cross-run stability report"
+    cmds: ["bun src/scripts/stability_summary.ts"]
+
   improve:report:
-    desc: "Generate the canonical improvement loop inputs for logs, flow, autonomy, freshness, and video"
-    cmds:
-      - task daily:report
-      - task movie:status
-      - task audit:publish-routing
-      - task audit:no-fallback
-      - bun src/scripts/improve_report.ts
+    desc: "Generate the improvement report directly from run evidence"
+    cmds: ["bun src/scripts/improve_report.ts"]

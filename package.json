@@ -1,23 +1,17 @@
 {
 	"name": "yt3",
 	"version": "1.0.0",
-	"description": "<div align=\"center\">",
-	"main": "index.js",
+	"description": "Auditable autonomous media operations for research, production, publishing, and post-publication verification.",
 	"scripts": {
+		"setup": "bun ci",
 		"test": "bun test",
-		"lint": "bun biome check src",
-		"format": "bun biome format --write src",
-		"check": "bun biome check --write src",
+		"lint": "bun biome check .",
+		"format": "bun biome format --write src tests",
 		"typecheck": "bun x tsc --noEmit",
-		"audit:ontology": "bun src/scripts/audit_ontology_standard.ts",
-		"audit:byosan-money": "bun scripts/audit_byosan_money_zero_trust.ts",
-		"stability:summary": "bun src/scripts/stability_summary.ts",
-		"stability:ready": "bun src/scripts/stability_ready.ts",
-		"daily:guarantee-status": "bun src/scripts/daily_guarantee_status.ts",
-		"daily:last3": "DAILY_LAST3=1 bun src/scripts/daily_guarantee_status.ts",
-		"movie:status": "bun src/scripts/movie_status.ts",
-		"publish:latest": "bun src/scripts/publish_latest_movie.ts",
-		"publish:visibility-audit": "bun src/scripts/public_visibility_audit.ts"
+		"audit:repo-contract": "bun src/scripts/audit_repository_contract.ts",
+		"audit:no-fallback:source": "bun src/scripts/audit_no_fallback_policy.ts --scope=source",
+		"check:merge:fast": "bun run lint && bun run typecheck && bun run audit:repo-contract && bun src/scripts/audit_publish_routing.ts && bun run audit:no-fallback:source",
+		"check:merge": "bun run check:merge:fast && SKIP_LLM=true DRY_RUN=true bun run test"
 	},
 	"repository": {
 		"type": "git",
@@ -47,8 +41,6 @@
 	"dependencies": {
 		"@langchain/core": "^1.1.27",
 		"@langchain/google-genai": "^2.1.20",
-		"@langchain/langgraph": "^1.1.5",
-		"@langchain/openai": "^1.2.9",
 		"@types/dotenv": "^8.2.3",
 		"@types/serve-index": "^1.9.4",
 		"@types/sharp": "^0.31.1",

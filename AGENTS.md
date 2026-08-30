@@ -1,197 +1,195 @@
-# Antigravity Audit Rule
+# YT3 Agent Operating Contract
 
-Before searching for `.agy`, always verify whether Antigravity CLI (`agy`) is installed.
+`Taskfile.yml` is the canonical executable interface. `README.md` is human orientation. This file defines repository-wide rules for autonomous work.
 
-Mandatory checks:
+The objective is to leave YT3 in a verified state with the smallest sufficient diff, one canonical workline, and evidence that belongs to the final state.
 
-1. `which agy`
-2. `agy --version`
-3. `agy --help`
-4. `agy /usage`
-5. Search `Taskfile`, systemd services, tmux launchers, shell scripts, and cron jobs for `agy`
+## 1. Evidence decides current state
 
-Never infer that Antigravity is absent merely because `.agy` does not exist.
+Prefer, in order:
 
-The canonical runtime identifier is `agy`, not `.agy`.
+1. current runtime/tool observations
+2. current repository code/configuration
+3. `Taskfile.yml` and executable checks
+4. deterministic tests, audits, receipts, and exact-head CI
+5. maintained standards/ADRs
+6. prose and historical context
+7. inference
 
-If `.agy` is not found but `agy` exists, continue investigation using the installed CLI and its integrations.
+Use these labels when material:
 
-Failure to check `agy` before concluding Antigravity is absent is considered an audit failure.
+- **VERIFIED** — directly observed from code, tools, deterministic evidence, API/read-back, or CI
+- **OBSERVED** — explicitly supplied by the user or an authoritative source
+- **INFERRED** — derived from evidence
+- **UNVERIFIED** — required evidence was not obtained
 
-## Project Principle
+Never turn “not checked” into “absent”, and never report a verifier as passing unless it ran against the state being reported.
 
-This project treats LLMs not as one-shot text generators, but as components inside an iterative execution and improvement system.
+## 2. Keep one canonical workline
 
-The core design practice is **loop engineering**.
+Before editing:
 
-## Layered Terminology
+1. continue the existing PR/branch for the requested outcome;
+2. otherwise continue the relevant unresolved Issue;
+3. only then create one branch and one PR.
 
-Use the following labels when describing the system:
+Do not create duplicate implementation paths, state stores, PRs, or fallback workflows for the same outcome. Prefer deletion and consolidation over compatibility layers when the old path is no longer required.
 
-* 実行層: `agent loop`
-* 検証層: `closed-loop agent workflow`
-* 継続改善層: `agent improvement loop` / `harness design`
+For non-trivial changes define:
 
-## Definition: Loop Engineering
+- contract
+- observable outcome
+- deterministic acceptance checks
+- evidence
+- stop condition
 
-Loop engineering is the practice of connecting model outputs, tool execution, validation, feedback, evaluation, and implementation changes into a single iterative system.
+## 3. Use the canonical operator surface
 
-The objective is not merely to write better prompts, but to continuously improve the **execution harness** around the model.
+Start with:
 
-In this project, the execution harness includes:
-
-* instructions
-* tools
-* routing
-* output requirements
-* validation checks
-* feedback collection
-* evals
-* implementation changes
-* trace analysis
-
-The LLM should therefore be understood as one part of a broader closed-loop system.
-
-## Core Loop
-
-The agent workflow should follow this loop:
-
-```text
-model output
-  → tool execution
-  → validation
-  → feedback
-  → evaluation
-  → implementation change
-  → improved execution harness
-  → next model output
+```bash
+task --list
+task setup
+task check:merge:fast
+task check:merge
 ```
 
-This loop should continue until the system reaches a final output, a handoff condition, a tool-calling condition, or a defined stopping condition.
+Useful targeted checks:
 
-## Execution Harness
-
-The execution harness is the surrounding system that constrains, observes, evaluates, and improves the model's behavior.
-
-It is not limited to prompts.
-
-The harness includes:
-
-```text
-instructions + tools + routing + output schema + validation + evals + traces + implementation changes
+```bash
+task audit:repo-contract
+task audit:publish-routing
+task audit:no-fallback SCOPE=source
+task audit:no-fallback SCOPE=runtime
+task audit:today
+task stability:report
 ```
 
-When the model fails, do not immediately assume that the model itself is the only problem.
+Internal `src/scripts/*` and package scripts support Taskfile/CI; they are not a second human-facing interface unless explicitly documented as one.
 
-First inspect:
+### Production execution requests are runtime operations
 
-1. Was the instruction underspecified?
-2. Was the tool interface ambiguous?
-3. Was the output requirement weak?
-4. Was validation missing?
-5. Was the stopping condition unclear?
-6. Was feedback not converted into an implementation change?
-7. Was the eval too weak to catch the failure?
+An explicit request to run/start/`動かす` a production path is not satisfied by repository validation alone. It means executing the canonical Taskfile command on the target runtime.
 
-## Agent Loop Reference
+- if authorized target-host execution capability is available, use it rather than stopping at CI or repository evidence;
+- CI, unit tests, mocks, simulations, and `DRY_RUN` must never be reported as the requested production execution;
+- never create an ad-hoc GitHub Actions workflow merely to bypass the target-host boundary;
+- if the current tool context cannot execute on the target host, report the runtime result as **UNVERIFIED** and explicitly state that the production command was not executed;
+- repository acceptance may be VERIFIED while product/runtime/publication remains separately UNVERIFIED.
 
-The agent loop should be interpreted as an execution system with explicit decision points.
+For 秒算マネー, `task byosan:prepare DATE=YYYY-MM-DD` is preparation-only, `task byosan:daily` is the full daily production path, and explicit publication follows the authorization boundary defined below.
 
-A typical loop is:
+## 4. Repository, product, and publication are separate verdicts
 
-```text
-Call LLM
-  → inspect output
-  → if final output: stop
-  → if handoff: switch agent
-  → if tool calls: execute tools
-  → append tool results
-  → call LLM again
-  → stop if max_turns is exceeded
+| evidence | proves | does not prove |
+|---|---|---|
+| `task check:merge` / green exact-head CI | repository revision satisfies merge criteria | product works, is release-ready, or was published |
+| target machine/service unavailable | target-specific criterion is UNVERIFIED | repository is unmergeable |
+| deterministic test/mock/simulation | tested repository contract holds | real target behavior occurred |
+| `task release:check PROFILE=<profile> -- <run-id> [video-path]` | exact artifact passes local release preflight | remote publication occurred |
+| remote receipt/read-back | specified external postcondition occurred | source quality or mergeability |
+
+The merge gate must not depend on production credentials, a concrete run, current YouTube state, historical runtime cleanup, or a particular production machine.
+
+Product criteria that require a real target remain **UNVERIFIED** until tested there. Do not downgrade repository mergeability because the target is unavailable, and do not upgrade product status because CI is green.
+
+## 5. Fail closed at real boundaries
+
+- do not hide errors behind fallback output that resembles success
+- do not invent substitute data for required missing inputs
+- do not suppress verifier failures to keep pipelines green
+- do not publish fallback media as the requested artifact
+- ambiguous profile, missing evidence, missing receipt, uncertain remote state, or failed read-back blocks only the criterion it prevents proving
+
+These YouTube profiles are distinct products:
+
+| profile | brand | bucket |
+|---|---|---|
+| `byosan` | 秒算マネー | `byosan_money` |
+| `yawa` | 夜話アーカイブ ASMR | `yawa_archive` |
+| `humanity` | 雨晴はうの人類観測所 | `humanity_observatory` |
+
+Publication is an irreversible external side effect. Use only the canonical Taskfile publication path, with an explicit profile and run. A code change, merge, rendered video, or local release preflight does not authorize or prove publication.
+
+Without remote receipt/read-back evidence, publication is not VERIFIED.
+
+### 秒算マネー local-agent publish-ready handoff
+
+When the requested outcome is “leave 秒算マネー ready to publish and hand it to a local agent”, the local agent must use this exact boundary:
+
+```bash
+git pull
+task setup
+task byosan:prepare DATE=YYYY-MM-DD
 ```
 
-The important design point is that tool execution and model reasoning are not separate isolated events.
+Rules:
 
-They are connected inside one controlled loop.
+1. `DATE` must be explicitly supplied in `YYYY-MM-DD` form. Do not infer “today” or substitute another date.
+2. `task byosan:prepare` is the canonical preparation path. It performs research, production, audit, and the product release gate, but must not perform the external YouTube publication side effect.
+3. If preparation or the release gate fails, stop. Do not bypass, weaken, retry around, or replace the failed gate with manual publication.
+4. A run is **publish-ready** only when the command succeeds and emits all of the following evidence for the same run:
+   - `[product-release-gate] PASS ... artifact_sha256=<sha256>`
+   - `PUBLISH_READY_RUN=<run-id>`
+   - `PUBLISH_COMMAND=task publish PROFILE=byosan -- <run-id>`
+5. Record the exact run id, artifact SHA-256, and printed publish command in the governing Issue or requested handoff surface, then stop. The local agent must not execute `PUBLISH_COMMAND` unless the user separately and explicitly authorizes publication.
+6. After explicit publication authorization, use only the exact canonical `task publish PROFILE=byosan -- <run-id>` path. Publication becomes VERIFIED only after remote receipt/read-back/visibility evidence is obtained.
 
-## Tool Use Reference
+The stop condition for a preparation-only handoff is therefore: exact artifact generated, product release gate PASS, exact publish command recorded, and no remote publication performed.
 
-When the model requests a tool, the application must:
+## 6. Change source, then validate
 
-1. detect the tool request
-2. execute the requested tool
-3. collect the tool result
-4. return the result to the model
-5. let the model continue reasoning or produce a final answer
+Inspect implementation, configuration, tests/audits, CI, and authoritative state before editing. Fix the source of truth rather than generated projections or stale documentation.
 
-The application is responsible for controlling this loop safely.
+Prefer:
 
-The model should not be treated as if it directly owns the environment.
+- one source of truth
+- typed boundaries and parse-once validation
+- generators over hand-edited generated output
+- deletion of obsolete helpers exposed by the change
+- no speculative abstractions
+- no duplicate configuration/state
 
-## Improvement Flywheel
+Repository validation ladder:
 
-The system should continuously improve through the following flywheel:
+1. targeted unit/schema/contract test when useful
+2. targeted domain audit
+3. `task check:merge:fast`
+4. `task check:merge`
+5. exact-head GitHub CI
 
-```text
-traces
-  → feedback
-  → evals
-  → Codex handoff
-  → harness changes
-  → better execution harness
-  → better future traces
-```
+For an explicitly requested product release, use a separate ladder after repository acceptance:
 
-Traces reveal where the agent failed.
+1. `task release:check PROFILE=<profile> -- <run-id> [video-path]`
+2. required target/runtime qualification
+3. authenticated channel verification
+4. authorized remote side effect
+5. remote receipt/read-back/visibility verification
 
-Feedback explains what was wrong or missing.
+Implementation intent is not acceptance evidence.
 
-Evals make the failure reproducible.
+## 7. Git, cleanup, and reporting
 
-Codex or implementation work converts the lesson into code, validation, routing, prompt, or tool changes.
+For repository changes:
 
-Harness changes improve the next run.
+1. start from the intended current base;
+2. keep the diff focused;
+3. update the canonical PR rather than creating a competing one;
+4. diagnose CI failures instead of retrying blindly;
+5. inspect CI for the exact PR head SHA;
+6. merge when repository acceptance passes;
+7. verify the intended base state afterward.
 
-## Operating Rule
+Before final reporting, remove temporary workflows, scripts, debug output, abandoned intermediates, superseded paths, and stale task/document references. Branch deletion is not part of the agent responsibility when the connection lacks that capability.
 
-Do not solve recurring failures with ad hoc prompting alone.
+Documentation must describe current executable behavior. Maintained boundaries are:
 
-For repeated failures, prefer durable harness changes:
+- `README.md` — human onboarding
+- `AGENTS.md` — repository-wide agent rules
+- `docs/QUALITY_GATES.md` — gate ownership
+- `docs/standard/` — operational standards
+- `docs/adr/` — architecture decisions
 
-* add a validation check
-* tighten the output schema
-* improve tool descriptions
-* add routing rules
-* add stopping conditions
-* add retry logic
-* add eval cases
-* improve trace inspection
-* modify implementation behavior
+Never expose secrets, OAuth credentials, private tokens, or private local metadata in public artifacts.
 
-## Design Goal
-
-The goal is not:
-
-```text
-better prompt
-```
-
-The goal is:
-
-```text
-better loop
-```
-
-A successful system is one where each run produces information that can improve the next run.
-
-## Summary
-
-Loop engineering means designing and improving the iterative system around the LLM.
-
-It is the practice of building a reliable agent loop where:
-
-```text
-LLM output → tools → validation → feedback → evals → implementation change
-```
-
-becomes a continuous improvement mechanism for the execution harness.
+Final reporting should state only verified facts relevant to the task: repository/PR, what changed, deterministic checks actually run, exact-head CI, merge state, and any separately verified product/runtime/external result. Stop when the requested scope reaches its fixed point.

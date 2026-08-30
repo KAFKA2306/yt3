@@ -3,7 +3,6 @@ import fs from "fs-extra";
 import {
 	type AssetStore,
 	BaseAgent,
-	ROOT,
 	getMemoryEssenceFile,
 	parseLlmJson,
 } from "../../io/core.js";
@@ -23,56 +22,41 @@ export class MemoryAgent extends BaseAgent {
 
 	async run(state: AgentState): Promise<void> {
 		this.logInput(state);
-		const cfg = this.config.workflow.memory;
-
 		const scriptLines = state.script?.lines || [];
-		if (scriptLines.length > 0) {
-			const prompt = this.loadPrompt<{ system: string; user_template: string }>(
-				"memory",
-			);
-			const scriptText = scriptLines
-				.map((l) => `${l.speaker}: ${l.text}`)
-				.join("\n");
-
-			const essence = await this.runLlm(
-				prompt.system,
-				prompt.user_template.replace("{script_text}", scriptText),
-				(text) => parseLlmJson<Essence>(text),
-			);
-
-			const essenceFile = getMemoryEssenceFile(this.store);
-			const essenceDir = path.dirname(essenceFile);
-			const essencesData = fs.existsSync(essenceFile)
-				? fs.readJsonSync(essenceFile)
-				: { essences: [] };
-
-			const newEssence = {
-				run_id: state.run_id,
-				topic: state.metadata?.title || state.script?.title || "Unknown",
-				timestamp: new Date().toISOString(),
-				...essence,
-			};
-
-			const allEssences = [...essencesData.essences, newEssence];
-			const cleanedEssences =
-				allEssences.length > 10 ? allEssences.slice(-10) : allEssences;
-			const finalEssencesData = {
-				...essencesData,
-				essences: cleanedEssences,
-			};
-
-			fs.ensureDirSync(essenceDir);
-			fs.writeJsonSync(essenceFile, finalEssencesData, { spaces: 2 });
-
-			this.logOutput({
-				status: "updated",
-				essence_added: true,
-			});
-		} else {
-			this.logOutput({
-				status: "updated",
-				essence_added: false,
-			});
+		if (scriptLines.length === 0) {
+			this.logOutput({ status: "updated", essence_added: false });
+			return;
 		}
+
+		const prompt = this.loadPrompt<{ system: string; user_template: string }>(
+			"memory",
+		);
+		const scriptText = scriptLines
+			.map((line) => `${line.speaker}: ${line.text}`)
+			.join("\n");
+		const essence = await this.runLlm(
+			prompt.system,
+			prompt.user_template.replace("{script_text}", scriptText),
+			(text) => parseLlmJson<Essence>(text),
+		);
+
+		const essenceFile = getMemoryEssenceFile(this.store);
+		const essencesData = fs.existsSync(essenceFile)
+			? fs.readJsonSync(essenceFile)
+			: { essences: [] };
+		const newEssence = {
+			run_id: state.run_id,
+			topic: state.metadata?.title || state.script?.title || "Unknown",
+			timestamp: new Date().toISOString(),
+			...essence,
+		};
+		const allEssences = [...essencesData.essences, newEssence];
+		fs.ensureDirSync(path.dirname(essenceFile));
+		fs.writeJsonSync(
+			essenceFile,
+			{ ...essencesData, essences: allEssences.slice(-10) },
+			{ spaces: 2 },
+		);
+		this.logOutput({ status: "updated", essence_added: true });
 	}
 }

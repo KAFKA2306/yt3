@@ -33,7 +33,6 @@ models/
 *.png
 *.jpg
 *.srt
-*log*
 
 # Development & Tools
 .vscode/

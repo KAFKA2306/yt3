@@ -1,28 +1,34 @@
 # Docs Index
 
-This repository uses evidence-driven daily operations.
+This directory contains maintained operational standards and architecture decisions for YT3. Runtime state and generated evidence belong under `runs/`, `audits/`, `artifacts/`, and `logs/`.
 
-## Daily Guarantee
+## Operations
 
-- [`daily_guarantee.md`](./daily_guarantee.md): one-page entrypoint for the metric definition and operational checks
-- [`content_freshness_metrics.md`](./content_freshness_metrics.md): deterministic freshness gate and thresholds
-- [`../prompts/audit_log_llm.txt`](../prompts/audit_log_llm.txt): strict prompt for fact-only log auditing
-- [`../logs/daily_guarantee_status.md`](../logs/daily_guarantee_status.md): combined status for metrics, freshness, and readiness
-- [`../logs/stability_ready.md`](../logs/stability_ready.md): latest 3 daily runs and evidence readiness
-- [`../logs/stability_summary.md`](../logs/stability_summary.md): 30-day failure classification and evidence readiness summary
-
-## Publish
-
-- `task publish:latest PROFILE=[byosan|yawa|humanity]`: publish the latest generated movie for a profile with receipt and evidence files
-- `task movie:status` or `bun run movie:status`: report the status of all movie receipts and write `logs/movie_status.md` and `logs/movie_status.json`
+- [`daily_guarantee.md`](./daily_guarantee.md): daily guarantee definition and status checks
+- [`content_freshness_metrics.md`](./content_freshness_metrics.md): deterministic freshness metrics and thresholds
+- [`QUALITY_GATES.md`](./QUALITY_GATES.md): ownership of lint, typecheck, tests, hooks, and CI gates
 
 ## Standards
 
-- [`standard/ontology-standard-reference.md`](./standard/ontology-standard-reference.md)
-- [`standard/continuous-improvement-loop.md`](./standard/continuous-improvement-loop.md)
-- [`standard/system-audit-protocol.md`](./standard/system-audit-protocol.md)
-- [`standard/viral-retention-engineering.md`](./standard/viral-retention-engineering.md)
+- [`standard/system-audit-protocol.md`](./standard/system-audit-protocol.md): system audit protocol
+- [`standard/continuous-improvement-loop.md`](./standard/continuous-improvement-loop.md): improvement-loop evidence flow
+- [`standard/humanity-observatory-audit-standard.md`](./standard/humanity-observatory-audit-standard.md): Humanity Observatory audit standard
+- [`standard/kafka-visual-identity.md`](./standard/kafka-visual-identity.md): shared visual identity rules
+- [`standard/viral-retention-engineering.md`](./standard/viral-retention-engineering.md): retention-oriented production standard
+- [`standard/asmr-workflow.md`](./standard/asmr-workflow.md): ASMR workflow standard
+
+## Publication
+
+Use an explicit profile and run ID through the single publisher:
+
+```bash
+task publish PROFILE=byosan -- <run-id>
+task publish PROFILE=yawa -- <run-id>
+task publish PROFILE=humanity -- <run-id>
+```
+
+There is no latest-run inference path.
 
 ## ADRs
 
-- [`adr/README.md`](./adr/README.md)
+See [`adr/README.md`](./adr/README.md) for the maintained architecture decision record index.

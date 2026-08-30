@@ -22,8 +22,6 @@ type RunProfile = {
 	title: string;
 	intro: string;
 	topic: string;
-	hook_pattern: string;
-	cadence_profile: string;
 	category: string;
 };
 
@@ -43,9 +41,7 @@ function jaccard(a: string, b: string): number {
 	const union = new Set([...left, ...right]);
 	if (union.size === 0) return 0;
 	let intersection = 0;
-	for (const token of left) {
-		if (right.has(token)) intersection++;
-	}
+	for (const token of left) if (right.has(token)) intersection++;
 	return intersection / union.size;
 }
 
@@ -89,15 +85,13 @@ function extractCategory(
 function getRecentRunProfiles(store: AssetStore, bucket: string): RunProfile[] {
 	const runsDir = path.join(ROOT, "runs", bucket);
 	if (!fs.existsSync(runsDir)) return [];
-
 	return fs
 		.readdirSync(runsDir)
-		.map((run_id) => path.join(runsDir, run_id))
+		.map((runId) => path.join(runsDir, runId))
 		.filter((runDir) => fs.statSync(runDir).isDirectory())
 		.map((runDir) => {
 			const statePath = path.join(runDir, "state.json");
 			const contentPath = path.join(runDir, "content", "output.yaml");
-			const genPath = path.join(runDir, "generation_dynamics.json");
 			const state = fs.existsSync(statePath)
 				? (fs.readJsonSync(statePath) as AgentState)
 				: undefined;
@@ -108,9 +102,6 @@ function getRecentRunProfiles(store: AssetStore, bucket: string): RunProfile[] {
 								metadata?: AgentState["metadata"];
 						  }
 						| undefined)
-				: undefined;
-			const dynamics = fs.existsSync(genPath)
-				? (fs.readJsonSync(genPath) as Record<string, unknown>)
 				: undefined;
 			const title =
 				state?.metadata?.title ||
@@ -133,34 +124,6 @@ function getRecentRunProfiles(store: AssetStore, bucket: string): RunProfile[] {
 				title,
 				intro,
 				topic,
-				hook_pattern:
-					typeof dynamics?.strategy_genome === "object" &&
-					dynamics.strategy_genome &&
-					"hook_pattern" in dynamics.strategy_genome &&
-					typeof (dynamics.strategy_genome as { hook_pattern?: unknown })
-						.hook_pattern === "string"
-						? String(
-								(dynamics.strategy_genome as { hook_pattern?: string })
-									.hook_pattern,
-							)
-						: "unknown",
-				cadence_profile:
-					typeof dynamics?.strategy_genome === "object" &&
-					dynamics.strategy_genome &&
-					"cadence_profile" in dynamics.strategy_genome &&
-					typeof (
-						dynamics.strategy_genome as {
-							cadence_profile?: unknown;
-						}
-					).cadence_profile === "string"
-						? String(
-								(
-									dynamics.strategy_genome as {
-										cadence_profile?: string;
-									}
-								).cadence_profile,
-							)
-						: "unknown",
 				category: extractCategory(
 					state?.director_data as Record<string, unknown> | undefined,
 					state?.metadata || content?.metadata,
@@ -186,50 +149,52 @@ export function evaluateCreativeFreshness(
 	store: AssetStore,
 	state: AgentState,
 ): CreativeFreshnessMetrics {
-	const bucket = state.bucket || store.domainId || "daily_pulse";
+	const bucket = state.bucket || store.domainId;
+	if (!bucket)
+		throw new Error("Creative freshness requires an explicit bucket");
 	const currentTitle = state.metadata?.title || state.script?.title || "";
 	const currentIntro = sampleIntro(state.script);
 	const currentTopic =
 		typeof state.director_data?.search_query === "string"
 			? state.director_data.search_query
 			: currentTitle;
+	const currentCategory = extractCategory(
+		state.director_data as Record<string, unknown> | undefined,
+		state.metadata,
+	);
 	const currentText = `${currentTitle}\n${currentIntro}\n${currentTopic}`;
 	const recent = getRecentRunProfiles(store, bucket).filter(
 		(profile) => profile.run_id !== path.basename(store.runDir),
 	);
 
-	const similarities = recent.map((profile) => {
-		const titleSim = jaccard(currentTitle, profile.title);
-		const introSim = jaccard(currentIntro, profile.intro);
-		const topicSim = jaccard(currentTopic, profile.topic);
-		return titleSim * 0.45 + introSim * 0.35 + topicSim * 0.2;
-	});
+	const similarities = recent.map(
+		(profile) =>
+			jaccard(currentTitle, profile.title) * 0.45 +
+			jaccard(currentIntro, profile.intro) * 0.35 +
+			jaccard(currentTopic, profile.topic) * 0.2,
+	);
 	const maxSimilarity = similarities.length > 0 ? Math.max(...similarities) : 0;
 	const noveltyScore = Math.max(0, 100 * (1 - maxSimilarity));
 
-	const hookPatterns = new Set(
-		recent
-			.map((profile) => profile.hook_pattern)
-			.filter((v) => v !== "unknown"),
+	const signatures = new Set(
+		recent.map((profile) =>
+			[
+				profile.category,
+				profile.title.trim().toLowerCase(),
+				profile.topic.trim().toLowerCase(),
+			].join("|"),
+		),
 	);
-	const cadenceProfiles = new Set(
-		recent
-			.map((profile) => profile.cadence_profile)
-			.filter((v) => v !== "unknown"),
-	);
-	const categories = new Set(recent.map((profile) => profile.category));
-	const diversityBasis = Math.max(recent.length, 1);
-	const diversityScore = Math.min(
-		100,
-		((hookPatterns.size + cadenceProfiles.size + categories.size) /
-			(3 * diversityBasis)) *
-			100,
-	);
+	const diversityScore =
+		recent.length === 0 ? 100 : (signatures.size / recent.length) * 100;
 
 	const questionCount = (currentIntro.match(/[?？]/g) || []).length;
-	const hookWords =
-		/(なぜ|どうして|しかし|でも|意外|実は|ただし|ところが|unexpected|surprise|why)/i;
-	const hookSignal = hookWords.test(currentIntro) ? 1 : 0;
+	const hookSignal =
+		/(なぜ|どうして|しかし|でも|意外|実は|ただし|ところが|unexpected|surprise|why)/i.test(
+			currentIntro,
+		)
+			? 1
+			: 0;
 	const concreteSignal = countConcreteSignals(currentText);
 	const introLength = currentIntro.length;
 	const concisionScore =
@@ -244,33 +209,27 @@ export function evaluateCreativeFreshness(
 			concisionScore * 0.2,
 	);
 
-	const coverageScore = Math.min(
-		100,
-		new Set([bucket, ...categories]).size * 18 + (recent.length > 0 ? 10 : 40),
-	);
-
-	const serendipityScore = Math.min(
-		100,
-		noveltyScore * 0.45 + concretenessScore * 0.35 + coverageScore * 0.2,
-	);
-
+	const observedCategories = new Set([
+		currentCategory,
+		...recent.map((profile) => profile.category),
+	]);
+	const coverageScore = Math.min(100, observedCategories.size * 25);
+	const serendipityScore = Math.min(noveltyScore, concretenessScore);
 	const freshnessScore = Math.min(
-		100,
-		noveltyScore * 0.35 +
-			diversityScore * 0.25 +
-			serendipityScore * 0.25 +
-			coverageScore * 0.15,
+		noveltyScore,
+		diversityScore,
+		serendipityScore,
+		coverageScore,
 	);
 
 	const signals: string[] = [];
 	if (maxSimilarity >= 0.45) signals.push("recent_similarity_high");
-	if (diversityScore < 45) signals.push("topic_or_pattern_diversity_low");
+	if (diversityScore < 45) signals.push("recent_content_diversity_low");
 	if (concretenessScore < 40) signals.push("opening_is_too_abstract");
 	if (coverageScore < 45) signals.push("coverage_is_narrow");
-	if (serendipityScore < 55) signals.push("unexpectedness_or_usefulness_low");
+	if (serendipityScore < 55) signals.push("novelty_or_concreteness_low");
 
 	const pass =
-		freshnessScore >= 68 &&
 		noveltyScore >= 60 &&
 		diversityScore >= 45 &&
 		serendipityScore >= 55 &&

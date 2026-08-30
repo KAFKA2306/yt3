@@ -34,10 +34,6 @@ export interface TtsOrchestrationConfig {
 
 export interface TtsSynthesisResult {
 	audio: Buffer;
-	speakerId: number;
-	usedSubstituteVoice: boolean;
-	/** @deprecated Use usedSubstituteVoice. Kept for clean-checkout compatibility. */
-	usedFallback: boolean;
 }
 
 export class TtsOrchestrator {
@@ -66,15 +62,8 @@ export class TtsOrchestrator {
 			request.speakerId,
 		);
 		this.applyVoiceControls(queryResponse, request.voice);
-		const synthesisBuffer = await this.synthesizeAudio(
-			queryResponse,
-			request.speakerId,
-		);
 		return {
-			audio: synthesisBuffer,
-			speakerId: request.speakerId,
-			usedSubstituteVoice: false,
-			usedFallback: false,
+			audio: await this.synthesizeAudio(queryResponse, request.speakerId),
 		};
 	}
 

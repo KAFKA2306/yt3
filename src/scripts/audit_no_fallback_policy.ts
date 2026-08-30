@@ -7,6 +7,8 @@ type Check = {
 	details: string;
 };
 
+type AuditScope = "source" | "runtime" | "all";
+
 const ROOT = process.cwd();
 const SOURCE_ROOTS = [
 	"src",
@@ -22,12 +24,12 @@ const FORBIDDEN_CODE_PATTERNS = [
 	/PUBLISH_FALLBACK/,
 	/buildFallback[A-Za-z0-9_]*/,
 	/findLatestVideoForBucket/,
+	/ls\s+-td[^\n]*runs\/[^\n]*\|\s*head\s+-n\s*1/,
 	/kind:\s*["']fallback["']/,
 	/usedFallback/,
 ];
 const ALLOWED_PATTERN_FILES = new Set([
 	"src/scripts/audit_no_fallback_policy.ts",
-	"src/scripts/delete_fallback_videos.ts",
 ]);
 
 function pass(name: string, details: string): Check {
@@ -36,6 +38,17 @@ function pass(name: string, details: string): Check {
 
 function fail(name: string, details: string): Check {
 	return { name, status: "FAIL", details };
+}
+
+function resolveScope(args: string[]): AuditScope {
+	const raw = args
+		.find((arg) => arg.startsWith("--scope="))
+		?.slice("--scope=".length);
+	if (!raw) return "all";
+	if (raw === "source" || raw === "runtime" || raw === "all") return raw;
+	throw new Error(
+		`Unknown audit scope '${raw}'. Expected source, runtime, or all.`,
+	);
 }
 
 function listFiles(target: string): string[] {
@@ -54,21 +67,22 @@ function scanForbiddenCode(): Check {
 			const relativePath = path.relative(ROOT, filePath);
 			if (ALLOWED_PATTERN_FILES.has(relativePath)) continue;
 			if (
-				!/\.(ts|tsx|js|json|ya?ml)$/.test(filePath) &&
+				!/\.(ts|tsx|js|json|ya?ml|sh)$/.test(filePath) &&
 				relativePath !== "Taskfile.yml"
 			) {
 				continue;
 			}
 			const text = fs.readFileSync(filePath, "utf8");
 			for (const pattern of FORBIDDEN_CODE_PATTERNS) {
-				if (pattern.test(text)) {
-					matches.push(`${relativePath}: ${pattern}`);
-				}
+				if (pattern.test(text)) matches.push(`${relativePath}: ${pattern}`);
 			}
 		}
 	}
 	return matches.length === 0
-		? pass("forbidden_code_patterns", "no fallback implementation hooks found")
+		? pass(
+				"forbidden_code_patterns",
+				"no fallback implementation or implicit latest-run selection hooks found",
+			)
 		: fail("forbidden_code_patterns", matches.join("; "));
 }
 
@@ -114,35 +128,42 @@ function auditFallbackReceipts(): Check {
 		: fail("fallback_receipts_deleted", failures.join("; "));
 }
 
-function formatMarkdown(checks: Check[]): string {
+function checksForScope(scope: AuditScope): Check[] {
+	if (scope === "source") return [scanForbiddenCode()];
+	if (scope === "runtime") return [auditFallbackReceipts()];
+	return [scanForbiddenCode(), auditFallbackReceipts()];
+}
+
+function formatMarkdown(scope: AuditScope, checks: Check[]): string {
 	const lines = ["# No Fallback Policy Audit", ""];
-	lines.push(`Generated: ${new Date().toISOString()}`);
-	lines.push("");
+	lines.push(`Scope: ${scope}`, `Generated: ${new Date().toISOString()}`, "");
 	for (const check of checks) {
 		lines.push(`- ${check.status} ${check.name}: ${check.details}`);
 	}
 	return lines.join("\n");
 }
 
+function outputStem(scope: AuditScope): string {
+	return scope === "all"
+		? "no_fallback_policy_audit"
+		: `no_fallback_policy_audit.${scope}`;
+}
+
 async function main() {
-	const checks = [scanForbiddenCode(), auditFallbackReceipts()];
+	const scope = resolveScope(process.argv.slice(2));
+	const checks = checksForScope(scope);
 	const outDir = path.join(ROOT, "logs");
+	const stem = outputStem(scope);
 	await fs.ensureDir(outDir);
-	await fs.writeJson(
-		path.join(outDir, "no_fallback_policy_audit.json"),
-		checks,
-		{
-			spaces: 2,
-		},
-	);
+	await fs.writeJson(path.join(outDir, `${stem}.json`), checks, {
+		spaces: 2,
+	});
 	await fs.writeFile(
-		path.join(outDir, "no_fallback_policy_audit.md"),
-		`${formatMarkdown(checks)}\n`,
+		path.join(outDir, `${stem}.md`),
+		`${formatMarkdown(scope, checks)}\n`,
 	);
-	console.log(formatMarkdown(checks));
-	if (checks.some((check) => check.status === "FAIL")) {
-		process.exit(1);
-	}
+	console.log(formatMarkdown(scope, checks));
+	if (checks.some((check) => check.status === "FAIL")) process.exit(1);
 }
 
 main().catch((error: unknown) => {

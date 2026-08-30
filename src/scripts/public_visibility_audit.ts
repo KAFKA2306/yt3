@@ -1,10 +1,10 @@
 import path from "node:path";
-import dotenv from "dotenv";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
-	YOUTUBE_PROFILES,
 	type YouTubeProfileName,
+	createYouTubeOAuthClient,
+	getYouTubeProfileForChannel,
 } from "../domain/youtube_profiles.js";
 import {
 	type YouTubeVisibilityAttestation,
@@ -41,15 +41,12 @@ const PROFILE_FILTER = process.env.PUBLIC_VISIBILITY_PROFILE as
 const BUCKET_FILTER = process.env.PUBLIC_VISIBILITY_BUCKET;
 
 function resolveProfileName(receipt: Receipt): YouTubeProfileName | "unknown" {
-	const channelId = receipt.youtube?.channel_id;
-	if (channelId === "UCYtjO-PYBfdG3MuPLXfhA-Q") return "byosan";
-	if (channelId === "UCMDrWHL4Jc6gtmfoqaW7sxg") return "humanity";
-	if (channelId === "UCtq3BVv6SBCFjtPiDoetizw") return "yawa";
-	const title = receipt.youtube?.channel_title || "";
-	if (title.includes("秒算マネー")) return "byosan";
-	if (title.includes("人類観測所")) return "humanity";
-	if (title.includes("夜話アーカイブ")) return "yawa";
-	return "unknown";
+	return (
+		getYouTubeProfileForChannel(
+			receipt.youtube?.channel_id,
+			receipt.youtube?.channel_title,
+		)?.profileName ?? "unknown"
+	);
 }
 
 function collectReceipts(): Array<{ runId: string; receiptPath: string }> {
@@ -80,19 +77,6 @@ function collectReceipts(): Array<{ runId: string; receiptPath: string }> {
 		}
 	}
 	return receipts;
-}
-
-async function loadAuth(profileName: YouTubeProfileName) {
-	const profile = YOUTUBE_PROFILES[profileName];
-	dotenv.config({ path: path.join(ROOT, profile.envFile), override: true });
-	const auth = new google.auth.OAuth2(
-		process.env.YOUTUBE_CLIENT_ID,
-		process.env.YOUTUBE_CLIENT_SECRET,
-		process.env.YOUTUBE_REDIRECT_URI || "http://localhost:3000/oauth2callback",
-	);
-	const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-	if (refreshToken) auth.setCredentials({ refresh_token: refreshToken });
-	return { profile, auth };
 }
 
 async function inspectOne(
@@ -152,7 +136,7 @@ async function inspectOne(
 		};
 	}
 
-	const { auth } = await loadAuth(profileName);
+	const { auth } = await createYouTubeOAuthClient(profileName);
 	const youtube = google.youtube({ version: "v3", auth });
 	const res = await youtube.videos.list({
 		part: ["status", "snippet"],

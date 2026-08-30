@@ -5,14 +5,12 @@ import { z } from "zod";
 import {
 	type AssetStore,
 	BaseAgent,
-	QuotaExhaustionError,
 	ROOT,
 	RunStage,
 	parseLlmJson,
 } from "../../io/core.js";
 import { evaluateCreativeFreshness } from "../../io/utils/creative_freshness.js";
 import { ScriptIntegrityLinter } from "../../io/utils/qa/script_linter.js";
-import { DynamicsOrchestrator } from "../evolution/dynamics_orchestrator.js";
 import { AuditReportSchema } from "../types.js";
 import type {
 	AgentState,
@@ -24,96 +22,6 @@ import type {
 	ScriptLine,
 } from "../types.js";
 import { compareVoiceMaps, getCanonicalVoiceMap } from "../voice_registry.js";
-import { MetaAuditLayer } from "./meta_audit_layer.js";
-
-const SemanticAuditResultSchema = z.object({
-	content_structure: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	brand_voice: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	entity_density: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	abstract_noun_ratio: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-});
-
-const AudienceAuditResultSchema = z.object({
-	hook_strength: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	curiosity_gap: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	intro_tension: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	boredom_prediction: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	recommendation_cluster: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		predicted_cluster: z.string(),
-		feedback: z.string(),
-	}),
-	novelty_score: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		most_similar_past_title: z.string().optional().nullable(),
-		similarity_percentage: z.number(),
-		feedback: z.string(),
-	}),
-	hook_loop: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	open_loop: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	emotional_oscillation: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	share_trigger: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	pattern_interrupt: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-	thumbnail_continuity: z.object({
-		passed: z.boolean(),
-		score: z.number(),
-		feedback: z.string(),
-	}),
-});
 
 const HumanityAuditResultSchema = z.object({
 	humanity: z.object({
@@ -191,8 +99,7 @@ export class AuditAgent extends BaseAgent {
 		// 1. SIGNAL AUDIT (DETERMINISTIC)
 		const signalResults = await this.auditSignals(state, evidence);
 		if (
-			(state.bucket === "humanity_observatory" ||
-				state.bucket === "daily_pulse") &&
+			state.bucket === "humanity_observatory" &&
 			signalResults.multimodal_pacing
 		) {
 			signalResults.multimodal_pacing.status = "PASS";
@@ -205,15 +112,6 @@ export class AuditAgent extends BaseAgent {
 
 		// 2.5 CREATIVE FRESHNESS AUDIT (DETERMINISTIC / RECENT-RUN COMPARISON)
 		Object.assign(results, this.auditCreativeFreshness(state, evidence));
-
-		// 3. SEMANTIC AUDIT (BOUNDED PROBABILISTIC / LLM)
-		if (
-			state.script &&
-			state.metadata &&
-			state.bucket !== "humanity_observatory"
-		) {
-			Object.assign(results, await this.auditSemantics(state, evidence));
-		}
 
 		// 4. VOICE ROLE INTEGRITY (Speaker Assignment Audit)
 		if (state.script) {
@@ -233,11 +131,6 @@ export class AuditAgent extends BaseAgent {
 			await this.auditAdaptiveSurvivability(state, evidence),
 		);
 
-		// 5.6 AUDIENCE AUDIT (Hook Strength, Curiosity Gap, Intro Tension, Novelty Budget, Cluster Fit)
-		if (state.script && state.bucket !== "humanity_observatory") {
-			Object.assign(results, await this.auditAudience(state, evidence));
-		}
-
 		// 5.7 DETERMINISTIC RETENTION AUDIT (ASVS Tier 0/1 Evidence)
 		if (
 			state.script &&
@@ -249,12 +142,6 @@ export class AuditAgent extends BaseAgent {
 				await this.auditDeterministicRetention(state, evidence),
 			);
 		}
-
-		// 5.8 GENERATION DYNAMICS AUDIT (Anti-Collapse & Parameter Drift Audit)
-		Object.assign(results, this.auditGenerationDynamics(state, evidence));
-
-		// 5.9 META AUDIT LAYER (Process-Evolution-Centric Audit)
-		Object.assign(results, await this.auditMetaEvolution(state, evidence));
 
 		// 5.10 HUMANITY OBSERVATORY AUDIT (For 'Humanity Observatory' channel)
 		if (state.script && state.bucket === "humanity_observatory") {
@@ -271,11 +158,6 @@ export class AuditAgent extends BaseAgent {
 
 		// 5.12 NAMING & PATH ISOLATION AUDIT (Zero-Trust Boundary Check)
 		Object.assign(results, this.auditNamingBoundaries(state, evidence));
-
-		// 5.13 MULTI-MODAL BRAND INTEGRITY AUDIT (ADR-0034)
-		if (state.bucket === "humanity_observatory") {
-			Object.assign(results, await this.auditBrandStyle(state, evidence));
-		}
 
 		// 5.14 SCRIPT INTEGRITY AUDIT (Discomfort Linter)
 		if (state.script) {
@@ -333,76 +215,6 @@ export class AuditAgent extends BaseAgent {
 
 		this.logOutput(results);
 		return results;
-	}
-
-	private async auditBrandStyle(
-		state: AgentState,
-		evidence: Record<string, unknown>,
-	): Promise<Record<string, AuditCheck>> {
-		const checks: Record<string, AuditCheck> = {};
-		const bucket = state.bucket;
-
-		// 1. COLOR AUDIT (COLOR-001/002)
-		// Logic: Detect Byosan Money navy (#103766) in screenshots
-		const forbiddenNavy = "#103766";
-		// (Placeholder for actual histogram analysis tool call)
-		checks.color_palette = {
-			name: "COLOR-001: Palette Isolation",
-			description: "Detects forbidden domain colors (Byosan Navy).",
-			status: "PASS", // Will FAIL if histogram tool detects #103766
-			details: "No Byosan Navy detected in sampled frames.",
-			critical: true,
-			type: "DETERMINISTIC",
-		};
-
-		// 2. ILLUSTRATION AUDIT (ILLUST-001/002)
-		checks.illust_style = {
-			name: "ILLUST-001: Style Embedding Audit",
-			description: "Bans finance-presentation or cyberpunk styles via CLIP.",
-			status: "PASS",
-			details: "Visual style aligned with 'mundane life' fragments.",
-			critical: true,
-			type: "BOUNDED_PROBABILISTIC",
-		};
-
-		// 3. VOICE AUDIT (VOICE-001/002/003)
-		checks.voice_style = {
-			name: "VOICE-001: Acoustic Profile Audit",
-			description: "Verifies playful warmth vs corporate narration.",
-			status: "PASS",
-			details:
-				"Pitch variance and energy contour match 'conversational closeness'.",
-			critical: true,
-			type: "BOUNDED_PROBABILISTIC",
-		};
-
-		// 4. CROSS-MODAL ALIGNMENT (STYLE-CROSS-001)
-		const bypassHuman = process.env.BYPASS_HUMAN_GATES === "true";
-		checks.style_alignment = {
-			name: "STYLE-CROSS-001: Brand Space Integrity",
-			description:
-				"Ensures script, voice, and visuals share the same brand space.",
-			status: bypassHuman ? "PASS" : "UNKNOWN", // Subjective: Cannot be deterministically verified
-			details: bypassHuman
-				? "Bypassed via environment variable."
-				: "Brand impression requires human review or retention metrics. No deterministic drift detected.",
-			critical: !bypassHuman,
-			type: "BOUNDED_PROBABILISTIC",
-		};
-
-		// 5. HUMANITY LANDING (HUMANITY-001)
-		checks.humanity_landing = {
-			name: "HUMANITY-001: Final Emotional Landing",
-			description: "Ensures results end in 'Humanity is cute' space.",
-			status: bypassHuman ? "PASS" : "UNKNOWN", // Subjective: Cannot be deterministically verified
-			details: bypassHuman
-				? "Bypassed via environment variable."
-				: "Emotional landing requires pairwise ranking or human review.",
-			critical: !bypassHuman,
-			type: "BOUNDED_PROBABILISTIC",
-		};
-
-		return checks;
 	}
 
 	private auditNamingBoundaries(
@@ -519,192 +331,6 @@ export class AuditAgent extends BaseAgent {
 				type: "BOUNDED_PROBABILISTIC",
 			};
 		}
-
-		return checks;
-	}
-
-	private auditGenerationDynamics(
-		state: AgentState,
-		evidence: Record<string, unknown>,
-	): Record<string, AuditCheck> {
-		const checks: Record<string, AuditCheck> = {};
-		const dynamics = state.generation_dynamics;
-
-		if (!dynamics) {
-			checks.generation_dynamics_integrity = {
-				name: "Generation Dynamics Integrity",
-				description:
-					"Verifies that all 8 state steps of generation dynamics are populated.",
-				status: "QUALITY_FAIL",
-				details: "generation_dynamics state is missing from AgentState.",
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-			return checks;
-		}
-
-		evidence.generation_dynamics = dynamics;
-
-		// 1. Structural/Integrity Check
-		const requiredSteps = [
-			"world_state",
-			"selection_state",
-			"narrative_state",
-			"generation_state",
-			"attention_state",
-			"publish_state",
-			"audience_response_state",
-			"evolution_state",
-		];
-		const missingSteps = requiredSteps.filter((step) => !(step in dynamics));
-
-		if (missingSteps.length > 0) {
-			checks.generation_dynamics_integrity = {
-				name: "Generation Dynamics Integrity",
-				description:
-					"Verifies that all 8 state steps of generation dynamics are populated.",
-				status: "QUALITY_FAIL",
-				details: `Missing steps: ${missingSteps.join(", ")}`,
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-		} else {
-			checks.generation_dynamics_integrity = {
-				name: "Generation Dynamics Integrity",
-				description:
-					"Verifies that all 8 state steps of generation dynamics are populated.",
-				status: "PASS",
-				details:
-					"All 8 steps (world, selection, narrative, generation, attention, publish, audience, evolution) are structurally verified.",
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-		}
-
-		// 2. Anti-Collapse / Parameter Drift Check
-		const explorationMode = dynamics.evolution_state?.exploration_mode_active;
-		const strategyMutation = dynamics.evolution_state?.strategy_mutation;
-		const cadenceMutation = dynamics.evolution_state?.cadence_mutation;
-
-		if (explorationMode) {
-			checks.anti_collapse_drift = {
-				name: "Anti-Collapse Parameter Drift",
-				description:
-					"Audit for structural duplication or pattern locking in cadence or topic narrative strategies.",
-				status: "PASS",
-				details: `Parameter drift was detected, but Strategy Mutation Engine successfully triggered exploration. Strategy Mutation: "${strategyMutation}". Cadence Mutation: "${cadenceMutation}".`,
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-		} else {
-			checks.anti_collapse_drift = {
-				name: "Anti-Collapse Parameter Drift",
-				description:
-					"Audit for structural duplication or pattern locking in cadence or topic narrative strategies.",
-				status: "PASS",
-				details:
-					"No significant parameter drift detected. Strategy variance remains healthy.",
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-		}
-
-		// 3. Attention Fatigue Risk Check (Simulated entropy accumulation check)
-		const fatigue = dynamics.attention_state?.fatigue_risk || 0.0;
-		if (fatigue > 0.75) {
-			checks.attention_entropy_load = {
-				name: "Attention Entropy & Fatigue Risk",
-				description:
-					"Verifies viewer fatigue does not exceed quality thresholds (fatigue <= 0.75).",
-				status: "QUALITY_FAIL",
-				details: `High viewer fatigue risk detected (${fatigue}). Entropy accumulation is critical due to lack of new information, predictable syntax or high cadence repetition.`,
-				critical: true,
-				type: "BOUNDED_PROBABILISTIC",
-			};
-		} else {
-			checks.attention_entropy_load = {
-				name: "Attention Entropy & Fatigue Risk",
-				description:
-					"Verifies viewer fatigue does not exceed quality thresholds (fatigue <= 0.75).",
-				status: "PASS",
-				details: `Viewer fatigue risk is within healthy bounds (${fatigue}).`,
-				critical: true,
-				type: "BOUNDED_PROBABILISTIC",
-			};
-		}
-
-		return checks;
-	}
-
-	private async auditMetaEvolution(
-		state: AgentState,
-		evidence: Record<string, unknown>,
-	): Promise<Record<string, AuditCheck>> {
-		const checks: Record<string, AuditCheck> = {};
-
-		const currentDynamics = state.generation_dynamics;
-		if (!currentDynamics) {
-			checks.meta_evolution_readiness = {
-				name: "Meta Evolution: Dynamic Ledger Readiness",
-				description:
-					"Verifies state contains necessary dynamics for meta auditing.",
-				status: "QUALITY_FAIL",
-				details: "State generation_dynamics is not populated.",
-				critical: true,
-				type: "DETERMINISTIC",
-			};
-			return checks;
-		}
-
-		const dynOrch = new DynamicsOrchestrator(this.store);
-		const metaLayer = new MetaAuditLayer(this.store);
-
-		const pastDynamics = dynOrch.getPastDynamics();
-		const metaReport = metaLayer.runMetaAudit(
-			state,
-			currentDynamics,
-			pastDynamics,
-		);
-		evidence.meta_audit = metaReport;
-
-		checks.meta_survivability = {
-			name: "Meta Evolution: Adaptive Survivability",
-			description:
-				"Evaluates overall system survivability under attention and algorithm shifts.",
-			status:
-				metaReport.survivability === "SURVIVABLE" ? "PASS" : "QUALITY_FAIL",
-			details: `Adaptive Survivability status evaluated as: ${metaReport.survivability}. Portfolio focus: stable (${metaReport.evolution_budget.portfolio_distribution.stable_content * 100}%), adjacent (${metaReport.evolution_budget.portfolio_distribution.adjacent_exploration * 100}%), radical (${metaReport.evolution_budget.portfolio_distribution.radical_experiment * 100}%).`,
-			critical: true,
-			type: "DETERMINISTIC",
-		};
-
-		checks.meta_strategy_convergence = {
-			name: "Meta Evolution: Anti-Convergence Auditor",
-			description:
-				"Checks if narrative or cadence patterns have locked or collapsed.",
-			status:
-				metaReport.strategy_convergence.status === "PASS"
-					? "PASS"
-					: "QUALITY_FAIL",
-			details: `Fear narrative ratio is ${metaReport.strategy_convergence.fear_narrative_ratio}. Emotional path entropy: ${metaReport.strategy_convergence.emotional_path_entropy}. Hook diversity: ${metaReport.strategy_convergence.hook_pattern_diversity}.`,
-			critical: true,
-			type: "DETERMINISTIC",
-		};
-
-		checks.meta_attention_entropy = {
-			name: "Meta Evolution: Attention Entropy & Fatigue",
-			description:
-				"Evaluates predictability accumulation to predict viewer fatigue.",
-			status:
-				metaReport.attention_entropy.status === "PASS"
-					? "PASS"
-					: metaReport.attention_entropy.status === "WARNING"
-						? "PASS"
-						: "QUALITY_FAIL",
-			details: `Viewer predictability score is ${metaReport.attention_entropy.audience_predictability_score} (status: ${metaReport.attention_entropy.status}). Cadence repeat count: ${metaReport.attention_entropy.repeated_cadence_count}. Opening rhythm repeat count: ${metaReport.attention_entropy.repeated_opening_rhythm_count}.`,
-			critical: true,
-			type: "BOUNDED_PROBABILISTIC",
-		};
 
 		return checks;
 	}
@@ -1287,28 +913,20 @@ export class AuditAgent extends BaseAgent {
 				if (gap > maxSilenceGap) maxSilenceGap = gap;
 			}
 
-			const allowStaticVisualPacing =
-				this.config.steps.video?.allow_static_visual_pacing === true;
-			const hasVisualCadence =
-				maxSceneGap <= 12 ||
-				(allowStaticVisualPacing && cutMatches.length <= 2);
-			const multimodalPass = hasVisualCadence && maxSilenceGap <= 45;
+			const multimodalPass = maxSceneGap <= 12 && maxSilenceGap <= 45;
 
 			checks.multimodal_pacing = {
 				name: "Signal: Multimodal Pacing",
 				description:
 					"Audits visual scene cut spacing and natural breathing silences in the audio track.",
 				status: multimodalPass ? "PASS" : "QUALITY_FAIL",
-				details: `Max visual scene gap: ${maxSceneGap.toFixed(1)}s (Target <= 12s${allowStaticVisualPacing ? "; static visual policy enabled" : ""}). Max speech segment without silence: ${maxSilenceGap.toFixed(1)}s (Target <= 45s).`,
+				details: `Max visual scene gap: ${maxSceneGap.toFixed(1)}s (Target <= 12s). Max speech segment without silence: ${maxSilenceGap.toFixed(1)}s (Target <= 45s).`,
 				critical: true,
 				type: "DETERMINISTIC",
 			};
 			evidence.multimodal_pacing = {
 				scene_cuts_count: cutMatches.length - 2,
 				max_scene_gap: maxSceneGap,
-				visual_pacing_mode: allowStaticVisualPacing
-					? "static_visual_with_caption_audio_gate"
-					: "scene_cut_gate",
 				silence_gaps_count: silenceStarts.length - 2,
 				max_silence_gap: maxSilenceGap,
 			};
@@ -2147,94 +1765,6 @@ export class AuditAgent extends BaseAgent {
 		};
 	}
 
-	private async auditSemantics(
-		state: AgentState,
-		evidence: Record<string, unknown>,
-	): Promise<Record<string, AuditCheck>> {
-		const system = `You are a Bounded Classifier for "Byosan Money" operating under the AUDIT DRIVEN MEDIA SYSTEM CONTRACT.
-
-	Your supreme mandate:
-	1. FACTS FIRST. STRUCTURE LATER. Concrete events must precede and anchor any background structure.
-	2. HUMAN RELEVANCE. Every fact must translate to daily life, money, work, or future uncertainty.
-	3. SPECIFICITY. Maximize density of named entities, numbers, and dates. 
-	4. ANTI-ABSTRACT. Penalize generalized macro explanations or philosophical filler.
-
-	Output MUST be a single JSON object with this structure:
-	{
-	"content_structure": { "passed": boolean, "score": number, "feedback": string },
-	"brand_voice": { "passed": boolean, "score": number, "feedback": string },
-	"entity_density": { "passed": boolean, "score": number, "feedback": string },
-	"abstract_noun_ratio": { "passed": boolean, "score": number, "feedback": string }
-	}
-	Output JSON strictly.`;
-
-		try {
-			const res = await this.runLlm(
-				system,
-				JSON.stringify(state.script?.lines),
-				(t) => parseLlmJson(t, SemanticAuditResultSchema),
-				{ temperature: 0 },
-			);
-			evidence.semantic = res;
-
-			return {
-				semantic_structure: {
-					name: "Probabilistic: Narrative Structure",
-					description:
-						"FACTS FIRST verification. Concrete events must precede structure.",
-					status: res.content_structure.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.content_structure.score}/100. ${res.content_structure.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				semantic_brand: {
-					name: "Probabilistic: Brand Voice",
-					description: "Verifies High Pace and Human Relevance.",
-					status: res.brand_voice.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.brand_voice.score}/100. ${res.brand_voice.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				semantic_entity_density: {
-					name: "Probabilistic: Entity Density",
-					description: "Verifies high density of specific named entities.",
-					status: res.entity_density.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.entity_density.score}/100. ${res.entity_density.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				semantic_abstract_ratio: {
-					name: "Probabilistic: Abstract Noun Ratio",
-					description:
-						"Penalizes intellectual essays or philosophical framing.",
-					status: res.abstract_noun_ratio.passed ? "PASS" : "QUALITY_FAIL",
-					details: `Score: ${res.abstract_noun_ratio.score}/100. ${res.abstract_noun_ratio.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-			};
-		} catch (e) {
-			evidence.semantic_error = String(e);
-			const isQuota =
-				e instanceof QuotaExhaustionError ||
-				String(e).includes("429") ||
-				String(e).toLowerCase().includes("quota exhaustion") ||
-				String(e).includes("LLM invocation failed after 5 attempts");
-			return {
-				semantic_infra: {
-					name: "Probabilistic: Semantic Verifier Health",
-					description: "Integrity of the LLM-based semantic audit.",
-					status: isQuota ? "PASS" : "QUALITY_FAIL",
-					details: isQuota
-						? `Bypassed due quota exhaustion: ${String(e)}`
-						: `Semantic Audit Failed: ${String(e)}`,
-					critical: !isQuota,
-					type: "DETERMINISTIC",
-				},
-			};
-		}
-	}
-
 	private getPastRunsState(): Array<{
 		run_id: string;
 		title: string;
@@ -2281,200 +1811,6 @@ export class AuditAgent extends BaseAgent {
 			console.error("Failed to read past runs states:", e);
 		}
 		return pastRuns;
-	}
-
-	private async auditAudience(
-		state: AgentState,
-		evidence: Record<string, unknown>,
-	): Promise<Record<string, AuditCheck>> {
-		const system = `You are a Bounded Audience Auditor for "Byosan Money" operating under the AUDIT DRIVEN MEDIA SYSTEM CONTRACT.
-
-	Your supreme mandate is to verify MEASURABLE RETENTION SIGNALS and PLATFORM COMPETITION VIABILITY. 
-
-	CRITICAL BAN:
-	- DO NOT use abstract praise (e.g., "viral", "engaging", "powerful", "interesting").
-	- DO NOT use self-congratulatory or emotional marketing prose.
-	- DO NOT assume success. Look for FAIL conditions.
-
-	Verification Metrics (PRM Spec v1):
-	1. HOOK LOOP: novelty_event_interval <= 35s. Fail if abstract conceptual filler persists.
-	2. OPEN LOOP: unresolved_question_count >= 1. Fail if linear conclusion (Fact->Explanation->End) is reached.
-	3. EMOTIONAL OSCILLATION: emotional_polarity_shift >= 1 per 45s. Fail if monotone cadence or single-mood persists.
-	4. SHARE TRIGGER: Must identify specific Status Gain, Future Advantage, or Fear trigger.
-	5. THUMBNAIL–INTRO CONTINUITY: 0-5s must pay off thumbnail title keywords. Fail if intro is generic greeting.
-	6. PATTERN INTERRUPT: rhetorical_cadence_limit <= 50s. Fail if BGM/pacing is too smooth for 60s.
-	7. INFORMATION DENSITY: abstract_noun_ratio < 15%, entity_density >= 5 per 1k chars.
-
-	Output MUST be a single JSON object:
-	{
-	"hook_strength": { "passed": boolean, "score": number, "feedback": string },
-	"curiosity_gap": { "passed": boolean, "score": number, "feedback": string },
-	"intro_tension": { "passed": boolean, "score": number, "feedback": string },
-	"boredom_prediction": { "passed": boolean, "score": number, "feedback": string },
-	"recommendation_cluster": { "passed": boolean, "score": number, "predicted_cluster": string, "feedback": string },
-	"novelty_score": { "passed": boolean, "score": number, "most_similar_past_title": string, "similarity_percentage": number, "feedback": string },
-	"hook_loop": { "passed": boolean, "score": number, "feedback": string },
-	"open_loop": { "passed": boolean, "score": number, "feedback": string },
-	"emotional_oscillation": { "passed": boolean, "score": number, "feedback": string },
-	"share_trigger": { "passed": boolean, "score": number, "feedback": string },
-	"pattern_interrupt": { "passed": boolean, "score": number, "feedback": string },
-	"thumbnail_continuity": { "passed": boolean, "score": number, "feedback": string }
-	}
-	Output strictly valid JSON. All feedback must be technical and data-driven.`;
-
-		try {
-			const pastRuns = this.getPastRunsState();
-			const currentLines = state.script?.lines || [];
-			const currentIntro = currentLines
-				.slice(0, 30) // Increased for better hook loop check
-				.map((l: ScriptLine) => `${l.speaker}: ${l.text}`)
-				.join("\n");
-
-			const userMessage = JSON.stringify({
-				current_video: {
-					title: state.script?.title || state.metadata?.title || "",
-					thumbnail_title: state.metadata?.thumbnail_title || "",
-					description:
-						state.script?.description || state.metadata?.description || "",
-					intro_script: currentIntro,
-					full_script_sample: currentLines
-						.slice(0, 100)
-						.map((l: ScriptLine) => `${l.speaker}: ${l.text}`)
-						.join("\n"),
-				},
-				previous_videos: pastRuns,
-			});
-
-			const res = await this.runLlm(
-				system,
-				userMessage,
-				(t) => parseLlmJson(t, AudienceAuditResultSchema),
-				{ temperature: 0 },
-			);
-
-			evidence.audience = res;
-
-			return {
-				audience_hook_strength: {
-					name: "Probabilistic: Audience Hook Strength",
-					description: "Validates opening hook retention strength.",
-					status: res.hook_strength.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.hook_strength.score}/100. ${res.hook_strength.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_curiosity_gap: {
-					name: "Probabilistic: Hook Curiosity Gap",
-					description: "Validates presence of a strong curiosity gap.",
-					status: res.curiosity_gap.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.curiosity_gap.score}/100. ${res.curiosity_gap.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_intro_tension: {
-					name: "Probabilistic: Intro Tension Curve",
-					description: "Checks introductory conversational tension.",
-					status: res.intro_tension.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.intro_tension.score}/100. ${res.intro_tension.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_boredom_prediction: {
-					name: "Probabilistic: Boredom Prediction",
-					description: "Audits for dry lecturing and abstract overload.",
-					status: res.boredom_prediction.passed ? "PASS" : "FAIL",
-					details: `Boredom Risk Score: ${res.boredom_prediction.score}/100 (high is better). ${res.boredom_prediction.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_recommendation_cluster: {
-					name: "Probabilistic: Algorithmic Recommendation Cluster Fit",
-					description: "Ensures no algorithmic identity drift from core niche.",
-					status: res.recommendation_cluster.passed ? "PASS" : "FAIL",
-					details: `Predicted Cluster: ${res.recommendation_cluster.predicted_cluster} (Score: ${res.recommendation_cluster.score}/100). ${res.recommendation_cluster.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_novelty_budget: {
-					name: "Probabilistic: Novelty Budget & Repetition Risk",
-					description: "Guarantees brand-safe novelty and rejects monotony.",
-					status: res.novelty_score.passed ? "PASS" : "FAIL",
-					details: `Novelty: ${res.novelty_score.score}/100, Similarity: ${res.novelty_score.similarity_percentage}% (Most similar past title: "${res.novelty_score.most_similar_past_title || "None"}"). ${res.novelty_score.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_hook_loop: {
-					name: "Viral: Hook Loop Tension",
-					description: "Verifies continuous tension refresh every 15s/30s/60s.",
-					status: res.hook_loop.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.hook_loop.score}/100. ${res.hook_loop.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_open_loop: {
-					name: "Viral: Open Loop Persistence",
-					description: "Ensures unresolved tensions keep the viewer engaged.",
-					status: res.open_loop.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.open_loop.score}/100. ${res.open_loop.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_emotional_oscillation: {
-					name: "Viral: Emotional Oscillation",
-					description: "Audits for fluctuating emotions vs AI smoothness.",
-					status: res.emotional_oscillation.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.emotional_oscillation.score}/100. ${res.emotional_oscillation.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_share_trigger: {
-					name: "Viral: Share Trigger Potential",
-					description:
-						"Validates presence of status-gain or insider-feeling share triggers.",
-					status: res.share_trigger.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.share_trigger.score}/100. ${res.share_trigger.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_pattern_interrupt: {
-					name: "Viral: Pattern Interrupt",
-					description:
-						"Checks for attention resets via unexpected examples or silence.",
-					status: res.pattern_interrupt.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.pattern_interrupt.score}/100. ${res.pattern_interrupt.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-				audience_thumbnail_continuity: {
-					name: "Viral: Thumbnail–Intro Continuity",
-					description:
-						"Ensures the intro immediately pays off the thumbnail's promise.",
-					status: res.thumbnail_continuity.passed ? "PASS" : "FAIL",
-					details: `Score: ${res.thumbnail_continuity.score}/100. ${res.thumbnail_continuity.feedback}`,
-					critical: true,
-					type: "BOUNDED_PROBABILISTIC",
-				},
-			};
-		} catch (e) {
-			evidence.audience_error = String(e);
-			const isQuota =
-				e instanceof QuotaExhaustionError ||
-				String(e).includes("429") ||
-				String(e).toLowerCase().includes("quota exhaustion") ||
-				String(e).includes("LLM invocation failed after 5 attempts");
-			return {
-				audience_infra: {
-					name: "Probabilistic: Audience Verifier Health",
-					description: "Integrity of the LLM-based audience audit.",
-					status: isQuota ? "PASS" : "FAIL",
-					details: isQuota
-						? `Bypassed due quota exhaustion: ${String(e)}`
-						: `Audience Audit Failed: ${String(e)}`,
-					critical: !isQuota,
-					type: "DETERMINISTIC",
-				},
-			};
-		}
 	}
 
 	private checkProvenance(evidence: Record<string, unknown>): AuditCheck {

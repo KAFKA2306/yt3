@@ -5,37 +5,28 @@ import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import type { z } from "zod";
-import { ContextPlaybook } from "../domain/evolution/context_playbook.js";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 export const ROOT = process.cwd();
 
-export function loadConfig(domainId?: string): AppConfig {
+export function loadConfig(
+	domainId = process.env.BUCKET?.trim() || "byosan_money",
+): AppConfig {
 	const configPath = process.env.CONFIG_PATH;
 	if (configPath && fs.existsSync(configPath)) {
 		return yaml.load(fs.readFileSync(configPath, "utf-8")) as AppConfig;
 	}
 
-	if (domainId) {
-		const mappedDomainId =
-			domainId === "daily_pulse" ? "byosan_money" : domainId;
-		const domainConfigPath = path.join(
-			ROOT,
-			"config",
-			"domains",
-			`${mappedDomainId}.yaml`,
-		);
-		if (fs.existsSync(domainConfigPath)) {
-			return yaml.load(fs.readFileSync(domainConfigPath, "utf-8")) as AppConfig;
-		}
+	const domainConfigPath = path.join(
+		ROOT,
+		"config",
+		"domains",
+		`${domainId}.yaml`,
+	);
+	if (fs.existsSync(domainConfigPath)) {
+		return yaml.load(fs.readFileSync(domainConfigPath, "utf-8")) as AppConfig;
 	}
 
-	const defaultPath = path.join(ROOT, "config", "default.yaml");
-	if (fs.existsSync(defaultPath)) {
-		return yaml.load(fs.readFileSync(defaultPath, "utf-8")) as AppConfig;
-	}
-	throw new Error(
-		`CRITICAL: No configuration found. Domain: ${domainId || "none"}`,
-	);
+	throw new Error(`CRITICAL: No configuration found for domain '${domainId}'`);
 }
 
 import { AgentLogger as Logger } from "./utils/logger.js";
@@ -57,9 +48,7 @@ const envFilePath = process.env.ENV_FILE
 		? process.env.ENV_FILE
 		: path.join(ROOT, process.env.ENV_FILE)
 	: path.join(ROOT, "config/.env");
-// Job-scoped safety gates are supplied by the contract runner. Profile files
-// fill missing values but must not overwrite the caller's process environment.
-dotenv.config({ path: envFilePath, override: false });
+dotenv.config({ path: envFilePath, override: true });
 
 export { Logger as AgentLogger };
 export type { AgentState };
@@ -88,7 +77,6 @@ export function createLlm(
 ): BaseChatModel & { keyName?: string } {
 	const { extra = {}, ...rest } = options;
 
-	// Infer domain from sessionId (usually runDir path)
 	let domainId: string | undefined;
 	if (options.sessionId?.includes("/")) {
 		const parts = options.sessionId.split(path.sep);
@@ -105,7 +93,7 @@ export function createLlm(
 		"SYSTEM",
 		"CORE",
 		"API_CHECK",
-		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}... (Domain: ${domainId || "default"})`,
+		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}... (Domain: ${domainId || "byosan_money"})`,
 	);
 
 	const llm = new ChatGoogleGenerativeAI({
@@ -257,13 +245,6 @@ export abstract class BaseAgent {
 		parser: (text: string) => T,
 		callOpts: Record<string, unknown> = {},
 	): Promise<T> {
-		const playbook = new ContextPlaybook();
-		const bullets = playbook.getRankedBullets(5);
-		const aceContext =
-			bullets.length > 0
-				? `\n\n[ACE Intelligence - Strategic Instructions]\n${bullets.map((b) => `- ${b.content} (ID: ${b.id})`).join("\n")}`
-				: "";
-
 		if (
 			process.env.SKIP_LLM === "true" &&
 			this.name !== "audit" &&
@@ -287,7 +268,7 @@ export abstract class BaseAgent {
 			const keyName = llm.keyName || "unknown";
 			lastKeyName = keyName;
 			const quotaContext = getQuotaContext(keyName, "gemini");
-			const finalSystemPrompt = `${systemPrompt}\n\n${aceContext}\n\n${quotaContext}`;
+			const finalSystemPrompt = `${systemPrompt}\n\n${quotaContext}`;
 			await waitIfRateLimited(keyName);
 
 			try {
@@ -309,9 +290,6 @@ export abstract class BaseAgent {
 				const isInvalidKey =
 					errMsg.toLowerCase().includes("api_key_invalid") ||
 					errMsg.toLowerCase().includes("api key not found");
-				const isTransientProviderFailure =
-					/\b5(?:00|02|03|04|05)\b/.test(errMsg) ||
-					/temporarily unavailable|high demand/i.test(errMsg);
 				lastFailure = classifyFailureMessage(errMsg);
 
 				if (isRateLimit || isInvalidKey) {
@@ -323,15 +301,6 @@ export abstract class BaseAgent {
 						`Error for key ${keyName} (${isInvalidKey ? "invalid key" : "rate limit"}). Attempt ${attempts}/${maxAttempts}. Rotating key and sleeping ${sleepMs / 1000}s... Error: ${errMsg.slice(0, 150)}`,
 					);
 					markKeyRateLimited(keyName);
-					await new Promise((resolve) => setTimeout(resolve, sleepMs));
-				} else if (isTransientProviderFailure) {
-					const sleepMs = Math.min(15000, 2000 * 2 ** (attempts - 1));
-					Logger.warn(
-						"SYSTEM",
-						"CORE",
-						"LLM_TRANSIENT_FAILURE",
-						`Transient provider failure. Attempt ${attempts}/${maxAttempts}; retrying in ${sleepMs / 1000}s: ${errMsg.slice(0, 150)}`,
-					);
 					await new Promise((resolve) => setTimeout(resolve, sleepMs));
 				} else {
 					throw err;
@@ -386,10 +355,6 @@ function cleanCodeBlock(text: string): string {
 		throw new Error(`Expected string for cleanCodeBlock, got ${typeof text}`);
 	}
 	const stripped = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-	const fencedJson = stripped.match(
-		/```(?:json|javascript|js)?\s*([\s\S]*?)```/i,
-	);
-	if (fencedJson?.[1]) return fencedJson[1].trim();
 
 	const firstBrace = stripped.indexOf("{");
 	const firstBracket = stripped.indexOf("[");
@@ -538,43 +503,11 @@ export function getRunIdDateString(): string {
 	return `${y}-${m}-${day}`;
 }
 export function getMemoryEssenceFile(store: AssetStore): string {
-	const cfg = store.cfg;
-	const isCognitive = store.runDir.includes("humanity_observatory");
-	const isByosanMoney = store.runDir.includes("byosan_money");
-	const subDir = isCognitive
-		? "humanity_observatory"
-		: isByosanMoney
-			? "byosan_money"
-			: "daily_pulse";
-	const essenceFile = path.join(
-		ROOT,
-		"data",
-		"memory",
-		subDir,
-		"essences.json",
-	);
-
-	if (!isCognitive && !fs.existsSync(essenceFile)) {
-		const legacyFile = path.isAbsolute(cfg.workflow.memory.essence_file)
-			? cfg.workflow.memory.essence_file
-			: path.join(ROOT, cfg.workflow.memory.essence_file);
-		if (fs.existsSync(legacyFile)) {
-			fs.ensureDirSync(path.dirname(essenceFile));
-			fs.copySync(legacyFile, essenceFile);
-		}
-	}
-	return essenceFile;
+	return path.join(ROOT, "data", "memory", store.domainId, "essences.json");
 }
 
 export function getLoopMemoryFile(store: AssetStore): string {
-	const isCognitive = store.runDir.includes("humanity_observatory");
-	const isByosanMoney = store.runDir.includes("byosan_money");
-	const subDir = isCognitive
-		? "humanity_observatory"
-		: isByosanMoney
-			? "byosan_money"
-			: "daily_pulse";
-	return path.join(ROOT, "data", "memory", subDir, "loop_journal.json");
+	return path.join(ROOT, "data", "memory", store.domainId, "loop_journal.json");
 }
 
 export function appendLoopMemory(
@@ -657,7 +590,7 @@ export function loadMemoryContext(store: AssetStore): string {
 }
 
 export function fetchRecentThemes(store: AssetStore, days = 7): string {
-	const cfg = loadConfig();
+	const cfg = store.cfg;
 	const runsDir = path.join(ROOT, cfg.workflow.paths.runs_dir, store.domainId);
 
 	if (!fs.existsSync(runsDir)) {
