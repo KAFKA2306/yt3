@@ -59,7 +59,9 @@ function assertWeek(week: PowerMacroWeek): void {
 	if (!Array.isArray(week.new_insights) || week.new_insights.length === 0) {
 		throw new Error("BYOSAN_POWER_MACRO_INVALID_NEW_INSIGHTS");
 	}
-	if (!week.source_report.startsWith("https://github.com/KAFKA2306/prompt-vault/")) {
+	if (
+		!week.source_report.startsWith("https://github.com/KAFKA2306/prompt-vault/")
+	) {
 		throw new Error("BYOSAN_POWER_MACRO_INVALID_SOURCE_REPORT");
 	}
 }
@@ -149,5 +151,7 @@ export function appendByosanPowerMacroWeek(
 	}
 	history.weeks.push(week);
 	history.derived_from.period_end = week.week_end;
-	fs.writeJsonSync(getByosanPowerMacroHistoryPath(root), history, { spaces: 2 });
+	fs.writeJsonSync(getByosanPowerMacroHistoryPath(root), history, {
+		spaces: 2,
+	});
 }
