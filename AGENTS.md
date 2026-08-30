@@ -67,6 +67,18 @@ task stability:report
 
 Internal `src/scripts/*` and package scripts support Taskfile/CI; they are not a second human-facing interface unless explicitly documented as one.
 
+### Production execution requests are runtime operations
+
+An explicit request to run/start/`動かす` a production path is not satisfied by repository validation alone. It means executing the canonical Taskfile command on the target runtime.
+
+- if authorized target-host execution capability is available, use it rather than stopping at CI or repository evidence;
+- CI, unit tests, mocks, simulations, and `DRY_RUN` must never be reported as the requested production execution;
+- never create an ad-hoc GitHub Actions workflow merely to bypass the target-host boundary;
+- if the current tool context cannot execute on the target host, report the runtime result as **UNVERIFIED** and explicitly state that the production command was not executed;
+- repository acceptance may be VERIFIED while product/runtime/publication remains separately UNVERIFIED.
+
+For 秒算マネー, `task byosan:prepare DATE=YYYY-MM-DD` is preparation-only, `task byosan:daily` is the full daily production path, and explicit publication follows the authorization boundary defined below.
+
 ## 4. Repository, product, and publication are separate verdicts
 
 | evidence | proves | does not prove |
