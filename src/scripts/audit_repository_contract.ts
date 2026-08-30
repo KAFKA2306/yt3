@@ -237,7 +237,10 @@ function auditPowerMacroHistory() {
 				"https://github.com/KAFKA2306/prompt-vault/blob/",
 			)
 		) {
-			record(relativePath, `weeks[${index}] has invalid source_report provenance`);
+			record(
+				relativePath,
+				`weeks[${index}] has invalid source_report provenance`,
+			);
 		}
 	}
 }
