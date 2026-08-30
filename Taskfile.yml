@@ -25,6 +25,20 @@ tasks:
     cmds:
       - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
+  byosan:prepare:
+    desc: "Prepare one 秒算マネー run through the product release gate without publishing (DATE=YYYY-MM-DD required)"
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "DATE=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+      - BYOSAN_DATE={{.DATE}} BYOSAN_DAILY_NO_PUBLISH=true task byosan:daily
+      - task release:check PROFILE=byosan -- byosan_money/{{.DATE}}-daily
+      - |
+        echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
+        echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
+
   release:check:
     desc: "Check run-specific product release conditions without external publication (PROFILE required)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/check_product_release.ts {{.CLI_ARGS}}"]
