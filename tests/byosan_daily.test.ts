@@ -3,10 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 import {
+	type ByosanFailureTrace,
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
 	recordByosanFailure,
-	type ByosanFailureTrace,
 } from "../src/scripts/byosan_daily.js";
 
 const tempRoots: string[] = [];
@@ -90,7 +90,9 @@ describe("byosan failure retry gate", () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
 			runDir,
-			new Error("BYOSAN_FEATURE_GENERATION_FAILED: domain audit rejected draft"),
+			new Error(
+				"BYOSAN_FEATURE_GENERATION_FAILED: domain audit rejected draft",
+			),
 			"failed-head",
 		);
 		expect(trace).toMatchObject({
@@ -108,11 +110,23 @@ describe("byosan failure retry gate", () => {
 
 	test("permits only the configured bounded retries for a provider rate limit", async () => {
 		const runDir = await makeRunDir();
-		recordByosanFailure(runDir, new Error("429 rate limit quota exhausted"), "head-a");
+		recordByosanFailure(
+			runDir,
+			new Error("429 rate limit quota exhausted"),
+			"head-a",
+		);
 		expect(() => assertByosanRetryAllowed(runDir, "head-a")).not.toThrow();
-		recordByosanFailure(runDir, new Error("429 rate limit quota exhausted"), "head-a");
+		recordByosanFailure(
+			runDir,
+			new Error("429 rate limit quota exhausted"),
+			"head-a",
+		);
 		expect(() => assertByosanRetryAllowed(runDir, "head-a")).not.toThrow();
-		recordByosanFailure(runDir, new Error("429 rate limit quota exhausted"), "head-a");
+		recordByosanFailure(
+			runDir,
+			new Error("429 rate limit quota exhausted"),
+			"head-a",
+		);
 		expect(() => assertByosanRetryAllowed(runDir, "head-a")).toThrow(
 			"RETRY_BLOCKED_TRANSIENT_EXHAUSTED",
 		);
@@ -137,7 +151,9 @@ describe("byosan failure retry gate", () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
 			runDir,
-			new Error("BYOSAN_FEATURE_GENERATION_FAILED: deterministic contract mismatch"),
+			new Error(
+				"BYOSAN_FEATURE_GENERATION_FAILED: deterministic contract mismatch",
+			),
 			"failed-head",
 		);
 		const resolved: ByosanFailureTrace = {
@@ -145,7 +161,8 @@ describe("byosan failure retry gate", () => {
 			resolution: {
 				status: "VERIFIED",
 				root_cause: "generator violated the deterministic feature contract",
-				regression_test: "tests/byosan_daily.test.ts::source failure retry gate",
+				regression_test:
+					"tests/byosan_daily.test.ts::source failure retry gate",
 				repair_commit: "repair-head",
 				validation: {
 					command: "task check:merge",
@@ -154,9 +171,13 @@ describe("byosan failure retry gate", () => {
 				},
 			},
 		};
-		await fs.outputJson(path.join(runDir, "audit/failure_trace.json"), resolved, {
-			spaces: 2,
-		});
+		await fs.outputJson(
+			path.join(runDir, "audit/failure_trace.json"),
+			resolved,
+			{
+				spaces: 2,
+			},
+		);
 		expect(() => assertByosanRetryAllowed(runDir, "repair-head")).not.toThrow();
 		expect(() => assertByosanRetryAllowed(runDir, "different-head")).toThrow(
 			"RETRY_BLOCKED_REPAIR_EVIDENCE_REQUIRED",

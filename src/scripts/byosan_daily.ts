@@ -115,11 +115,17 @@ function currentGitHead(): string {
 }
 
 function failureStage(message: string): ByosanFailureStage {
-	if (/DUPLICATE_PUBLISH|PUBLISH_|publish_youtube/i.test(message)) return "PUBLISH";
-	if (/produce_byosan_feature|VOICEVOX|TTS|audio|ffmpeg|motion|zoompan|subtitle/i.test(message)) {
+	if (/DUPLICATE_PUBLISH|PUBLISH_|publish_youtube/i.test(message))
+		return "PUBLISH";
+	if (
+		/produce_byosan_feature|VOICEVOX|TTS|audio|ffmpeg|motion|zoompan|subtitle/i.test(
+			message,
+		)
+	) {
 		return "MEDIA";
 	}
-	if (/BYOSAN_FEATURE|feature spec|schema|zod|structured/i.test(message)) return "SPEC";
+	if (/BYOSAN_FEATURE|feature spec|schema|zod|structured/i.test(message))
+		return "SPEC";
 	if (/BYOSAN_ANGLE|research|TrendScout/i.test(message)) return "RESEARCH";
 	return "UNKNOWN";
 }
@@ -131,7 +137,11 @@ export function classifyByosanFailure(message: string): {
 	maxRetries: number;
 } {
 	const stage = failureStage(message);
-	if (/COMMAND_FAILED: .*publish_youtube|DUPLICATE_PUBLISH_BLOCKED|PUBLISH_EVIDENCE_INCOMPLETE/i.test(message)) {
+	if (
+		/COMMAND_FAILED: .*publish_youtube|DUPLICATE_PUBLISH_BLOCKED|PUBLISH_EVIDENCE_INCOMPLETE/i.test(
+			message,
+		)
+	) {
 		return {
 			failureClass: "UNCERTAIN_REMOTE_COMMIT",
 			stage: "PUBLISH",
@@ -147,7 +157,11 @@ export function classifyByosanFailure(message: string): {
 			maxRetries: 2,
 		};
 	}
-	if (/oauth|credential|unauthori[sz]ed|forbidden|network|ECONN|ENOTFOUND/i.test(message)) {
+	if (
+		/oauth|credential|unauthori[sz]ed|forbidden|network|ECONN|ENOTFOUND/i.test(
+			message,
+		)
+	) {
 		return {
 			failureClass: "NETWORK_AUTH",
 			stage,
@@ -203,7 +217,11 @@ export function classifyByosanFailure(message: string): {
 			maxRetries: 0,
 		};
 	}
-	if (/permission|EACCES|EPERM|not found|module|dependency|ffmpeg|ffprobe/i.test(message)) {
+	if (
+		/permission|EACCES|EPERM|not found|module|dependency|ffmpeg|ffprobe/i.test(
+			message,
+		)
+	) {
 		return {
 			failureClass: "INFRA_DEPENDENCY",
 			stage,
@@ -257,13 +275,13 @@ function repairResolutionIsValid(
 ): boolean {
 	return Boolean(
 		resolution?.status === "VERIFIED" &&
-		resolution.root_cause.trim() &&
-		resolution.regression_test.trim() &&
-		resolution.regression_test !== "pending" &&
-		resolution.repair_commit === currentHead &&
-		resolution.validation.command === "task check:merge" &&
-		resolution.validation.status === "PASS" &&
-		resolution.validation.checked_at,
+			resolution.root_cause.trim() &&
+			resolution.regression_test.trim() &&
+			resolution.regression_test !== "pending" &&
+			resolution.repair_commit === currentHead &&
+			resolution.validation.command === "task check:merge" &&
+			resolution.validation.status === "PASS" &&
+			resolution.validation.checked_at,
 	);
 }
 
@@ -308,7 +326,8 @@ export function recordByosanFailure(
 	failedCommit = currentGitHead(),
 ): ByosanFailureTrace {
 	const message = error instanceof Error ? error.message : String(error);
-	const evidence = error instanceof Error ? (error.stack ?? error.message) : String(error);
+	const evidence =
+		error instanceof Error ? (error.stack ?? error.message) : String(error);
 	const classification = classifyByosanFailure(message);
 	const fingerprint = failureFingerprint(
 		classification.failureClass,
@@ -318,7 +337,9 @@ export function recordByosanFailure(
 	const previous = fs.existsSync(failureTracePath(runDir))
 		? readFailureTrace(runDir)
 		: null;
-	const commandMatch = message.match(/COMMAND_FAILED:\s+(.+?)\s+status=(\d+|signal)/);
+	const commandMatch = message.match(
+		/COMMAND_FAILED:\s+(.+?)\s+status=(\d+|signal)/,
+	);
 	const now = new Date().toISOString();
 	const trace: ByosanFailureTrace = {
 		schema_version: "byosan_failure_trace_v1",
