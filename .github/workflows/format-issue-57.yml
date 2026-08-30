@@ -1,0 +1,32 @@
+name: Format issue 57 branch
+
+on:
+  push:
+    branches: ["issue-57-failure-retry-gate"]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: issue-57-failure-retry-gate
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun ci
+      - name: Apply canonical Biome formatting
+        run: bun biome check --write src/scripts/byosan_daily.ts tests/byosan_daily.test.ts
+      - name: Commit formatting only when needed
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/scripts/byosan_daily.ts tests/byosan_daily.test.ts
+          git commit -m "style: apply canonical Biome formatting"
+          git push origin HEAD:issue-57-failure-retry-gate
