@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "domain": "byosan_money",
+  "kind": "power_macro_weekly_history",
+  "derived_from": {
+    "repository": "KAFKA2306/prompt-vault",
+    "report_series": "Weekly Power & Macro Intelligence",
+    "period_start": "2026-04-04",
+    "period_end": "2026-07-04",
+    "note": "Compressed historical knowledge derived from the retained Prompt Vault weekly reports. Source reports remain the provenance record."
+  },
+  "weeks": [
+    {
+      "week_end": "2026-04-04",
+      "regime": "Geopolitical relief rally with improving earnings expectations.",
+      "new_insights": [
+        "Iran-related geopolitical tension eased enough to support a relief rally.",
+        "S&P 500 Q1 aggregate earnings estimates were revised upward and a sixth consecutive quarter of double-digit earnings growth was expected."
+      ],
+      "thesis_update": "Equity upside could be supported by both lower geopolitical risk and genuine earnings growth rather than sentiment alone.",
+      "counterevidence": "A failed or reversed peace process could quickly restore oil and volatility risk.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-04-04.md"
+    },
+    {
+      "week_end": "2026-04-11",
+      "regime": "Potential equity bottoming while oil and rates remained restrictive.",
+      "new_insights": [
+        "The S&P 500 correction was treated as a possible bottoming process rather than the start of a structural bear market.",
+        "Robotics capital inflows emerged as an adjacent AI investment theme."
+      ],
+      "thesis_update": "The key question shifted from macro stress alone to whether earnings could offset high rates and energy costs.",
+      "counterevidence": "Higher-for-longer rates or renewed oil inflation could cap valuation expansion despite solid earnings.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-04-11.md"
+    },
+    {
+      "week_end": "2026-04-18",
+      "regime": "Hyperscaler-led recovery supported by positive earnings guidance.",
+      "new_insights": [
+        "S&P 500 and Nasdaq reached new highs after the late-March low.",
+        "The number of S&P 500 companies issuing positive EPS guidance reached a five-year high.",
+        "AI adoption was increasingly framed as a labor and skill-structure transformation, not only a software theme."
+      ],
+      "thesis_update": "The AI trade moved from bubble-or-not debate toward evidence of earnings support and real organizational adoption.",
+      "counterevidence": "Slowing payroll growth remained a warning that macro demand could weaken even while large-cap earnings stayed strong.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-04-18.md"
+    },
+    {
+      "week_end": "2026-04-25",
+      "regime": "Frontier-model progress reinforced the AI investment cycle.",
+      "new_insights": [
+        "Frontier-model and multimodal product progress strengthened the link between model capability and continued compute demand.",
+        "The market recovery from the late-March low remained intact."
+      ],
+      "thesis_update": "Model progress should be connected to downstream compute demand, AI equity valuation and private-company NAV rather than treated as isolated product news.",
+      "counterevidence": "The week provided little new macro or policy evidence, making the AI-capex inference less direct than earnings-backed observations.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-04-25.md"
+    },
+    {
+      "week_end": "2026-05-02",
+      "regime": "Strong Q1 earnings confirmation with Japan entering a new financial-policy phase.",
+      "new_insights": [
+        "With 63% of S&P 500 companies reported, 84% had beaten EPS expectations and aggregate earnings growth was exceptionally strong.",
+        "Japan's corporate-value collateral right and BOJ outlook highlighted changes in financing and capital allocation."
+      ],
+      "thesis_update": "US equity strength became explicitly earnings-driven; in Japan, financing structure and capital efficiency became investable structural themes.",
+      "counterevidence": "A widening Nikkei-TOPIX divergence suggested index-level strength could conceal concentration or composition distortions.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-05-02.md"
+    },
+    {
+      "week_end": "2026-05-09",
+      "regime": "Earnings momentum stayed strong while oil inflation re-emerged as a macro risk.",
+      "new_insights": [
+        "At 89% reporting completion, 84% of S&P 500 companies were still beating EPS expectations.",
+        "2026 and 2027 earnings expectations continued to be revised upward.",
+        "WTI briefly moved above 110 dollars per barrel, reviving inflation risk."
+      ],
+      "thesis_update": "The earnings case remained intact, but oil became a clear transmission path from geopolitics to inflation and rates.",
+      "counterevidence": "Persistent oil inflation could force tighter monetary policy and compress valuation multiples.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-05-09.md"
+    },
+    {
+      "week_end": "2026-05-16",
+      "regime": "The dominant risk shifted from rate cuts to possible renewed tightening.",
+      "new_insights": [
+        "US two-year yields above 4% and firm inflation/labor data made renewed Fed tightening plausible.",
+        "Strong earnings and revenue coexisted with increasing discount-rate risk.",
+        "Electricity availability emerged as a physical bottleneck for AI expansion."
+      ],
+      "thesis_update": "Good economic news could become bad equity news when it prevents easing; AI growth must be evaluated against physical power constraints.",
+      "counterevidence": "If inflation cooled without a growth collapse, the tightening-risk thesis would weaken materially.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-05-16.md"
+    },
+    {
+      "week_end": "2026-05-23",
+      "regime": "FEMO versus a long-rate shock.",
+      "new_insights": [
+        "Long Treasury yields rose sharply while earnings surprises remained unusually strong.",
+        "Government involvement in strategic technology broadened from subsidies toward direct equity participation.",
+        "Data-center electricity constraints became a first-class AI-capex risk."
+      ],
+      "thesis_update": "The market could remain earnings-led, but the required return and discount-rate channel became the primary threat to valuation.",
+      "counterevidence": "A sustained decline in long yields without EPS deterioration would restore room for multiple expansion.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-05-23.md"
+    },
+    {
+      "week_end": "2026-05-30",
+      "regime": "Fabulous Earnings Momentum became the central equity thesis.",
+      "new_insights": [
+        "Q2 bottom-up EPS estimates rose 2.5% when they would normally decline early in a quarter.",
+        "S&P 500 continued to new highs despite higher rates.",
+        "AI exposure broadened beyond Mag-7 toward hardware, infrastructure and strategic technology."
+      ],
+      "thesis_update": "The simple AI-bubble short thesis weakened; as long as forward earnings keep rising, pullbacks deserve different treatment from valuation-only bubbles.",
+      "counterevidence": "A turn from upward to broad downward EPS revisions would directly break the FEMO thesis.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-05-30.md"
+    },
+    {
+      "week_end": "2026-06-06",
+      "regime": "Strong earnings continued, but tightening and mega-IPO liquidity absorption became material risks.",
+      "new_insights": [
+        "S&P 500 moved above 7600 while Q2 EPS estimates remained upwardly revised.",
+        "Large private AI and space IPOs were treated as possible liquidity drains on public markets.",
+        "Strategic compute investment was increasingly intertwined with government capital."
+      ],
+      "thesis_update": "AI fundamentals remained constructive, but valuation needed to account for both higher rates and competition for market liquidity.",
+      "counterevidence": "If mega-IPO funding proved additive rather than crowding out existing equities, the liquidity-risk thesis would be overstated.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-06-06.md"
+    },
+    {
+      "week_end": "2026-06-13",
+      "regime": "June Swoon exposed the difference between earnings strength and valuation sensitivity.",
+      "new_insights": [
+        "Equities sold off sharply even though Q2 EPS estimates remained elevated and upwardly revised.",
+        "AI references in corporate earnings calls reached a decade high.",
+        "Frontier AI became more visibly subject to national-security intervention and access controls."
+      ],
+      "thesis_update": "Strong earnings do not immunize equities from a discount-rate shock; price and fundamental direction can temporarily diverge.",
+      "counterevidence": "If the selloff persisted alongside falling earnings revisions, the event would no longer be explainable as a valuation-only correction.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-06-13.md"
+    },
+    {
+      "week_end": "2026-06-20",
+      "regime": "Central-bank tightening replaced geopolitics as the dominant macro risk while oil risk eased.",
+      "new_insights": [
+        "Fed policy framing shifted from easing toward tightening while Japan also operated in a higher-rate regime.",
+        "US-Iran interim peace reduced the oil-risk channel.",
+        "AI adoption became broad enough to appear in hundreds of S&P 500 earnings calls."
+      ],
+      "thesis_update": "The key macro risk migrated from geopolitical supply shock to monetary-policy restriction; AI demand remained structurally broad.",
+      "counterevidence": "A renewed geopolitical disruption to oil supply would restore the earlier inflation channel and compound monetary tightening.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-06-20.md"
+    },
+    {
+      "week_end": "2026-06-27",
+      "regime": "AI investment broadened from models into inference silicon and physical infrastructure while Fed hawkishness persisted.",
+      "new_insights": [
+        "OpenAI-Broadcom custom inference-chip activity and Blackwell infrastructure made custom silicon and inference economics explicit investment themes.",
+        "AI value-chain analysis expanded into electricity, memory and critical minerals.",
+        "S&P 500 remained below its early-June high after the June correction."
+      ],
+      "thesis_update": "The AI thesis should be analyzed as a full physical value chain: agents and models drive demand for ASICs, GPUs, memory, data centers, power and materials.",
+      "counterevidence": "Capacity overbuild or weak utilization at any layer could turn infrastructure scarcity into oversupply and compress returns.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-06-27.md"
+    },
+    {
+      "week_end": "2026-07-04",
+      "regime": "AI growth remained strong, but the market entered a selection phase under higher rates and rising input costs.",
+      "new_insights": [
+        "Q2 S&P 500 earnings estimates were revised upward by 3.4% during the quarter and a second consecutive quarter of more than 20% earnings growth was expected.",
+        "Nasdaq fell sharply while memory and storage cost pressure pushed large technology companies toward price increases.",
+        "The weekly process produced its first explicit S&P 500 EPS score of 4."
+      ],
+      "thesis_update": "The question is no longer whether AI demand exists, but which companies can convert that demand into durable margins after memory, power, capital and rate costs.",
+      "counterevidence": "If input costs normalize quickly while AI revenue remains strong, the selection pressure may broaden back into a wider AI rally.",
+      "source_report": "https://github.com/KAFKA2306/prompt-vault/blob/main/docs/reports/weekly-power-macro-intelligence/2026-07-04.md"
+    }
+  ],
+  "persistent_theses": [
+    {
+      "id": "us_equity_eps_base",
+      "statement": "US equity resilience in this period was repeatedly supported by earnings revisions and surprises, not by sentiment alone.",
+      "status": "strengthened"
+    },
+    {
+      "id": "rates_primary_counterforce",
+      "statement": "The main counterforce to strong earnings is the discount rate: stronger growth can keep policy tight and compress valuation multiples.",
+      "status": "strengthened"
+    },
+    {
+      "id": "ai_physical_value_chain",
+      "statement": "AI investment must be evaluated across models, agents, GPUs, ASICs, memory, data centers, electricity and critical materials.",
+      "status": "strengthened"
+    },
+    {
+      "id": "ai_selection_phase",
+      "statement": "AI moved from broad thematic beta toward selection based on monetization, margin durability and infrastructure cost exposure.",
+      "status": "emerged"
+    },
+    {
+      "id": "japan_rate_supply_constraint",
+      "statement": "Japan should be evaluated through adaptation to positive rates and supply constraints: capital efficiency, pricing power, productivity and balance-sheet resilience matter more than yen weakness alone.",
+      "status": "emerged"
+    }
+  ]
+}
