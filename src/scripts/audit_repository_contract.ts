@@ -16,6 +16,17 @@ type Failure = {
 	message: string;
 };
 
+type PowerMacroWeek = {
+	week_end?: string;
+	source_report?: string;
+};
+
+type PowerMacroHistory = {
+	schema_version?: number;
+	domain?: string;
+	weeks?: PowerMacroWeek[];
+};
+
 const ROOT = process.cwd();
 const failures: Failure[] = [];
 
@@ -161,10 +172,81 @@ function auditDocumentation(taskNames: Set<string>) {
 	}
 }
 
+function auditPowerMacroHistory() {
+	const relativePath = "data/memory/byosan_money/power_macro_history.json";
+	const raw = loadText(relativePath);
+	if (!raw) return;
+
+	let history: PowerMacroHistory;
+	try {
+		history = JSON.parse(raw) as PowerMacroHistory;
+	} catch (error) {
+		record(
+			relativePath,
+			`JSON parse failed: ${error instanceof Error ? error.message : String(error)}`,
+		);
+		return;
+	}
+
+	if (history.schema_version !== 1) {
+		record(relativePath, "schema_version must be 1");
+	}
+	if (history.domain !== "byosan_money") {
+		record(relativePath, "domain must be byosan_money");
+	}
+	if (!Array.isArray(history.weeks)) {
+		record(relativePath, "weeks must be an array");
+		return;
+	}
+
+	const expectedSeedWeeks = [
+		"2026-04-04",
+		"2026-04-11",
+		"2026-04-18",
+		"2026-04-25",
+		"2026-05-02",
+		"2026-05-09",
+		"2026-05-16",
+		"2026-05-23",
+		"2026-05-30",
+		"2026-06-06",
+		"2026-06-13",
+		"2026-06-20",
+		"2026-06-27",
+		"2026-07-04",
+	];
+	const weekEnds = history.weeks.flatMap((week) =>
+		week.week_end ? [week.week_end] : [],
+	);
+	const uniqueWeekEnds = new Set(weekEnds);
+	if (uniqueWeekEnds.size !== weekEnds.length) {
+		record(relativePath, "week_end values must be unique");
+	}
+	for (const expected of expectedSeedWeeks) {
+		if (!uniqueWeekEnds.has(expected)) {
+			record(relativePath, `missing migrated seed week ${expected}`);
+		}
+	}
+
+	for (const [index, week] of history.weeks.entries()) {
+		if (!week.week_end) {
+			record(relativePath, `weeks[${index}] is missing week_end`);
+		}
+		if (
+			!week.source_report?.startsWith(
+				"https://github.com/KAFKA2306/prompt-vault/blob/",
+			)
+		) {
+			record(relativePath, `weeks[${index}] has invalid source_report provenance`);
+		}
+	}
+}
+
 function main() {
 	const taskNames = auditTaskfile();
 	auditPackageScripts();
 	auditDocumentation(taskNames);
+	auditPowerMacroHistory();
 
 	if (failures.length > 0) {
 		console.error(`[repo-contract] FAIL (${failures.length})`);
@@ -175,7 +257,7 @@ function main() {
 	}
 
 	console.log(
-		`[repo-contract] PASS (${taskNames.size} Taskfile tasks; executable and documentation references resolved)`,
+		`[repo-contract] PASS (${taskNames.size} Taskfile tasks; executable, documentation, and memory references resolved)`,
 	);
 }
 
