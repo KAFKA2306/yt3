@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
@@ -20,6 +21,67 @@ export type PublishedRunEvidence = {
 	videoId?: string;
 };
 
+export type ByosanFailureClass =
+	| "INFRA_DEPENDENCY"
+	| "NETWORK_AUTH"
+	| "PROVIDER_RATE_LIMIT"
+	| "PROVIDER_SCHEMA"
+	| "SPEC_CONTRACT"
+	| "MEDIA_AUDIO"
+	| "MEDIA_VIDEO_MOTION"
+	| "SUBTITLE"
+	| "PUBLISH_REMOTE"
+	| "UNCERTAIN_REMOTE_COMMIT"
+	| "UNCLASSIFIED";
+
+export type ByosanFailureStage =
+	| "RESEARCH"
+	| "SPEC"
+	| "MEDIA"
+	| "PUBLISH"
+	| "UNKNOWN";
+
+type RetryPolicy =
+	| "TRANSIENT_BOUNDED"
+	| "REQUIRES_REPAIR_EVIDENCE"
+	| "REMOTE_READBACK_ONLY";
+
+type RepairResolution = {
+	status: "VERIFIED";
+	root_cause: string;
+	regression_test: string;
+	repair_commit: string;
+	validation: {
+		command: "task check:merge";
+		status: "PASS";
+		checked_at: string;
+	};
+};
+
+export type ByosanFailureTrace = {
+	schema_version: "byosan_failure_trace_v1";
+	status: "OPEN" | "RECOVERED";
+	failure_class: ByosanFailureClass;
+	stage: ByosanFailureStage;
+	failed_gate: ByosanFailureStage;
+	command?: string;
+	symptom: string;
+	evidence: string;
+	fingerprint: string;
+	failed_commit: string;
+	retry_policy: RetryPolicy;
+	retry_count: number;
+	max_retries: number;
+	exit_status?: number;
+	root_cause: "pending_trace_review";
+	regression_test: "pending";
+	failed_at: string;
+	first_failed_at: string;
+	last_retry_at?: string;
+	recovered_at?: string;
+	resolution?: RepairResolution;
+};
+
 function safeSourceId(raw: string, index: number): string {
 	const normalized = raw
 		.normalize("NFKD")
@@ -37,6 +99,267 @@ function normalizedSources(candidate: ByosanAngleCandidate): FeatureSource[] {
 		seen.add(id);
 		return { id, name: source.name, url: source.url };
 	});
+}
+
+function failureTracePath(runDir: string): string {
+	return path.join(runDir, "audit", "failure_trace.json");
+}
+
+function currentGitHead(): string {
+	const result = spawnSync("git", ["rev-parse", "HEAD"], {
+		cwd: ROOT,
+		encoding: "utf8",
+	});
+	if (result.status !== 0) return "UNVERIFIED";
+	return result.stdout.trim() || "UNVERIFIED";
+}
+
+function failureStage(message: string): ByosanFailureStage {
+	if (/DUPLICATE_PUBLISH|PUBLISH_|publish_youtube/i.test(message)) return "PUBLISH";
+	if (/produce_byosan_feature|VOICEVOX|TTS|audio|ffmpeg|motion|zoompan|subtitle/i.test(message)) {
+		return "MEDIA";
+	}
+	if (/BYOSAN_FEATURE|feature spec|schema|zod|structured/i.test(message)) return "SPEC";
+	if (/BYOSAN_ANGLE|research|TrendScout/i.test(message)) return "RESEARCH";
+	return "UNKNOWN";
+}
+
+export function classifyByosanFailure(message: string): {
+	failureClass: ByosanFailureClass;
+	stage: ByosanFailureStage;
+	retryPolicy: RetryPolicy;
+	maxRetries: number;
+} {
+	const stage = failureStage(message);
+	if (/COMMAND_FAILED: .*publish_youtube|DUPLICATE_PUBLISH_BLOCKED|PUBLISH_EVIDENCE_INCOMPLETE/i.test(message)) {
+		return {
+			failureClass: "UNCERTAIN_REMOTE_COMMIT",
+			stage: "PUBLISH",
+			retryPolicy: "REMOTE_READBACK_ONLY",
+			maxRetries: 0,
+		};
+	}
+	if (/429|rate limit|quota exhausted|resource exhausted/i.test(message)) {
+		return {
+			failureClass: "PROVIDER_RATE_LIMIT",
+			stage,
+			retryPolicy: "TRANSIENT_BOUNDED",
+			maxRetries: 2,
+		};
+	}
+	if (/oauth|credential|unauthori[sz]ed|forbidden|network|ECONN|ENOTFOUND/i.test(message)) {
+		return {
+			failureClass: "NETWORK_AUTH",
+			stage,
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (/schema|zod|structured output|parse/i.test(message)) {
+		return {
+			failureClass: "PROVIDER_SCHEMA",
+			stage,
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (/BYOSAN_FEATURE|SPEC_CONTRACT|feature spec/i.test(message)) {
+		return {
+			failureClass: "SPEC_CONTRACT",
+			stage: "SPEC",
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (/VOICEVOX|TTS|audio|speech|duration/i.test(message)) {
+		return {
+			failureClass: "MEDIA_AUDIO",
+			stage: "MEDIA",
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (/motion|zoompan|crop|lateral|video motion/i.test(message)) {
+		return {
+			failureClass: "MEDIA_VIDEO_MOTION",
+			stage: "MEDIA",
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (/subtitle|caption|srt/i.test(message)) {
+		return {
+			failureClass: "SUBTITLE",
+			stage: "MEDIA",
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (/PUBLISH_|youtube/i.test(message)) {
+		return {
+			failureClass: "PUBLISH_REMOTE",
+			stage: "PUBLISH",
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (/permission|EACCES|EPERM|not found|module|dependency|ffmpeg|ffprobe/i.test(message)) {
+		return {
+			failureClass: "INFRA_DEPENDENCY",
+			stage,
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	return {
+		failureClass: "UNCLASSIFIED",
+		stage,
+		retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+		maxRetries: 0,
+	};
+}
+
+function failureFingerprint(
+	failureClass: ByosanFailureClass,
+	stage: ByosanFailureStage,
+	message: string,
+): string {
+	const canonicalMessage = message.split("\n", 1)[0]?.trim() || message.trim();
+	return createHash("sha256")
+		.update(`${failureClass}\n${stage}\n${canonicalMessage}`)
+		.digest("hex");
+}
+
+function readFailureTrace(runDir: string): ByosanFailureTrace | null {
+	const tracePath = failureTracePath(runDir);
+	if (!fs.existsSync(tracePath)) return null;
+	try {
+		const trace = fs.readJsonSync(tracePath) as ByosanFailureTrace;
+		if (
+			trace.schema_version !== "byosan_failure_trace_v1" ||
+			!trace.fingerprint ||
+			!trace.failure_class ||
+			!trace.retry_policy
+		) {
+			throw new Error("invalid failure trace schema");
+		}
+		return trace;
+	} catch (error) {
+		throw new Error(
+			`FAILURE_TRACE_UNREADABLE: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
+}
+
+function repairResolutionIsValid(
+	resolution: RepairResolution | undefined,
+	currentHead: string,
+): boolean {
+	return Boolean(
+		resolution?.status === "VERIFIED" &&
+		resolution.root_cause.trim() &&
+		resolution.regression_test.trim() &&
+		resolution.regression_test !== "pending" &&
+		resolution.repair_commit === currentHead &&
+		resolution.validation.command === "task check:merge" &&
+		resolution.validation.status === "PASS" &&
+		resolution.validation.checked_at,
+	);
+}
+
+export function assertByosanRetryAllowed(
+	runDir: string,
+	currentHead = currentGitHead(),
+): void {
+	const trace = readFailureTrace(runDir);
+	if (!trace || trace.status === "RECOVERED") return;
+	if (trace.retry_policy === "REMOTE_READBACK_ONLY") {
+		throw new Error(
+			`RETRY_BLOCKED_REMOTE_READBACK_REQUIRED: ${trace.failure_class} ${trace.fingerprint}`,
+		);
+	}
+	if (trace.retry_policy === "TRANSIENT_BOUNDED") {
+		if (trace.retry_count >= trace.max_retries) {
+			throw new Error(
+				`RETRY_BLOCKED_TRANSIENT_EXHAUSTED: ${trace.failure_class} ${trace.retry_count}/${trace.max_retries}`,
+			);
+		}
+		fs.outputJsonSync(
+			failureTracePath(runDir),
+			{
+				...trace,
+				retry_count: trace.retry_count + 1,
+				last_retry_at: new Date().toISOString(),
+			},
+			{ spaces: 2 },
+		);
+		return;
+	}
+	if (!repairResolutionIsValid(trace.resolution, currentHead)) {
+		throw new Error(
+			`RETRY_BLOCKED_REPAIR_EVIDENCE_REQUIRED: ${trace.failure_class} ${trace.fingerprint}`,
+		);
+	}
+}
+
+export function recordByosanFailure(
+	runDir: string,
+	error: unknown,
+	failedCommit = currentGitHead(),
+): ByosanFailureTrace {
+	const message = error instanceof Error ? error.message : String(error);
+	const evidence = error instanceof Error ? (error.stack ?? error.message) : String(error);
+	const classification = classifyByosanFailure(message);
+	const fingerprint = failureFingerprint(
+		classification.failureClass,
+		classification.stage,
+		message,
+	);
+	const previous = fs.existsSync(failureTracePath(runDir))
+		? readFailureTrace(runDir)
+		: null;
+	const commandMatch = message.match(/COMMAND_FAILED:\s+(.+?)\s+status=(\d+|signal)/);
+	const now = new Date().toISOString();
+	const trace: ByosanFailureTrace = {
+		schema_version: "byosan_failure_trace_v1",
+		status: "OPEN",
+		failure_class: classification.failureClass,
+		stage: classification.stage,
+		failed_gate: classification.stage,
+		...(commandMatch?.[1] ? { command: commandMatch[1] } : {}),
+		...(commandMatch?.[2] && commandMatch[2] !== "signal"
+			? { exit_status: Number(commandMatch[2]) }
+			: {}),
+		symptom: message,
+		evidence,
+		fingerprint,
+		failed_commit: failedCommit,
+		retry_policy: classification.retryPolicy,
+		retry_count:
+			previous?.fingerprint === fingerprint ? previous.retry_count : 0,
+		max_retries: classification.maxRetries,
+		root_cause: "pending_trace_review",
+		regression_test: "pending",
+		failed_at: now,
+		first_failed_at:
+			previous?.fingerprint === fingerprint ? previous.first_failed_at : now,
+	};
+	fs.outputJsonSync(failureTracePath(runDir), trace, { spaces: 2 });
+	return trace;
+}
+
+function markFailureRecovered(runDir: string): void {
+	const trace = readFailureTrace(runDir);
+	if (!trace || trace.status === "RECOVERED") return;
+	fs.outputJsonSync(
+		failureTracePath(runDir),
+		{
+			...trace,
+			status: "RECOVERED",
+			recovered_at: new Date().toISOString(),
+		},
+		{ spaces: 2 },
+	);
 }
 
 export function findPublishedByosanRunForDate(
@@ -259,6 +582,7 @@ export async function runByosanDaily(): Promise<void> {
 
 	const runId = `byosan_money/${date}-daily`;
 	const store = new AssetStore(runId);
+	assertByosanRetryAllowed(store.runDir);
 	const missionPath = path.join(store.runDir, "source", "no-mission-file.md");
 	const scout = new TrendScout(store);
 	const research = await scout.run("byosan_money", 5, missionPath);
@@ -305,6 +629,7 @@ export async function runByosanDaily(): Promise<void> {
 		},
 	);
 	if (process.env.BYOSAN_DAILY_NO_PUBLISH === "true") {
+		markFailureRecovered(store.runDir);
 		console.log(`PRODUCTION_PASS_NO_PUBLISH=${runId}`);
 		return;
 	}
@@ -315,12 +640,12 @@ export async function runByosanDaily(): Promise<void> {
 		RUN_ID: runId,
 	});
 	assertPublishEvidence(store.runDir);
+	markFailureRecovered(store.runDir);
 	console.log(`BYOSAN_DAILY_PASS=${runId}`);
 }
 
 if (import.meta.main) {
 	runByosanDaily().catch((error) => {
-		const message = error instanceof Error ? error.message : String(error);
 		const failureDate = process.env.BYOSAN_DATE?.trim() || getRunIdDateString();
 		const failureRunDir = path.join(
 			ROOT,
@@ -328,20 +653,21 @@ if (import.meta.main) {
 			"byosan_money",
 			`${failureDate}-daily`,
 		);
-		if (fs.existsSync(failureRunDir)) {
-			fs.outputJsonSync(
-				path.join(failureRunDir, "audit", "failure_trace.json"),
-				{
-					symptom: message,
-					evidence: error instanceof Error ? error.stack : String(error),
-					root_cause: "pending_trace_review",
-					harness_change:
-						"convert the failure into a regression test before retry",
-					regression_test: "pending",
-					failed_at: new Date().toISOString(),
-				},
-				{ spaces: 2 },
-			);
+		const message = error instanceof Error ? error.message : String(error);
+		if (
+			fs.existsSync(failureRunDir) &&
+			!message.startsWith("RETRY_BLOCKED_") &&
+			!message.startsWith("FAILURE_TRACE_UNREADABLE")
+		) {
+			try {
+				recordByosanFailure(failureRunDir, error);
+			} catch (traceError) {
+				console.error(
+					traceError instanceof Error
+						? (traceError.stack ?? traceError.message)
+						: traceError,
+				);
+			}
 		}
 		console.error(
 			error instanceof Error ? (error.stack ?? error.message) : error,
