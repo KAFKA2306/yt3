@@ -119,42 +119,94 @@ export function normalizeFeatureDraft(
 					text: segment.dialogue,
 				}))
 			: [];
-	const segments = rawSegments.map((segment, index) => {
-		const rawEmotion = String(segment.emotion || "analytical").toLowerCase();
-		const emotion =
-			BYOSAN_EMOTION_ALIASES[rawEmotion] ||
-			(BYOSAN_EMOTIONS as readonly string[]).includes(rawEmotion)
-				? BYOSAN_EMOTION_ALIASES[rawEmotion] || rawEmotion
-				: BYOSAN_EMOTIONS[index % BYOSAN_EMOTIONS.length];
-		const text = String(segment.text || segment.dialogue || candidate.angle);
-		const stats = Array.isArray(segment.stats)
-			? segment.stats
-			: [
-					{
-						label: "注目",
-						value: hooks[index % hooks.length] || candidate.numbers[0],
-						detail: "一次資料に基づく数値",
-						color: "cyan",
-					},
-				];
-		return {
-			chapter: String(segment.chapter || "検証"),
-			speaker: segment.speaker === "ずんだもん" ? "ずんだもん" : "春日部つむぎ",
-			emotion,
-			section: String(segment.section || "数字を分解"),
-			headline: String(segment.headline || "数字の読み方").slice(0, 34),
-			subheadline: String(segment.subheadline || "一次資料で確認").slice(0, 52),
-			visualType: String(segment.visualType || "center_stat"),
-			stats,
-			source: String(segment.source || firstSource),
-			text:
-				text.length >= 18
-					? text.slice(0, 180)
-					: `${text} ${candidate.angle}`.slice(0, 180),
-		};
-	});
+	const segments = rawSegments
+		.map((segment, index) => {
+			const rawEmotion = String(segment.emotion || "analytical").toLowerCase();
+			const emotion =
+				BYOSAN_EMOTION_ALIASES[rawEmotion] ||
+				(BYOSAN_EMOTIONS as readonly string[]).includes(rawEmotion)
+					? BYOSAN_EMOTION_ALIASES[rawEmotion] || rawEmotion
+					: BYOSAN_EMOTIONS[index % BYOSAN_EMOTIONS.length];
+			let text = String(segment.text || segment.dialogue || candidate.angle);
+			if (index < 2) {
+				for (const hook of hooks) {
+					if (!text.includes(hook)) text = `${text} ${hook}`;
+				}
+			}
+			const rawStats = Array.isArray(segment.stats)
+				? (segment.stats as Record<string, unknown>[])
+				: [];
+			const stats = (rawStats.length > 0 ? rawStats : [{}])
+				.slice(0, 3)
+				.map((stat, statIndex) => ({
+					label: String(stat.label || "注目").slice(0, 30),
+					value: String(
+						stat.value ||
+							hooks[(index + statIndex) % hooks.length] ||
+							candidate.numbers[0],
+					).slice(0, 24),
+					detail: String(stat.detail || "一次資料に基づく数値").slice(0, 40),
+					color: BYOSAN_EMOTIONS.includes(
+						String(stat.color) as (typeof BYOSAN_EMOTIONS)[number],
+					)
+						? "cyan"
+						: ["cyan", "amber", "white", "muted"].includes(String(stat.color))
+							? String(stat.color)
+							: ["cyan", "amber", "white", "muted"][statIndex % 4],
+				}));
+			return {
+				chapter: String(segment.chapter || "検証"),
+				speaker:
+					segment.speaker === "ずんだもん" ? "ずんだもん" : "春日部つむぎ",
+				emotion,
+				section: String(segment.section || "数字を分解"),
+				headline: String(segment.headline || "数字の読み方").slice(0, 34),
+				subheadline: String(segment.subheadline || "一次資料で確認").slice(
+					0,
+					52,
+				),
+				visualType: String(segment.visualType || "center_stat"),
+				stats,
+				source: String(segment.source || firstSource),
+				text:
+					text.length >= 18
+						? text.slice(0, 180)
+						: `${text} ${candidate.angle}`.slice(0, 180),
+			};
+		})
+		.slice(0, 32);
+	while (segments.length < 20) {
+		const index = segments.length;
+		segments.push({
+			chapter: "検証",
+			speaker: index % 2 === 0 ? "春日部つむぎ" : "ずんだもん",
+			emotion: BYOSAN_EMOTIONS[index % BYOSAN_EMOTIONS.length],
+			section: "数字を分解",
+			headline: "一次資料の読み方",
+			subheadline: "条件を置いて読み解く",
+			visualType: "center_stat",
+			stats: [
+				{
+					label: "確認",
+					value: String(candidate.numbers[index % candidate.numbers.length]),
+					detail: "一次資料に基づく数値",
+					color: "cyan",
+				},
+			],
+			source: firstSource,
+			text: `${candidate.angle}を一次資料の条件に沿って確認します。`,
+		});
+	}
 	return {
 		...input,
+		descriptionLead: String(
+			input.descriptionLead ||
+				`${candidate.angle}を一次資料の数字から分解し、見かけの変化と実際の構造を切り分けます。`,
+		).slice(0, 500),
+		disclaimer: String(
+			input.disclaimer ||
+				"この動画は公開された一次資料の要約です。将来の結果や投資成果を保証するものではありません。必要に応じて原資料をご確認ください。",
+		).slice(0, 400),
 		thumbnail,
 		claims,
 		segments,
@@ -166,6 +218,10 @@ export function normalizeFeatureDraft(
 						)
 					: []),
 				"秒算マネー",
+				"経済統計",
+				"データ分析",
+				"ニュース解説",
+				"日本経済",
 			]),
 		),
 		hookPromises: hooks,
