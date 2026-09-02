@@ -128,11 +128,7 @@ export function normalizeFeatureDraft(
 					? BYOSAN_EMOTION_ALIASES[rawEmotion] || rawEmotion
 					: BYOSAN_EMOTIONS[index % BYOSAN_EMOTIONS.length];
 			let text = String(segment.text || segment.dialogue || candidate.angle);
-			if (index < 2) {
-				for (const hook of hooks) {
-					if (!text.includes(hook)) text = `${text} ${hook}`;
-				}
-			}
+			if (index < 2) text = `${hooks.join("、")}。${text}`;
 			const rawStats = Array.isArray(segment.stats)
 				? (segment.stats as Record<string, unknown>[])
 				: [];
