@@ -10,7 +10,13 @@ import {
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import type { ByosanAngleCandidate } from "../domain/byosan/news_angle.js";
-import { AssetStore, ROOT, createLlm, getRunIdDateString } from "../io/core.js";
+import {
+	AssetStore,
+	ROOT,
+	createLlm,
+	getRunIdDateString,
+	parseLlmJson,
+} from "../io/core.js";
 
 type FeatureSource = ByosanFeatureSource;
 
@@ -486,10 +492,6 @@ async function generateFeatureSpec(
 		temperature: 0.28,
 		sessionId: runDir,
 	});
-	const structured = llm.withStructuredOutput(ByosanFeatureDraftSchema, {
-		name: "byosan_feature_draft",
-		method: "jsonSchema",
-	});
 	const evidence = {
 		candidate,
 		allowed_sources: sources,
@@ -498,7 +500,7 @@ async function generateFeatureSpec(
 	let lastError: unknown;
 	for (let attempt = 1; attempt <= 3; attempt++) {
 		try {
-			const draft = await structured.invoke([
+			const response = await llm.invoke([
 				{
 					role: "system",
 					content:
@@ -509,6 +511,19 @@ async function generateFeatureSpec(
 					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
 				},
 			]);
+			const responseText =
+				typeof response.content === "string"
+					? response.content
+					: response.content
+							.map((part) =>
+								typeof part === "string"
+									? part
+									: "text" in part && typeof part.text === "string"
+										? part.text
+										: "",
+							)
+							.join("");
+			const draft = parseLlmJson(responseText, ByosanFeatureDraftSchema);
 			return parseAndAuditByosanFeatureSpec({
 				...draft,
 				schemaVersion: "byosan_feature_v1",
