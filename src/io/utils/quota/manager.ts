@@ -30,6 +30,16 @@ export function acquireKey(sessionId?: string) {
 		{ name: "GEMINI_API_KEY_4", env: "GEMINI_API_KEY_4" },
 		{ name: "GEMINI_API_KEY_5", env: "GEMINI_API_KEY_5" },
 	];
+	const preferredKey = process.env.GEMINI_PREFERRED_KEY?.trim();
+	if (preferredKey) {
+		const preferredIndex = keyList.findIndex(
+			(item) => item.name === preferredKey,
+		);
+		if (preferredIndex > 0) {
+			const [preferred] = keyList.splice(preferredIndex, 1);
+			if (preferred) keyList.unshift(preferred);
+		}
+	}
 
 	for (let i = 0; i < keyList.length; i++) {
 		const item = keyList[i];
