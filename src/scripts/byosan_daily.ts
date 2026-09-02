@@ -166,8 +166,8 @@ export function normalizeFeatureDraft(
 				source: String(segment.source || firstSource),
 				text:
 					text.length >= 18
-						? text.slice(0, 180)
-						: `${text} ${candidate.angle}`.slice(0, 180),
+						? text.slice(0, 95)
+						: `${text} ${candidate.angle}`.slice(0, 95),
 			};
 		})
 		.slice(0, 32);
@@ -190,11 +190,14 @@ export function normalizeFeatureDraft(
 				},
 			],
 			source: firstSource,
-			text: `${candidate.angle}を一次資料の条件に沿って確認します。`,
+			text: `${candidate.angle}を一次資料の条件に沿って確認します。`.slice(
+				0,
+				95,
+			),
 		});
 	}
 	for (const segment of segments.slice(0, 2)) {
-		segment.text = `${hooks.join("、")}。${segment.text}`.slice(0, 180);
+		segment.text = `${hooks.join("、")}。${segment.text}`.slice(0, 95);
 	}
 	return {
 		...input,
