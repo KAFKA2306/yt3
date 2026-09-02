@@ -193,6 +193,9 @@ export function normalizeFeatureDraft(
 			text: `${candidate.angle}を一次資料の条件に沿って確認します。`,
 		});
 	}
+	for (const segment of segments.slice(0, 2)) {
+		segment.text = `${hooks.join("、")}。${segment.text}`.slice(0, 180);
+	}
 	return {
 		...input,
 		descriptionLead: String(
