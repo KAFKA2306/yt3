@@ -17,6 +17,7 @@ import {
 	getRunIdDateString,
 	parseLlmJson,
 } from "../io/core.js";
+import { markKeyRateLimited } from "../io/utils/quota/manager.js";
 
 type FeatureSource = ByosanFeatureSource;
 
@@ -26,6 +27,150 @@ export type PublishedRunEvidence = {
 	reason: string;
 	videoId?: string;
 };
+
+const BYOSAN_EMOTION_ALIASES: Record<string, string> = {
+	excited: "joy",
+	surprised: "shock",
+	enthusiastic: "joy",
+	happy: "joy",
+	neutral: "serious",
+	reassuring: "relieved",
+	concerned: "caution",
+	thoughtful: "analytical",
+	questioning: "curious",
+	optimistic: "confident",
+	informative: "analytical",
+	empathetic: "warm",
+	empowered: "confident",
+};
+const BYOSAN_EMOTIONS = [
+	"shock",
+	"reveal",
+	"curious",
+	"analytical",
+	"caution",
+	"confident",
+	"warm",
+	"relieved",
+	"serious",
+	"joy",
+] as const;
+
+export function normalizeFeatureDraft(
+	input: Record<string, unknown>,
+	candidate: ByosanAngleCandidate,
+	sources: FeatureSource[],
+): Record<string, unknown> {
+	const allowed = new Set(sources.map((source) => source.id));
+	const firstSource = sources[0]?.id;
+	if (!firstSource) throw new Error("BYOSAN_FEATURE_SOURCE_MISSING");
+	const hooks = Array.isArray(input.hookPromises)
+		? input.hookPromises.filter(
+				(value): value is string => typeof value === "string",
+			)
+		: candidate.numbers.slice(0, 2);
+	const rawThumbnail =
+		input.thumbnail && typeof input.thumbnail === "object"
+			? (input.thumbnail as Record<string, unknown>)
+			: {};
+	const thumbnail = {
+		...rawThumbnail,
+		eyebrow: String(rawThumbnail.eyebrow || "今日の構造").slice(0, 18),
+		lead: String(rawThumbnail.lead || "注目").slice(0, 8),
+		accent: String(rawThumbnail.accent || "変化").slice(0, 10),
+		reaction: String(rawThumbnail.reaction || "必見").slice(0, 4),
+		secondLine: String(rawThumbnail.secondLine || "最新の変化").slice(0, 12),
+		calloutTop: String(
+			rawThumbnail.calloutTop || hooks[0] || "最新データ",
+		).slice(0, 22),
+		calloutBottom: String(
+			rawThumbnail.calloutBottom || hooks[1] || "条件を確認",
+		).slice(0, 18),
+	};
+	const rawClaims = Array.isArray(input.claims)
+		? (input.claims as Record<string, unknown>[])
+		: [];
+	const claims = rawClaims
+		.map((claim) => ({
+			claim: String(claim.claim || candidate.angle),
+			sourceIds: (Array.isArray(claim.sourceIds) ? claim.sourceIds : []).filter(
+				(id): id is string => typeof id === "string" && allowed.has(id),
+			),
+			status: [
+				"verified",
+				"derived_with_caveat",
+				"analyst_estimate_not_company_non_gaap",
+			].includes(String(claim.status))
+				? String(claim.status)
+				: "derived_with_caveat",
+		}))
+		.filter((claim) => claim.sourceIds.length > 0);
+	while (claims.length < 3)
+		claims.push({
+			claim: candidate.angle,
+			sourceIds: [firstSource],
+			status: "derived_with_caveat",
+		});
+	const rawSegments: Record<string, unknown>[] = Array.isArray(input.segments)
+		? (input.segments as Record<string, unknown>[])
+		: Array.isArray(input.videoScript)
+			? (input.videoScript as Record<string, unknown>[]).map((segment) => ({
+					...segment,
+					text: segment.dialogue,
+				}))
+			: [];
+	const segments = rawSegments.map((segment, index) => {
+		const rawEmotion = String(segment.emotion || "analytical").toLowerCase();
+		const emotion =
+			BYOSAN_EMOTION_ALIASES[rawEmotion] ||
+			(BYOSAN_EMOTIONS as readonly string[]).includes(rawEmotion)
+				? BYOSAN_EMOTION_ALIASES[rawEmotion] || rawEmotion
+				: BYOSAN_EMOTIONS[index % BYOSAN_EMOTIONS.length];
+		const text = String(segment.text || segment.dialogue || candidate.angle);
+		const stats = Array.isArray(segment.stats)
+			? segment.stats
+			: [
+					{
+						label: "注目",
+						value: hooks[index % hooks.length] || candidate.numbers[0],
+						detail: "一次資料に基づく数値",
+						color: "cyan",
+					},
+				];
+		return {
+			chapter: String(segment.chapter || "検証"),
+			speaker: segment.speaker === "ずんだもん" ? "ずんだもん" : "春日部つむぎ",
+			emotion,
+			section: String(segment.section || "数字を分解"),
+			headline: String(segment.headline || "数字の読み方").slice(0, 34),
+			subheadline: String(segment.subheadline || "一次資料で確認").slice(0, 52),
+			visualType: String(segment.visualType || "center_stat"),
+			stats,
+			source: String(segment.source || firstSource),
+			text:
+				text.length >= 18
+					? text.slice(0, 180)
+					: `${text} ${candidate.angle}`.slice(0, 180),
+		};
+	});
+	return {
+		...input,
+		thumbnail,
+		claims,
+		segments,
+		tags: Array.from(
+			new Set([
+				...(Array.isArray(input.tags)
+					? input.tags.filter(
+							(value): value is string => typeof value === "string",
+						)
+					: []),
+				"秒算マネー",
+			]),
+		),
+		hookPromises: hooks,
+	};
+}
 
 export type ByosanFailureClass =
 	| "INFRA_DEPENDENCY"
@@ -488,19 +633,22 @@ async function generateFeatureSpec(
 	runId: string,
 	date: string,
 ): Promise<ByosanFeatureSpec> {
-	const llm = createLlm({
-		temperature: 0.28,
-		sessionId: runDir,
-	});
 	const evidence = {
 		candidate,
 		allowed_sources: sources,
 		news: research.news,
 	};
 	let lastError: unknown;
+	let activeKeyName: string | undefined;
 	for (let attempt = 1; attempt <= 3; attempt++) {
 		try {
-			const response = await llm.invoke([
+			const activeLlm = createLlm({
+				temperature: 0.28,
+				sessionId: runDir,
+				response_mime_type: "application/json",
+			});
+			activeKeyName = activeLlm.keyName;
+			const response = await activeLlm.invoke([
 				{
 					role: "system",
 					content:
@@ -523,9 +671,15 @@ async function generateFeatureSpec(
 										: "",
 							)
 							.join("");
-			const draft = parseLlmJson(responseText, ByosanFeatureDraftSchema);
+			const draft = parseLlmJson(responseText) as Record<string, unknown>;
+			const normalizedDraft = normalizeFeatureDraft(draft, candidate, sources);
+			fs.outputJsonSync(
+				path.join(runDir, "audit", "feature_draft_candidate.json"),
+				normalizedDraft,
+				{ spaces: 2 },
+			);
 			return parseAndAuditByosanFeatureSpec({
-				...draft,
+				...normalizedDraft,
 				schemaVersion: "byosan_feature_v1",
 				runId,
 				asOf: date,
@@ -535,6 +689,10 @@ async function generateFeatureSpec(
 			});
 		} catch (error) {
 			lastError = error;
+			const message = error instanceof Error ? error.message : String(error);
+			if (/429|quota|rate limit/i.test(message) && activeKeyName) {
+				markKeyRateLimited(activeKeyName);
+			}
 		}
 	}
 	throw new Error(
