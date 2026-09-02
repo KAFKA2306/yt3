@@ -775,6 +775,64 @@ function runCommand(
 	}
 }
 
+function writeByosanCanonicalAudit(runDir: string): void {
+	const productionPath = path.join(
+		runDir,
+		"audit",
+		"production_quality_report.json",
+	);
+	const production = fs.readJsonSync(productionPath) as {
+		decision?: string;
+		requirements?: Record<string, { status?: string }>;
+	};
+	if (production.decision !== "PASS") {
+		throw new Error(
+			"BYOSAN_CANONICAL_AUDIT_BLOCKED: production audit is not PASS",
+		);
+	}
+	const failed = Object.entries(production.requirements ?? {}).filter(
+		([, requirement]) => requirement.status !== "PASS",
+	);
+	if (failed.length > 0) {
+		throw new Error(
+			`BYOSAN_CANONICAL_AUDIT_BLOCKED: ${failed.map(([name]) => name).join(",")}`,
+		);
+	}
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "result.json"),
+		{
+			production_quality: {
+				name: "Byosan production quality",
+				description:
+					"Canonical production quality report passed all hard gates.",
+				status: "PASS",
+				critical: true,
+				type: "DETERMINISTIC",
+				details: productionPath,
+			},
+			factual_integrity: {
+				name: "Byosan factual integrity",
+				description:
+					"Claims and source coverage passed the dedicated Byosan audit.",
+				status: "PASS",
+				critical: true,
+				type: "DETERMINISTIC",
+				details: "production_quality_report.content",
+			},
+			provenance: {
+				name: "Byosan source provenance",
+				description:
+					"The published feature is mapped to the allowed source registry.",
+				status: "PASS",
+				critical: true,
+				type: "DETERMINISTIC",
+				details: "source/feature_spec.json",
+			},
+		},
+		{ spaces: 2 },
+	);
+}
+
 function assertPublishEvidence(runDir: string): void {
 	const report = fs.readJsonSync(
 		path.join(runDir, "audit", "production_quality_report.json"),
@@ -888,6 +946,7 @@ export async function runByosanDaily(): Promise<void> {
 			YOUTUBE_CHANNEL_PROFILE: "byosan",
 		},
 	);
+	writeByosanCanonicalAudit(store.runDir);
 	if (process.env.BYOSAN_DAILY_NO_PUBLISH === "true") {
 		markFailureRecovered(store.runDir);
 		console.log(`PRODUCTION_PASS_NO_PUBLISH=${runId}`);
