@@ -320,6 +320,13 @@ export function assertByosanRetryAllowed(
 	}
 }
 
+export function resolveByosanMissionFile(
+	missionFile = process.env.MISSION_FILE,
+): string | undefined {
+	const trimmed = missionFile?.trim();
+	return trimmed || undefined;
+}
+
 export function recordByosanFailure(
 	runDir: string,
 	error: unknown,
@@ -604,7 +611,7 @@ export async function runByosanDaily(): Promise<void> {
 	const runId = `byosan_money/${date}-daily`;
 	const store = new AssetStore(runId);
 	assertByosanRetryAllowed(store.runDir);
-	const missionPath = path.join(store.runDir, "source", "no-mission-file.md");
+	const missionPath = resolveByosanMissionFile();
 	const scout = new TrendScout(store);
 	const research = await scout.run("byosan_money", 5, missionPath);
 	await fs.outputJson(

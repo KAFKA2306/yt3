@@ -7,6 +7,7 @@ import {
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
 	recordByosanFailure,
+	resolveByosanMissionFile,
 } from "../src/scripts/byosan_daily.js";
 
 const tempRoots: string[] = [];
@@ -29,6 +30,14 @@ async function makeRunDir(): Promise<string> {
 }
 
 describe("byosan daily duplicate-publication gate", () => {
+	test("does not invent a mission file when none was supplied", () => {
+		expect(resolveByosanMissionFile(undefined)).toBeUndefined();
+		expect(resolveByosanMissionFile("  ")).toBeUndefined();
+		expect(resolveByosanMissionFile("source/mission.md")).toBe(
+			"source/mission.md",
+		);
+	});
+
 	test("returns null when the date has no upload receipt", async () => {
 		const root = await makeRoot();
 		expect(findPublishedByosanRunForDate(root, "2026-08-02")).toBeNull();

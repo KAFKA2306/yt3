@@ -5,7 +5,7 @@
 	"scripts": {
 		"setup": "bun ci",
 		"test": "bun test",
-		"lint": "bun biome check .",
+		"lint": "bun biome check src tests",
 		"format": "bun biome format --write src tests",
 		"typecheck": "bun x tsc --noEmit",
 		"audit:repo-contract": "bun src/scripts/audit_repository_contract.ts",
