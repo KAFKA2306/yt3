@@ -488,7 +488,7 @@ async function generateFeatureSpec(
 	});
 	const structured = llm.withStructuredOutput(ByosanFeatureDraftSchema, {
 		name: "byosan_feature_draft",
-		method: "jsonMode",
+		method: "jsonSchema",
 	});
 	const evidence = {
 		candidate,
