@@ -62,7 +62,11 @@ function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
 			};
 		}
 		const narrativeRole =
-			slot === 0 ? ("fact" as const) : slot === 3 ? ("impact" as const) : ("context" as const);
+			slot === 0
+				? ("fact" as const)
+				: slot === 3
+					? ("impact" as const)
+					: ("context" as const);
 		const verificationRole =
 			slot === 0
 				? ("presenter" as const)
