@@ -39,6 +39,146 @@ tasks:
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
 
+  byosan:digest:
+    desc: "Build a verified-run weekly/monthly 秒算マネー digest and pass the release gate (PERIOD=week|month END=YYYY-MM-DD)"
+    cmds:
+      - |
+        if [ "{{.PERIOD}}" != "week" ] && [ "{{.PERIOD}}" != "month" ]; then
+          echo "PERIOD=week|month is required" >&2
+          exit 2
+        fi
+        if ! printf '%s' "{{.END}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}
+    cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/check_product_release.ts {{.CLI_ARGS}}"]
+
+  publish:
+    desc: "Publish to YouTube after the product release gate (PROFILE=byosan|yawa|humanity; required)"
+    cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}"]
+
+  auth:
+    desc: "YouTube OAuth (PROFILE=byosan|yawa|humanity; required)"
+    cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/youtube_oauth.ts {{.CLI_ARGS}}"]
+
+  movie:generate:
+    desc: "Generate and concatenate scene videos from a JSON plan (PLAN=...)"
+    cmds:
+      - |
+        if [ -z "{{.PLAN}}" ]; then
+          echo "PLAN is required" >&2
+          exit 2
+        fi
+        bun src/scripts/generate_movie.ts --plan "{{.PLAN}}" {{.CLI_ARGS}}
+
+  publish:visibility-audit:
+    desc: "Audit published video visibility"
+    cmds: ["bun src/scripts/public_visibility_audit.ts"]
+
+  analytics:refresh:
+    desc: "Refresh authorized YouTube Analytics and purge data past the 30-day authorization boundary"
+    cmds: ["bun src/scripts/refresh_youtube_analytics.ts"]
+
+  asmr:ops:
+    desc: "Run ASMR archive/index operations"
+    cmds: ["bun --env-file=config/.env src/scripts/asmr_ops.ts"]
+
+  asmr:publish:
+    desc: "Batch publish completed ASMR projects"
+    cmds: ["bun src/scripts/publish_batch.ts"]
+
+  up:
+    desc: "Start local services"
+    cmds:
+      - docker rm -f voicevox-nemo || true
+      - docker run -d --name voicevox-nemo --restart unless-stopped -p 50121:50021 voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+      - systemctl --user start yt3-aim.service
+      - systemctl --user start yt3-discord.service
+
+  down:
+    desc: "Stop local services"
+    cmds:
+      - docker stop voicevox-nemo || true
+      - systemctl --user stop yt3-aim.service || true
+      - systemctl --user stop yt3-discord.service || true
+
+  serve:
+    desc: "Start the dashboard and API server"
+    cmds: ["bun src/server.ts"]
+
+  asr:
+    desc: "Transcribe audio (FILE=... OUT=...)"
+    cmds:
+      - uv run --no-project --with faster-whisper python3 scripts/run_asr.py --input-wav "{{.FILE}}" --output-dir "{{.OUT}}" --model base
+
+  lint:
+    desc: "Run the canonical Biome lint/format owner"
+    cmds: ["bun run lint"]
+
+  test:
+    desc: "Run unit tests"
+    cmds: ["SKIP_LLM=true DRY_RUN=true bun test"]
+
+  check:merge:fast:
+    desc: "Run the fast deterministic PR merge gate"
+    cmds: ["bun run check:merge:fast"]
+
+  check:merge:
+    desc: "Run the full PR merge gate used by CI"
+    cmds: ["bun run check:merge"]
+
+  clean:
+    desc: "Reset logs and temporary artifacts"
+    cmds:
+      - rm -rf logs/*
+      - touch logs/.gitkeep
+
+  systemd:setup:
+    desc: "Install systemd service and timer"
+    cmds: ["bun src/io/utils/infra/setup_systemd.ts"]
+
+  audit:today:
+    desc: "Audit today's production status"
+    cmds: ["bun src/scripts/audit_today.ts"]
+
+  audit:publish-routing:
+    desc: "Audit YouTube routing and profile identity"
+    cmds: ["bun src/scripts/audit_publish_routing.ts"]
+
+  audit:byosan-money:
+    desc: "Run 秒算マネー source-policy audit"
+    cmds:
+      - bun scripts/audit_byosan_money_zero_trust.ts
+      - bun src/scripts/audit_byosan_source_registry.ts
+      - bun src/scripts/audit_no_fallback_policy.ts --scope=source
+
+  audit:no-fallback:
+    desc: "Audit no-fallback policy (SCOPE=source|runtime|all; default all)"
+    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope={{.SCOPE}}"]
+
+  audit:repo-contract:
+    desc: "Verify Taskfile executables and documented repository entry points"
+    cmds: ["bun src/scripts/audit_repository_contract.ts"]
+
+  stability:report:
+    desc: "Regenerate the canonical cross-run stability report"
+    cmds: ["bun src/scripts/stability_summary.ts"]
+
+  improve:report:
+    desc: "Generate the improvement report directly from run evidence"
+    cmds: ["bun src/scripts/improve_report.ts"]
+; then
+          echo "END=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+      - PERIOD={{.PERIOD}} END={{.END}} bun src/scripts/build_byosan_digest.ts
+      - |
+        if [ "{{.PERIOD}}" = "week" ]; then
+          RUN_ID="byosan_money/{{.END}}-weekly-digest"
+        else
+          RUN_ID="byosan_money/{{.END}}-monthly-digest"
+        fi
+        task release:check PROFILE=byosan -- "$RUN_ID"
+        echo "PUBLISH_READY_RUN=$RUN_ID"
+        echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- $RUN_ID"
+
   release:check:
     desc: "Check run-specific product release conditions without external publication (PROFILE required)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/check_product_release.ts {{.CLI_ARGS}}"]
