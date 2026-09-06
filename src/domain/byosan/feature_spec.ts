@@ -291,35 +291,37 @@ export function auditByosanFeatureSpec(
 			});
 		}
 
-		const canonicalArchetypeSlots = requiredByosanArchetypeSlots(
-			spec.production.narrativeArchetype,
-		);
+		const narrativeArchetype =
+			spec.production.narrativeArchetype ?? "standard";
+		const canonicalArchetypeSlots =
+			requiredByosanArchetypeSlots(narrativeArchetype);
+		const recordedArchetypeSlots =
+			spec.production.archetypeRequiredSlots ?? [];
 		if (
-			JSON.stringify(spec.production.archetypeRequiredSlots) !==
+			JSON.stringify(recordedArchetypeSlots) !==
 			JSON.stringify(canonicalArchetypeSlots)
 		) {
 			issues.push({
 				code: "production_archetype_slots_mismatch",
-				details: spec.production.narrativeArchetype,
+				details: narrativeArchetype,
 			});
 		}
 		if (
-			spec.production.narrativeArchetype !== "standard" &&
+			narrativeArchetype !== "standard" &&
 			!spec.production.archetypeEvidence
 		) {
 			issues.push({
 				code: "production_archetype_evidence_missing",
-				details: spec.production.narrativeArchetype,
+				details: narrativeArchetype,
 			});
 		}
 		if (
 			spec.production.archetypeEvidence &&
-			spec.production.archetypeEvidence.archetype !==
-				spec.production.narrativeArchetype
+			spec.production.archetypeEvidence.archetype !== narrativeArchetype
 		) {
 			issues.push({
 				code: "production_archetype_evidence_mismatch",
-				details: `${spec.production.narrativeArchetype} != ${spec.production.archetypeEvidence.archetype}`,
+				details: `${narrativeArchetype} != ${spec.production.archetypeEvidence.archetype}`,
 			});
 		}
 
@@ -331,7 +333,7 @@ export function auditByosanFeatureSpec(
 			) {
 				issues.push({
 					code: "unexpected_archetype_slot",
-					details: `${spec.production.narrativeArchetype}:${segment.archetypeSlot}`,
+					details: `${narrativeArchetype}:${segment.archetypeSlot}`,
 				});
 			}
 		}
@@ -350,7 +352,7 @@ export function auditByosanFeatureSpec(
 				if (index < 0) {
 					issues.push({
 						code: "archetype_slot_sequence_missing",
-						details: `${spec.production.narrativeArchetype}:${slotName}`,
+						details: `${narrativeArchetype}:${slotName}`,
 					});
 					continue;
 				}
@@ -361,7 +363,7 @@ export function auditByosanFeatureSpec(
 				if (!evidenceSlot) {
 					issues.push({
 						code: "archetype_slot_evidence_missing",
-						details: `${spec.production.narrativeArchetype}:${slotName}`,
+						details: `${narrativeArchetype}:${slotName}`,
 					});
 					continue;
 				}
@@ -382,7 +384,7 @@ export function auditByosanFeatureSpec(
 						details: `${slotName}:${evidenceSlot.sourceIds.join(",")}`,
 					});
 				}
-				const missingEvidenceIds = evidenceSlot.adversarialEvidenceIds.filter(
+				const missingEvidenceIds = (evidenceSlot.adversarialEvidenceIds ?? []).filter(
 					(evidenceId) => !(segment.evidenceIds ?? []).includes(evidenceId),
 				);
 				if (missingEvidenceIds.length > 0) {
