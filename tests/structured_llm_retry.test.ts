@@ -49,27 +49,27 @@ describe("canonical structured LLM invocation", () => {
 	});
 
 	test("retries semantic validation without treating it as provider success", async () => {
-			let validations = 0;
-			const result = await invokeStructuredLlm({
-				schema: z.object({ value: z.number() }),
-				name: "semantic_test",
-				llmFactory: fakeFactory(
-					[
-						{ kind: "value", value: { value: 1 } },
-						{ kind: "value", value: { value: 2 } },
-					],
-					["GEMINI_API_KEY", "GEMINI_API_KEY"],
-				),
-				sleep: async () => {},
-				messages: () => [{ role: "user", content: "test" }],
-				validate: (value) => {
-					validations++;
-					if (validations === 1) throw new Error("domain audit mismatch");
-					return value;
-				},
-			});
-			expect(result.value).toBe(2);
-			expect(validations).toBe(2);
+		let validations = 0;
+		const result = await invokeStructuredLlm({
+			schema: z.object({ value: z.number() }),
+			name: "semantic_test",
+			llmFactory: fakeFactory(
+				[
+					{ kind: "value", value: { value: 1 } },
+					{ kind: "value", value: { value: 2 } },
+				],
+				["GEMINI_API_KEY", "GEMINI_API_KEY"],
+			),
+			sleep: async () => {},
+			messages: () => [{ role: "user", content: "test" }],
+			validate: (value) => {
+				validations++;
+				if (validations === 1) throw new Error("domain audit mismatch");
+				return value;
+			},
+		});
+		expect(result.value).toBe(2);
+		expect(validations).toBe(2);
 	});
 
 	test("non-retryable provider errors stop immediately", async () => {
