@@ -9,7 +9,7 @@ describe("Byosan full runtime gate", () => {
 		);
 		expect(source).toContain("BYOSAN_RUNTIME_UNVERIFIED:");
 		expect(source).not.toContain(
-			'console.log(`BYOSAN_RUNTIME_UNVERIFIED=${reportPath}`);\n\t\treturn;',
+			"console.log(`BYOSAN_RUNTIME_UNVERIFIED=${reportPath}`);\n\t\treturn;",
 		);
 		expect(source).toContain("writeReport(reportPath, params)");
 	});
