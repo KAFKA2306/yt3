@@ -82,6 +82,8 @@ export const ByosanFeatureClaimSchema = z.object({
 	]),
 	assumptions: z.array(z.string().min(3)).max(6).optional(),
 	caveat: z.string().min(3).max(240).optional(),
+	confidence: z.number().min(0).max(1).optional(),
+	unresolvedMismatches: z.array(z.string().min(5).max(180)).max(6).optional(),
 	epistemicBoundary: z.string().min(8).max(180).optional(),
 });
 
@@ -230,15 +232,25 @@ export function auditByosanFeatureSpec(
 				details: `${claim.claim}: ${missing.join(",")}`,
 			});
 		}
-		if (
-			spec.production &&
-			claim.status !== "verified" &&
-			(!claim.caveat || claim.caveat.trim().length < 3)
-		) {
-			issues.push({
-				code: "derived_claim_caveat_missing",
-				details: claim.id || claim.claim,
-			});
+		if (spec.production && claim.status !== "verified") {
+			if (!claim.caveat || claim.caveat.trim().length < 3) {
+				issues.push({
+					code: "derived_claim_caveat_missing",
+					details: claim.id || claim.claim,
+				});
+			}
+			if (claim.confidence === undefined) {
+				issues.push({
+					code: "inference_confidence_missing",
+					details: claim.id || claim.claim,
+				});
+			}
+			if (claim.unresolvedMismatches === undefined) {
+				issues.push({
+					code: "inference_mismatch_review_missing",
+					details: claim.id || claim.claim,
+				});
+			}
 		}
 	}
 
@@ -451,6 +463,49 @@ export function auditByosanFeatureSpec(
 		const sourceById = new Map(
 			spec.sources.map((source) => [source.id, source]),
 		);
+		for (const claim of spec.claims.filter(
+			(claim) => claim.id && claim.status !== "verified",
+		)) {
+			const claimId = claim.id ?? "";
+			if (
+				claim.confidence !== undefined &&
+				claim.unresolvedMismatches !== undefined
+			) {
+				const confidenceText = `${Math.round(claim.confidence * 100)}%`;
+				const inferenceBoundarySpoken = spec.segments.some(
+					(segment) =>
+						(segment.verificationRole === "resolution" ||
+							segment.verificationRole === "landing") &&
+						segment.claimIds?.includes(claimId) &&
+						/(推論|推定|分析|確度)/.test(segment.text) &&
+						segment.text.includes(confidenceText),
+				);
+				if (!inferenceBoundarySpoken) {
+					issues.push({
+						code: "inference_confidence_not_spoken",
+						details: `${claimId}: ${confidenceText}`,
+					});
+				}
+				if (claim.unresolvedMismatches.length > 0) {
+					const mismatchSpoken = claim.unresolvedMismatches.some((mismatch) =>
+						spec.segments.some(
+							(segment) =>
+								(segment.verificationRole === "resolution" ||
+									segment.verificationRole === "landing") &&
+								segment.claimIds?.includes(claimId) &&
+								segment.text.includes(mismatch),
+						),
+					);
+					if (!mismatchSpoken) {
+						issues.push({
+							code: "inference_mismatch_not_spoken",
+							details: claimId,
+						});
+					}
+				}
+			}
+		}
+
 		for (const claim of spec.claims.filter((claim) => claim.id)) {
 			const claimSources = claim.sourceIds
 				.map((sourceId) => sourceById.get(sourceId))
