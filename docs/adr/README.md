@@ -1,14 +1,10 @@
 # ADR Index
 
-`docs/adr/` には、現在も運用判断に使う主要な Architecture Decision Record だけを置く。統合済み・obsolete な履歴は Git history で参照する。
+`docs/adr/` には、現在も有効な設計判断だけを置く。統合済み・obsolete な履歴は Git history で参照する。Repository-wide の agent instruction は root `AGENTS.md` が正本であり、ADRには置かない。
 
 ## Canonical Docs
 
-- `0001-autonomous.md`: ハーネス自律運用
-- `0002-harness.md`: ハーネス保守スキル導入
-- `0003-crash-driven-development.md`: Crash-Driven Development
 - `0004-irodori-tts-evaluation-and-usage.md`: Irodori-TTS 基盤選定と評価
-- `0005-how-to-irodori-tts.md`: Irodori-TTS 音声運用
 - `0006-asmr-three-layer-prompt-design.md`: ASMR用3層プロンプト設計
 - `0007-oneesan-onsen-care-script.md`: 温泉看病ASMR統合台本
 - `0008-asmr-brand-structure.md`: 夜話アーカイブブランド構造
