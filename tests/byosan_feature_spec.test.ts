@@ -126,6 +126,55 @@ function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
 	};
 }
 
+function withParadoxArchetype(spec: ByosanFeatureSpec): ByosanFeatureSpec {
+	if (!spec.production) throw new Error("production fixture is missing");
+	const slotBindings = [
+		{ slot: "fact_a", segmentIndex: 0, claimId: "claim_0" },
+		{ slot: "fact_b", segmentIndex: 4, claimId: "claim_1" },
+		{ slot: "hidden_mechanism", segmentIndex: 8, claimId: "claim_2" },
+		{ slot: "catalyst_or_incentive", segmentIndex: 12, claimId: "claim_0" },
+	] as const;
+	const evidenceSlots = slotBindings.map((binding) => {
+		const claim = spec.claims.find((item) => item.id === binding.claimId);
+		const sourceId = claim?.sourceIds[0];
+		if (!sourceId) throw new Error(`claim source missing: ${binding.claimId}`);
+		return {
+			slot: binding.slot,
+			statement: `${binding.slot} is grounded in ${sourceId}`,
+			sourceIds: [sourceId],
+			adversarialEvidenceIds: [],
+		};
+	});
+	const segments = spec.segments.map((segment, index) => {
+		const binding = slotBindings.find((item) => item.segmentIndex === index);
+		if (!binding) return segment;
+		return {
+			...segment,
+			archetypeSlot: binding.slot,
+			claimIds: [binding.claimId],
+		};
+	});
+	return {
+		...spec,
+		segments,
+		production: {
+			...spec.production,
+			narrativeArchetype: "paradox_resolution",
+			archetypeRequiredSlots: [
+				"fact_a",
+				"fact_b",
+				"hidden_mechanism",
+				"catalyst_or_incentive",
+			],
+			archetypeReasons: ["eligible_bundle=paradox_resolution"],
+			archetypeEvidence: {
+				archetype: "paradox_resolution",
+				slots: evidenceSlots,
+			},
+		},
+	};
+}
+
 async function loadReferenceSpec(): Promise<ByosanFeatureSpec> {
 	return ByosanFeatureSpecSchema.parse(await fs.readJson(SPEC_PATH));
 }
@@ -142,6 +191,41 @@ describe("byosan feature specification", () => {
 		expect(auditByosanFeatureSpec(spec)).toEqual([]);
 		expect(parseAndAuditByosanFeatureSpec(spec).production?.format).toBe(
 			"regular",
+		);
+	});
+
+	test("specialized archetype slots must appear in order with claim provenance", async () => {
+		const spec = withParadoxArchetype(
+			productionAwareSpec(await loadReferenceSpec()),
+		);
+		expect(auditByosanFeatureSpec(spec)).toEqual([]);
+
+		const factA = spec.segments.find((segment) => segment.archetypeSlot === "fact_a");
+		const factB = spec.segments.find((segment) => segment.archetypeSlot === "fact_b");
+		if (!factA || !factB) throw new Error("archetype fixture is incomplete");
+		factA.archetypeSlot = "fact_b";
+		factB.archetypeSlot = "fact_a";
+		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
+			"archetype_slot_sequence_missing",
+		);
+	});
+
+	test("archetype slot evidence must match a claim source spoken in that slot", async () => {
+		const spec = withParadoxArchetype(
+			productionAwareSpec(await loadReferenceSpec()),
+		);
+		const evidence = spec.production?.archetypeEvidence?.slots.find(
+			(slot) => slot.slot === "fact_a",
+		);
+		const claim = spec.claims.find((item) => item.id === "claim_0");
+		if (!evidence || !claim) throw new Error("archetype provenance fixture missing");
+		const unrelated = spec.sources.find(
+			(source) => !claim.sourceIds.includes(source.id),
+		);
+		if (!unrelated) throw new Error("unrelated source fixture missing");
+		evidence.sourceIds = [unrelated.id];
+		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
+			"archetype_slot_claim_provenance_missing",
 		);
 	});
 
