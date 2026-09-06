@@ -134,6 +134,16 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	sources: true,
 	production: true,
 	narrative: true,
+}).extend({
+	claims: z
+		.array(
+			ByosanFeatureClaimSchema.extend({
+				id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
+			}),
+		)
+		.min(3)
+		.max(18),
+	packaging: ByosanPackagingSchema,
 });
 
 export type ByosanFeatureSpec = z.infer<typeof ByosanFeatureSpecSchema>;
