@@ -11,7 +11,10 @@ type FakeOutcome =
 	| { kind: "error"; error: Error }
 	| { kind: "value"; value: unknown };
 
-function fakeFactory(outcomes: FakeOutcome[], names: string[]): typeof createLlm {
+function fakeFactory(
+	outcomes: FakeOutcome[],
+	names: string[],
+): typeof createLlm {
 	let index = 0;
 	return ((_: LlmOptions = {}) => {
 		const current = outcomes[index];
@@ -132,12 +135,12 @@ describe("canonical structured LLM invocation", () => {
 	});
 
 	test("key-pool exhaustion cannot fall back to primary and key prefixes are not logged", () => {
-			const quotaSource = fs.readFileSync(
-				"src/io/utils/quota/manager.ts",
-				"utf8",
-			);
-			const coreSource = fs.readFileSync("src/io/core.ts", "utf8");
-			expect(quotaSource).not.toContain("Falling back to primary");
-			expect(coreSource).not.toContain("apiKey.slice");
+		const quotaSource = fs.readFileSync(
+			"src/io/utils/quota/manager.ts",
+			"utf8",
+		);
+		const coreSource = fs.readFileSync("src/io/core.ts", "utf8");
+		expect(quotaSource).not.toContain("Falling back to primary");
+		expect(coreSource).not.toContain("apiKey.slice");
 	});
 });
