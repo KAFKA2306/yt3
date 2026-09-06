@@ -913,7 +913,7 @@ function writeDigestArtifacts(
 				status: "PASS",
 				critical: true,
 				details:
-					"Legacy reuse_only_no_new_material_claims authority is replaced by reuse_daily_assets_plus_verified_digest_bridge.",
+					"Canonical digest policy is reuse_daily_assets_plus_verified_digest_bridge.",
 			},
 		},
 		{ spaces: 2 },
