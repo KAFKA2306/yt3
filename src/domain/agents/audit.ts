@@ -755,9 +755,7 @@ export class AuditAgent extends BaseAgent {
 		// C. ASR Loopback (Zero-Trust Numeric Integrity)
 		try {
 			const asrDir = path.join(this.store.runDir, "audit_asr");
-			execSync(
-				`task asr FILE="${videoPath}" OUT="${asrDir}"`,
-				{
+			execSync(`task asr FILE="${videoPath}" OUT="${asrDir}"`, {
 					encoding: "utf-8",
 					maxBuffer: 100 * 1024 * 1024,
 					env: {
