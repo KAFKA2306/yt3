@@ -3025,7 +3025,6 @@ No markdown or raw tags, only valid JSON.`;
 			"yt3-automation.timer",
 			"yt3-aim.service",
 			...(hasDiscordBotToken ? ["yt3-discord.service"] : []),
-			"yt3-asmr-autonomous.timer",
 		];
 		const serviceStatus: Record<string, string> = {};
 		let allActive = true;
