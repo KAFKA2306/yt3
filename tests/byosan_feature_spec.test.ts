@@ -200,8 +200,12 @@ describe("byosan feature specification", () => {
 		);
 		expect(auditByosanFeatureSpec(spec)).toEqual([]);
 
-		const factA = spec.segments.find((segment) => segment.archetypeSlot === "fact_a");
-		const factB = spec.segments.find((segment) => segment.archetypeSlot === "fact_b");
+		const factA = spec.segments.find(
+			(segment) => segment.archetypeSlot === "fact_a",
+		);
+		const factB = spec.segments.find(
+			(segment) => segment.archetypeSlot === "fact_b",
+		);
 		if (!factA || !factB) throw new Error("archetype fixture is incomplete");
 		factA.archetypeSlot = "fact_b";
 		factB.archetypeSlot = "fact_a";
@@ -218,7 +222,8 @@ describe("byosan feature specification", () => {
 			(slot) => slot.slot === "fact_a",
 		);
 		const claim = spec.claims.find((item) => item.id === "claim_0");
-		if (!evidence || !claim) throw new Error("archetype provenance fixture missing");
+		if (!evidence || !claim)
+			throw new Error("archetype provenance fixture missing");
 		const unrelated = spec.sources.find(
 			(source) => !claim.sourceIds.includes(source.id),
 		);
