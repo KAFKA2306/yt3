@@ -5,6 +5,12 @@ import {
 	ByosanActiveProbeEvidenceSchema,
 	auditByosanActiveProbeEvidence,
 } from "./active_probe.js";
+import {
+	ByosanArchetypeEvidenceBundleSchema,
+	auditByosanArchetypeEvidence,
+	ByosanNarrativeArchetypeSchema,
+	selectByosanNarrativeArchetype,
+} from "./narrative_archetype.js";
 
 export const ByosanSourceTierSchema = z.enum([
 	"L1",
@@ -60,6 +66,10 @@ export const ByosanAngleCandidateSchema = z.object({
 	risks: z.array(z.string().min(3)).min(1),
 	adversarialEvidence: z.array(ByosanAdversarialEvidenceSchema).min(1).max(10),
 	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).max(8).optional(),
+	archetypeEvidence: z
+		.array(ByosanArchetypeEvidenceBundleSchema)
+		.max(10)
+		.default([]),
 });
 
 export type ByosanAngleCandidate = z.infer<typeof ByosanAngleCandidateSchema>;
@@ -107,6 +117,10 @@ export const ByosanProductionPlanSchema = z.object({
 	minSegments: z.number().int().min(12).max(40),
 	maxSegments: z.number().int().min(12).max(40),
 	reasons: z.array(z.string().min(1)).min(1),
+	narrativeArchetype: ByosanNarrativeArchetypeSchema.default("standard"),
+	archetypeRequiredSlots: z.array(z.string().regex(/^[a-z0-9_]+$/)).max(12).default([]),
+	archetypeReasons: z.array(z.string().min(1)).default([]),
+	archetypeEvidence: ByosanArchetypeEvidenceBundleSchema.optional(),
 	appliedPerformancePreference: ByosanProductionFormatSchema.optional(),
 });
 
@@ -288,12 +302,19 @@ export function selectByosanProductionPlan(
 	if (!selected) {
 		throw new Error("BYOSAN_PRODUCTION_PLAN_UNAVAILABLE");
 	}
+	const archetype = selectByosanNarrativeArchetype(evaluated.candidate, {
+		format: selected.format,
+	});
 	return ByosanProductionPlanSchema.parse({
 		format: selected.format,
 		targetMinutes: selected.targetMinutes,
 		minSegments: selected.minSegments,
 		maxSegments: selected.maxSegments,
 		reasons: [...selected.reasons, `format_score=${selected.score.toFixed(2)}`],
+		narrativeArchetype: archetype.archetype,
+		archetypeRequiredSlots: archetype.requiredSlots,
+		archetypeReasons: archetype.reasons,
+		...(archetype.evidence ? { archetypeEvidence: archetype.evidence } : {}),
 		...(selected.format === preferredFormat
 			? { appliedPerformancePreference: preferredFormat }
 			: {}),
@@ -427,6 +448,9 @@ export function evaluateByosanAngleCandidate(
 		if (probe.sourceIds.some((sourceId) => !sourceIds.has(sourceId))) {
 			hardGateFailures.push("active_probe_source_missing");
 		}
+	}
+	for (const issue of auditByosanArchetypeEvidence(candidate)) {
+		hardGateFailures.push(issue.code);
 	}
 	if (weightedScore < 75) hardGateFailures.push("weighted_score_below_75");
 
