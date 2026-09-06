@@ -453,18 +453,32 @@ function buildDigestBridgeSpec(
 	const unresolved = context.baselineAlignments
 		.filter((alignment) => alignment.status === "UNVERIFIED")
 		.flatMap((alignment) => alignment.limitations)
+		.map((value) => clip(value, 90))
 		.slice(0, 3);
 	const claims = context.macroSynthesis.map((item) => {
 		const id = `macro_${item.axis}`;
+		const sourceIds = sourceIdsForUrls(sourcesWithOriginal, item.sourceUrls);
+		const claimSources = sourcesWithOriginal.filter((source) =>
+			sourceIds.includes(source.id),
+		);
+		const vendorOnly =
+			claimSources.length > 0 &&
+			claimSources.every((source) => source.tier === "L3");
 		return {
 			id,
 			claim: item.claim,
-			sourceIds: sourceIdsForUrls(sourcesWithOriginal, item.sourceUrls),
+			sourceIds,
 			status: "derived_with_caveat" as const,
 			caveat:
 				"期間内の複数claimを同じ基準で統合した分析で、単一原表の直接値ではありません。",
 			confidence: 0.8,
 			unresolvedMismatches: unresolved,
+			...(vendorOnly
+				? {
+						epistemicBoundary:
+							"発表主体側の資料だけで支える部分は、第三者検証済みとは扱いません。",
+					}
+				: {}),
 			assumptions: [
 				"入力日次runのproduction auditがPASSであること",
 				"baseline alignment contractの状態を維持すること",
@@ -488,6 +502,7 @@ function buildDigestBridgeSpec(
 	const segments = context.macroSynthesis.flatMap((item, groupIndex) => {
 		const claimId = `macro_${item.axis}`;
 		const evidenceId = `digest_evidence_${item.axis}`;
+		const claim = claims.find((candidate) => candidate.id === claimId);
 		const mismatch =
 			unresolved[0] ??
 			"確認範囲ではmaterialな未解決baseline mismatchは残っていません";
@@ -539,7 +554,7 @@ function buildDigestBridgeSpec(
 				verificationRole: "landing",
 				claimId,
 				headline: "限定付きで着地",
-				text: `これは分析で、確度80%です。確認できる範囲に限定すると、${clip(item.claim, 110)}。`,
+				text: `これは分析で、確度80%です。${claim?.epistemicBoundary ? ` ${claim.epistemicBoundary}` : ""} 確認できる範囲に限定すると、${clip(item.claim, 85)}。`,
 				source: item.sourceUrls[0] ?? "digest input claims",
 			}),
 		];
