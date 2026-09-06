@@ -280,8 +280,21 @@ export class TrendScout extends BaseAgent {
 
 [BYOSAN SHARP-ANGLE STRUCTURED OUTPUT]
 Return at least five total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
-topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, adversarialEvidence.
+topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, adversarialEvidence, archetypeEvidence.
 numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. source ids must be stable machine-readable identifiers. counterfactual must be testable by exclusion, subtraction, or a changed denominator.
+
+archetypeEvidence is an array of zero or more evidence bundles. Do not choose a winner or force a specialized pattern. Each bundle has archetype and slots. Each slot has slot, statement, sourceIds, optional adversarialEvidenceIds, and optional observedAt (YYYY-MM-DD). Only emit a bundle when every required slot is supported by listed sources. Supported archetypes/required slots are:
+- actionable_prescription: pain, cause, prescription, ordering
+- paradox_resolution: fact_a, fact_b, hidden_mechanism, catalyst_or_incentive
+- progressive_comparison: round_1, round_2, round_3, role_fit
+- first_principles: current_pain, old_model, mechanism, trade_off, simplification_boundary
+- timeline_motive: event_1, event_2, event_3, anomaly, hypothesis_1, hypothesis_2, incentive; event_1..3 require observedAt
+- role_reversal: side_a, side_b, historical_mirror, role_reversal, disclosure_incentive
+- asymmetric_cost: headline_value, footnote_condition, specialization_gap, hidden_total_cost, downside_risk; footnote_condition must reference measurement_condition or source_limitation adversarialEvidence
+- supply_chain_dependency: surface_event, contract_trigger, hidden_dependency, downstream_impact
+- regulatory_game_theory: legal_force, foreign_comparator, empirical_blowback, jurisdiction_asymmetry, equilibrium
+- hardware_capital: headline_multiplier, robust_baseline, physical_bottleneck, supplier_capital, remaining_spof
+The deterministic harness will select among eligible bundles after production format is known. If no bundle is complete, it will use standard Fact -> Context -> Impact. Do not invent missing slots to qualify a bundle.
 
 adversarialEvidence must contain at least one object with id, kind, targetClaim, statement, sourceIds, checkedSourceIds. kind must be measurement_condition | counter_metric | third_party_disagreement | source_limitation | no_counter_evidence. Before returning a candidate, actively inspect footnotes, methodology notes, unfavorable metrics, changed denominators, exclusions, and third-party measurements that could weaken the headline claim. sourceIds must identify sources that directly support the adversarial statement. checkedSourceIds records the sources actually inspected for counter-evidence. Use no_counter_evidence only when at least two listed sources were checked and no material counter-evidence was found; never omit the search silently.
 
