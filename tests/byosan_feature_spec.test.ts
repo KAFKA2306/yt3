@@ -217,23 +217,25 @@ describe("byosan feature specification", () => {
 		expect(codes).toContain("inference_mismatch_review_missing");
 	});
 
-	test("unresolved mismatches must be spoken for inferred claims", async () => {
+	test("unresolved mismatches must be spoken for narrated inferred claims", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
-		const inferred = spec.claims.find(
-			(claim) => claim.status !== "verified" && claim.id,
-		);
-		if (!inferred?.id) throw new Error("inferred claim fixture is missing");
+		const inferred = spec.claims.find((claim) => claim.id === "claim_2");
+		if (!inferred?.id) throw new Error("narrated claim fixture is missing");
+		inferred.status = "derived_with_caveat";
+		inferred.caveat = "複数の観測値を統合した分析です";
+		inferred.confidence = 0.8;
 		inferred.unresolvedMismatches = [
 			"外部比較では同じ傾向をまだ確認できていません",
 		];
-		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
-		expect(codes).toContain("inference_mismatch_not_spoken");
 		const landing = spec.segments.find(
 			(segment) =>
 				segment.verificationRole === "landing" &&
 				segment.claimIds?.includes(inferred.id ?? ""),
 		);
 		if (!landing) throw new Error("landing fixture is missing");
+		landing.text += " これは分析で、確度80%です。";
+		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
+		expect(codes).toContain("inference_mismatch_not_spoken");
 		landing.text += " 外部比較では同じ傾向をまだ確認できていません";
 		expect(
 			auditByosanFeatureSpec(spec).map((issue) => issue.code),
