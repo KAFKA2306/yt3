@@ -42,6 +42,26 @@ function candidate(
 		noveltyFingerprint: "評価益除外と上位2社除外の二段反実仮想",
 		visualPlan: "47.4から評価益寄与を引き算し28.8へ変わる中央固定バー比較",
 		risks: ["ブレンデッド値は未発表企業の予想を含む"],
+		adversarialEvidence: [
+			{
+				id: "counter_blended",
+				kind: "source_limitation",
+				targetClaim: "S&P 500 Q2利益成長率47.4%",
+				statement:
+					"ブレンデッド利益成長率は未発表企業の予想を含み、確定実績だけの値ではない",
+				sourceIds: ["factset"],
+				checkedSourceIds: ["sec", "factset"],
+			},
+			{
+				id: "counter_exclusion",
+				kind: "counter_metric",
+				targetClaim: "S&P 500 Q2利益成長率47.4%",
+				statement:
+					"AlphabetとAmazonを除く同じ集計では利益成長率が28.8%まで下がる",
+				sourceIds: ["factset"],
+				checkedSourceIds: ["sec", "factset"],
+			},
+		],
 		...overrides,
 	};
 }
@@ -60,6 +80,46 @@ describe("byosan sharp-angle gate", () => {
 		const result = evaluateByosanAngleCandidate(candidate(), []);
 		expect(result.passed).toBe(true);
 		expect(result.weightedScore).toBeGreaterThanOrEqual(75);
+	});
+
+	test("counter-evidence must map back to inspected candidate sources", () => {
+		const item = candidate({
+			adversarialEvidence: [
+				{
+					id: "bad_counter",
+					kind: "counter_metric",
+					targetClaim: "指数利益47.4%",
+					statement: "外部資料では同じ条件で28.8%だった",
+					sourceIds: ["missing-source"],
+					checkedSourceIds: ["sec", "factset"],
+				},
+			],
+		});
+		const result = evaluateByosanAngleCandidate(item, []);
+		expect(result.passed).toBe(false);
+		expect(result.hardGateFailures).toContain(
+			"adversarial_evidence_source_missing",
+		);
+	});
+
+	test("no-counter-evidence requires an explicit multi-source search scope", () => {
+		const item = candidate({
+			adversarialEvidence: [
+				{
+					id: "none_found",
+					kind: "no_counter_evidence",
+					targetClaim: "指数利益47.4%",
+					statement: "確認範囲では追加の重要な反証材料は見つからなかった",
+					sourceIds: ["factset"],
+					checkedSourceIds: ["factset"],
+				},
+			],
+		});
+		const result = evaluateByosanAngleCandidate(item, []);
+		expect(result.passed).toBe(false);
+		expect(result.hardGateFailures).toContain(
+			"no_counter_evidence_scope_too_narrow",
+		);
 	});
 
 	test("recent-topic duplication blocks the candidate", () => {

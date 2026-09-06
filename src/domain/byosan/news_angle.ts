@@ -20,6 +20,27 @@ export const ByosanAngleSourceSchema = z.object({
 	supports: z.array(z.string().min(3)).min(1),
 });
 
+export const ByosanAdversarialEvidenceKindSchema = z.enum([
+	"measurement_condition",
+	"counter_metric",
+	"third_party_disagreement",
+	"source_limitation",
+	"no_counter_evidence",
+]);
+
+export const ByosanAdversarialEvidenceSchema = z.object({
+	id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
+	kind: ByosanAdversarialEvidenceKindSchema,
+	targetClaim: z.string().min(8),
+	statement: z.string().min(8),
+	sourceIds: z.array(z.string().min(1)).min(1),
+	checkedSourceIds: z.array(z.string().min(1)).min(1),
+});
+
+export type ByosanAdversarialEvidence = z.infer<
+	typeof ByosanAdversarialEvidenceSchema
+>;
+
 export const ByosanAngleCandidateSchema = z.object({
 	topic: z.string().min(3),
 	angle: z.string().min(8),
@@ -33,6 +54,7 @@ export const ByosanAngleCandidateSchema = z.object({
 	noveltyFingerprint: z.string().min(8),
 	visualPlan: z.string().min(8),
 	risks: z.array(z.string().min(3)).min(1),
+	adversarialEvidence: z.array(ByosanAdversarialEvidenceSchema).min(1).max(10),
 });
 
 export type ByosanAngleCandidate = z.infer<typeof ByosanAngleCandidateSchema>;
@@ -371,6 +393,28 @@ export function evaluateByosanAngleCandidate(
 		hardGateFailures.push("counterfactual_is_not_testable");
 	if (candidate.sources.some((source) => source.supports.length === 0))
 		hardGateFailures.push("claim_source_mapping_missing");
+	const sourceIds = new Set(candidate.sources.map((source) => source.id));
+	const adversarialIds = new Set<string>();
+	for (const evidenceItem of candidate.adversarialEvidence) {
+		if (adversarialIds.has(evidenceItem.id)) {
+			hardGateFailures.push("duplicate_adversarial_evidence_id");
+		}
+		adversarialIds.add(evidenceItem.id);
+		if (
+			evidenceItem.sourceIds.some((sourceId) => !sourceIds.has(sourceId)) ||
+			evidenceItem.checkedSourceIds.some((sourceId) => !sourceIds.has(sourceId))
+		) {
+			hardGateFailures.push("adversarial_evidence_source_missing");
+		}
+		if (
+			evidenceItem.kind === "no_counter_evidence" &&
+			evidenceItem.checkedSourceIds.length < 2
+		) {
+			hardGateFailures.push("no_counter_evidence_scope_too_narrow");
+		}
+	}
+	if (candidate.adversarialEvidence.length < 1)
+		hardGateFailures.push("adversarial_evidence_missing");
 	if (weightedScore < 75) hardGateFailures.push("weighted_score_below_75");
 
 	return ByosanEvaluatedAngleSchema.parse({
