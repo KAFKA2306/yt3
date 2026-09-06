@@ -2,10 +2,10 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
 import {
-	ByosanFeatureSpecSchema,
 	type ByosanFeatureSpec,
+	ByosanFeatureSpecSchema,
 } from "../domain/byosan/feature_spec.js";
-import { AgentStateSchema, type AgentState } from "../domain/types.js";
+import { type AgentState, AgentStateSchema } from "../domain/types.js";
 
 export type DigestPeriod = "week" | "month";
 
@@ -39,7 +39,11 @@ export function digestStartDate(period: DigestPeriod, end: string): string {
 }
 
 function normalizeTopicKey(spec: ByosanFeatureSpec): string {
-	return spec.searchQuery.normalize("NFKC").toLowerCase().replaceAll(/\s+/g, " ").trim();
+	return spec.searchQuery
+		.normalize("NFKC")
+		.toLowerCase()
+		.replaceAll(/\s+/g, " ")
+		.trim();
 }
 
 export function dedupeDigestInputs(inputs: DigestInput[]): DigestInput[] {
@@ -129,11 +133,15 @@ function concatFileLine(filePath: string): string {
 	return `file '${filePath.replaceAll("'", "'\\''")}'`;
 }
 
-function runFfmpegConcat(inputs: DigestInput[], outputPath: string, runDir: string) {
+function runFfmpegConcat(
+	inputs: DigestInput[],
+	outputPath: string,
+	runDir: string,
+) {
 	const listPath = path.join(runDir, "source", "concat.txt");
 	fs.writeFileSync(
 		listPath,
-		inputs.map((input) => concatFileLine(input.videoPath)).join("\n") + "\n",
+		`${inputs.map((input) => concatFileLine(input.videoPath)).join("\n")}\n`,
 	);
 	const result = spawnSync(
 		"ffmpeg",
@@ -189,7 +197,6 @@ function uniqueSources(inputs: DigestInput[]) {
 }
 
 function writeDigestArtifacts(
-	root: string,
 	period: DigestPeriod,
 	end: string,
 	inputs: DigestInput[],
@@ -211,7 +218,9 @@ function writeDigestArtifacts(
 		].join("\n"),
 		tags: ["秒算マネー", label, "金融", "市場"],
 	};
-	const scriptLines = inputs.flatMap((input) => input.state.script?.lines ?? []);
+	const scriptLines = inputs.flatMap(
+		(input) => input.state.script?.lines ?? [],
+	);
 	const totalDuration = inputs.reduce(
 		(sum, input) => sum + Number(input.state.script?.total_duration ?? 0),
 		0,
@@ -261,9 +270,13 @@ function writeDigestArtifacts(
 		sources: uniqueSources(inputs),
 		materialFactPolicy: "reuse_only_no_new_material_claims",
 	};
-	fs.outputJsonSync(path.join(runDir, "source", "digest_manifest.json"), manifest, {
-		spaces: 2,
-	});
+	fs.outputJsonSync(
+		path.join(runDir, "source", "digest_manifest.json"),
+		manifest,
+		{
+			spaces: 2,
+		},
+	);
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "production_quality_report.json"),
 		{
@@ -288,7 +301,8 @@ function writeDigestArtifacts(
 			provenance_integrity: {
 				status: "PASS",
 				critical: true,
-				details: "Every digest segment reuses a production-audited daily run and retains its claim/source matrix.",
+				details:
+					"Every digest segment reuses a production-audited daily run and retains its claim/source matrix.",
 			},
 			input_production_quality: {
 				status: "PASS",
@@ -298,7 +312,8 @@ function writeDigestArtifacts(
 			material_claim_reuse_only: {
 				status: "PASS",
 				critical: true,
-				details: "Digest adds only date range, count, ordering, and source attribution.",
+				details:
+					"Digest adds only date range, count, ordering, and source attribution.",
 			},
 		},
 		{ spaces: 2 },
@@ -323,7 +338,7 @@ export function buildByosanDigest(
 
 	if (!dryRun) {
 		runFfmpegConcat(inputs, videoPath, runDir);
-		writeDigestArtifacts(root, period, end, inputs, videoPath, runDir);
+		writeDigestArtifacts(period, end, inputs, videoPath, runDir);
 	}
 	return {
 		runId: `byosan_money/${runName}`,
