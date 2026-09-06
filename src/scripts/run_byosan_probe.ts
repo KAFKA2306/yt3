@@ -35,7 +35,10 @@ const ProbeRequestSchema = z.discriminatedUnion("probeType", [
 		url: z.string().url(),
 		method: z.enum(["GET", "POST"]).default("GET"),
 		body: z.unknown().optional(),
-		bearerTokenEnv: z.string().regex(/^[A-Z0-9_]+$/).optional(),
+		bearerTokenEnv: z
+			.string()
+			.regex(/^[A-Z0-9_]+$/)
+			.optional(),
 	}),
 	BaseRequestSchema.extend({
 		probeType: z.literal("tokenizer_fingerprint"),
@@ -83,9 +86,7 @@ async function execute(request: z.infer<typeof ProbeRequestSchema>) {
 			},
 		);
 		if (result.status !== 0) {
-			throw new Error(
-				`ACTIVE_PROBE_GIT_DIFF_FAILED: ${result.stderr.trim()}`,
-			);
+			throw new Error(`ACTIVE_PROBE_GIT_DIFF_FAILED: ${result.stderr.trim()}`);
 		}
 		const observation = redact(result.stdout).slice(0, 4000);
 		return {
