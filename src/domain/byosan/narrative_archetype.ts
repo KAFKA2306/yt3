@@ -23,7 +23,10 @@ export const ByosanArchetypeEvidenceSlotSchema = z.object({
 	statement: z.string().min(8).max(500),
 	sourceIds: z.array(z.string().min(1)).min(1).max(8),
 	adversarialEvidenceIds: z.array(z.string().min(1)).max(6).optional(),
-	observedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+	observedAt: z
+		.string()
+		.regex(/^\d{4}-\d{2}-\d{2}$/)
+		.optional(),
 });
 
 export const ByosanArchetypeEvidenceBundleSchema = z.object({
@@ -206,12 +209,10 @@ function isEligible(
 
 	if (
 		archetype === "asymmetric_cost" &&
-		!hasRequiredAdversarialKind(
-			bundle,
-			candidate,
-			"footnote_condition",
-			["measurement_condition", "source_limitation"],
-		)
+		!hasRequiredAdversarialKind(bundle, candidate, "footnote_condition", [
+			"measurement_condition",
+			"source_limitation",
+		])
 	) {
 		return false;
 	}
