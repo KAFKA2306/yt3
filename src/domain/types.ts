@@ -5,7 +5,6 @@ export enum RunStage {
 	MEDIA = "media",
 	PUBLISH = "publish",
 	WATCHER = "watcher",
-	MEMORY = "memory",
 	AUDIT = "audit",
 }
 import type { OverlayConfig, Rect, Size } from "./config/base.js";

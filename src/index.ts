@@ -165,7 +165,7 @@ async function main() {
 			stage: "pipeline",
 			kind: "failure",
 			summary:
-				"Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+				"Uncaught pipeline crash. Record the failure as operator diagnostic evidence without feeding it into the next prompt.",
 			signals: [error.message],
 			fixes: [
 				"read the terminal error once, then fix the failing harness step before retrying",

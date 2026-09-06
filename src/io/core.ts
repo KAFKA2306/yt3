@@ -139,12 +139,7 @@ export class AssetStore {
 		const originalScriptLines =
 			state.script?.lines?.map((l) => ({ ...l })) || [];
 
-		const stages = [
-			RunStage.RESEARCH,
-			RunStage.CONTENT,
-			RunStage.MEDIA,
-			RunStage.MEMORY,
-		];
+		const stages = [RunStage.RESEARCH, RunStage.CONTENT, RunStage.MEDIA];
 		for (const step of stages) {
 			const outputPath = path.join(
 				this.runDir,
@@ -502,10 +497,6 @@ export function getRunIdDateString(): string {
 	const day = String(d.getDate()).padStart(2, "0");
 	return `${y}-${m}-${day}`;
 }
-export function getMemoryEssenceFile(store: AssetStore): string {
-	return path.join(ROOT, "data", "memory", store.domainId, "essences.json");
-}
-
 export function getLoopMemoryFile(store: AssetStore): string {
 	return path.join(ROOT, "data", "memory", store.domainId, "loop_journal.json");
 }
@@ -537,56 +528,6 @@ export function appendLoopMemory(
 	const capped = [...deduped, nextEntry].slice(-30);
 	fs.ensureDirSync(dir);
 	fs.writeJsonSync(file, { entries: capped }, { spaces: 2 });
-}
-
-export function loadMemoryContext(store: AssetStore): string {
-	const essenceFile = getMemoryEssenceFile(store);
-	const loopFile = getLoopMemoryFile(store);
-
-	if (!fs.existsSync(essenceFile) && !fs.existsSync(loopFile)) return "";
-
-	const essencesData = fs.existsSync(essenceFile)
-		? (fs.readJsonSync(essenceFile) as {
-				essences: Array<{
-					topic: string;
-					timestamp: string;
-					key_insights: string[];
-					universal_principles: string[];
-				}>;
-			})
-		: {
-				essences: [],
-			};
-	const loopData = fs.existsSync(loopFile)
-		? (fs.readJsonSync(loopFile) as {
-				entries?: Array<LoopMemoryEntry>;
-			})
-		: { entries: [] as LoopMemoryEntry[] };
-
-	const recentEssences = Array.isArray(essencesData.essences)
-		? essencesData.essences.slice(-5).reverse()
-		: [];
-	const recentLoopEntries = Array.isArray(loopData.entries)
-		? loopData.entries.slice(-3).reverse()
-		: [];
-
-	if (recentEssences.length === 0 && recentLoopEntries.length === 0) return "";
-
-	const loopText = recentLoopEntries
-		.map((entry) => {
-			const signals =
-				entry.signals.length > 0 ? entry.signals.join(" / ") : "なし";
-			const fixes = entry.fixes.length > 0 ? entry.fixes.join(" / ") : "なし";
-			return `【Loop ${entry.kind}: ${entry.stage}】\n${entry.summary}\n兆候: ${signals}\n対策: ${fixes}`;
-		})
-		.join("\n\n");
-	const essenceText = recentEssences
-		.map(
-			(e) =>
-				`【${e.topic}】\n${e.key_insights.slice(0, 2).join("\n")}\n原則: ${e.universal_principles[0] || ""}`,
-		)
-		.join("\n\n");
-	return [loopText, essenceText].filter(Boolean).join("\n\n");
 }
 
 export function fetchRecentThemes(store: AssetStore, days = 7): string {
