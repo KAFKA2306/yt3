@@ -83,7 +83,7 @@ export const ByosanProductionPlanSchema = z.object({
 	appliedPerformancePreference: ByosanProductionFormatSchema.optional(),
 });
 
-export type ByosanProductionFormat = z.infer<typeof ByosanProductionFormatSchema>;
+export type ByosanProductionFormat = z.infer<\n\ttypeof ByosanProductionFormatSchema\n>;
 export type ByosanProductionPlan = z.infer<typeof ByosanProductionPlanSchema>;
 
 function normalize(text: string): string {
@@ -249,14 +249,11 @@ export function selectByosanProductionPlan(
 		.filter((candidate) => candidate.eligible)
 		.map((candidate) => ({
 			...candidate,
-			score:
-				candidate.score +
-				(candidate.format === preferredFormat ? 3 : 0),
+			score: candidate.score + (candidate.format === preferredFormat ? 3 : 0),
 		}))
 		.sort(
 			(left, right) =>
-				right.score - left.score ||
-				left.format.localeCompare(right.format),
+				right.score - left.score || left.format.localeCompare(right.format),
 		);
 	const selected = ranked[0];
 	if (!selected) {
@@ -267,10 +264,7 @@ export function selectByosanProductionPlan(
 		targetMinutes: selected.targetMinutes,
 		minSegments: selected.minSegments,
 		maxSegments: selected.maxSegments,
-		reasons: [
-			...selected.reasons,
-			`format_score=${selected.score.toFixed(2)}`,
-		],
+		reasons: [...selected.reasons, `format_score=${selected.score.toFixed(2)}`],
 		...(selected.format === preferredFormat
 			? { appliedPerformancePreference: preferredFormat }
 			: {}),
