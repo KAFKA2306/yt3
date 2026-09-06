@@ -20,7 +20,7 @@ function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
 			? {}
 			: { caveat: "推計または派生値であり、前提条件に依存する" }),
 	}));
-	const segments = base.segments.map((segment, index) => {
+	const segments = base.segments.slice(0, 28).map((segment, index) => {
 		const narrativeRole: ByosanNarrativeRole =
 			index === 0
 				? "fact"
