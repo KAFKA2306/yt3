@@ -3,13 +3,13 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
+import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
 import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
 	type ByosanFeatureSpec,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
-import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
 import {
 	type ByosanAdversarialEvidence,
 	type ByosanAngleCandidate,
