@@ -489,8 +489,14 @@ export function auditByosanFeatureSpec(
 		const sourceById = new Map(
 			spec.sources.map((source) => [source.id, source]),
 		);
+		const spokenClaimIds = new Set(
+			spec.segments.flatMap((segment) => segment.claimIds ?? []),
+		);
 		for (const claim of spec.claims.filter(
-			(claim) => claim.id && claim.status !== "verified",
+			(claim) =>
+				claim.id &&
+				claim.status !== "verified" &&
+				spokenClaimIds.has(claim.id),
 		)) {
 			const claimId = claim.id ?? "";
 			if (
