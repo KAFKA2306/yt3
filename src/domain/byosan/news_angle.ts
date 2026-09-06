@@ -83,7 +83,9 @@ export const ByosanProductionPlanSchema = z.object({
 	appliedPerformancePreference: ByosanProductionFormatSchema.optional(),
 });
 
-export type ByosanProductionFormat = z.infer<\n\ttypeof ByosanProductionFormatSchema\n>;
+export type ByosanProductionFormat = z.infer<
+	typeof ByosanProductionFormatSchema
+>;
 export type ByosanProductionPlan = z.infer<typeof ByosanProductionPlanSchema>;
 
 function normalize(text: string): string {
