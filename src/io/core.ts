@@ -93,7 +93,7 @@ export function createLlm(
 		"SYSTEM",
 		"CORE",
 		"API_CHECK",
-		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}... (Domain: ${domainId || "byosan_money"})`,
+		`Using key ${keyName} (Domain: ${domainId || "byosan_money"})`,
 	);
 
 	const llm = new ChatGoogleGenerativeAI({
@@ -110,6 +110,130 @@ export function createLlm(
 	llm.keyName = keyName;
 	return llm;
 }
+export type StructuredInvocationFailureClass =
+	| "PROVIDER_RATE_LIMIT"
+	| "PROVIDER_INVALID_KEY"
+	| "PROVIDER_NON_RETRYABLE"
+	| "SEMANTIC_VALIDATION";
+
+export type StructuredInvocationAttempt = {
+	attempt: number;
+	keyName: string;
+	status: "PASS" | "FAIL";
+	failureClass?: StructuredInvocationFailureClass;
+	details?: string;
+};
+
+export async function invokeStructuredLlm<T>(params: {
+	schema: z.ZodSchema<T>;
+	name: string;
+	llmOptions?: LlmOptions;
+	messages: (
+		attempt: number,
+		lastValidationError?: string,
+	) => Array<{ role: "system" | "user"; content: string }>;
+	validate?: (value: T) => T;
+	maxAttempts?: number;
+	evidencePath?: string;
+	llmFactory?: typeof createLlm;
+	sleep?: (ms: number) => Promise<void>;
+}): Promise<T> {
+	const maxAttempts = params.maxAttempts ?? 3;
+	const attempts: StructuredInvocationAttempt[] = [];
+	const factory = params.llmFactory ?? createLlm;
+	const sleep =
+		params.sleep ??
+		((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+	let lastValidationError: string | undefined;
+
+	const persist = (): void => {
+		if (!params.evidencePath) return;
+		fs.ensureDirSync(path.dirname(params.evidencePath));
+		fs.writeJsonSync(
+			params.evidencePath,
+			{
+				schemaVersion: "structured_llm_attempts_v1",
+				name: params.name,
+				attempts,
+			},
+			{ spaces: 2 },
+		);
+	};
+
+	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		const llm = factory(params.llmOptions ?? {});
+		const keyName = llm.keyName ?? "unknown";
+		await waitIfRateLimited(keyName);
+		const structured = llm.withStructuredOutput(params.schema, {
+			name: params.name,
+		});
+
+		let value: T;
+		try {
+			value = await structured.invoke(
+				params.messages(attempt, lastValidationError),
+			);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			const lower = message.toLowerCase();
+			const rateLimited =
+				message.includes("429") ||
+				lower.includes("quota") ||
+				lower.includes("rate limit");
+			const invalidKey =
+				lower.includes("api_key_invalid") ||
+				lower.includes("api key not found") ||
+				lower.includes("invalid api key");
+			if (!rateLimited && !invalidKey) {
+				attempts.push({
+					attempt,
+					keyName,
+					status: "FAIL",
+					failureClass: "PROVIDER_NON_RETRYABLE",
+					details: message.slice(0, 500),
+				});
+				persist();
+				throw error;
+			}
+			attempts.push({
+				attempt,
+				keyName,
+				status: "FAIL",
+				failureClass: invalidKey
+					? "PROVIDER_INVALID_KEY"
+					: "PROVIDER_RATE_LIMIT",
+				details: message.slice(0, 500),
+			});
+			persist();
+			markKeyRateLimited(keyName);
+			await sleep(invalidKey ? 2_000 : 10_000);
+			continue;
+		}
+
+		try {
+			const validated = params.validate ? params.validate(value) : value;
+			attempts.push({ attempt, keyName, status: "PASS" });
+			persist();
+			return validated;
+		} catch (error) {
+			lastValidationError =
+				error instanceof Error ? error.message : String(error);
+			attempts.push({
+				attempt,
+				keyName,
+				status: "FAIL",
+				failureClass: "SEMANTIC_VALIDATION",
+				details: lastValidationError.slice(0, 500),
+			});
+			persist();
+		}
+	}
+
+	throw new Error(
+		`STRUCTURED_OUTPUT_VALIDATION_EXHAUSTED: ${params.name}: ${lastValidationError ?? "provider attempts exhausted"}`,
+	);
+}
+
 export class AssetStore {
 	runDir: string;
 	cfg: AppConfig;
