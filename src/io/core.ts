@@ -4,7 +4,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import yaml from "js-yaml";
-import type { z } from "zod";
+import { z } from "zod";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 export const ROOT = process.cwd();
 
@@ -184,6 +184,24 @@ export async function invokeStructuredLlm<T>(params: {
 				lower.includes("api_key_invalid") ||
 				lower.includes("api key not found") ||
 				lower.includes("invalid api key");
+			const semanticOutputError =
+				error instanceof z.ZodError ||
+				lower.includes("schema") ||
+				lower.includes("failed to parse") ||
+				lower.includes("output parser") ||
+				lower.includes("structured output");
+			if (semanticOutputError) {
+				lastValidationError = message;
+				attempts.push({
+					attempt,
+					keyName,
+					status: "FAIL",
+					failureClass: "SEMANTIC_VALIDATION",
+					details: message.slice(0, 500),
+				});
+				persist();
+				continue;
+			}
 			if (!rateLimited && !invalidKey) {
 				attempts.push({
 					attempt,
