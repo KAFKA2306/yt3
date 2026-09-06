@@ -9,6 +9,7 @@ import {
 	type ByosanFeatureSpec,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
+import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
 import {
 	type ByosanAdversarialEvidence,
 	type ByosanAngleCandidate,
@@ -100,6 +101,7 @@ function safeSourceId(raw: string, index: number): string {
 function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
 	sources: FeatureSource[];
 	adversarialEvidence: ByosanAdversarialEvidence[];
+	activeProbes: ByosanActiveProbeEvidence[];
 } {
 	const seen = new Set<string>();
 	const sourceIdMap = new Map<string, string>();
@@ -126,6 +128,10 @@ function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
 			...evidence,
 			sourceIds: remapIds(evidence.sourceIds),
 			checkedSourceIds: remapIds(evidence.checkedSourceIds),
+		})),
+		activeProbes: (candidate.activeProbes ?? []).map((probe) => ({
+			...probe,
+			sourceIds: remapIds(probe.sourceIds),
 		})),
 	};
 }
@@ -502,6 +508,7 @@ async function generateFeatureSpec(
 	productionPlan: ByosanProductionPlan,
 	sources: FeatureSource[],
 	adversarialEvidence: ByosanAdversarialEvidence[],
+	activeProbes: ByosanActiveProbeEvidence[],
 	runDir: string,
 	runId: string,
 	date: string,
@@ -518,6 +525,7 @@ async function generateFeatureSpec(
 		production_plan: productionPlan,
 		allowed_sources: sources,
 		adversarial_evidence: adversarialEvidence,
+		active_probes: activeProbes,
 		news: research.news,
 	};
 	let lastError: unknown;
@@ -547,6 +555,7 @@ async function generateFeatureSpec(
 					audiencePayoff: candidate.audiencePayoff,
 				},
 				adversarialEvidence,
+				activeProbes,
 				sources,
 			});
 		} catch (error) {
@@ -675,6 +684,7 @@ export async function runByosanDaily(): Promise<void> {
 		productionPlan,
 		normalized.sources,
 		normalized.adversarialEvidence,
+		normalized.activeProbes,
 		store.runDir,
 		runId,
 		date,
