@@ -1,11 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import { z } from "zod";
-import {
-	type LlmOptions,
-	createLlm,
-	invokeStructuredLlm,
-} from "../src/io/core.js";
+import type { LlmOptions } from "../src/io/core.js";
+import { createLlm, invokeStructuredLlm } from "../src/io/core.js";
 
 type FakeOutcome =
 	| { kind: "error"; error: Error }
@@ -48,29 +45,32 @@ describe("canonical structured LLM invocation", () => {
 		expect(result).toEqual({ ok: true });
 	});
 
-	test("retries semantic validation without treating it as provider success", async () => {
-		let validations = 0;
-		const result = await invokeStructuredLlm({
-			schema: z.object({ value: z.number() }),
-			name: "semantic_test",
-			llmFactory: fakeFactory(
-				[
-					{ kind: "value", value: { value: 1 } },
-					{ kind: "value", value: { value: 2 } },
-				],
-				["GEMINI_API_KEY", "GEMINI_API_KEY"],
-			),
-			sleep: async () => {},
-			messages: () => [{ role: "user", content: "test" }],
-			validate: (value) => {
-				validations++;
-				if (validations === 1) throw new Error("domain audit mismatch");
-				return value;
-			},
-		});
-		expect(result.value).toBe(2);
-		expect(validations).toBe(2);
-	});
+	test(
+		"retries semantic validation without treating it as provider success",
+		async () => {
+			let validations = 0;
+			const result = await invokeStructuredLlm({
+				schema: z.object({ value: z.number() }),
+				name: "semantic_test",
+				llmFactory: fakeFactory(
+					[
+						{ kind: "value", value: { value: 1 } },
+						{ kind: "value", value: { value: 2 } },
+					],
+					["GEMINI_API_KEY", "GEMINI_API_KEY"],
+				),
+				sleep: async () => {},
+				messages: () => [{ role: "user", content: "test" }],
+				validate: (value) => {
+					validations++;
+					if (validations === 1) throw new Error("domain audit mismatch");
+					return value;
+				},
+			});
+			expect(result.value).toBe(2);
+			expect(validations).toBe(2);
+		},
+	);
 
 	test("non-retryable provider errors stop immediately", async () => {
 		let factoryCalls = 0;
@@ -106,7 +106,12 @@ describe("canonical structured LLM invocation", () => {
 					name: "redaction_test",
 					evidencePath,
 					llmFactory: fakeFactory(
-						[{ kind: "error", error: new Error(`permission denied ${secret}`) }],
+						[
+							{
+								kind: "error",
+								error: new Error(`permission denied ${secret}`),
+							},
+						],
 						["GEMINI_API_KEY"],
 					),
 					sleep: async () => {},
@@ -117,19 +122,25 @@ describe("canonical structured LLM invocation", () => {
 			expect(persisted).not.toContain(secret);
 			expect(persisted).toContain("[REDACTED_KEY]");
 		} finally {
-			if (old === undefined) delete process.env.GEMINI_API_KEY;
-			else process.env.GEMINI_API_KEY = old;
+			if (old === undefined) {
+				Reflect.deleteProperty(process.env, "GEMINI_API_KEY");
+			} else {
+				process.env.GEMINI_API_KEY = old;
+			}
 			fs.removeSync(dir);
 		}
 	});
 
-	test("key-pool exhaustion cannot fall back to primary and key prefixes are not logged", () => {
-		const quotaSource = fs.readFileSync(
-			"src/io/utils/quota/manager.ts",
-			"utf8",
-		);
-		const coreSource = fs.readFileSync("src/io/core.ts", "utf8");
-		expect(quotaSource).not.toContain("Falling back to primary");
-		expect(coreSource).not.toContain("apiKey.slice");
-	});
+	test(
+		"key-pool exhaustion cannot fall back to primary and key prefixes are not logged",
+		() => {
+			const quotaSource = fs.readFileSync(
+				"src/io/utils/quota/manager.ts",
+				"utf8",
+			);
+			const coreSource = fs.readFileSync("src/io/core.ts", "utf8");
+			expect(quotaSource).not.toContain("Falling back to primary");
+			expect(coreSource).not.toContain("apiKey.slice");
+		},
+	);
 });
