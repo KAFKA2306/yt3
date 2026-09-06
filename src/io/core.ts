@@ -143,7 +143,7 @@ export type StructuredInvocationAttempt = {
 	details?: string;
 };
 
-export async function invokeStructuredLlm<T>(params: {
+export async function invokeStructuredLlm<T, U = T>(params: {
 	schema: z.ZodSchema<T>;
 	name: string;
 	llmOptions?: LlmOptions;
@@ -151,12 +151,12 @@ export async function invokeStructuredLlm<T>(params: {
 		attempt: number,
 		lastValidationError?: string,
 	) => Array<{ role: "system" | "user"; content: string }>;
-	validate?: (value: T) => T;
+	validate?: (value: T) => U;
 	maxAttempts?: number;
 	evidencePath?: string;
 	llmFactory?: typeof createLlm;
 	sleep?: (ms: number) => Promise<void>;
-}): Promise<T> {
+}): Promise<U> {
 	const maxAttempts = params.maxAttempts ?? 3;
 	const attempts: StructuredInvocationAttempt[] = [];
 	const factory = params.llmFactory ?? createLlm;
@@ -189,9 +189,9 @@ export async function invokeStructuredLlm<T>(params: {
 
 		let value: T;
 		try {
-			value = await structured.invoke(
+			value = (await structured.invoke(
 				params.messages(attempt, lastValidationError),
-			);
+			)) as T;
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			const lower = message.toLowerCase();
@@ -248,7 +248,9 @@ export async function invokeStructuredLlm<T>(params: {
 		}
 
 		try {
-			const validated = params.validate ? params.validate(value) : value;
+			const validated = params.validate
+				? params.validate(value)
+				: (value as unknown as U);
 			attempts.push({ attempt, keyName, status: "PASS" });
 			persist();
 			return validated;
