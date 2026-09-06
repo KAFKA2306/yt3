@@ -8,10 +8,7 @@ export const ByosanActiveProbeTypeSchema = z.enum([
 	"tokenizer_fingerprint",
 ]);
 
-export const ByosanActiveProbeStatusSchema = z.enum([
-	"VERIFIED",
-	"UNVERIFIED",
-]);
+export const ByosanActiveProbeStatusSchema = z.enum(["VERIFIED", "UNVERIFIED"]);
 
 export const ByosanActiveProbeEvidenceSchema = z.object({
 	id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
@@ -66,7 +63,10 @@ export function tokenizerFingerprint(
 	return fingerprintProbeInput(normalized);
 }
 
-export function summarizeTextDiff(before: string, after: string): {
+export function summarizeTextDiff(
+	before: string,
+	after: string,
+): {
 	beforeHash: string;
 	afterHash: string;
 	addedLines: string[];
