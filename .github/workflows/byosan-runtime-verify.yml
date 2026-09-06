@@ -1,0 +1,56 @@
+name: Byosan Runtime Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Byosan production date (YYYY-MM-DD)"
+        required: true
+        type: string
+      period:
+        description: "Digest period"
+        required: true
+        default: "week"
+        type: choice
+        options:
+          - week
+          - month
+      analytics:
+        description: "Refresh authorized YouTube Analytics"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  runtime-verify:
+    runs-on: [self-hosted, byosan]
+    timeout-minutes: 120
+    steps:
+      - name: Checkout exact main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies from lockfile
+        run: bun ci
+
+      - name: Verify local Byosan runtime without publishing
+        run: bun src/scripts/verify_byosan_runtime.ts
+        env:
+          BYOSAN_RUNTIME_MODE: full
+          BYOSAN_DATE: ${{ inputs.date }}
+          PERIOD: ${{ inputs.period }}
+          WITH_ANALYTICS: ${{ inputs.analytics }}
+
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: byosan-runtime-evidence-${{ inputs.date }}
+          path: runs/byosan_money/${{ inputs.date }}-runtime-verification/audit/
+          if-no-files-found: error
