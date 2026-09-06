@@ -69,7 +69,7 @@ export const ByosanAngleCandidateSchema = z.object({
 	archetypeEvidence: z
 		.array(ByosanArchetypeEvidenceBundleSchema)
 		.max(10)
-		.default([]),
+		.optional(),
 });
 
 export type ByosanAngleCandidate = z.infer<typeof ByosanAngleCandidateSchema>;
@@ -117,9 +117,9 @@ export const ByosanProductionPlanSchema = z.object({
 	minSegments: z.number().int().min(12).max(40),
 	maxSegments: z.number().int().min(12).max(40),
 	reasons: z.array(z.string().min(1)).min(1),
-	narrativeArchetype: ByosanNarrativeArchetypeSchema.default("standard"),
-	archetypeRequiredSlots: z.array(z.string().regex(/^[a-z0-9_]+$/)).max(12).default([]),
-	archetypeReasons: z.array(z.string().min(1)).default([]),
+	narrativeArchetype: ByosanNarrativeArchetypeSchema.optional(),
+	archetypeRequiredSlots: z.array(z.string().regex(/^[a-z0-9_]+$/)).max(12).optional(),
+	archetypeReasons: z.array(z.string().min(1)).optional(),
 	archetypeEvidence: ByosanArchetypeEvidenceBundleSchema.optional(),
 	appliedPerformancePreference: ByosanProductionFormatSchema.optional(),
 });
