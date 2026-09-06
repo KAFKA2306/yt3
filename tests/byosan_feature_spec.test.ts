@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import {
+	type ByosanFeatureSpec,
+	type ByosanNarrativeRole,
+	ByosanFeatureSpecSchema,
 	auditByosanFeatureSpec,
 	centerLockedMotionFilter,
 	parseAndAuditByosanFeatureSpec,
@@ -9,20 +12,29 @@ import {
 
 const SPEC_PATH = "config/productions/sp500_anthropic_2026q2.json";
 
-function productionAwareSpec(base: any) {
-	const claims = base.claims.map((claim: any, index: number) => ({
+function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
+	const claims = base.claims.map((claim, index) => ({
 		...claim,
 		id: `claim_${index}`,
 		...(claim.status === "verified"
 			? {}
 			: { caveat: "推計または派生値であり、前提条件に依存する" }),
 	}));
-	const segments = base.segments.map((segment: any, index: number) => ({
-		...segment,
-		narrativeRole:
-			index === 0 ? "fact" : index === 1 ? "context" : index === 2 ? "impact" : "action",
-		...(index === 0 ? { claimIds: ["claim_0"] } : {}),
-	}));
+	const segments = base.segments.map((segment, index) => {
+		const narrativeRole: ByosanNarrativeRole =
+			index === 0
+				? "fact"
+				: index === 1
+					? "context"
+					: index === 2
+						? "impact"
+						: "action";
+		return {
+			...segment,
+			narrativeRole,
+			...(index === 0 ? { claimIds: ["claim_0"] } : {}),
+		};
+	});
 	return {
 		...base,
 		title: "S&P500利益+47.4%の中身を一次資料で検証",
@@ -49,6 +61,10 @@ function productionAwareSpec(base: any) {
 	};
 }
 
+async function loadReferenceSpec(): Promise<ByosanFeatureSpec> {
+	return ByosanFeatureSpecSchema.parse(await fs.readJson(SPEC_PATH));
+}
+
 describe("byosan feature specification", () => {
 	test("the reference production satisfies the reusable schema", async () => {
 		const spec = parseAndAuditByosanFeatureSpec(await fs.readJson(SPEC_PATH));
@@ -57,8 +73,7 @@ describe("byosan feature specification", () => {
 	});
 
 	test("production-aware specs enforce grounded packaging and Fact -> Context -> Impact", async () => {
-		const base = await fs.readJson(SPEC_PATH);
-		const spec = productionAwareSpec(base);
+		const spec = productionAwareSpec(await loadReferenceSpec());
 		expect(auditByosanFeatureSpec(spec)).toEqual([]);
 		expect(parseAndAuditByosanFeatureSpec(spec).production?.format).toBe(
 			"regular",
@@ -66,8 +81,7 @@ describe("byosan feature specification", () => {
 	});
 
 	test("unsupported breaking and extreme wording fail closed", async () => {
-		const base = await fs.readJson(SPEC_PATH);
-		const spec = productionAwareSpec(base);
+		const spec = productionAwareSpec(await loadReferenceSpec());
 		spec.title = "【速報】過去最大のS&P500利益+47.4%";
 		const issues = auditByosanFeatureSpec(spec);
 		expect(issues.map((issue) => issue.code)).toContain(
@@ -79,9 +93,12 @@ describe("byosan feature specification", () => {
 	});
 
 	test("fact segments require claim grounding under the new narrative contract", async () => {
-		const base = await fs.readJson(SPEC_PATH);
-		const spec = productionAwareSpec(base);
-		delete spec.segments[0].claimIds;
+		const spec = productionAwareSpec(await loadReferenceSpec());
+		const first = spec.segments[0];
+		if (!first) throw new Error("reference spec has no first segment");
+		const { claimIds, ...ungroundedFirst } = first;
+		expect(claimIds).toEqual(["claim_0"]);
+		spec.segments = [ungroundedFirst, ...spec.segments.slice(1)];
 		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
 			"fact_segment_claim_missing",
 		);
