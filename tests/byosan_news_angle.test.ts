@@ -4,6 +4,7 @@ import {
 	byosanTextSimilarity,
 	evaluateByosanAngleCandidate,
 	selectByosanAngle,
+	selectByosanProductionPlan,
 } from "../src/domain/byosan/news_angle.js";
 
 function candidate(
@@ -76,6 +77,35 @@ describe("byosan sharp-angle gate", () => {
 		const result = selectByosanAngle([candidate()], []);
 		expect(result.decision).toBe("STOP");
 		expect(result.reason).toContain("fewer_than_five_candidates");
+	});
+
+	test("production format is deterministic for the same evaluated evidence", () => {
+		const evaluated = evaluateByosanAngleCandidate(candidate(), []);
+		const first = selectByosanProductionPlan(evaluated, "2026-09-06");
+		const second = selectByosanProductionPlan(evaluated, "2026-09-06");
+		expect(second).toEqual(first);
+		expect(["breaking", "comparison", "deep_dive", "regular"]).toContain(
+			first.format,
+		);
+		expect(first.minSegments).toBeLessThanOrEqual(first.maxSegments);
+	});
+
+	test("fresh primary evidence can select breaking without an LLM classifier", () => {
+		const item = candidate({
+			angle: "24時間で47.4%と28.8%と19ポイントの差が同時に確定した指数利益の異変",
+			hiddenMechanism:
+				"47.4%から28.8%へ19ポイント縮む原因を二社の非現金評価益と指数加重で分解する",
+			counterfactual:
+				"47.4%から二社を除く場合は28.8%となり、19ポイント差を同じ分母で比較する",
+			sources: candidate().sources.map((source) => ({
+				...source,
+				publishedAt: "2026-09-06",
+			})),
+		});
+		const evaluated = evaluateByosanAngleCandidate(item, []);
+		expect(evaluated.passed).toBe(true);
+		const plan = selectByosanProductionPlan(evaluated, "2026-09-06");
+		expect(plan.format).toBe("breaking");
 	});
 
 	test("ranking selects only after collection and candidate hard gates pass", () => {
