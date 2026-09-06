@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   research:
+    # Required because the pinned reusable workflow commits research/weekly back to this repository.
     permissions:
       contents: write
-    uses: KAFKA2306/agent-resources/.github/workflows/reusable-weekly-repo-research.yml@main
+    uses: KAFKA2306/agent-resources/.github/workflows/reusable-weekly-repo-research.yml@e1f12ec1532719f2ea970be65eababed6475e168
