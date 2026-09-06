@@ -756,7 +756,7 @@ export class AuditAgent extends BaseAgent {
 		try {
 			const asrDir = path.join(this.store.runDir, "audit_asr");
 			execSync(
-				`uv run --no-project --with faster-whisper python .claude/skills/audio-production/scripts/run_asr.py --input-wav "${videoPath}" --output-dir "${asrDir}" --model base`,
+				`task asr FILE="${videoPath}" OUT="${asrDir}"`,
 				{
 					encoding: "utf-8",
 					maxBuffer: 100 * 1024 * 1024,
