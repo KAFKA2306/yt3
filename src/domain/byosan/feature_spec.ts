@@ -1,5 +1,9 @@
 import { z } from "zod";
 import {
+	ByosanActiveProbeEvidenceSchema,
+	auditByosanActiveProbeEvidence,
+} from "./active_probe.js";
+import {
 	ByosanAdversarialEvidenceSchema,
 	ByosanProductionPlanSchema,
 	ByosanSourceTierSchema,
@@ -143,6 +147,7 @@ export const ByosanFeatureSpecSchema = z.object({
 		.min(1)
 		.max(10)
 		.optional(),
+	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).max(8).optional(),
 	noveltyQueries: z.array(z.string().min(8).max(180)).min(2).max(5),
 	tags: z.array(z.string().min(1).max(30)).min(5).max(15),
 	sources: z.array(ByosanFeatureSourceSchema).min(2).max(12),
@@ -160,6 +165,7 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	production: true,
 	narrative: true,
 	adversarialEvidence: true,
+	activeProbes: true,
 }).extend({
 	claims: z
 		.array(
@@ -351,6 +357,26 @@ export function auditByosanFeatureSpec(
 				code: "relative_claim_ungrounded",
 				details: "comparative/extreme wording requires comparator and period",
 			});
+		}
+	}
+
+	if (spec.activeProbes) {
+		for (const probe of spec.activeProbes) {
+			for (const issue of auditByosanActiveProbeEvidence(probe)) {
+				issues.push({
+					code: `active_probe_${issue.code}`,
+					details: issue.details,
+				});
+			}
+			const missing = probe.sourceIds.filter(
+				(sourceId) => !sourceIds.has(sourceId),
+			);
+			if (missing.length > 0) {
+				issues.push({
+					code: "active_probe_source_missing",
+					details: `${probe.id}: ${missing.join(",")}`,
+				});
+			}
 		}
 	}
 
