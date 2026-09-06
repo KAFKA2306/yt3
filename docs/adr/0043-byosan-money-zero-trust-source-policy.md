@@ -19,8 +19,6 @@ Accepted
 - `config/schemas/byosan_money_source_policy_v1.json`
 - `config/schemas/byosan_money_content_audit_v1.json`
 - `scripts/audit_byosan_money_zero_trust.ts`
-- `.claude/agents/liquidity-regime-agent.md`
-- `.claude/agents/humanity-impact-agent.md`
 
 ## Consequences
 
