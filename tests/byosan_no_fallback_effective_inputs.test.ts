@@ -30,11 +30,11 @@ describe("effective no-fallback inputs", () => {
 			entries?: Array<{ kind?: string; summary?: string; fixes?: string[] }>;
 		};
 		for (const entry of memory.entries ?? []) {
-		expect(entry.kind).not.toBe("fallback");
-		expect(entry.summary ?? "").not.toMatch(/fallback-safe\s+synthesis/i);
-		expect((entry.fixes ?? []).join(" ")).not.toMatch(
+			expect(entry.kind).not.toBe("fallback");
+			expect(entry.summary ?? "").not.toMatch(/fallback-safe\s+synthesis/i);
+			expect((entry.fixes ?? []).join(" ")).not.toMatch(
 				/fallback-safe\s+synthesis/i,
-		);
+			);
 		}
 	});
 });
