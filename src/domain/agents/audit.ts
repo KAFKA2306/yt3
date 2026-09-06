@@ -756,17 +756,16 @@ export class AuditAgent extends BaseAgent {
 		try {
 			const asrDir = path.join(this.store.runDir, "audit_asr");
 			execSync(`task asr FILE="${videoPath}" OUT="${asrDir}"`, {
-					encoding: "utf-8",
-					maxBuffer: 100 * 1024 * 1024,
-					env: {
-						...process.env,
-						VIRTUAL_ENV: path.join(ROOT, ".venv"),
-						PYTHONHOME: "",
-						PYTHONPATH: "",
-						PATH: `${path.join(ROOT, ".venv", "bin")}:${process.env.PATH || ""}`,
-					},
+				encoding: "utf-8",
+				maxBuffer: 100 * 1024 * 1024,
+				env: {
+					...process.env,
+					VIRTUAL_ENV: path.join(ROOT, ".venv"),
+					PYTHONHOME: "",
+					PYTHONPATH: "",
+					PATH: `${path.join(ROOT, ".venv", "bin")}:${process.env.PATH || ""}`,
 				},
-			);
+			});
 
 			const asrRaw = fs.readFileSync(
 				path.join(asrDir, "asr_raw.jsonl"),
