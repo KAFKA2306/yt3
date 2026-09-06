@@ -92,7 +92,8 @@ describe("byosan sharp-angle gate", () => {
 
 	test("fresh primary evidence can select breaking without an LLM classifier", () => {
 		const item = candidate({
-			angle: "24時間で47.4%と28.8%と19ポイントの差が同時に確定した指数利益の異変",
+			angle:
+				"24時間で47.4%と28.8%と19ポイントの差が同時に確定した指数利益の異変",
 			hiddenMechanism:
 				"47.4%から28.8%へ19ポイント縮む原因を二社の非現金評価益と指数加重で分解する",
 			counterfactual:
