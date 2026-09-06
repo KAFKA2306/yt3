@@ -24,7 +24,6 @@ readonly log_file="${daily_log_dir}/${today_date}.log"
 readonly latest_log="${repo_dir}/logs/latest.log"
 readonly status_file="${repo_dir}/data/state/last_run.json"
 readonly lock_file="${repo_dir}/logs/cron.lock"
-readonly node_bin="${NODE_BIN:-$(if [ -x /root/.nvm/versions/node/v22.17.1/bin/node ]; then echo /root/.nvm/versions/node/v22.17.1/bin/node; else command -v node; fi)}"
 readonly log_start_line="$(wc -l < "${log_file}" 2>/dev/null || echo 0)"
 
 mkdir -p "${log_dir}" "${daily_log_dir}"
@@ -39,23 +38,6 @@ timestamp() {
 
 current_run_log() {
   tail -n +"$((log_start_line + 1))" "${log_file}" 2>/dev/null || true
-}
-
-run_auto_heal() {
-  local reason="$1"
-
-  if [ "${ENABLE_AUTO_HEAL:-false}" != "true" ]; then
-    printf '[%s] WARN  auto-heal skipped for %s; set ENABLE_AUTO_HEAL=true for an explicitly authorized repair run\n' "$(timestamp)" "${reason}" >> logs/healing.log
-    return 0
-  fi
-
-  (
-    cd "${repo_dir}"
-    export PATH="/root/.nvm/versions/node/v22.17.1/bin:/root/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:$PATH"
-    export AUTONOMY_TRIGGER="auto-heal"
-    echo "[$(timestamp)] --- Auto-Healing Triggered for ${reason} ---" >> logs/healing.log
-    "${node_bin}" /usr/local/bin/gemini -m gemini-2.5-flash "${2}" >> logs/healing.log 2>&1
-  ) &
 }
 
 printf '[%s] INFO  acquiring lock\n' "$(timestamp)"
@@ -98,14 +80,8 @@ notify_failure() {
 
   local msg="❌ **YT3 Automation ALERT**: Workflow failed (${error_type}) with exit code ${exit_code} after ${duration}s.\nCheck logs/latest.log for details."
   
-  # If it's a target error, invoke Gemini CLI autonomously
   if [[ "${error_type}" != "Unknown Error" ]]; then
-    msg="${msg}\n\n🤖 **Auto-Healing Initiated**: Invoking Gemini CLI to investigate and patch the root cause autonomously."
-
-    # Run in background to avoid blocking the workflow exit.
-    run_auto_heal \
-      "${error_type}" \
-      "FATAL ERROR: ${error_type}. Read logs/latest.log. Autonomously fix the code or system configuration causing this. You are running in a headless auto-healing context. Do not ask questions. Implement the fix, verify it, and exit."
+    msg="${msg}\n\n🧪 Repair is blocked until a repository change, regression evidence, and canonical validation exist."
   fi
 
   printf '[%s] ERROR %s\n' "$(timestamp)" "${msg}"
@@ -155,13 +131,8 @@ ensure_voicevox_running() {
       fi
     done
 
-    notify_critical "🚨 **YT3 Automation FATAL**: Voicevox failed to respond after attempted start. Invoking Auto-Healing..."
-    
-    # Trigger Gemini CLI to fix Voicevox environment autonomously
-    run_auto_heal \
-      "VOICEVOX_STARTUP_FAILURE" \
-      "FATAL ERROR: Voicevox is not responding. Check docker containers, ports (50121), and system resources. Autonomously fix the issue (e.g., restart docker, kill blocking processes, or recreate container) and ensure it is UP and responding to /version. Then exit."
-    
+    notify_critical "🚨 **YT3 Automation FATAL**: Voicevox failed to respond after attempted start. Repair is blocked until canonical regression evidence exists."
+
     return 1
   fi
   return 0
