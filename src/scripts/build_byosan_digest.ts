@@ -1,17 +1,17 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
-import { z } from "zod";
+import type { z } from "zod";
 import {
-	ByosanDigestContextSchema,
 	type ByosanDigestContext,
+	ByosanDigestContextSchema,
 	auditByosanDigestContext,
 	formatDigestWatchlistItem,
 } from "../domain/byosan/digest_contract.js";
 import {
+	type ByosanFeatureSource,
 	type ByosanFeatureSpec,
 	ByosanFeatureSpecSchema,
-	type ByosanFeatureSource,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
@@ -194,9 +194,9 @@ function runFfmpegConcat(
 	}
 }
 
-function uniqueSources(inputs: DigestInput[]): Array<
-	ByosanFeatureSource & { sourceRunIds: string[] }
-> {
+function uniqueSources(
+	inputs: DigestInput[],
+): Array<ByosanFeatureSource & { sourceRunIds: string[] }> {
 	const byUrl = new Map<
 		string,
 		ByosanFeatureSource & { sourceRunIds: string[] }
@@ -329,9 +329,7 @@ async function generateDigestContext(
 		navigation: inputs.map((input) => ({
 			runId: input.runId,
 			title: input.spec.title,
-			...(verifiedVideoUrl(input)
-				? { videoUrl: verifiedVideoUrl(input) }
-				: {}),
+			...(verifiedVideoUrl(input) ? { videoUrl: verifiedVideoUrl(input) } : {}),
 		})),
 	});
 	const issues = auditByosanDigestContext(
@@ -463,7 +461,9 @@ function buildDigestBridgeSpec(
 	if (sourcesWithOriginal.length < 2) {
 		throw new Error("DIGEST_BRIDGE_REQUIRES_AT_LEAST_TWO_SOURCES");
 	}
-	const sources = sourcesWithOriginal.map(({ originalUrl: _originalUrl, ...source }) => source);
+	const sources = sourcesWithOriginal.map(
+		({ originalUrl: _originalUrl, ...source }) => source,
+	);
 	const unresolved = context.baselineAlignments
 		.filter((alignment) => alignment.status === "UNVERIFIED")
 		.flatMap((alignment) => alignment.limitations)
@@ -622,8 +622,7 @@ function buildDigestBridgeSpec(
 				speaker: segments.length % 2 === 0 ? "春日部つむぎ" : "ずんだもん",
 				narrativeRole: "action",
 				headline: "検証境界の確認",
-				text:
-					"このダイジェストは日次の検証済みclaimを再利用し、新しい断定はbridge contractの証拠範囲に限定します。",
+				text: "このダイジェストは日次の検証済みclaimを再利用し、新しい断定はbridge contractの証拠範囲に限定します。",
 				source: "digest contract",
 			}),
 		);
@@ -694,7 +693,11 @@ function buildDigestBridgeSpec(
 	});
 }
 
-function runCommand(command: string, args: string[], env: NodeJS.ProcessEnv): void {
+function runCommand(
+	command: string,
+	args: string[],
+	env: NodeJS.ProcessEnv,
+): void {
 	const result = spawnSync(command, args, {
 		cwd: process.cwd(),
 		env,
