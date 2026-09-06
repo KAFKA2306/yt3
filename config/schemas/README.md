@@ -84,4 +84,3 @@ Audit-specific schemas use explicit names because they are policy artifacts, not
 - All schemas conform to JSON Schema Draft 7
 - Schemas are cached in memory for performance
 - Changes to schemas should be backward-compatible when possible
-- Update `agr.toml` CHANGELOG when adding new versions
