@@ -142,11 +142,6 @@ export async function auditByosanMoneyZeroTrust(
 		rootDir,
 		"scripts/audit_byosan_money_zero_trust.ts",
 	);
-	const agentPaths = [
-		path.join(rootDir, ".claude/agents/liquidity-regime-agent.md"),
-		path.join(rootDir, ".claude/agents/humanity-impact-agent.md"),
-	];
-
 	const checks: CheckResult[] = [];
 
 	const byosanConfig = await readYamlIfExists(configPath);
@@ -268,7 +263,7 @@ export async function auditByosanMoneyZeroTrust(
 		),
 	);
 
-	const promptSources = [configPath, ...agentPaths];
+	const promptSources = [configPath];
 	let promptText = "";
 	for (const filePath of promptSources) {
 		const text = await readTextIfExists(filePath);
@@ -279,19 +274,19 @@ export async function auditByosanMoneyZeroTrust(
 	checks.push(
 		check(
 			"prompt_no_unbacked_assertion",
-			"Byosan prompts and agents explicitly forbid unsupported assertions",
+			"Byosan config explicitly forbids unsupported assertions",
 			hasRequiredTerms(promptText, [REQUIRED_PROMPT_PHRASES[0]]),
-			"一次情報なし断定禁止 is present in the byosan prompts/agents",
-			"一次情報なし断定禁止 is missing from the byosan prompts/agents",
+			"一次情報なし断定禁止 is present in byosan config",
+			"一次情報なし断定禁止 is missing from byosan config",
 		),
 	);
 	checks.push(
 		check(
 			"prompt_life_impact",
-			"Byosan prompts and agents explicitly require life-impact connection",
+			"Byosan config explicitly requires life-impact connection",
 			hasRequiredTerms(promptText, [REQUIRED_PROMPT_PHRASES[1]]),
-			"生活影響への接続 is present in the byosan prompts/agents",
-			"生活影響への接続 is missing from the byosan prompts/agents",
+			"生活影響への接続 is present in byosan config",
+			"生活影響への接続 is missing from byosan config",
 		),
 	);
 
