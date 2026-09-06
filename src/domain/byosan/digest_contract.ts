@@ -89,6 +89,16 @@ export function auditByosanDigestContext(
 					details: `${alignment.metric}: ${item.runId}`,
 				});
 			}
+			const baselineChanged =
+				(item.originalBaselineVersion !== undefined &&
+					item.originalBaselineVersion !== alignment.baselineVersion) ||
+				item.originalAsOf !== alignment.baselineAsOf;
+			if (alignment.status === "UNCHANGED" && baselineChanged) {
+				issues.push({
+					code: "baseline_mismatch_not_realigned",
+					details: `${alignment.metric}: ${item.runId}`,
+				});
+			}
 			if (alignment.status === "REALIGNED") {
 				if (!item.normalizedValue || !item.formula) {
 					issues.push({
