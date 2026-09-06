@@ -7,8 +7,8 @@ import {
 } from "./active_probe.js";
 import {
 	ByosanArchetypeEvidenceBundleSchema,
-	auditByosanArchetypeEvidence,
 	ByosanNarrativeArchetypeSchema,
+	auditByosanArchetypeEvidence,
 	selectByosanNarrativeArchetype,
 } from "./narrative_archetype.js";
 
@@ -118,7 +118,10 @@ export const ByosanProductionPlanSchema = z.object({
 	maxSegments: z.number().int().min(12).max(40),
 	reasons: z.array(z.string().min(1)).min(1),
 	narrativeArchetype: ByosanNarrativeArchetypeSchema.optional(),
-	archetypeRequiredSlots: z.array(z.string().regex(/^[a-z0-9_]+$/)).max(12).optional(),
+	archetypeRequiredSlots: z
+		.array(z.string().regex(/^[a-z0-9_]+$/))
+		.max(12)
+		.optional(),
 	archetypeReasons: z.array(z.string().min(1)).optional(),
 	archetypeEvidence: ByosanArchetypeEvidenceBundleSchema.optional(),
 	appliedPerformancePreference: ByosanProductionFormatSchema.optional(),
