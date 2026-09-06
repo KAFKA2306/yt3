@@ -37,28 +37,28 @@ describe("byosan analytics feedback", () => {
 			);
 		`);
 		const base = await fs.readJson(
-			path.join(process.cwd(), "config/productions/sp500_anthropic_2026q2.json"),
+			path.join(
+				process.cwd(),
+				"config/productions/sp500_anthropic_2026q2.json",
+			),
 		);
 		for (let index = 0; index < 3; index++) {
 			const runName = `2026-08-0${index + 1}-daily`;
 			const runDir = path.join(root, "runs", "byosan_money", runName);
 			fs.ensureDirSync(path.join(runDir, "source"));
 			fs.ensureDirSync(path.join(runDir, "publish"));
-			fs.writeJsonSync(
-				path.join(runDir, "source", "feature_spec.json"),
-				{
-					...base,
-					runId: `byosan_money/${runName}`,
-					asOf: `2026-08-0${index + 1}`,
-					production: {
-						format: "comparison",
-						targetMinutes: 8,
-						minSegments: 20,
-						maxSegments: 32,
-						reasons: ["test"],
-					},
+			fs.writeJsonSync(path.join(runDir, "source", "feature_spec.json"), {
+				...base,
+				runId: `byosan_money/${runName}`,
+				asOf: `2026-08-0${index + 1}`,
+				production: {
+					format: "comparison",
+					targetMinutes: 8,
+					minSegments: 20,
+					maxSegments: 32,
+					reasons: ["test"],
 				},
-			);
+			});
 			fs.writeJsonSync(path.join(runDir, "state.json"), {
 				run_id: `byosan_money/${runName}`,
 				bucket: "byosan_money",
