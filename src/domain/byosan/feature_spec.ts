@@ -3,12 +3,12 @@ import {
 	ByosanActiveProbeEvidenceSchema,
 	auditByosanActiveProbeEvidence,
 } from "./active_probe.js";
+import { requiredByosanArchetypeSlots } from "./narrative_archetype.js";
 import {
 	ByosanAdversarialEvidenceSchema,
 	ByosanProductionPlanSchema,
 	ByosanSourceTierSchema,
 } from "./news_angle.js";
-import { requiredByosanArchetypeSlots } from "./narrative_archetype.js";
 
 export const ByosanStatColorSchema = z.enum([
 	"cyan",
@@ -42,7 +42,10 @@ export const ByosanFeatureSegmentSchema = z.object({
 	chapter: z.string().min(1).max(40).optional(),
 	narrativeRole: ByosanNarrativeRoleSchema.optional(),
 	verificationRole: ByosanVerificationRoleSchema.optional(),
-	archetypeSlot: z.string().regex(/^[a-z0-9_]+$/).optional(),
+	archetypeSlot: z
+		.string()
+		.regex(/^[a-z0-9_]+$/)
+		.optional(),
 	claimIds: z.array(z.string().min(1)).max(6).optional(),
 	evidenceIds: z.array(z.string().min(1)).max(6).optional(),
 	speaker: z.enum(["春日部つむぎ", "ずんだもん"]),
@@ -291,12 +294,10 @@ export function auditByosanFeatureSpec(
 			});
 		}
 
-		const narrativeArchetype =
-			spec.production.narrativeArchetype ?? "standard";
+		const narrativeArchetype = spec.production.narrativeArchetype ?? "standard";
 		const canonicalArchetypeSlots =
 			requiredByosanArchetypeSlots(narrativeArchetype);
-		const recordedArchetypeSlots =
-			spec.production.archetypeRequiredSlots ?? [];
+		const recordedArchetypeSlots = spec.production.archetypeRequiredSlots ?? [];
 		if (
 			JSON.stringify(recordedArchetypeSlots) !==
 			JSON.stringify(canonicalArchetypeSlots)
@@ -384,7 +385,9 @@ export function auditByosanFeatureSpec(
 						details: `${slotName}:${evidenceSlot.sourceIds.join(",")}`,
 					});
 				}
-				const missingEvidenceIds = (evidenceSlot.adversarialEvidenceIds ?? []).filter(
+				const missingEvidenceIds = (
+					evidenceSlot.adversarialEvidenceIds ?? []
+				).filter(
 					(evidenceId) => !(segment.evidenceIds ?? []).includes(evidenceId),
 				);
 				if (missingEvidenceIds.length > 0) {
