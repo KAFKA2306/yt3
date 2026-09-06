@@ -73,9 +73,6 @@ tasks:
     desc: "Run ASMR archive/index operations"
     cmds: ["bun --env-file=config/.env src/scripts/asmr_ops.ts"]
 
-  asmr:publish:
-    desc: "Batch publish completed ASMR projects"
-    cmds: ["bun src/scripts/publish_batch.ts"]
 
   up:
     desc: "Start local services"
