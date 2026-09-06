@@ -103,7 +103,7 @@ fixed_tools: []
 # for this project.
 # This setting can, in turn, be overridden by CLI parameters (--mode).
 # See https://oraios.github.io/serena/02-usage/050_configuration.html#modes
-default_modes:
+default_modes: ["no-memories"]
 
 # list of mode names to be activated additionally for this project, e.g. ["query-projects"]
 # The full set of modes to be activated is base_modes (from global config) + default_modes + added_modes.
