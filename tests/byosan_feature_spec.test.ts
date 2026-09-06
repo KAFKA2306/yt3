@@ -20,19 +20,69 @@ function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
 			? {}
 			: { caveat: "推計または派生値であり、前提条件に依存する" }),
 	}));
+	const adversarialEvidence = [
+		{
+			id: "evidence_0",
+			kind: "counter_metric" as const,
+			targetClaim: claims[0]?.claim ?? "S&P500利益成長率",
+			statement: "上位2社を除くと利益成長率は28.8%まで低下する",
+			sourceIds: ["factset_0731"],
+			checkedSourceIds: ["factset_0731", "amazon_10q"],
+		},
+		{
+			id: "evidence_1",
+			kind: "measurement_condition" as const,
+			targetClaim: claims[1]?.claim ?? "Amazon純利益",
+			statement: "純利益には非現金の株式評価益が含まれている",
+			sourceIds: ["amazon_10q"],
+			checkedSourceIds: ["amazon_10q", "factset_0731"],
+		},
+		{
+			id: "evidence_2",
+			kind: "source_limitation" as const,
+			targetClaim: claims[2]?.claim ?? "Amazon評価益",
+			statement: "評価益は市場価格の変動で将来反転する可能性がある",
+			sourceIds: ["amazon_10q"],
+			checkedSourceIds: ["amazon_10q", "factset_0731"],
+		},
+	];
+	const claimEvidence = [
+		{ claimId: "claim_0", evidenceId: "evidence_0" },
+		{ claimId: "claim_1", evidenceId: "evidence_1" },
+		{ claimId: "claim_2", evidenceId: "evidence_2" },
+	];
 	const segments = base.segments.slice(0, 28).map((segment, index) => {
-		const narrativeRole: ByosanNarrativeRole =
-			index === 0
-				? "fact"
-				: index === 1
-					? "context"
-					: index === 2
-						? "impact"
-						: "action";
+		const group = index < 12 ? Math.floor(index / 4) : -1;
+		const slot = index % 4;
+		const binding = group >= 0 ? claimEvidence[group] : undefined;
+		if (!binding) {
+			return {
+				...segment,
+				narrativeRole: "action" as const,
+			};
+		}
+		const narrativeRole =
+			slot === 0 ? ("fact" as const) : slot === 3 ? ("impact" as const) : ("context" as const);
+		const verificationRole =
+			slot === 0
+				? ("presenter" as const)
+				: slot === 1
+					? ("auditor" as const)
+					: slot === 2
+						? ("resolution" as const)
+						: ("landing" as const);
 		return {
 			...segment,
+			speaker:
+				verificationRole === "auditor"
+					? ("ずんだもん" as const)
+					: ("春日部つむぎ" as const),
 			narrativeRole,
-			...(index === 0 ? { claimIds: ["claim_0"] } : {}),
+			verificationRole,
+			claimIds: [binding.claimId],
+			...(verificationRole === "auditor" || verificationRole === "resolution"
+				? { evidenceIds: [binding.evidenceId] }
+				: {}),
 		};
 	});
 	return {
@@ -58,6 +108,7 @@ function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
 				"AlphabetとAmazonを除いた場合の利益成長率を同じ分母で比較する",
 			audiencePayoff: "見出し利益と本業成長を分けて投資判断に使える",
 		},
+		adversarialEvidence,
 	};
 }
 
@@ -102,6 +153,43 @@ describe("byosan feature specification", () => {
 		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
 			"fact_segment_claim_missing",
 		);
+	});
+
+	test("auditor interjections without evidence do not satisfy the verifier slot", async () => {
+		const spec = productionAwareSpec(await loadReferenceSpec());
+		const auditor = spec.segments.find(
+			(segment) => segment.verificationRole === "auditor",
+		);
+		if (!auditor) throw new Error("auditor fixture is missing");
+		auditor.evidenceIds = undefined;
+		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
+			"adversarial_dialogue_sequence_missing",
+		);
+	});
+
+	test("L3-only claims must speak their epistemic boundary", async () => {
+		const spec = productionAwareSpec(await loadReferenceSpec());
+		spec.sources = spec.sources.map((source) => ({
+			...source,
+			tier: source.id === "factset_0731" ? "L3" : "L1",
+		}));
+		const primaryClaim = spec.claims.find((claim) => claim.id === "claim_0");
+		if (!primaryClaim) throw new Error("primary claim fixture is missing");
+		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
+			"vendor_claim_boundary_missing",
+		);
+		primaryClaim.epistemicBoundary =
+			"これは発表主体側の数値で、第三者検証済みとは扱いません。";
+		const resolution = spec.segments.find(
+			(segment) =>
+				segment.verificationRole === "resolution" &&
+				segment.claimIds?.includes("claim_0"),
+		);
+		if (!resolution) throw new Error("resolution fixture is missing");
+		resolution.text = primaryClaim.epistemicBoundary;
+		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
+		expect(codes).not.toContain("vendor_claim_boundary_missing");
+		expect(codes).not.toContain("vendor_claim_boundary_not_spoken");
 	});
 
 	test("motion keeps crop origins on the even-pixel chroma grid", () => {
