@@ -2,24 +2,6 @@
   "entries": [
     {
       "run_id": "daily_pulse/2026-05-29",
-      "bucket": "default",
-      "stage": "content",
-      "kind": "fallback",
-      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
-      "signals": [
-        "rate limit / quota exhaustion",
-        "3 attempted generations failed",
-        "deterministic fallback preserved pipeline continuity"
-      ],
-      "fixes": [
-        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
-        "prime future runs with cached research and loop memory",
-        "prefer concise, audit-safe fallback patterns when the model pool is dry"
-      ],
-      "timestamp": "2026-05-29T14:58:13.425Z"
-    },
-    {
-      "run_id": "daily_pulse/2026-05-29",
       "bucket": "daily_pulse",
       "stage": "audit",
       "kind": "failure",
@@ -56,24 +38,6 @@
         "prime the next loop with the specific failing check names"
       ],
       "timestamp": "2026-05-30T09:00:15.856Z"
-    },
-    {
-      "run_id": "daily_pulse/2026-05-30",
-      "bucket": "default",
-      "stage": "content",
-      "kind": "fallback",
-      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
-      "signals": [
-        "rate limit / quota exhaustion",
-        "3 attempted generations failed",
-        "deterministic fallback preserved pipeline continuity"
-      ],
-      "fixes": [
-        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
-        "prime future runs with cached research and loop memory",
-        "prefer concise, audit-safe fallback patterns when the model pool is dry"
-      ],
-      "timestamp": "2026-05-30T09:08:58.312Z"
     },
     {
       "run_id": "daily_pulse/2026-05-30",
@@ -141,24 +105,6 @@
     },
     {
       "run_id": "daily_pulse/2026-06-05",
-      "bucket": "default",
-      "stage": "content",
-      "kind": "fallback",
-      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
-      "signals": [
-        "rate limit / quota exhaustion",
-        "3 attempted generations failed",
-        "deterministic fallback preserved pipeline continuity"
-      ],
-      "fixes": [
-        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
-        "prime future runs with cached research and loop memory",
-        "prefer concise, audit-safe fallback patterns when the model pool is dry"
-      ],
-      "timestamp": "2026-06-05T06:49:36.566Z"
-    },
-    {
-      "run_id": "daily_pulse/2026-06-05",
       "bucket": "daily_pulse",
       "stage": "audit",
       "kind": "failure",
@@ -206,24 +152,6 @@
         "prime the next loop with the specific failing check names"
       ],
       "timestamp": "2026-06-06T00:18:01.047Z"
-    },
-    {
-      "run_id": "daily_pulse/2026-06-06",
-      "bucket": "default",
-      "stage": "content",
-      "kind": "fallback",
-      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
-      "signals": [
-        "rate limit / quota exhaustion",
-        "3 attempted generations failed",
-        "deterministic fallback preserved pipeline continuity"
-      ],
-      "fixes": [
-        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
-        "prime future runs with cached research and loop memory",
-        "prefer concise, audit-safe fallback patterns when the model pool is dry"
-      ],
-      "timestamp": "2026-06-06T04:07:56.929Z"
     },
     {
       "run_id": "daily_pulse/2026-06-06",

@@ -16,6 +16,7 @@ const SOURCE_ROOTS = [
 	"config",
 	"Taskfile.yml",
 	"package.json",
+	"data/memory",
 ];
 const FORBIDDEN_CODE_PATTERNS = [
 	/FALLBACK_SUCCESS/,
@@ -27,6 +28,9 @@ const FORBIDDEN_CODE_PATTERNS = [
 	/ls\s+-td[^\n]*runs\/[^\n]*\|\s*head\s+-n\s*1/,
 	/kind:\s*["']fallback["']/,
 	/usedFallback/,
+	/CHARACTER_FALLBACK/,
+	/fallbackCharacterSvg/,
+	/fallback-safe\s+synthesis/i,
 ];
 const ALLOWED_PATTERN_FILES = new Set([
 	"src/scripts/audit_no_fallback_policy.ts",
