@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import {
 	type ByosanFeatureSpec,
-	type ByosanNarrativeRole,
 	ByosanFeatureSpecSchema,
+	type ByosanNarrativeRole,
 	auditByosanFeatureSpec,
 	centerLockedMotionFilter,
 	parseAndAuditByosanFeatureSpec,
