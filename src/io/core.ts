@@ -143,7 +143,6 @@ export class AssetStore {
 			RunStage.RESEARCH,
 			RunStage.CONTENT,
 			RunStage.MEDIA,
-			RunStage.MEMORY,
 		];
 		for (const step of stages) {
 			const outputPath = path.join(
