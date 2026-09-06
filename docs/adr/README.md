@@ -15,7 +15,6 @@
 - `0009-kafka-visual-identity-standard.md`: ビジュアル基準
 - `0011-kafka-japanese-style-standard.md`: ライティング指針
 - `0017-character-count-based-script-management.md`: 台本文字数管理
-- `0018-autonomous-asmr-management-engine.md`: ASMR自律管理
 - `0019-kafka-core-prompt-contract.md`: ビジュアル生成コアプロンプト契約
 - `0020-irodori-tts-stability-protocol.md`: Irodori-TTS安定化
 - `0021-asmr-audition-and-archive-structure.md`: ASMR成果物管理
