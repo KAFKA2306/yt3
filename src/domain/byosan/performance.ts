@@ -3,12 +3,12 @@ import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
 import {
-	ByosanFeatureSpecSchema,
 	type ByosanFeatureSpec,
+	ByosanFeatureSpecSchema,
 } from "./feature_spec.js";
 import {
-	ByosanProductionFormatSchema,
 	type ByosanProductionFormat,
+	ByosanProductionFormatSchema,
 } from "./news_angle.js";
 
 const AnalyticsRowSchema = z.object({
@@ -69,10 +69,7 @@ function packagingPattern(spec: ByosanFeatureSpec): string {
 	return parts.length > 0 ? parts.join("+") : "plain";
 }
 
-function discoverByosanAnalytics(
-	db: Database,
-	root: string,
-): RunAnalytics[] {
+function discoverByosanAnalytics(db: Database, root: string): RunAnalytics[] {
 	const bucketDir = path.join(root, "runs", "byosan_money");
 	if (!fs.existsSync(bucketDir)) return [];
 	const rows: RunAnalytics[] = [];
