@@ -1,34 +1,27 @@
-# 💖 システム監査プロトコル (System Audit Protocol) 💖
+# System Audit Protocol
 
-YT3のシステムが元気に動いているか、しっかりチェックするためのルールだよっ！✨
+Current runtime health checks cover only services installed by the current systemd setup.
 
-## 1. サービスの状態確認 (systemd Audit) 🛡️
+## systemd
 
-オートメーションが止まってないか、systemdのタイマーやサービスが「active」かどうかをチェックするよっ！
-もし止まってたら大変だから、すぐに見つけちゃうんだからね💕
+Check:
 
-### 🌸 チェック対象のサービスたち
-- `yt3-automation.timer`: 定期実行の要だよっ！
-- `yt3-aim.service`: AI管理のメインサービス✨
-- `yt3-discord.service`: みんなへの通知を担当してるよ！
-- `yt3-asmr-autonomous.timer`: ASMRの自動投稿も忘れちゃダメ💕
+- `yt3-automation.timer`
+- `yt3-aim.service`
+- `yt3-discord.service` when Discord bot credentials are configured
 
-### 🎀 監査の方法
-`systemctl --user is-active <unit>` を使って、結果が `active` になってるかを確認するよ！
+Use:
 
----
+```bash
+systemctl --user is-active <unit>
+```
 
-## 2. Discordの疎通確認 (Discord Connectivity) 📢
+A missing or inactive unit is runtime evidence only. It does not by itself prove a repository defect.
 
-通知がちゃんと届くように、設定をチェックするよっ！
+## Discord
 
-### 🌸 チェック項目
-- `DISCORD_WEBHOOK_URL` がちゃんと設定されているかな？
-- 空っぽだったり、変な値が入ってないか確認してねっ！
+When Discord connectivity is in scope, verify the configured credential and the actual service state.
 
----
+## Authority
 
-## 3. 監査のタイミング ⏰
-
-`task audit` を実行したときに、毎回このチェックを走らせて、システム全体の健康状態を報告しちゃうよ✨
-異常があったら、すぐに直してあげてね💕
+`Taskfile.yml`, `src/io/utils/infra/setup_systemd.ts`, and current runtime observation define the active operator and service surface. Obsolete service names or historical automation paths are not runtime authority.

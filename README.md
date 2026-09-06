@@ -55,7 +55,7 @@ PROFILE=humanity task run      # 人類観測所
 task byosan:daily
 ```
 
-`task run` resolves the workflow bucket and environment from `YOUTUBE_PROFILES`; it does not maintain a second profile-to-config mapping. 夜話アーカイブ uses the ASMR operator path rather than `src/index.ts`.
+`task run` resolves the workflow bucket and environment from `YOUTUBE_PROFILES`; it does not maintain a second profile-to-config mapping. 夜話アーカイブ uses the shared release and publication path with `PROFILE=yawa`; it does not use `src/index.ts`.
 
 Use explicit run IDs when resuming or publishing. Publication never infers an unrelated latest run.
 
@@ -116,7 +116,6 @@ task improve:report
 task movie:generate PLAN=<plan.json>
 task analytics:refresh
 task asmr:ops
-task asmr:publish
 task up
 task down
 task serve
