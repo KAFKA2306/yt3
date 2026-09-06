@@ -188,7 +188,7 @@ export async function runSequentialWorkflow(
 			fixes: [
 				"regenerate content and media rather than reusing stale artifacts",
 				"treat failing audit checks as state invalidation, not just a notification",
-				"prime the next loop with the specific failing check names",
+				"retain the failing check names as operator diagnostic evidence",
 			],
 			timestamp: new Date().toISOString(),
 		});
@@ -292,7 +292,7 @@ export async function runSequentialWorkflow(
 		],
 		fixes: [
 			"reuse the same audience-fitting angle if the topic family repeats",
-			"treat this run as a positive exemplar in future memory context",
+			"retain this run as operator diagnostic evidence, not prompt authority",
 		],
 		timestamp: new Date().toISOString(),
 	});
