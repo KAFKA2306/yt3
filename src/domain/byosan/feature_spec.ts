@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { ByosanProductionPlanSchema } from "./news_angle.js";
+import {
+	ByosanAdversarialEvidenceSchema,
+	ByosanProductionPlanSchema,
+	ByosanSourceTierSchema,
+} from "./news_angle.js";
 
 export const ByosanStatColorSchema = z.enum([
 	"cyan",
@@ -22,10 +26,19 @@ export const ByosanNarrativeRoleSchema = z.enum([
 	"action",
 ]);
 
+export const ByosanVerificationRoleSchema = z.enum([
+	"presenter",
+	"auditor",
+	"resolution",
+	"landing",
+]);
+
 export const ByosanFeatureSegmentSchema = z.object({
 	chapter: z.string().min(1).max(40).optional(),
 	narrativeRole: ByosanNarrativeRoleSchema.optional(),
+	verificationRole: ByosanVerificationRoleSchema.optional(),
 	claimIds: z.array(z.string().min(1)).max(6).optional(),
+	evidenceIds: z.array(z.string().min(1)).max(6).optional(),
 	speaker: z.enum(["春日部つむぎ", "ずんだもん"]),
 	emotion: z.enum([
 		"shock",
@@ -52,6 +65,7 @@ export const ByosanFeatureSourceSchema = z.object({
 	id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
 	name: z.string().min(2),
 	url: z.string().url(),
+	tier: ByosanSourceTierSchema.optional(),
 });
 
 export const ByosanFeatureClaimSchema = z.object({
@@ -68,6 +82,7 @@ export const ByosanFeatureClaimSchema = z.object({
 	]),
 	assumptions: z.array(z.string().min(3)).max(6).optional(),
 	caveat: z.string().min(3).max(240).optional(),
+	epistemicBoundary: z.string().min(8).max(180).optional(),
 });
 
 export const ByosanPackagingSchema = z.object({
@@ -121,6 +136,11 @@ export const ByosanFeatureSpecSchema = z.object({
 	production: ByosanProductionPlanSchema.optional(),
 	packaging: ByosanPackagingSchema.optional(),
 	narrative: ByosanNarrativeSchema.optional(),
+	adversarialEvidence: z
+		.array(ByosanAdversarialEvidenceSchema)
+		.min(1)
+		.max(10)
+		.optional(),
 	noveltyQueries: z.array(z.string().min(8).max(180)).min(2).max(5),
 	tags: z.array(z.string().min(1).max(30)).min(5).max(15),
 	sources: z.array(ByosanFeatureSourceSchema).min(2).max(12),
@@ -137,6 +157,7 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	sources: true,
 	production: true,
 	narrative: true,
+	adversarialEvidence: true,
 }).extend({
 	claims: z
 		.array(
@@ -155,6 +176,9 @@ export type ByosanFeatureSegment = z.infer<typeof ByosanFeatureSegmentSchema>;
 export type ByosanFeatureSource = z.infer<typeof ByosanFeatureSourceSchema>;
 export type ByosanStatColor = z.infer<typeof ByosanStatColorSchema>;
 export type ByosanNarrativeRole = z.infer<typeof ByosanNarrativeRoleSchema>;
+export type ByosanVerificationRole = z.infer<
+	typeof ByosanVerificationRoleSchema
+>;
 
 export type FeatureSpecIssue = {
 	code: string;
@@ -240,6 +264,12 @@ export function auditByosanFeatureSpec(
 				details: "production-aware specs require narrative grounding",
 			});
 		}
+		if (!spec.adversarialEvidence) {
+			issues.push({
+				code: "adversarial_evidence_contract_missing",
+				details: "production-aware specs require research adversarial evidence",
+			});
+		}
 	}
 
 	if (spec.packaging) {
@@ -309,6 +339,145 @@ export function auditByosanFeatureSpec(
 				code: "relative_claim_ungrounded",
 				details: "comparative/extreme wording requires comparator and period",
 			});
+		}
+	}
+
+	if (spec.adversarialEvidence) {
+		const evidenceIds = new Set(
+			spec.adversarialEvidence.map((evidence) => evidence.id),
+		);
+		for (const evidence of spec.adversarialEvidence) {
+			const missing = [
+				...evidence.sourceIds,
+				...evidence.checkedSourceIds,
+			].filter((sourceId) => !sourceIds.has(sourceId));
+			if (missing.length > 0) {
+				issues.push({
+					code: "adversarial_evidence_source_missing",
+					details: `${evidence.id}: ${[...new Set(missing)].join(",")}`,
+				});
+			}
+		}
+		for (const segment of spec.segments) {
+			const missingEvidenceIds = (segment.evidenceIds ?? []).filter(
+				(evidenceId) => !evidenceIds.has(evidenceId),
+			);
+			if (missingEvidenceIds.length > 0) {
+				issues.push({
+					code: "segment_adversarial_evidence_missing",
+					details: `${segment.headline}: ${missingEvidenceIds.join(",")}`,
+				});
+			}
+		}
+	}
+
+	if (spec.production && spec.packaging && spec.adversarialEvidence) {
+		const materialClaimIds = spec.packaging.claimIds;
+		const evidenceById = new Map(
+			spec.adversarialEvidence.map((evidence) => [evidence.id, evidence]),
+		);
+		for (const claimId of materialClaimIds) {
+			const presenterIndex = spec.segments.findIndex(
+				(segment) =>
+					segment.verificationRole === "presenter" &&
+					segment.claimIds?.includes(claimId),
+			);
+			const auditorIndex = spec.segments.findIndex(
+				(segment, index) =>
+					index > presenterIndex &&
+					segment.verificationRole === "auditor" &&
+					segment.claimIds?.includes(claimId) &&
+					(segment.evidenceIds?.length ?? 0) > 0,
+			);
+			const auditor = auditorIndex >= 0 ? spec.segments[auditorIndex] : undefined;
+			const resolutionIndex = spec.segments.findIndex(
+				(segment, index) =>
+					index > auditorIndex &&
+					segment.verificationRole === "resolution" &&
+					segment.claimIds?.includes(claimId) &&
+					(segment.evidenceIds ?? []).some((evidenceId) =>
+						auditor?.evidenceIds?.includes(evidenceId),
+					),
+			);
+			const landingIndex = spec.segments.findIndex(
+				(segment, index) =>
+					index > resolutionIndex &&
+					segment.verificationRole === "landing" &&
+					segment.claimIds?.includes(claimId),
+			);
+			if (
+				presenterIndex < 0 ||
+				auditorIndex <= presenterIndex ||
+				resolutionIndex <= auditorIndex ||
+				landingIndex <= resolutionIndex
+			) {
+				issues.push({
+					code: "adversarial_dialogue_sequence_missing",
+					details: claimId,
+				});
+				continue;
+			}
+			const presenter = spec.segments[presenterIndex];
+			if (presenter && auditor && presenter.speaker === auditor.speaker) {
+				issues.push({
+					code: "auditor_speaker_not_distinct",
+					details: claimId,
+				});
+			}
+		}
+
+		for (const evidence of spec.adversarialEvidence.filter((item) =>
+			[
+				"measurement_condition",
+				"counter_metric",
+				"third_party_disagreement",
+				"source_limitation",
+			].includes(item.kind),
+		)) {
+			const recovered = spec.segments.some(
+				(segment) =>
+					segment.verificationRole === "resolution" &&
+					segment.evidenceIds?.includes(evidence.id),
+			);
+			if (!recovered) {
+				issues.push({
+					code: "adversarial_evidence_not_recovered",
+					details: evidence.id,
+				});
+			}
+		}
+
+		const sourceById = new Map(spec.sources.map((source) => [source.id, source]));
+		for (const claim of spec.claims.filter((claim) => claim.id)) {
+			const claimSources = claim.sourceIds
+				.map((sourceId) => sourceById.get(sourceId))
+				.filter((source): source is NonNullable<typeof source> =>
+					Boolean(source),
+				);
+			const vendorOnly =
+				claimSources.length > 0 &&
+				claimSources.every((source) => source.tier === "L3");
+			if (!vendorOnly) continue;
+			if (!claim.epistemicBoundary) {
+				issues.push({
+					code: "vendor_claim_boundary_missing",
+					details: claim.id ?? claim.claim,
+				});
+				continue;
+			}
+			const boundaryRecovered = spec.segments.some(
+				(segment) =>
+					(segment.verificationRole === "resolution" ||
+						segment.verificationRole === "landing") &&
+					segment.claimIds?.includes(claim.id ?? "") &&
+					segment.text.includes(claim.epistemicBoundary ?? ""),
+			);
+			if (!boundaryRecovered) {
+				issues.push({
+					code: "vendor_claim_boundary_not_spoken",
+					details: claim.id ?? claim.claim,
+				});
+			}
 		}
 	}
 
