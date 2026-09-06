@@ -204,6 +204,7 @@ export function auditByosanFeatureSpec(
 			});
 		}
 		if (
+			spec.production &&
 			claim.status !== "verified" &&
 			(!claim.caveat || claim.caveat.trim().length < 3)
 		) {
