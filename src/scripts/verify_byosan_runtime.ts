@@ -18,7 +18,10 @@ const RuntimeReportSchema = z.object({
 	schemaVersion: z.literal("byosan_runtime_evidence_v1"),
 	mode: z.enum(["smoke", "full"]),
 	status: StepStatusSchema,
-	date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+	date: z
+		.string()
+		.regex(/^\d{4}-\d{2}-\d{2}$/)
+		.optional(),
 	period: z.enum(["week", "month"]).optional(),
 	publishAttempted: z.literal(false),
 	steps: z.record(z.string(), RuntimeStepSchema),
@@ -117,9 +120,7 @@ function safeDetail(stdout: string, stderr: string): string {
 	return text ? text.slice(-3000) : "command completed without output";
 }
 
-function runActiveProbe(
-	workDir: string,
-): RuntimeStep {
+function runActiveProbe(workDir: string): RuntimeStep {
 	const requestPath = path.join(workDir, "active_probe_request.json");
 	const outputPath = path.join(workDir, "active_probe_evidence.json");
 	fs.outputJsonSync(
@@ -158,7 +159,8 @@ function runActiveProbe(
 	if (!fs.existsSync(outputPath)) {
 		return {
 			status: "FAIL",
-			details: "Active Probe command exited successfully but produced no evidence file.",
+			details:
+				"Active Probe command exited successfully but produced no evidence file.",
 			evidence: [requestPath],
 		};
 	}
@@ -234,8 +236,7 @@ function runBunStep(
 }
 
 async function main(): Promise<void> {
-	const mode =
-		process.env.BYOSAN_RUNTIME_MODE === "full" ? "full" : "smoke";
+	const mode = process.env.BYOSAN_RUNTIME_MODE === "full" ? "full" : "smoke";
 	const date = process.env.BYOSAN_DATE?.trim();
 	const period =
 		process.env.PERIOD === "month"
@@ -245,10 +246,14 @@ async function main(): Promise<void> {
 				: undefined;
 	if (mode === "full") {
 		if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-			throw new Error("BYOSAN_DATE=YYYY-MM-DD is required for full runtime verification");
+			throw new Error(
+				"BYOSAN_DATE=YYYY-MM-DD is required for full runtime verification",
+			);
 		}
 		if (!period) {
-			throw new Error("PERIOD=week|month is required for full runtime verification");
+			throw new Error(
+				"PERIOD=week|month is required for full runtime verification",
+			);
 		}
 	}
 
@@ -351,10 +356,7 @@ async function main(): Promise<void> {
 		params,
 		"digest_build",
 		runBunStep(
-			[
-				"--env-file=config/.env.byosan",
-				"src/scripts/build_byosan_digest.ts",
-			],
+			["--env-file=config/.env.byosan", "src/scripts/build_byosan_digest.ts"],
 			{ ...env, PERIOD: period, END: date },
 			`Built ${digestRunId} with a separately audited digest bridge.`,
 			[path.join(ROOT, "runs", digestRunId)],
@@ -386,7 +388,15 @@ async function main(): Promise<void> {
 				["src/scripts/refresh_youtube_analytics.ts"],
 				env,
 				"Authorized YouTube Analytics refresh completed.",
-				[path.join(ROOT, "data", "memory", "byosan_money", "performance_summary.json")],
+				[
+					path.join(
+						ROOT,
+						"data",
+						"memory",
+						"byosan_money",
+						"performance_summary.json",
+					),
+				],
 			),
 		);
 	} else {
