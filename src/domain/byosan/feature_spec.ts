@@ -55,7 +55,10 @@ export const ByosanFeatureSourceSchema = z.object({
 });
 
 export const ByosanFeatureClaimSchema = z.object({
-	id: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional(),
+	id: z
+		.string()
+		.regex(/^[a-zA-Z0-9_-]+$/)
+		.optional(),
 	claim: z.string().min(8),
 	sourceIds: z.array(z.string().min(1)).min(1),
 	status: z.enum([
@@ -243,12 +246,8 @@ export function auditByosanFeatureSpec(
 		const packagingIds = new Set([
 			spec.packaging.primaryClaimId,
 			...spec.packaging.claimIds,
-			...(spec.packaging.impactClaimId
-				? [spec.packaging.impactClaimId]
-				: []),
-			...(spec.packaging.freshness
-				? [spec.packaging.freshness.claimId]
-				: []),
+			...(spec.packaging.impactClaimId ? [spec.packaging.impactClaimId] : []),
+			...(spec.packaging.freshness ? [spec.packaging.freshness.claimId] : []),
 			...(spec.packaging.relativeAnchor
 				? [spec.packaging.relativeAnchor.claimId]
 				: []),
