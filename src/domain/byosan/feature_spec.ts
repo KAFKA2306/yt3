@@ -389,7 +389,8 @@ export function auditByosanFeatureSpec(
 					segment.claimIds?.includes(claimId) &&
 					(segment.evidenceIds?.length ?? 0) > 0,
 			);
-			const auditor = auditorIndex >= 0 ? spec.segments[auditorIndex] : undefined;
+			const auditor =
+				auditorIndex >= 0 ? spec.segments[auditorIndex] : undefined;
 			const resolutionIndex = spec.segments.findIndex(
 				(segment, index) =>
 					index > auditorIndex &&
@@ -447,7 +448,9 @@ export function auditByosanFeatureSpec(
 			}
 		}
 
-		const sourceById = new Map(spec.sources.map((source) => [source.id, source]));
+		const sourceById = new Map(
+			spec.sources.map((source) => [source.id, source]),
+		);
 		for (const claim of spec.claims.filter((claim) => claim.id)) {
 			const claimSources = claim.sourceIds
 				.map((sourceId) => sourceById.get(sourceId))
