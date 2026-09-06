@@ -10,6 +10,7 @@ import {
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import {
+	type ByosanAdversarialEvidence,
 	type ByosanAngleCandidate,
 	type ByosanProductionPlan,
 	selectByosanProductionPlan,
@@ -96,14 +97,37 @@ function safeSourceId(raw: string, index: number): string {
 	return normalized || `source_${index + 1}`;
 }
 
-function normalizedSources(candidate: ByosanAngleCandidate): FeatureSource[] {
+function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
+	sources: FeatureSource[];
+	adversarialEvidence: ByosanAdversarialEvidence[];
+} {
 	const seen = new Set<string>();
-	return candidate.sources.map((source, index) => {
+	const sourceIdMap = new Map<string, string>();
+	const sources = candidate.sources.map((source, index) => {
 		let id = safeSourceId(source.id, index);
 		while (seen.has(id)) id = `${id}_${index + 1}`;
 		seen.add(id);
-		return { id, name: source.name, url: source.url };
+		sourceIdMap.set(source.id, id);
+		return { id, name: source.name, url: source.url, tier: source.tier };
 	});
+	const remapIds = (sourceIds: string[]): string[] =>
+		sourceIds.map((sourceId) => {
+			const mapped = sourceIdMap.get(sourceId);
+			if (!mapped) {
+				throw new Error(
+					`BYOSAN_ADVERSARIAL_EVIDENCE_SOURCE_MISSING: ${sourceId}`,
+				);
+			}
+			return mapped;
+		});
+	return {
+		sources,
+		adversarialEvidence: candidate.adversarialEvidence.map((evidence) => ({
+			...evidence,
+			sourceIds: remapIds(evidence.sourceIds),
+			checkedSourceIds: remapIds(evidence.checkedSourceIds),
+		})),
+	};
 }
 
 function failureTracePath(runDir: string): string {
@@ -477,6 +501,7 @@ async function generateFeatureSpec(
 	candidate: ByosanAngleCandidate,
 	productionPlan: ByosanProductionPlan,
 	sources: FeatureSource[],
+	adversarialEvidence: ByosanAdversarialEvidence[],
 	runDir: string,
 	runId: string,
 	date: string,
@@ -492,6 +517,7 @@ async function generateFeatureSpec(
 		candidate,
 		production_plan: productionPlan,
 		allowed_sources: sources,
+		adversarial_evidence: adversarialEvidence,
 		news: research.news,
 	};
 	let lastError: unknown;
@@ -500,7 +526,7 @@ async function generateFeatureSpec(
 			const draft = await structured.invoke([
 				{
 					role: "system",
-					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveatと必要ならassumptionsを付けます。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleを付け、主要な流れとしてfact→context→impactまたはactionの順序を作ります。fact segmentにはclaimIdsを必ず付けます。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
+					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveatと必要ならassumptionsを付けます。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
 				},
 				{
 					role: "user",
@@ -520,6 +546,7 @@ async function generateFeatureSpec(
 					counterfactual: candidate.counterfactual,
 					audiencePayoff: candidate.audiencePayoff,
 				},
+				adversarialEvidence,
 				sources,
 			});
 		} catch (error) {
@@ -641,12 +668,13 @@ export async function runByosanDaily(): Promise<void> {
 		date,
 		preferredFormat,
 	);
-	const sources = normalizedSources(candidate);
+	const normalized = normalizedResearchEvidence(candidate);
 	const spec = await generateFeatureSpec(
 		research,
 		candidate,
 		productionPlan,
-		sources,
+		normalized.sources,
+		normalized.adversarialEvidence,
 		store.runDir,
 		runId,
 		date,
