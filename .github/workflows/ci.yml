@@ -12,6 +12,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
@@ -23,3 +25,15 @@ jobs:
 
     - name: PR merge gate
       run: bun run check:merge
+
+    - name: Byosan Active Probe runtime smoke
+      run: bun src/scripts/verify_byosan_runtime.ts
+      env:
+        BYOSAN_RUNTIME_MODE: smoke
+
+    - name: Upload Byosan runtime smoke evidence
+      uses: actions/upload-artifact@v4
+      with:
+        name: byosan-runtime-smoke
+        path: .artifacts/byosan-runtime-smoke/
+        if-no-files-found: error
