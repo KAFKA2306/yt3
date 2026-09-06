@@ -500,8 +500,7 @@ async function generateFeatureSpec(
 			const draft = await structured.invoke([
 				{
 					role: "system",
-					content:
-						`あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveatと必要ならassumptionsを付けます。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleを付け、主要な流れとしてfact→context→impactまたはactionの順序を作ります。fact segmentにはclaimIdsを必ず付けます。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
+					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveatと必要ならassumptionsを付けます。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleを付け、主要な流れとしてfact→context→impactまたはactionの順序を作ります。fact segmentにはclaimIdsを必ず付けます。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
 				},
 				{
 					role: "user",
