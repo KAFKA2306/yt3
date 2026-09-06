@@ -61,7 +61,7 @@ tasks:
           echo "END=YYYY-MM-DD is required" >&2
           exit 2
         fi
-      - PERIOD={{.PERIOD}} END={{.END}} bun src/scripts/build_byosan_digest.ts
+      - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan PERIOD={{.PERIOD}} END={{.END}} bun --env-file=config/.env.byosan src/scripts/build_byosan_digest.ts
       - |
         if [ "{{.PERIOD}}" = "week" ]; then
           RUN_ID="byosan_money/{{.END}}-weekly-digest"
