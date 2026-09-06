@@ -18,7 +18,11 @@ function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
 		id: `claim_${index}`,
 		...(claim.status === "verified"
 			? {}
-			: { caveat: "推計または派生値であり、前提条件に依存する" }),
+			: {
+					caveat: "推計または派生値であり、前提条件に依存する",
+					confidence: 0.8,
+					unresolvedMismatches: [],
+				}),
 	}));
 	const adversarialEvidence = [
 		{
@@ -75,8 +79,14 @@ function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
 					: slot === 2
 						? ("resolution" as const)
 						: ("landing" as const);
+		const boundClaim = claims.find((claim) => claim.id === binding.claimId);
+		const inferenceSuffix =
+			boundClaim?.status !== "verified" && verificationRole === "landing"
+				? " これは分析で、確度80%です。"
+				: "";
 		return {
 			...segment,
+			text: `${segment.text}${inferenceSuffix}`,
 			speaker:
 				verificationRole === "auditor"
 					? ("ずんだもん" as const)
@@ -194,6 +204,40 @@ describe("byosan feature specification", () => {
 		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
 		expect(codes).not.toContain("vendor_claim_boundary_missing");
 		expect(codes).not.toContain("vendor_claim_boundary_not_spoken");
+	});
+
+	test("inferred claims require confidence and mismatch review", async () => {
+		const spec = productionAwareSpec(await loadReferenceSpec());
+		const inferred = spec.claims.find((claim) => claim.status !== "verified");
+		if (!inferred) throw new Error("inferred claim fixture is missing");
+		inferred.confidence = undefined;
+		inferred.unresolvedMismatches = undefined;
+		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
+		expect(codes).toContain("inference_confidence_missing");
+		expect(codes).toContain("inference_mismatch_review_missing");
+	});
+
+	test("unresolved mismatches must be spoken for inferred claims", async () => {
+		const spec = productionAwareSpec(await loadReferenceSpec());
+		const inferred = spec.claims.find(
+			(claim) => claim.status !== "verified" && claim.id,
+		);
+		if (!inferred?.id) throw new Error("inferred claim fixture is missing");
+		inferred.unresolvedMismatches = [
+			"外部比較では同じ傾向をまだ確認できていません",
+		];
+		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
+		expect(codes).toContain("inference_mismatch_not_spoken");
+		const landing = spec.segments.find(
+			(segment) =>
+				segment.verificationRole === "landing" &&
+				segment.claimIds?.includes(inferred.id ?? ""),
+		);
+		if (!landing) throw new Error("landing fixture is missing");
+		landing.text += " 外部比較では同じ傾向をまだ確認できていません";
+		expect(
+			auditByosanFeatureSpec(spec).map((issue) => issue.code),
+		).not.toContain("inference_mismatch_not_spoken");
 	});
 
 	test("motion keeps crop origins on the even-pixel chroma grid", () => {
