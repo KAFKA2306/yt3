@@ -9,7 +9,12 @@ import {
 	type ByosanFeatureSpec,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
-import type { ByosanAngleCandidate } from "../domain/byosan/news_angle.js";
+import {
+	type ByosanAngleCandidate,
+	type ByosanProductionPlan,
+	selectByosanProductionPlan,
+} from "../domain/byosan/news_angle.js";
+import { loadPreferredByosanFormat } from "../domain/byosan/performance.js";
 import { AssetStore, ROOT, createLlm, getRunIdDateString } from "../io/core.js";
 
 type FeatureSource = ByosanFeatureSource;
@@ -470,6 +475,7 @@ function selectedCandidate(research: ResearchResult): ByosanAngleCandidate {
 async function generateFeatureSpec(
 	research: ResearchResult,
 	candidate: ByosanAngleCandidate,
+	productionPlan: ByosanProductionPlan,
 	sources: FeatureSource[],
 	runDir: string,
 	runId: string,
@@ -484,6 +490,7 @@ async function generateFeatureSpec(
 	});
 	const evidence = {
 		candidate,
+		production_plan: productionPlan,
 		allowed_sources: sources,
 		news: research.news,
 	};
@@ -493,12 +500,11 @@ async function generateFeatureSpec(
 			const draft = await structured.invoke([
 				{
 					role: "system",
-					content:
-						"あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。claimsのsourceIdsにはallowed_sourcesのidだけを使ってください。毎回新しい比較単位、章構成、問いの順番を選びます。",
+					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveatと必要ならassumptionsを付けます。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleを付け、主要な流れとしてfact→context→impactまたはactionの順序を作ります。fact segmentにはclaimIdsを必ず付けます。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
 				},
 				{
 					role: "user",
-					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
+					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
 				},
 			]);
 			return parseAndAuditByosanFeatureSpec({
@@ -508,6 +514,12 @@ async function generateFeatureSpec(
 				asOf: date,
 				angle: candidate.angle,
 				searchQuery: research.director_data.search_query,
+				production: productionPlan,
+				narrative: {
+					hiddenMechanism: candidate.hiddenMechanism,
+					counterfactual: candidate.counterfactual,
+					audiencePayoff: candidate.audiencePayoff,
+				},
 				sources,
 			});
 		} catch (error) {
@@ -615,10 +627,25 @@ export async function runByosanDaily(): Promise<void> {
 		},
 	);
 	const candidate = selectedCandidate(research);
+	const selectedIndex = research.angle_decision?.selectedIndex;
+	const evaluated =
+		selectedIndex === null || selectedIndex === undefined
+			? undefined
+			: research.angle_decision?.evaluated[selectedIndex];
+	if (!evaluated) {
+		throw new Error("BYOSAN_ANGLE_STOP: selected evaluation is missing");
+	}
+	const preferredFormat = loadPreferredByosanFormat(ROOT);
+	const productionPlan = selectByosanProductionPlan(
+		evaluated,
+		date,
+		preferredFormat,
+	);
 	const sources = normalizedSources(candidate);
 	const spec = await generateFeatureSpec(
 		research,
 		candidate,
+		productionPlan,
 		sources,
 		store.runDir,
 		runId,
@@ -633,6 +660,8 @@ export async function runByosanDaily(): Promise<void> {
 			validation_layer: "closed-loop agent workflow",
 			improvement_layer: "agent improvement loop / harness design",
 			angle_decision: research.angle_decision,
+			production_plan: productionPlan,
+			performance_preference: preferredFormat ?? null,
 			feature_spec: specPath,
 			motion_policy: "center_locked_no_lateral_oscillation",
 			generated_at: new Date().toISOString(),

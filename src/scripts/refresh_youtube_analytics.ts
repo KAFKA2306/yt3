@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import path from "node:path";
 import fs from "fs-extra";
+import { writeByosanPerformanceSummary } from "../domain/byosan/performance.js";
 import { discoverVideos } from "./ingest_youtube_analytics.js";
 
 const DEFAULT_DB_FILE = "db/evolution.db";
@@ -63,6 +64,10 @@ async function main() {
 			`YouTube Analytics refresh failed with exit code ${exitCode}`,
 		);
 	}
+	const summary = writeByosanPerformanceSummary();
+	console.log(
+		`Byosan performance summary: status=${summary.status} samples=${summary.sampleCount} preferred_format=${summary.preferredFormat ?? "none"}`,
+	);
 }
 
 if (import.meta.main) {

@@ -39,6 +39,29 @@ tasks:
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
 
+  byosan:digest:
+    desc: "Build a verified-run weekly/monthly 秒算マネー digest and pass the release gate (PERIOD=week|month END=YYYY-MM-DD)"
+    cmds:
+      - |
+        if [ "{{.PERIOD}}" != "week" ] && [ "{{.PERIOD}}" != "month" ]; then
+          echo "PERIOD=week|month is required" >&2
+          exit 2
+        fi
+        if ! printf '%s' "{{.END}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "END=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+      - PERIOD={{.PERIOD}} END={{.END}} bun src/scripts/build_byosan_digest.ts
+      - |
+        if [ "{{.PERIOD}}" = "week" ]; then
+          RUN_ID="byosan_money/{{.END}}-weekly-digest"
+        else
+          RUN_ID="byosan_money/{{.END}}-monthly-digest"
+        fi
+        task release:check PROFILE=byosan -- "$RUN_ID"
+        echo "PUBLISH_READY_RUN=$RUN_ID"
+        echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- $RUN_ID"
+
   release:check:
     desc: "Check run-specific product release conditions without external publication (PROFILE required)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/check_product_release.ts {{.CLI_ARGS}}"]

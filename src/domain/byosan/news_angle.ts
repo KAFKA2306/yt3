@@ -67,6 +67,27 @@ export const ByosanAngleDecisionSchema = z.object({
 
 export type ByosanAngleDecision = z.infer<typeof ByosanAngleDecisionSchema>;
 
+export const ByosanProductionFormatSchema = z.enum([
+	"breaking",
+	"comparison",
+	"deep_dive",
+	"regular",
+]);
+
+export const ByosanProductionPlanSchema = z.object({
+	format: ByosanProductionFormatSchema,
+	targetMinutes: z.number().min(3).max(15),
+	minSegments: z.number().int().min(12).max(40),
+	maxSegments: z.number().int().min(12).max(40),
+	reasons: z.array(z.string().min(1)).min(1),
+	appliedPerformancePreference: ByosanProductionFormatSchema.optional(),
+});
+
+export type ByosanProductionFormat = z.infer<
+	typeof ByosanProductionFormatSchema
+>;
+export type ByosanProductionPlan = z.infer<typeof ByosanProductionPlanSchema>;
+
 function normalize(text: string): string {
 	return text.normalize("NFKC").toLowerCase().replaceAll(/\s+/g, " ").trim();
 }
@@ -122,6 +143,134 @@ function concreteSignalCount(text: string): number {
 		(text.match(/\d+(?:[.,]\d+)?/g)?.length ?? 0) +
 		(text.match(/[%％兆億万ドル円倍ポイントbp]/g)?.length ?? 0)
 	);
+}
+
+function freshestPrimarySourceAgeDays(
+	candidate: ByosanAngleCandidate,
+	currentDate: string,
+): number | null {
+	const now = Date.parse(`${currentDate}T23:59:59Z`);
+	if (!Number.isFinite(now)) return null;
+	const ages = candidate.sources
+		.filter((source) => ["L1", "L2", "L3"].includes(source.tier))
+		.flatMap((source) => {
+			if (!source.publishedAt) return [];
+			const timestamp = Date.parse(source.publishedAt);
+			if (!Number.isFinite(timestamp)) return [];
+			return [Math.max(0, (now - timestamp) / 86_400_000)];
+		});
+	return ages.length > 0 ? Math.min(...ages) : null;
+}
+
+export function selectByosanProductionPlan(
+	evaluatedInput: z.infer<typeof ByosanEvaluatedAngleSchema>,
+	currentDate: string,
+	preferredFormat?: ByosanProductionFormat,
+): ByosanProductionPlan {
+	const evaluated = ByosanEvaluatedAngleSchema.parse(evaluatedInput);
+	const freshnessDays = freshestPrimarySourceAgeDays(
+		evaluated.candidate,
+		currentDate,
+	);
+	const candidates: Array<{
+		format: ByosanProductionFormat;
+		score: number;
+		eligible: boolean;
+		reasons: string[];
+		targetMinutes: number;
+		minSegments: number;
+		maxSegments: number;
+	}> = [
+		{
+			format: "breaking",
+			score:
+				evaluated.scores.evidence * 0.45 +
+				evaluated.scores.surprise * 0.4 +
+				(freshnessDays !== null && freshnessDays <= 2 ? 15 : 0),
+			eligible:
+				freshnessDays !== null &&
+				freshnessDays <= 2 &&
+				evaluated.scores.evidence >= 80 &&
+				evaluated.scores.surprise >= 65,
+			reasons: [
+				`freshest_primary_source_age_days=${freshnessDays ?? "unknown"}`,
+				`evidence=${evaluated.scores.evidence}`,
+				`surprise=${evaluated.scores.surprise}`,
+			],
+			targetMinutes: 6,
+			minSegments: 20,
+			maxSegments: 26,
+		},
+		{
+			format: "comparison",
+			score:
+				evaluated.scores.counterfactual * 0.45 +
+				evaluated.scores.audienceValue * 0.25 +
+				evaluated.scores.visualizability * 0.3,
+			eligible:
+				evaluated.scores.counterfactual >= 75 &&
+				evaluated.candidate.numbers.length >= 2,
+			reasons: [
+				`counterfactual=${evaluated.scores.counterfactual}`,
+				`numbers=${evaluated.candidate.numbers.length}`,
+				`visualizability=${evaluated.scores.visualizability}`,
+			],
+			targetMinutes: 8,
+			minSegments: 24,
+			maxSegments: 32,
+		},
+		{
+			format: "deep_dive",
+			score:
+				evaluated.scores.mechanism * 0.4 +
+				evaluated.scores.audienceValue * 0.35 +
+				evaluated.scores.counterfactual * 0.25,
+			eligible:
+				evaluated.scores.mechanism >= 75 &&
+				evaluated.scores.audienceValue >= 70,
+			reasons: [
+				`mechanism=${evaluated.scores.mechanism}`,
+				`audience_value=${evaluated.scores.audienceValue}`,
+				`counterfactual=${evaluated.scores.counterfactual}`,
+			],
+			targetMinutes: 10,
+			minSegments: 28,
+			maxSegments: 36,
+		},
+		{
+			format: "regular",
+			score: evaluated.weightedScore,
+			eligible: true,
+			reasons: [`weighted_score=${evaluated.weightedScore}`],
+			targetMinutes: 6,
+			minSegments: 20,
+			maxSegments: 28,
+		},
+	];
+	const ranked = candidates
+		.filter((candidate) => candidate.eligible)
+		.map((candidate) => ({
+			...candidate,
+			score: candidate.score + (candidate.format === preferredFormat ? 3 : 0),
+		}))
+		.sort(
+			(left, right) =>
+				right.score - left.score || left.format.localeCompare(right.format),
+		);
+	const selected = ranked[0];
+	if (!selected) {
+		throw new Error("BYOSAN_PRODUCTION_PLAN_UNAVAILABLE");
+	}
+	return ByosanProductionPlanSchema.parse({
+		format: selected.format,
+		targetMinutes: selected.targetMinutes,
+		minSegments: selected.minSegments,
+		maxSegments: selected.maxSegments,
+		reasons: [...selected.reasons, `format_score=${selected.score.toFixed(2)}`],
+		...(selected.format === preferredFormat
+			? { appliedPerformancePreference: preferredFormat }
+			: {}),
+	});
 }
 
 export function evaluateByosanAngleCandidate(
