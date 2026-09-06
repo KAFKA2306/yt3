@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import { z } from "zod";
-import type { LlmOptions } from "../src/io/core.js";
-import { createLlm, invokeStructuredLlm } from "../src/io/core.js";
+import {
+	type LlmOptions,
+	type createLlm,
+	invokeStructuredLlm,
+} from "../src/io/core.js";
 
 type FakeOutcome =
 	| { kind: "error"; error: Error }
@@ -45,9 +48,7 @@ describe("canonical structured LLM invocation", () => {
 		expect(result).toEqual({ ok: true });
 	});
 
-	test(
-		"retries semantic validation without treating it as provider success",
-		async () => {
+	test("retries semantic validation without treating it as provider success", async () => {
 			let validations = 0;
 			const result = await invokeStructuredLlm({
 				schema: z.object({ value: z.number() }),
@@ -69,8 +70,7 @@ describe("canonical structured LLM invocation", () => {
 			});
 			expect(result.value).toBe(2);
 			expect(validations).toBe(2);
-		},
-	);
+	});
 
 	test("non-retryable provider errors stop immediately", async () => {
 		let factoryCalls = 0;
@@ -131,9 +131,7 @@ describe("canonical structured LLM invocation", () => {
 		}
 	});
 
-	test(
-		"key-pool exhaustion cannot fall back to primary and key prefixes are not logged",
-		() => {
+	test("key-pool exhaustion cannot fall back to primary and key prefixes are not logged", () => {
 			const quotaSource = fs.readFileSync(
 				"src/io/utils/quota/manager.ts",
 				"utf8",
@@ -141,6 +139,5 @@ describe("canonical structured LLM invocation", () => {
 			const coreSource = fs.readFileSync("src/io/core.ts", "utf8");
 			expect(quotaSource).not.toContain("Falling back to primary");
 			expect(coreSource).not.toContain("apiKey.slice");
-		},
-	);
+	});
 });
