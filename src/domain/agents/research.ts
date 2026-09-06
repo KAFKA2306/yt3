@@ -9,7 +9,6 @@ import {
 	RunStage,
 	fetchRecentThemes,
 	getCurrentDateString,
-	loadMemoryContext,
 	parseLlmJson,
 } from "../../io/core.js";
 import {
@@ -53,8 +52,7 @@ export class TrendScout extends BaseAgent {
 			bucket,
 			limit: limit || researchCfg.default_limit || 3,
 		});
-		const recent = loadMemoryContext(this.store);
-		const memoryContext = composeResearchMemoryContext(bucket, recent, ROOT);
+		const memoryContext = composeResearchMemoryContext(bucket, "", ROOT);
 		const promptCfg = this.loadPrompt<{
 			consolidated_research: { system: string; user_template: string };
 		}>(this.name);
