@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+	type DigestInput,
 	dedupeDigestInputs,
 	digestStartDate,
-	type DigestInput,
 } from "../src/scripts/build_byosan_digest.js";
 
 function input(runId: string, asOf: string, searchQuery: string): DigestInput {
