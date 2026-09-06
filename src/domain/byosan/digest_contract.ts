@@ -29,11 +29,7 @@ export const DigestBaselineAlignmentSchema = z.object({
 });
 
 export const DigestMacroSynthesisSchema = z.object({
-	axis: z.enum([
-		"structure",
-		"relative_economics",
-		"policy_distribution_risk",
-	]),
+	axis: z.enum(["structure", "relative_economics", "policy_distribution_risk"]),
 	claim: z.string().min(12).max(500),
 	sourceRunIds: z.array(z.string().min(1)).min(1),
 	sourceClaimIds: z.array(z.string().min(1)).min(1),
