@@ -139,11 +139,7 @@ export class AssetStore {
 		const originalScriptLines =
 			state.script?.lines?.map((l) => ({ ...l })) || [];
 
-		const stages = [
-			RunStage.RESEARCH,
-			RunStage.CONTENT,
-			RunStage.MEDIA,
-		];
+		const stages = [RunStage.RESEARCH, RunStage.CONTENT, RunStage.MEDIA];
 		for (const step of stages) {
 			const outputPath = path.join(
 				this.runDir,
