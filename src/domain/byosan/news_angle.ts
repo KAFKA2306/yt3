@@ -1,6 +1,10 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
+import {
+	ByosanActiveProbeEvidenceSchema,
+	auditByosanActiveProbeEvidence,
+} from "./active_probe.js";
 
 export const ByosanSourceTierSchema = z.enum([
 	"L1",
@@ -55,6 +59,7 @@ export const ByosanAngleCandidateSchema = z.object({
 	visualPlan: z.string().min(8),
 	risks: z.array(z.string().min(3)).min(1),
 	adversarialEvidence: z.array(ByosanAdversarialEvidenceSchema).min(1).max(10),
+	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).max(8).optional(),
 });
 
 export type ByosanAngleCandidate = z.infer<typeof ByosanAngleCandidateSchema>;
@@ -415,6 +420,14 @@ export function evaluateByosanAngleCandidate(
 	}
 	if (candidate.adversarialEvidence.length < 1)
 		hardGateFailures.push("adversarial_evidence_missing");
+	for (const probe of candidate.activeProbes ?? []) {
+		for (const issue of auditByosanActiveProbeEvidence(probe)) {
+			hardGateFailures.push(`active_probe_${issue.code}`);
+		}
+		if (probe.sourceIds.some((sourceId) => !sourceIds.has(sourceId))) {
+			hardGateFailures.push("active_probe_source_missing");
+		}
+	}
 	if (weightedScore < 75) hardGateFailures.push("weighted_score_below_75");
 
 	return ByosanEvaluatedAngleSchema.parse({

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
+import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
 import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
@@ -100,6 +101,7 @@ function safeSourceId(raw: string, index: number): string {
 function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
 	sources: FeatureSource[];
 	adversarialEvidence: ByosanAdversarialEvidence[];
+	activeProbes: ByosanActiveProbeEvidence[];
 } {
 	const seen = new Set<string>();
 	const sourceIdMap = new Map<string, string>();
@@ -126,6 +128,10 @@ function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
 			...evidence,
 			sourceIds: remapIds(evidence.sourceIds),
 			checkedSourceIds: remapIds(evidence.checkedSourceIds),
+		})),
+		activeProbes: (candidate.activeProbes ?? []).map((probe) => ({
+			...probe,
+			sourceIds: remapIds(probe.sourceIds),
 		})),
 	};
 }
@@ -502,6 +508,7 @@ async function generateFeatureSpec(
 	productionPlan: ByosanProductionPlan,
 	sources: FeatureSource[],
 	adversarialEvidence: ByosanAdversarialEvidence[],
+	activeProbes: ByosanActiveProbeEvidence[],
 	runDir: string,
 	runId: string,
 	date: string,
@@ -518,6 +525,7 @@ async function generateFeatureSpec(
 		production_plan: productionPlan,
 		allowed_sources: sources,
 		adversarial_evidence: adversarialEvidence,
+		active_probes: activeProbes,
 		news: research.news,
 	};
 	let lastError: unknown;
@@ -526,7 +534,7 @@ async function generateFeatureSpec(
 			const draft = await structured.invoke([
 				{
 					role: "system",
-					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveatと必要ならassumptionsを付けます。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
+					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimはresolutionまたはlandingで「推論/推定/分析/確度」のいずれかとconfidenceを整数%で発話し、矛盾が残る場合はunresolvedMismatchesの少なくとも1つを原文一致で発話します。confidenceは事実の確率や公式確率ではなく、現在の証拠集合に対する分析確度です。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
 				},
 				{
 					role: "user",
@@ -547,6 +555,7 @@ async function generateFeatureSpec(
 					audiencePayoff: candidate.audiencePayoff,
 				},
 				adversarialEvidence,
+				activeProbes,
 				sources,
 			});
 		} catch (error) {
@@ -675,6 +684,7 @@ export async function runByosanDaily(): Promise<void> {
 		productionPlan,
 		normalized.sources,
 		normalized.adversarialEvidence,
+		normalized.activeProbes,
 		store.runDir,
 		runId,
 		date,
