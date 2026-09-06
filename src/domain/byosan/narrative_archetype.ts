@@ -22,7 +22,7 @@ export const ByosanArchetypeEvidenceSlotSchema = z.object({
 	slot: z.string().regex(/^[a-z0-9_]+$/),
 	statement: z.string().min(8).max(500),
 	sourceIds: z.array(z.string().min(1)).min(1).max(8),
-	adversarialEvidenceIds: z.array(z.string().min(1)).max(6).default([]),
+	adversarialEvidenceIds: z.array(z.string().min(1)).max(6).optional(),
 	observedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
@@ -156,7 +156,7 @@ function bundleHasValidReferences(
 	return bundle.slots.every(
 		(slot) =>
 			slot.sourceIds.every((sourceId) => sourceIds.has(sourceId)) &&
-			slot.adversarialEvidenceIds.every((evidenceId) =>
+			(slot.adversarialEvidenceIds ?? []).every((evidenceId) =>
 				evidenceIds.has(evidenceId),
 			),
 	);
@@ -173,7 +173,7 @@ function hasRequiredAdversarialKind(
 	const byId = new Map(
 		candidate.adversarialEvidence.map((evidence) => [evidence.id, evidence]),
 	);
-	return slot.adversarialEvidenceIds.some((id) =>
+	return (slot.adversarialEvidenceIds ?? []).some((id) =>
 		kinds.includes(byId.get(id)?.kind ?? ""),
 	);
 }
@@ -281,7 +281,7 @@ export function auditByosanArchetypeEvidence(
 					details: `${bundle.archetype}:${slot.slot}:${missingSources.join(",")}`,
 				});
 			}
-			const missingEvidence = slot.adversarialEvidenceIds.filter(
+			const missingEvidence = (slot.adversarialEvidenceIds ?? []).filter(
 				(evidenceId) => !evidenceIds.has(evidenceId),
 			);
 			if (missingEvidence.length > 0) {
