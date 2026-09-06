@@ -39,6 +39,16 @@ tasks:
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
 
+  byosan:probe:
+    desc: "Run an explicitly authorized 秒算マネー evidence probe (SPEC=...; paid API probes require BYOSAN_PROBE_ALLOW_PAID=true)"
+    cmds:
+      - |
+        if [ -z "{{.SPEC}}" ]; then
+          echo "SPEC=<probe request json> is required" >&2
+          exit 2
+        fi
+      - SPEC={{.SPEC}} OUT={{.OUT}} bun src/scripts/run_byosan_probe.ts
+
   byosan:digest:
     desc: "Build a verified-run weekly/monthly 秒算マネー digest and pass the release gate (PERIOD=week|month END=YYYY-MM-DD)"
     cmds:
