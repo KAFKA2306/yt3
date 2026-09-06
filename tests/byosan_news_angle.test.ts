@@ -150,6 +150,72 @@ describe("byosan sharp-angle gate", () => {
 		expect(first.minSegments).toBeLessThanOrEqual(first.maxSegments);
 	});
 
+	test("provenance-complete evidence selects a specialized narrative archetype deterministically", () => {
+		const item = candidate({
+			archetypeEvidence: [
+				{
+					archetype: "paradox_resolution",
+					slots: [
+						{
+							slot: "fact_a",
+							statement: "指数利益成長率は47.4%と高い",
+							sourceIds: ["factset"],
+						},
+						{
+							slot: "fact_b",
+							statement: "上位企業除外では28.8%まで低下する",
+							sourceIds: ["factset"],
+						},
+						{
+							slot: "hidden_mechanism",
+							statement: "非現金評価益が集計利益を押し上げる",
+							sourceIds: ["sec"],
+						},
+						{
+							slot: "catalyst_or_incentive",
+							statement: "決算開示が比較可能な時点を作った",
+							sourceIds: ["sec"],
+						},
+					],
+				},
+			],
+		});
+		const evaluated = evaluateByosanAngleCandidate(item, []);
+		expect(evaluated.passed).toBe(true);
+		const first = selectByosanProductionPlan(evaluated, "2026-09-06");
+		const second = selectByosanProductionPlan(evaluated, "2026-09-06");
+		expect(first.narrativeArchetype).toBe("paradox_resolution");
+		expect(first.archetypeRequiredSlots).toEqual([
+			"fact_a",
+			"fact_b",
+			"hidden_mechanism",
+			"catalyst_or_incentive",
+		]);
+		expect(second).toEqual(first);
+	});
+
+	test("archetype evidence cannot reference sources outside the candidate", () => {
+		const item = candidate({
+			archetypeEvidence: [
+				{
+					archetype: "paradox_resolution",
+					slots: [
+						{
+							slot: "fact_a",
+							statement: "外部の未登録資料に依存する事実",
+							sourceIds: ["missing-source"],
+						},
+					],
+				},
+			],
+		});
+		const evaluated = evaluateByosanAngleCandidate(item, []);
+		expect(evaluated.passed).toBe(false);
+		expect(evaluated.hardGateFailures).toContain(
+			"archetype_evidence_source_missing",
+		);
+	});
+
 	test("fresh primary evidence can select breaking without an LLM classifier", () => {
 		const item = candidate({
 			angle:
