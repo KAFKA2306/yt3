@@ -110,6 +110,25 @@ export function createLlm(
 	llm.keyName = keyName;
 	return llm;
 }
+function redactLlmEvidence(value: string): string {
+	let redacted = value;
+	for (const name of [
+		"GEMINI_API_KEY",
+		"GEMINI_API_KEY_2",
+		"GEMINI_API_KEY_3",
+		"GEMINI_API_KEY_4",
+		"GEMINI_API_KEY_5",
+	]) {
+		const secret = process.env[name];
+		if (secret && secret.length >= 4) {
+			redacted = redacted.replaceAll(secret, "[REDACTED_KEY]");
+		}
+	}
+	return redacted
+		.replaceAll(/AIza[A-Za-z0-9_-]{16,}/g, "[REDACTED_KEY]")
+		.replaceAll(/\bsk-[A-Za-z0-9_-]{12,}\b/g, "[REDACTED_KEY]");
+}
+
 export type StructuredInvocationFailureClass =
 	| "PROVIDER_RATE_LIMIT"
 	| "PROVIDER_INVALID_KEY"
@@ -197,7 +216,7 @@ export async function invokeStructuredLlm<T>(params: {
 					keyName,
 					status: "FAIL",
 					failureClass: "SEMANTIC_VALIDATION",
-					details: message.slice(0, 500),
+					details: redactLlmEvidence(message).slice(0, 500),
 				});
 				persist();
 				continue;
@@ -208,7 +227,7 @@ export async function invokeStructuredLlm<T>(params: {
 					keyName,
 					status: "FAIL",
 					failureClass: "PROVIDER_NON_RETRYABLE",
-					details: message.slice(0, 500),
+					details: redactLlmEvidence(message).slice(0, 500),
 				});
 				persist();
 				throw error;
@@ -220,7 +239,7 @@ export async function invokeStructuredLlm<T>(params: {
 				failureClass: invalidKey
 					? "PROVIDER_INVALID_KEY"
 					: "PROVIDER_RATE_LIMIT",
-				details: message.slice(0, 500),
+				details: redactLlmEvidence(message).slice(0, 500),
 			});
 			persist();
 			markKeyRateLimited(keyName);
@@ -241,7 +260,7 @@ export async function invokeStructuredLlm<T>(params: {
 				keyName,
 				status: "FAIL",
 				failureClass: "SEMANTIC_VALIDATION",
-				details: lastValidationError.slice(0, 500),
+				details: redactLlmEvidence(lastValidationError).slice(0, 500),
 			});
 			persist();
 		}
@@ -440,7 +459,7 @@ export abstract class BaseAgent {
 						"SYSTEM",
 						"CORE",
 						"LLM_RATE_LIMIT",
-						`Error for key ${keyName} (${isInvalidKey ? "invalid key" : "rate limit"}). Attempt ${attempts}/${maxAttempts}. Rotating key and sleeping ${sleepMs / 1000}s... Error: ${errMsg.slice(0, 150)}`,
+						`Error for key ${keyName} (${isInvalidKey ? "invalid key" : "rate limit"}). Attempt ${attempts}/${maxAttempts}. Rotating key and sleeping ${sleepMs / 1000}s... Error: ${redactLlmEvidence(errMsg).slice(0, 150)}`,
 					);
 					markKeyRateLimited(keyName);
 					await new Promise((resolve) => setTimeout(resolve, sleepMs));
