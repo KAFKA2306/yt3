@@ -302,8 +302,7 @@ async function main(): Promise<void> {
 	appendStep(reportPath, params, "preflight", preflight);
 	if (preflight.status !== "PASS") {
 		writeReport(reportPath, params);
-		console.log(`BYOSAN_RUNTIME_UNVERIFIED=${reportPath}`);
-		return;
+		throw new Error(`BYOSAN_RUNTIME_UNVERIFIED: ${reportPath}`);
 	}
 
 	const env = {
