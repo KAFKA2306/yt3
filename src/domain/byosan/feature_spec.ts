@@ -494,9 +494,7 @@ export function auditByosanFeatureSpec(
 		);
 		for (const claim of spec.claims.filter(
 			(claim) =>
-				claim.id &&
-				claim.status !== "verified" &&
-				spokenClaimIds.has(claim.id),
+				claim.id && claim.status !== "verified" && spokenClaimIds.has(claim.id),
 		)) {
 			const claimId = claim.id ?? "";
 			if (
