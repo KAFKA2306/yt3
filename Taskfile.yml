@@ -39,6 +39,25 @@ tasks:
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
 
+  byosan:runtime-smoke:
+    desc: "Execute the non-secret Byosan Active Probe runtime smoke and write evidence"
+    cmds:
+      - BYOSAN_RUNTIME_MODE=smoke bun src/scripts/verify_byosan_runtime.ts
+
+  byosan:runtime-verify:
+    desc: "Verify Byosan prepare + probe + digest + release runtime without publishing (DATE=YYYY-MM-DD PERIOD=week|month; ANALYTICS=true optional)"
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "DATE=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+        if [ "{{.PERIOD}}" != "week" ] && [ "{{.PERIOD}}" != "month" ]; then
+          echo "PERIOD=week|month is required" >&2
+          exit 2
+        fi
+      - BYOSAN_RUNTIME_MODE=full BYOSAN_DATE={{.DATE}} PERIOD={{.PERIOD}} WITH_ANALYTICS={{.ANALYTICS}} bun src/scripts/verify_byosan_runtime.ts
+
   byosan:probe:
     desc: "Run an explicitly authorized 秒算マネー evidence probe (SPEC=...; paid API probes require BYOSAN_PROBE_ALLOW_PAID=true)"
     cmds:
