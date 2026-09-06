@@ -339,6 +339,20 @@ async function generateDigestContext(
 		inputs.map((input) => input.runId),
 		claimIdsByRun(inputs),
 	);
+	const inputSourceUrls = new Set(
+		inputs.flatMap((input) => input.spec.sources.map((source) => source.url)),
+	);
+	for (const synthesis of context.macroSynthesis) {
+		const outsideInput = synthesis.sourceUrls.filter(
+			(url) => !inputSourceUrls.has(url),
+		);
+		if (outsideInput.length > 0) {
+			issues.push({
+				code: "synthesis_source_url_not_input_evidence",
+				details: `${synthesis.axis}: ${outsideInput.join(",")}`,
+			});
+		}
+	}
 	if (issues.length > 0) {
 		throw new Error(
 			`DIGEST_CONTEXT_INVALID: ${issues
@@ -751,11 +765,6 @@ function writeDigestArtifacts(
 	const sourceLines = inputs.flatMap(
 		(input) => input.state.script?.lines ?? [],
 	);
-	const bridgeLines = bridgeSpec.segments.map((segment) => ({
-		speaker: segment.speaker,
-		text: segment.text,
-		duration: 0,
-	}));
 	const sourceDuration = inputs.reduce(
 		(sum, input) => sum + Number(input.state.script?.total_duration ?? 0),
 		0,
@@ -771,6 +780,13 @@ function writeDigestArtifacts(
 				fs.readJsonSync(bridgeStatePath),
 			) as AgentState)
 		: undefined;
+	const bridgeLines =
+		bridgeState?.script?.lines ??
+		bridgeSpec.segments.map((segment) => ({
+			speaker: segment.speaker,
+			text: segment.text,
+			duration: 0,
+		}));
 	const bridgeDuration = Number(bridgeState?.script?.total_duration ?? 0);
 	const state = AgentStateSchema.passthrough().parse({
 		run_id: `byosan_money/${path.basename(runDir)}`,
