@@ -16,7 +16,10 @@ export const ByosanContentAnchorSegmentSchema = z.object({
 	index: z.number().int().min(0),
 	narrativeRole: ByosanNarrativeRoleSchema.optional(),
 	verificationRole: ByosanVerificationRoleSchema.optional(),
-	archetypeSlot: z.string().regex(/^[a-z0-9_]+$/).optional(),
+	archetypeSlot: z
+		.string()
+		.regex(/^[a-z0-9_]+$/)
+		.optional(),
 	claimIds: z.array(z.string().min(1)).max(6).optional(),
 	evidenceIds: z.array(z.string().min(1)).max(6).optional(),
 	text: z.string().min(18).max(180),
@@ -62,7 +65,9 @@ export const ByosanPresentationVariantSchema = z.object({
 });
 
 export type ByosanContentAnchor = z.infer<typeof ByosanContentAnchorSchema>;
-export type ByosanPresentationSkin = z.infer<typeof ByosanPresentationSkinSchema>;
+export type ByosanPresentationSkin = z.infer<
+	typeof ByosanPresentationSkinSchema
+>;
 export type ByosanPresentationVariant = z.infer<
 	typeof ByosanPresentationVariantSchema
 >;
@@ -84,7 +89,9 @@ function canonicalize(value: unknown): unknown {
 	return value;
 }
 
-export function hashByosanContentAnchor(anchorInput: ByosanContentAnchor): string {
+export function hashByosanContentAnchor(
+	anchorInput: ByosanContentAnchor,
+): string {
 	const anchor = ByosanContentAnchorSchema.parse(anchorInput);
 	return createHash("sha256")
 		.update(JSON.stringify(canonicalize(anchor)))
@@ -134,15 +141,25 @@ function expectedSegmentIndexes(
 	anchor: ByosanContentAnchor,
 	skin: ByosanPresentationSkin,
 ): number[] {
-	if (!skin.segmentIndexes) return anchor.segments.map((segment) => segment.index);
+	if (!skin.segmentIndexes)
+		return anchor.segments.map((segment) => segment.index);
 	const indexes = [...skin.segmentIndexes];
 	if (new Set(indexes).size !== indexes.length) {
 		throw new Error("BYOSAN_PRESENTATION_SKIN_DUPLICATE_SEGMENT_INDEX");
 	}
-	if (indexes.some((index) => !anchor.segments.some((segment) => segment.index === index))) {
+	if (
+		indexes.some(
+			(index) => !anchor.segments.some((segment) => segment.index === index),
+		)
+	) {
 		throw new Error("BYOSAN_PRESENTATION_SKIN_UNKNOWN_SEGMENT_INDEX");
 	}
-	if (indexes.some((index, position) => position > 0 && index <= (indexes[position - 1] ?? -1))) {
+	if (
+		indexes.some(
+			(index, position) =>
+				position > 0 && index <= (indexes[position - 1] ?? -1),
+		)
+	) {
 		throw new Error("BYOSAN_PRESENTATION_SKIN_SEGMENT_ORDER_INVALID");
 	}
 	return indexes;
