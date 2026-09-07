@@ -1,16 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import {
-	ByosanFeatureSpecSchema,
-	type ByosanFeatureSpec,
-} from "../src/domain/byosan/feature_spec.js";
-import {
+	type ByosanPresentationSkin,
 	auditByosanPresentationVariant,
 	buildByosanContentAnchor,
 	buildByosanPresentationVariant,
 	hashByosanContentAnchor,
-	type ByosanPresentationSkin,
 } from "../src/domain/byosan/content_variants.js";
+import {
+	type ByosanFeatureSpec,
+	ByosanFeatureSpecSchema,
+} from "../src/domain/byosan/feature_spec.js";
 
 function referenceSpec(): ByosanFeatureSpec {
 	return ByosanFeatureSpecSchema.parse(
@@ -52,9 +52,9 @@ describe("byosan content anchor and presentation skin", () => {
 		expect(shorts.contentAnchorHash).toBe(feature.contentAnchorHash);
 		expect(feature.skin.aspectRatio).toBe("16:9");
 		expect(shorts.skin.aspectRatio).toBe("9:16");
-		expect(shorts.segmentRenderPlan.map((item) => item.anchorSegmentIndex)).toEqual([
-			0, 1, 2,
-		]);
+		expect(
+			shorts.segmentRenderPlan.map((item) => item.anchorSegmentIndex),
+		).toEqual([0, 1, 2]);
 		expect(auditByosanPresentationVariant(anchor, feature)).toEqual([]);
 		expect(auditByosanPresentationVariant(anchor, shorts)).toEqual([]);
 	});
@@ -94,7 +94,9 @@ describe("byosan content anchor and presentation skin", () => {
 			contentAnchorHash: "0".repeat(64),
 		};
 		expect(
-			auditByosanPresentationVariant(anchor, tampered).map((issue) => issue.code),
+			auditByosanPresentationVariant(anchor, tampered).map(
+				(issue) => issue.code,
+			),
 		).toContain("content_anchor_hash_mismatch");
 	});
 });
