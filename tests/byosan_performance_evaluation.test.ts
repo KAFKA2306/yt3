@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
-	evaluateByosanAnalyticsCandidates,
-	hashByosanAnalyticsEvaluationPlan,
 	type ByosanAnalyticsEvaluationCandidate,
 	type ByosanAnalyticsEvaluationPlan,
+	evaluateByosanAnalyticsCandidates,
+	hashByosanAnalyticsEvaluationPlan,
 } from "../src/domain/byosan/performance_evaluation.js";
 
 function plan(): ByosanAnalyticsEvaluationPlan {
