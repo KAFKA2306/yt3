@@ -186,7 +186,7 @@ export function discoverByosanPromptInventory(
 
 	for (const relativePath of collectFiles(root, "src").sort()) {
 		const text = fs.readFileSync(path.join(root, relativePath), "utf-8");
-		if (/role\s*:\s*["']system["']|systemInstruction/i.test(text)) {
+		if (/role\s*:\s*["']system["']\s*,|systemInstruction\s*:/i.test(text)) {
 			records.push(
 				recordForSource(relativePath, "system", text, contractVersion),
 			);
