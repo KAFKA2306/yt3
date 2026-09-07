@@ -78,7 +78,9 @@ function detectProviderTags(text: string): string[] {
 		["astra", /\bastra\b/i],
 		["fable", /\bfable(?:[-\s]\w+)?/i],
 	] as const;
-	return tags.flatMap(([tag, pattern]) => (pattern.test(normalized) ? [tag] : []));
+	return tags.flatMap(([tag, pattern]) =>
+		pattern.test(normalized) ? [tag] : [],
+	);
 }
 
 export function detectByosanPromptPolicySignals(
@@ -134,7 +136,11 @@ function collectFiles(root: string, relativeDir: string): string[] {
 	for (const entry of fs.readdirSync(absoluteDir, { withFileTypes: true })) {
 		const relativePath = path.join(relativeDir, entry.name);
 		if (entry.isDirectory()) {
-			if (["node_modules", ".git", "runs", "logs", "artifacts"].includes(entry.name)) {
+			if (
+				["node_modules", ".git", "runs", "logs", "artifacts"].includes(
+					entry.name,
+				)
+			) {
 				continue;
 			}
 			files.push(...collectFiles(root, relativePath));
@@ -173,13 +179,17 @@ export function discoverByosanPromptInventory(
 	const agentsPath = path.join(root, "AGENTS.md");
 	if (fs.existsSync(agentsPath)) {
 		const text = fs.readFileSync(agentsPath, "utf-8");
-		records.push(recordForSource("AGENTS.md", "repository", text, contractVersion));
+		records.push(
+			recordForSource("AGENTS.md", "repository", text, contractVersion),
+		);
 	}
 
 	for (const relativePath of collectFiles(root, "src").sort()) {
 		const text = fs.readFileSync(path.join(root, relativePath), "utf-8");
 		if (/role\s*:\s*["']system["']|systemInstruction/i.test(text)) {
-			records.push(recordForSource(relativePath, "system", text, contractVersion));
+			records.push(
+				recordForSource(relativePath, "system", text, contractVersion),
+			);
 		}
 		if (/role\s*:\s*["']developer["']/i.test(text)) {
 			records.push(
@@ -383,6 +393,8 @@ export function auditByosanPromptMigration(
 	}
 	return {
 		diff,
-		issues: issues.map((issue) => ByosanPromptMigrationIssueSchema.parse(issue)),
+		issues: issues.map((issue) =>
+			ByosanPromptMigrationIssueSchema.parse(issue),
+		),
 	};
 }
