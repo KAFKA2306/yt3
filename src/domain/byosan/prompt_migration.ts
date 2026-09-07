@@ -85,13 +85,16 @@ export function detectByosanPromptPolicySignals(
 	text: string,
 ): z.infer<typeof ByosanPromptPolicySignalsSchema> {
 	const normalized = normalize(text);
+	const progressNegated =
+		/(禁止しない|禁止ではない|do not prohibit|not forbidden)/i.test(normalized);
 	const progressForbidden =
-		/(途中経過|進捗).{0,24}(報告|更新).{0,24}(禁止|しない|不要)/i.test(
+		!progressNegated &&
+		(/(途中経過|進捗).{0,24}(報告|更新).{0,24}(禁止|しない|不要)/i.test(
 			normalized,
 		) ||
-		/(do not|don't|never|no).{0,24}progress.{0,16}(update|report)/i.test(
-			normalized,
-		);
+			/(do not|don't|never|no).{0,24}progress.{0,16}(update|report)/i.test(
+				normalized,
+			));
 	const progressRequired =
 		/(途中経過|進捗).{0,24}(報告|更新).{0,24}(必須|行う|入れる|共有)/i.test(
 			normalized,
