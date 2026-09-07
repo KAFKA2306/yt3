@@ -187,7 +187,9 @@ export function evaluateByosanAnalyticsCandidates(
 			if (first.hardGateFailures.length > 0) {
 				verdict = "REJECTED";
 				reasonCodes.push(
-					...first.hardGateFailures.map((failure) => `hard_gate_failed:${failure}`),
+					...first.hardGateFailures.map(
+						(failure) => `hard_gate_failed:${failure}`,
+					),
 				);
 			}
 			const floorFailures = metricFloorFailures(plan, first.metrics);
