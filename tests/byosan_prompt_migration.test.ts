@@ -3,12 +3,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
+	type ByosanPromptInventory,
 	auditByosanPromptInventory,
 	auditByosanPromptMigration,
 	detectByosanPromptPolicySignals,
 	diffByosanPromptInventories,
 	discoverByosanPromptInventory,
-	type ByosanPromptInventory,
 } from "../src/domain/byosan/prompt_migration.js";
 
 function inventory(
@@ -33,7 +33,10 @@ function record(
 	return {
 		sourcePath,
 		authority,
-		promptHash: sourcePath.padEnd(64, "0").slice(0, 64).replaceAll(/[^a-f0-9]/g, "a"),
+		promptHash: sourcePath
+			.padEnd(64, "0")
+			.slice(0, 64)
+			.replaceAll(/[^a-f0-9]/g, "a"),
 		providerProfileApplicability,
 		contractVersion: "prompt_migration_v1",
 		signals: {
@@ -49,20 +52,26 @@ describe("byosan prompt migration audit", () => {
 			record("AGENTS.md", "repository", "required"),
 			record("src/agent.ts", "system", "forbidden"),
 		]);
-		const codes = auditByosanPromptInventory(current).map((issue) => issue.code);
+		const codes = auditByosanPromptInventory(current).map(
+			(issue) => issue.code,
+		);
 		expect(codes).toContain("explicit_policy_conflict:progress_updates");
 		expect(codes).toContain("repository_authority_conflict:progress_updates");
 	});
 
 	test("signal detector recognizes the migration failure fixture", () => {
 		expect(
-			detectByosanPromptPolicySignals("長時間runでは進捗更新を必須として共有する").progressUpdates,
+			detectByosanPromptPolicySignals(
+				"長時間runでは進捗更新を必須として共有する",
+			).progressUpdates,
 		).toBe("required");
 		expect(
-			detectByosanPromptPolicySignals("途中経過の報告は禁止しない").progressUpdates,
+			detectByosanPromptPolicySignals("途中経過の報告は禁止しない")
+				.progressUpdates,
 		).not.toBe("forbidden");
 		expect(
-			detectByosanPromptPolicySignals("途中経過の報告を禁止する").progressUpdates,
+			detectByosanPromptPolicySignals("途中経過の報告を禁止する")
+				.progressUpdates,
 		).toBe("forbidden");
 	});
 
@@ -85,9 +94,9 @@ describe("byosan prompt migration audit", () => {
 		const current = inventory("gemini-3", [
 			record("src/legacy.ts", "system", "unspecified", ["gpt"]),
 		]);
-		expect(auditByosanPromptInventory(current).map((issue) => issue.code)).toContain(
-			"obsolete_model_specific_patch",
-		);
+		expect(
+			auditByosanPromptInventory(current).map((issue) => issue.code),
+		).toContain("obsolete_model_specific_patch");
 	});
 
 	test("inventory discovery records repository and system prompt hashes without raw prompt text", () => {
