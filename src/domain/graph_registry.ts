@@ -58,12 +58,6 @@ export const NODE_METADATA: Record<string, GraphNodeMetadata> = {
 		type: "agent",
 		description: "Parallel financial & web research post-NotebookLM",
 	},
-	memory: {
-		name: "memory",
-		phase: "debugging",
-		type: "agent",
-		description: "Run results persistence and memory update",
-	},
 };
 
 export function getNodeMetadata(

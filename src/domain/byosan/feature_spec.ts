@@ -3,6 +3,7 @@ import {
 	ByosanActiveProbeEvidenceSchema,
 	auditByosanActiveProbeEvidence,
 } from "./active_probe.js";
+import { requiredByosanArchetypeSlots } from "./narrative_archetype.js";
 import {
 	ByosanAdversarialEvidenceSchema,
 	ByosanProductionPlanSchema,
@@ -41,6 +42,10 @@ export const ByosanFeatureSegmentSchema = z.object({
 	chapter: z.string().min(1).max(40).optional(),
 	narrativeRole: ByosanNarrativeRoleSchema.optional(),
 	verificationRole: ByosanVerificationRoleSchema.optional(),
+	archetypeSlot: z
+		.string()
+		.regex(/^[a-z0-9_]+$/)
+		.optional(),
 	claimIds: z.array(z.string().min(1)).max(6).optional(),
 	evidenceIds: z.array(z.string().min(1)).max(6).optional(),
 	speaker: z.enum(["春日部つむぎ", "ずんだもん"]),
@@ -287,6 +292,111 @@ export function auditByosanFeatureSpec(
 				code: "adversarial_evidence_contract_missing",
 				details: "production-aware specs require research adversarial evidence",
 			});
+		}
+
+		const narrativeArchetype = spec.production.narrativeArchetype ?? "standard";
+		const canonicalArchetypeSlots =
+			requiredByosanArchetypeSlots(narrativeArchetype);
+		const recordedArchetypeSlots = spec.production.archetypeRequiredSlots ?? [];
+		if (
+			JSON.stringify(recordedArchetypeSlots) !==
+			JSON.stringify(canonicalArchetypeSlots)
+		) {
+			issues.push({
+				code: "production_archetype_slots_mismatch",
+				details: narrativeArchetype,
+			});
+		}
+		if (
+			narrativeArchetype !== "standard" &&
+			!spec.production.archetypeEvidence
+		) {
+			issues.push({
+				code: "production_archetype_evidence_missing",
+				details: narrativeArchetype,
+			});
+		}
+		if (
+			spec.production.archetypeEvidence &&
+			spec.production.archetypeEvidence.archetype !== narrativeArchetype
+		) {
+			issues.push({
+				code: "production_archetype_evidence_mismatch",
+				details: `${narrativeArchetype} != ${spec.production.archetypeEvidence.archetype}`,
+			});
+		}
+
+		const allowedArchetypeSlots = new Set(canonicalArchetypeSlots);
+		for (const segment of spec.segments) {
+			if (
+				segment.archetypeSlot &&
+				!allowedArchetypeSlots.has(segment.archetypeSlot)
+			) {
+				issues.push({
+					code: "unexpected_archetype_slot",
+					details: `${narrativeArchetype}:${segment.archetypeSlot}`,
+				});
+			}
+		}
+		if (canonicalArchetypeSlots.length > 0) {
+			const claimById = new Map(
+				spec.claims
+					.filter((claim) => claim.id)
+					.map((claim) => [claim.id ?? "", claim]),
+			);
+			let cursor = -1;
+			for (const slotName of canonicalArchetypeSlots) {
+				const index = spec.segments.findIndex(
+					(segment, candidateIndex) =>
+						candidateIndex > cursor && segment.archetypeSlot === slotName,
+				);
+				if (index < 0) {
+					issues.push({
+						code: "archetype_slot_sequence_missing",
+						details: `${narrativeArchetype}:${slotName}`,
+					});
+					continue;
+				}
+				cursor = index;
+				const evidenceSlot = spec.production.archetypeEvidence?.slots.find(
+					(slot) => slot.slot === slotName,
+				);
+				if (!evidenceSlot) {
+					issues.push({
+						code: "archetype_slot_evidence_missing",
+						details: `${narrativeArchetype}:${slotName}`,
+					});
+					continue;
+				}
+				const segment = spec.segments[index];
+				if (!segment) continue;
+				const claimSourceIds = new Set(
+					(segment.claimIds ?? []).flatMap(
+						(claimId) => claimById.get(claimId)?.sourceIds ?? [],
+					),
+				);
+				if (
+					!evidenceSlot.sourceIds.some((sourceId) =>
+						claimSourceIds.has(sourceId),
+					)
+				) {
+					issues.push({
+						code: "archetype_slot_claim_provenance_missing",
+						details: `${slotName}:${evidenceSlot.sourceIds.join(",")}`,
+					});
+				}
+				const missingEvidenceIds = (
+					evidenceSlot.adversarialEvidenceIds ?? []
+				).filter(
+					(evidenceId) => !(segment.evidenceIds ?? []).includes(evidenceId),
+				);
+				if (missingEvidenceIds.length > 0) {
+					issues.push({
+						code: "archetype_slot_adversarial_provenance_missing",
+						details: `${slotName}:${missingEvidenceIds.join(",")}`,
+					});
+				}
+			}
 		}
 	}
 
