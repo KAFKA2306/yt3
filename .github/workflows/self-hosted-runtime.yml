@@ -1,0 +1,52 @@
+name: Self-hosted runtime verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-verify:
+    runs-on: [self-hosted, Linux, X64, yt3-runtime]
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify runner prerequisites
+        run: |
+          set -euo pipefail
+          uname -a
+          command -v bun
+          command -v task
+          command -v ffmpeg
+          command -v uv
+          command -v python3
+          bun --version
+          task --version
+          ffmpeg -version | head -n 1
+          uv --version
+          python3 --version
+
+      - name: Install repository dependencies
+        run: task setup
+
+      - name: Run repository merge gate
+        run: task check:merge
+
+      - name: Run non-publishing runtime smoke
+        run: task byosan:runtime-smoke
+
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yt3-self-hosted-runtime-evidence
+          path: .artifacts/byosan-runtime-smoke/
+          if-no-files-found: warn
+          retention-days: 14
