@@ -8,6 +8,7 @@ permissions:
 
 jobs:
   runtime-verify:
+    if: github.repository == 'KAFKA2306/yt3' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Linux, X64, yt3-runtime]
     timeout-minutes: 30
 
@@ -17,6 +18,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Verify runner prerequisites
         run: |
