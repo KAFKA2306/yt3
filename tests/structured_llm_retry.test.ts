@@ -18,7 +18,7 @@ function fakeFactory(
 	let index = 0;
 	return ((_: LlmOptions = {}) => {
 		const current = outcomes[index];
-		const keyName = names[index] ?? `key_${index + 1}`;
+		const keyName = names[index] ?? `TEST_KEY_${index + 1}`;
 		index++;
 		return {
 			keyName,
@@ -43,7 +43,41 @@ describe("canonical structured LLM invocation", () => {
 					{ kind: "error", error: new Error("429 quota exceeded") },
 					{ kind: "value", value: { ok: true } },
 				],
-				["GEMINI_API_KEY", "GEMINI_API_KEY_2"],
+				["TEST_RATE_KEY_1", "TEST_RATE_KEY_2"],
+			),
+			sleep: async () => {},
+			messages: () => [{ role: "user", content: "test" }],
+		});
+		expect(result).toEqual({ ok: true });
+	});
+
+	test("rotates after invalid key and succeeds on the next key", async () => {
+		const result = await invokeStructuredLlm({
+			schema: z.object({ ok: z.boolean() }),
+			name: "invalid_key_rotation_test",
+			llmFactory: fakeFactory(
+				[
+					{ kind: "error", error: new Error("API_KEY_INVALID") },
+					{ kind: "value", value: { ok: true } },
+				],
+				["TEST_INVALID_KEY_1", "TEST_INVALID_KEY_2"],
+			),
+			sleep: async () => {},
+			messages: () => [{ role: "user", content: "test" }],
+		});
+		expect(result).toEqual({ ok: true });
+	});
+
+	test("retries structured schema failures within the canonical contract", async () => {
+		const result = await invokeStructuredLlm({
+			schema: z.object({ ok: z.boolean() }),
+			name: "schema_retry_test",
+			llmFactory: fakeFactory(
+				[
+					{ kind: "error", error: new Error("schema validation failed") },
+					{ kind: "value", value: { ok: true } },
+				],
+				["TEST_SCHEMA_KEY_1", "TEST_SCHEMA_KEY_2"],
 			),
 			sleep: async () => {},
 			messages: () => [{ role: "user", content: "test" }],
@@ -61,7 +95,7 @@ describe("canonical structured LLM invocation", () => {
 					{ kind: "value", value: { value: 1 } },
 					{ kind: "value", value: { value: 2 } },
 				],
-				["GEMINI_API_KEY", "GEMINI_API_KEY"],
+				["TEST_SEMANTIC_KEY", "TEST_SEMANTIC_KEY"],
 			),
 			sleep: async () => {},
 			messages: () => [{ role: "user", content: "test" }],
@@ -81,7 +115,7 @@ describe("canonical structured LLM invocation", () => {
 			factoryCalls++;
 			return fakeFactory(
 				[{ kind: "error", error: new Error("permission denied") }],
-				["GEMINI_API_KEY"],
+				["TEST_FATAL_KEY"],
 			)();
 		}) as unknown as typeof createLlm;
 		await expect(
@@ -115,7 +149,7 @@ describe("canonical structured LLM invocation", () => {
 								error: new Error(`permission denied ${secret}`),
 							},
 						],
-						["GEMINI_API_KEY"],
+						["TEST_REDACTION_KEY"],
 					),
 					sleep: async () => {},
 					messages: () => [{ role: "user", content: "test" }],
