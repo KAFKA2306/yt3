@@ -175,7 +175,9 @@ function bundleHasValidReferences(
 	const evidenceIds = new Set(
 		candidate.adversarialEvidence.map((evidence) => evidence.id),
 	);
-	const probeIds = new Set((candidate.activeProbes ?? []).map((probe) => probe.id));
+	const probeIds = new Set(
+		(candidate.activeProbes ?? []).map((probe) => probe.id),
+	);
 	return bundle.slots.every(
 		(slot) =>
 			slot.sourceIds.every((sourceId) => sourceIds.has(sourceId)) &&
@@ -210,7 +212,9 @@ function hasVerifiedActiveProbe(
 ): boolean {
 	const slot = bundle.slots.find((item) => item.slot === slotName);
 	if (!slot) return false;
-	const byId = new Map((candidate.activeProbes ?? []).map((probe) => [probe.id, probe]));
+	const byId = new Map(
+		(candidate.activeProbes ?? []).map((probe) => [probe.id, probe]),
+	);
 	return (slot.activeProbeIds ?? []).some((id) => {
 		const probe = byId.get(id);
 		return (
@@ -315,7 +319,9 @@ export function auditByosanArchetypeEvidence(
 	const evidenceIds = new Set(
 		candidate.adversarialEvidence.map((evidence) => evidence.id),
 	);
-	const probeIds = new Set((candidate.activeProbes ?? []).map((probe) => probe.id));
+	const probeIds = new Set(
+		(candidate.activeProbes ?? []).map((probe) => probe.id),
+	);
 	const seen = new Set<string>();
 	for (const rawBundle of candidate.archetypeEvidence ?? []) {
 		const bundle = ByosanArchetypeEvidenceBundleSchema.parse(rawBundle);
