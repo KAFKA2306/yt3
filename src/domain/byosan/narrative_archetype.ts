@@ -9,6 +9,8 @@ export const ByosanNarrativeArchetypeSchema = z.enum([
 	"timeline_motive",
 	"role_reversal",
 	"asymmetric_cost",
+	"arithmetic_runtime_bias",
+	"rollout_verification",
 	"supply_chain_dependency",
 	"regulatory_game_theory",
 	"hardware_capital",
@@ -23,6 +25,7 @@ export const ByosanArchetypeEvidenceSlotSchema = z.object({
 	statement: z.string().min(8).max(500),
 	sourceIds: z.array(z.string().min(1)).min(1).max(8),
 	adversarialEvidenceIds: z.array(z.string().min(1)).max(6).optional(),
+	activeProbeIds: z.array(z.string().min(1)).max(6).optional(),
 	observedAt: z
 		.string()
 		.regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -78,6 +81,19 @@ const REQUIRED_SLOTS: Record<ByosanNarrativeArchetype, readonly string[]> = {
 		"hidden_total_cost",
 		"downside_risk",
 	],
+	arithmetic_runtime_bias: [
+		"headline_claim",
+		"reverse_calculation",
+		"offsetting_factor",
+		"runtime_default_bias",
+		"attribution_boundary",
+	],
+	rollout_verification: [
+		"access_gating",
+		"quota_consumption",
+		"behavior_change",
+		"self_report_boundary",
+	],
 	supply_chain_dependency: [
 		"surface_event",
 		"contract_trigger",
@@ -101,10 +117,12 @@ const REQUIRED_SLOTS: Record<ByosanNarrativeArchetype, readonly string[]> = {
 };
 
 const PRIORITY: readonly ByosanNarrativeArchetype[] = [
+	"rollout_verification",
 	"progressive_comparison",
 	"paradox_resolution",
 	"timeline_motive",
 	"role_reversal",
+	"arithmetic_runtime_bias",
 	"asymmetric_cost",
 	"supply_chain_dependency",
 	"regulatory_game_theory",
@@ -116,6 +134,7 @@ const PRIORITY: readonly ByosanNarrativeArchetype[] = [
 type CandidateShape = {
 	sources: Array<{ id: string }>;
 	adversarialEvidence: Array<{ id: string; kind: string }>;
+	activeProbes?: Array<{ id: string; probeType: string; status: string }>;
 	archetypeEvidence?: ByosanArchetypeEvidenceBundle[];
 };
 
@@ -156,12 +175,14 @@ function bundleHasValidReferences(
 	const evidenceIds = new Set(
 		candidate.adversarialEvidence.map((evidence) => evidence.id),
 	);
+	const probeIds = new Set((candidate.activeProbes ?? []).map((probe) => probe.id));
 	return bundle.slots.every(
 		(slot) =>
 			slot.sourceIds.every((sourceId) => sourceIds.has(sourceId)) &&
 			(slot.adversarialEvidenceIds ?? []).every((evidenceId) =>
 				evidenceIds.has(evidenceId),
-			),
+			) &&
+			(slot.activeProbeIds ?? []).every((probeId) => probeIds.has(probeId)),
 	);
 }
 
@@ -179,6 +200,24 @@ function hasRequiredAdversarialKind(
 	return (slot.adversarialEvidenceIds ?? []).some((id) =>
 		kinds.includes(byId.get(id)?.kind ?? ""),
 	);
+}
+
+function hasVerifiedActiveProbe(
+	bundle: ByosanArchetypeEvidenceBundle,
+	candidate: CandidateShape,
+	slotName: string,
+	probeType?: string,
+): boolean {
+	const slot = bundle.slots.find((item) => item.slot === slotName);
+	if (!slot) return false;
+	const byId = new Map((candidate.activeProbes ?? []).map((probe) => [probe.id, probe]));
+	return (slot.activeProbeIds ?? []).some((id) => {
+		const probe = byId.get(id);
+		return (
+			probe?.status === "VERIFIED" &&
+			(probeType === undefined || probe.probeType === probeType)
+		);
+	});
 }
 
 function isEligible(
@@ -215,6 +254,20 @@ function isEligible(
 		])
 	) {
 		return false;
+	}
+
+	if (archetype === "rollout_verification") {
+		if (production.format !== "breaking") return false;
+		if (
+			!hasVerifiedActiveProbe(
+				bundle,
+				candidate,
+				"quota_consumption",
+				"authorized_api",
+			)
+		) {
+			return false;
+		}
 	}
 
 	return true;
@@ -262,6 +315,7 @@ export function auditByosanArchetypeEvidence(
 	const evidenceIds = new Set(
 		candidate.adversarialEvidence.map((evidence) => evidence.id),
 	);
+	const probeIds = new Set((candidate.activeProbes ?? []).map((probe) => probe.id));
 	const seen = new Set<string>();
 	for (const rawBundle of candidate.archetypeEvidence ?? []) {
 		const bundle = ByosanArchetypeEvidenceBundleSchema.parse(rawBundle);
@@ -289,6 +343,15 @@ export function auditByosanArchetypeEvidence(
 				issues.push({
 					code: "archetype_adversarial_evidence_missing",
 					details: `${bundle.archetype}:${slot.slot}:${missingEvidence.join(",")}`,
+				});
+			}
+			const missingProbes = (slot.activeProbeIds ?? []).filter(
+				(probeId) => !probeIds.has(probeId),
+			);
+			if (missingProbes.length > 0) {
+				issues.push({
+					code: "archetype_active_probe_missing",
+					details: `${bundle.archetype}:${slot.slot}:${missingProbes.join(",")}`,
 				});
 			}
 		}
