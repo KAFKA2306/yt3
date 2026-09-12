@@ -1,6 +1,6 @@
 # YT3 Agent Contract
 
-`AGENTS.md` is the only repository-wide agent instruction source. `GEMINI.md` and `.claude/CLAUDE.md` may only import it. Tool-specific skills must not duplicate repository-wide rules.
+`AGENTS.md` is the repository-wide instruction source. `GEMINI.md` and `.claude/CLAUDE.md` may only import it; tool-specific skills must not duplicate repository-wide rules.
 
 `Taskfile.yml` is the canonical executable interface.
 
@@ -14,22 +14,15 @@ YT3 contains three distinct products:
 
 Keep their config, media, credentials, receipts, and publication state separate. Read volatile values from current config/runtime instead of copying them into agent instructions.
 
-## Execution
+## Product execution
 
-- Prefer current user instruction, current runtime observations, current code/config/Taskfile/tests, then maintained docs/history.
-- Proceed with read-only and reversible work without unnecessary confirmation.
-- Reuse one canonical implementation and one Issue/branch/PR per outcome.
-- Fix the owning source rather than generated output or stale prose.
-- Do not hide missing inputs or failures with fallback output that resembles success.
-- An explicit request to run/start a production path means executing the canonical Taskfile command on the target runtime when that capability is available. CI, mocks, simulations, or dry runs do not satisfy that request.
+Fix the owning source rather than generated output or stale prose. Do not hide missing inputs or failures with fallback output that resembles success.
 
-## Verification
+An explicit request to run or start a production path means executing its canonical Taskfile command on the target runtime when that capability is available. CI, mocks, simulations, and dry runs do not satisfy that request.
 
-Run the smallest relevant deterministic check first. Broaden only when new changes, failures, or unresolved concerns justify it.
+## Evidence boundary
 
-Repository checks prove only repository acceptance for the exact revision tested. Product/runtime/publication are separate and require direct evidence from the target artifact or service.
-
-A check that did not run is not PASS.
+Repository checks prove only the exact revision they executed. Product/runtime/publication are separate states and require direct evidence from the target artifact or service. Unchecked layers remain `UNVERIFIED`.
 
 ## Publication
 
@@ -43,10 +36,4 @@ task byosan:prepare DATE=YYYY-MM-DD
 
 Preparation must not publish. Publish only after separate authorization using the exact command emitted by the successful preparation flow.
 
-Publication becomes verified only after the remote receipt/read-back confirms the intended channel and result.
-
-## Git and completion
-
-Re-read state before writes, read back after writes, and merge only the verified PR head.
-
-Stop when the requested repository, artifact, runtime, or publication state is directly verified. Unchecked layers remain `UNVERIFIED`.
+Publication is verified only after the remote receipt/read-back confirms the intended channel and result.
