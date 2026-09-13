@@ -37,6 +37,7 @@ export class TrendScout extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.RESEARCH, {
 			temperature: store.cfg.steps.research?.temperature || 0.5,
+			response_mime_type: "application/json",
 		});
 	}
 
@@ -104,7 +105,7 @@ export class TrendScout extends BaseAgent {
 				}>;
 			}>;
 		}>(
-			promptCfg.consolidated_research.system
+			`${promptCfg.consolidated_research.system}${bucket === "byosan_money" ? this.buildSharpAnglePrompt() : ""}`
 				.replace(
 					"{regions}",
 					researchCfg.regions.map((region) => region.lang).join(", "),
