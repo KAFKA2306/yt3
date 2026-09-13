@@ -15,7 +15,9 @@ readonly resolved_env="${repo_dir}/${ENV_FILE}"
 # Load environment variables for Discord notifications from bash
 if [ -f "${resolved_env}" ]; then
   # Sourcing safely: ignoring comments and empty lines
-  export $(grep -v '^#' "${resolved_env}" | xargs)
+  # ENV_FILE is already a readonly selector above; do not re-export the
+  # selector from the dotenv file and collide with the shell variable.
+  export $(grep -v '^#' "${resolved_env}" | grep -v '^ENV_FILE=' | xargs)
 fi
 readonly log_dir="${repo_dir}/data/state"
 readonly daily_log_dir="${repo_dir}/logs/daily"
