@@ -15,7 +15,7 @@ import {
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
-import { createLlm } from "../io/core.js";
+import { invokeStructuredLlm } from "../io/core.js";
 
 export type DigestPeriod = "week" | "month";
 
@@ -295,29 +295,36 @@ async function generateDigestContext(
 		}
 		draft = DigestContextDraftSchema.parse(supplied);
 	} else {
-		const llm = createLlm({
-			temperature: 0.15,
-			sessionId: runDir,
-			extra: { tools: [{ googleSearchRetrieval: {} }] },
-		});
-		const structured = llm.withStructuredOutput(DigestContextDraftSchema, {
+		draft = await invokeStructuredLlm({
+			schema: DigestContextDraftSchema,
 			name: "byosan_digest_context",
+			llmOptions: {
+				temperature: 0.15,
+				sessionId: runDir,
+				extra: { tools: [{ googleSearchRetrieval: {} }] },
+			},
+			maxAttempts: 3,
+			evidencePath: path.join(
+				runDir,
+				"audit",
+				"structured_digest_attempts.json",
+			),
+			messages: (attempt, lastValidationError) => [
+				{
+					role: "system",
+					content:
+						"あなたは秒算マネーの週次・月次ダイジェスト検証担当です。入力済みの日次claimを正本として、期間末時点の共通物差しへの再整列、期間全体の3軸総括、次期間のWatchlistだけを作ります。baseline/version/asOfが異なる比較を無言で混在させてはいけません。再計算できる場合はREALIGNEDとして元値・変換後値・式を残し、再計算できない場合はUNVERIFIEDとしてnormalizedValue/formulaを出してはいけません。macroSynthesisはstructure, relative_economics, policy_distribution_riskの3軸を各1件とし、sourceRunIdsとsourceClaimIdsは入力に実在するものだけを使います。watchlistは3〜5件、日付が一次・公式情報で確定している場合だけconfirmed、それ以外はtentativeです。URLを推測で作らないでください。",
+				},
+				{
+					role: "user",
+					content: `period=${period}\nstart=${start}\nend=${end}\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}\n\n日次run evidence:\n${JSON.stringify(
+						digestResearchPayload(inputs),
+						null,
+						2,
+					)}`,
+				},
+			],
 		});
-		draft = await structured.invoke([
-			{
-				role: "system",
-				content:
-					"あなたは秒算マネーの週次・月次ダイジェスト検証担当です。入力済みの日次claimを正本として、期間末時点の共通物差しへの再整列、期間全体の3軸総括、次期間のWatchlistだけを作ります。baseline/version/asOfが異なる比較を無言で混在させてはいけません。再計算できる場合はREALIGNEDとして元値・変換後値・式を残し、再計算できない場合はUNVERIFIEDとしてnormalizedValue/formulaを出してはいけません。macroSynthesisはstructure, relative_economics, policy_distribution_riskの3軸を各1件とし、sourceRunIdsとsourceClaimIdsは入力に実在するものだけを使います。watchlistは3〜5件、日付が一次・公式情報で確定している場合だけconfirmed、それ以外はtentativeです。URLを推測で作らないでください。",
-			},
-			{
-				role: "user",
-				content: `period=${period}\nstart=${start}\nend=${end}\n\n日次run evidence:\n${JSON.stringify(
-					digestResearchPayload(inputs),
-					null,
-					2,
-				)}`,
-			},
-		]);
 	}
 
 	const context = ByosanDigestContextSchema.parse({

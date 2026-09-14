@@ -64,18 +64,9 @@ export function acquireKey(sessionId?: string) {
 		}
 	}
 
-	const primary = process.env.GEMINI_API_KEY;
-	if (primary) {
-		Logger.warn(
-			"SYSTEM",
-			"CORE",
-			"API_ACQUIRE",
-			"All configured keys seem exhausted. Falling back to primary.",
-		);
-		return { name: "GEMINI_API_KEY", key: primary, index: 1 };
-	}
-
-	throw new QuotaExhaustionError("No API keys available.");
+	throw new QuotaExhaustionError(
+		"No API keys available outside quota/cooldown limits.",
+	);
 }
 
 export function updateFromHeaders(
