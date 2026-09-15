@@ -70,11 +70,7 @@ export async function renderEpisode(args: RenderEpisodeArgs): Promise<void> {
 				{
 					workspace,
 					renderCommand,
-					muxCommand: buildEpisodeMuxCommand(
-						visualOutput,
-						audioConcat,
-						output,
-					),
+					muxCommand: buildEpisodeMuxCommand(visualOutput, audioConcat, output),
 					qaCommand: buildEpisodeVideoQaCommand(output),
 				},
 				null,
