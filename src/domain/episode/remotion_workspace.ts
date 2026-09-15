@@ -121,7 +121,9 @@ const Visual = ({item}:{item:Item}) => {
 const Scene = ({item}:{item:Item}) => {
   const frame = useCurrentFrame();
   const opacity = interpolate(frame,[0,8],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-  return <AbsoluteFill style={{background:"linear-gradient(135deg,#0d1b2a,#1b263b)",color:"white",fontFamily:"Arial, sans-serif",alignItems:"center",justifyContent:"center",opacity}}><Visual item={item}/><div style={{position:"absolute",left:"6%",right:"6%",bottom:"5%",padding:"18px 28px",background:"rgba(0,0,0,.72)",borderRadius:20,textAlign:"center",fontSize:42,fontWeight:700}}>{item.subtitle}</div></AbsoluteFill>;
+  const angle = 135 + (frame % 240) * 0.08;
+  const drift = Math.sin(frame / 18) * 1.2;
+  return <AbsoluteFill style={{background:"linear-gradient("+angle+"deg,#0d1b2a,#1b263b)",color:"white",fontFamily:"Arial, sans-serif",alignItems:"center",justifyContent:"center",opacity}}><div style={{display:"contents",transform:"translateX("+drift+"px)"}}><Visual item={item}/></div><div style={{position:"absolute",left:"6%",right:"6%",bottom:"5%",padding:"18px 28px",background:"rgba(0,0,0,.72)",borderRadius:20,textAlign:"center",fontSize:42,fontWeight:700}}>{item.subtitle}</div></AbsoluteFill>;
 };
 
 const Episode = ({items}:Input) => <AbsoluteFill>{items.map((item)=><Sequence key={item.id} from={item.startFrame} durationInFrames={Math.max(1,item.endFrame-item.startFrame)}><Scene item={item}/></Sequence>)}</AbsoluteFill>;
