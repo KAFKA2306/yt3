@@ -48,9 +48,7 @@ export async function smokeEpisodePipeline(
 		},
 		fps: 10,
 		sources: [{ id: "source1", url: "https://example.com", title: "Source" }],
-		claims: [
-			{ id: "claim1", text: "Smoke claim", source_ids: ["source1"] },
-		],
+		claims: [{ id: "claim1", text: "Smoke claim", source_ids: ["source1"] }],
 		assets: [],
 		visuals: [
 			{
@@ -83,7 +81,11 @@ export async function smokeEpisodePipeline(
 	} as const;
 	const episode = parseEpisode(JSON.stringify(episodeObject));
 	const episodePath = path.join(root, "episode.json");
-	await writeFile(episodePath, `${JSON.stringify(episodeObject, null, 2)}\n`, "utf8");
+	await writeFile(
+		episodePath,
+		`${JSON.stringify(episodeObject, null, 2)}\n`,
+		"utf8",
+	);
 
 	const jaDir = path.join(root, "ja");
 	await compileEpisode({
