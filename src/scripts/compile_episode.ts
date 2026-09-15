@@ -57,7 +57,8 @@ export async function compileEpisode(args: Args): Promise<void> {
 	let episode = parseEpisode(await readFile(episodePath, "utf8"));
 
 	const baseIssues = auditEpisode(episode);
-	if (baseIssues.length > 0) throw new Error(JSON.stringify(baseIssues, null, 2));
+	if (baseIssues.length > 0)
+		throw new Error(JSON.stringify(baseIssues, null, 2));
 	if (args.localePatch) {
 		const patch = parseLocalePatch(
 			await readFile(path.resolve(args.localePatch), "utf8"),
