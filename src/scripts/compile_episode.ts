@@ -103,7 +103,8 @@ export async function compileEpisode(args: CompileEpisodeArgs): Promise<void> {
 	);
 	const mainAudioPaths = timeline.map((item) => {
 		const audioPath = audioByDialogue.get(item.dialogueId);
-		if (!audioPath) throw new Error(`missing audio path for ${item.dialogueId}`);
+		if (!audioPath)
+			throw new Error(`missing audio path for ${item.dialogueId}`);
 		return audioPath;
 	});
 	await writeFile(
