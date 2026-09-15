@@ -1,15 +1,21 @@
 import path from "node:path";
 import fs from "fs-extra";
+import {
+	buildEpisodeMuxCommand,
+	buildEpisodeVideoQaCommand,
+	finalizeEpisodeVideo,
+	removeIfExists,
+} from "../domain/episode/finalizer.js";
 import { buildRemotionRenderCommand } from "../domain/episode/remotion_workspace.js";
 
-interface Args {
+export interface RenderEpisodeArgs {
 	compiled: string;
 	kind: "main" | "short";
 	output: string;
 	dryRun: boolean;
 }
 
-function parseArgs(argv: string[]): Args {
+function parseArgs(argv: string[]): RenderEpisodeArgs {
 	let compiled = "";
 	let kind: "main" | "short" = "main";
 	let output = "";
@@ -43,24 +49,50 @@ async function run(command: string[], cwd: string): Promise<void> {
 		throw new Error(`command failed (${exitCode}): ${command.join(" ")}`);
 }
 
-export async function renderEpisode(args: Args): Promise<void> {
+export async function renderEpisode(args: RenderEpisodeArgs): Promise<void> {
 	const compiled = path.resolve(args.compiled);
 	const workspace = path.join(compiled, "remotion");
 	const inputFile = path.join(compiled, `render-input-${args.kind}.json`);
+	const audioConcat = path.join(compiled, `audio-${args.kind}.concat.txt`);
 	const output = path.resolve(args.output);
+	const visualOutput = `${output}.visual.mp4`;
 	if (!fs.existsSync(path.join(workspace, "package.json")))
 		throw new Error("compiled Remotion workspace is missing");
 	if (!fs.existsSync(inputFile))
 		throw new Error(`render input is missing: ${inputFile}`);
-	const command = buildRemotionRenderCommand(inputFile, output);
+	if (!fs.existsSync(audioConcat))
+		throw new Error(`audio concat is missing: ${audioConcat}`);
+	fs.ensureDirSync(path.dirname(output));
+	const renderCommand = buildRemotionRenderCommand(inputFile, visualOutput);
 	if (args.dryRun) {
-		console.log(JSON.stringify({ workspace, command }, null, 2));
+		console.log(
+			JSON.stringify(
+				{
+					workspace,
+					renderCommand,
+					muxCommand: buildEpisodeMuxCommand(
+						visualOutput,
+						audioConcat,
+						output,
+					),
+					qaCommand: buildEpisodeVideoQaCommand(output),
+				},
+				null,
+				2,
+			),
+		);
 		return;
 	}
 	await run(["bun", "install", "--no-save"], workspace);
-	await run(command, workspace);
-	if (!fs.existsSync(output) || fs.statSync(output).size === 0)
+	await removeIfExists(visualOutput);
+	await run(renderCommand, workspace);
+	if (!fs.existsSync(visualOutput) || fs.statSync(visualOutput).size === 0)
 		throw new Error("Remotion render produced no video");
+	try {
+		await finalizeEpisodeVideo(visualOutput, audioConcat, output);
+	} finally {
+		await removeIfExists(visualOutput);
+	}
 }
 
 export async function main(argv = process.argv.slice(2)): Promise<number> {
