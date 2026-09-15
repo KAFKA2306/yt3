@@ -15,20 +15,25 @@ import {
 	buildYouTubeMetadata,
 	extractTranslatableStrings,
 } from "../domain/episode/compiler.js";
+import { buildAudioConcatFile } from "../domain/episode/finalizer.js";
 import {
 	buildRemotionInput,
 	buildRemotionWorkspaceFiles,
 } from "../domain/episode/remotion_workspace.js";
-import { parseEpisode, parseLocalePatch } from "../domain/episode/schema.js";
+import {
+	EpisodeSchema,
+	parseEpisode,
+	parseLocalePatch,
+} from "../domain/episode/schema.js";
 
-interface Args {
+export interface CompileEpisodeArgs {
 	episode: string;
 	out: string;
 	localePatch?: string;
 	ffprobe: string;
 }
 
-function parseArgs(argv: string[]): Args {
+function parseArgs(argv: string[]): CompileEpisodeArgs {
 	let episode = "";
 	let out = "";
 	let localePatch: string | undefined;
@@ -50,7 +55,7 @@ async function writeJson(filePath: string, value: unknown): Promise<void> {
 	await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-export async function compileEpisode(args: Args): Promise<void> {
+export async function compileEpisode(args: CompileEpisodeArgs): Promise<void> {
 	const episodePath = path.resolve(args.episode);
 	const episodeDir = path.dirname(episodePath);
 	const outDir = path.resolve(args.out);
@@ -66,7 +71,7 @@ export async function compileEpisode(args: Args): Promise<void> {
 		const localeIssues = auditLocalePatch(episode, patch);
 		if (localeIssues.length > 0)
 			throw new Error(JSON.stringify(localeIssues, null, 2));
-		episode = applyLocalePatch(episode, patch);
+		episode = EpisodeSchema.parse(applyLocalePatch(episode, patch));
 	}
 
 	for (const asset of episode.assets) {
@@ -87,6 +92,25 @@ export async function compileEpisode(args: Args): Promise<void> {
 	const manifest = buildEpisodeManifest(episode, timeline, shortPlan);
 	const remotionDir = path.join(outDir, "remotion");
 	await mkdir(remotionDir, { recursive: true });
+
+	const audioByDialogue = new Map(
+		episode.sections.flatMap((section) =>
+			section.dialogue.map((dialogue) => [
+				dialogue.id,
+				path.resolve(episodeDir, dialogue.audio.path),
+			]),
+		),
+	);
+	const mainAudioPaths = timeline.map((item) => {
+		const audioPath = audioByDialogue.get(item.dialogueId);
+		if (!audioPath) throw new Error(`missing audio path for ${item.dialogueId}`);
+		return audioPath;
+	});
+	await writeFile(
+		path.join(outDir, "audio-main.concat.txt"),
+		buildAudioConcatFile(mainAudioPaths),
+		"utf8",
+	);
 
 	await writeFile(
 		path.join(outDir, "script_master.md"),
@@ -122,6 +146,16 @@ export async function compileEpisode(args: Args): Promise<void> {
 		buildRemotionInput(episode, timeline),
 	);
 	if (shortPlan) {
+		const shortAudioPaths = shortPlan.dialogue_ids.map((dialogueId) => {
+			const audioPath = audioByDialogue.get(dialogueId);
+			if (!audioPath) throw new Error(`missing audio path for ${dialogueId}`);
+			return audioPath;
+		});
+		await writeFile(
+			path.join(outDir, "audio-short.concat.txt"),
+			buildAudioConcatFile(shortAudioPaths),
+			"utf8",
+		);
 		await writeJson(
 			path.join(outDir, "render-input-short.json"),
 			buildRemotionInput(episode, timeline, shortPlan),
