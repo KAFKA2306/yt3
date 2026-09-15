@@ -6,7 +6,8 @@ function quoteConcatPath(value: string): string {
 }
 
 export function buildAudioConcatFile(paths: string[]): string {
-	if (paths.length === 0) throw new Error("audio concat requires at least one file");
+	if (paths.length === 0)
+		throw new Error("audio concat requires at least one file");
 	return `${paths.map((item) => `file '${quoteConcatPath(item)}'`).join("\n")}\n`;
 }
 
@@ -83,7 +84,9 @@ async function runCapture(command: string[]): Promise<string> {
 	const stderr = await new Response(child.stderr).text();
 	const exitCode = await child.exited;
 	if (exitCode !== 0)
-		throw new Error(`command failed (${exitCode}): ${command.join(" ")}\n${stderr}`);
+		throw new Error(
+			`command failed (${exitCode}): ${command.join(" ")}\n${stderr}`,
+		);
 	return stderr;
 }
 
@@ -98,7 +101,9 @@ export async function finalizeEpisodeVideo(
 	);
 	if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0)
 		throw new Error("FFmpeg finalization produced no video");
-	const qaLog = await runCapture(buildEpisodeVideoQaCommand(outputPath, ffmpeg));
+	const qaLog = await runCapture(
+		buildEpisodeVideoQaCommand(outputPath, ffmpeg),
+	);
 	const qa = parseEpisodeVideoQa(qaLog);
 	if (qa.blackSegments > 0 || qa.freezeSegments > 0) {
 		throw new Error(
