@@ -16,7 +16,10 @@ export function buildFfprobeDurationCommand(
 	];
 }
 
-export function probeAudioDurationMs(path: string, ffprobe = "ffprobe"): number {
+export function probeAudioDurationMs(
+	path: string,
+	ffprobe = "ffprobe",
+): number {
 	const result = Bun.spawnSync(buildFfprobeDurationCommand(path, ffprobe), {
 		stdout: "pipe",
 		stderr: "pipe",
