@@ -26,6 +26,19 @@ jobs:
     - name: PR merge gate
       run: bun run check:merge
 
+    - name: Install FFmpeg for episode render smoke
+      run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+
+    - name: Episode canonical render smoke
+      run: bun src/scripts/smoke_episode_pipeline.ts
+
+    - name: Upload episode render smoke evidence
+      uses: actions/upload-artifact@v4
+      with:
+        name: episode-render-smoke
+        path: .artifacts/episode-render-smoke/
+        if-no-files-found: error
+
     - name: Byosan Active Probe runtime smoke
       run: bun src/scripts/verify_byosan_runtime.ts
       env:

@@ -113,6 +113,26 @@ tasks:
         fi
         bun src/scripts/generate_movie.ts --plan "{{.PLAN}}" {{.CLI_ARGS}}
 
+  episode:compile:
+    desc: "Compile canonical episode.json into script, metadata, timeline, subtitles, short, locale strings, and Remotion inputs (EPISODE=... OUT=...)"
+    cmds:
+      - |
+        if [ -z "{{.EPISODE}}" ] || [ -z "{{.OUT}}" ]; then
+          echo "EPISODE and OUT are required" >&2
+          exit 2
+        fi
+        bun src/scripts/compile_episode.ts --episode "{{.EPISODE}}" --out "{{.OUT}}" {{.CLI_ARGS}}
+
+  episode:render:
+    desc: "Render a compiled episode through its isolated pinned Remotion workspace (COMPILED=... OUTPUT=... KIND=main|short)"
+    cmds:
+      - |
+        if [ -z "{{.COMPILED}}" ] || [ -z "{{.OUTPUT}}" ]; then
+          echo "COMPILED and OUTPUT are required" >&2
+          exit 2
+        fi
+        bun src/scripts/render_episode.ts --compiled "{{.COMPILED}}" --output "{{.OUTPUT}}" --kind "{{default "main" .KIND}}" {{.CLI_ARGS}}
+
   publish:visibility-audit:
     desc: "Audit published video visibility"
     cmds: ["bun src/scripts/public_visibility_audit.ts"]
