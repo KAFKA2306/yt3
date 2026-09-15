@@ -66,11 +66,26 @@ export function auditEpisode(episode: Episode): EpisodeAuditIssue[] {
 	const dialogues = allDialogues(episode);
 
 	issues.push(
-		...duplicateIssues(episode.sources.map((item) => item.id), "sources"),
-		...duplicateIssues(episode.claims.map((item) => item.id), "claims"),
-		...duplicateIssues(episode.assets.map((item) => item.id), "assets"),
-		...duplicateIssues(episode.visuals.map((item) => item.id), "visuals"),
-		...duplicateIssues(episode.sections.map((item) => item.id), "sections"),
+		...duplicateIssues(
+			episode.sources.map((item) => item.id),
+			"sources",
+		),
+		...duplicateIssues(
+			episode.claims.map((item) => item.id),
+			"claims",
+		),
+		...duplicateIssues(
+			episode.assets.map((item) => item.id),
+			"assets",
+		),
+		...duplicateIssues(
+			episode.visuals.map((item) => item.id),
+			"visuals",
+		),
+		...duplicateIssues(
+			episode.sections.map((item) => item.id),
+			"sections",
+		),
 		...duplicateIssues(
 			dialogues.map(({ dialogue }) => dialogue.id),
 			"sections.dialogue",
@@ -371,20 +386,14 @@ export function applyLocalePatch(
 	}
 	for (const visual of translated.visuals) {
 		for (const key of Object.keys(visual.props)) {
-			const patchValue =
-				patch.strings[`visuals.${visual.id}.props.${key}`];
-			if (
-				patchValue !== undefined &&
-				typeof visual.props[key] === "string"
-			) {
+			const patchValue = patch.strings[`visuals.${visual.id}.props.${key}`];
+			if (patchValue !== undefined && typeof visual.props[key] === "string") {
 				visual.props[key] = patchValue;
 			}
 		}
 		for (const element of visual.elements) {
 			const patchValue =
-				patch.strings[
-					`visuals.${visual.id}.elements.${element.id}.text`
-				];
+				patch.strings[`visuals.${visual.id}.elements.${element.id}.text`];
 			if (patchValue !== undefined && element.text !== undefined)
 				element.text = patchValue;
 		}
@@ -416,9 +425,7 @@ export function buildShortPlan(
 		dialogue_ids: selected.map((item) => item.dialogueId),
 		section_ids: [...new Set(selected.map((item) => item.sectionId))],
 		hook_dialogue_id: first.dialogueId,
-		highlight_dialogue_ids: selected
-			.slice(1)
-			.map((item) => item.dialogueId),
+		highlight_dialogue_ids: selected.slice(1).map((item) => item.dialogueId),
 		cta: "本編で続きを見る",
 		duration_ms: selected.reduce(
 			(sum, item) => sum + (item.endMs - item.startMs),
