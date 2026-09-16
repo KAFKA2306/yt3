@@ -26,17 +26,31 @@ jobs:
     - name: PR merge gate
       run: bun run check:merge
 
-    - name: Install FFmpeg for episode render smoke
-      run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+    - name: Install media tools for episode render smoke
+      run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg zip unzip
 
-    - name: Episode canonical render smoke
+    - name: Episode production-quality render smoke
       run: bun src/scripts/smoke_episode_pipeline.ts
+
+    - name: Pack bounded episode render evidence
+      run: |
+        cd .artifacts/episode-render-smoke
+        zip -9 -r ../episode-render-smoke-evidence.zip \
+          ja-main.mp4 ja-short.mp4 en-main.mp4 frames evidence
+        cd ..
+        size=$(stat -c%s episode-render-smoke-evidence.zip)
+        echo "episode evidence zip bytes=$size"
+        test "$size" -le 26214400
+        if unzip -l episode-render-smoke-evidence.zip | grep -q 'node_modules'; then
+          echo "node_modules leaked into episode render evidence" >&2
+          exit 1
+        fi
 
     - name: Upload episode render smoke evidence
       uses: actions/upload-artifact@v4
       with:
         name: episode-render-smoke
-        path: .artifacts/episode-render-smoke/
+        path: .artifacts/episode-render-smoke-evidence.zip
         if-no-files-found: error
 
     - name: Byosan Active Probe runtime smoke
