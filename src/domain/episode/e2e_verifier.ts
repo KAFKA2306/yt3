@@ -29,7 +29,8 @@ export interface EpisodeMediaProbe {
 }
 
 function durationMs(value: unknown, label: string): number {
-	if (typeof value !== "string") throw new Error(`${label} duration is missing`);
+	if (typeof value !== "string")
+		throw new Error(`${label} duration is missing`);
 	const seconds = Number.parseFloat(value);
 	if (!Number.isFinite(seconds) || seconds <= 0)
 		throw new Error(`${label} duration is invalid: ${String(value)}`);
@@ -105,7 +106,8 @@ export function assertTimelineContract(
 	timeline: EpisodeTimelineItem[],
 	fps: number,
 ): void {
-	if (timeline.length < 3) throw new Error("E2E timeline must contain at least 3 scenes");
+	if (timeline.length < 3)
+		throw new Error("E2E timeline must contain at least 3 scenes");
 	const durationSet = new Set<number>();
 	for (let index = 0; index < timeline.length; index++) {
 		const item = timeline[index];
@@ -116,24 +118,30 @@ export function assertTimelineContract(
 			const previous = timeline[index - 1];
 			if (
 				previous &&
-				(item.startMs !== previous.endMs || item.startFrame !== previous.endFrame)
+				(item.startMs !== previous.endMs ||
+					item.startFrame !== previous.endFrame)
 			) {
 				throw new Error(`timeline gap or overlap before ${item.dialogueId}`);
 			}
 		}
 		const renderedMs = ((item.endFrame - item.startFrame) / fps) * 1000;
 		if (Math.abs(renderedMs - durationMsValue) > 1000 / fps) {
-			throw new Error(`frame rounding exceeds one frame for ${item.dialogueId}`);
+			throw new Error(
+				`frame rounding exceeds one frame for ${item.dialogueId}`,
+			);
 		}
 	}
 	if (durationSet.size < 3)
-		throw new Error("E2E timeline must contain at least 3 distinct audio durations");
+		throw new Error(
+			"E2E timeline must contain at least 3 distinct audio durations",
+		);
 }
 
 export function assertTemplateCoverage(input: RemotionRenderInput): void {
 	const actual = new Set(input.items.map((item) => item.visual.type));
 	for (const template of REQUIRED_EPISODE_TEMPLATES) {
-		if (!actual.has(template)) throw new Error(`template was not rendered: ${template}`);
+		if (!actual.has(template))
+			throw new Error(`template was not rendered: ${template}`);
 	}
 }
 
