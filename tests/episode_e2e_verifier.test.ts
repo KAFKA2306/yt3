@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { EpisodeShortPlan, EpisodeTimelineItem } from "../src/domain/episode/compiler.js";
+import type {
+	EpisodeShortPlan,
+	EpisodeTimelineItem,
+} from "../src/domain/episode/compiler.js";
 import {
 	assertDeterministicFontContract,
 	assertEnglishLocale,
@@ -10,8 +13,8 @@ import {
 	buildRepresentativeFrameCommand,
 } from "../src/domain/episode/e2e_verifier.js";
 import {
-	buildRemotionWorkspaceFiles,
 	type RemotionRenderInput,
+	buildRemotionWorkspaceFiles,
 } from "../src/domain/episode/remotion_workspace.js";
 
 const templates = [
