@@ -53,6 +53,29 @@ jobs:
         path: .artifacts/episode-render-smoke-evidence.zip
         if-no-files-found: error
 
+    - name: Canonical production path smoke
+      run: bun src/scripts/smoke_canonical_production.ts
+
+    - name: Pack canonical production evidence
+      run: |
+        cd .artifacts/canonical-production-smoke
+        zip -9 -r ../canonical-production-smoke-evidence.zip evidence summary.json
+        cd ..
+        size=$(stat -c%s canonical-production-smoke-evidence.zip)
+        echo "canonical production evidence zip bytes=$size"
+        test "$size" -le 26214400
+        if unzip -l canonical-production-smoke-evidence.zip | grep -q 'node_modules'; then
+          echo "node_modules leaked into canonical production evidence" >&2
+          exit 1
+        fi
+
+    - name: Upload canonical production evidence
+      uses: actions/upload-artifact@v4
+      with:
+        name: canonical-production-smoke
+        path: .artifacts/canonical-production-smoke-evidence.zip
+        if-no-files-found: error
+
     - name: Byosan Active Probe runtime smoke
       run: bun src/scripts/verify_byosan_runtime.ts
       env:
