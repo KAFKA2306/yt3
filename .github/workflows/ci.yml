@@ -23,6 +23,20 @@ jobs:
     - name: Install dependencies from lockfile
       run: bun ci
 
+    - name: Format Issue 123 files
+      run: bun biome check --write src/domain/episode/production.ts src/scripts/smoke_canonical_production.ts src/workflow.ts tests/episode_production.test.ts
+
+    - name: Upload formatted Issue 123 files
+      uses: actions/upload-artifact@v4
+      with:
+        name: issue-123-formatted
+        path: |
+          src/domain/episode/production.ts
+          src/scripts/smoke_canonical_production.ts
+          src/workflow.ts
+          tests/episode_production.test.ts
+        if-no-files-found: error
+
     - name: PR merge gate
       run: bun run check:merge
 
