@@ -2,10 +2,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import fs from "fs-extra";
 import {
-	auditEpisode,
-	extractTranslatableStrings,
 	type EpisodeShortPlan,
 	type EpisodeTimelineItem,
+	auditEpisode,
+	extractTranslatableStrings,
 } from "../domain/episode/compiler.js";
 import {
 	assertDeterministicFontContract,
@@ -18,10 +18,10 @@ import {
 	probeEpisodeMedia,
 } from "../domain/episode/e2e_verifier.js";
 import {
-	buildRemotionWorkspaceFiles,
 	type RemotionRenderInput,
+	buildRemotionWorkspaceFiles,
 } from "../domain/episode/remotion_workspace.js";
-import { parseEpisode, type Episode } from "../domain/episode/schema.js";
+import { type Episode, parseEpisode } from "../domain/episode/schema.js";
 import { compileEpisode } from "./compile_episode.js";
 import { renderEpisode } from "./render_episode.js";
 
@@ -67,39 +67,42 @@ async function makeTone(
 
 function translateFixtureValue(value: string): string {
 	const translations: Record<string, string> = {
-		"実動画E2E": "Real video E2E",
-		"正本JSONから実動画を生成する": "Render a real video from canonical JSON",
-		"本編": "Main",
-		"フック": "Hook: canonical JSON",
-		"比較": "Highlight: compare paths",
-		"本編を見る": "CTA: watch the full video",
-		"工程": "Timeline",
-		"数値": "Number highlight",
-		"引用": "Quote",
-		"出典": "Source card",
-		"画像": "Image template",
-		"端末": "Terminal",
-		"GitHub": "GitHub card",
-		"JSONから動画": "JSON to video",
-		"日本語字幕確認": "English subtitle check",
-		"左": "Left",
-		"右": "Right",
-		"方式A": "Method A",
-		"方式B": "Method B",
-		"実フレームで比較": "Compare using real frames",
-		"テンプレート工程": "Template timeline",
+		実動画E2E: "Real video E2E",
+		正本JSONから実動画を生成する: "Render a real video from canonical JSON",
+		本編: "Main",
+		フック: "Hook: canonical JSON",
+		比較: "Highlight: compare paths",
+		本編を見る: "CTA: watch the full video",
+		工程: "Timeline",
+		数値: "Number highlight",
+		引用: "Quote",
+		出典: "Source card",
+		画像: "Image template",
+		端末: "Terminal",
+		GitHub: "GitHub card",
+		JSONから動画: "JSON to video",
+		日本語字幕確認: "English subtitle check",
+		レンダリング確認: "Render check",
+		左: "Left",
+		右: "Right",
+		方式A: "Method A",
+		方式B: "Method B",
+		実フレームで比較: "Compare using real frames",
+		テンプレート工程: "Template timeline",
 		"10テンプレート": "10 templates",
-		"実フレームで確認": "Verified with real frames",
-		"出典カード": "Source card",
-		"画像テンプレート": "Image template",
-		"GitHubカード": "GitHub card",
-		"実動画で閉じる": "Close with real video evidence",
-		"日本語E2E": "English E2E",
+		実フレームで確認: "Verified with real frames",
+		出典カード: "Source card",
+		画像テンプレート: "Image template",
+		GitHubカード: "GitHub card",
+		実動画で閉じる: "Close with real video evidence",
+		日本語E2E: "English E2E",
 	};
 	const translated = translations[value];
 	if (translated) return translated;
 	if (!/[\u3040-\u30ff\u3400-\u9fff]/u.test(value)) return value;
-	throw new Error(`missing deterministic English fixture translation: ${value}`);
+	throw new Error(
+		`missing deterministic English fixture translation: ${value}`,
+	);
 }
 
 function buildEpisodeFixture(audioNames: [string, string, string]) {
@@ -327,15 +330,27 @@ export async function smokeEpisodePipeline(
 	const jaShortInput = await readJson<RemotionRenderInput>(
 		path.join(jaDir, "render-input-short.json"),
 	);
-	const shortPlan = await readJson<EpisodeShortPlan>(path.join(jaDir, "short.json"));
+	const shortPlan = await readJson<EpisodeShortPlan>(
+		path.join(jaDir, "short.json"),
+	);
 	assertTimelineContract(jaTimeline, episode.fps);
 	assertTemplateCoverage(jaMainInput);
 	assertShortContract(shortPlan, jaShortInput);
 
 	const jaMain = path.join(root, "ja-main.mp4");
 	const jaShort = path.join(root, "ja-short.mp4");
-	await renderEpisode({ compiled: jaDir, kind: "main", output: jaMain, dryRun: false });
-	await renderEpisode({ compiled: jaDir, kind: "short", output: jaShort, dryRun: false });
+	await renderEpisode({
+		compiled: jaDir,
+		kind: "main",
+		output: jaMain,
+		dryRun: false,
+	});
+	await renderEpisode({
+		compiled: jaDir,
+		kind: "short",
+		output: jaShort,
+		dryRun: false,
+	});
 
 	const sourceStrings = extractTranslatableStrings(episode);
 	const localePath = path.join(root, "en.json");
@@ -355,10 +370,17 @@ export async function smokeEpisodePipeline(
 		localePatch: localePath,
 		ffprobe: "ffprobe",
 	});
-	const enEpisode = parseEpisode(await readFile(path.join(enDir, "episode.resolved.json"), "utf8"));
+	const enEpisode = parseEpisode(
+		await readFile(path.join(enDir, "episode.resolved.json"), "utf8"),
+	);
 	assertEnglishLocale(extractTranslatableStrings(enEpisode));
 	const enMain = path.join(root, "en-main.mp4");
-	await renderEpisode({ compiled: enDir, kind: "main", output: enMain, dryRun: false });
+	await renderEpisode({
+		compiled: enDir,
+		kind: "main",
+		output: enMain,
+		dryRun: false,
+	});
 
 	const probes = {
 		jaMain: probeEpisodeMedia(jaMain),
@@ -367,7 +389,10 @@ export async function smokeEpisodePipeline(
 	};
 	const contracts = {
 		jaMain: assertMediaContract(probes.jaMain, { width: 1920, height: 1080 }),
-		jaShort: assertMediaContract(probes.jaShort, { width: 1080, height: 1920 }),
+		jaShort: assertMediaContract(probes.jaShort, {
+			width: 1080,
+			height: 1920,
+		}),
 		enMain: assertMediaContract(probes.enMain, { width: 1920, height: 1080 }),
 	};
 	await writeJson(path.join(evidenceDir, "media-probes.json"), {
@@ -378,7 +403,8 @@ export async function smokeEpisodePipeline(
 	const visualTypeByDialogue = new Map(
 		episode.sections[0]?.dialogue.map((dialogue) => [
 			dialogue.id,
-		episode.visuals.find((visual) => visual.id === dialogue.visual_ref)?.type ?? "unknown",
+			episode.visuals.find((visual) => visual.id === dialogue.visual_ref)
+				?.type ?? "unknown",
 		]) ?? [],
 	);
 	const frameEvidence: Array<{
@@ -417,8 +443,10 @@ export async function smokeEpisodePipeline(
 		});
 	}
 	const enFirst = jaTimeline[0];
-	if (!enFirst) throw new Error("English representative frame has no timeline item");
-	const enSeconds = Math.max(enFirst.startFrame, enFirst.endFrame - 1) / episode.fps;
+	if (!enFirst)
+		throw new Error("English representative frame has no timeline item");
+	const enSeconds =
+		Math.max(enFirst.startFrame, enFirst.endFrame - 1) / episode.fps;
 	await extractFrame(enMain, path.join(framesDir, "en-title.png"), enSeconds);
 	frameEvidence.push({
 		kind: "en-main",
@@ -427,7 +455,10 @@ export async function smokeEpisodePipeline(
 		seconds: enSeconds,
 		file: "en-title.png",
 	});
-	await writeJson(path.join(evidenceDir, "representative-frames.json"), frameEvidence);
+	await writeJson(
+		path.join(evidenceDir, "representative-frames.json"),
+		frameEvidence,
+	);
 
 	for (const [prefix, directory] of [
 		["ja", jaDir],
