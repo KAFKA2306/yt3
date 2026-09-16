@@ -2,9 +2,13 @@ import path from "node:path";
 import fs from "fs-extra";
 import { AuditAgent } from "./domain/agents/audit.js";
 import { ScriptSmith } from "./domain/agents/content.js";
-import { type MediaResult, VisualDirector } from "./domain/agents/media.js";
+import type { MediaResult } from "./domain/agents/media.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
+import {
+	type CanonicalProductionResult,
+	runCanonicalEpisodeProduction,
+} from "./domain/episode/production.js";
 import type { AgentState, ContentResult } from "./domain/types.js";
 import { type AssetStore, appendLoopMemory } from "./io/core.js";
 import { sendAlert } from "./io/utils/discord.js";
@@ -110,49 +114,42 @@ export async function runSequentialWorkflow(
 		"media",
 		store.cfg.workflow.filenames.output,
 	);
-	if (fs.existsSync(videoPath) && fs.existsSync(mediaOutputPath)) {
+	const canonicalResultPath = path.join(
+		store.runDir,
+		"episode",
+		"production-result.json",
+	);
+	if (
+		fs.existsSync(videoPath) &&
+		fs.existsSync(mediaOutputPath) &&
+		fs.existsSync(canonicalResultPath)
+	) {
 		AgentLogger.info(
 			"SYSTEM",
 			"WORKFLOW",
 			"STEP",
-			"Skipping Media Rendering (cached video & media output found)",
+			"Skipping Canonical Episode Production (verified canonical cache found)",
 		);
 		const mediaResults = store.load<MediaResult>("media", "output");
 		if (!mediaResults) throw new Error("Failed to load cached media results");
 		state = { ...state, ...mediaResults };
-
-		if (state.script && mediaResults.audio_paths) {
-			const { execSync } = require("node:child_process");
-			for (let i = 0; i < state.script.lines.length; i++) {
-				const line = state.script.lines[i];
-				const audioPath = mediaResults.audio_paths[i];
-				if (line && audioPath && fs.existsSync(audioPath)) {
-					try {
-						const durationStr = execSync(
-							`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`,
-							{ encoding: "utf-8" },
-						).trim();
-						line.duration = Number.parseFloat(durationStr) || 0;
-					} catch {
-						line.duration = 0;
-					}
-				}
-			}
-		}
+		applyCanonicalDurations(state, store);
 	} else {
 		AgentLogger.info(
 			"SYSTEM",
 			"WORKFLOW",
 			"STEP",
-			"Starting Media Rendering...",
+			"Starting Canonical Episode Production...",
 		);
-		if (!state.script) throw new Error("Missing script for media rendering");
-		const media = new VisualDirector(store);
-		const mediaResults = await media.run(
-			state.script,
-			state.metadata?.title || state.script.title,
-			state.metadata?.thumbnail_title,
-		);
+		if (!state.script) throw new Error("Missing script for canonical production");
+		if (!state.metadata)
+			throw new Error("Missing metadata for canonical production");
+		const canonical = await runCanonicalEpisodeProduction(store, state);
+		const mediaResults: MediaResult = {
+			audio_paths: canonical.audio_paths,
+			thumbnail_path: canonical.thumbnail_path,
+			video_path: canonical.video_path,
+		};
 		state = { ...state, ...mediaResults };
 		store.save("media", "output", mediaResults);
 	}
@@ -186,7 +183,7 @@ export async function runSequentialWorkflow(
 				"Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
 			signals: failingChecks,
 			fixes: [
-				"regenerate content and media rather than reusing stale artifacts",
+				"regenerate content and canonical episode media rather than reusing stale artifacts",
 				"treat failing audit checks as state invalidation, not just a notification",
 				"retain the failing check names as operator diagnostic evidence",
 			],
@@ -217,9 +214,10 @@ export async function runSequentialWorkflow(
 			evidence_paths: [
 				path.join(store.runDir, "state.json"),
 				path.join(store.runDir, "audit", "result.json"),
+				path.join(store.runDir, "episode", "qa.json"),
 			],
 			artifact_paths: [],
-			note: "Publish was blocked by critical audit checks and the content cache was invalidated.",
+			note: "Publish was blocked by critical audit checks and the canonical content cache was invalidated.",
 		});
 		return state;
 	}
@@ -261,7 +259,10 @@ export async function runSequentialWorkflow(
 			status: state.status,
 			disposition: failure.disposition,
 			log_path: resolveDailyLogPath(state.run_id),
-			evidence_paths: [path.join(store.runDir, "state.json")],
+			evidence_paths: [
+				path.join(store.runDir, "state.json"),
+				path.join(store.runDir, "episode", "production-result.json"),
+			],
 			artifact_paths: [],
 			failure,
 			note: "Publish exception was caught and classified in workflow.ts.",
@@ -270,9 +271,17 @@ export async function runSequentialWorkflow(
 		return state;
 	}
 
+	const receiptPath = path.join(store.runDir, "publish", "receipt.json");
+	const existingReceipt = fs.existsSync(receiptPath)
+		? fs.readJsonSync(receiptPath)
+		: {};
 	fs.writeJsonSync(
-		path.join(store.runDir, "publish", "receipt.json"),
-		publishResults,
+		receiptPath,
+		{
+			...existingReceipt,
+			...publishResults,
+			canonical_episode: buildCanonicalReceiptTrace(store),
+		},
 		{ spaces: 2 },
 	);
 
@@ -284,9 +293,10 @@ export async function runSequentialWorkflow(
 		stage: "publish",
 		kind: "success",
 		summary:
-			"Run completed successfully. Keep the audience framing, title shape, and audit-safe structure that passed this cycle.",
+			"Run completed successfully. Keep the audience framing, title shape, canonical episode, and audit-safe structure that passed this cycle.",
 		signals: [
 			state.metadata?.title || state.script?.title || "successful publish",
+			"canonical episode passed",
 			"audit passed",
 			"publish succeeded",
 		],
@@ -306,13 +316,61 @@ export async function runSequentialWorkflow(
 		log_path: resolveDailyLogPath(state.run_id),
 		evidence_paths: [
 			path.join(store.runDir, "state.json"),
+			path.join(store.runDir, "episode", "episode.json"),
+			path.join(store.runDir, "episode", "production-result.json"),
+			path.join(store.runDir, "episode", "qa.json"),
 			path.join(store.runDir, "publish", "state.json"),
-			path.join(store.runDir, "publish", "receipt.json"),
+			receiptPath,
 		],
 		artifact_paths: [state.video_path || ""].filter(Boolean),
-		note: "Sequential workflow completed successfully with canonical publication evidence.",
+		note: "Sequential workflow completed successfully through the canonical episode production path.",
 	});
 	return state;
+}
+
+function applyCanonicalDurations(state: AgentState, store: AssetStore): void {
+	if (!state.script) return;
+	const timelinePath = path.join(
+		store.runDir,
+		"episode",
+		"compiled",
+		"ja",
+		"timeline.json",
+	);
+	if (!fs.existsSync(timelinePath))
+		throw new Error("canonical cache is missing measured timeline evidence");
+	const timeline = fs.readJsonSync(timelinePath) as Array<{
+		startMs: number;
+		endMs: number;
+	}>;
+	if (timeline.length !== state.script.lines.length)
+		throw new Error("canonical cached timeline does not match script dialogue count");
+	for (let index = 0; index < state.script.lines.length; index++) {
+		const line = state.script.lines[index];
+		const timing = timeline[index];
+		if (line && timing) line.duration = (timing.endMs - timing.startMs) / 1000;
+	}
+}
+
+function buildCanonicalReceiptTrace(store: AssetStore): Record<string, unknown> {
+	const resultPath = path.join(store.runDir, "episode", "production-result.json");
+	if (!fs.existsSync(resultPath))
+		throw new Error("publish receipt cannot be finalized without canonical production result");
+	const result = fs.readJsonSync(resultPath) as CanonicalProductionResult;
+	if (!fs.existsSync(result.episode_manifest_path))
+		throw new Error("publish receipt cannot be finalized without canonical episode manifest");
+	const manifest = fs.readJsonSync(result.episode_manifest_path) as Record<string, unknown>;
+	return {
+		episode_path: result.episode_path,
+		manifest_path: result.episode_manifest_path,
+		episode_sha256: manifest.episode_sha256,
+		timeline_sha256: manifest.timeline_sha256,
+		main_video_path: result.video_path,
+		short_video_path: result.short_video_path,
+		locale_video_paths: result.locale_video_paths,
+		qa_path: result.canonical_qa_path,
+		asr_report_path: result.asr_report_path,
+	};
 }
 
 function invalidateContentArtifacts(store: AssetStore) {
@@ -321,6 +379,7 @@ function invalidateContentArtifacts(store: AssetStore) {
 		path.join(store.runDir, "metadata.json"),
 		path.join(store.runDir, "media", store.cfg.workflow.filenames.output),
 		path.join(store.videoDir(), store.cfg.workflow.filenames.video),
+		path.join(store.runDir, "episode"),
 	];
 	for (const targetPath of paths) {
 		if (fs.existsSync(targetPath)) fs.removeSync(targetPath);
@@ -338,6 +397,7 @@ function invalidateMediaArtifacts(store: AssetStore) {
 		path.join(mediaDir, "video"),
 		path.join(store.runDir, store.cfg.workflow.filenames.thumbnail),
 		path.join(store.runDir, store.cfg.workflow.filenames.subtitles),
+		path.join(store.runDir, "episode"),
 	];
 	for (const targetPath of paths) {
 		if (fs.existsSync(targetPath)) fs.removeSync(targetPath);
