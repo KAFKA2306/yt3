@@ -55,7 +55,7 @@ export function buildRemotionInput(
 		const duration = item.endFrame - item.startFrame;
 		const startFrame = shortPlan ? shortFrameCursor : item.startFrame;
 		if (shortPlan) shortFrameCursor += duration;
-		const shortRole = !shortPlan
+		const shortRole: RemotionRenderItem["shortRole"] = !shortPlan
 			? null
 			: item.dialogueId === shortPlan.hook_dialogue_id
 				? "HOOK"
