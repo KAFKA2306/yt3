@@ -175,11 +175,17 @@ export async function smokeCanonicalProduction(
 			tags: ["canonical", "episode"],
 		},
 	};
+	const smokeScript = state.script;
+	const smokeMetadata = state.metadata;
+	if (!smokeScript || !smokeMetadata)
+		throw new Error("canonical production smoke fixture is incomplete");
 
-	const previewAudio = state.script?.lines.map((_, index) => `../media/audio/ja/${String(index).padStart(3, "0")}.wav`) ?? [];
+	const previewAudio = smokeScript.lines.map(
+		(_, index) => `../media/audio/ja/${String(index).padStart(3, "0")}.wav`,
+	);
 	const previewEpisode = buildCanonicalEpisode({
-		script: state.script!,
-		metadata: state.metadata!,
+		script: smokeScript,
+		metadata: smokeMetadata,
 		news: state.news ?? [],
 		fps: store.cfg.steps.video.fps,
 		audioPaths: previewAudio,
