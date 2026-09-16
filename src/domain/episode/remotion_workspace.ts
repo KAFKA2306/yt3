@@ -3,6 +3,8 @@ import type { Episode } from "./schema.js";
 
 export const REMOTION_VERSION = "4.0.524";
 export const REACT_VERSION = "19.0.0";
+export const NOTO_SANS_JP_VERSION = "5.3.0";
+export const EPISODE_FONT_FAMILY = "Noto Sans JP Variable";
 
 export interface RemotionRenderItem {
 	id: string;
@@ -11,6 +13,7 @@ export interface RemotionRenderItem {
 	speaker: string;
 	text: string;
 	subtitle: string;
+	shortRole: "HOOK" | "HIGHLIGHT" | "CTA" | null;
 	visual: {
 		type: string;
 		props: Record<string, unknown>;
@@ -40,6 +43,7 @@ export function buildRemotionInput(
 	const selected = timeline.filter(
 		(item) => !allowed || allowed.has(item.dialogueId),
 	);
+	const ctaDialogueId = shortPlan?.dialogue_ids.at(-1) ?? null;
 	let shortFrameCursor = 0;
 	const items = selected.map((item) => {
 		const dialogue = dialogueById.get(item.dialogueId);
@@ -51,6 +55,13 @@ export function buildRemotionInput(
 		const duration = item.endFrame - item.startFrame;
 		const startFrame = shortPlan ? shortFrameCursor : item.startFrame;
 		if (shortPlan) shortFrameCursor += duration;
+		const shortRole: RemotionRenderItem["shortRole"] = !shortPlan
+			? null
+			: item.dialogueId === shortPlan.hook_dialogue_id
+				? "HOOK"
+				: item.dialogueId === ctaDialogueId
+					? "CTA"
+					: "HIGHLIGHT";
 		return {
 			id: dialogue.id,
 			startFrame,
@@ -58,6 +69,7 @@ export function buildRemotionInput(
 			speaker: dialogue.speaker,
 			text: dialogue.text,
 			subtitle: dialogue.subtitle ?? dialogue.text,
+			shortRole,
 			visual: {
 				type: visual?.type ?? "title",
 				props: visual?.props ?? { title: dialogue.text },
@@ -79,6 +91,7 @@ export function remotionPackageJson(): string {
 			private: true,
 			type: "module",
 			dependencies: {
+				"@fontsource-variable/noto-sans-jp": NOTO_SANS_JP_VERSION,
 				"@remotion/cli": REMOTION_VERSION,
 				react: REACT_VERSION,
 				"react-dom": REACT_VERSION,
@@ -90,12 +103,24 @@ export function remotionPackageJson(): string {
 	)}\n`;
 }
 
-export const REMOTION_ENTRY_TSX = `import React from "react";
-import { AbsoluteFill, Composition, Sequence, interpolate, registerRoot, useCurrentFrame } from "remotion";
+export const REMOTION_ENTRY_TSX = `import "@fontsource-variable/noto-sans-jp";
+import React from "react";
+import { AbsoluteFill, Composition, Sequence, cancelRender, continueRender, delayRender, interpolate, registerRoot, useCurrentFrame } from "remotion";
 
-type Item = {id:string;startFrame:number;endFrame:number;speaker:string;text:string;subtitle:string;visual:{type:string;props:Record<string,unknown>}};
+type Item = {id:string;startFrame:number;endFrame:number;speaker:string;text:string;subtitle:string;shortRole:"HOOK"|"HIGHLIGHT"|"CTA"|null;visual:{type:string;props:Record<string,unknown>}};
 type Input = {fps:number;width:number;height:number;durationInFrames:number;items:Item[]};
 const placeholder: Input = {fps:30,width:1920,height:1080,durationInFrames:1,items:[]};
+const FONT_FAMILY = "${EPISODE_FONT_FAMILY}";
+const fontHandle = delayRender("Load deterministic Noto Sans JP webfont");
+if (typeof document !== "undefined") {
+  Promise.all([
+    document.fonts.load('400 42px "'+FONT_FAMILY+'"', "レンダリング確認"),
+    document.fonts.load('700 64px "'+FONT_FAMILY+'"', "日本語字幕"),
+  ]).then(() => {
+    if (!document.fonts.check('400 42px "'+FONT_FAMILY+'"', "レンダリング確認")) throw new Error("CJK font contract failed");
+    continueRender(fontHandle);
+  }).catch((error) => cancelRender(error instanceof Error ? error : new Error(String(error))));
+}
 const text = (value: unknown, fallback = "") => typeof value === "string" ? value : fallback;
 const list = (value: unknown) => Array.isArray(value) ? value.map((item) => String(item)) : [];
 const card: React.CSSProperties = {background:"rgba(255,255,255,0.92)",borderRadius:28,padding:44,color:"#0d1b2a",boxShadow:"0 18px 60px rgba(0,0,0,.18)"};
@@ -120,10 +145,10 @@ const Visual = ({item}:{item:Item}) => {
 
 const Scene = ({item}:{item:Item}) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame,[0,8],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  const opacity = interpolate(frame,[0,3],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
   const angle = 135 + (frame % 240) * 0.08;
   const drift = Math.sin(frame / 18) * 1.2;
-  return <AbsoluteFill style={{background:"linear-gradient("+angle+"deg,#0d1b2a,#1b263b)",color:"white",fontFamily:"Arial, sans-serif",alignItems:"center",justifyContent:"center",opacity}}><div style={{display:"contents",transform:"translateX("+drift+"px)"}}><Visual item={item}/></div><div style={{position:"absolute",left:"6%",right:"6%",bottom:"5%",padding:"18px 28px",background:"rgba(0,0,0,.72)",borderRadius:20,textAlign:"center",fontSize:42,fontWeight:700}}>{item.subtitle}</div></AbsoluteFill>;
+  return <AbsoluteFill style={{background:"linear-gradient("+angle+"deg,#0d1b2a,#1b263b)",color:"white",fontFamily:FONT_FAMILY,alignItems:"center",justifyContent:"center",opacity}}><div style={{position:"absolute",left:"4%",top:"4%",fontSize:24,letterSpacing:2,opacity:.72}}>{item.visual.type}</div>{item.shortRole ? <div style={{position:"absolute",right:"6%",top:"5%",padding:"12px 20px",border:"2px solid rgba(255,255,255,.72)",borderRadius:999,fontSize:30,fontWeight:800}}>{item.shortRole}</div> : null}<div style={{display:"contents",transform:"translateX("+drift+"px)"}}><Visual item={item}/></div><div style={{position:"absolute",left:"6%",right:"6%",bottom:"5%",padding:"18px 28px",background:"rgba(0,0,0,.72)",borderRadius:20,textAlign:"center",fontSize:42,fontWeight:700}}>{item.subtitle}</div></AbsoluteFill>;
 };
 
 const Episode = ({items}:Input) => <AbsoluteFill>{items.map((item)=><Sequence key={item.id} from={item.startFrame} durationInFrames={Math.max(1,item.endFrame-item.startFrame)}><Scene item={item}/></Sequence>)}</AbsoluteFill>;
