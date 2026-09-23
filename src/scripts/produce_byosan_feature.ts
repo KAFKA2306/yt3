@@ -1176,6 +1176,7 @@ async function writeOutputs(
 			angle: spec.angle,
 			title_hook: spec.title,
 			search_query: spec.searchQuery,
+			key_questions: [spec.centralQuestion],
 		},
 		script,
 		metadata,
