@@ -1314,6 +1314,21 @@ async function auditProduction(
 				)
 				.join("")
 		: "";
+	const topicMarkerTokens = [
+		firstSegment?.headline ?? "",
+		spec.title,
+		spec.angle,
+	]
+		.flatMap(
+			(value) =>
+				value.match(
+					/[一-龯々〆ヵヶ]{2,}|[ぁ-んァ-ヶー]{2,}|[A-Za-z0-9$%]{2,}/g,
+				) ?? [],
+		)
+		.filter((value, index, values) => values.indexOf(value) === index);
+	const topicMarkerHits = topicMarkerTokens.filter((token) =>
+		firstFiveText.includes(token),
+	);
 	const firstThirtyText = timed
 		.filter((segment) => segment.start < 30)
 		.map((segment) => segment.text)
@@ -1349,8 +1364,7 @@ async function auditProduction(
 		opening_5_seconds:
 			firstSegment !== undefined &&
 			firstFiveText.length > 0 &&
-			(firstFiveText.includes(spec.hookPromises[0] ?? "") ||
-				firstFiveText.includes(spec.title.slice(0, 6))),
+			topicMarkerHits.length >= 2,
 		question_within_30_seconds: hasQuestionWithinThirtySeconds,
 		fact_importance_counter_conclusion: Boolean(
 			spec.centralQuestion &&
