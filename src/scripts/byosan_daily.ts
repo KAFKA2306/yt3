@@ -507,6 +507,7 @@ async function generateFeatureSpec(
 	const evidence = {
 		candidate,
 		allowed_sources: sources,
+		allowed_source_ids: sources.map((source) => source.id),
 		news: research.news,
 	};
 	let lastError: unknown;
@@ -526,7 +527,7 @@ async function generateFeatureSpec(
 				},
 				{
 					role: "user",
-					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。centralQuestion、whyItMatters、counterargument、conclusion、nextWatchNumbersを必ず出力する。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。必須フィールドを1つでも出せない場合は成功形を返さず、前回エラーと同様に修正してから完全なJSONを返すこと。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
+					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。centralQuestion、whyItMatters、counterargument、conclusion、nextWatchNumbersを必ず出力する。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。claimsは必ずallowed_source_idsから1個以上を選び、sourceIds:[]を絶対に出さない。必須フィールドを1つでも出せない場合は成功形を返さず、前回エラーと同様に修正してから完全なJSONを返すこと。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
 				},
 			]);
 			const responseText =
