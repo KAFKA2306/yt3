@@ -701,7 +701,7 @@ export async function runByosanDaily(): Promise<void> {
 			production_plan: productionPlan,
 			performance_preference: preferredFormat ?? null,
 			feature_spec: specPath,
-			motion_policy: "center_locked_no_lateral_oscillation",
+			motion_policy: "static_scenes_no_camera_motion",
 			generated_at: new Date().toISOString(),
 		},
 		{ spaces: 2 },
