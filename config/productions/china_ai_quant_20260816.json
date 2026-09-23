@@ -26,6 +26,11 @@
 		"生データ: https://kafka2306.github.io/semiconductor-earnings-model/china-ai/"
 	],
 	"disclaimer": "本動画は『NVIDIAに性能で勝たなくても、安いTokenを大量供給できればAI産業は成立しうる』という仮説を、公開一次資料の数量で検証する情報提供です。企業間の優劣、投資判断、将来の市場シェアや技術覇権を断定・予測するものではありません。",
+	"centralQuestion": "中国AIはNVIDIAの最先端GPUに勝たなくても、安いTokenを大量かつ継続的に供給できるのか？",
+	"whyItMatters": "性能競争だけでなく、Tokenの供給量と価格がAI企業の売上・利用量・設備投資を左右するためです。",
+	"counterargument": "公開された算力やToken量が実利用や利益に結びついていないなら、供給能力だけで産業の成立を説明できません。",
+	"conclusion": "中国AIの競争力は単一GPUの性能ではなく、算力・Token価格・実導入・AI売上を同じ軸で確認して判断すべきです。",
+	"nextWatchNumbers": ["Token単価", "AI Cloud Infra売上", "国産acceleratorの実稼働率"],
 	"hookPromises": ["120兆", "2185", "56万", "88億元"],
 	"noveltyQueries": [
 		"site:youtube.com/watch 中国AI NVIDIA 勝たなくていい 120兆 Token 2185 EFLOPS",

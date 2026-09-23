@@ -1299,6 +1299,76 @@ async function auditProduction(
 	const openingPromisesPaid = spec.hookPromises.every((promise) =>
 		openingText.includes(promise),
 	);
+	const firstSegment = timed[0];
+	const firstFiveText = firstSegment
+		? Array.from(firstSegment.text)
+				.slice(
+					0,
+					Math.max(
+						1,
+						Math.ceil(
+							Array.from(firstSegment.text).length *
+								Math.min(1, 5 / Math.max(firstSegment.duration, 0.01)),
+						),
+					),
+				)
+				.join("")
+		: "";
+	const firstThirtyText = timed
+		.filter((segment) => segment.start < 30)
+		.map((segment) => segment.text)
+		.join(" ");
+	const finalText = timed
+		.slice(-3)
+		.map((segment) => segment.text)
+		.join(" ");
+	const hasQuestionWithinThirtySeconds = /[?？]|なぜ|どうして|本当に|何が/.test(
+		firstThirtyText,
+	);
+	const hasCounterargumentDialogue = timed.some(
+		(segment) =>
+			segment.speaker === "ずんだもん" &&
+			/(\?|？|でも|ただ|本当に|それなら|一方)/.test(segment.text),
+	);
+	const visualTypeCount = new Set(timed.map((segment) => segment.visualType))
+		.size;
+	const hasDataVisual = timed.some((segment) =>
+		/(chart|graph|table|compare|comparison|flow|timeline|bar|line|因果|比較|表|推移|供給|利益)/i.test(
+			segment.visualType,
+		),
+	);
+	const numericDisplayedStats = timed
+		.flatMap((segment) => segment.stats)
+		.filter((stat) => /\d/.test(stat.value));
+	const hasUnitsOnDisplayedNumbers =
+		numericDisplayedStats.length > 0 &&
+		numericDisplayedStats.every((stat) =>
+			/[%％円ドル$€£兆億万千百十倍bpMWGWkWh]/i.test(stat.value),
+		);
+	const checklist = {
+		opening_5_seconds:
+			firstSegment !== undefined &&
+			firstFiveText.length > 0 &&
+			(firstFiveText.includes(spec.hookPromises[0] ?? "") ||
+				firstFiveText.includes(spec.title.slice(0, 6))),
+		question_within_30_seconds: hasQuestionWithinThirtySeconds,
+		fact_importance_counter_conclusion: Boolean(
+			spec.centralQuestion &&
+				spec.whyItMatters &&
+				spec.counterargument &&
+				spec.conclusion,
+		),
+		one_topic: spec.angle.trim().length >= 12,
+		next_watch_numbers:
+			spec.nextWatchNumbers.length >= 1 &&
+			finalText.length > 0 &&
+			spec.nextWatchNumbers.some((value) => finalText.includes(value)),
+		character_roles:
+			new Set(timed.map((segment) => segment.speaker)).size === 2 &&
+			hasCounterargumentDialogue,
+		visual_explanation: visualTypeCount >= 3 && hasDataVisual,
+		units_and_readability: hasUnitsOnDisplayedNumbers,
+	};
 	const motionFilter = centerLockedMotionFilter(FPS);
 	const motionPolicyPass =
 		!motionFilter.match(/sin|cos/) &&
@@ -1332,6 +1402,10 @@ async function auditProduction(
 				promise: spec.hookPromises,
 				opening_text: openingText,
 			},
+		},
+		basic_checklist: {
+			status: Object.values(checklist).every(Boolean) ? "PASS" : "FAIL",
+			evidence: checklist,
 		},
 		content: {
 			status: sourceCoverage ? "PASS" : "FAIL",

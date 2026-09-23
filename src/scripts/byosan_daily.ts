@@ -28,206 +28,10 @@ export type PublishedRunEvidence = {
 	videoId?: string;
 };
 
-const BYOSAN_EMOTION_ALIASES: Record<string, string> = {
-	excited: "joy",
-	surprised: "shock",
-	enthusiastic: "joy",
-	happy: "joy",
-	neutral: "serious",
-	reassuring: "relieved",
-	concerned: "caution",
-	thoughtful: "analytical",
-	questioning: "curious",
-	optimistic: "confident",
-	informative: "analytical",
-	empathetic: "warm",
-	empowered: "confident",
-};
-const BYOSAN_EMOTIONS = [
-	"shock",
-	"reveal",
-	"curious",
-	"analytical",
-	"caution",
-	"confident",
-	"warm",
-	"relieved",
-	"serious",
-	"joy",
-] as const;
-
 export function normalizeFeatureDraft(
 	input: Record<string, unknown>,
-	candidate: ByosanAngleCandidate,
-	sources: FeatureSource[],
 ): Record<string, unknown> {
-	const allowed = new Set(sources.map((source) => source.id));
-	const firstSource = sources[0]?.id;
-	if (!firstSource) throw new Error("BYOSAN_FEATURE_SOURCE_MISSING");
-	const hooks = Array.isArray(input.hookPromises)
-		? input.hookPromises.filter(
-				(value): value is string => typeof value === "string",
-			)
-		: candidate.numbers.slice(0, 2);
-	const rawThumbnail =
-		input.thumbnail && typeof input.thumbnail === "object"
-			? (input.thumbnail as Record<string, unknown>)
-			: {};
-	const thumbnail = {
-		...rawThumbnail,
-		eyebrow: String(rawThumbnail.eyebrow || "今日の構造").slice(0, 18),
-		lead: String(rawThumbnail.lead || "注目").slice(0, 8),
-		accent: String(rawThumbnail.accent || "変化").slice(0, 10),
-		reaction: String(rawThumbnail.reaction || "必見").slice(0, 4),
-		secondLine: String(rawThumbnail.secondLine || "最新の変化").slice(0, 12),
-		calloutTop: String(
-			rawThumbnail.calloutTop || hooks[0] || "最新データ",
-		).slice(0, 22),
-		calloutBottom: String(
-			rawThumbnail.calloutBottom || hooks[1] || "条件を確認",
-		).slice(0, 18),
-	};
-	const rawClaims = Array.isArray(input.claims)
-		? (input.claims as Record<string, unknown>[])
-		: [];
-	const claims = rawClaims
-		.map((claim) => ({
-			claim: String(claim.claim || candidate.angle),
-			sourceIds: (Array.isArray(claim.sourceIds) ? claim.sourceIds : []).filter(
-				(id): id is string => typeof id === "string" && allowed.has(id),
-			),
-			status: [
-				"verified",
-				"derived_with_caveat",
-				"analyst_estimate_not_company_non_gaap",
-			].includes(String(claim.status))
-				? String(claim.status)
-				: "derived_with_caveat",
-		}))
-		.filter((claim) => claim.sourceIds.length > 0);
-	while (claims.length < 3)
-		claims.push({
-			claim: candidate.angle,
-			sourceIds: [firstSource],
-			status: "derived_with_caveat",
-		});
-	const rawSegments: Record<string, unknown>[] = Array.isArray(input.segments)
-		? (input.segments as Record<string, unknown>[])
-		: Array.isArray(input.videoScript)
-			? (input.videoScript as Record<string, unknown>[]).map((segment) => ({
-					...segment,
-					text: segment.dialogue,
-				}))
-			: [];
-	const segments = rawSegments
-		.map((segment, index) => {
-			const rawEmotion = String(segment.emotion || "analytical").toLowerCase();
-			const emotion =
-				BYOSAN_EMOTION_ALIASES[rawEmotion] ||
-				(BYOSAN_EMOTIONS as readonly string[]).includes(rawEmotion)
-					? BYOSAN_EMOTION_ALIASES[rawEmotion] || rawEmotion
-					: BYOSAN_EMOTIONS[index % BYOSAN_EMOTIONS.length];
-			let text = String(segment.text || segment.dialogue || candidate.angle);
-			if (index < 2) text = `${hooks.join("、")}。${text}`;
-			const rawStats = Array.isArray(segment.stats)
-				? (segment.stats as Record<string, unknown>[])
-				: [];
-			const stats = (rawStats.length > 0 ? rawStats : [{}])
-				.slice(0, 3)
-				.map((stat, statIndex) => ({
-					label: String(stat.label || "注目").slice(0, 30),
-					value: String(
-						stat.value ||
-							hooks[(index + statIndex) % hooks.length] ||
-							candidate.numbers[0],
-					).slice(0, 24),
-					detail: String(stat.detail || "一次資料に基づく数値").slice(0, 40),
-					color: BYOSAN_EMOTIONS.includes(
-						String(stat.color) as (typeof BYOSAN_EMOTIONS)[number],
-					)
-						? "cyan"
-						: ["cyan", "amber", "white", "muted"].includes(String(stat.color))
-							? String(stat.color)
-							: ["cyan", "amber", "white", "muted"][statIndex % 4],
-				}));
-			return {
-				chapter: String(segment.chapter || "検証"),
-				speaker:
-					segment.speaker === "ずんだもん" ? "ずんだもん" : "春日部つむぎ",
-				emotion,
-				section: String(segment.section || "数字を分解"),
-				headline: String(segment.headline || "数字の読み方").slice(0, 34),
-				subheadline: String(segment.subheadline || "一次資料で確認").slice(
-					0,
-					52,
-				),
-				visualType: String(segment.visualType || "center_stat"),
-				stats,
-				source: String(segment.source || firstSource),
-				text:
-					text.length >= 18
-						? text.slice(0, 95)
-						: `${text} ${candidate.angle}`.slice(0, 95),
-			};
-		})
-		.slice(0, 32);
-	while (segments.length < 20) {
-		const index = segments.length;
-		segments.push({
-			chapter: "検証",
-			speaker: index % 2 === 0 ? "春日部つむぎ" : "ずんだもん",
-			emotion: BYOSAN_EMOTIONS[index % BYOSAN_EMOTIONS.length],
-			section: "数字を分解",
-			headline: "一次資料の読み方",
-			subheadline: "条件を置いて読み解く",
-			visualType: "center_stat",
-			stats: [
-				{
-					label: "確認",
-					value: String(candidate.numbers[index % candidate.numbers.length]),
-					detail: "一次資料に基づく数値",
-					color: "cyan",
-				},
-			],
-			source: firstSource,
-			text: `${candidate.angle}を一次資料の条件に沿って確認します。`.slice(
-				0,
-				95,
-			),
-		});
-	}
-	for (const segment of segments.slice(0, 2)) {
-		segment.text = `${hooks.join("、")}。${segment.text}`.slice(0, 95);
-	}
-	return {
-		...input,
-		descriptionLead: String(
-			input.descriptionLead ||
-				`${candidate.angle}を一次資料の数字から分解し、見かけの変化と実際の構造を切り分けます。`,
-		).slice(0, 500),
-		disclaimer: String(
-			input.disclaimer ||
-				"この動画は公開された一次資料の要約です。将来の結果や投資成果を保証するものではありません。必要に応じて原資料をご確認ください。",
-		).slice(0, 400),
-		thumbnail,
-		claims,
-		segments,
-		tags: Array.from(
-			new Set([
-				...(Array.isArray(input.tags)
-					? input.tags.filter(
-							(value): value is string => typeof value === "string",
-						)
-					: []),
-				"秒算マネー",
-				"経済統計",
-				"データ分析",
-				"ニュース解説",
-				"日本経済",
-			]),
-		),
-		hookPromises: hooks,
-	};
+	return ByosanFeatureDraftSchema.parse(input);
 }
 
 export type ByosanFailureClass =
@@ -710,11 +514,11 @@ async function generateFeatureSpec(
 				{
 					role: "system",
 					content:
-						"あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。claimsのsourceIdsにはallowed_sourcesのidだけを使ってください。毎回新しい比較単位、章構成、問いの順番を選びます。",
+						"あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭5秒で何の話かが分かり、30秒以内にcentralQuestionを台詞として出してください。fact→whyItMatters→counterargument→conclusionの順序を台本に反映し、最後にnextWatchNumbersを1〜3個提示してください。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。つむぎは分析役、ずんだもんは本気の反証役で、単なる相槌にしないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。claimsのsourceIdsにはallowed_sourcesのidだけを使ってください。毎回新しい比較単位、章構成、問いの順番を選びます。要求されたフィールド、segments、stats、sourcesを欠落・代替・自動補完せず、完全なJSONを返してください。",
 				},
 				{
 					role: "user",
-					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
+					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。centralQuestion、whyItMatters、counterargument、conclusion、nextWatchNumbersを必ず出力する。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
 				},
 			]);
 			const responseText =
@@ -730,7 +534,7 @@ async function generateFeatureSpec(
 							)
 							.join("");
 			const draft = parseLlmJson(responseText) as Record<string, unknown>;
-			const normalizedDraft = normalizeFeatureDraft(draft, candidate, sources);
+			const normalizedDraft = normalizeFeatureDraft(draft);
 			fs.outputJsonSync(
 				path.join(runDir, "audit", "feature_draft_candidate.json"),
 				normalizedDraft,

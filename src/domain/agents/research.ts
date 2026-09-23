@@ -33,6 +33,27 @@ export interface ResearchResult {
 	angle_decision?: ByosanAngleDecision;
 }
 
+export function resolveResearchPromptContext(
+	bucket: string,
+	recent: string,
+	recentThemes: string,
+	root = ROOT,
+): { memoryContext: string; promptMemory: string; promptThemes: string } {
+	if (bucket === "byosan_money") {
+		return {
+			memoryContext:
+				"Blind Discovery: historical content is excluded until the novelty audit phase.",
+			promptMemory: "",
+			promptThemes: "",
+		};
+	}
+	return {
+		memoryContext: composeResearchMemoryContext(bucket, recent, root),
+		promptMemory: composeResearchMemoryContext(bucket, recent, root),
+		promptThemes: recentThemes,
+	};
+}
+
 export class TrendScout extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.RESEARCH, {
@@ -55,19 +76,23 @@ export class TrendScout extends BaseAgent {
 			limit: limit || researchCfg.default_limit || 3,
 		});
 		const recent = loadMemoryContext(this.store);
-		const memoryContext = composeResearchMemoryContext(bucket, recent, ROOT);
+		const promptContext = resolveResearchPromptContext(
+			bucket,
+			recent,
+			fetchRecentThemes(this.store, 7),
+		);
+		const memoryContext = promptContext.memoryContext;
 		const promptCfg = this.loadPrompt<{
 			consolidated_research: { system: string; user_template: string };
 		}>(this.name);
 		const currentDate = getCurrentDateString();
-		const recentThemes = fetchRecentThemes(this.store, 7);
 		let userPrompt = promptCfg.consolidated_research.user_template
 			.replace(
 				"{regions}",
 				researchCfg.regions.map((region) => region.lang).join(", "),
 			)
-			.replace("{recent_topics}", memoryContext)
-			.replace("{recent_themes}", recentThemes)
+			.replace("{recent_topics}", promptContext.promptMemory)
+			.replace("{recent_themes}", promptContext.promptThemes)
 			.replace("{current_date}", currentDate);
 		userPrompt += this.buildSourceRegistryPrompt(bucket);
 		if (bucket === "byosan_money") userPrompt += this.buildSharpAnglePrompt();
@@ -282,9 +307,11 @@ export class TrendScout extends BaseAgent {
 		return `
 
 [BYOSAN SHARP-ANGLE STRUCTURED OUTPUT]
-Return at least five total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
-topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks.
-numbers must contain at least two concrete numerical strings. sources must contain at least two objects with the exact keys id, name, url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and supports. The URL key is exactly "url", not "absolute url". Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. counterfactual must be testable by exclusion, subtraction, or a changed denominator. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.
-Use the exact camelCase keys above; do not translate them to snake_case. risks is an array of strings, numbers is an array of strings, and sources is an array of source objects. Every source object must include a valid absolute http(s) url copied from the approved registry or search result; never omit url or replace it with an id. If any required field cannot be evidenced, return an evidence gap rather than an incomplete object.`;
+Return 10-20 rough results when the evidence surface allows it, and never fewer than five. Cover at least three distinct publishers and intentionally vary region, sector, actor type, event type, time horizon, causal direction, financial metric, supply-chain layer, market-vs-real-economy scale, data surface, and observation scale. This is Blind Discovery: do not use recent titles, recent topics, recent angles, previous winners, previous formats, or analytics to define the search space. Past-content comparison happens only after candidate selection.
+Every results item MUST include a byosan_angle object with exactly these camelCase fields:
+topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, explorationProfile.
+explorationProfile must be an object with the exact string keys geography, sector, actorType, eventType, timeHorizon, causalDirection, financialMetric, supplyChainLayer, marketRealEconomy, dataSurface, and scale. Use the observed search path, not invented labels. This metadata is audited for candidate-set orthogonality.
+numbers must contain at least two concrete numerical strings. sources must contain at least two objects with the exact keys id, name, url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and supports. supports MUST be an array of one or more strings, even when there is only one claim. The URL key is exactly "url", not "absolute url". Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. counterfactual must be testable by exclusion, subtraction, or a changed denominator. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.
+Use the exact camelCase keys above; do not translate them to snake_case. risks is an array of strings, numbers is an array of strings, sources is an array of source objects. Every source object must include a valid absolute http(s) url copied from the approved registry or search result; never omit url or replace it with an id. If any required field cannot be evidenced, return an evidence gap rather than an incomplete object.`;
 	}
 }

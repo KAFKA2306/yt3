@@ -11,14 +11,39 @@ export const ByosanSourceTierSchema = z.enum([
 	"unknown",
 ]);
 
+const ByosanSourceSupportsSchema = z.preprocess(
+	(value) => (typeof value === "string" ? [value] : value),
+	z.array(z.string().min(3)).min(1),
+);
+
 export const ByosanAngleSourceSchema = z.object({
 	id: z.string().min(1),
 	name: z.string().min(2),
 	url: z.string().url(),
 	publishedAt: z.string().min(4).optional(),
 	tier: ByosanSourceTierSchema,
-	supports: z.array(z.string().min(3)).min(1),
+	// Some providers serialize a single claim mapping as a string. Normalize
+	// that losslessly at the schema boundary; missing mappings still fail closed.
+	supports: ByosanSourceSupportsSchema,
 });
+
+export const ByosanExplorationProfileSchema = z.object({
+	geography: z.string().min(2),
+	sector: z.string().min(2),
+	actorType: z.string().min(2),
+	eventType: z.string().min(2),
+	timeHorizon: z.string().min(2),
+	causalDirection: z.string().min(2),
+	financialMetric: z.string().min(2),
+	supplyChainLayer: z.string().min(2),
+	marketRealEconomy: z.string().min(2),
+	dataSurface: z.string().min(2),
+	scale: z.string().min(2),
+});
+
+export type ByosanExplorationProfile = z.infer<
+	typeof ByosanExplorationProfileSchema
+>;
 
 export const ByosanAngleCandidateSchema = z.object({
 	topic: z.string().min(3),
@@ -33,6 +58,7 @@ export const ByosanAngleCandidateSchema = z.object({
 	noveltyFingerprint: z.string().min(8),
 	visualPlan: z.string().min(8),
 	risks: z.array(z.string().min(3)).min(1),
+	explorationProfile: ByosanExplorationProfileSchema,
 });
 
 export type ByosanAngleCandidate = z.infer<typeof ByosanAngleCandidateSchema>;
@@ -62,6 +88,21 @@ export const ByosanAngleDecisionSchema = z.object({
 	reason: z.string().min(1),
 	candidateCount: z.number().int().min(0),
 	distinctPublisherCount: z.number().int().min(0),
+	orthogonality: z.object({
+		uniqueProfileCount: z.number().int().min(0),
+		geography: z.number().int().min(0),
+		sector: z.number().int().min(0),
+		actorType: z.number().int().min(0),
+		eventType: z.number().int().min(0),
+		timeHorizon: z.number().int().min(0),
+		causalDirection: z.number().int().min(0),
+		financialMetric: z.number().int().min(0),
+		supplyChainLayer: z.number().int().min(0),
+		marketRealEconomy: z.number().int().min(0),
+		dataSurface: z.number().int().min(0),
+		scale: z.number().int().min(0),
+		failedAxes: z.array(z.string()),
+	}),
 	evaluated: z.array(ByosanEvaluatedAngleSchema),
 });
 
@@ -111,6 +152,62 @@ function distinctHosts(sources: ByosanAngleCandidate["sources"]): Set<string> {
 			}
 		}),
 	);
+}
+
+const ORTHOGONALITY_AXES = [
+	"geography",
+	"sector",
+	"actorType",
+	"eventType",
+	"timeHorizon",
+	"causalDirection",
+	"financialMetric",
+	"supplyChainLayer",
+	"marketRealEconomy",
+	"dataSurface",
+	"scale",
+] as const satisfies readonly (keyof ByosanExplorationProfile)[];
+
+type Orthogonality = z.infer<typeof ByosanAngleDecisionSchema>["orthogonality"];
+
+function evaluateOrthogonality(
+	candidates: ByosanAngleCandidate[],
+): Orthogonality {
+	const diversity = Object.fromEntries(
+		ORTHOGONALITY_AXES.map((axis) => [
+			axis,
+			new Set(candidates.map((candidate) => candidate.explorationProfile[axis]))
+				.size,
+		]),
+	) as Record<(typeof ORTHOGONALITY_AXES)[number], number>;
+	const uniqueProfileCount = new Set(
+		candidates.map((candidate) =>
+			ORTHOGONALITY_AXES.map((axis) => candidate.explorationProfile[axis]).join(
+				"\u001f",
+			),
+		),
+	).size;
+	const minimums: Record<(typeof ORTHOGONALITY_AXES)[number], number> = {
+		geography: 2,
+		sector: 3,
+		actorType: 3,
+		eventType: 3,
+		timeHorizon: 2,
+		causalDirection: 3,
+		financialMetric: 3,
+		supplyChainLayer: 3,
+		marketRealEconomy: 2,
+		dataSurface: 3,
+		scale: 2,
+	};
+	const failedAxes = ORTHOGONALITY_AXES.filter(
+		(axis) => diversity[axis] < Math.min(minimums[axis], candidates.length),
+	);
+	return {
+		uniqueProfileCount,
+		...diversity,
+		failedAxes: failedAxes.map((axis) => `insufficient_${axis}_diversity`),
+	};
 }
 
 function scoreTextDepth(text: string, targetLength: number): number {
@@ -247,11 +344,13 @@ export function selectByosanAngle(
 	const distinctPublishers = new Set(
 		candidates.flatMap((candidate) => [...distinctHosts(candidate.sources)]),
 	);
+	const orthogonality = evaluateOrthogonality(candidates);
 	const collectionFailures: string[] = [];
 	if (candidates.length < 5)
 		collectionFailures.push("fewer_than_five_candidates");
 	if (distinctPublishers.size < 3)
 		collectionFailures.push("fewer_than_three_publishers_in_candidate_set");
+	collectionFailures.push(...orthogonality.failedAxes);
 
 	const ranked = evaluated
 		.map((entry, index) => ({ entry, index }))
@@ -276,6 +375,7 @@ export function selectByosanAngle(
 				: `candidate_${selectedIndex}_won_deterministic_ranking`,
 		candidateCount: candidates.length,
 		distinctPublisherCount: distinctPublishers.size,
+		orthogonality,
 		evaluated,
 	});
 }

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	type ByosanAngleCandidate,
+	ByosanAngleSourceSchema,
 	byosanTextSimilarity,
 	evaluateByosanAngleCandidate,
 	selectByosanAngle,
@@ -41,6 +42,19 @@ function candidate(
 		noveltyFingerprint: "評価益除外と上位2社除外の二段反実仮想",
 		visualPlan: "47.4から評価益寄与を引き算し28.8へ変わる中央固定バー比較",
 		risks: ["ブレンデッド値は未発表企業の予想を含む"],
+		explorationProfile: {
+			geography: "米国",
+			sector: "株式指数",
+			actorType: "上場企業",
+			eventType: "決算",
+			timeHorizon: "四半期",
+			causalDirection: "利益→評価",
+			financialMetric: "EPS",
+			supplyChainLayer: "下流",
+			marketRealEconomy: "市場価格",
+			dataSurface: "決算資料",
+			scale: "業界",
+		},
 		...overrides,
 	};
 }
@@ -59,6 +73,17 @@ describe("byosan sharp-angle gate", () => {
 		const result = evaluateByosanAngleCandidate(candidate(), []);
 		expect(result.passed).toBe(true);
 		expect(result.weightedScore).toBeGreaterThanOrEqual(75);
+	});
+
+	test("normalizes one source-support claim without inventing evidence", () => {
+		const parsed = ByosanAngleSourceSchema.parse({
+			id: "sec",
+			name: "SEC filing",
+			url: "https://www.sec.gov/filing",
+			tier: "L1",
+			supports: "評価益と純利益",
+		});
+		expect(parsed.supports).toEqual(["評価益と純利益"]);
 	});
 
 	test("recent-topic duplication blocks the candidate", () => {
@@ -85,6 +110,35 @@ describe("byosan sharp-angle gate", () => {
 				angle: `見出し数字を異なる分母${index}で分解して市場の錯覚を測る`,
 				titleHook: `候補${index}の大数字を一次資料で分解すると何が残るか`,
 				noveltyFingerprint: `固有の反実仮想パターン${index}と比較単位${index}`,
+				explorationProfile: {
+					geography: ["米国", "日本", "台湾", "韓国", "欧州"][index] ?? "米国",
+					sector:
+						["株式指数", "半導体", "電力", "銀行", "物流"][index] ?? "株式指数",
+					actorType:
+						["上場企業", "政府", "中央銀行", "消費者", "供給者"][index] ??
+						"上場企業",
+					eventType:
+						["決算", "政策", "統計", "設備投資", "価格"][index] ?? "決算",
+					timeHorizon:
+						["四半期", "1年", "数日", "3年", "数時間"][index] ?? "四半期",
+					causalDirection:
+						["利益→評価", "政策→需要", "金利→信用", "設備→電力", "価格→利益"][
+							index
+						] ?? "利益→評価",
+					financialMetric:
+						["EPS", "FCF", "売上", "利益率", "CapEx"][index] ?? "EPS",
+					supplyChainLayer:
+						["下流", "装置", "材料", "インフラ", "物流"][index] ?? "下流",
+					marketRealEconomy:
+						["市場価格", "実体経済", "市場価格", "実体経済", "市場価格"][
+							index
+						] ?? "市場価格",
+					dataSurface:
+						["決算資料", "政府統計", "規制文書", "受注", "価格データ"][index] ??
+						"決算資料",
+					scale:
+						["業界", "国家", "企業", "物理インフラ", "家計"][index] ?? "業界",
+				},
 				sources: [
 					...candidate().sources,
 					{
