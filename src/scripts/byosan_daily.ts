@@ -35,7 +35,7 @@ const ByosanFeatureGenerationSchema = z.object({
 	whyItMatters: z.string(),
 	counterargument: z.string(),
 	conclusion: z.string(),
-	nextWatchNumbers: z.array(z.string()),
+	nextWatchNumbers: z.array(z.string().max(32)),
 	hookPromises: z.array(z.string()),
 	noveltyQueries: z.array(z.string()),
 	tags: z.array(z.string()),
