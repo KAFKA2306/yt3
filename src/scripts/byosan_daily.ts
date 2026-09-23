@@ -447,7 +447,7 @@ export function recordByosanFailure(
 	return trace;
 }
 
-function markFailureRecovered(runDir: string): void {
+export function markFailureRecovered(runDir: string): void {
 	const trace = readFailureTrace(runDir);
 	if (!trace || trace.status === "RECOVERED") return;
 	fs.outputJsonSync(
