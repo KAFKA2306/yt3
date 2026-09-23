@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
+import { z } from "zod";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
 import {
 	ByosanFeatureDraftSchema,
@@ -14,6 +15,59 @@ import { AssetStore, ROOT, createLlm, getRunIdDateString } from "../io/core.js";
 import { markKeyRateLimited } from "../io/utils/quota/manager.js";
 
 type FeatureSource = ByosanFeatureSource;
+
+const ByosanFeatureGenerationSchema = z.object({
+	title: z.string(),
+	thumbnailTitle: z.string(),
+	thumbnail: z.object({
+		eyebrow: z.string(),
+		lead: z.string(),
+		accent: z.string(),
+		reaction: z.string(),
+		secondLine: z.string(),
+		calloutTop: z.string(),
+		calloutBottom: z.string(),
+	}),
+	descriptionLead: z.string(),
+	descriptionBullets: z.array(z.string()),
+	disclaimer: z.string(),
+	centralQuestion: z.string(),
+	whyItMatters: z.string(),
+	counterargument: z.string(),
+	conclusion: z.string(),
+	nextWatchNumbers: z.array(z.string()),
+	hookPromises: z.array(z.string()),
+	noveltyQueries: z.array(z.string()),
+	tags: z.array(z.string()),
+	claims: z.array(
+		z.object({
+			claim: z.string(),
+			sourceIds: z.array(z.string()),
+			status: z.string(),
+		}),
+	),
+	segments: z.array(
+		z.object({
+			chapter: z.string().optional(),
+			speaker: z.string(),
+			emotion: z.string(),
+			section: z.string(),
+			headline: z.string(),
+			subheadline: z.string(),
+			visualType: z.string(),
+			stats: z.array(
+				z.object({
+					label: z.string(),
+					value: z.string(),
+					detail: z.string(),
+					color: z.string(),
+				}),
+			),
+			source: z.string(),
+			text: z.string(),
+		}),
+	),
+});
 
 const BYOSAN_FEATURE_JSON_CONTRACT = `出力形式はJSONオブジェクト1個だけです。Markdown、説明文、コードフェンス、旧形式の互換フィールドは出力しません。
 必須トップレベルキーは title, thumbnailTitle, thumbnail, descriptionLead, descriptionBullets, disclaimer, centralQuestion, whyItMatters, counterargument, conclusion, nextWatchNumbers, hookPromises, noveltyQueries, tags, claims, segments です。
@@ -515,7 +569,7 @@ async function generateFeatureSpec(
 			});
 			activeKeyName = activeLlm.keyName;
 			const structuredLlm = activeLlm.withStructuredOutput(
-				ByosanFeatureDraftSchema,
+				ByosanFeatureGenerationSchema,
 				{ name: "byosan_feature_draft" },
 			);
 			const draft = (await structuredLlm.invoke([
