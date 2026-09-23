@@ -6,6 +6,7 @@ import {
 	type ByosanFailureTrace,
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
+	normalizeFeatureDraft,
 	recordByosanFailure,
 	resolveByosanMissionFile,
 } from "../src/scripts/byosan_daily.js";
@@ -30,6 +31,16 @@ async function makeRunDir(): Promise<string> {
 }
 
 describe("byosan daily duplicate-publication gate", () => {
+	test("does not repair a legacy feature draft into a publishable shape", () => {
+		expect(() =>
+			normalizeFeatureDraft({
+				title: "旧形式",
+				thumbnail: "文字列サムネイル",
+				chapters: [],
+			}),
+		).toThrow();
+	});
+
 	test("does not invent a mission file when none was supplied", () => {
 		expect(resolveByosanMissionFile(undefined)).toBeUndefined();
 		expect(resolveByosanMissionFile("  ")).toBeUndefined();

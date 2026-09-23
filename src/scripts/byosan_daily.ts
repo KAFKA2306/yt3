@@ -21,6 +21,14 @@ import { markKeyRateLimited } from "../io/utils/quota/manager.js";
 
 type FeatureSource = ByosanFeatureSource;
 
+const BYOSAN_FEATURE_JSON_CONTRACT = `出力形式はJSONオブジェクト1個だけです。Markdown、説明文、コードフェンス、旧形式の互換フィールドは出力しません。
+必須トップレベルキーは title, thumbnailTitle, thumbnail, descriptionLead, descriptionBullets, disclaimer, centralQuestion, whyItMatters, counterargument, conclusion, nextWatchNumbers, hookPromises, noveltyQueries, tags, claims, segments です。
+thumbnail は文字列ではなく、必ず次の7キーを持つオブジェクトです: eyebrow, lead, accent, reaction, secondLine, calloutTop, calloutBottom。
+claims は3〜18個のオブジェクト配列で、各要素は claim, sourceIds, status を必ず持ちます。status は verified / derived_with_caveat / analyst_estimate_not_company_non_gaap のいずれかです。sourceIds は allowed_sources の id だけです。
+segments は20〜32個のオブジェクト配列です。各要素は speaker, emotion, section, headline, subheadline, visualType, stats, source, text を必ず持ち、stats は1〜3個の配列です。各stats要素は label, value, detail, color を必ず持ち、color は cyan / amber / white / muted のいずれかです。speaker は 春日部つむぎ / ずんだもん、emotion は shock / reveal / curious / analytical / caution / confident / warm / relieved / serious / joy のいずれかです。chapter は任意です。
+segmentsのtextは18〜180文字、statsのvalueには単位を付けます。冒頭2シーンにhookPromisesの語を含めます。少なくとも7種類のemotionを使い、つむぎを分析・説明役、ずんだもんを疑問・反証役にします。
+禁止: thumbnail を文字列にする、top-levelの chapters を出す、空のstatsを出す、claimsやsegmentsを省略する、欠落項目を推測で補完する。要求された全フィールドを完全に生成できない場合は成功形に見せかけず、JSONを返さず検証エラーを返してください。`;
+
 export type PublishedRunEvidence = {
 	runId: string;
 	verified: boolean;
@@ -513,12 +521,11 @@ async function generateFeatureSpec(
 			const response = await activeLlm.invoke([
 				{
 					role: "system",
-					content:
-						"あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭5秒で何の話かが分かり、30秒以内にcentralQuestionを台詞として出してください。fact→whyItMatters→counterargument→conclusionの順序を台本に反映し、最後にnextWatchNumbersを1〜3個提示してください。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。つむぎは分析役、ずんだもんは本気の反証役で、単なる相槌にしないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。claimsのsourceIdsにはallowed_sourcesのidだけを使ってください。毎回新しい比較単位、章構成、問いの順番を選びます。要求されたフィールド、segments、stats、sourcesを欠落・代替・自動補完せず、完全なJSONを返してください。",
+					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭5秒で何の話かが分かり、30秒以内にcentralQuestionを台詞として出してください。fact→whyItMatters→counterargument→conclusionの順序を台本に反映し、最後にnextWatchNumbersを1〜3個提示してください。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。つむぎは分析役、ずんだもんは本気の反証役で、単なる相槌にしないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。要求されたフィールドを欠落・代替・自動補完せず、完全なJSONを返してください。\n\n${BYOSAN_FEATURE_JSON_CONTRACT}`,
 				},
 				{
 					role: "user",
-					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。centralQuestion、whyItMatters、counterargument、conclusion、nextWatchNumbersを必ず出力する。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
+					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。centralQuestion、whyItMatters、counterargument、conclusion、nextWatchNumbersを必ず出力する。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。必須フィールドを1つでも出せない場合は成功形を返さず、前回エラーと同様に修正してから完全なJSONを返すこと。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
 				},
 			]);
 			const responseText =
