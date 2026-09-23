@@ -29,6 +29,12 @@
 
 失敗は `audit/production_quality_report.json` に要件別で残す。再制作時は、失敗した要件を台本、音声プリセット、字幕分割、映像レンダリング、公開ゲートの実装変更へ変換する。公開結果と視聴維持率が得られたら、冒頭30秒の離脱、トップモーメント、サムネとタイトルの整合を次の eval に追加する。
 
+## 編集参照の分解観察
+
+`config/references/byosan_money_editorial_references.json` の12件は、内容を真似るためではなく、構成・情報密度・図解・テロップ・サムネ・画面転換を分解して観察するための編集参照である。日次生成では3〜5件をrunごとに選び、少なくとも3つの役割グループを組み合わせる。
+
+選定計画は `editorial_reference_plan` として台本・メタデータ・監査に保存する。参照要素は実際のシーンの図解や画面更新へ割り当てるが、参照先のサイト名、ロゴ、固有文言、素材、テンプレート、結論は再現しない。編集参照は一次資料ではないため、`claims.sourceIds` と数値根拠へ入れてはならない。
+
 ## 根拠として使う仕様
 
 - YouTube audience retention: https://support.google.com/youtube/answer/9314415

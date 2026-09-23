@@ -3,6 +3,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import sharp from "sharp";
+import type { ByosanEditorialReferencePlanItem } from "../domain/byosan/editorial_references.js";
 import {
 	type ByosanFeatureSegment,
 	type ByosanFeatureSpec,
@@ -407,11 +408,55 @@ function statCard(
 		</g>`;
 }
 
+function editorialReferenceForScene(
+	spec: FeatureSpec,
+	index: number,
+): ByosanEditorialReferencePlanItem {
+	const references = spec.editorialReferencePlan.selectedReferences;
+	const reference = references[index % references.length];
+	if (!reference)
+		throw new Error("BYOSAN_EDITORIAL_REFERENCE_SCENE_ASSIGNMENT_MISSING");
+	return reference;
+}
+
+function thumbnailReferenceForSpec(
+	spec: FeatureSpec,
+): ByosanEditorialReferencePlanItem {
+	const reference =
+		spec.editorialReferencePlan.selectedReferences.find(
+			(item) =>
+				item.surface === "thumbnail" || item.role === "thumbnail_composition",
+		) ?? spec.editorialReferencePlan.selectedReferences[0];
+	if (!reference) {
+		throw new Error("BYOSAN_EDITORIAL_REFERENCE_THUMBNAIL_ASSIGNMENT_MISSING");
+	}
+	return reference;
+}
+
+function editorialDecoration(
+	item: ByosanEditorialReferencePlanItem,
+	index: number,
+	totalSegments: number,
+): string {
+	if (item.surface === "chart" || item.surface === "visual") {
+		return `<g opacity="0.54" stroke="${VISUAL_IDENTITY.primaryAccent}" stroke-width="3" fill="none"><path d="M1050 440 H1390" stroke-dasharray="10 12"/><path d="M1080 420 L1160 370 L1240 395 L1335 315"/><circle cx="1335" cy="315" r="9" fill="${VISUAL_IDENTITY.secondaryAccent}" stroke="none"/></g>`;
+	}
+	if (item.surface === "structure" || item.surface === "cuts") {
+		const width = 310 / totalSegments;
+		return `<g opacity="0.9"><rect x="1506" y="134" width="${width - 6}" height="7" rx="3" fill="${VISUAL_IDENTITY.secondaryAccent}" transform="translate(${Math.min(index, totalSegments - 1) * width},0)"/></g>`;
+	}
+	if (item.surface === "caption") {
+		return `<rect x="78" y="232" width="${Math.min(980, 420 + index * 12)}" height="4" rx="2" fill="${VISUAL_IDENTITY.secondaryAccent}" opacity="0.86"/>`;
+	}
+	return `<rect x="78" y="520" width="940" height="10" rx="5" fill="${VISUAL_IDENTITY.primaryAccent}" opacity="0.18"/>`;
+}
+
 function sceneSvg(
 	spec: FeatureSpec,
 	segment: FeatureSegment,
 	index: number,
 ): Buffer {
+	const editorialReference = editorialReferenceForScene(spec, index);
 	const headlineLines = wrapDisplay(segment.headline, 21).slice(0, 2);
 	const headlineSize = headlineLines.some((line) => displayUnits(line) > 18)
 		? 68
@@ -483,6 +528,7 @@ function sceneSvg(
 		<text x="1440" y="96" class="section">${String(index + 1).padStart(2, "0")} / ${String(spec.segments.length).padStart(2, "0")}</text>
 		<rect x="1506" y="117" width="310" height="5" rx="3" fill="${VISUAL_IDENTITY.surfaceStrong}"/>
 		<rect x="1506" y="117" width="${Math.round(310 * ((index + 1) / spec.segments.length))}" height="5" rx="3" fill="${accent}"/>
+		${editorialDecoration(editorialReference, index, spec.segments.length)}
 		<text x="92" y="181" class="section">${xml(segment.section)}</text>
 		<text x="92" y="290" class="headline" font-size="${headlineSize}">${tspans(headlineLines, 92, 290, headlineSize + 17)}</text>
 		<text x="92" y="${headlineLines.length > 1 ? 458 : 398}" class="subheadline">${xml(segment.subheadline)}</text>
@@ -579,6 +625,13 @@ async function renderThumbnail(
 		.png()
 		.toBuffer();
 	const thumbnail = spec.thumbnail;
+	const thumbnailReference = thumbnailReferenceForSpec(spec);
+	const mobileReadableLayout =
+		thumbnailReference.surface === "thumbnail" ||
+		thumbnailReference.role === "thumbnail_composition";
+	const textPanelWidth = mobileReadableLayout ? 940 : 820;
+	const bottomPanelWidth = mobileReadableLayout ? 850 : 760;
+	const characterLeft = mobileReadableLayout ? 1390 : 1450;
 	const accentSize = Array.from(thumbnail.accent).length > 9 ? 112 : 148;
 	const secondLineSize =
 		Array.from(thumbnail.secondLine).length > 12 ? 82 : 104;
@@ -606,10 +659,10 @@ async function renderThumbnail(
 			<text x="1010" y="318" font-size="118" font-weight="950" fill="${VISUAL_IDENTITY.secondaryAccent}">${xml(thumbnail.reaction)}</text>
 			<text x="78" y="472" font-size="${secondLineSize}" font-weight="900" fill="${VISUAL_IDENTITY.textPrimary}">${xml(thumbnail.secondLine)}</text>
 		</g>
-		<rect x="78" y="550" width="940" height="92" rx="24" fill="${VISUAL_IDENTITY.lightSurface}"/>
+		<rect x="78" y="550" width="${textPanelWidth}" height="92" rx="24" fill="${VISUAL_IDENTITY.lightSurface}"/>
 		<text x="116" y="611" font-size="${calloutTopSize}" font-weight="900" fill="${VISUAL_IDENTITY.darkText}">${xml(thumbnail.calloutTop)}</text>
 		<g transform="translate(78,695)">
-			<rect width="850" height="116" rx="28" fill="${VISUAL_IDENTITY.background}" fill-opacity="0.9" stroke="${VISUAL_IDENTITY.secondaryAccent}" stroke-width="3"/>
+			<rect width="${bottomPanelWidth}" height="116" rx="28" fill="${VISUAL_IDENTITY.background}" fill-opacity="0.9" stroke="${VISUAL_IDENTITY.secondaryAccent}" stroke-width="3"/>
 			<text x="32" y="72" font-size="${calloutBottomSize}" font-weight="900" fill="${VISUAL_IDENTITY.textPrimary}">${xml(thumbnail.calloutBottom)}</text>
 		</g>
 		<text x="82" y="1002" font-size="31" font-weight="800" fill="${VISUAL_IDENTITY.textPrimary}" letter-spacing="3">秒算マネー</text>
@@ -618,7 +671,7 @@ async function renderThumbnail(
 		.resize(WIDTH, HEIGHT, { fit: "cover", position: "centre" })
 		.composite([
 			{ input: overlay, left: 0, top: 0 },
-			{ input: character, left: 1390, top: 128 },
+			{ input: character, left: characterLeft, top: 128 },
 		]);
 	await composed.clone().png({ compressionLevel: 8 }).toFile(thumbnailPng);
 	await composed
@@ -1127,17 +1180,19 @@ async function writeOutputs(
 		thumbnail_title: spec.thumbnailTitle,
 		description,
 		tags: spec.tags,
+		editorial_reference_plan: spec.editorialReferencePlan,
 	};
 	const script = {
 		title: spec.title,
 		description: spec.descriptionLead,
 		total_duration: timed.reduce((sum, segment) => sum + segment.duration, 0),
-		lines: timed.map((segment) => ({
+		lines: timed.map((segment, index) => ({
 			speaker: segment.speaker,
 			text: segment.text,
 			duration: segment.duration,
 			emotion: segment.emotion,
 			visual_type: segment.visualType,
+			editorial_reference: editorialReferenceForScene(spec, index),
 		})),
 	};
 	const contentOutput = { script, metadata };
@@ -1156,6 +1211,7 @@ async function writeOutputs(
 				"Primary-source claim matrix with explicit derived-estimate caveats",
 			sources: spec.sources,
 			claims: spec.claims,
+			editorial_reference_plan: spec.editorialReferencePlan,
 			search_novelty_check: {
 				queries: spec.noveltyQueries,
 				result:
@@ -1177,6 +1233,7 @@ async function writeOutputs(
 			title_hook: spec.title,
 			search_query: spec.searchQuery,
 			key_questions: [spec.centralQuestion],
+			editorial_reference_plan: spec.editorialReferencePlan,
 		},
 		script,
 		metadata,
@@ -1361,6 +1418,39 @@ async function auditProduction(
 		numericDisplayedStats.every((stat) =>
 			/[%％円ドル$€£兆億万千百十倍bpMWGWkWh]/i.test(stat.value),
 		);
+	const editorialSceneAssignments = timed.map((segment, index) => ({
+		index: segment.index,
+		reference: editorialReferenceForScene(spec, index),
+	}));
+	const selectedEditorialReferenceIds = new Set(
+		spec.editorialReferencePlan.selectedReferences.map(
+			(reference) => reference.referenceId,
+		),
+	);
+	const usedEditorialReferenceIds = new Set(
+		editorialSceneAssignments.map(
+			(assignment) => assignment.reference.referenceId,
+		),
+	);
+	const editorialReferencePlanPass =
+		selectedEditorialReferenceIds.size >= 3 &&
+		selectedEditorialReferenceIds.size <= 5 &&
+		[...selectedEditorialReferenceIds].every((id) =>
+			usedEditorialReferenceIds.has(id),
+		) &&
+		spec.claims.every((claim) =>
+			claim.sourceIds.every((sourceId) => !sourceId.startsWith("ref_")),
+		) &&
+		new Set(
+			spec.editorialReferencePlan.selectedReferences.map(
+				(reference) => reference.roleGroup,
+			),
+		).size >= 3 &&
+		spec.editorialReferencePlan.selectedReferences.every(
+			(reference) =>
+				reference.provenance === "editorial_reference_observation" &&
+				reference.avoidImitation.length >= 12,
+		);
 	const checklist = {
 		opening_5_seconds:
 			firstSegment !== undefined &&
@@ -1429,6 +1519,26 @@ async function auditProduction(
 				source_count: spec.sources.length,
 				caveats: spec.descriptionBullets,
 				disclaimer: spec.disclaimer,
+			},
+		},
+		editorial_reference_decomposition: {
+			status: editorialReferencePlanPass ? "PASS" : "FAIL",
+			evidence: {
+				selected_reference_ids: [...selectedEditorialReferenceIds],
+				selected_role_groups:
+					spec.editorialReferencePlan.selectedReferences.map(
+						(reference) => reference.roleGroup,
+					),
+				used_in_scene_order: editorialSceneAssignments.map((assignment) => ({
+					index: assignment.index,
+					reference_id: assignment.reference.referenceId,
+					surface: assignment.reference.surface,
+					element: assignment.reference.element,
+				})),
+				claims_are_fact_source_only: spec.claims.every((claim) =>
+					claim.sourceIds.every((sourceId) => !sourceId.startsWith("ref_")),
+				),
+				combination_policy: spec.editorialReferencePlan.combinationPolicy,
 			},
 		},
 		intonation: {
@@ -1515,6 +1625,8 @@ async function auditProduction(
 			status: (await fs.stat(thumbnailPath)).size > 100000 ? "PASS" : "FAIL",
 			evidence: {
 				path: thumbnailPath,
+				editorial_reference_id: thumbnailReferenceForSpec(spec).referenceId,
+				editorial_reference_element: thumbnailReferenceForSpec(spec).element,
 				continuity: {
 					thumbnail_title: spec.thumbnailTitle,
 					hook_promises: spec.hookPromises,

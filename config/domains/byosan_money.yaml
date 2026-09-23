@@ -244,6 +244,14 @@ source_policy:
     require_source_url_or_identifier: true
     require_life_impact_connection: true
 
+editorial_reference_policy:
+  schema_version: "byosan_editorial_reference_registry_v1"
+  registry: "config/references/byosan_money_editorial_references.json"
+  source_class: "editorial_reference"
+  usage: "構成・情報密度・図解・テロップ・サムネ・画面転換を分解して観察する。事実根拠・数値出典・ニュース探索には使わない。"
+  selection: "毎runで3〜5件をrun_idと選定角度から決定的に選び、3つ以上のrole_groupを含める。同じ組み合わせを固定しない。"
+  forbidden: ["サイト名の模倣", "ロゴ・固有文言・素材の転載", "テンプレートのそのまま利用", "編集参照をclaimのsourceIdsへ入れる"]
+
 prompts:
   research:
     consolidated_research:
@@ -321,6 +329,9 @@ prompts:
         目的は、単なるニュース解説ではありません。
         視聴者に、「世界が今まさに変わっている実感」「バラバラな情報が接続される快感」「自分の人生との関連性」「不安と希望が同時に存在する現実感」を継続的に発生させることが目的です。
         一次情報なし断定禁止。各コンテンツは liquidity / fiscal / rates / productivity / AI capex / energy / supply chain / geopolitical regime のうち最低3つ以上に接続し、最後に必ず生活影響への接続を明示してください。
+
+        # EDITORIAL REFERENCE DECOMPOSITION
+        編集参照は内容を真似るためではなく、構成・情報密度・図解・テロップ・サムネ・画面転換を分解して観察するために使う。毎runで渡される3〜5件の計画を組み合わせ、サイト名、ロゴ、固有文言、素材、テンプレート、結論を再現してはならない。編集参照は事実根拠ではなく、claims.sourceIdsへ入れてはならない。
 
         # CORE PRINCIPLE (適応的成長の原則)
         世界は、「崩壊」ではなく、「適応しながら再構築され続ける」。

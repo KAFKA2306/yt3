@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
+import { selectByosanEditorialReferencePlan } from "../domain/byosan/editorial_references.js";
 import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
@@ -553,10 +554,20 @@ async function generateFeatureSpec(
 	runId: string,
 	date: string,
 ): Promise<ByosanFeatureSpec> {
+	const editorialReferencePlan = selectByosanEditorialReferencePlan(
+		runId,
+		candidate.angle,
+	);
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "editorial_reference_plan.json"),
+		editorialReferencePlan,
+		{ spaces: 2 },
+	);
 	const evidence = {
 		candidate,
 		allowed_sources: sources,
 		allowed_source_ids: sources.map((source) => source.id),
+		editorial_reference_plan: editorialReferencePlan,
 		news: research.news,
 	};
 	let lastError: unknown;
@@ -580,10 +591,13 @@ async function generateFeatureSpec(
 				},
 				{
 					role: "user",
-					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。centralQuestion、whyItMatters、counterargument、conclusion、nextWatchNumbersを必ず出力する。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。claimsは必ずallowed_source_idsから1個以上を選び、sourceIds:[]を絶対に出さない。必須フィールドを1つでも出せない場合は成功形を返さず、前回エラーと同様に修正してから完全なJSONを返すこと。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
+					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。centralQuestion、whyItMatters、counterargument、conclusion、nextWatchNumbersを必ず出力する。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。claimsは必ずallowed_source_idsから1個以上を選び、sourceIds:[]を絶対に出さない。editorial_reference_planは事実根拠ではなく、構成・図解・字幕・画面転換・サムネを分解するための計画です。提示したexactな計画を内容と画面へ翻訳し、サイト名の模倣、ロゴ、固有文言、素材転載はしないでください。毎runで選定組み合わせは変わり得ます。必須フィールドを1つでも出せない場合は成功形を返さず、前回エラーと同様に修正してから完全なJSONを返すこと。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
 				},
 			])) as Record<string, unknown>;
-			const normalizedDraft = normalizeFeatureDraft(draft);
+			const normalizedDraft = normalizeFeatureDraft({
+				...draft,
+				editorialReferencePlan,
+			});
 			fs.outputJsonSync(
 				path.join(runDir, "audit", "feature_draft_candidate.json"),
 				normalizedDraft,

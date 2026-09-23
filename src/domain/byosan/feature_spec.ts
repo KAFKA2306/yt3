@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+	type ByosanEditorialReferencePlan,
+	ByosanEditorialReferencePlanSchema,
+	auditByosanEditorialReferencePlan,
+	editorialReferenceIds,
+	isByosanEditorialReferenceId,
+} from "./editorial_references.js";
 
 export const ByosanStatColorSchema = z.enum([
 	"cyan",
@@ -81,6 +88,7 @@ export const ByosanFeatureSpecSchema = z.object({
 	counterargument: z.string().min(12).max(240),
 	conclusion: z.string().min(12).max(240),
 	nextWatchNumbers: z.array(z.string().min(1).max(32)).min(1).max(3),
+	editorialReferencePlan: ByosanEditorialReferencePlanSchema,
 	hookPromises: z.array(z.string().min(1).max(24)).min(2).max(4),
 	noveltyQueries: z.array(z.string().min(8).max(180)).min(2).max(5),
 	tags: z.array(z.string().min(1).max(30)).min(5).max(15),
@@ -103,6 +111,7 @@ export type ByosanFeatureDraft = z.infer<typeof ByosanFeatureDraftSchema>;
 export type ByosanFeatureSegment = z.infer<typeof ByosanFeatureSegmentSchema>;
 export type ByosanFeatureSource = z.infer<typeof ByosanFeatureSourceSchema>;
 export type ByosanStatColor = z.infer<typeof ByosanStatColorSchema>;
+export type { ByosanEditorialReferencePlan };
 
 export type FeatureSpecIssue = {
 	code: string;
@@ -113,8 +122,21 @@ export function auditByosanFeatureSpec(
 	specInput: ByosanFeatureSpec,
 ): FeatureSpecIssue[] {
 	const spec = ByosanFeatureSpecSchema.parse(specInput);
+	auditByosanEditorialReferencePlan(spec.editorialReferencePlan);
 	const issues: FeatureSpecIssue[] = [];
 	const sourceIds = new Set(spec.sources.map((source) => source.id));
+	const editorialReferenceIdsSet = editorialReferenceIds(
+		spec.editorialReferencePlan,
+	);
+	const overlappingNamespaces = [...editorialReferenceIdsSet].filter((id) =>
+		sourceIds.has(id),
+	);
+	if (overlappingNamespaces.length > 0) {
+		issues.push({
+			code: "editorial_reference_source_namespace_overlap",
+			details: overlappingNamespaces.join(","),
+		});
+	}
 	if (sourceIds.size !== spec.sources.length) {
 		issues.push({
 			code: "duplicate_source_id",
@@ -122,6 +144,15 @@ export function auditByosanFeatureSpec(
 		});
 	}
 	for (const claim of spec.claims) {
+		const editorialSourceIds = claim.sourceIds.filter(
+			isByosanEditorialReferenceId,
+		);
+		if (editorialSourceIds.length > 0) {
+			issues.push({
+				code: "editorial_reference_used_as_fact_source",
+				details: `${claim.claim}: ${editorialSourceIds.join(",")}`,
+			});
+		}
 		const missing = claim.sourceIds.filter(
 			(sourceId) => !sourceIds.has(sourceId),
 		);

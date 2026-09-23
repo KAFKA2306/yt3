@@ -1,0 +1,127 @@
+{
+	"schemaVersion": "byosan_editorial_reference_registry_v1",
+	"domain": "byosan_money",
+	"sourceClass": "editorial_reference",
+	"references": [
+		{
+			"id": "ref_pivot",
+			"name": "PIVOT",
+			"url": "https://pivot.inc/",
+			"role": "caption_people",
+			"roleGroup": "presentation",
+			"extractableElements": ["日本語字幕の要点強調", "話者の配置と余白", "章切り替えのテンポ"],
+			"surfaces": ["caption", "structure", "cuts"],
+			"doNotCopy": ["固有の番組フォーマット", "ロゴ・配色・文言", "出演者の見せ方そのもの"]
+		},
+		{
+			"id": "ref_bloomberg_originals",
+			"name": "Bloomberg Originals",
+			"url": "https://www.youtube.com/@BloombergOriginals",
+			"role": "video_cuts",
+			"roleGroup": "presentation",
+			"extractableElements": ["人物・現場・チャートの切り替え", "ナレーションと画面の同期", "資料映像を短く差し込む構成"],
+			"surfaces": ["structure", "cuts", "visual"],
+			"doNotCopy": ["映像の順番や編集点の再現", "番組タイトルやロゴ", "個別動画のナレーション"]
+		},
+		{
+			"id": "ref_reuters_graphics",
+			"name": "Reuters Graphics",
+			"url": "https://www.reuters.com/graphics/",
+			"role": "news_graphic",
+			"roleGroup": "visualization",
+			"extractableElements": ["ニュースを一枚の図へ圧縮", "因果関係を矢印で整理", "地図・地域差の見せ方"],
+			"surfaces": ["visual", "chart", "structure"],
+			"doNotCopy": ["記事の図版や画像", "見出し・配色・図形の再利用", "同じニュースの結論"]
+		},
+		{
+			"id": "ref_financial_times",
+			"name": "Financial Times Visual & Data",
+			"url": "https://www.ft.com/visual-and-data-journalism",
+			"role": "financial_chart",
+			"roleGroup": "visualization",
+			"extractableElements": ["余白を残した金融チャート", "注釈付きの比較", "色数を絞った強調"],
+			"surfaces": ["chart", "visual", "caption"],
+			"doNotCopy": ["グラフ画像や記事のレイアウト", "ブランドカラー", "記事固有の注釈文"]
+		},
+		{
+			"id": "ref_the_pudding",
+			"name": "The Pudding",
+			"url": "https://pudding.cool/",
+			"role": "data_story",
+			"roleGroup": "storytelling",
+			"extractableElements": ["データから問いを立てる順序", "発見に合わせて次の図へ進む流れ", "小さな発見を積み上げる構成"],
+			"surfaces": ["structure", "visual", "cuts"],
+			"doNotCopy": ["インタラクティブ作品のコード", "作品固有の物語や表現", "データセットや結論"]
+		},
+		{
+			"id": "ref_visual_capitalist",
+			"name": "Visual Capitalist",
+			"url": "https://www.visualcapitalist.com/",
+			"role": "comparison_diagram",
+			"roleGroup": "visualization",
+			"extractableElements": ["一画面の比較ランキング", "産業構造を一枚で俯瞰", "比較軸を一つに絞る図解"],
+			"surfaces": ["visual", "chart", "thumbnail"],
+			"doNotCopy": ["インフォグラフィックの転載", "ランキングの結論", "アイコン・イラストの再利用"]
+		},
+		{
+			"id": "ref_our_world_in_data",
+			"name": "Our World in Data",
+			"url": "https://ourworldindata.org/grapher",
+			"role": "simple_chart",
+			"roleGroup": "data",
+			"extractableElements": ["軸・単位・期間を明記", "注釈を一か所に絞る", "単純な系列比較"],
+			"surfaces": ["chart", "caption", "visual"],
+			"doNotCopy": ["データの出典扱い", "チャート画像の転載", "別テーマへの結論移植"]
+		},
+		{
+			"id": "ref_fred",
+			"name": "FRED",
+			"url": "https://fred.stlouisfed.org/",
+			"role": "macro_data",
+			"roleGroup": "data",
+			"extractableElements": ["一次系列からの時系列化", "期間を指定した変化率", "注記付きの基準線"],
+			"surfaces": ["chart", "visual", "structure"],
+			"doNotCopy": ["事実ソースとの混同", "系列のない数値の補完", "チャート画像の転載"]
+		},
+		{
+			"id": "ref_macromicro",
+			"name": "MacroMicro",
+			"url": "https://en.macromicro.me/",
+			"role": "macro_dashboard",
+			"roleGroup": "data",
+			"extractableElements": ["複数マクロ指標の重ね合わせ", "景気循環の局面比較", "株価・金利・在庫の接続"],
+			"surfaces": ["chart", "structure", "visual"],
+			"doNotCopy": ["ダッシュボードの数値", "独自スコアや結論", "画面レイアウト"]
+		},
+		{
+			"id": "ref_koyfin",
+			"name": "Koyfin",
+			"url": "https://www.koyfin.com/",
+			"role": "investor_dashboard",
+			"roleGroup": "data",
+			"extractableElements": ["企業比較の分割画面", "利益率・コンセンサス・評価の整理", "ETF・債券・マクロの横断"],
+			"surfaces": ["chart", "visual", "structure"],
+			"doNotCopy": ["有料画面の転載", "コンセンサス数値", "ダッシュボードのUI"]
+		},
+		{
+			"id": "ref_tradingview",
+			"name": "TradingView",
+			"url": "https://www.tradingview.com/",
+			"role": "market_chart",
+			"roleGroup": "data",
+			"extractableElements": ["期間を明示した価格推移", "イベントマーカー", "一つの転換点へのフォーカス"],
+			"surfaces": ["chart", "caption", "visual"],
+			"doNotCopy": ["売買シグナル", "価格予測", "チャート画面の転載"]
+		},
+		{
+			"id": "ref_canva_youtube_thumbnails",
+			"name": "Canva YouTube Thumbnails",
+			"url": "https://www.canva.com/create/youtube-thumbnails/",
+			"role": "thumbnail_composition",
+			"roleGroup": "thumbnail",
+			"extractableElements": ["短い文字量と大きな主語", "顔・主題・余白の視線誘導", "小画面での文字可読性"],
+			"surfaces": ["thumbnail", "caption"],
+			"doNotCopy": ["テンプレートのそのまま利用", "素材画像や人物", "タイトルとサムネの同文"]
+		}
+	]
+}

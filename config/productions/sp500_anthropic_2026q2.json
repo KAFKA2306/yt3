@@ -29,6 +29,53 @@
 	"counterargument": "評価益を除いても本業の営業利益が伸びているなら、見かけだけの成長という結論は成立しません。",
 	"conclusion": "利益成長率は評価益と本業を分け、上位企業を除いた分母でも確認して初めて投資判断に使えます。",
 	"nextWatchNumbers": ["評価益を除いた利益成長率", "上位2社を除く営業利益率", "営業利益からFCFへの転換率"],
+	"editorialReferencePlan": {
+		"schemaVersion": "byosan_editorial_reference_plan_v1",
+		"selectionSeed": "byosan_money/2026-08-01-sp500-47-anthropic|47.4%という指数見出しを、2社の非営業評価益と2社除外後の本業成長に分解する二段オチ",
+		"selectedReferences": [
+			{
+				"referenceId": "ref_our_world_in_data",
+				"role": "simple_chart",
+				"roleGroup": "data",
+				"surface": "visual",
+				"element": "軸・単位・期間を明記",
+				"application": "「軸・単位・期間を明記」を、軸・単位・期間を持つデータ表示へ適用する",
+				"provenance": "editorial_reference_observation",
+				"avoidImitation": "Our World in Dataの固有表現・素材・結論は使わず、データの出典扱いを避ける"
+			},
+			{
+				"referenceId": "ref_bloomberg_originals",
+				"role": "video_cuts",
+				"roleGroup": "presentation",
+				"surface": "structure",
+				"element": "ナレーションと画面の同期",
+				"application": "「ナレーションと画面の同期」を、話者・章・画面更新の設計へ分解して適用する",
+				"provenance": "editorial_reference_observation",
+				"avoidImitation": "Bloomberg Originalsの固有表現・素材・結論は使わず、映像の順番や編集点の再現を避ける"
+			},
+			{
+				"referenceId": "ref_visual_capitalist",
+				"role": "comparison_diagram",
+				"roleGroup": "visualization",
+				"surface": "chart",
+				"element": "産業構造を一枚で俯瞰",
+				"application": "「産業構造を一枚で俯瞰」を、主張を一つに絞った図解の判断へ適用する",
+				"provenance": "editorial_reference_observation",
+				"avoidImitation": "Visual Capitalistの固有表現・素材・結論は使わず、インフォグラフィックの転載を避ける"
+			},
+			{
+				"referenceId": "ref_financial_times",
+				"role": "financial_chart",
+				"roleGroup": "visualization",
+				"surface": "visual",
+				"element": "注釈付きの比較",
+				"application": "「注釈付きの比較」を、主張を一つに絞った図解の判断へ適用する",
+				"provenance": "editorial_reference_observation",
+				"avoidImitation": "Financial Times Visual & Dataの固有表現・素材・結論は使わず、グラフ画像や記事のレイアウトを避ける"
+			}
+		],
+		"combinationPolicy": "vary_per_run_3_to_5_sources_no_fixed_combo"
+	},
 	"hookPromises": ["47.4", "28.8", "626", "505"],
 	"noveltyQueries": [
 		"site:youtube.com/watch \"47.4%\" \"S&P 500\" earnings Anthropic Amazon",

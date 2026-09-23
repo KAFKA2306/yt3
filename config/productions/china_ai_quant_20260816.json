@@ -31,6 +31,43 @@
 	"counterargument": "公開された算力やToken量が実利用や利益に結びついていないなら、供給能力だけで産業の成立を説明できません。",
 	"conclusion": "中国AIの競争力は単一GPUの性能ではなく、算力・Token価格・実導入・AI売上を同じ軸で確認して判断すべきです。",
 	"nextWatchNumbers": ["Token単価", "AI Cloud Infra売上", "国産acceleratorの実稼働率"],
+	"editorialReferencePlan": {
+		"schemaVersion": "byosan_editorial_reference_plan_v1",
+		"selectionSeed": "byosan_money/2026-08-16-china-ai-quant|NVIDIAの最先端GPUに勝てるかではなく、安いTokenを大量かつ継続的に供給できるかを、算力・token/day・価格・国産accelerator出荷/配備・AI売上の一次公開値だけで検証する",
+		"selectedReferences": [
+			{
+				"referenceId": "ref_bloomberg_originals",
+				"role": "video_cuts",
+				"roleGroup": "presentation",
+				"surface": "cuts",
+				"element": "資料映像を短く差し込む構成",
+				"application": "「資料映像を短く差し込む構成」を、話者・章・画面更新の設計へ分解して適用する",
+				"provenance": "editorial_reference_observation",
+				"avoidImitation": "Bloomberg Originalsの固有表現・素材・結論は使わず、映像の順番や編集点の再現を避ける"
+			},
+			{
+				"referenceId": "ref_canva_youtube_thumbnails",
+				"role": "thumbnail_composition",
+				"roleGroup": "thumbnail",
+				"surface": "thumbnail",
+				"element": "小画面での文字可読性",
+				"application": "「小画面での文字可読性」を、短文・主役・余白のサムネ構図へ適用する",
+				"provenance": "editorial_reference_observation",
+				"avoidImitation": "Canva YouTube Thumbnailsの固有表現・素材・結論は使わず、テンプレートのそのまま利用を避ける"
+			},
+			{
+				"referenceId": "ref_the_pudding",
+				"role": "data_story",
+				"roleGroup": "storytelling",
+				"surface": "cuts",
+				"element": "小さな発見を積み上げる構成",
+				"application": "「小さな発見を積み上げる構成」を、問いから発見へ進む順序の設計へ適用する",
+				"provenance": "editorial_reference_observation",
+				"avoidImitation": "The Puddingの固有表現・素材・結論は使わず、インタラクティブ作品のコードを避ける"
+			}
+		],
+		"combinationPolicy": "vary_per_run_3_to_5_sources_no_fixed_combo"
+	},
 	"hookPromises": ["120兆", "2185", "56万", "88億元"],
 	"noveltyQueries": [
 		"site:youtube.com/watch 中国AI NVIDIA 勝たなくていい 120兆 Token 2185 EFLOPS",
