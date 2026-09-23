@@ -10,13 +10,7 @@ import {
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import type { ByosanAngleCandidate } from "../domain/byosan/news_angle.js";
-import {
-	AssetStore,
-	ROOT,
-	createLlm,
-	getRunIdDateString,
-	parseLlmJson,
-} from "../io/core.js";
+import { AssetStore, ROOT, createLlm, getRunIdDateString } from "../io/core.js";
 import { markKeyRateLimited } from "../io/utils/quota/manager.js";
 
 type FeatureSource = ByosanFeatureSource;
@@ -520,7 +514,11 @@ async function generateFeatureSpec(
 				response_mime_type: "application/json",
 			});
 			activeKeyName = activeLlm.keyName;
-			const response = await activeLlm.invoke([
+			const structuredLlm = activeLlm.withStructuredOutput(
+				ByosanFeatureDraftSchema,
+				{ name: "byosan_feature_draft" },
+			);
+			const draft = (await structuredLlm.invoke([
 				{
 					role: "system",
 					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭5秒で何の話かが分かり、30秒以内にcentralQuestionを台詞として出してください。fact→whyItMatters→counterargument→conclusionの順序を台本に反映し、最後にnextWatchNumbersを1〜3個提示してください。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。つむぎは分析役、ずんだもんは本気の反証役で、単なる相槌にしないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。要求されたフィールドを欠落・代替・自動補完せず、完全なJSONを返してください。\n\n${BYOSAN_FEATURE_JSON_CONTRACT}`,
@@ -529,20 +527,7 @@ async function generateFeatureSpec(
 					role: "user",
 					content: `対象証拠:\n${JSON.stringify(evidence, null, 2)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じ主張を表す。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。centralQuestion、whyItMatters、counterargument、conclusion、nextWatchNumbersを必ず出力する。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。claimsは必ずallowed_source_idsから1個以上を選び、sourceIds:[]を絶対に出さない。必須フィールドを1つでも出せない場合は成功形を返さず、前回エラーと同様に修正してから完全なJSONを返すこと。attempt=${attempt}\n前回の検証エラー: ${lastError instanceof Error ? lastError.message : lastError ? String(lastError) : "なし"}`,
 				},
-			]);
-			const responseText =
-				typeof response.content === "string"
-					? response.content
-					: response.content
-							.map((part) =>
-								typeof part === "string"
-									? part
-									: "text" in part && typeof part.text === "string"
-										? part.text
-										: "",
-							)
-							.join("");
-			const draft = parseLlmJson(responseText) as Record<string, unknown>;
+			])) as Record<string, unknown>;
 			const normalizedDraft = normalizeFeatureDraft(draft);
 			fs.outputJsonSync(
 				path.join(runDir, "audit", "feature_draft_candidate.json"),
