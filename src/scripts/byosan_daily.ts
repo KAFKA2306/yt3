@@ -23,10 +23,11 @@ type FeatureSource = ByosanFeatureSource;
 
 const BYOSAN_FEATURE_JSON_CONTRACT = `出力形式はJSONオブジェクト1個だけです。Markdown、説明文、コードフェンス、旧形式の互換フィールドは出力しません。
 必須トップレベルキーは title, thumbnailTitle, thumbnail, descriptionLead, descriptionBullets, disclaimer, centralQuestion, whyItMatters, counterargument, conclusion, nextWatchNumbers, hookPromises, noveltyQueries, tags, claims, segments です。
-thumbnail は文字列ではなく、必ず次の7キーを持つオブジェクトです: eyebrow, lead, accent, reaction, secondLine, calloutTop, calloutBottom。
+thumbnail は文字列ではなく、必ず次の7キーを持つオブジェクトです: eyebrow, lead, accent, reaction, secondLine, calloutTop, calloutBottom。文字数上限は順に eyebrow 18, lead 8, accent 10, reaction 4, secondLine 12, calloutTop 22, calloutBottom 18 です。各値は空文字にしません。
 claims は3〜18個のオブジェクト配列で、各要素は claim, sourceIds, status を必ず持ちます。status は verified / derived_with_caveat / analyst_estimate_not_company_non_gaap のいずれかです。sourceIds は1個以上の非空配列で、allowed_sources の id を少なくとも1個入れます。claimsの最小形は {"claim":"根拠のある8文字以上の主張","sourceIds":["allowed_source_id"],"status":"verified"} です。
 segments は20〜32個のオブジェクト配列です。各要素は speaker, emotion, section, headline, subheadline, visualType, stats, source, text を必ず持ち、source は null ではない2文字以上の文字列、stats は全segmentで必ず1〜3個の非空配列です。stats:[] は禁止です。各stats要素は label, value, detail, color を必ず持ち、color は cyan / amber / white / muted のいずれかです。segmentの最小形は {"speaker":"春日部つむぎ","emotion":"analytical","section":"事実","headline":"数字","subheadline":"意味","visualType":"chart","stats":[{"label":"指標","value":"10%","detail":"出典の数値","color":"cyan"}],"source":"出典名","text":"18文字以上の台詞本文"} です。speaker は 春日部つむぎ / ずんだもん、emotion は shock / reveal / curious / analytical / caution / confident / warm / relieved / serious / joy のいずれかです。chapter は任意です。
 segmentsのtextは18〜180文字、statsのvalueには単位を付けます。冒頭2シーンにhookPromisesの語を含めます。少なくとも7種類のemotionを使い、つむぎを分析・説明役、ずんだもんを疑問・反証役にします。
+文字数・配列数も厳守します: title 10〜100, thumbnailTitle 4〜42, descriptionLead 30〜500, descriptionBullets 3〜8個（各8〜180）, disclaimer 20〜400, centralQuestion 10〜180, whyItMatters/counterargument/conclusion 各12〜240, nextWatchNumbers 1〜3個（各32以下）, hookPromises 2〜4個（各24以下）, noveltyQueries 2〜5個（各8〜180）, tags 5〜15個（各30以下）, claims 3〜18個。
 禁止: thumbnail を文字列にする、top-levelの chapters を出す、空のstatsを出す、claimsのsourceIdsを空にする、segmentsのsourceをnullにする、claimsやsegmentsを省略する、欠落項目を推測で補完する。要求された全フィールドを完全に生成できない場合は成功形に見せかけず、JSONを返さず検証エラーを返してください。`;
 
 export type PublishedRunEvidence = {
