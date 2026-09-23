@@ -216,20 +216,9 @@ export function parseAndAuditByosanFeatureSpec(
 	return spec;
 }
 
-export function quantizedCenterOrigin(inputSize: number, zoom: number): number {
-	if (!(inputSize > 0) || !(zoom >= 1)) {
-		throw new Error(
-			`Invalid center origin input: size=${inputSize} zoom=${zoom}`,
-		);
+export function staticSceneMotionFilter(fps = 30): string {
+	if (!Number.isInteger(fps) || fps <= 0) {
+		throw new Error(`Invalid static scene fps: ${fps}`);
 	}
-	return Math.floor((inputSize - inputSize / zoom) / 4) * 2;
-}
-
-export function centerLockedMotionFilter(fps = 30): string {
-	return [
-		`zoompan=z='min(max(pzoom,1)+0.0002,1.18)'`,
-		"x='floor((iw-iw/zoom)/4)*2'",
-		"y='floor((ih-ih/zoom)/4)*2'",
-		`d=1:s=1920x1080:fps=${fps}`,
-	].join(":");
+	return `fps=${fps}`;
 }

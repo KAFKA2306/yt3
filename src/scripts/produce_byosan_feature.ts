@@ -8,8 +8,8 @@ import {
 	type ByosanFeatureSegment,
 	type ByosanFeatureSpec,
 	type ByosanStatColor,
-	centerLockedMotionFilter,
 	parseAndAuditByosanFeatureSpec,
+	staticSceneMotionFilter,
 } from "../domain/byosan/feature_spec.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
 import { runAudioQA } from "../io/utils/audio_qa.js";
@@ -907,7 +907,7 @@ function videoEncoderArgs(): string[] {
 function renderVisualSegment(segment: TimedSegment): void {
 	const filter = [
 		"scale=1920:1080:flags=lanczos",
-		centerLockedMotionFilter(FPS),
+		staticSceneMotionFilter(FPS),
 		`fade=t=in:st=0:d=${segment.index === 0 ? "0.35" : "0.10"}`,
 		"format=yuv420p",
 	].join(",");
@@ -1474,11 +1474,10 @@ async function auditProduction(
 		visual_explanation: visualTypeCount >= 3 && hasDataVisual,
 		units_and_readability: hasUnitsOnDisplayedNumbers,
 	};
-	const motionFilter = centerLockedMotionFilter(FPS);
+	const motionFilter = staticSceneMotionFilter(FPS);
 	const motionPolicyPass =
-		!motionFilter.match(/sin|cos/) &&
-		motionFilter.includes("floor((iw-iw/zoom)/4)*2") &&
-		motionFilter.includes("floor((ih-ih/zoom)/4)*2");
+		motionFilter === `fps=${FPS}` &&
+		!motionFilter.match(/zoompan|crop|rotate|sin|cos/);
 	const requirements = {
 		audio_quality: {
 			status: audioQA.status === "PASS" ? "PASS" : "FAIL",
@@ -1575,21 +1574,16 @@ async function auditProduction(
 			},
 		},
 		motion: {
-			status:
-				defects.freezeSegments === 0 &&
-				maxSceneSeconds <= 16 &&
-				motionPolicyPass
-					? "PASS"
-					: "FAIL",
+			status: maxSceneSeconds <= 16 && motionPolicyPass ? "PASS" : "FAIL",
 			evidence: {
 				scene_count: timed.length,
 				max_scene_seconds: maxSceneSeconds,
 				camera_motion:
-					"center-locked slow push-in with even-pixel crop origins; no lateral or vertical oscillation",
+					"static scene; no zoom, crop, pan, rotation, or oscillation",
 				filter: motionFilter,
-				even_pixel_center_origin: motionPolicyPass,
-				no_lateral_oscillation: motionPolicyPass,
-				freeze_segments: defects.freezeSegments,
+				static_scene: motionPolicyPass,
+				no_camera_transform: motionPolicyPass,
+				freeze_segments_diagnostic: defects.freezeSegments,
 			},
 		},
 		emotion: {

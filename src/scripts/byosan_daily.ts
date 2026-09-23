@@ -587,7 +587,7 @@ async function generateFeatureSpec(
 			const draft = (await structuredLlm.invoke([
 				{
 					role: "system",
-					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭5秒で何の話かが分かり、30秒以内にcentralQuestionを台詞として出してください。fact→whyItMatters→counterargument→conclusionの順序を台本に反映し、最後にnextWatchNumbersを1〜3個提示してください。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。つむぎは分析役、ずんだもんは本気の反証役で、単なる相槌にしないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。要求されたフィールドを欠落・代替・自動補完せず、完全なJSONを返してください。\n\n${BYOSAN_FEATURE_JSON_CONTRACT}`,
+					content: `あなたは秒算マネーの編集長です。与えられた証拠だけで5〜7分の対話型金融動画を設計します。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、条件を台本と説明欄へ入れます。冒頭5秒で何の話かが分かり、30秒以内にcentralQuestionを台詞として出してください。fact→whyItMatters→counterargument→conclusionの順序を台本に反映し、最後にnextWatchNumbersを1〜3個提示してください。20〜32シーン、7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。つむぎは分析役、ずんだもんは本気の反証役で、単なる相槌にしないでください。画面は静止レイアウトにし、カメラ移動・ズーム・パン・回転・左右揺れを設計しないでください。変化はシーン切替、字幕、数値カード更新だけに限定します。毎回新しい比較単位、章構成、問いの順番を選びます。要求されたフィールドを欠落・代替・自動補完せず、完全なJSONを返してください。\n\n${BYOSAN_FEATURE_JSON_CONTRACT}`,
 				},
 				{
 					role: "user",
@@ -798,7 +798,7 @@ export async function runByosanDaily(): Promise<void> {
 			improvement_layer: "agent improvement loop / harness design",
 			angle_decision: research.angle_decision,
 			feature_spec: specPath,
-			motion_policy: "center_locked_no_lateral_oscillation",
+			motion_policy: "static_scenes_no_camera_motion",
 			generated_at: new Date().toISOString(),
 		},
 		{ spaces: 2 },
