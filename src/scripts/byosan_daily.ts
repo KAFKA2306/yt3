@@ -628,7 +628,7 @@ function runCommand(
 	}
 }
 
-function writeByosanCanonicalAudit(runDir: string): void {
+export function writeByosanCanonicalAudit(runDir: string): void {
 	const productionPath = path.join(
 		runDir,
 		"audit",
