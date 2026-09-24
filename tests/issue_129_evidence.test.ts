@@ -7,6 +7,13 @@ type EvidenceLedger = {
 	marketComparison: {
 		status: string;
 		historicalDossierValue: { status: string };
+		verifiedMarketReadback: {
+			status: string;
+			marketPrice: number;
+			discountToReportedNavPercent: number;
+			discountToModifiedNavPercent: number;
+			navReferenceDateStatus: string;
+		};
 	};
 	sources: Array<{ tier: string; url: string }>;
 	visualPlan: { formats: string[]; sourceDateOnScreen: boolean };
@@ -31,11 +38,18 @@ describe("issue 129 evidence ledger", () => {
 			expect(fact.status).toMatch(/^VERIFIED_/);
 		}
 		expect(ledger.marketComparison.status).toBe(
-			"UNVERIFIED_REQUIRES_CURRENT_MARKET_READBACK",
+			"PARTIAL_CURRENT_PRICE_READBACK_NAV_DATE_UNALIGNED",
 		);
 		expect(ledger.marketComparison.historicalDossierValue.status).toBe(
 			"REQUIRES_RECHECK_BEFORE_PRODUCTION",
 		);
+		expect(ledger.marketComparison.verifiedMarketReadback).toMatchObject({
+			status: "VERIFIED_MARKET_CLOSE_READBACK",
+			marketPrice: 1501,
+			discountToReportedNavPercent: 32.1267,
+			discountToModifiedNavPercent: 41.1373,
+			navReferenceDateStatus: "REQUIRES_EXACT_DATE_ALIGNMENT",
+		});
 	});
 
 	test("requires primary-source dates and both delivery formats", () => {

@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "Issuer-reported NAV and operating context are recorded from official IR materials, but the current market-price readback, final render, ASR, and production acceptance remain outstanding.",
+	"statusReason": "Issuer-reported NAV and operating context are recorded from official IR materials, and the 2026-09-24 market close is now read back from the cited market-data page. Exact NAV reference-date alignment, final render, ASR, and production acceptance remain outstanding.",
 	"issuerFacts": [
 		{
 			"id": "reported_nav",
@@ -59,7 +59,7 @@
 		}
 	],
 	"marketComparison": {
-		"status": "UNVERIFIED_REQUIRES_CURRENT_MARKET_READBACK",
+		"status": "PARTIAL_CURRENT_PRICE_READBACK_NAV_DATE_UNALIGNED",
 		"formula": "discount = 1 - marketPrice / issuerReportedNav",
 		"requiredInputs": [
 			"market close and timestamp",
@@ -72,6 +72,24 @@
 			"currency": "JPY",
 			"asOf": "2026-09-24",
 			"status": "REQUIRES_RECHECK_BEFORE_PRODUCTION"
+		},
+		"verifiedMarketReadback": {
+			"status": "VERIFIED_MARKET_CLOSE_READBACK",
+			"sourceId": "market_price_readback_20260925",
+			"marketPrice": 1501,
+			"currency": "JPY",
+			"closeDate": "2026-09-24",
+			"closeTimeJst": "15:30",
+			"reportedHigh": 1510.5,
+			"reportedLow": 1468,
+			"discountToReportedNavPercent": 32.1267,
+			"discountToModifiedNavPercent": 41.1373,
+			"calculation": {
+				"reportedNav": "1 - 1501 / 2210",
+				"modifiedNav": "1 - 1501 / 2550"
+			},
+			"navReferenceDateStatus": "REQUIRES_EXACT_DATE_ALIGNMENT",
+			"note": "The market page confirms the 2026-09-24 close, but this does not by itself establish that the close and issuer NAV were measured at the same reference date."
 		},
 		"interpretationBoundary": "A mechanical discount to reported NAV is not an intrinsic-value estimate, safety margin, or purchase recommendation."
 	},
@@ -110,11 +128,16 @@
 			"supports": ["latestOfficialReportingCalendar"]
 		},
 		{
-			"id": "market_price_pending",
+			"id": "market_price_readback_20260925",
 			"url": "https://s.kabutan.jp/stocks/8801/historical_prices/daily/",
 			"tier": "L5",
-			"retrievedAt": "2026-09-24",
-			"supports": ["pendingMarketReadback"]
+			"retrievedAt": "2026-09-25",
+			"supports": [
+				"2026-09-24Close",
+				"closeTime",
+				"highLow",
+				"marketPriceReadback"
+			]
 		}
 	],
 	"visualPlan": {
