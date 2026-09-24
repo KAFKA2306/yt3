@@ -1,0 +1,286 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 137,
+	"runId": "byosan_money/2026-09-24-issue-137-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "The ledger preserves the issue snapshot as provisional and keeps CAGR, single-year YoY, demand volume, market size, and company exposure separate. Latest publisher readback, comparable market definitions, source timestamps, production visuals, and QA remain outstanding.",
+	"layers": [
+		{
+			"id": "compute",
+			"label": "AI GPU and accelerator",
+			"status": "PROVISIONAL_MARKET_FORECAST_REQUIRES_SOURCE_READBACK",
+			"flow": "demand_origin",
+			"sourceIds": ["gartner_ai_processing"]
+		},
+		{
+			"id": "memory",
+			"label": "HBM and DRAM",
+			"status": "PROVISIONAL_CYCLE_SENSITIVE",
+			"flow": "bandwidth_bottleneck",
+			"sourceIds": ["trendforce_hbm", "gartner_semiconductor_2026"]
+		},
+		{
+			"id": "connectivity",
+			"label": "Scale-up, scale-out, switch, NIC, and DPU",
+			"status": "PROVISIONAL_MARKET_DEFINITION_REQUIRES_READBACK",
+			"flow": "cluster_communication",
+			"sourceIds": ["delloro_ai_networking"]
+		},
+		{
+			"id": "optics",
+			"label": "Optics, silicon photonics, CPO, and NPO",
+			"status": "PROVISIONAL_SMALL_BASE_EFFECT_REQUIRES_READBACK",
+			"flow": "electrical_to_optical_boundary",
+			"sourceIds": ["trendforce_cpo", "lightcounting_ai_optics"]
+		},
+		{
+			"id": "storage",
+			"label": "Data-center SSD and NAND",
+			"status": "PROVISIONAL_PRICE_CYCLE_SENSITIVE",
+			"flow": "data_persistence",
+			"sourceIds": ["gartner_semiconductor_2026"]
+		},
+		{
+			"id": "physical_infrastructure",
+			"label": "Foundry, advanced packaging, power, cooling, rack, and fiber",
+			"status": "PROVISIONAL_MARKET_SCOPE_REQUIRES_READBACK",
+			"flow": "facility_constraint",
+			"sourceIds": ["delloro_physical_infrastructure"]
+		}
+	],
+	"metrics": [
+		{
+			"id": "cpo_npo_cagr",
+			"layer": "optics",
+			"metric": "CPO/NPO market growth",
+			"value": 230,
+			"unit": "percent",
+			"basis": "CAGR",
+			"period": "2025-2030",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"smallBaseWarning": true,
+			"sourceIds": ["trendforce_cpo"]
+		},
+		{
+			"id": "optical_transceiver_cagr",
+			"layer": "optics",
+			"metric": "AI-cluster optical transceiver market growth",
+			"value": 41,
+			"unit": "percent",
+			"basis": "CAGR",
+			"period": "2024-2026",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"sourceIds": ["lightcounting_ai_optics"]
+		},
+		{
+			"id": "ai_networking_cagr",
+			"layer": "connectivity",
+			"metric": "AI networking market growth",
+			"value": 40,
+			"unit": "percent_or_higher",
+			"basis": "CAGR",
+			"period": "2024-2029",
+			"scope": "front_end_back_end_scale_up_must_be_split",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"sourceIds": ["delloro_ai_networking"]
+		},
+		{
+			"id": "direct_liquid_cooling_cagr",
+			"layer": "physical_infrastructure",
+			"metric": "Direct liquid cooling market growth",
+			"value": 39,
+			"unit": "percent",
+			"basis": "CAGR",
+			"period": "2024-2029",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"sourceIds": ["delloro_physical_infrastructure"]
+		},
+		{
+			"id": "ai_accelerator_cagr",
+			"layer": "compute",
+			"metric": "AI GPU and custom accelerator market growth",
+			"value": 26.8,
+			"unit": "percent",
+			"basis": "CAGR",
+			"period": "through_2030",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"sourceIds": ["gartner_ai_processing"]
+		},
+		{
+			"id": "advanced_packaging_cagr",
+			"layer": "physical_infrastructure",
+			"metric": "High-performance advanced packaging market growth",
+			"value": 23,
+			"unit": "percent",
+			"basis": "CAGR",
+			"period": "2024-2030",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"scope": "HBM_2_5D_3D_must_be_defined",
+			"sourceIds": ["gartner_ai_processing"]
+		},
+		{
+			"id": "power_cooling_rack_cagr",
+			"layer": "physical_infrastructure",
+			"metric": "Data-center power, cooling, and rack market growth",
+			"value": 22,
+			"unit": "percent",
+			"basis": "CAGR",
+			"period": "2025-2030",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"sourceIds": ["delloro_physical_infrastructure"]
+		},
+		{
+			"id": "data_center_ssd_cagr",
+			"layer": "storage",
+			"metric": "Data-center SSD market growth",
+			"value": 17.4,
+			"unit": "percent",
+			"basis": "CAGR",
+			"period": "2026-2033",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"sourceIds": ["gartner_ai_processing"]
+		},
+		{
+			"id": "cpu_cagr",
+			"layer": "compute",
+			"metric": "CPU market growth",
+			"value": "7-11",
+			"unit": "percent",
+			"basis": "CAGR",
+			"period": "through_2033_or_2035",
+			"status": "PROVISIONAL_REQUIRES_MARKET_DEFINITION_READBACK",
+			"comparisonRule": "Do not present as an AI-only market.",
+			"sourceIds": ["gartner_ai_processing"]
+		},
+		{
+			"id": "nand_2026_yoy",
+			"layer": "storage",
+			"metric": "NAND revenue growth",
+			"value": 371.9,
+			"unit": "percent",
+			"basis": "single_year_YoY",
+			"period": "2026",
+			"status": "PROVISIONAL_PRICE_AND_SUPPLY_CYCLE_REQUIRES_READBACK",
+			"sourceIds": ["gartner_semiconductor_2026"]
+		},
+		{
+			"id": "dram_2026_yoy",
+			"layer": "memory",
+			"metric": "DRAM revenue growth",
+			"value": 246.6,
+			"unit": "percent",
+			"basis": "single_year_YoY",
+			"period": "2026",
+			"status": "PROVISIONAL_PRICE_AND_SUPPLY_CYCLE_REQUIRES_READBACK",
+			"sourceIds": ["gartner_semiconductor_2026"]
+		},
+		{
+			"id": "hbm_2026_demand",
+			"layer": "memory",
+			"metric": "HBM demand volume growth",
+			"value": 70,
+			"unit": "percent_or_higher",
+			"basis": "demand_volume_not_revenue",
+			"period": "2026",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"sourceIds": ["trendforce_hbm"]
+		},
+		{
+			"id": "foundry_2026_yoy",
+			"layer": "physical_infrastructure",
+			"metric": "Foundry market revenue growth",
+			"value": 18.8,
+			"unit": "percent",
+			"basis": "single_year_YoY",
+			"period": "2026",
+			"status": "PROVISIONAL_REQUIRES_PUBLISHER_READBACK",
+			"sourceIds": ["gartner_semiconductor_2026"]
+		}
+	],
+	"interpretationRules": [
+		"CAGR and single-year YoY must use separate visual panels.",
+		"HBM is a DRAM category but its demand-volume metric must not be presented as DRAM revenue.",
+		"CPO/NPO high growth requires an explicit small-initial-market warning.",
+		"Market growth is not a stock-return forecast and must not be phrased as investment advice.",
+		"Different publishers' market definitions cannot be ranked as if they measured the same market."
+	],
+	"sources": [
+		{
+			"id": "gartner_ai_processing",
+			"url": "https://www.gartner.com/en/documents/8259357",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"ai_processing_forecast",
+				"accelerator_context",
+				"cpu_context"
+			]
+		},
+		{
+			"id": "gartner_semiconductor_2026",
+			"url": "https://www.gartner.com/en/newsroom/press-releases/2026-08-24-gartner-forecasts-worldwide-semiconductor-revenue-to-reach-1-trillion-dollars-in-2026",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["2026_semiconductor", "dram", "nand", "foundry"]
+		},
+		{
+			"id": "trendforce_hbm",
+			"url": "https://www.trendforce.com/presscenter/news/20251030-12762.html",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["hbm_demand_volume"]
+		},
+		{
+			"id": "delloro_ai_networking",
+			"url": "https://www.delloro.com/news/ai-back-end-switch-sales-to-approach-1-trillion-over-the-next-five-years/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["ai_networking"]
+		},
+		{
+			"id": "delloro_physical_infrastructure",
+			"url": "https://www.delloro.com/news/data-center-physical-infrastructure-market-forecast-to-reach-120-billion-by-2030/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["power", "cooling", "rack", "physical_infrastructure"]
+		},
+		{
+			"id": "lightcounting_ai_optics",
+			"url": "https://www.lightcounting.com/newsletter/en/january-2025-optics-for-ai-clusters-319",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["ai_optical_transceivers"]
+		},
+		{
+			"id": "trendforce_cpo",
+			"url": "https://www.trendforce.com/presscenter/news/20260615-13098.html",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["cpo_npo"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"GPU to HBM to communication to optics to power/cooling chain",
+			"CAGR-only horizontal comparison with market definitions",
+			"2026 YoY cards separated from CAGR",
+			"pluggable optics to CPO to optical I/O maturity path"
+		],
+		"shorts": [
+			"GPU demand creates a wider bottleneck chain",
+			"HBM demand is not DRAM revenue",
+			"CPO growth starts from a small base"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"stageRule": "Every value carries metric basis, period, market definition, source, and provisional/verified status."
+	},
+	"openAcceptance": [
+		"Re-read every publisher source and record publication date, forecast horizon, market definition, and unit.",
+		"Keep CAGR, single-year YoY, and HBM demand volume in separate panels and captions.",
+		"Complete the four required visuals, script, thumbnail variants, source list, Shorts version, and next-episode bridge.",
+		"Complete factuality/source-policy QA, render, ASR, and non-recommendation review."
+	]
+}
