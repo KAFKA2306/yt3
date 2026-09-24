@@ -1,0 +1,224 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 130,
+	"runId": "byosan_money/2026-09-24-issue-130-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "Official product definitions and dated documents are recorded, but current 8-company holdings and look-through weights still require the latest official holdings files.",
+	"products": [
+		{
+			"id": "dram",
+			"name": "Roundhill Memory ETF",
+			"ticker": "DRAM",
+			"benchmarkOrMandate": "Memory and storage ecosystem, including HBM, DRAM, and NAND",
+			"launchDate": "2026-04-02",
+			"expenseRatio": {
+				"value": 0.65,
+				"unit": "percent",
+				"status": "VERIFIED_FROM_OFFICIAL_PAGE"
+			},
+			"active": true,
+			"holdingsAsOf": "2026-06-30",
+			"holdingsStatus": "DATED_PARTIAL",
+			"exposureCaveat": "The official page says the displayed allocation combines stock positions with total-return swaps; direct holdings and economic exposure must remain separate.",
+			"sourceIds": ["roundhill_dram"]
+		},
+		{
+			"id": "221a",
+			"name": "MAXIS Nikkei Semiconductor Stock ETF",
+			"ticker": "221A",
+			"benchmarkOrMandate": "Nikkei Semiconductor Stock Index; 30 Tokyo-listed semiconductor-related companies, market-cap weighted",
+			"expenseRatio": {
+				"value": 0.14,
+				"unit": "percent_max",
+				"status": "VERIFIED_FROM_JPX"
+			},
+			"active": true,
+			"holdingsAsOf": "2025-04-30",
+			"holdingsStatus": "HISTORICAL_SAMPLE_ONLY",
+			"historicalSample": [
+				{ "company": "Tokyo Electron", "weight": 17.1 },
+				{ "company": "Advantest", "weight": 12.0 },
+				{ "company": "Renesas Electronics", "weight": 11.1 },
+				{ "company": "Disco", "weight": 10.6 },
+				{ "company": "Sony Group", "weight": 8.7 }
+			],
+			"historicalSampleCaveat": "These weights are retained only as a dated example and must not be presented as current holdings.",
+			"sourceIds": ["jpx_221a", "nikkei_semiconductor_index"]
+		},
+		{
+			"id": "rakuten_sox",
+			"name": "Rakuten Plus SOX Index Fund",
+			"ticker": "楽天・プラス・SOXインデックス・ファンド",
+			"benchmarkOrMandate": "SOX Index on a yen-converted basis; primarily invests in US equities, including depositary receipts",
+			"expenseRatio": { "status": "UNVERIFIED_REQUIRES_CURRENT_PROSPECTUS" },
+			"active": true,
+			"holdingsAsOf": "2026-08",
+			"holdingsStatus": "MONTHLY_REPORT_AVAILABLE_CURRENT_WEIGHTS_UNVERIFIED",
+			"structureNote": "The official monthly report identifies the master fund as the principal allocation; fund holdings and index constituents are separate evidence layers.",
+			"sourceIds": ["rakuten_sox", "sox_methodology"]
+		}
+	],
+	"companies": [
+		{ "id": "MU", "name": "Micron", "country": "US", "valueChain": "memory" },
+		{ "id": "TSM", "name": "TSMC", "country": "TW", "valueChain": "foundry" },
+		{ "id": "NVDA", "name": "NVIDIA", "country": "US", "valueChain": "logic" },
+		{
+			"id": "AMAT",
+			"name": "Applied Materials",
+			"country": "US",
+			"valueChain": "equipment"
+		},
+		{
+			"id": "LRCX",
+			"name": "Lam Research",
+			"country": "US",
+			"valueChain": "equipment"
+		},
+		{ "id": "KLAC", "name": "KLA", "country": "US", "valueChain": "equipment" },
+		{
+			"id": "TEL",
+			"name": "Tokyo Electron",
+			"country": "JP",
+			"valueChain": "equipment"
+		},
+		{ "id": "SKH", "name": "SK hynix", "country": "KR", "valueChain": "memory" }
+	],
+	"coverageMatrix": [
+		{
+			"companyId": "MU",
+			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+		},
+		{
+			"companyId": "TSM",
+			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+		},
+		{
+			"companyId": "NVDA",
+			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+		},
+		{
+			"companyId": "AMAT",
+			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+		},
+		{
+			"companyId": "LRCX",
+			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+		},
+		{
+			"companyId": "KLAC",
+			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+		},
+		{
+			"companyId": "TEL",
+			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+		},
+		{
+			"companyId": "SKH",
+			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+		}
+	],
+	"lookThrough": {
+		"status": "NOT_CALCULABLE_UNTIL_CURRENT_HOLDINGS_ARE_VERIFIED",
+		"formula": "sum(productAllocation × productCompanyWeight)",
+		"requiredInputs": [
+			"latest official holdings",
+			"direct-versus-swap classification",
+			"ADR/local-share aggregation rule",
+			"user-supplied illustrative product allocations"
+		],
+		"illustrativeAllocation": {
+			"dram": 25,
+			"221a": 25,
+			"rakuten_sox": 50,
+			"unit": "percent",
+			"isRecommendation": false
+		}
+	},
+	"sources": [
+		{
+			"id": "roundhill_dram",
+			"url": "https://www.roundhillinvestments.com/etf/dram/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"launchDate",
+				"expenseRatio",
+				"memoryScope",
+				"swapCaveat",
+				"datedHoldingsPage"
+			]
+		},
+		{
+			"id": "jpx_221a",
+			"url": "https://www.jpx.co.jp/equities/products/etfs/issues/01.html",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["benchmark", "30CompanyScope", "expenseRatioMaximum"]
+		},
+		{
+			"id": "nikkei_semiconductor_index",
+			"url": "https://indexes.nikkei.co.jp/nkave/index/profile?idx=nkscd",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["benchmarkDefinition", "marketCapWeighting"]
+		},
+		{
+			"id": "rakuten_sox",
+			"url": "https://www.rakuten-toushin.co.jp/fund/nav/rirsox/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"yenConvertedBenchmark",
+				"USEquityMandate",
+				"monthlyReportAvailability"
+			]
+		},
+		{
+			"id": "sox_methodology",
+			"url": "https://www.nyse.com/indices/nyse-semiconductor-index",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["indexMethodologyPendingCrossCheck"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"8x3 coverage matrix",
+			"memory/logic/foundry/equipment value-chain map",
+			"look-through overlap calculator",
+			"expense and evidence-date cards"
+		],
+		"shorts": [
+			"matrix cut with explicit UNVERIFIED labels",
+			"SOX versus DRAM versus 221A role comparison"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"zeroVersusMissingRule": "A verified 0% is distinct from missing or inaccessible data."
+	},
+	"openAcceptance": [
+		"Fetch the latest official holdings or CSV for each product on the production date.",
+		"Populate all 24 matrix cells with verified weight/status and preserve direct-versus-swap distinctions.",
+		"Calculate and audit look-through overlap using the verified holdings snapshot.",
+		"Complete factuality/source-policy QA, render, ASR, and visual checks.",
+		"Do not publish or describe the ledger as investment advice."
+	]
+}
