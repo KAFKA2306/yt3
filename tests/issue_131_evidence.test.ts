@@ -5,6 +5,15 @@ type EvidenceLedger = {
 	status: string;
 	layers: Array<{ id: string; status: string }>;
 	reportedKpis: Array<{ status: string; sourceIds: string[] }>;
+	companyReadbacks: {
+		status: string;
+		readAt: string;
+		entries: Array<{
+			sourceId: string;
+			verifiedClaims: string[];
+			boundary: string;
+		}>;
+	};
 	sources: Array<{ tier: string; url: string }>;
 	visualPlan: { formats: string[]; sourceDateOnScreen: boolean };
 	openAcceptance: string[];
@@ -35,6 +44,30 @@ describe("issue 131 evidence ledger", () => {
 		expect(ledger.sources.every((source) => source.tier === "L1")).toBe(true);
 		expect(
 			ledger.sources.every((source) => source.url.startsWith("https://")),
+		).toBe(true);
+	});
+
+	test("records the dated company readback without overstating bottleneck proof", () => {
+		expect(ledger.companyReadbacks.status).toBe("PARTIAL_COMPANY_READBACK");
+		expect(ledger.companyReadbacks.readAt).toBe("2026-09-25");
+		expect(ledger.companyReadbacks.entries).toHaveLength(4);
+		expect(
+			ledger.companyReadbacks.entries.map((entry) => entry.sourceId),
+		).toEqual([
+			"nvidia_data_center",
+			"tsmc_q2_2026",
+			"asml_q2_2026",
+			"broadcom_q2_2026",
+		]);
+		expect(
+			ledger.companyReadbacks.entries.every(
+				(entry) => entry.verifiedClaims.length > 0,
+			),
+		).toBe(true);
+		expect(
+			ledger.companyReadbacks.entries.every(
+				(entry) => entry.boundary.length > 0,
+			),
 		).toBe(true);
 	});
 

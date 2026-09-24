@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "Primary company materials establish dated infrastructure layers and reported KPIs, but a comparable current bottleneck ranking, independent corroboration, render, ASR, and production acceptance remain outstanding.",
+	"statusReason": "A 2026-09-25 readback confirms the cited company platform scope and reported KPI periods, but power/cooling evidence, a comparable current bottleneck ranking, independent corroboration, render, ASR, and production acceptance remain outstanding.",
 	"layers": [
 		{
 			"id": "compute",
@@ -94,6 +94,40 @@
 			"sourceIds": ["broadcom_q2_2026"]
 		}
 	],
+	"companyReadbacks": {
+		"status": "PARTIAL_COMPANY_READBACK",
+		"readAt": "2026-09-25",
+		"entries": [
+			{
+				"sourceId": "nvidia_data_center",
+				"verifiedClaims": [
+					"NVIDIA describes a full-stack data-center platform spanning GPU, CPU, networking, storage, and security architectures."
+				],
+				"boundary": "Platform scope does not establish market share, shortage, capacity, lead time, or bottleneck ranking."
+			},
+			{
+				"sourceId": "tsmc_q2_2026",
+				"verifiedClaims": [
+					"TSMC reports 2026-Q2 net revenue of US$40.20 billion and 2026-Q3 revenue guidance of US$44.6–45.8 billion."
+				],
+				"boundary": "Quarterly revenue and guidance are company financial metrics, not a normalized capacity, shortage, or facility constraint measure."
+			},
+			{
+				"sourceId": "asml_q2_2026",
+				"verifiedClaims": [
+					"ASML reports 2026-Q2 net sales of €9.3 billion, 54.0% gross margin, €2.9 billion net income, and 2026 net-sales guidance of €43–45 billion."
+				],
+				"boundary": "Company results and guidance do not by themselves prove lithography capacity, equipment lead times, or a cross-layer bottleneck."
+			},
+			{
+				"sourceId": "broadcom_q2_2026",
+				"verifiedClaims": [
+					"Broadcom reports FY2026-Q2 AI semiconductor revenue of US$10.8 billion, up 143% year over year, and FY2026-Q3 guidance of US$16.0 billion with growth above 200% year over year."
+				],
+				"boundary": "AI semiconductor revenue and company guidance are not a comparable network, power, cooling, or supply-chain bottleneck measure."
+			}
+		]
+	},
 	"interpretationBoundaries": [
 		"Company-reported revenue or guidance is not a cross-company capacity measure.",
 		"A platform page establishes product scope, not market share or a verified shortage.",
