@@ -126,6 +126,75 @@
 		},
 		"queryBoundary": "The current master values and five formula cells were read back through the authenticated Sheet UI. Google Finance Web parity, provider timestamps for fallback columns, and cross-tab alignment remain separate checks."
 	},
+	"followUpSheetReadback": {
+		"status": "VERIFIED_AUTHENTICATED_READBACK",
+		"readAt": "2026-09-25",
+		"sourceTab": "Securities_Master",
+		"priceField": "adr_price",
+		"note": "The master tab is live and its ADR quote values changed after the 2026-09-24 readback. The prior readback remains historical evidence; these values must not be silently substituted into the older snapshot.",
+		"representativeAdrQuotes": [
+			{
+				"canonicalId": "JP:6758",
+				"symbol": "NYSE:SONY",
+				"price": 22.88,
+				"status": "ADR_OK",
+				"adrProgram": "Sponsored ADR"
+			},
+			{
+				"canonicalId": "JP:8035",
+				"symbol": "OTCMKTS:TOELY",
+				"price": 164.55,
+				"status": "ADR_OK",
+				"adrRatio": "ORD:DR 1:2",
+				"adrProgram": "Unsponsored ADR"
+			},
+			{
+				"canonicalId": "JP:9984",
+				"symbol": "OTCMKTS:SFTBY",
+				"price": 19.74,
+				"status": "ADR_OK",
+				"adrRatio": "ORD:DR 1:2",
+				"adrProgram": "Unsponsored ADR"
+			},
+			{
+				"canonicalId": "JP:285A",
+				"symbol": "OTCMKTS:KXIAY",
+				"price": 34.74,
+				"status": "ADR_OK",
+				"adrRatio": "ORD:DR 1:10",
+				"adrProgram": "Unsponsored ADR"
+			},
+			{
+				"canonicalId": "JP:6723",
+				"symbol": "OTCMKTS:RNECY",
+				"price": 10.87,
+				"status": "ADR_OK",
+				"adrRatio": "ORD:DR 1:2",
+				"adrProgram": "Unsponsored ADR"
+			}
+		],
+		"crossTabComparison": {
+			"status": "RECONCILIATION_REQUIRED",
+			"adrAuditSnapshotReadAt": "2026-09-24",
+			"examples": [
+				{
+					"canonicalId": "JP:6758",
+					"masterPrice": 22.88,
+					"adrAuditPrice": 23.42
+				},
+				{
+					"canonicalId": "JP:6723",
+					"masterPrice": 10.87,
+					"adrAuditPrice": 10.92
+				},
+				{
+					"canonicalId": "JP:9984",
+					"masterPrice": 19.74,
+					"adrAuditPrice": 22.1
+				}
+			]
+		}
+	},
 	"canonicalModel": {
 		"status": "CONTRACT_AND_CURRENT_READBACK_VERIFIED_PARTIAL",
 		"canonicalIdentity": [
