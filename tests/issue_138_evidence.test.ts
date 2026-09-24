@@ -24,6 +24,17 @@ type EvidenceLedger = {
 		representativeQuotes: Array<{ status: string; price: number }>;
 		formulaProof: { status: string; sampleCells: string[] };
 	};
+	followUpSheetReadback: {
+		status: string;
+		readAt: string;
+		priceField: string;
+		representativeAdrQuotes: Array<{
+			canonicalId: string;
+			price: number;
+			status: string;
+		}>;
+		crossTabComparison: { status: string; examples: Array<unknown> };
+	};
 	examples: Array<{ status: string; fallbackType: string }>;
 	normalizationRules: string[];
 	readbackBoundary: { status: string; requiredTabs: string[] };
@@ -94,6 +105,23 @@ describe("issue 138 evidence ledger", () => {
 			"Securities_Master",
 			"ADR_Audit",
 		]);
+	});
+
+	test("preserves the next-day readback as a separate dated snapshot", () => {
+		expect(ledger.followUpSheetReadback).toMatchObject({
+			status: "VERIFIED_AUTHENTICATED_READBACK",
+			readAt: "2026-09-25",
+			priceField: "adr_price",
+			crossTabComparison: { status: "RECONCILIATION_REQUIRED" },
+		});
+		expect(ledger.followUpSheetReadback.representativeAdrQuotes).toHaveLength(
+			5,
+		);
+		expect(
+			ledger.followUpSheetReadback.representativeAdrQuotes.map(
+				(quote) => quote.price,
+			),
+		).toEqual([22.88, 164.55, 19.74, 34.74, 10.87]);
 	});
 
 	test("requires primary documentation and both delivery formats", () => {
