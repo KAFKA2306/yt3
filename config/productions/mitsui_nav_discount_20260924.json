@@ -1,0 +1,771 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-mitsui-nav-discount",
+	"asOf": "2026-09-24",
+	"angle": "不動産の現物指標が強い一方で三井不動産株がNAVを下回る理由を、金利と評価倍率の変化として検証する",
+	"searchQuery": "三井不動産 8801 NAV 2210 2550 東京オフィス 空室率 1.4 賃料 11.7 金利 2026",
+	"title": "三井不動産はなぜNAV32%ディスカウント？ 金利上昇時代の「割安」を検証",
+	"thumbnailTitle": "不動産は好調\n株価 -30%",
+	"thumbnail": {
+		"eyebrow": "三井不動産 8801",
+		"lead": "株価",
+		"accent": "-30%",
+		"reaction": "!?",
+		"secondLine": "NAV -32%",
+		"calloutTop": "NAV 2,210円",
+		"calloutBottom": "株価 1,501円"
+	},
+	"descriptionLead": "東京オフィスの空室率と賃料は強いのに、三井不動産の株価は2月高値から下落し、会社開示NAVを下回っています。金利と評価の仕組みを一次資料で分解し、割安という言葉だけでは判断しないための材料を整理します。",
+	"descriptionBullets": [
+		"2026年9月24日の8801終値は1,501円、年初来高値は2,158円、安値は1,425円",
+		"三井不動産の統合報告書2026は1株当たりNAVを2,210円、修正後NAVを約2,550円と記載",
+		"2026年第2四半期の東京オフィスはオールグレード空室率1.4%、賃料前年比11.7%",
+		"日銀は2026年9月18日に無担保コールレートを1.25%程度へ変更し、24日から適用",
+		"MF_NAV_Discountタブは2026年開示NAVを固定基準にした参考系列として扱い、各時点の過去NAVとは混同しない",
+		"株価とNAVの差は固定的な安全域ではなく、金利・キャップレート・資産価値の仮定に依存する",
+		"売買推奨、目標株価、将来価格の断定は行わない"
+	],
+	"disclaimer": "本動画は公開資料に基づく情報提供です。NAVは会社の算定方法と前提に依存し、株価がNAVを下回ることだけで割安や安全を意味しません。特定の金融商品の売買、目標株価、将来価格を推奨・断定しません。",
+	"hookPromises": ["1,501", "2,210", "1.4", "1.25"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 22,
+		"reasons": [
+			"現物市場と株価の逆方向を一次資料で比較する",
+			"NAVと金利の評価メカニズムを分けて説明する"
+		],
+		"narrativeArchetype": "paradox_resolution",
+		"archetypeRequiredSlots": [
+			"fact_a",
+			"fact_b",
+			"hidden_mechanism",
+			"catalyst_or_incentive"
+		],
+		"archetypeReasons": [
+			"オフィス現物指標と株価評価が同時に成立する逆説を解く"
+		],
+		"archetypeEvidence": {
+			"archetype": "paradox_resolution",
+			"slots": [
+				{
+					"slot": "fact_a",
+					"statement": "東京オフィスの空室率は1.4%で、オールグレード想定成約賃料は前年比11.7%だった",
+					"sourceIds": ["cbre_tokyo_q2_2026"],
+					"adversarialEvidenceIds": ["market_measurement"],
+					"observedAt": "2026-08-05"
+				},
+				{
+					"slot": "fact_b",
+					"statement": "8801の2026年9月24日終値は1,501円で、会社開示NAVは2,210円だった",
+					"sourceIds": ["kabutan_8801_20260924", "mitsuifudosan_ir2026"],
+					"adversarialEvidenceIds": ["nav_definition"],
+					"observedAt": "2026-09-24"
+				},
+				{
+					"slot": "hidden_mechanism",
+					"statement": "株価とNAVの差には金利、要求利回り、キャップレート、資産価値の見直しが関わる",
+					"sourceIds": ["boj_policy_20260918", "mitsuifudosan_ir2026"],
+					"adversarialEvidenceIds": ["rate_boundary"],
+					"observedAt": "2026-09-24"
+				},
+				{
+					"slot": "catalyst_or_incentive",
+					"statement": "日銀は9月18日に政策金利を1.25%程度へ変更し、9月24日から適用した",
+					"sourceIds": ["boj_policy_20260918"],
+					"adversarialEvidenceIds": ["rate_boundary"],
+					"observedAt": "2026-09-24"
+				}
+			]
+		}
+	},
+	"packaging": {
+		"primaryClaimId": "claim_stock_vs_nav",
+		"claimIds": [
+			"claim_stock_vs_nav",
+			"claim_nav",
+			"claim_market",
+			"claim_discount"
+		],
+		"freshness": { "claimId": "claim_stock_vs_nav", "eventDate": "2026-09-24" },
+		"relativeAnchor": {
+			"claimId": "claim_stock_vs_nav",
+			"comparator": "会社開示NAV 2,210円",
+			"period": "2026-09-24終値"
+		}
+	},
+	"narrative": {
+		"hiddenMechanism": "業績が弱いという一因だけでなく、金利上昇が要求利回りと不動産評価倍率を押し下げ、株価のNAV倍率を圧縮する経路を検証する。",
+		"counterfactual": "金利が上がらず、空室率低位と賃料上昇が続く場合でも、NAVの算定前提と株価の評価倍率は別々に確認する必要がある。",
+		"audiencePayoff": "株価がNAVを下回る数字を見たとき、割安と結論する前に現物需給、金利、評価前提を分解できる。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "nav_definition",
+			"kind": "measurement_condition",
+			"targetClaim": "NAV 2,210円と修正後NAV約2,550円",
+			"statement": "NAVは会社の定義と含み益の範囲に依存し、修正後NAVは通常NAVと同じ指標ではない",
+			"sourceIds": ["mitsuifudosan_ir2026"],
+			"checkedSourceIds": ["mitsuifudosan_ir2026"]
+		},
+		{
+			"id": "market_measurement",
+			"kind": "measurement_condition",
+			"targetClaim": "東京オフィス空室率と賃料",
+			"statement": "CBRE数値は2026年第2四半期の東京市場データで、三井不動産単体の稼働率ではない",
+			"sourceIds": ["cbre_tokyo_q2_2026"],
+			"checkedSourceIds": ["cbre_tokyo_q2_2026"]
+		},
+		{
+			"id": "rate_boundary",
+			"kind": "source_limitation",
+			"targetClaim": "金利上昇が評価倍率を圧縮する仕組み",
+			"statement": "金利から株価の具体的な将来値は導かず、メカニズムとシナリオに限定する",
+			"sourceIds": ["boj_policy_20260918", "mitsuifudosan_ir2026"],
+			"checkedSourceIds": ["boj_policy_20260918", "mitsuifudosan_ir2026"]
+		}
+	],
+	"noveltyQueries": [
+		"site:youtube.com/watch 三井不動産 NAV 32% ディスカウント 金利3%",
+		"site:youtube.com/watch 8801 東京オフィス 空室率 賃料 株価",
+		"site:youtube.com/watch 不動産株 NAV 金利 キャップレート 三井不動産"
+	],
+	"tags": [
+		"三井不動産",
+		"8801",
+		"NAV",
+		"不動産株",
+		"金利",
+		"オフィス",
+		"秒算マネー"
+	],
+	"sources": [
+		{
+			"id": "mitsuifudosan_ir2026",
+			"name": "三井不動産 統合報告書2026 CEOメッセージ・NAV図",
+			"url": "https://www.mitsuifudosan.co.jp/corporate/ir/library/integratedreport/ir2026/ceo/",
+			"tier": "L1"
+		},
+		{
+			"id": "cbre_tokyo_q2_2026",
+			"name": "CBRE 全国空室率・想定成約賃料 2026年第2四半期",
+			"url": "https://www.cbre.co.jp/properties/column/office/market/office_marketview-q2-2026-index/office_marketview_data-q2-2026",
+			"tier": "L2"
+		},
+		{
+			"id": "boj_policy_20260918",
+			"name": "日本銀行 金融市場調節方針の変更について 2026年9月18日",
+			"url": "https://www.boj.or.jp/mopo/mpmdeci/mpr_2026/k260918a.pdf",
+			"tier": "L1"
+		},
+		{
+			"id": "kabutan_8801_20260924",
+			"name": "株探 三井不動産8801 株価時系列",
+			"url": "https://s.kabutan.jp/stocks/8801/historical_prices/daily/",
+			"tier": "L5"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_stock_vs_nav",
+			"claim": "8801の2026年9月24日終値は1,501円、2026年高値は2,158円、安値は1,425円だった",
+			"sourceIds": ["kabutan_8801_20260924"],
+			"status": "verified"
+		},
+		{
+			"id": "claim_nav",
+			"claim": "三井不動産の1株当たりNAVは2,210円、販売用不動産等の含み益を考慮した修正後NAVは約2,550円である",
+			"sourceIds": ["mitsuifudosan_ir2026"],
+			"status": "verified"
+		},
+		{
+			"id": "claim_market",
+			"claim": "東京オフィスの2026年第2四半期オールグレード空室率は1.4%、想定成約賃料は前年比11.7%だった",
+			"sourceIds": ["cbre_tokyo_q2_2026"],
+			"status": "verified"
+		},
+		{
+			"id": "claim_boj",
+			"claim": "日本銀行は2026年9月18日に無担保コールレートを1.25%程度とする方針を決定し9月24日から適用した",
+			"sourceIds": ["boj_policy_20260918"],
+			"status": "verified"
+		},
+		{
+			"id": "claim_discount",
+			"claim": "1,501円は2,210円のNAVを約32.1%、約32%下回り、2,550円の修正後NAVを約41.1%下回り、高値2,158円から約30.4%、約30%下落している",
+			"sourceIds": ["kabutan_8801_20260924", "mitsuifudosan_ir2026"],
+			"status": "derived_with_caveat",
+			"assumptions": [
+				"株価は2026年9月24日終値1,501円を使用",
+				"discountは1 - 株価/NAVで計算"
+			],
+			"caveat": "修正後NAVは通常NAVと定義が異なり、株価がNAVへ戻ることを意味しない",
+			"confidence": 1,
+			"unresolvedMismatches": [
+				"過去の各時点で開示されていたNAVとの比較ではない"
+			],
+			"epistemicBoundary": "現在の開示NAVを基準にした機械的な比較であり、適正価格の推計ではない"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "冒頭の逆説",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"archetypeSlot": "fact_a",
+			"claimIds": ["claim_market"],
+			"evidenceIds": ["market_measurement"],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "THE PARADOX",
+			"headline": "空室率1.4%",
+			"subheadline": "東京オフィスは埋まっている",
+			"visualType": "stat-card",
+			"stats": [
+				{
+					"label": "空室率",
+					"value": "1.4%",
+					"detail": "東京 全グレード 2026Q2",
+					"color": "cyan"
+				}
+			],
+			"source": "CBRE 2026Q2",
+			"text": "東京オフィスの空室率は1.4パーセント。それでも株価は1,501円まで下がっています。"
+		},
+		{
+			"chapter": "冒頭の逆説",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"archetypeSlot": "fact_b",
+			"claimIds": ["claim_stock_vs_nav", "claim_nav", "claim_boj"],
+			"evidenceIds": ["nav_definition", "rate_boundary"],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "THE PARADOX",
+			"headline": "でも株価は1,501円",
+			"subheadline": "NAV2,210円・政策金利1.25%",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "9/24終値",
+					"value": "1,501円",
+					"detail": "8801",
+					"color": "amber"
+				},
+				{
+					"label": "開示NAV",
+					"value": "2,210円",
+					"detail": "政策金利1.25%",
+					"color": "white"
+				}
+			],
+			"source": "株探・三井不動産 IR・日銀",
+			"text": "三井不動産の9月24日終値は1,501円。開示NAVは2,210円で、日銀の政策金利は1.25パーセント程度です。"
+		},
+		{
+			"chapter": "問いを固定する",
+			"narrativeRole": "context",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_discount"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "THE QUESTION",
+			"headline": "これは本当に割安？",
+			"subheadline": "NAVとの差を言い換えない",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "問い",
+					"value": "NAV -32%",
+					"detail": "安全域とは限らない",
+					"color": "cyan"
+				}
+			],
+			"source": "計算値",
+			"text": "ここで、NAVより安いから買いだ、と短絡しないことが今日の出発点です。"
+		},
+		{
+			"chapter": "NAVの定義",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_nav"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "NAV",
+			"headline": "会社開示NAVは2,210円",
+			"subheadline": "修正後は約2,550円",
+			"visualType": "number-highlight",
+			"stats": [
+				{
+					"label": "1株NAV",
+					"value": "2,210円",
+					"detail": "統合報告書2026",
+					"color": "cyan"
+				},
+				{
+					"label": "修正後",
+					"value": "約2,550円",
+					"detail": "含み益を追加",
+					"color": "amber"
+				}
+			],
+			"source": "三井不動産 IR",
+			"text": "三井不動産の統合報告書2026では、1株当たりNAVは2,210円、販売用不動産などの含み益を考慮した修正後NAVは約2,550円です。"
+		},
+		{
+			"chapter": "NAVの定義",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_discount", "claim_nav"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "NAV",
+			"headline": "2つのNAVは同じではない",
+			"subheadline": "比較の基準を分ける",
+			"visualType": "two-column",
+			"stats": [
+				{
+					"label": "通常NAV",
+					"value": "2,210円",
+					"detail": "開示値",
+					"color": "white"
+				},
+				{
+					"label": "修正後NAV",
+					"value": "2,550円",
+					"detail": "別の前提",
+					"color": "amber"
+				}
+			],
+			"source": "三井不動産 IR",
+			"text": "通常NAVと修正後NAVは同じ数字ではありません。今回の比較では、2つの基準を混ぜずに表示します。"
+		},
+		{
+			"chapter": "計算",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_discount"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "CALCULATION",
+			"headline": "NAV比は約マイナス32%",
+			"subheadline": "1,501円 ÷ 2,210円",
+			"visualType": "number-highlight",
+			"stats": [
+				{
+					"label": "NAV比",
+					"value": "-32.1%",
+					"detail": "機械的な計算",
+					"color": "cyan"
+				}
+			],
+			"source": "derived calculation",
+			"text": "1,501円を2,210円で割ると、株価はNAVを約32.1パーセント下回ります。"
+		},
+		{
+			"chapter": "計算",
+			"narrativeRole": "fact",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_discount"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "ずんだもん",
+			"emotion": "analytical",
+			"section": "CALCULATION",
+			"headline": "修正NAV比は約マイナス41%",
+			"subheadline": "基準を変えると差も変わる",
+			"visualType": "number-highlight",
+			"stats": [
+				{
+					"label": "修正NAV比",
+					"value": "-41.1%",
+					"detail": "約2,550円基準",
+					"color": "amber"
+				}
+			],
+			"source": "derived calculation",
+			"text": "修正後NAVの約2,550円を基準にすると、差は約41.1パーセントです。"
+		},
+		{
+			"chapter": "株価履歴",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_stock_vs_nav"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "PRICE PATH",
+			"headline": "2,158円から1,425円へ",
+			"subheadline": "高値と安値を分けて表示",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "高値",
+					"value": "2,158円",
+					"detail": "2/12",
+					"color": "cyan"
+				},
+				{
+					"label": "安値",
+					"value": "1,425円",
+					"detail": "8/18",
+					"color": "amber"
+				}
+			],
+			"source": "株探 8801",
+			"text": "株価は2月12日の2,158円から8月18日の1,425円まで下がり、9月24日は1,501円でした。"
+		},
+		{
+			"chapter": "株価履歴",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_stock_vs_nav"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "PRICE PATH",
+			"headline": "安値からは戻っている",
+			"subheadline": "それでも高値とは距離がある",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "安値から",
+					"value": "+5.3%",
+					"detail": "1,425円比",
+					"color": "cyan"
+				},
+				{
+					"label": "高値から",
+					"value": "-30.4%",
+					"detail": "2,158円比",
+					"color": "amber"
+				}
+			],
+			"source": "derived calculation",
+			"text": "安値からは約5.3パーセント戻っていますが、高値からは約30.4パーセント下の位置です。"
+		},
+		{
+			"chapter": "現物市場",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_market"],
+			"evidenceIds": ["market_measurement"],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "REAL ASSETS",
+			"headline": "賃料は前年比11.7%",
+			"subheadline": "Grade Aは17.3%",
+			"visualType": "bar-chart",
+			"stats": [
+				{
+					"label": "オールグレード",
+					"value": "+11.7%",
+					"detail": "前年比",
+					"color": "cyan"
+				},
+				{
+					"label": "Grade A",
+					"value": "+17.3%",
+					"detail": "前年比",
+					"color": "amber"
+				}
+			],
+			"source": "CBRE 2026Q2",
+			"text": "CBREの東京データでは、オールグレードの想定成約賃料が前年比11.7パーセント、Grade Aが17.3パーセント上昇しました。"
+		},
+		{
+			"chapter": "現物市場",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_market"],
+			"evidenceIds": ["market_measurement"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "REAL ASSETS",
+			"headline": "ただし会社単体ではない",
+			"subheadline": "東京市場の指標として扱う",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "対象",
+					"value": "東京市場",
+					"detail": "三井不動産単体ではない",
+					"color": "white"
+				}
+			],
+			"source": "CBRE 2026Q2",
+			"text": "この数字は三井不動産だけの稼働率ではなく、東京オフィス市場の指標です。そこを混同しないようにします。"
+		},
+		{
+			"chapter": "現物と株価",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"archetypeSlot": "hidden_mechanism",
+			"claimIds": [
+				"claim_market",
+				"claim_stock_vs_nav",
+				"claim_nav",
+				"claim_discount",
+				"claim_boj"
+			],
+			"evidenceIds": ["market_measurement", "nav_definition", "rate_boundary"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "MECHANISM",
+			"headline": "業績だけでは説明しにくい",
+			"subheadline": "現物と株価が逆方向",
+			"visualType": "two-column",
+			"stats": [
+				{
+					"label": "現物",
+					"value": "空室1.4%",
+					"detail": "賃料上昇",
+					"color": "cyan"
+				},
+				{
+					"label": "株価",
+					"value": "NAV -32%",
+					"detail": "評価圧縮",
+					"color": "amber"
+				}
+			],
+			"source": "CBRE・株探・IR・日銀",
+			"text": "現物市場が強いのに株価が下がるなら、事業の稼働だけではなく評価の仕組みを見る必要があります。"
+		},
+		{
+			"chapter": "金利",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"archetypeSlot": "catalyst_or_incentive",
+			"claimIds": ["claim_boj"],
+			"evidenceIds": ["rate_boundary"],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "RATES",
+			"headline": "政策金利は1.25%程度",
+			"subheadline": "9月24日から適用",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "政策金利",
+					"value": "1.25%",
+					"detail": "日銀 9/18決定",
+					"color": "amber"
+				}
+			],
+			"source": "日本銀行",
+			"text": "日銀は9月18日に無担保コールレートを1.25パーセント程度とする方針を決め、9月24日から適用しました。"
+		},
+		{
+			"chapter": "金利",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_boj"],
+			"evidenceIds": ["rate_boundary"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "RATES",
+			"headline": "金利は評価の分母に効く",
+			"subheadline": "将来収益を今の価値へ戻す",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "金利上昇",
+					"value": "要求利回り",
+					"detail": "評価倍率へ作用",
+					"color": "amber"
+				}
+			],
+			"source": "mechanism explanation",
+			"text": "金利が上がると、将来の賃料や売却価値を現在価値へ戻すときの分母が重くなります。"
+		},
+		{
+			"chapter": "金利",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_boj"],
+			"evidenceIds": ["rate_boundary"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "RATES",
+			"headline": "キャップレートを分けて考える",
+			"subheadline": "政策金利と同じではない",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "注意",
+					"value": "同一視しない",
+					"detail": "政策金利≠cap rate",
+					"color": "white"
+				}
+			],
+			"source": "mechanism explanation",
+			"text": "政策金利が1.25パーセントだから、物件価値が機械的に同じ割合で下がる、という話ではありません。"
+		},
+		{
+			"chapter": "シナリオ",
+			"narrativeRole": "impact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_market", "claim_boj", "claim_discount"],
+			"evidenceIds": ["market_measurement", "rate_boundary"],
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "SCENARIOS",
+			"headline": "金利上昇が止まる場合",
+			"subheadline": "賃料と空室率が支える",
+			"visualType": "scenario-matrix",
+			"stats": [
+				{
+					"label": "仮定",
+					"value": "金利安定",
+					"detail": "賃料上昇継続",
+					"color": "cyan"
+				}
+			],
+			"source": "scenario assumption",
+			"text": "金利上昇が止まり、空室率が低位で賃料上昇が続くなら、ディスカウントが縮む余地はありますが、保証ではありません。"
+		},
+		{
+			"chapter": "シナリオ",
+			"narrativeRole": "impact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_boj", "claim_discount"],
+			"evidenceIds": ["rate_boundary"],
+			"speaker": "ずんだもん",
+			"emotion": "serious",
+			"section": "SCENARIOS",
+			"headline": "金利高止まりの場合",
+			"subheadline": "NAVと倍率が同時に圧迫",
+			"visualType": "scenario-matrix",
+			"stats": [
+				{
+					"label": "仮定",
+					"value": "金利高止まり",
+					"detail": "cap rate上昇余地",
+					"color": "amber"
+				}
+			],
+			"source": "scenario assumption",
+			"text": "長期金利が高止まりすれば、資産価値の前提と株価の評価倍率が同時に圧迫される可能性があります。"
+		},
+		{
+			"chapter": "シナリオ",
+			"narrativeRole": "impact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_market", "claim_boj"],
+			"evidenceIds": ["market_measurement", "rate_boundary"],
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "SCENARIOS",
+			"headline": "金利高と景気悪化",
+			"subheadline": "賃料鈍化も重なる",
+			"visualType": "scenario-matrix",
+			"stats": [
+				{
+					"label": "最悪条件",
+					"value": "金利高+需要弱",
+					"detail": "空室率にも注目",
+					"color": "amber"
+				}
+			],
+			"source": "scenario assumption",
+			"text": "金利上昇に景気悪化が重なると、賃料の伸びが鈍り、空室率や利益予想の下方修正も重なります。"
+		},
+		{
+			"chapter": "正しい読み方",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_discount"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "READING THE DISCOUNT",
+			"headline": "32%安いは結論ではない",
+			"subheadline": "比較の起点にとどめる",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "読み方",
+					"value": "起点",
+					"detail": "安全域ではない",
+					"color": "amber"
+				}
+			],
+			"source": "derived calculation",
+			"text": "NAV比32パーセントという数字は、判断の結論ではなく、前提を確認するための起点です。"
+		},
+		{
+			"chapter": "ウォッチリスト",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_boj", "claim_market"],
+			"evidenceIds": ["rate_boundary", "market_measurement"],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "WATCHLIST",
+			"headline": "見る数字は4つ",
+			"subheadline": "金利・空室率・賃料・NAV",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "監視",
+					"value": "4項目",
+					"detail": "将来価格は予測しない",
+					"color": "cyan"
+				}
+			],
+			"source": "episode watchlist",
+			"text": "追う数字は、10年国債利回り、東京オフィス空室率、賃料、そして三井不動産のNAVと利益予想です。"
+		},
+		{
+			"chapter": "着地",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_stock_vs_nav", "claim_nav", "claim_discount"],
+			"evidenceIds": ["nav_definition"],
+			"speaker": "ずんだもん",
+			"emotion": "relieved",
+			"section": "LANDING",
+			"headline": "評価の値下げを分解する",
+			"subheadline": "割安という言葉で止めない",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "結論",
+					"value": "評価を分解",
+					"detail": "売買推奨ではない",
+					"color": "white"
+				}
+			],
+			"source": "episode conclusion",
+			"text": "この100%の計算確度は、過去の各時点で開示されていたNAVとの比較ではない点を含みます。割安という言葉で止めません。"
+		},
+		{
+			"chapter": "着地",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_market", "claim_boj"],
+			"evidenceIds": ["market_measurement", "rate_boundary"],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "LANDING",
+			"headline": "現物と金融を同じ画面で",
+			"subheadline": "次回も基準日を明示する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "基準日",
+					"value": "2026-09-24",
+					"detail": "数字は更新される",
+					"color": "muted"
+				}
+			],
+			"source": "source contract",
+			"text": "現物の強さと金融環境は同じ方向に動くとは限りません。基準日を明示して、次回も更新します。"
+		}
+	]
+}
