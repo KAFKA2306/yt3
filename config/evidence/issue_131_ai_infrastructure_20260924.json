@@ -1,0 +1,155 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 131,
+	"runId": "byosan_money/2026-09-24-issue-131-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "Primary company materials establish dated infrastructure layers and reported KPIs, but a comparable current bottleneck ranking, independent corroboration, render, ASR, and production acceptance remain outstanding.",
+	"layers": [
+		{
+			"id": "compute",
+			"label": "演算",
+			"status": "STRUCTURAL_SCOPE_VERIFIED",
+			"sourceIds": ["nvidia_data_center"]
+		},
+		{
+			"id": "memory_package",
+			"label": "HBM・先端パッケージ",
+			"status": "REQUIRES_CURRENT_MULTI_SOURCE_KPI",
+			"sourceIds": ["tsmc_q2_2026", "asml_q2_2026"]
+		},
+		{
+			"id": "manufacturing",
+			"label": "半導体製造・装置",
+			"status": "COMPANY_REPORTED_KPI_AVAILABLE",
+			"sourceIds": ["tsmc_q2_2026", "asml_q2_2026"]
+		},
+		{
+			"id": "network_optical",
+			"label": "ネットワーク・光",
+			"status": "STRUCTURAL_SCOPE_VERIFIED_COMPANY_REPORTED",
+			"sourceIds": ["nvidia_data_center", "broadcom_q2_2026"]
+		},
+		{
+			"id": "power",
+			"label": "電力",
+			"status": "UNVERIFIED_REQUIRES_EXTERNAL_POWER_DATA",
+			"sourceIds": []
+		},
+		{
+			"id": "cooling_datacenter",
+			"label": "冷却・データセンター",
+			"status": "UNVERIFIED_REQUIRES_EXTERNAL_FACILITY_DATA",
+			"sourceIds": []
+		}
+	],
+	"reportedKpis": [
+		{
+			"id": "tsmc_q2",
+			"company": "TSMC",
+			"period": "2026-Q2",
+			"values": {
+				"revenueUsdBillion": 40.2,
+				"advancedTechnologyWaferRevenuePercent": 77,
+				"hpcRevenueMixPercent": 66
+			},
+			"guidance": {
+				"period": "2026-Q3",
+				"revenueUsdBillion": { "low": 44.6, "high": 45.8 }
+			},
+			"status": "VERIFIED_FROM_COMPANY_IR",
+			"sourceIds": ["tsmc_q2_2026"]
+		},
+		{
+			"id": "asml_q2",
+			"company": "ASML",
+			"period": "2026-Q2",
+			"values": {
+				"totalNetSalesEurBillion": 9.3,
+				"grossMarginPercent": 54,
+				"netIncomeEurBillion": 2.9
+			},
+			"guidance": {
+				"fullYear2026NetSalesEurBillion": { "low": 43, "high": 45 }
+			},
+			"status": "VERIFIED_FROM_COMPANY_IR",
+			"sourceIds": ["asml_q2_2026"]
+		},
+		{
+			"id": "broadcom_q2_ai",
+			"company": "Broadcom",
+			"period": "FY2026-Q2",
+			"values": {
+				"aiSemiconductorRevenueUsdBillion": 10.8,
+				"yearOverYearGrowthPercent": 143
+			},
+			"guidance": {
+				"period": "FY2026-Q3",
+				"aiSemiconductorRevenueUsdBillion": 16,
+				"yearOverYearGrowthPercent": 200,
+				"growthComparison": "more_than"
+			},
+			"status": "VERIFIED_AS_COMPANY_GUIDANCE",
+			"sourceIds": ["broadcom_q2_2026"]
+		}
+	],
+	"interpretationBoundaries": [
+		"Company-reported revenue or guidance is not a cross-company capacity measure.",
+		"A platform page establishes product scope, not market share or a verified shortage.",
+		"Power and cooling are separate evidence layers and must not be inferred from chip revenue.",
+		"The final bottleneck ranking requires current, comparable KPI definitions and independent checks."
+	],
+	"sources": [
+		{
+			"id": "nvidia_data_center",
+			"url": "https://www.nvidia.com/en-us/data-center/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["fullStackComputeCpuNetworking", "platformScope"]
+		},
+		{
+			"id": "tsmc_q2_2026",
+			"url": "https://investor.tsmc.com/english/quarterly-results/2026/q2",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["q2Revenue", "advancedTechnologyMix", "hpcMix", "q3Guidance"]
+		},
+		{
+			"id": "asml_q2_2026",
+			"url": "https://www.asml.com/en/news/press-releases/2026/q2-2026-financial-results",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["q2Results", "fullYearGuidance", "aiDemandStatement"]
+		},
+		{
+			"id": "broadcom_q2_2026",
+			"url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["aiSemiconductorRevenue", "growth", "guidance"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"six-layer AI infrastructure map",
+			"company-reported KPI cards with period labels",
+			"capacity-to-facility dependency arrows",
+			"fact versus scenario boundary panel"
+		],
+		"shorts": [
+			"GPU is not the whole stack",
+			"TSMC/ASML/Broadcom KPI cards",
+			"power and cooling as unverified separate layers"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"guidanceRule": "Forward-looking company guidance must be labeled as guidance, not realized demand."
+	},
+	"openAcceptance": [
+		"Add current evidence for power and cooling capacity, lead times, and facility constraints.",
+		"Normalize KPI periods and units before comparing layers or ranking bottlenecks.",
+		"Separate company statements from independent corroboration and scenario inference.",
+		"Complete factuality/source-policy QA, render, ASR, and non-recommendation checks."
+	]
+}
