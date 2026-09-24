@@ -9,6 +9,7 @@ def main() -> None:
     ap.add_argument("--input-wav", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--model", default="small")
+    ap.add_argument("--language", default="ja")
     args = ap.parse_args()
 
     out_dir = Path(args.output_dir)
@@ -19,7 +20,7 @@ def main() -> None:
     model = WhisperModel(args.model, device="cpu", compute_type="int8")
     segments, info = model.transcribe(
         args.input_wav,
-        language="ja",
+        language=args.language,
         vad_filter=True,
         beam_size=5,
         condition_on_previous_text=False,
@@ -50,6 +51,7 @@ def main() -> None:
         json.dumps(
             {
                 "language": info.language,
+                "requested_language": args.language,
                 "language_probability": info.language_probability,
                 "segments": count,
                 "model": args.model,
