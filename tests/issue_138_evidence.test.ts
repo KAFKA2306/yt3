@@ -9,6 +9,21 @@ type EvidenceLedger = {
 		individualStocksWithOverseasPrice: number;
 		reconciliationStatus: string;
 	};
+	currentSheetReadback: {
+		status: string;
+		tabs: {
+			ADR_Audit: {
+				auditedRows: number;
+				adrSymbols: number;
+				adrPriceSuccess: number;
+				fallbackSymbols: number;
+				fallbackPriceSuccess: number;
+				stockRowsWithSuccessfulRoute: number;
+			};
+		};
+		representativeQuotes: Array<{ status: string; price: number }>;
+		formulaProof: { status: string; sampleCells: string[] };
+	};
 	examples: Array<{ status: string; fallbackType: string }>;
 	normalizationRules: string[];
 	readbackBoundary: { status: string; requiredTabs: string[] };
@@ -28,8 +43,37 @@ describe("issue 138 evidence ledger", () => {
 		expect(ledger.observedSnapshot.individualStocks).toBe(74);
 		expect(ledger.observedSnapshot.individualStocksWithOverseasPrice).toBe(62);
 		expect(ledger.observedSnapshot.reconciliationStatus).toBe(
-			"UNVERIFIED_REQUIRES_SHEET_READBACK",
+			"CONTRADICTED_BY_CURRENT_SHEET_READBACK",
 		);
+	});
+
+	test("records dated authenticated counts and five representative routes", () => {
+		expect(ledger.currentSheetReadback.status).toBe(
+			"VERIFIED_AUTHENTICATED_READBACK",
+		);
+		expect(ledger.currentSheetReadback.tabs.ADR_Audit).toMatchObject({
+			auditedRows: 72,
+			adrSymbols: 40,
+			adrPriceSuccess: 38,
+			fallbackSymbols: 26,
+			fallbackPriceSuccess: 22,
+			stockRowsWithSuccessfulRoute: 60,
+		});
+		expect(ledger.currentSheetReadback.representativeQuotes).toHaveLength(5);
+		expect(
+			ledger.currentSheetReadback.representativeQuotes.every(
+				(quote) => quote.status === "ADR_OK" || quote.status === "FALLBACK_OK",
+			),
+		).toBe(true);
+		expect(
+			ledger.currentSheetReadback.representativeQuotes.map(
+				(quote) => quote.price,
+			),
+		).toEqual([22.92, 164.55, 19.79, 34.74, 10.89]);
+		expect(ledger.currentSheetReadback.formulaProof).toMatchObject({
+			status: "VERIFIED_UI_FORMULA_READBACK",
+			sampleCells: ["L14", "L36", "L38", "L49", "L55"],
+		});
 	});
 
 	test("covers ADR, OTC, and European routes with normalization controls", () => {
@@ -44,7 +88,7 @@ describe("issue 138 evidence ledger", () => {
 		).toBe(true);
 		expect(ledger.normalizationRules).toHaveLength(5);
 		expect(ledger.readbackBoundary.status).toBe(
-			"UNVERIFIED_SHEET_ACCESS_REQUIRED",
+			"PARTIAL_VERIFIED_REQUIRES_RECONCILIATION",
 		);
 		expect(ledger.readbackBoundary.requiredTabs).toEqual([
 			"Securities_Master",
