@@ -1,7 +1,8 @@
 import path from "node:path";
 import fs from "fs-extra";
-import { AgentLogger, runMcpTool } from "../../io/core.js";
+import { AgentLogger } from "../../io/core.js";
 import type { IqaValidator } from "../../io/utils/iqa_validator.js";
+import { getKafkaVisualSystem } from "../design/kafka_visual_system.js";
 import type { LayoutEngine } from "../layout/engine.js";
 import type { RenderPlan } from "../types.js";
 
@@ -23,7 +24,6 @@ export interface ThumbnailPalette {
 export interface ThumbnailConfig {
 	enabled: boolean;
 	palettes?: ThumbnailPalette[];
-	right_guard_band_px?: number;
 }
 
 export interface ThumbnailGenerationConfig {
@@ -35,6 +35,7 @@ export interface ThumbnailGenerationConfig {
 }
 
 export class ThumbnailGenerator {
+	private design = getKafkaVisualSystem();
 	private layout: LayoutEngine;
 	private validator: IqaValidator;
 	private config: ThumbnailConfig;
@@ -63,10 +64,11 @@ export class ThumbnailGenerator {
 
 		const validation = await this.validator.validate(
 			outputPath,
-			palette.title_color || "#FFFFFF",
-			palette.background_color || "#000000",
+			this.design.colors.text_primary,
+			this.design.colors.background,
 			title,
-			this.config.right_guard_band_px ?? 850,
+			this.design.thumbnail.title_zone.x +
+				this.design.thumbnail.title_zone.width,
 		);
 
 		try {
@@ -90,38 +92,10 @@ export class ThumbnailGenerator {
 	}
 
 	private async resolvePalette(): Promise<ThumbnailPalette> {
-		const defaultPalette: ThumbnailPalette = this.config.palettes?.[0] || {
-			background_color: "#000000",
-			title_color: "#FFFFFF",
+		const defaultPalette: ThumbnailPalette = {
+			background_color: this.design.colors.background,
+			title_color: this.design.colors.text_primary,
 		};
-
-		if (!this.mcpServers?.context7) {
-			return defaultPalette;
-		}
-
-		const trendInfo = (await runMcpTool(
-			"context7",
-			this.mcpServers.context7,
-			"get_finance_color_trends",
-			{ year: 2026 },
-		)) as TrendInfo;
-
-		if (!trendInfo?.data?.recommended_palette) {
-			return defaultPalette;
-		}
-
-		AgentLogger.info(
-			this.agentName,
-			"RUN",
-			"MCP_TREND",
-			"Overriding palette with 2026 CTR trends",
-		);
-
-		return {
-			...defaultPalette,
-			background_color:
-				trendInfo.data.recommended_palette.background_color || "#103766",
-			title_color: trendInfo.data.recommended_palette.title_color || "#FFFFFF",
-		};
+		return defaultPalette;
 	}
 }

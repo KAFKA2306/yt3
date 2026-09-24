@@ -150,10 +150,48 @@ export class ScriptIntegrityLinter {
 		checks.push(completionCheck);
 		if (completionCheck.status === "FAIL") totalScore -= 10;
 
+		const comedyCheck = this.checkComedyStructure(script);
+		checks.push(comedyCheck);
+		if (comedyCheck.status === "FAIL") totalScore -= 20;
+
 		return {
 			passed: totalScore >= 70 && !checks.some((c) => c.status === "FAIL"),
 			score: Math.max(0, totalScore),
 			checks,
+		};
+	}
+
+	private checkComedyStructure(
+		script: Script,
+	): DiscomfortLinterResult["checks"][0] {
+		const roles = script.lines
+			.map((line) => line.beat_role)
+			.filter((role): role is NonNullable<typeof role> => Boolean(role));
+		if (roles.length === 0) {
+			return {
+				layer: "ComedyStructure",
+				status: "OK",
+				message: "Comedy Beat is disabled for this script",
+			};
+		}
+		const tsukkomiCount = roles.filter((role) => role === "tsukkomi").length;
+		const pivotIndex = roles.lastIndexOf("pivot");
+		const tsukkomiIndex = roles.lastIndexOf("tsukkomi");
+		const validOrder =
+			tsukkomiCount <= 2 &&
+			tsukkomiIndex >= 0 &&
+			pivotIndex > tsukkomiIndex &&
+			pivotIndex - tsukkomiIndex <= 2;
+		return {
+			layer: "ComedyStructure",
+			status: validOrder ? "OK" : "FAIL",
+			message: validOrder
+				? "Comedy Beat returns to analysis within two lines"
+				: "Comedy Beat structure is missing a bounded tsukkomi-to-pivot return",
+			details: [
+				`roles=${roles.join(",")}`,
+				"source support is checked by outline validation",
+			],
 		};
 	}
 
@@ -239,7 +277,9 @@ export class ScriptIntegrityLinter {
 	private checkRepetitionEntropy(
 		script: Script,
 	): DiscomfortLinterResult["checks"][0] {
-		const lines = script.lines.map((l) => l.text.trim());
+		const lines = script.lines
+			.filter((line) => line.beat_role !== "escalation")
+			.map((l) => l.text.trim());
 		const duplicates = lines.filter(
 			(item, index) => lines.indexOf(item) !== index && item.length > 15,
 		);

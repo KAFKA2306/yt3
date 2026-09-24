@@ -13,6 +13,14 @@
 		}
 	},
 	"files": {
-		"ignore": ["**/*.log", "logs/**", "node_modules/**", "data/**"]
+		"ignore": [
+			"**/*.log",
+			"logs/**",
+			"node_modules/**",
+			".venv/**",
+			".artifacts/**",
+			"artifacts/**",
+			"data/**"
+		]
 	}
 }

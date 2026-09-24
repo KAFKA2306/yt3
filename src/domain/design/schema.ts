@@ -1,0 +1,323 @@
+import { z } from "zod";
+
+export const HexColorSchema = z
+	.string()
+	.regex(/^#[0-9A-Fa-f]{6}$/, "must be a #RRGGBB color");
+export const OpacitySchema = z.number().min(0).max(1);
+export const PositiveNumberSchema = z.number().positive();
+export const RectSchema = z.object({
+	x: z.number(),
+	y: z.number(),
+	width: PositiveNumberSchema,
+	height: PositiveNumberSchema,
+});
+export const SizeSchema = z.object({
+	width: PositiveNumberSchema,
+	height: PositiveNumberSchema,
+});
+export const CanvasSchema = SizeSchema.extend({
+	fps: z.number().int().positive().max(120),
+});
+export const InsetsSchema = z.object({
+	left: z.number().nonnegative(),
+	right: z.number().nonnegative(),
+	top: z.number().nonnegative(),
+	bottom: z.number().nonnegative(),
+});
+
+const ColorSchema = z.object({
+	background: HexColorSchema,
+	background_alt: HexColorSchema,
+	surface: HexColorSchema,
+	surface_strong: HexColorSchema,
+	brand_blue: HexColorSchema,
+	brand_accent: HexColorSchema,
+	text_primary: HexColorSchema,
+	text_secondary: HexColorSchema,
+	text_muted: HexColorSchema,
+	text_dark: HexColorSchema,
+	accent_primary: HexColorSchema,
+	accent_secondary: HexColorSchema,
+	human_cream: HexColorSchema,
+	warning: HexColorSchema,
+	accent_pink: HexColorSchema,
+	grid: HexColorSchema,
+	shadow: HexColorSchema,
+	alert: HexColorSchema,
+	success: HexColorSchema,
+});
+
+const FrameSchema = RectSchema.extend({
+	radius: PositiveNumberSchema,
+	stroke_width: PositiveNumberSchema,
+	color: HexColorSchema,
+	opacity: OpacitySchema,
+});
+const RailSchema = RectSchema;
+const ChipSchema = RectSchema.extend({ radius: PositiveNumberSchema });
+const SpeakerChipSchema = z.object({
+	x: z.number(),
+	y: z.number(),
+	width: PositiveNumberSchema,
+	height: PositiveNumberSchema,
+	radius: PositiveNumberSchema,
+	stroke_width: PositiveNumberSchema,
+	text_x: z.number(),
+	baseline_y: z.number(),
+	font_size: PositiveNumberSchema,
+	font_weight: z.number().int().positive(),
+	emotion_x: z.number(),
+	emotion_baseline_y: z.number(),
+	emotion_font_size: PositiveNumberSchema,
+	emotion_font_weight: z.number().int().positive(),
+});
+const TemplateSchema = z.record(z.string(), z.unknown());
+const StatCardsSchema = z
+	.object({
+		height: PositiveNumberSchema,
+		gap: PositiveNumberSchema,
+		widths: z.array(PositiveNumberSchema).length(3),
+		radius: PositiveNumberSchema,
+		fill: HexColorSchema,
+		fill_opacity: OpacitySchema,
+		stroke_width: PositiveNumberSchema,
+		stroke_opacity: OpacitySchema,
+		accent_width: PositiveNumberSchema,
+		accent_height: PositiveNumberSchema,
+		accent_radius: PositiveNumberSchema,
+		padding_left: PositiveNumberSchema,
+		padding_right: PositiveNumberSchema,
+		label_baseline_offset: PositiveNumberSchema,
+		label_font_size: PositiveNumberSchema,
+		label_font_weight: z.number().int().positive(),
+		label_letter_spacing: z.number(),
+		value_baseline_offset: PositiveNumberSchema,
+		value_short_font_size: PositiveNumberSchema,
+		value_medium_font_size: PositiveNumberSchema,
+		value_compact_font_size: PositiveNumberSchema,
+		value_line_height: PositiveNumberSchema,
+		detail_baseline_offset: PositiveNumberSchema,
+		detail_font_size: PositiveNumberSchema,
+		detail_font_weight: z.number().int().positive(),
+	})
+	.passthrough();
+
+export const KafkaVisualSystemSchema = z.object({
+	version: z.literal("kafka_visual_system_v1"),
+	unit: z.literal("px"),
+	canvas: z.object({
+		landscape: CanvasSchema,
+		shorts: CanvasSchema,
+		thumbnail: SizeSchema,
+	}),
+	spacing: z.array(PositiveNumberSchema).min(1),
+	stroke: z.object({
+		hairline: PositiveNumberSchema,
+		default: PositiveNumberSchema,
+		strong: PositiveNumberSchema,
+	}),
+	radius: z.object({
+		small: PositiveNumberSchema,
+		medium: PositiveNumberSchema,
+		card: PositiveNumberSchema,
+		pill: PositiveNumberSchema,
+	}),
+	colors: ColorSchema,
+	typography: z.object({
+		japanese: z.string().min(1),
+		display: z.string().min(1),
+		body: z.string().min(1),
+		numeric: z.string().min(1),
+		weights: z.record(z.string(), z.number().int().positive()),
+	}),
+	landscape: z.object({
+		safe_area: InsetsSchema,
+		outer_frame: FrameSchema,
+		accent_rail: RailSchema,
+		caption_band: RectSchema.extend({
+			color: HexColorSchema,
+			opacity: OpacitySchema,
+		}),
+		background: z.object({
+			gradient_angle_deg: z.number(),
+			stops: z.array(HexColorSchema).min(2),
+			stop_positions: z.array(z.number().min(0).max(1)),
+			grid_cell: PositiveNumberSchema,
+			grid_stroke: PositiveNumberSchema,
+			grid_opacity: OpacitySchema,
+			max_glows: z.number().int().nonnegative(),
+			glow_opacity: OpacitySchema,
+		}),
+		brand_chip: ChipSchema.extend({
+			text_x: z.number(),
+			baseline_y: z.number(),
+			font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			letter_spacing: z.number(),
+		}),
+		section_counter: z.object({
+			x: z.number(),
+			baseline_y: z.number(),
+			font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			letter_spacing: z.number(),
+		}),
+		progress: RectSchema.extend({
+			radius: PositiveNumberSchema,
+			track: HexColorSchema,
+		}),
+		section_label: z.object({
+			x: z.number(),
+			baseline_y: z.number(),
+			font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			letter_spacing: z.number(),
+			color: HexColorSchema,
+		}),
+		headline: z.object({
+			x: z.number(),
+			baseline_y: z.number(),
+			max_width: PositiveNumberSchema,
+			max_lines: z.number().int().positive(),
+			default_font_size: PositiveNumberSchema,
+			compact_font_size: PositiveNumberSchema,
+			default_line_height: PositiveNumberSchema,
+			compact_line_height: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			letter_spacing: z.number(),
+		}),
+		subheadline: z.object({
+			x: z.number(),
+			one_line_baseline_y: z.number(),
+			two_line_baseline_y: z.number(),
+			max_width: PositiveNumberSchema,
+			font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+		}),
+		data_region: RectSchema,
+		chart_region: z.object({
+			x: z.number(),
+			y: z.number(),
+			width: PositiveNumberSchema,
+			height: PositiveNumberSchema,
+			title_baseline_y: z.number(),
+			legend_font_size: PositiveNumberSchema,
+			axis_label_font_size: PositiveNumberSchema,
+			key_number_font_size: PositiveNumberSchema,
+			stroke_width: PositiveNumberSchema,
+			grid_stroke: PositiveNumberSchema,
+			grid_opacity: OpacitySchema,
+			max_series: z.number().int().positive(),
+			max_pie_slices: z.number().int().positive(),
+		}),
+		stat_cards: StatCardsSchema,
+		character_region: RectSchema.extend({
+			object_fit: z.literal("contain"),
+			horizontal_align: z.string(),
+			vertical_align: z.string(),
+		}),
+		speaker_chip: SpeakerChipSchema,
+		source: z.object({
+			x: z.number(),
+			baseline_y: z.number(),
+			max_width: PositiveNumberSchema,
+			font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			color: HexColorSchema,
+		}),
+		subtitle: z.object({
+			font_size: PositiveNumberSchema,
+			min_font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			outline_width: z.number().nonnegative(),
+			shadow: z.number().nonnegative(),
+			alignment: z.string(),
+			margin_left: z.number().nonnegative(),
+			margin_right: z.number().nonnegative(),
+			margin_bottom: z.number().nonnegative(),
+			max_lines: z.number().int().positive(),
+			color: HexColorSchema,
+			outline_color: HexColorSchema,
+		}),
+	}),
+	thumbnail: z.object({
+		safe_area: InsetsSchema,
+		outer_frame: FrameSchema,
+		accent_rail: RailSchema,
+		brand_chip: ChipSchema.extend({
+			font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+		}),
+		title_zone: RectSchema.extend({
+			max_lines: z.number().int().positive(),
+			max_chars_per_line: z.number().int().positive(),
+			font_size: PositiveNumberSchema,
+			line_height: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			fill: HexColorSchema,
+			outer_stroke: HexColorSchema,
+			outer_stroke_width: PositiveNumberSchema,
+			inner_stroke: HexColorSchema,
+			inner_stroke_width: PositiveNumberSchema,
+		}),
+		subtitle: z.object({
+			x: z.number(),
+			baseline_y: z.number(),
+			width: PositiveNumberSchema,
+			font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			color: HexColorSchema,
+			max_lines: z.number().int().positive(),
+		}),
+		character_zone: RectSchema.extend({
+			object_fit: z.literal("contain"),
+			horizontal_align: z.string(),
+			vertical_align: z.string(),
+		}),
+	}),
+	shorts: z.object({
+		safe_area: InsetsSchema,
+		outer_frame: FrameSchema,
+		accent_rail: RailSchema,
+		brand_chip: ChipSchema.extend({ font_size: PositiveNumberSchema }),
+		short_role_chip: ChipSchema.extend({
+			font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+		}),
+		main_visual_zone: RectSchema,
+		source: z.object({
+			x: z.number(),
+			baseline_y: z.number(),
+			width: PositiveNumberSchema,
+			font_size: PositiveNumberSchema,
+		}),
+		caption_band: RectSchema,
+		caption_text_zone: RectSchema.extend({
+			font_size: PositiveNumberSchema,
+			min_font_size: PositiveNumberSchema,
+			font_weight: z.number().int().positive(),
+			max_lines: z.number().int().positive(),
+		}),
+		bottom_reserved_height: PositiveNumberSchema,
+	}),
+	templates: z.object({
+		title: TemplateSchema,
+		comparison: TemplateSchema,
+		timeline: TemplateSchema,
+		number_highlight: TemplateSchema,
+		quote: TemplateSchema,
+		source_card: TemplateSchema,
+		image: TemplateSchema,
+		shorts_comparison: TemplateSchema,
+	}),
+	motion: z.object({
+		scene_fade_in_frames: z.number().int().nonnegative(),
+		content_drift_amplitude_px: z.number().nonnegative(),
+		content_drift_period_frames: z.number().int().positive(),
+		background_gradient_angle_deg: z.number(),
+		transition_zoom: z.number().nonnegative(),
+		max_simultaneous_animations: z.number().int().positive(),
+	}),
+});
+
+export type KafkaVisualSystem = z.infer<typeof KafkaVisualSystemSchema>;

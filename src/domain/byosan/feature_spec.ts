@@ -160,6 +160,17 @@ export const ByosanFeatureSpecSchema = z.object({
 	segments: z.array(ByosanFeatureSegmentSchema).min(20).max(36),
 });
 
+export const BYOSAN_BRAND_TAG = "秒算マネー";
+
+export function ensureByosanBrandTag(
+	tags: readonly string[] | undefined,
+): string[] {
+	return [
+		BYOSAN_BRAND_TAG,
+		...(tags ?? []).filter((tag) => tag !== BYOSAN_BRAND_TAG),
+	].slice(0, 15);
+}
+
 export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	schemaVersion: true,
 	runId: true,
@@ -171,7 +182,9 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	narrative: true,
 	adversarialEvidence: true,
 	activeProbes: true,
+	tags: true,
 }).extend({
+	tags: z.array(z.string().min(1).max(30)).min(4).max(14).optional(),
 	claims: z
 		.array(
 			ByosanFeatureClaimSchema.extend({
@@ -736,10 +749,10 @@ export function auditByosanFeatureSpec(
 			details: "At least seven emotion presets are required",
 		});
 	}
-	if (!spec.tags.includes("秒算マネー")) {
+	if (!spec.tags.includes(BYOSAN_BRAND_TAG)) {
 		issues.push({
 			code: "brand_tag_missing",
-			details: "tags must include 秒算マネー",
+			details: `tags must include ${BYOSAN_BRAND_TAG}`,
 		});
 	}
 	if (!spec.segments.some((segment) => segment.speaker === "ずんだもん")) {

@@ -11,6 +11,7 @@ import {
 	staticSceneMotionFilter,
 } from "../domain/byosan/feature_spec.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
+import { getKafkaVisualSystem } from "../domain/design/kafka_visual_system.js";
 import { runAudioQA } from "../io/utils/audio_qa.js";
 import {
 	TtsOrchestrator,
@@ -32,10 +33,14 @@ type TimedSegment = FeatureSegment & {
 	voice: TtsVoiceControls;
 };
 
-const WIDTH = 1920;
-const HEIGHT = 1080;
-const FPS = 30;
-const FONT = "Noto Sans CJK JP";
+const DESIGN = getKafkaVisualSystem();
+const LANDSCAPE = DESIGN.landscape;
+const THUMBNAIL = DESIGN.thumbnail;
+const THUMBNAIL_CANVAS = DESIGN.canvas.thumbnail;
+const WIDTH = DESIGN.canvas.landscape.width;
+const HEIGHT = DESIGN.canvas.landscape.height;
+const FPS = DESIGN.canvas.landscape.fps;
+const FONT = DESIGN.typography.japanese;
 const PROJECT_ROOT = process.cwd();
 const DEFAULT_SPEC = path.join(
 	PROJECT_ROOT,
@@ -392,18 +397,23 @@ function statCard(
 ): string {
 	const color = COLORS[stat.color];
 	const valueUnits = displayUnits(stat.value);
-	const valueSize = valueUnits > 12 ? 39 : valueUnits > 8 ? 47 : 61;
+	const valueSize =
+		valueUnits > 12
+			? LANDSCAPE.stat_cards.value_compact_font_size
+			: valueUnits > 8
+				? LANDSCAPE.stat_cards.value_medium_font_size
+				: LANDSCAPE.stat_cards.value_short_font_size;
 	const valueLines = wrapDisplay(stat.value, valueUnits > 12 ? 16 : 20).slice(
 		0,
 		2,
 	);
 	return `
 		<g>
-			<rect x="${x}" y="${y}" width="${width}" height="224" rx="28" fill="${VISUAL_IDENTITY.surface}" fill-opacity="0.94" stroke="${color}" stroke-opacity="0.34" stroke-width="2"/>
-			<rect x="${x}" y="${y}" width="8" height="224" rx="4" fill="${color}"/>
-			<text x="${x + 30}" y="${y + 44}" class="stat-label">${xml(stat.label)}</text>
-			<text x="${x + 30}" y="${y + 112}" class="stat-value" font-size="${valueSize}" fill="${color}">${tspans(valueLines, x + 30, y + 112, 54)}</text>
-			<text x="${x + 30}" y="${y + 196}" class="stat-detail">${xml(stat.detail)}</text>
+			<rect x="${x}" y="${y}" width="${width}" height="${LANDSCAPE.stat_cards.height}" rx="${LANDSCAPE.stat_cards.radius}" fill="${LANDSCAPE.stat_cards.fill}" fill-opacity="${LANDSCAPE.stat_cards.fill_opacity}" stroke="${color}" stroke-opacity="${LANDSCAPE.stat_cards.stroke_opacity}" stroke-width="${LANDSCAPE.stat_cards.stroke_width}"/>
+			<rect x="${x}" y="${y}" width="${LANDSCAPE.stat_cards.accent_width}" height="${LANDSCAPE.stat_cards.accent_height}" rx="${LANDSCAPE.stat_cards.accent_radius}" fill="${color}"/>
+			<text x="${x + LANDSCAPE.stat_cards.padding_left}" y="${y + LANDSCAPE.stat_cards.label_baseline_offset}" class="stat-label">${xml(stat.label)}</text>
+			<text x="${x + LANDSCAPE.stat_cards.padding_left}" y="${y + LANDSCAPE.stat_cards.value_baseline_offset}" class="stat-value" font-size="${valueSize}" fill="${color}">${tspans(valueLines, x + LANDSCAPE.stat_cards.padding_left, y + LANDSCAPE.stat_cards.value_baseline_offset, LANDSCAPE.stat_cards.value_line_height)}</text>
+			<text x="${x + LANDSCAPE.stat_cards.padding_left}" y="${y + LANDSCAPE.stat_cards.detail_baseline_offset}" class="stat-detail">${xml(stat.detail)}</text>
 		</g>`;
 }
 
@@ -414,22 +424,27 @@ function sceneSvg(
 ): Buffer {
 	const headlineLines = wrapDisplay(segment.headline, 21).slice(0, 2);
 	const headlineSize = headlineLines.some((line) => displayUnits(line) > 18)
-		? 68
-		: 82;
+		? LANDSCAPE.headline.compact_font_size
+		: LANDSCAPE.headline.default_font_size;
 	const statCount = Math.max(1, segment.stats.length);
-	const cardGap = 24;
-	const available = 1334;
+	const cardGap = LANDSCAPE.stat_cards.gap;
+	const available = LANDSCAPE.data_region.width;
 	const cardWidth = Math.floor(
 		(available - cardGap * (statCount - 1)) / statCount,
 	);
 	const cards = segment.stats
 		.map((stat, cardIndex) =>
-			statCard(stat, 92 + cardIndex * (cardWidth + cardGap), 500, cardWidth),
+			statCard(
+				stat,
+				LANDSCAPE.data_region.x + cardIndex * (cardWidth + cardGap),
+				LANDSCAPE.data_region.y,
+				cardWidth,
+			),
 		)
 		.join("");
 	const speakerColor =
 		segment.speaker === "ずんだもん"
-			? "#A9F07B"
+			? DESIGN.colors.success
 			: VISUAL_IDENTITY.secondaryAccent;
 	const accent =
 		segment.emotion === "caution" || segment.emotion === "serious"
@@ -438,67 +453,68 @@ function sceneSvg(
 	const emotionLabel = EMOTION_LABELS[segment.emotion] ?? "解説";
 	const questionMark =
 		segment.visualType === "question"
-			? `<text x="1560" y="550" font-family="Noto Sans CJK JP" font-size="310" font-weight="900" fill="${VISUAL_IDENTITY.primaryAccent}" fill-opacity="0.10">?</text>`
+			? `<text x="${LANDSCAPE.chart_region.x + LANDSCAPE.chart_region.width - 80}" y="${LANDSCAPE.chart_region.y + 78}" font-family="${FONT}" font-size="310" font-weight="900" fill="${VISUAL_IDENTITY.primaryAccent}" fill-opacity="0.10">?</text>`
 			: "";
 	return Buffer.from(`
 	<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
 		<defs>
 			<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-				<stop offset="0" stop-color="${VISUAL_IDENTITY.background}"/>
-				<stop offset="0.58" stop-color="${VISUAL_IDENTITY.backgroundAlt}"/>
-				<stop offset="1" stop-color="${VISUAL_IDENTITY.background}"/>
+				<stop offset="${LANDSCAPE.background.stop_positions[0]}" stop-color="${LANDSCAPE.background.stops[0]}"/>
+				<stop offset="${LANDSCAPE.background.stop_positions[1]}" stop-color="${LANDSCAPE.background.stops[1]}"/>
+				<stop offset="${LANDSCAPE.background.stop_positions[2]}" stop-color="${LANDSCAPE.background.stops[2]}"/>
 			</linearGradient>
 			<radialGradient id="glow" cx="0.78" cy="0.34" r="0.62">
 				<stop offset="0" stop-color="${accent}" stop-opacity="0.08"/>
-				<stop offset="1" stop-color="${VISUAL_IDENTITY.background}" stop-opacity="0"/>
+				<stop offset="1" stop-color="${DESIGN.colors.background}" stop-opacity="0"/>
 			</radialGradient>
-			<pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse">
-				<path d="M 56 0 L 0 0 0 56" fill="none" stroke="${VISUAL_IDENTITY.grid}" stroke-opacity="0.035" stroke-width="1"/>
+			<pattern id="grid" width="${LANDSCAPE.background.grid_cell}" height="${LANDSCAPE.background.grid_cell}" patternUnits="userSpaceOnUse">
+				<path d="M ${LANDSCAPE.background.grid_cell} 0 L 0 0 0 ${LANDSCAPE.background.grid_cell}" fill="none" stroke="${DESIGN.colors.grid}" stroke-opacity="${LANDSCAPE.background.grid_opacity}" stroke-width="${LANDSCAPE.background.grid_stroke}"/>
 			</pattern>
 			<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
 				<feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="${VISUAL_IDENTITY.shadow}" flood-opacity="0.42"/>
 			</filter>
 			<style>
 				text { font-family: '${FONT}', sans-serif; }
-				.brand { fill:${VISUAL_IDENTITY.textPrimary}; font-size:25px; font-weight:800; letter-spacing:2px; }
-				.section { fill:${VISUAL_IDENTITY.primaryAccent}; font-size:22px; font-weight:700; letter-spacing:3px; }
-				.headline { fill:${VISUAL_IDENTITY.textPrimary}; font-weight:900; letter-spacing:-1px; }
-				.subheadline { fill:${VISUAL_IDENTITY.textSecondary}; font-size:31px; font-weight:600; }
-				.stat-label { fill:${VISUAL_IDENTITY.textSecondary}; font-size:23px; font-weight:700; letter-spacing:1px; }
+				.brand { fill:${DESIGN.colors.text_primary}; font-size:${LANDSCAPE.brand_chip.font_size}px; font-weight:${LANDSCAPE.brand_chip.font_weight}; letter-spacing:${LANDSCAPE.brand_chip.letter_spacing}px; }
+				.section { fill:${DESIGN.colors.accent_primary}; font-size:${LANDSCAPE.section_label.font_size}px; font-weight:${LANDSCAPE.section_label.font_weight}; letter-spacing:${LANDSCAPE.section_label.letter_spacing}px; }
+				.headline { fill:${DESIGN.colors.text_primary}; font-weight:${LANDSCAPE.headline.font_weight}; letter-spacing:${LANDSCAPE.headline.letter_spacing}px; }
+				.subheadline { fill:${DESIGN.colors.text_secondary}; font-size:${LANDSCAPE.subheadline.font_size}px; font-weight:${LANDSCAPE.subheadline.font_weight}; }
+				.stat-label { fill:${DESIGN.colors.text_secondary}; font-size:${LANDSCAPE.stat_cards.label_font_size}px; font-weight:${LANDSCAPE.stat_cards.label_font_weight}; letter-spacing:${LANDSCAPE.stat_cards.label_letter_spacing}px; }
 				.stat-value { font-weight:900; letter-spacing:-1px; }
-				.stat-detail { fill:${VISUAL_IDENTITY.textMuted}; font-size:20px; font-weight:500; }
-				.source { fill:${VISUAL_IDENTITY.textMuted}; font-size:20px; font-weight:500; }
+				.stat-detail { fill:${DESIGN.colors.text_muted}; font-size:${LANDSCAPE.stat_cards.detail_font_size}px; font-weight:${LANDSCAPE.stat_cards.detail_font_weight}; }
+				.source { fill:${DESIGN.colors.text_muted}; font-size:${LANDSCAPE.source.font_size}px; font-weight:${LANDSCAPE.source.font_weight}; }
 			</style>
 		</defs>
-		<rect width="1920" height="1080" fill="url(#bg)"/>
-		<rect width="1920" height="1080" fill="url(#grid)"/>
-		<rect width="1920" height="1080" fill="url(#glow)"/>
+		<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#bg)"/>
+		<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#grid)"/>
+		<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow)"/>
+		<rect x="${LANDSCAPE.outer_frame.x}" y="${LANDSCAPE.outer_frame.y}" width="${LANDSCAPE.outer_frame.width}" height="${LANDSCAPE.outer_frame.height}" rx="${LANDSCAPE.outer_frame.radius}" fill="none" stroke="${LANDSCAPE.outer_frame.color}" stroke-opacity="${LANDSCAPE.outer_frame.opacity}" stroke-width="${LANDSCAPE.outer_frame.stroke_width}"/>
 		<path d="M0 826 C280 774 390 856 650 792 S1050 816 1435 730 S1750 706 1920 650" fill="none" stroke="${VISUAL_IDENTITY.primaryAccent}" stroke-opacity="0.08" stroke-width="3"/>
-		<rect x="0" y="858" width="1920" height="222" fill="${VISUAL_IDENTITY.shadow}" fill-opacity="0.62"/>
-		<rect x="0" y="0" width="12" height="1080" fill="${accent}"/>
-		<g transform="translate(92,62)">
-			<rect width="240" height="52" rx="26" fill="${VISUAL_IDENTITY.surface}" stroke="${VISUAL_IDENTITY.primaryAccent}" stroke-opacity="0.26"/>
-			<text x="28" y="35" class="brand">秒算マネー</text>
+		<rect x="${LANDSCAPE.caption_band.x}" y="${LANDSCAPE.caption_band.y}" width="${LANDSCAPE.caption_band.width}" height="${LANDSCAPE.caption_band.height}" fill="${LANDSCAPE.caption_band.color}" fill-opacity="${LANDSCAPE.caption_band.opacity}"/>
+		<rect x="${DESIGN.landscape.accent_rail.x}" y="${DESIGN.landscape.accent_rail.y}" width="${DESIGN.landscape.accent_rail.width}" height="${DESIGN.landscape.accent_rail.height}" fill="${accent}"/>
+		<g transform="translate(${LANDSCAPE.brand_chip.x},${LANDSCAPE.brand_chip.y})">
+			<rect width="${LANDSCAPE.brand_chip.width}" height="${LANDSCAPE.brand_chip.height}" rx="${LANDSCAPE.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${DESIGN.colors.accent_primary}" stroke-opacity="0.26"/>
+			<text x="${LANDSCAPE.brand_chip.text_x - LANDSCAPE.brand_chip.x}" y="${LANDSCAPE.brand_chip.baseline_y - LANDSCAPE.brand_chip.y}" class="brand">秒算マネー</text>
 		</g>
-		<text x="1440" y="96" class="section">${String(index + 1).padStart(2, "0")} / ${String(spec.segments.length).padStart(2, "0")}</text>
-		<rect x="1506" y="117" width="310" height="5" rx="3" fill="${VISUAL_IDENTITY.surfaceStrong}"/>
-		<rect x="1506" y="117" width="${Math.round(310 * ((index + 1) / spec.segments.length))}" height="5" rx="3" fill="${accent}"/>
-		<text x="92" y="181" class="section">${xml(segment.section)}</text>
-		<text x="92" y="290" class="headline" font-size="${headlineSize}">${tspans(headlineLines, 92, 290, headlineSize + 17)}</text>
-		<text x="92" y="${headlineLines.length > 1 ? 458 : 398}" class="subheadline">${xml(segment.subheadline)}</text>
+		<text x="${LANDSCAPE.section_counter.x}" y="${LANDSCAPE.section_counter.baseline_y}" class="section">${String(index + 1).padStart(2, "0")} / ${String(spec.segments.length).padStart(2, "0")}</text>
+		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${LANDSCAPE.progress.width}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${LANDSCAPE.progress.track}"/>
+		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${Math.round(LANDSCAPE.progress.width * ((index + 1) / spec.segments.length))}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${accent}"/>
+		<text x="${LANDSCAPE.section_label.x}" y="${LANDSCAPE.section_label.baseline_y}" class="section">${xml(segment.section)}</text>
+		<text x="${LANDSCAPE.headline.x}" y="${LANDSCAPE.headline.baseline_y}" class="headline" font-size="${headlineSize}">${tspans(headlineLines, LANDSCAPE.headline.x, LANDSCAPE.headline.baseline_y, headlineSize + 17)}</text>
+		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline">${xml(segment.subheadline)}</text>
 		${cards}
 		${questionMark}
 		<g filter="url(#shadow)">
-			<ellipse cx="1650" cy="596" rx="218" ry="300" fill="${speakerColor}" fill-opacity="0.06" stroke="${speakerColor}" stroke-opacity="0.20" stroke-width="2"/>
-			<path d="M1462 697 C1510 650 1556 620 1614 610" fill="none" stroke="${speakerColor}" stroke-opacity="0.30" stroke-width="5" stroke-linecap="round"/>
-			<circle cx="1462" cy="697" r="7" fill="${speakerColor}"/>
+			<ellipse cx="${LANDSCAPE.character_region.x + LANDSCAPE.character_region.width / 2}" cy="${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height / 2}" rx="${LANDSCAPE.character_region.width / 2 - 8}" ry="${LANDSCAPE.character_region.height / 2 - 24}" fill="${speakerColor}" fill-opacity="0.06" stroke="${speakerColor}" stroke-opacity="0.20" stroke-width="${DESIGN.stroke.default}"/>
+			<path d="M${LANDSCAPE.character_region.x + 38} ${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 159} C${LANDSCAPE.character_region.x + 86} ${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 206} ${LANDSCAPE.character_region.x + 132} ${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 236} ${LANDSCAPE.character_region.x + 190} ${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 246}" fill="none" stroke="${speakerColor}" stroke-opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+			<circle cx="${LANDSCAPE.character_region.x + 38}" cy="${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 159}" r="7" fill="${speakerColor}"/>
 		</g>
-		<g transform="translate(1510,164)">
-			<rect width="286" height="56" rx="28" fill="${VISUAL_IDENTITY.background}" stroke="${speakerColor}" stroke-width="2"/>
-			<text x="24" y="37" font-size="23" font-weight="800" fill="${speakerColor}">${xml(segment.speaker)}</text>
-			<text x="250" y="37" text-anchor="end" font-size="21" font-weight="700" fill="${VISUAL_IDENTITY.textSecondary}">${xml(emotionLabel)}</text>
+		<g transform="translate(${LANDSCAPE.speaker_chip.x},${LANDSCAPE.speaker_chip.y})">
+			<rect width="${LANDSCAPE.speaker_chip.width}" height="${LANDSCAPE.speaker_chip.height}" rx="${LANDSCAPE.speaker_chip.radius}" fill="${DESIGN.colors.background}" stroke="${speakerColor}" stroke-width="${LANDSCAPE.speaker_chip.stroke_width}"/>
+			<text x="${LANDSCAPE.speaker_chip.text_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.baseline_y - LANDSCAPE.speaker_chip.y}" font-size="${LANDSCAPE.speaker_chip.font_size}" font-weight="${LANDSCAPE.speaker_chip.font_weight}" fill="${speakerColor}">${xml(segment.speaker)}</text>
+			<text x="${LANDSCAPE.speaker_chip.emotion_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.emotion_baseline_y - LANDSCAPE.speaker_chip.y}" text-anchor="end" font-size="${LANDSCAPE.speaker_chip.emotion_font_size}" font-weight="${LANDSCAPE.speaker_chip.emotion_font_weight}" fill="${DESIGN.colors.text_secondary}">${xml(emotionLabel)}</text>
 		</g>
-		<text x="92" y="824" class="source">SOURCE  ${xml(segment.source)}</text>
+		<text x="${LANDSCAPE.source.x}" y="${LANDSCAPE.source.baseline_y}" class="source">SOURCE  ${xml(segment.source)}</text>
 	</svg>`);
 }
 
@@ -524,7 +540,7 @@ async function characterBuffer(
 	return sharp(await characterSourceBuffer(speaker))
 		.trim({ background: { r: 255, g: 255, b: 255, alpha: 0 } })
 		.resize({
-			height: speaker === "ずんだもん" ? 650 : 720,
+			height: LANDSCAPE.character_region.height,
 			fit: "inside",
 			withoutEnlargement: true,
 		})
@@ -541,11 +557,18 @@ async function renderScene(
 	const base = sceneSvg(spec, segment, index);
 	const character = await characterBuffer(segment.speaker);
 	const metadata = await sharp(character).metadata();
-	const left = WIDTH - (metadata.width ?? 340) - 66;
-	const top = HEIGHT - (metadata.height ?? 650) - 168;
+	const left =
+		LANDSCAPE.character_region.x +
+		(LANDSCAPE.character_region.width -
+			(metadata.width ?? LANDSCAPE.character_region.width)) /
+			2;
+	const top =
+		LANDSCAPE.character_region.y +
+		LANDSCAPE.character_region.height -
+		(metadata.height ?? LANDSCAPE.character_region.height);
 	await sharp(base)
 		.composite([
-			{ input: character, left: Math.max(1425, left), top: Math.max(215, top) },
+			{ input: character, left: Math.round(left), top: Math.round(top) },
 		])
 		.png({ compressionLevel: 8, adaptiveFiltering: true })
 		.toFile(outputPath);
@@ -560,50 +583,59 @@ async function renderThumbnail(
 	const thumbnailJpg = path.join(runDir, "thumbnail_youtube.jpg");
 	const character = await sharp(await characterSourceBuffer("春日部つむぎ"))
 		.trim({ background: { r: 255, g: 255, b: 255, alpha: 0 } })
-		.resize({ height: 930, fit: "inside", withoutEnlargement: false })
+		.resize({
+			height: THUMBNAIL.character_zone.height,
+			fit: "inside",
+			withoutEnlargement: false,
+		})
 		.png()
 		.toBuffer();
 	const thumbnail = spec.thumbnail;
-	const accentSize = Array.from(thumbnail.accent).length > 9 ? 112 : 148;
-	const secondLineSize =
-		Array.from(thumbnail.secondLine).length > 12 ? 82 : 104;
-	const calloutTopSize = Array.from(thumbnail.calloutTop).length > 18 ? 37 : 47;
-	const calloutBottomSize =
-		Array.from(thumbnail.calloutBottom).length > 18 ? 38 : 48;
+	const accentSize = THUMBNAIL.title_zone.font_size;
+	const secondLineSize = THUMBNAIL.title_zone.font_size;
+	const calloutTopSize = THUMBNAIL.subtitle.font_size;
+	const calloutBottomSize = THUMBNAIL.subtitle.font_size;
 	const overlay = Buffer.from(`
-	<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+	<svg width="${THUMBNAIL_CANVAS.width}" height="${THUMBNAIL_CANVAS.height}" xmlns="http://www.w3.org/2000/svg">
 		<defs>
 			<linearGradient id="shade" x1="0" x2="1">
-				<stop offset="0" stop-color="${VISUAL_IDENTITY.shadow}" stop-opacity="0.96"/>
-				<stop offset="0.57" stop-color="${VISUAL_IDENTITY.shadow}" stop-opacity="0.78"/>
-				<stop offset="0.78" stop-color="${VISUAL_IDENTITY.shadow}" stop-opacity="0.12"/>
-				<stop offset="1" stop-color="${VISUAL_IDENTITY.shadow}" stop-opacity="0.02"/>
+				<stop offset="0" stop-color="${DESIGN.colors.shadow}" stop-opacity="0.96"/>
+				<stop offset="0.57" stop-color="${DESIGN.colors.shadow}" stop-opacity="0.78"/>
+				<stop offset="0.78" stop-color="${DESIGN.colors.shadow}" stop-opacity="0.12"/>
+				<stop offset="1" stop-color="${DESIGN.colors.shadow}" stop-opacity="0.02"/>
 			</linearGradient>
-			<filter id="textShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="${VISUAL_IDENTITY.shadow}" flood-opacity="0.82"/></filter>
+			<filter id="textShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="${DESIGN.colors.shadow}" flood-opacity="0.82"/></filter>
 			<style>text{font-family:'${FONT}',sans-serif}</style>
 		</defs>
-		<rect width="1920" height="1080" fill="url(#shade)"/>
-		<rect x="74" y="70" width="520" height="62" rx="31" fill="${VISUAL_IDENTITY.surface}" stroke="${VISUAL_IDENTITY.primaryAccent}" stroke-width="2"/>
-		<text x="108" y="111" font-size="29" font-weight="800" fill="${VISUAL_IDENTITY.textPrimary}" letter-spacing="2">${xml(thumbnail.eyebrow)}</text>
+		<rect width="${THUMBNAIL_CANVAS.width}" height="${THUMBNAIL_CANVAS.height}" fill="url(#shade)"/>
+		<rect x="${THUMBNAIL.outer_frame.x}" y="${THUMBNAIL.outer_frame.y}" width="${THUMBNAIL.outer_frame.width}" height="${THUMBNAIL.outer_frame.height}" rx="${THUMBNAIL.outer_frame.radius}" fill="none" stroke="${THUMBNAIL.outer_frame.color}" stroke-opacity="${THUMBNAIL.outer_frame.opacity}" stroke-width="${THUMBNAIL.outer_frame.stroke_width}"/>
+		<rect x="${THUMBNAIL.accent_rail.x}" y="${THUMBNAIL.accent_rail.y}" width="${THUMBNAIL.accent_rail.width}" height="${THUMBNAIL.accent_rail.height}" fill="${DESIGN.colors.brand_accent}"/>
+		<rect x="${THUMBNAIL.brand_chip.x}" y="${THUMBNAIL.brand_chip.y}" width="${THUMBNAIL.brand_chip.width}" height="${THUMBNAIL.brand_chip.height}" rx="${THUMBNAIL.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${DESIGN.colors.accent_primary}" stroke-width="${DESIGN.stroke.default}"/>
+		<text x="${THUMBNAIL.brand_chip.x + 28}" y="${THUMBNAIL.brand_chip.y + 30}" font-size="${THUMBNAIL.brand_chip.font_size}" font-weight="${THUMBNAIL.brand_chip.font_weight}" fill="${DESIGN.colors.text_primary}" letter-spacing="2">${xml(thumbnail.eyebrow)}</text>
 		<g filter="url(#textShadow)">
-			<text x="78" y="318" font-size="114" font-weight="900" fill="${VISUAL_IDENTITY.textPrimary}">${xml(thumbnail.lead)}</text>
-			<text x="330" y="318" font-size="${accentSize}" font-weight="950" fill="${VISUAL_IDENTITY.primaryAccent}">${xml(thumbnail.accent)}</text>
-			<text x="1010" y="318" font-size="118" font-weight="950" fill="${VISUAL_IDENTITY.secondaryAccent}">${xml(thumbnail.reaction)}</text>
-			<text x="78" y="472" font-size="${secondLineSize}" font-weight="900" fill="${VISUAL_IDENTITY.textPrimary}">${xml(thumbnail.secondLine)}</text>
+			<text x="${THUMBNAIL.title_zone.x}" y="${THUMBNAIL.title_zone.y + THUMBNAIL.title_zone.font_size}" font-size="${THUMBNAIL.title_zone.font_size}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${THUMBNAIL.title_zone.fill}" stroke="${THUMBNAIL.title_zone.inner_stroke}" stroke-width="${THUMBNAIL.title_zone.inner_stroke_width}">${xml(thumbnail.lead)} ${xml(thumbnail.accent)}</text>
+			<text x="${THUMBNAIL.title_zone.x}" y="${THUMBNAIL.title_zone.y + THUMBNAIL.title_zone.font_size + THUMBNAIL.title_zone.line_height}" font-size="${secondLineSize}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${THUMBNAIL.title_zone.fill}">${xml(thumbnail.secondLine)} ${xml(thumbnail.reaction)}</text>
 		</g>
-		<rect x="78" y="550" width="940" height="92" rx="24" fill="${VISUAL_IDENTITY.lightSurface}"/>
-		<text x="116" y="611" font-size="${calloutTopSize}" font-weight="900" fill="${VISUAL_IDENTITY.darkText}">${xml(thumbnail.calloutTop)}</text>
-		<g transform="translate(78,695)">
-			<rect width="850" height="116" rx="28" fill="${VISUAL_IDENTITY.background}" fill-opacity="0.9" stroke="${VISUAL_IDENTITY.secondaryAccent}" stroke-width="3"/>
-			<text x="32" y="72" font-size="${calloutBottomSize}" font-weight="900" fill="${VISUAL_IDENTITY.textPrimary}">${xml(thumbnail.calloutBottom)}</text>
+		<rect x="${THUMBNAIL.subtitle.x}" y="${THUMBNAIL.subtitle.baseline_y - THUMBNAIL.subtitle.font_size}" width="${THUMBNAIL.subtitle.width}" height="${THUMBNAIL.subtitle.font_size + 16}" rx="${DESIGN.radius.medium}" fill="${DESIGN.colors.human_cream}"/>
+		<text x="${THUMBNAIL.subtitle.x + 32}" y="${THUMBNAIL.subtitle.baseline_y - 8}" font-size="${calloutTopSize}" font-weight="${THUMBNAIL.subtitle.font_weight}" fill="${DESIGN.colors.text_dark}">${xml(thumbnail.calloutTop)}</text>
+		<g transform="translate(${THUMBNAIL.subtitle.x},${THUMBNAIL.subtitle.baseline_y + 72})">
+			<rect width="${THUMBNAIL.subtitle.width}" height="${THUMBNAIL.subtitle.font_size + 68}" rx="${DESIGN.radius.card}" fill="${DESIGN.colors.background}" fill-opacity="0.9" stroke="${DESIGN.colors.accent_secondary}" stroke-width="${DESIGN.stroke.default}"/>
+			<text x="32" y="${THUMBNAIL.subtitle.font_size + 24}" font-size="${calloutBottomSize}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${DESIGN.colors.text_primary}">${xml(thumbnail.calloutBottom)}</text>
 		</g>
-		<text x="82" y="1002" font-size="31" font-weight="800" fill="${VISUAL_IDENTITY.textPrimary}" letter-spacing="3">秒算マネー</text>
+		<text x="${THUMBNAIL.brand_chip.x}" y="${THUMBNAIL_CANVAS.height - THUMBNAIL.safe_area.bottom}" font-size="${THUMBNAIL.brand_chip.font_size}" font-weight="${THUMBNAIL.brand_chip.font_weight}" fill="${DESIGN.colors.text_primary}" letter-spacing="3">秒算マネー</text>
 	</svg>`);
 	const composed = sharp(heroPath)
-		.resize(WIDTH, HEIGHT, { fit: "cover", position: "centre" })
+		.resize(THUMBNAIL_CANVAS.width, THUMBNAIL_CANVAS.height, {
+			fit: "cover",
+			position: "centre",
+		})
 		.composite([
 			{ input: overlay, left: 0, top: 0 },
-			{ input: character, left: 1390, top: 128 },
+			{
+				input: character,
+				left: THUMBNAIL.character_zone.x,
+				top: THUMBNAIL.character_zone.y,
+			},
 		]);
 	await composed.clone().png({ compressionLevel: 8 }).toFile(thumbnailPng);
 	await composed

@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { loadConfig, resolvePath } from "../../io/core.js";
 import type { OverlayConfig, Rect, Size } from "../config/base.js";
+import { getKafkaVisualSystem } from "../design/kafka_visual_system.js";
 import { ThumbnailRenderer } from "../media/thumbnail_renderer.js";
 import type { AppConfig, RenderPlan, Script } from "../types.js";
 import { generateASS } from "./ass.js";
@@ -15,11 +16,9 @@ export class LayoutEngine {
 	constructor(config?: AppConfig) {
 		this.config = config || loadConfig();
 		this.thumbRenderer = new ThumbnailRenderer(this.config);
-		const parseRes = (s: string) => s.split("x").map(Number);
-		const v = parseRes(this.config.steps.video.resolution || "1920x1080");
-		this.videoRes = { width: v[0] ?? 1920, height: v[1] ?? 1080 };
-		const t = parseRes(this.config.steps.thumbnail.resolution || "1280x720");
-		this.thumbRes = { width: t[0] ?? 1280, height: t[1] ?? 720 };
+		const design = getKafkaVisualSystem();
+		this.videoRes = design.canvas.landscape;
+		this.thumbRes = design.canvas.thumbnail;
 	}
 
 	async createVideoRenderPlan(): Promise<RenderPlan> {
@@ -69,41 +68,20 @@ export class LayoutEngine {
 	}
 
 	private calculateSafeSubtitleArea(
-		overlays: Array<{ bounds: Rect }>,
+		_overlays: Array<{ bounds: Rect }>,
 		canvas: Size,
 	) {
-		const { width: W, height: H } = canvas;
-		const s = this.config.steps.video.subtitles || {};
-		let [sL, sR] = [s.margin_l || 0, s.margin_r || 0];
-		const lc = this.config.steps.video.layout_constants || {
-			subtitle_zone_ratio: 0.15,
-			subtitle_height: 300,
-			default_max_w_ratio: 0.5,
-		};
-
-		if (sL === 0 && sR === 0) {
-			const zone = H * lc.subtitle_zone_ratio;
-			for (const ol of overlays) {
-				if (ol.bounds.y + ol.bounds.height > H - zone) {
-					if (ol.bounds.x < W / 2)
-						sL = Math.max(sL, ol.bounds.x + ol.bounds.width + 10);
-					else sR = Math.max(sR, W - ol.bounds.x + 10);
-				}
-			}
-		}
-		const minW = W * (lc.default_max_w_ratio ?? 0.5);
-		if (W - sL - sR < minW) {
-			const ex = (minW - (W - sL - sR)) / 2;
-			sL = Math.max(0, sL - ex);
-			sR = Math.max(0, sR - ex);
-		}
-		const h = lc.subtitle_height ?? 300;
+		const design = getKafkaVisualSystem();
+		const s = design.landscape.subtitle;
+		const sL = s.margin_left;
+		const sR = s.margin_right;
+		const h = design.landscape.caption_band.height;
 		return {
 			subtitleArea: {
 				x: sL,
-				y: H - h,
-				width: W - sL - sR,
-				height: h - (s.margin_v || 10),
+				y: design.landscape.caption_band.y,
+				width: canvas.width - sL - sR,
+				height: h,
 			},
 			safeMarginL: Math.round(sL),
 			safeMarginR: Math.round(sR),

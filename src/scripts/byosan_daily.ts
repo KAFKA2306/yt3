@@ -5,9 +5,14 @@ import fs from "fs-extra";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
 import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
 import {
+	reconcileByosanCheckpoint,
+	writeByosanCheckpoint,
+} from "../domain/byosan/checkpoint.js";
+import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
 	type ByosanFeatureSpec,
+	ensureByosanBrandTag,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import {
@@ -23,6 +28,7 @@ import {
 	getRunIdDateString,
 	invokeStructuredLlm,
 } from "../io/core.js";
+import { runByosanPreflight } from "./byosan_preflight.js";
 
 type FeatureSource = ByosanFeatureSource;
 
@@ -518,6 +524,12 @@ async function generateFeatureSpec(
 	runId: string,
 	date: string,
 ): Promise<ByosanFeatureSpec> {
+	const hookPromises = candidate.numbers.slice(0, 4);
+	if (hookPromises.length < 2) {
+		throw new Error(
+			"BYOSAN_FEATURE_GENERATION_FAILED: at least two hook promises are required",
+		);
+	}
 	return invokeStructuredLlm({
 		schema: ByosanFeatureDraftSchema,
 		name: "byosan_feature_draft",
@@ -541,6 +553,7 @@ async function generateFeatureSpec(
 				content: `対象証拠:\n${JSON.stringify(
 					{
 						candidate,
+						hook_promises: hookPromises,
 						production_plan: productionPlan,
 						allowed_sources: sources,
 						adversarial_evidence: adversarialEvidence,
@@ -552,9 +565,10 @@ async function generateFeatureSpec(
 				)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
 			},
 		],
-		validate: (draft) =>
-			parseAndAuditByosanFeatureSpec({
+		validate: (draft) => {
+			const audited = parseAndAuditByosanFeatureSpec({
 				...draft,
+				tags: ensureByosanBrandTag(draft.tags),
 				schemaVersion: "byosan_feature_v1",
 				runId,
 				asOf: date,
@@ -569,7 +583,37 @@ async function generateFeatureSpec(
 				adversarialEvidence,
 				activeProbes,
 				sources,
-			}),
+			});
+			if (
+				JSON.stringify(audited.hookPromises) !== JSON.stringify(hookPromises)
+			) {
+				throw new Error(
+					"opening_hook_contract_mismatch: generated hookPromises differ from the pre-generation contract",
+				);
+			}
+			const rawHash = createHash("sha256")
+				.update(JSON.stringify(draft.segments.map((segment) => segment.text)))
+				.digest("hex");
+			const auditedHash = createHash("sha256")
+				.update(JSON.stringify(audited.segments.map((segment) => segment.text)))
+				.digest("hex");
+			fs.outputJsonSync(
+				path.join(runDir, "audit", "narrative_integrity.json"),
+				{
+					schema_version: "byosan_narrative_integrity_v1",
+					raw_draft_narrative_sha256: rawHash,
+					audited_narrative_sha256: auditedHash,
+					narrative_unchanged: rawHash === auditedHash,
+				},
+				{ spaces: 2 },
+			);
+			if (rawHash !== auditedHash) {
+				throw new Error(
+					"narrative_mutation_detected_between_generation_and_audit",
+				);
+			}
+			return audited;
+		},
 	});
 }
 
@@ -657,17 +701,31 @@ export async function runByosanDaily(): Promise<void> {
 
 	const runId = `byosan_money/${date}-daily`;
 	const store = new AssetStore(runId);
+	const checkpoint = reconcileByosanCheckpoint(store.runDir, runId, ROOT);
+	writeByosanCheckpoint(store.runDir, checkpoint);
+	const preflight = await runByosanPreflight(store.runDir);
+	if (preflight.status !== "PASS") {
+		throw new Error(
+			`BYOSAN_PREFLIGHT_BLOCKED: ${preflight.status} ${path.join(store.runDir, "audit", "preflight.json")}`,
+		);
+	}
 	assertByosanRetryAllowed(store.runDir);
 	const missionPath = path.join(store.runDir, "source", "no-mission-file.md");
-	const scout = new TrendScout(store);
-	const research = await scout.run("byosan_money", 5, missionPath);
-	await fs.outputJson(
-		path.join(store.runDir, "source", "research_result.json"),
-		research,
-		{
-			spaces: 2,
-		},
+	const researchPath = path.join(
+		store.runDir,
+		"source",
+		"research_result.json",
 	);
+	let research: ResearchResult;
+	if (checkpoint.stages.research_ready && (await fs.pathExists(researchPath))) {
+		research = (await fs.readJson(researchPath)) as ResearchResult;
+	} else {
+		const scout = new TrendScout(store);
+		research = await scout.run("byosan_money", 5, missionPath);
+		await fs.outputJson(researchPath, research, { spaces: 2 });
+		checkpoint.stages.research_ready = true;
+		writeByosanCheckpoint(store.runDir, checkpoint);
+	}
 	const candidate = selectedCandidate(research);
 	const selectedIndex = research.angle_decision?.selectedIndex;
 	const evaluated =
@@ -684,19 +742,26 @@ export async function runByosanDaily(): Promise<void> {
 		preferredFormat,
 	);
 	const normalized = normalizedResearchEvidence(candidate);
-	const spec = await generateFeatureSpec(
-		research,
-		candidate,
-		productionPlan,
-		normalized.sources,
-		normalized.adversarialEvidence,
-		normalized.activeProbes,
-		store.runDir,
-		runId,
-		date,
-	);
 	const specPath = path.join(store.runDir, "source", "feature_spec.json");
-	await fs.outputJson(specPath, spec, { spaces: 2 });
+	let spec: ByosanFeatureSpec;
+	if (checkpoint.stages.spec_ready && (await fs.pathExists(specPath))) {
+		spec = parseAndAuditByosanFeatureSpec(await fs.readJson(specPath));
+	} else {
+		spec = await generateFeatureSpec(
+			research,
+			candidate,
+			productionPlan,
+			normalized.sources,
+			normalized.adversarialEvidence,
+			normalized.activeProbes,
+			store.runDir,
+			runId,
+			date,
+		);
+		await fs.outputJson(specPath, spec, { spaces: 2 });
+		checkpoint.stages.spec_ready = true;
+		writeByosanCheckpoint(store.runDir, checkpoint);
+	}
 	await fs.outputJson(
 		path.join(store.runDir, "audit", "loop_manifest.json"),
 		{
@@ -713,15 +778,44 @@ export async function runByosanDaily(): Promise<void> {
 		{ spaces: 2 },
 	);
 
-	runCommand(
-		process.execPath,
-		["src/scripts/produce_byosan_feature.ts", specPath],
-		{
-			...process.env,
-			ENV_FILE: "config/.env.byosan",
-			YOUTUBE_CHANNEL_PROFILE: "byosan",
-		},
+	const finalVideoPath = path.join(
+		store.runDir,
+		"media",
+		"video",
+		"publish_video.mp4",
 	);
+	const qualityReportPath = path.join(
+		store.runDir,
+		"audit",
+		"production_quality_report.json",
+	);
+	if (
+		!(
+			checkpoint.stages.media_ready &&
+			checkpoint.stages.quality_pass &&
+			(await fs.pathExists(finalVideoPath)) &&
+			(await fs.pathExists(qualityReportPath))
+		)
+	) {
+		runCommand(
+			process.execPath,
+			["src/scripts/produce_byosan_feature.ts", specPath],
+			{
+				...process.env,
+				ENV_FILE: "config/.env.byosan",
+				YOUTUBE_CHANNEL_PROFILE: "byosan",
+			},
+		);
+		checkpoint.stages.media_ready = true;
+		const qualityReport = (await fs.readJson(qualityReportPath)) as {
+			decision?: string;
+		};
+		checkpoint.stages.quality_pass = qualityReport.decision === "PASS";
+		writeByosanCheckpoint(store.runDir, checkpoint);
+	}
+	if (!checkpoint.stages.quality_pass) {
+		throw new Error(`QUALITY_GATE_FAILED: ${qualityReportPath}`);
+	}
 	if (process.env.BYOSAN_DAILY_NO_PUBLISH === "true") {
 		markFailureRecovered(store.runDir);
 		console.log(`PRODUCTION_PASS_NO_PUBLISH=${runId}`);
@@ -734,6 +828,8 @@ export async function runByosanDaily(): Promise<void> {
 		RUN_ID: runId,
 	});
 	assertPublishEvidence(store.runDir);
+	checkpoint.stages.publish_verified = true;
+	writeByosanCheckpoint(store.runDir, checkpoint);
 	markFailureRecovered(store.runDir);
 	console.log(`BYOSAN_DAILY_PASS=${runId}`);
 }
