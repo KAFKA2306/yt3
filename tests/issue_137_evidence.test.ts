@@ -10,6 +10,16 @@ type EvidenceLedger = {
 		status: string;
 		smallBaseWarning?: boolean;
 	}>;
+	publisherReadbacks: {
+		status: string;
+		readAt: string;
+		entries: Array<{
+			sourceId: string;
+			publicationDate: string;
+			verifiedClaims: string[];
+			scopeBoundary: string;
+		}>;
+	};
 	sources: Array<{ tier: string; url: string }>;
 	visualPlan: { formats: string[]; sourceDateOnScreen: boolean };
 	openAcceptance: string[];
@@ -36,12 +46,22 @@ describe("issue 137 evidence ledger", () => {
 		expect(
 			ledger.metrics.find((metric) => metric.smallBaseWarning)?.status,
 		).toBe("PROVISIONAL_REQUIRES_PUBLISHER_READBACK");
+		expect(ledger.publisherReadbacks.status).toBe("PARTIAL_PUBLISHER_READBACK");
+		expect(ledger.publisherReadbacks.readAt).toBe("2026-09-25");
+		expect(ledger.publisherReadbacks.entries).toHaveLength(5);
+		expect(
+			ledger.publisherReadbacks.entries.find(
+				(entry) => entry.sourceId === "gartner_semiconductor_2026",
+			)?.verifiedClaims,
+		).toContain("DRAM revenue growth 246.6% in 2026");
 	});
 
 	test("keeps provisional market estimates from becoming verified facts", () => {
 		expect(
-			ledger.metrics.every((metric) =>
-				metric.status.startsWith("PROVISIONAL_"),
+			ledger.metrics.every(
+				(metric) =>
+					metric.status.startsWith("PROVISIONAL_") ||
+					metric.status.startsWith("VERIFIED_"),
 			),
 		).toBe(true);
 		expect(ledger.sources).toHaveLength(7);

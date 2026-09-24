@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "The ledger preserves the issue snapshot as provisional and keeps CAGR, single-year YoY, demand volume, market size, and company exposure separate. Latest publisher readback, comparable market definitions, source timestamps, production visuals, and QA remain outstanding.",
+	"statusReason": "The ledger preserves the issue snapshot as provisional and keeps CAGR, single-year YoY, demand volume, market size, and company exposure separate. A partial 2026-09-25 publisher readback now verifies selected dates, scopes, and boundary values, while comparable definitions, remaining metrics, production visuals, and QA remain outstanding.",
 	"layers": [
 		{
 			"id": "compute",
@@ -199,6 +199,55 @@
 			"sourceIds": ["gartner_semiconductor_2026"]
 		}
 	],
+	"publisherReadbacks": {
+		"status": "PARTIAL_PUBLISHER_READBACK",
+		"readAt": "2026-09-25",
+		"entries": [
+			{
+				"sourceId": "gartner_ai_processing",
+				"publicationDate": "2026-08-13",
+				"verifiedClaims": [
+					"AI processing semiconductor revenue CAGR 26.8% through 2030"
+				],
+				"scopeBoundary": "The public summary exposes the headline forecast but not the full methodology tables."
+			},
+			{
+				"sourceId": "gartner_semiconductor_2026",
+				"publicationDate": "2026-08-24",
+				"verifiedClaims": [
+					"DRAM revenue growth 246.6% in 2026",
+					"NAND flash revenue growth 371.9% in 2026",
+					"total semiconductor revenue 1555.2 billion USD in 2026",
+					"AI data-center share 36.5% in 2026 and more than 53% by 2030"
+				],
+				"scopeBoundary": "These are Gartner semiconductor revenue forecasts; they are not company revenue or stock-return forecasts."
+			},
+			{
+				"sourceId": "trendforce_hbm",
+				"publicationDate": "2025-10-30",
+				"verifiedClaims": ["HBM consumption growth exceeds 70% in 2026"],
+				"scopeBoundary": "The metric is HBM demand volume, not DRAM or HBM revenue."
+			},
+			{
+				"sourceId": "delloro_ai_networking",
+				"publicationDate": "2026-07-28",
+				"verifiedClaims": [
+					"Cumulative AI back-end switch spending approaches 1 trillion USD over 2026-2030",
+					"Scale-up exceeds half of the market by 2030"
+				],
+				"scopeBoundary": "This publisher readback is a cumulative spend and market-scope observation; it does not verify the ledger's 40% CAGR metric."
+			},
+			{
+				"sourceId": "trendforce_cpo",
+				"publicationDate": "2026-06-15",
+				"verifiedClaims": [
+					"CPO/NPO market is around 0.1 billion USD in 2025 and above 39 billion USD in 2030",
+					"Pluggable transceivers remain a separate market near 26 billion USD in 2030"
+				],
+				"scopeBoundary": "The 230% CAGR is a derived approximation from rounded endpoints and remains provisional until the publisher's exact market series is available."
+			}
+		]
+	},
 	"interpretationRules": [
 		"CAGR and single-year YoY must use separate visual panels.",
 		"HBM is a DRAM category but its demand-volume metric must not be presented as DRAM revenue.",
