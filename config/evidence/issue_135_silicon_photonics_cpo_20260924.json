@@ -1,0 +1,151 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 135,
+	"runId": "byosan_money/2026-09-24-issue-135-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "The ledger separates production, development, demonstration, and control evidence for silicon photonics/CPO, but deployment volume, yield, thermal, maintenance, cost, and final production QA remain outstanding.",
+	"maturityMatrix": [
+		{
+			"id": "nvidia_spectrum_x_photonics",
+			"company": "NVIDIA",
+			"stage": "PRODUCTION_REPORTED",
+			"value": {
+				"serdesGbps": 200,
+				"bandwidthTbps": 409.6,
+				"availability": "second_half_2026"
+			},
+			"sourceIds": ["nvidia_vera_rubin", "nvidia_photonics"]
+		},
+		{
+			"id": "tsmc_coupe",
+			"company": "TSMC",
+			"stage": "TECHNOLOGY_DEVELOPMENT_REPORTED",
+			"value": {
+				"technology": "compact_universal_photonics_engine",
+				"scope": "silicon_photonic_solution_enablement"
+			},
+			"sourceIds": ["tsmc_coupe"]
+		},
+		{
+			"id": "coherent_cpo_demo",
+			"company": "Coherent",
+			"stage": "DEMONSTRATION_REPORTED",
+			"value": {
+				"socketedCpoTbps": 6.4,
+				"inPModulatorPerLaneGbps": 400,
+				"architectures": ["silicon_photonics", "VCSEL", "InP_on_silicon"]
+			},
+			"sourceIds": ["coherent_cpo"]
+		},
+		{
+			"id": "broadcom_tomahawk_control",
+			"company": "Broadcom",
+			"stage": "PACKET_SWITCH_PRODUCTION_CONTROL",
+			"value": { "throughputTbps": 102.4 },
+			"sourceIds": ["broadcom_control"]
+		}
+	],
+	"physicsBoundary": {
+		"status": "STRUCTURAL_EXPLANATION_REQUIRES_REVIEW",
+		"mechanism": [
+			"move optical I/O closer to switching silicon",
+			"reduce electrical reach and power",
+			"integrate modulator/waveguide/photonic engine with package or module"
+		],
+		"notProvenByThisLedger": [
+			"system-wide energy savings",
+			"yield at volume",
+			"maintenance advantage",
+			"total cost advantage"
+		]
+	},
+	"counterarguments": [
+		{
+			"id": "pluggable_competition",
+			"status": "UNVERIFIED_REQUIRES_CURRENT_COMPARATIVE_DATA"
+		},
+		{
+			"id": "lpo_lro_alternatives",
+			"status": "UNVERIFIED_REQUIRES_ARCHITECTURE_DATA"
+		},
+		{
+			"id": "thermal_and_yield",
+			"status": "UNVERIFIED_REQUIRES_MANUFACTURING_DATA"
+		},
+		{
+			"id": "maintenance_and_external_laser",
+			"status": "UNVERIFIED_REQUIRES_OPERATIONS_DATA"
+		}
+	],
+	"sources": [
+		{
+			"id": "nvidia_vera_rubin",
+			"url": "https://nvidianews.nvidia.com/news/vera-rubin-full-production-agentic-ai-factory",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"veraRubinRamp",
+				"cpoProduction",
+				"200GbSerDes",
+				"shipmentTiming"
+			]
+		},
+		{
+			"id": "nvidia_photonics",
+			"url": "https://www.nvidia.com/en-us/networking/products/silicon-photonics/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["cpoArchitecture", "bandwidth", "powerClaim"]
+		},
+		{
+			"id": "tsmc_coupe",
+			"url": "https://investor.tsmc.com/static/annualReports/2025/english/pdf/2025_tsmc_ar_e_ch5.pdf",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["coupeTechnologyDevelopment", "siliconPhotonicEnablement"]
+		},
+		{
+			"id": "coherent_cpo",
+			"url": "https://www.coherent.com/news/press-releases/coherent-co-packaged-optics-cpo-technologies-ofc-2026",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"demonstration",
+				"6.4T",
+				"400GPerLane",
+				"multipleArchitectures"
+			]
+		},
+		{
+			"id": "broadcom_control",
+			"url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-now-shipping-worlds-first-1024-tbps-switch-production",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["packetSwitchControl"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"production/development/demo/control maturity matrix",
+			"electrical reach to photonic I/O mechanism",
+			"CPO versus pluggable/LPO/LRO counterargument panel",
+			"thermal/yield/maintenance checklist"
+		],
+		"shorts": [
+			"production is not demonstration",
+			"TSMC COUPE versus NVIDIA CPO",
+			"why Broadcom packet-switch volume is a control, not CPO proof"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"stageRule": "Every claim must carry one of production, development, demonstration, or control; stages must not be blended."
+	},
+	"openAcceptance": [
+		"Obtain current deployment, yield, thermal, maintenance, and cost evidence.",
+		"Cross-check CPO against current pluggable, LPO, and LRO alternatives.",
+		"Keep company claims, technical demonstrations, and independent measurement separate.",
+		"Complete factuality/source-policy QA, render, ASR, and non-recommendation checks."
+	]
+}
