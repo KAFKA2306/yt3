@@ -1,0 +1,164 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 134,
+	"runId": "byosan_money/2026-09-24-issue-134-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "Product and architecture evidence is recorded across switch ASIC, CPO, transceiver, and photonics-electronics layers, but market-size attribution, supply constraints, current customer mix, render, ASR, and production acceptance remain outstanding.",
+	"layers": [
+		{
+			"id": "packet_switch_asic",
+			"label": "packet switch / switch ASIC",
+			"status": "PRODUCT_FACT_VERIFIED",
+			"sourceIds": ["broadcom_tomahawk"]
+		},
+		{
+			"id": "optical_circuit_or_cpo_switch",
+			"label": "optical/CPO switch",
+			"status": "PRODUCT_FACT_VERIFIED",
+			"sourceIds": ["nvidia_photonics", "ntt_pec"]
+		},
+		{
+			"id": "optical_transceiver",
+			"label": "optical transceiver / module",
+			"status": "PRODUCT_AND_ENGAGEMENT_FACT_VERIFIED",
+			"sourceIds": ["coherent_photonlink", "ntt_dsp"]
+		},
+		{
+			"id": "materials_devices",
+			"label": "lasers, detectors, fibers, materials",
+			"status": "SCOPE_VERIFIED_SUPPLY_ATTRIBUTION_PENDING",
+			"sourceIds": ["coherent_photonlink", "ntt_detector"]
+		}
+	],
+	"reportedFacts": [
+		{
+			"id": "tomahawk_6",
+			"company": "Broadcom",
+			"value": {
+				"throughputTbps": 102.4,
+				"status": "production_volume",
+				"relativeThroughput": "double_Tomahawk_5"
+			},
+			"status": "VERIFIED_FROM_COMPANY_RELEASE",
+			"sourceIds": ["broadcom_tomahawk"]
+		},
+		{
+			"id": "nvidia_cpo",
+			"company": "NVIDIA",
+			"value": {
+				"bandwidthTbps": 409.6,
+				"powerEfficiencyClaim": "5x",
+				"availability": "second_half_2026",
+				"architecture": "CPO_integrated_on_ASIC"
+			},
+			"status": "VERIFIED_AS_COMPANY_PRODUCT_CLAIM",
+			"sourceIds": ["nvidia_photonics"]
+		},
+		{
+			"id": "coherent_photonlink",
+			"company": "Coherent",
+			"date": "2026-09-21",
+			"value": {
+				"cpoEngagements": "more_than_10",
+				"npoEngagements": "more_than_10",
+				"chipToChipEngagements": "more_than_5",
+				"revenueRamp": "Q4_CY2026",
+				"inPLasersShipped": "more_than_300_million",
+				"photodetectorsShipped": "more_than_1_billion"
+			},
+			"status": "VERIFIED_AS_COMPANY_RELEASE",
+			"sourceIds": ["coherent_photonlink"]
+		},
+		{
+			"id": "ntt_detector",
+			"company": "NTT",
+			"date": "2026-03-12",
+			"value": {
+				"detectorSpeed": "200GHz_class",
+				"targetInterconnect": "3.2Tbps_and_beyond"
+			},
+			"status": "VERIFIED_AS_RESEARCH_RELEASE",
+			"sourceIds": ["ntt_detector"]
+		}
+	],
+	"interpretationBoundaries": [
+		"Throughput, engagement count, production status, and device speed are not interchangeable market-size metrics.",
+		"Company product claims are not independent proof of deployment share or bottleneck status.",
+		"CPO, packet switching, pluggable transceivers, and material/device supply chains must remain separate rows.",
+		"The map must not imply that AI traffic growth automatically lifts every listed company."
+	],
+	"sources": [
+		{
+			"id": "broadcom_tomahawk",
+			"url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-now-shipping-worlds-first-1024-tbps-switch-production",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["throughput", "productionVolume"]
+		},
+		{
+			"id": "nvidia_photonics",
+			"url": "https://www.nvidia.com/en-us/networking/products/silicon-photonics/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["cpoArchitecture", "bandwidth", "availability", "partners"]
+		},
+		{
+			"id": "coherent_photonlink",
+			"url": "https://www.coherent.com/news/press-releases/launches-photonlink-integrated-optics-platform-ai-infrastructure",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"cpo",
+				"npo",
+				"engagements",
+				"manufacturingBase",
+				"revenueRamp"
+			]
+		},
+		{
+			"id": "ntt_pec",
+			"url": "https://group.ntt/en/ir/library/annual/pdf/integrated_report_25e.pdf",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["pecRoadmap", "opticalEngine", "switchModule"]
+		},
+		{
+			"id": "ntt_dsp",
+			"url": "https://group.ntt/en/newsrelease/2026/05/26/260526a.html",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["coherentDsp", "transceiverMonitoring"]
+		},
+		{
+			"id": "ntt_detector",
+			"url": "https://group.ntt/en/newsrelease/2026/03/12/260312b.html",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["detectorSpeed", "interconnectTarget"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"four-layer optical industry map",
+			"ASIC-to-CPO-to-transceiver signal path",
+			"throughput and device-speed cards",
+			"engagement-versus-production boundary panel"
+		],
+		"shorts": [
+			"packet switch is not optical switch",
+			"CPO versus pluggable transceiver",
+			"where NTT/Coherent fit in the chain"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"claimRule": "Product claims and roadmap claims must show issuer and date; market-share inference is prohibited without separate evidence."
+	},
+	"openAcceptance": [
+		"Add current independent market-size, customer, capacity, and lead-time evidence.",
+		"Normalize bandwidth units and distinguish shipment, engagement, roadmap, and production status.",
+		"Complete the company-role map and counter-evidence review without stock-price inference.",
+		"Complete factuality/source-policy QA, render, ASR, and non-recommendation checks."
+	]
+}
