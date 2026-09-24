@@ -5,6 +5,15 @@ type EvidenceLedger = {
 	status: string;
 	layers: Array<{ id: string; status: string; sourceIds: string[] }>;
 	reportedFacts: Array<{ status: string; sourceIds: string[] }>;
+	issuerReadbacks: {
+		status: string;
+		readAt: string;
+		entries: Array<{
+			sourceId: string;
+			verifiedClaims: string[];
+			boundary: string;
+		}>;
+	};
 	sources: Array<{ tier: string; url: string }>;
 	visualPlan: { formats: string[]; sourceDateOnScreen: boolean };
 	openAcceptance: string[];
@@ -27,6 +36,9 @@ describe("issue 134 evidence ledger", () => {
 		for (const layer of ledger.layers) {
 			expect(layer.sourceIds.length).toBeGreaterThan(0);
 		}
+		expect(ledger.issuerReadbacks.status).toBe("PARTIAL_ISSUER_READBACK");
+		expect(ledger.issuerReadbacks.readAt).toBe("2026-09-25");
+		expect(ledger.issuerReadbacks.entries).toHaveLength(5);
 	});
 
 	test("labels company-reported facts and primary links", () => {
@@ -35,6 +47,11 @@ describe("issue 134 evidence ledger", () => {
 			expect(fact.status).toMatch(/^VERIFIED_/);
 			expect(fact.sourceIds.length).toBeGreaterThan(0);
 		}
+		expect(
+			ledger.issuerReadbacks.entries.find(
+				(entry) => entry.sourceId === "nvidia_photonics",
+			)?.boundary,
+		).toContain("do not prove current deployment share");
 		expect(
 			ledger.sources.filter((source) => source.tier === "L1"),
 		).toHaveLength(6);
