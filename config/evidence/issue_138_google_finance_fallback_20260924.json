@@ -5,9 +5,9 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "The ledger defines a canonical Japanese security and ordered quote fallbacks, and records the issue snapshot as an unverified observation. The referenced Sheet is not readable in the current signed-in session, so counts, live GOOGLEFINANCE results, ratios, and representative examples require authenticated readback or an export.",
+	"statusReason": "The ledger defines a canonical Japanese security and ordered quote fallbacks, and now records a dated readback of the authenticated Sheet. The readback verifies current audit counts, five master formula cells, and representative fallback values; the older 94-code claim, Web-versus-Sheets comparison, timestamp/ratio completeness, cross-tab alignment, and video deliverables still require reconciliation or production QA.",
 	"observedSnapshot": {
-		"status": "OBSERVED_FROM_ISSUE_SNAPSHOT_UNVERIFIED",
+		"status": "OBSERVED_FROM_ISSUE_SNAPSHOT_REQUIRES_RECONCILIATION",
 		"uniqueTokyoCodes": 94,
 		"adrIdentified": 42,
 		"adrPriceSuccess": 40,
@@ -18,11 +18,116 @@
 		"individualStocksWithOverseasPrice": 62,
 		"reportedIndividualRecoveryRatePercent": 84,
 		"calculatedIndividualRecoveryRatePercent": 83.7838,
-		"reconciliationStatus": "UNVERIFIED_REQUIRES_SHEET_READBACK",
-		"note": "The category counts may overlap and must be reconciled against the current Securities_Master and ADR_Audit tabs before publication."
+		"reconciliationStatus": "CONTRADICTED_BY_CURRENT_SHEET_READBACK",
+		"note": "The issue snapshot is retained as historical input; it must not be presented as the current Sheet state."
+	},
+	"currentSheetReadback": {
+		"status": "VERIFIED_AUTHENTICATED_READBACK",
+		"sheetTitle": "All Securities Registry 2026-09-23",
+		"readAt": "2026-09-24",
+		"tabs": {
+			"Securities_Master": {
+				"gid": "761467577",
+				"nonEmptyCanonicalRows": 407
+			},
+			"ADR_Audit": {
+				"gid": "1279703700",
+				"auditedRows": 72,
+				"etfOrReitRows": 1,
+				"stockRows": 71,
+				"adrSymbols": 40,
+				"adrPriceSuccess": 38,
+				"adrNoData": 2,
+				"fallbackSymbols": 26,
+				"fallbackPriceSuccess": 22,
+				"fallbackNoData": 4,
+				"noAlternativeListing": 5,
+				"stockRowsWithSuccessfulRoute": 60,
+				"stockRouteRecoveryRatePercent": 84.507
+			}
+		},
+		"representativeQuotes": [
+			{
+				"canonicalId": "JP:6758",
+				"issuer": "Sony Group Corp",
+				"primarySymbol": "TYO:6758",
+				"fallbackSymbol": "NYSE:SONY",
+				"fallbackType": "ADR",
+				"price": 22.92,
+				"status": "ADR_OK",
+				"sourceTab": "Securities_Master",
+				"formulaCell": "L38",
+				"readbackQuery": "Securities_Master where canonical_id=JP:6758"
+			},
+			{
+				"canonicalId": "JP:8035",
+				"issuer": "Tokyo Electron",
+				"primarySymbol": "TYO:8035",
+				"fallbackSymbol": "OTCMKTS:TOELY",
+				"fallbackType": "ADR",
+				"price": 164.55,
+				"status": "ADR_OK",
+				"sourceTab": "Securities_Master",
+				"formulaCell": "L49",
+				"readbackQuery": "Securities_Master where canonical_id=JP:8035"
+			},
+			{
+				"canonicalId": "JP:9984",
+				"issuer": "SoftBank Group",
+				"primarySymbol": "TYO:9984",
+				"fallbackSymbol": "OTCMKTS:SFTBY",
+				"fallbackType": "ADR",
+				"price": 19.79,
+				"status": "ADR_OK",
+				"sourceTab": "Securities_Master",
+				"formulaCell": "L55",
+				"readbackQuery": "Securities_Master where canonical_id=JP:9984"
+			},
+			{
+				"canonicalId": "JP:285A",
+				"issuer": "Kioxia Holdings",
+				"primarySymbol": "TYO:285A",
+				"fallbackSymbol": "OTCMKTS:KXIAY",
+				"fallbackType": "ADR",
+				"price": 34.74,
+				"status": "ADR_OK",
+				"sourceTab": "Securities_Master",
+				"formulaCell": "L14",
+				"readbackQuery": "Securities_Master where canonical_id=JP:285A"
+			},
+			{
+				"canonicalId": "JP:6723",
+				"issuer": "Renesas Electronics",
+				"primarySymbol": "TYO:6723",
+				"fallbackSymbol": "OTCMKTS:RNECY",
+				"fallbackType": "ADR",
+				"price": 10.89,
+				"status": "FALLBACK_OK",
+				"sourceTab": "Securities_Master",
+				"formulaCell": "L36",
+				"readbackQuery": "Securities_Master where canonical_id=JP:6723"
+			}
+		],
+		"supplementalAuditExample": {
+			"tseCode": "2811",
+			"issuer": "Kagome",
+			"fallbackSymbol": "FRA:5EW",
+			"fallbackType": "European cross-listing",
+			"fallbackPrice": 14.6,
+			"fallbackStatus": "FALLBACK_OK",
+			"sourceTab": "ADR_Audit",
+			"note": "This row is present in ADR_Audit but not in the current Securities_Master query."
+		},
+		"formulaProof": {
+			"status": "VERIFIED_UI_FORMULA_READBACK",
+			"priceFormulaPattern": "=IF(K<row>=\"\",\"\",IFERROR(GOOGLEFINANCE(K<row>,\"price\"),\"\"))",
+			"sampleCells": ["L14", "L36", "L38", "L49", "L55"],
+			"statusFormulaSample": "U38 =IF(K38=\"\",\"NO_SYMBOL\",IF(REGEXMATCH(K38,\"^TYO:\"),\"TYO_UNAVAILABLE_IN_GOOGLEFINANCE_FUNCTION\",IF(L38<>\"\",\"OK\",\"UNSUPPORTED_OR_NO_DATA\")))"
+		},
+		"queryBoundary": "The current master values and five formula cells were read back through the authenticated Sheet UI. Google Finance Web parity, provider timestamps for fallback columns, and cross-tab alignment remain separate checks."
 	},
 	"canonicalModel": {
-		"status": "CONTRACT_DEFINED_NOT_DATA_VERIFIED",
+		"status": "CONTRACT_AND_CURRENT_READBACK_VERIFIED_PARTIAL",
 		"canonicalIdentity": [
 			"canonical_id",
 			"issuer_name",
@@ -100,16 +205,16 @@
 		"A successful fallback quote does not prove equivalent liquidity, trading hours, or price freshness."
 	],
 	"readbackBoundary": {
-		"status": "UNVERIFIED_SHEET_ACCESS_REQUIRED",
+		"status": "PARTIAL_VERIFIED_REQUIRES_RECONCILIATION",
 		"sheetUrl": "https://docs.google.com/spreadsheets/d/1yoe606TGqmhRRgAmdhfdvJLZcabbWlG8kKeLU5Ou9YQ/edit",
 		"requiredTabs": ["Securities_Master", "ADR_Audit"],
 		"requiredChecks": [
-			"Recalculate the 94-code population and all category counts.",
-			"Run five live GOOGLEFINANCE examples and preserve the returned value or exact error.",
+			"Reconcile the historical 94-code claim with the current 72-row ADR_Audit population and 407-row Securities_Master population.",
+			"Preserve the five formula-cell readbacks and the current fallback values without mixing the ADR_Audit snapshot values with the master values.",
 			"Verify ADR ratio, program type, currency, timestamp, and fallback status.",
 			"Compare Sheets function behavior with Google Finance Web without treating either as a universal coverage claim."
 		],
-		"currentObservation": "The signed-in browser session showed a permission-required state; no access request was submitted."
+		"currentObservation": "The signed-in browser session read both tabs on 2026-09-24; no access request was submitted."
 	},
 	"sources": [
 		{
@@ -147,7 +252,7 @@
 			"retrievedAt": "2026-09-24",
 			"supports": [
 				"issue_data_reference_only",
-				"not_readable_in_current_session"
+				"authenticated_readback_2026-09-24"
 			]
 		}
 	],
@@ -161,15 +266,15 @@
 		"shorts": [
 			"the ticker can fail while the issuer still has a quote route",
 			"ADR price is not Tokyo price",
-			"84 percent is provisional until the Sheet is readable"
+			"the current Sheet readback is 60 of 71 stock rows, not the stale 94-code snapshot"
 		],
 		"formats": ["16:9", "9:16"],
 		"sourceDateOnScreen": true,
 		"stageRule": "Every count and example carries a source, readback status, denominator, and timestamp."
 	},
 	"openAcceptance": [
-		"Obtain authenticated Sheet access or an export and recalculate ADR_Audit and Securities_Master counts.",
-		"Verify five live GOOGLEFINANCE examples plus provider, timestamp, currency, and ADR ratio fields.",
+		"Reconcile the historical 94-code issue snapshot with the current 72-row ADR_Audit and 407-row Securities_Master readback, documenting the population filter.",
+		"Compare the verified Sheets formulas and current fallback values with Google Finance Web, and fill missing provider timestamp, currency, and ADR-ratio fields where the source exposes them.",
 		"Complete the fallback architecture visual, before/after coverage visual, five examples, and Web-versus-Sheets explanation.",
 		"Complete factuality/source-policy QA, data reconciliation, render, ASR, and non-recommendation review."
 	]
