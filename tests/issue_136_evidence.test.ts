@@ -8,9 +8,27 @@ type EvidenceLedger = {
 		instrument: string;
 		marketData: string;
 	}>;
+	authenticatedTrackerReadback: {
+		status: string;
+		readAt: string;
+		sheetName: string;
+		provider: string;
+		rows: Array<{
+			ticker: string;
+			currentPrice: number;
+			ytdBase: number;
+			ytdDisplayed: string;
+		}>;
+		formulaEvidence: Record<string, string>;
+	};
 	reportedFacts: Array<{ status: string; sourceIds: string[] }>;
 	sources: Array<{ tier: string; url: string }>;
-	marketDataBoundary: { status: string; requiredFields: string[] };
+	marketDataBoundary: {
+		status: string;
+		requiredFields: string[];
+		verifiedReadbackFields: string[];
+		unverifiedFields: string[];
+	};
 	causalityBoundary: { status: string; classification: string[] };
 	visualPlan: { formats: string[]; sourceDateOnScreen: boolean };
 	openAcceptance: string[];
@@ -30,6 +48,22 @@ describe("issue 136 evidence ledger", () => {
 					company.investmentRelation === "CONDITIONAL_COMMITMENT_REPORTED",
 			),
 		).toBe(true);
+		expect(ledger.authenticatedTrackerReadback.status).toBe(
+			"VERIFIED_CURRENT_YTD_READBACK",
+		);
+		expect(ledger.authenticatedTrackerReadback.readAt).toBe("2026-09-25");
+		expect(ledger.authenticatedTrackerReadback.sheetName).toBe("Tracker");
+		expect(ledger.authenticatedTrackerReadback.provider).toBe("GOOGLEFINANCE");
+		expect(ledger.authenticatedTrackerReadback.rows).toHaveLength(10);
+		expect(ledger.authenticatedTrackerReadback.rows[0]).toMatchObject({
+			ticker: "2454.TW",
+			currentPrice: 5285,
+			ytdBase: 1430,
+			ytdDisplayed: "269.6%",
+		});
+		expect(
+			ledger.authenticatedTrackerReadback.formulaEvidence.currentPrice,
+		).toContain("GOOGLEFINANCE");
 		expect(
 			ledger.companies.some(
 				(company) =>
@@ -55,9 +89,15 @@ describe("issue 136 evidence ledger", () => {
 
 	test("keeps market and causal claims unresolved", () => {
 		expect(ledger.marketDataBoundary.status).toBe(
-			"UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"PARTIAL_CURRENT_YTD_READBACK_ANNOUNCEMENT_RETURN_UNVERIFIED",
 		);
 		expect(ledger.marketDataBoundary.requiredFields).toHaveLength(5);
+		expect(ledger.marketDataBoundary.verifiedReadbackFields).toContain(
+			"latest_price",
+		);
+		expect(ledger.marketDataBoundary.unverifiedFields).toContain(
+			"return_since_announcement",
+		);
 		expect(ledger.causalityBoundary.status).toBe("UNVERIFIED_NO_CAUSAL_CLAIM");
 		expect(ledger.causalityBoundary.classification).toEqual([
 			"confirmed",
