@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "The four companies' disclosed roles and dated operating facts are recorded, but comparable autonomous-driving KPI definitions, current valuation data, scenario calibration, render, ASR, and production acceptance remain outstanding.",
+	"statusReason": "The four companies' disclosed roles and dated operating facts are recorded, and a 2026-09-25 primary-source readback refreshes GO's plan and Daiwa's results while keeping plan-versus-realized and inaccessible-page boundaries explicit. Comparable autonomous-driving KPI definitions, current valuation data, scenario calibration, render, ASR, and production acceptance remain outstanding.",
 	"capitalRoles": [
 		{
 			"id": "go",
@@ -89,6 +89,38 @@
 			"sourceIds": ["macnica_company_profile"]
 		}
 	],
+	"primarySourceReadbacks": {
+		"status": "PARTIAL_PRIMARY_SOURCE_READBACK",
+		"readAt": "2026-09-25",
+		"entries": [
+			{
+				"sourceId": "go_waymo_partnership",
+				"publicationDate": "2026-09-15",
+				"verifiedClaims": [
+					"GO, Waymo, and Nihon Kotsu target fully unmanned Level 4 commercial taxi operations in Tokyo during 2027",
+					"The target is staged at approximately 100 vehicles"
+				],
+				"boundary": "The release says launch timing depends on safety confirmation and required permits; this is a company plan, not realized service volume."
+			},
+			{
+				"sourceId": "daiwa_fy2026_results",
+				"publicationDate": "2026-05-13",
+				"verifiedClaims": [
+					"FY2026 revenue was 19,907 million JPY, operating income 384 million JPY, ordinary income 263 million JPY, and net income 222 million JPY",
+					"The filing separately presents FY2027 forecasts"
+				],
+				"boundary": "These are consolidated company results and forecasts; they are not autonomous-driving unit economics or comparable fleet KPIs."
+			},
+			{
+				"sourceId": "witz_business_scope",
+				"publicationDateStatus": "NOT_EXPOSED_ON_PAGE",
+				"verifiedClaims": [
+					"The investor page describes Witz's automotive software, ADAS, AI safety, and simulation scope"
+				],
+				"boundary": "The page supports business scope, not a current deployment count, revenue split, or autonomous-driving KPI."
+			}
+		]
+	},
 	"kpiMatrix": {
 		"status": "UNVERIFIED_REQUIRES_COMPARABLE_CURRENT_DATA",
 		"rows": [
