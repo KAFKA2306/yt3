@@ -1,0 +1,609 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-25-issue-156",
+	"asOf": "2026-09-25",
+	"angle": "計画された電力と実際の通電を分け、Project Jupiterを例にAIデータセンター遅延の損失伝播を検証する",
+	"searchQuery": "Project Jupiter Oracle force majeure data center debt power demand Goldman Sachs",
+	"title": "AIデータセンター、電気が来なかったら誰が損する？",
+	"thumbnailTitle": "電気が来ない。誰が損する？",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "電気",
+		"accent": "信用",
+		"reaction": "？",
+		"secondLine": "契約と融資を監査",
+		"calloutTop": "電気が来ない",
+		"calloutBottom": "投資推奨ではない"
+	},
+	"descriptionLead": "計画GW、系統接続、建設完了、実通電を分け、Project JupiterとGoldman Sachsの予測を使って、遅延時に損失がどの主体へ移るかを検証する。",
+	"descriptionBullets": [
+		"計画容量と実通電容量を混同しない",
+		"報道された契約・融資情報と確認できない条件を分ける",
+		"開発主体、貸し手、テナント、運用者の損失経路を図示する",
+		"投資推奨ではなくリスク移転の構造として締める"
+	],
+	"disclaimer": "本動画はAIインフラの契約・信用リスクを整理する情報コンテンツであり、特定企業や証券の売買を推奨しません。報道値は制作runで再確認します。",
+	"hookPromises": ["電気が来ない", "誰が損する", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 8,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires a reproducible loss-propagation production plan.",
+			"通電、契約、融資、稼働の境界を推測で埋めない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_loss_chain",
+		"claimIds": ["claim_loss_chain", "claim_jupiter", "claim_power_forecast"]
+	},
+	"narrative": {
+		"hiddenMechanism": "計画MWは収益開始を意味せず、契約と融資の条件が遅延損失の負担先を変える。",
+		"counterfactual": "もし計画容量を実通電と呼べば、建設遅延と信用ストレスの場所を誤って読む。",
+		"audiencePayoff": "通電遅延を信用連鎖として読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_loss_chain",
+			"kind": "no_counter_evidence",
+			"targetClaim": "通電遅延の損失は開発主体、貸し手、テナント、運用者へ同じ形で発生するとは限らない。",
+			"statement": "契約、債務、稼働条件を分け、損失移転は条件付きの分析として扱う。",
+			"sourceIds": ["bloomberg_force_majeure", "reuters_debt"],
+			"checkedSourceIds": ["bloomberg_force_majeure", "reuters_debt"]
+		},
+		{
+			"id": "evidence_jupiter_report",
+			"kind": "no_counter_evidence",
+			"targetClaim": "Project Jupiterのforce majeure通知と融資価格は報道された観測であり、債務不履行や最終損失を意味しない。",
+			"statement": "報道の帰属を画面に残し、契約本文、貸し手の損失、稼働実績は未確認として扱う。",
+			"sourceIds": ["bloomberg_force_majeure", "reuters_debt"],
+			"checkedSourceIds": ["bloomberg_force_majeure", "reuters_debt"]
+		},
+		{
+			"id": "evidence_power_forecast",
+			"kind": "no_counter_evidence",
+			"targetClaim": "Goldman Sachsの電力需要とオンタイム稼働率は予測であり、個別施設の通電を証明しない。",
+			"statement": "予測、施設実績、地域の系統制約を別パネルにし、投資判断へ変換しない。",
+			"sourceIds": ["goldman_power"],
+			"checkedSourceIds": ["goldman_power"]
+		}
+	],
+	"noveltyQueries": [
+		"Project Jupiterの契約主体と債務価格を一次資料・報道で再監査する",
+		"計画容量と実通電容量を区別する最新データを再確認する"
+	],
+	"tags": [
+		"秒算マネー",
+		"AIデータセンター",
+		"電力",
+		"信用リスク",
+		"融資",
+		"通電遅延"
+	],
+	"sources": [
+		{
+			"id": "goldman_power",
+			"name": "Goldman Sachs US data center power demand",
+			"url": "https://www.goldmansachs.com/insights/articles/us-data-center-power-demand-projected-to-double-by-2027",
+			"publishedAt": "2026-05-20",
+			"tier": "L1"
+		},
+		{
+			"id": "bloomberg_force_majeure",
+			"name": "Bloomberg Law Project Jupiter force majeure report",
+			"url": "https://news.bloomberglaw.com/tech-and-telecom-law/oracle-cites-force-majeure-to-shield-itself-on-big-data-center",
+			"publishedAt": "2026-09-24",
+			"tier": "L2"
+		},
+		{
+			"id": "reuters_force_majeure",
+			"name": "Reuters Project Jupiter force majeure report",
+			"url": "https://www.reuters.com/business/oracle-cites-force-majeure-shield-itself-controversial-data-center-bloomberg-2026-09-24/",
+			"publishedAt": "2026-09-24",
+			"tier": "L2"
+		},
+		{
+			"id": "reuters_debt",
+			"name": "Reuters Project Jupiter debt pricing report",
+			"url": "https://www.reuters.com/business/finance/oracles-18-billion-data-center-debt-under-pressure-ft-reports-2026-09-18/",
+			"publishedAt": "2026-09-18",
+			"tier": "L2"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_loss_chain",
+			"claim": "通電が遅れると、開発主体、貸し手、テナント、運用者の負担は契約と債務条件を通じて異なる順番で表面化する。",
+			"sourceIds": ["bloomberg_force_majeure", "reuters_debt"],
+			"status": "derived_with_caveat",
+			"caveat": "契約本文と各主体の実損失は公開資料で未確認のため、条件付きの分析として扱う。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["契約条項と実際の損失配分は未確認"],
+			"epistemicBoundary": "これは報道された条件からのリスク伝播分析であり、損失の確定額ではない。"
+		},
+		{
+			"id": "claim_jupiter",
+			"claim": "Project Jupiterについて、Oracleのforce majeure通知と約180億ドル融資の89〜91セント提示が報道されたが、これは債務不履行の確定ではない。",
+			"sourceIds": ["bloomberg_force_majeure", "reuters_debt"],
+			"status": "derived_with_caveat",
+			"caveat": "報道の帰属を明示し、契約本文、最終価格、実際の遅延は未確認として扱う。",
+			"confidence": 0.5,
+			"unresolvedMismatches": [
+				"Project Jupiterの契約主体と最終融資条件は未確認"
+			],
+			"epistemicBoundary": "報道された価格と通知は、最終損失やデフォルトを直接証明しない。"
+		},
+		{
+			"id": "claim_power_forecast",
+			"claim": "Goldman Sachs Researchは米国データセンター電力需要を2025年31GWから2027年66GWへ予測し、予定容量のオンタイム稼働は次の1年で約60%、2年で約50%と見積もる。",
+			"sourceIds": ["goldman_power"],
+			"status": "verified",
+			"caveat": "これはGoldman Sachs Researchの予測であり、個別施設の実績ではない。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "入口",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "入口",
+			"headline": "電気が来ない。誰が損する？",
+			"subheadline": "計画MWと通電MWは違う",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "焦点",
+					"value": "通電遅延",
+					"detail": "契約と融資を分解",
+					"color": "amber"
+				}
+			],
+			"source": "bloomberg_force_majeure",
+			"text": "電気が来ない。誰が損する。AIデータセンターは建てれば収益になるとは限らず、通電遅延の負担先を契約と融資から見ます。投資推奨ではない形で整理します。"
+		},
+		{
+			"chapter": "入口",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": ["evidence_loss_chain"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "入口",
+			"headline": "誰が損するかを急がない",
+			"subheadline": "条件付きの連鎖として監査",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "境界",
+					"value": "未確定",
+					"detail": "契約本文は未確認",
+					"color": "cyan"
+				}
+			],
+			"source": "reuters_debt",
+			"text": "報道された融資価格だけで、誰が最終的に損をするかは決まりません。開発、貸し手、テナント、運用者を分け、投資推奨ではない形で検証します。"
+		},
+		{
+			"chapter": "入口",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": ["evidence_loss_chain"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "入口",
+			"headline": "最初に見るのは順番",
+			"subheadline": "資本コストが先に積み上がる",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "分析",
+					"value": "条件付き",
+					"detail": "損失額ではない",
+					"color": "muted"
+				}
+			],
+			"source": "bloomberg_force_majeure",
+			"text": "ここは推論です。確度は50%。通電が遅れるほど、建設費、金利、賃料、計算資源の機会損失が別々に表面化する可能性があります。契約条項と実際の損失配分は未確認です。"
+		},
+		{
+			"chapter": "入口",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "入口",
+			"headline": "まず通電を定義する",
+			"subheadline": "計画から実稼働まで",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "手順",
+					"value": "5段階",
+					"detail": "計画から実通電",
+					"color": "cyan"
+				}
+			],
+			"source": "goldman_power",
+			"text": "計画容量、電源確保、系統接続、建設完了、実通電を分けます。推奨ではなく、リスクの場所を特定するための順番です。"
+		},
+		{
+			"chapter": "Project Jupiter",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_jupiter"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "Project Jupiter",
+			"headline": "報道された融資ストレス",
+			"subheadline": "価格と通知を別々に読む",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "報道",
+					"value": "89〜91",
+					"detail": "セント提示",
+					"color": "amber"
+				}
+			],
+			"source": "reuters_debt",
+			"text": "約180億ドルの融資が89〜91セントで提示されたという報道があります。ただし、これは市場のストレス観測であって確定損失ではありません。"
+		},
+		{
+			"chapter": "Project Jupiter",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_jupiter"],
+			"evidenceIds": ["evidence_jupiter_report"],
+			"speaker": "ずんだもん",
+			"emotion": "serious",
+			"section": "Project Jupiter",
+			"headline": "force majeureは撤退と同じか",
+			"subheadline": "支払い条件の防御かもしれない",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "帰属",
+					"value": "報道",
+					"detail": "契約本文は未確認",
+					"color": "cyan"
+				}
+			],
+			"source": "bloomberg_force_majeure",
+			"text": "Oracleのforce majeure通知が報じられていますが、報道は撤退の確定ではなく、遅延時の支払い条件を争う動きとして説明しています。"
+		},
+		{
+			"chapter": "Project Jupiter",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_jupiter"],
+			"evidenceIds": ["evidence_jupiter_report"],
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "Project Jupiter",
+			"headline": "未確認を残す",
+			"subheadline": "価格はデフォルトではない",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "結論",
+					"value": "未確定",
+					"detail": "最終条件は不明",
+					"color": "amber"
+				}
+			],
+			"source": "reuters_debt",
+			"text": "ここは推論です。確度は50%。報道された価格と通知は、最終損失やデフォルトを直接証明しない。Project Jupiterの契約主体と最終融資条件は未確認です。"
+		},
+		{
+			"chapter": "Project Jupiter",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_jupiter"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "Project Jupiter",
+			"headline": "契約を見ないと断定できない",
+			"subheadline": "報道値は入口に置く",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "帰属",
+					"detail": "報道値を明示",
+					"color": "muted"
+				}
+			],
+			"source": "bloomberg_force_majeure",
+			"text": "Project Jupiterは、報道された契約・融資の入口です。契約本文、担保、支払い条件、実通電を確認するまでは、損失額を断定しません。"
+		},
+		{
+			"chapter": "電力予測",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_power_forecast"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "電力予測",
+			"headline": "計画容量は通電容量ではない",
+			"subheadline": "米国電力需要の予測",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "予測",
+					"value": "31→66GW",
+					"detail": "2025年から2027年",
+					"color": "cyan"
+				}
+			],
+			"source": "goldman_power",
+			"text": "Goldman Sachs Researchは、米国データセンター電力需要を2025年31GWから2027年66GWへ予測しています。これは個別施設の実績ではありません。"
+		},
+		{
+			"chapter": "電力予測",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_power_forecast"],
+			"evidenceIds": ["evidence_power_forecast"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "電力予測",
+			"headline": "オンタイム率にも幅がある",
+			"subheadline": "予定と実現を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "予測",
+					"value": "50〜60%",
+					"detail": "予定容量の稼働",
+					"color": "amber"
+				}
+			],
+			"source": "goldman_power",
+			"text": "次の1年に予定された容量の約60%、2年先では約50%しか予定通り稼働しないという予測です。地域と施設で結果は変わります。"
+		},
+		{
+			"chapter": "電力予測",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_power_forecast"],
+			"evidenceIds": ["evidence_power_forecast"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "電力予測",
+			"headline": "予測を個別案件へ直結しない",
+			"subheadline": "地域差と遅延要因を見る",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "境界",
+					"value": "予測",
+					"detail": "個別実績ではない",
+					"color": "muted"
+				}
+			],
+			"source": "goldman_power",
+			"text": "Goldman Sachsの数値は予測です。許認可、送電、設備、労働力の遅延を示唆しますが、個別案件の通電や損失を証明しません。"
+		},
+		{
+			"chapter": "電力予測",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_power_forecast"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "電力予測",
+			"headline": "最後に実通電を確認する",
+			"subheadline": "予測と実績を同じ画面に置かない",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "手順",
+					"value": "実績確認",
+					"detail": "CODと通電を分離",
+					"color": "cyan"
+				}
+			],
+			"source": "goldman_power",
+			"text": "予測を実績へ変換せず、COD、系統接続、実通電、稼働率を別々に確認します。投資推奨ではなく検証手順です。"
+		},
+		{
+			"chapter": "損失伝播",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "損失伝播",
+			"headline": "開発主体は先に固定費を抱える",
+			"subheadline": "土地、設備、金利",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "主体",
+					"value": "開発側",
+					"detail": "先行投資を負担",
+					"color": "amber"
+				}
+			],
+			"source": "reuters_debt",
+			"text": "開発主体は土地、設備、建設費、金利を先に固定します。収益開始だけが遅れると、資本コストの時間が伸びます。"
+		},
+		{
+			"chapter": "損失伝播",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "serious",
+			"section": "損失伝播",
+			"headline": "貸し手は価格で先に反応する",
+			"subheadline": "額面と市場価格は別",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "観測",
+					"value": "市場価格",
+					"detail": "額面との差を確認",
+					"color": "cyan"
+				}
+			],
+			"source": "reuters_debt",
+			"text": "貸し手や信用投資家は、返済そのものより前に、ローン価格や借換え条件でストレスを示すことがあります。これは分析上の順番です。"
+		},
+		{
+			"chapter": "損失伝播",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "caution",
+			"section": "損失伝播",
+			"headline": "テナントの損失は機会費用かもしれない",
+			"subheadline": "固定費と計算能力",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "注意",
+					"value": "契約次第",
+					"detail": "支払いと利用を分ける",
+					"color": "amber"
+				}
+			],
+			"source": "bloomberg_force_majeure",
+			"text": "テナントは支払い条件を交渉できても、予定した計算能力を使えない機会費用が残る可能性があります。契約条件が必要です。"
+		},
+		{
+			"chapter": "損失伝播",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "損失伝播",
+			"headline": "運用者は稼働率を見る",
+			"subheadline": "GPUの有無だけでは決まらない",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "観点",
+					"value": "可用性",
+					"detail": "compute availability",
+					"color": "muted"
+				}
+			],
+			"source": "goldman_power",
+			"text": "AI運用者はGPUを持っているかではなく、電力、冷却、ネットワークを含む計算能力をいつ使えるかで影響を受けます。"
+		},
+		{
+			"chapter": "まとめ",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_jupiter"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "まとめ",
+			"headline": "希少なのは計画ではなく接続済み資産",
+			"subheadline": "電源、土地、変圧器、許認可",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "確認",
+					"value": "接続済み",
+					"detail": "計画と区別",
+					"color": "cyan"
+				}
+			],
+			"source": "goldman_power",
+			"text": "見るべき希少性は計画GWだけではありません。電源、系統接続、変圧器、冷却、許認可が実際に揃っているかです。"
+		},
+		{
+			"chapter": "まとめ",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_jupiter"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "joy",
+			"section": "まとめ",
+			"headline": "ニュースを損益に直訳しない",
+			"subheadline": "確認できる層を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "分離",
+					"detail": "事実・推論・未確認",
+					"color": "muted"
+				}
+			],
+			"source": "reuters_force_majeure",
+			"text": "force majeure、融資価格、電力予測はそれぞれ違う層の情報です。一つに混ぜず、事実、推論、未確認を画面上で分けます。"
+		},
+		{
+			"chapter": "まとめ",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_power_forecast"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "まとめ",
+			"headline": "通電が信用を動かす",
+			"subheadline": "リスク移転を追う",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "結論",
+					"value": "条件付き",
+					"detail": "施設ごとに確認",
+					"color": "amber"
+				}
+			],
+			"source": "goldman_power",
+			"text": "電力不足のニュースをそのまま企業価値へ結びつけず、通電遅延がどの契約と債務へ伝わるかを追います。"
+		},
+		{
+			"chapter": "まとめ",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_loss_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "まとめ",
+			"headline": "投資推奨ではなく検証表へ",
+			"subheadline": "plannedからenergizedへ",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "出口",
+					"value": "監査",
+					"detail": "最新値を再確認",
+					"color": "cyan"
+				}
+			],
+			"source": "bloomberg_force_majeure",
+			"text": "結論は銘柄ではありません。計画MWから実通電MWまで、契約、融資、許認可、稼働実績を順に監査することです。"
+		}
+	]
+}
