@@ -20,6 +20,14 @@ export type PreflightCheck = {
 	evidence: string[];
 };
 
+export type ByosanPreflightDependencies = {
+	commandAvailable?: (command: string) => PreflightCheck;
+	pythonRuntime?: (runDir: string) => PreflightCheck;
+	voicevox?: () => Promise<PreflightCheck>;
+	gemini?: (runDir: string) => Promise<PreflightCheck>;
+	youtube?: () => Promise<PreflightCheck>;
+};
+
 export type ByosanPreflightReport = {
 	schema_version: "byosan_production_preflight_v1";
 	status: PreflightStatus;
@@ -226,14 +234,20 @@ export function aggregateStatus(
 
 export async function runByosanPreflight(
 	runDir: string,
+	dependencies: ByosanPreflightDependencies = {},
 ): Promise<ByosanPreflightReport> {
+	const commandCheck = dependencies.commandAvailable ?? commandAvailable;
+	const pythonCheck = dependencies.pythonRuntime ?? runPythonRuntime;
+	const voicevoxCheck = dependencies.voicevox ?? checkVoicevox;
+	const geminiCheck = dependencies.gemini ?? checkGemini;
+	const youtubeCheck = dependencies.youtube ?? checkYouTube;
 	const checks: Record<string, PreflightCheck> = {
-		ffmpeg: commandAvailable("ffmpeg"),
-		ffprobe: commandAvailable("ffprobe"),
-		python_runtime: runPythonRuntime(runDir),
-		voicevox: await checkVoicevox(),
-		gemini: await checkGemini(runDir),
-		youtube: await checkYouTube(),
+		ffmpeg: commandCheck("ffmpeg"),
+		ffprobe: commandCheck("ffprobe"),
+		python_runtime: pythonCheck(runDir),
+		voicevox: await voicevoxCheck(),
+		gemini: await geminiCheck(runDir),
+		youtube: await youtubeCheck(),
 	};
 	const report: ByosanPreflightReport = {
 		schema_version: "byosan_production_preflight_v1",
