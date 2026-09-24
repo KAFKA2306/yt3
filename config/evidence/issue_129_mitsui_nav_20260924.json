@@ -1,0 +1,142 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 129,
+	"runId": "byosan_money/2026-09-24-issue-129-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "Issuer-reported NAV and operating context are recorded from official IR materials, but the current market-price readback, final render, ASR, and production acceptance remain outstanding.",
+	"issuerFacts": [
+		{
+			"id": "reported_nav",
+			"value": {
+				"navPerShare": 2210,
+				"modifiedNavPerShareApprox": 2550,
+				"currency": "JPY"
+			},
+			"status": "VERIFIED_FROM_ISSUER_IR",
+			"sourceIds": ["mitsuifudosan_ceo_ir2026"]
+		},
+		{
+			"id": "fy2025_results",
+			"value": {
+				"businessIncomeBillionYen": 445.1,
+				"netProfitBillionYen": 278.6
+			},
+			"status": "VERIFIED_FROM_ISSUER_RESULTS",
+			"sourceIds": ["mitsuifudosan_results_fy2025"]
+		},
+		{
+			"id": "balance_sheet_context",
+			"value": {
+				"rentalPropertyMarketValueBillionYen": 7714.6,
+				"unrealizedGainBillionYen": 3985.1,
+				"interestBearingDebtBillionYen": 4632.5,
+				"deRatio": 1.41
+			},
+			"status": "VERIFIED_FROM_ISSUER_RESULTS",
+			"sourceIds": ["mitsuifudosan_results_fy2025"]
+		},
+		{
+			"id": "forward_rate_and_profit_context",
+			"value": {
+				"fy2026BusinessIncomeBillionYen": 450,
+				"fy2026NetProfitBillionYen": 285,
+				"fy2026InterestBearingDebtBillionYen": 4800,
+				"fy2026NetInterestBurdenBillionYen": 85
+			},
+			"status": "VERIFIED_AS_ISSUER_FORECAST",
+			"sourceIds": ["mitsuifudosan_results_fy2025"]
+		},
+		{
+			"id": "office_context",
+			"value": {
+				"metropolitanOfficeVacancyRatePercent": 1.6,
+				"period": "FY2025 year-end"
+			},
+			"status": "VERIFIED_FROM_ISSUER_RESULTS",
+			"sourceIds": ["mitsuifudosan_results_fy2025"]
+		}
+	],
+	"marketComparison": {
+		"status": "UNVERIFIED_REQUIRES_CURRENT_MARKET_READBACK",
+		"formula": "discount = 1 - marketPrice / issuerReportedNav",
+		"requiredInputs": [
+			"market close and timestamp",
+			"issuer NAV reference date",
+			"share-count or split adjustment",
+			"market-data source URL"
+		],
+		"historicalDossierValue": {
+			"marketPrice": 1501,
+			"currency": "JPY",
+			"asOf": "2026-09-24",
+			"status": "REQUIRES_RECHECK_BEFORE_PRODUCTION"
+		},
+		"interpretationBoundary": "A mechanical discount to reported NAV is not an intrinsic-value estimate, safety margin, or purchase recommendation."
+	},
+	"sources": [
+		{
+			"id": "mitsuifudosan_ceo_ir2026",
+			"url": "https://www.mitsuifudosan.co.jp/corporate/ir/library/integratedreport/ir2026/ceo/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"reportedNav",
+				"modifiedNav",
+				"issuerViewOfValuation",
+				"growthDrivers"
+			]
+		},
+		{
+			"id": "mitsuifudosan_results_fy2025",
+			"url": "https://www.mitsuifudosan.co.jp/english/corporate/ir/presentation/pdf/summary_online_conference2605E.pdf",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"fy2025Results",
+				"balanceSheet",
+				"marketValue",
+				"debt",
+				"officeVacancy",
+				"fy2026Forecast"
+			]
+		},
+		{
+			"id": "mitsuifudosan_ir_calendar",
+			"url": "https://www.mitsuifudosan.co.jp/english/corporate/ir/calendar/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["latestOfficialReportingCalendar"]
+		},
+		{
+			"id": "market_price_pending",
+			"url": "https://s.kabutan.jp/stocks/8801/historical_prices/daily/",
+			"tier": "L5",
+			"retrievedAt": "2026-09-24",
+			"supports": ["pendingMarketReadback"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"issuer NAV versus market price card",
+			"balance-sheet and debt bridge",
+			"rent/vacancy versus valuation mechanism",
+			"three-scenario rate matrix"
+		],
+		"shorts": [
+			"NAV definition card",
+			"reported NAV versus modified NAV",
+			"discount formula with date and caveat"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"issuerViewRule": "Label management statements as issuer views, separate them from independently observed market data."
+	},
+	"openAcceptance": [
+		"Re-read the current market close and align it to the issuer NAV reference date.",
+		"Recompute the discount only from the read-back values and preserve the formula.",
+		"Complete factuality/source-policy QA, render, and ASR checks.",
+		"Do not turn the discount into a target price, ranking, or purchase recommendation."
+	]
+}
