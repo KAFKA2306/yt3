@@ -141,7 +141,8 @@ export async function runSequentialWorkflow(
 			"STEP",
 			"Starting Canonical Episode Production...",
 		);
-		if (!state.script) throw new Error("Missing script for canonical production");
+		if (!state.script)
+			throw new Error("Missing script for canonical production");
 		if (!state.metadata)
 			throw new Error("Missing metadata for canonical production");
 		const canonical = await runCanonicalEpisodeProduction(store, state);
@@ -344,7 +345,9 @@ function applyCanonicalDurations(state: AgentState, store: AssetStore): void {
 		endMs: number;
 	}>;
 	if (timeline.length !== state.script.lines.length)
-		throw new Error("canonical cached timeline does not match script dialogue count");
+		throw new Error(
+			"canonical cached timeline does not match script dialogue count",
+		);
 	for (let index = 0; index < state.script.lines.length; index++) {
 		const line = state.script.lines[index];
 		const timing = timeline[index];
@@ -352,14 +355,27 @@ function applyCanonicalDurations(state: AgentState, store: AssetStore): void {
 	}
 }
 
-function buildCanonicalReceiptTrace(store: AssetStore): Record<string, unknown> {
-	const resultPath = path.join(store.runDir, "episode", "production-result.json");
+function buildCanonicalReceiptTrace(
+	store: AssetStore,
+): Record<string, unknown> {
+	const resultPath = path.join(
+		store.runDir,
+		"episode",
+		"production-result.json",
+	);
 	if (!fs.existsSync(resultPath))
-		throw new Error("publish receipt cannot be finalized without canonical production result");
+		throw new Error(
+			"publish receipt cannot be finalized without canonical production result",
+		);
 	const result = fs.readJsonSync(resultPath) as CanonicalProductionResult;
 	if (!fs.existsSync(result.episode_manifest_path))
-		throw new Error("publish receipt cannot be finalized without canonical episode manifest");
-	const manifest = fs.readJsonSync(result.episode_manifest_path) as Record<string, unknown>;
+		throw new Error(
+			"publish receipt cannot be finalized without canonical episode manifest",
+		);
+	const manifest = fs.readJsonSync(result.episode_manifest_path) as Record<
+		string,
+		unknown
+	>;
 	return {
 		episode_path: result.episode_path,
 		manifest_path: result.episode_manifest_path,
