@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "Product and architecture evidence is recorded across switch ASIC, CPO, transceiver, and photonics-electronics layers, but market-size attribution, supply constraints, current customer mix, render, ASR, and production acceptance remain outstanding.",
+	"statusReason": "Product and architecture evidence is recorded across switch ASIC, CPO, transceiver, and photonics-electronics layers, and a 2026-09-25 issuer readback now records current product, first-adopter, engagement, and research boundaries. Market-size attribution, supply constraints, current customer mix, render, ASR, and production acceptance remain outstanding.",
 	"layers": [
 		{
 			"id": "packet_switch_asic",
@@ -83,6 +83,55 @@
 			"sourceIds": ["ntt_detector"]
 		}
 	],
+	"issuerReadbacks": {
+		"status": "PARTIAL_ISSUER_READBACK",
+		"readAt": "2026-09-25",
+		"entries": [
+			{
+				"sourceId": "broadcom_tomahawk",
+				"publicationDate": "2026-03-12",
+				"verifiedClaims": [
+					"Tomahawk 6 is shipping in production volume",
+					"102.4 Tbps throughput with 100G and 200G SerDes"
+				],
+				"boundary": "A company production-volume statement does not establish market share or customer concentration."
+			},
+			{
+				"sourceId": "nvidia_photonics",
+				"verifiedClaims": [
+					"Spectrum-X Ethernet Photonics is described as reaching full production",
+					"The page lists CoreWeave, Lambda, Meta, Microsoft, and Oracle Cloud Infrastructure as first adopters",
+					"Spectrum-X Ethernet Photonics is listed at up to 409.6 Tbps and available in the second half of 2026"
+				],
+				"boundary": "These are NVIDIA product-page and first-adopter claims; they do not prove current deployment share or independent customer volumes."
+			},
+			{
+				"sourceId": "coherent_photonlink",
+				"publicationDate": "2026-09-21",
+				"verifiedClaims": [
+					"PhotonLink supports CPO, NPO, and chip-to-chip connectivity",
+					"Coherent reports more than ten CPO and more than ten NPO engagements, with revenue expected to ramp in Q4 2026"
+				],
+				"boundary": "Engagements and a planned revenue ramp are not equivalent to shipped units or market share."
+			},
+			{
+				"sourceId": "ntt_dsp",
+				"publicationDate": "2026-05-26",
+				"verifiedClaims": [
+					"NTT demonstrated end-to-end optical-network visualization in an 800G coherent DSP and OSFP transceiver across a 1,005 km link"
+				],
+				"boundary": "The source describes a research demonstration and future implementation path, not production shipment."
+			},
+			{
+				"sourceId": "ntt_detector",
+				"publicationDate": "2026-03-12",
+				"verifiedClaims": [
+					"NTT reports a 200-GHz-class photodetector suitable for 400-Gbaud signals and future 3.2-Tbps-and-beyond transceivers"
+				],
+				"boundary": "NTT says it will advance development toward commercialization; this is not a production-volume claim."
+			}
+		]
+	},
 	"interpretationBoundaries": [
 		"Throughput, engagement count, production status, and device speed are not interchangeable market-size metrics.",
 		"Company product claims are not independent proof of deployment share or bottleneck status.",
