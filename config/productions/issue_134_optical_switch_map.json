@@ -1,0 +1,641 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-issue-134",
+	"asOf": "2026-09-24",
+	"angle": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る",
+	"searchQuery": "optical switching semiconductor AI data center industry map primary sources",
+	"title": "光スイッチ半導体はAIネットワークの次のボトルネックか",
+	"thumbnailTitle": "光スイッチを構造で見る",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "構造",
+		"accent": "比較",
+		"reaction": "？",
+		"secondLine": "一次資料で監査",
+		"calloutTop": "構造を分解",
+		"calloutBottom": "推奨ではない"
+	},
+	"descriptionLead": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。最新値は制作runで再取得し、事実、推論、未確認を分離して動画へ落とし込む。",
+	"descriptionBullets": [
+		"一次資料のURLと取得日を保存する",
+		"構成銘柄・市場定義・KPIを機械可読化する",
+		"観測値と将来シナリオを画面上で分ける",
+		"投資推奨ではなく構造理解として締める"
+	],
+	"disclaimer": "本動画は情報整理と構造説明を目的とし、特定銘柄の売買を推奨しません。最新値や定義は制作runで再確認します。",
+	"hookPromises": ["構造を分解", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires reproducible source-backed production planning.",
+			"未取得の最新値を推測で補わない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_distinction",
+		"claimIds": ["claim_distinction", "claim_distinction", "claim_distinction"]
+	},
+	"narrative": {
+		"hiddenMechanism": "同じ見出しでも測定単位、証券階層、将来条件が異なるため構造を分解する。",
+		"counterfactual": "もし定義と取得日を混ぜれば、見かけの比較が誤った結論になる。",
+		"audiencePayoff": "一次資料と未確認を分けて読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_1",
+			"kind": "no_counter_evidence",
+			"targetClaim": "packet switch、optical circuit switch、光トランシーバー、silicon photonicsは役割と実装階層が異なるため、同じ光半導体銘柄として扱わない。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["broadcom_tomahawk", "nvidia_photonics", "coherent_optics"],
+			"checkedSourceIds": [
+				"broadcom_tomahawk",
+				"nvidia_photonics",
+				"coherent_optics"
+			]
+		},
+		{
+			"id": "evidence_2",
+			"kind": "no_counter_evidence",
+			"targetClaim": "業界地図はシステム、スイッチ・ASIC、光エンジン・モジュール、材料・ウェハ・パッケージに分け、各社の一次資料で製品役割を確認する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"broadcom_tomahawk",
+				"nvidia_photonics",
+				"coherent_optics",
+				"ntt_photonics"
+			],
+			"checkedSourceIds": [
+				"broadcom_tomahawk",
+				"nvidia_photonics",
+				"coherent_optics",
+				"ntt_photonics"
+			]
+		},
+		{
+			"id": "evidence_3",
+			"kind": "no_counter_evidence",
+			"targetClaim": "AIクラスタの帯域増加から容量・製品・売上へ至る経路を比較し、AI需要増加だけで全光関連企業が伸びるとは結論づけない。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"broadcom_tomahawk",
+				"nvidia_photonics",
+				"coherent_optics",
+				"ntt_photonics"
+			],
+			"checkedSourceIds": [
+				"broadcom_tomahawk",
+				"nvidia_photonics",
+				"coherent_optics",
+				"ntt_photonics"
+			]
+		}
+	],
+	"noveltyQueries": [
+		"光スイッチの構造差を一次資料で再監査する",
+		"光スイッチの未取得値を制作runで更新する"
+	],
+	"tags": [
+		"秒算マネー",
+		"光通信",
+		"光スイッチ",
+		"AIネットワーク",
+		"ASIC",
+		"フォトニクス",
+		"業界地図"
+	],
+	"sources": [
+		{
+			"id": "broadcom_tomahawk",
+			"name": "Broadcom Tomahawk product announcement",
+			"url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-now-shipping-worlds-first-1024-tbps-switch-production",
+			"tier": "L1"
+		},
+		{
+			"id": "nvidia_photonics",
+			"name": "NVIDIA silicon photonics networking",
+			"url": "https://www.nvidia.com/en-us/networking/products/silicon-photonics/",
+			"tier": "L1"
+		},
+		{
+			"id": "coherent_optics",
+			"name": "Coherent optical networking",
+			"url": "https://www.coherent.com/news/press-releases",
+			"tier": "L1"
+		},
+		{
+			"id": "ntt_photonics",
+			"name": "NTT photonics research",
+			"url": "https://group.ntt/en/technology/innovation/",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_distinction",
+			"claim": "packet switch、optical circuit switch、光トランシーバー、silicon photonicsは役割と実装階層が異なるため、同じ光半導体銘柄として扱わない。",
+			"sourceIds": ["broadcom_tomahawk", "nvidia_photonics", "coherent_optics"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_map",
+			"claim": "業界地図はシステム、スイッチ・ASIC、光エンジン・モジュール、材料・ウェハ・パッケージに分け、各社の一次資料で製品役割を確認する。",
+			"sourceIds": [
+				"broadcom_tomahawk",
+				"nvidia_photonics",
+				"coherent_optics",
+				"ntt_photonics"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_value_chain",
+			"claim": "AIクラスタの帯域増加から容量・製品・売上へ至る経路を比較し、AI需要増加だけで全光関連企業が伸びるとは結論づけない。",
+			"sourceIds": [
+				"broadcom_tomahawk",
+				"nvidia_photonics",
+				"coherent_optics",
+				"ntt_photonics"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点1",
+			"headline": "光スイッチの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "構造を分解し、投資推奨ではない形でpacket switch、optical circuit switch、光トランシーバー、silicon photonicsは役割と実装階層が異なるため、同じ光半導体銘柄として扱わない。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点1",
+			"headline": "光スイッチの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "一次資料と定義を監査する。packet switch、optical circuit switch、光トランシーバー、silicon photonicsは役割と実装階層が異なるため、同じ光半導体銘柄として扱わない。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点1",
+			"headline": "光スイッチの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。packet switch、optical circuit switch、光トランシーバー、silicon photonicsは役割と実装階層が異なるため、同じ光半導体銘柄として扱わない。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点1",
+			"headline": "光スイッチの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "確定できる境界を確認する。投資推奨ではない。packet switch、optical circuit switch、光トランシーバー、silicon photonicsは役割と実装階層が異なるため、同じ光半導体銘柄として扱わない。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_map"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点2",
+			"headline": "光スイッチの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "まず主張を提示する。業界地図はシステム、スイッチ・ASIC、光エンジン・モジュール、材料・ウェハ・パッケージに分け、各社の一次資料で製品役割を確認する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_map"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点2",
+			"headline": "光スイッチの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "一次資料と定義を監査する。業界地図はシステム、スイッチ・ASIC、光エンジン・モジュール、材料・ウェハ・パッケージに分け、各社の一次資料で製品役割を確認する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_map"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点2",
+			"headline": "光スイッチの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。業界地図はシステム、スイッチ・ASIC、光エンジン・モジュール、材料・ウェハ・パッケージに分け、各社の一次資料で製品役割を確認する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_map"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点2",
+			"headline": "光スイッチの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "確定できる境界を確認する。投資推奨ではない。業界地図はシステム、スイッチ・ASIC、光エンジン・モジュール、材料・ウェハ・パッケージに分け、各社の一次資料で製品役割を確認する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_value_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点3",
+			"headline": "光スイッチの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "まず主張を提示する。AIクラスタの帯域増加から容量・製品・売上へ至る経路を比較し、AI需要増加だけで全光関連企業が伸びるとは結論づけない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_value_chain"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点3",
+			"headline": "光スイッチの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "一次資料と定義を監査する。AIクラスタの帯域増加から容量・製品・売上へ至る経路を比較し、AI需要増加だけで全光関連企業が伸びるとは結論づけない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_value_chain"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点3",
+			"headline": "光スイッチの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。AIクラスタの帯域増加から容量・製品・売上へ至る経路を比較し、AI需要増加だけで全光関連企業が伸びるとは結論づけない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_value_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点3",
+			"headline": "光スイッチの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "確定できる境界を確認する。投資推奨ではない。AIクラスタの帯域増加から容量・製品・売上へ至る経路を比較し、AI需要増加だけで全光関連企業が伸びるとは結論づけない。"
+		},
+		{
+			"chapter": "全体地図",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "全体地図",
+			"headline": "光スイッチを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "定義",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "定義",
+			"headline": "光スイッチを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "データ境界",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "データ境界",
+			"headline": "光スイッチを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "構成",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "構成",
+			"headline": "光スイッチを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "Short案",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "Short案",
+			"headline": "光スイッチを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "出典",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "出典",
+			"headline": "光スイッチを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "QA",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "QA",
+			"headline": "光スイッチを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "結論",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_distinction"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "結論",
+			"headline": "光スイッチを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "broadcom_tomahawk",
+			"text": "光スイッチ、packet switch、光トランシーバー、材料・装置を分離した業界地図を作る。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		}
+	]
+}

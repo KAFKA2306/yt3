@@ -1,0 +1,622 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-issue-136",
+	"asOf": "2026-09-24",
+	"angle": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する",
+	"searchQuery": "NVIDIA investments capital loop Intel Marvell MediaTek Nebius Lumentum primary sources",
+	"title": "NVIDIAの投資はAI需要を作るのか　資本循環を検証する",
+	"thumbnailTitle": "NVIDIA投資を構造で見る",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "構造",
+		"accent": "比較",
+		"reaction": "？",
+		"secondLine": "一次資料で監査",
+		"calloutTop": "構造を分解",
+		"calloutBottom": "推奨ではない"
+	},
+	"descriptionLead": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。最新値は制作runで再取得し、事実、推論、未確認を分離して動画へ落とし込む。",
+	"descriptionBullets": [
+		"一次資料のURLと取得日を保存する",
+		"構成銘柄・市場定義・KPIを機械可読化する",
+		"観測値と将来シナリオを画面上で分ける",
+		"投資推奨ではなく構造理解として締める"
+	],
+	"disclaimer": "本動画は情報整理と構造説明を目的とし、特定銘柄の売買を推奨しません。最新値や定義は制作runで再確認します。",
+	"hookPromises": ["構造を分解", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires reproducible source-backed production planning.",
+			"未取得の最新値を推測で補わない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_instrument",
+		"claimIds": ["claim_instrument", "claim_instrument", "claim_instrument"]
+	},
+	"narrative": {
+		"hiddenMechanism": "同じ見出しでも測定単位、証券階層、将来条件が異なるため構造を分解する。",
+		"counterfactual": "もし定義と取得日を混ぜれば、見かけの比較が誤った結論になる。",
+		"audiencePayoff": "一次資料と未確認を分けて読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_1",
+			"kind": "no_counter_evidence",
+			"targetClaim": "NVIDIAとの関係は普通株、転換証券、commitment、戦略契約を分離し、実行済み保有株と将来条件を同じ数字にしない。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["nvidia_sec", "intel_ir", "marvell_ir", "mediatek_ir"],
+			"checkedSourceIds": [
+				"nvidia_sec",
+				"intel_ir",
+				"marvell_ir",
+				"mediatek_ir"
+			]
+		},
+		{
+			"id": "evidence_2",
+			"kind": "no_counter_evidence",
+			"targetClaim": "投資先の製品・顧客・AIインフラ上の役割は、NVIDIA製品購入との関係をconfirmed、inferred、unknownに分類して記録する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["nvidia_sec", "intel_ir", "marvell_ir", "mediatek_ir"],
+			"checkedSourceIds": [
+				"nvidia_sec",
+				"intel_ir",
+				"marvell_ir",
+				"mediatek_ir"
+			]
+		},
+		{
+			"id": "evidence_3",
+			"kind": "no_counter_evidence",
+			"targetClaim": "投資先のYTDや発表後リターンは観測値として分け、NVIDIA出資が株価上昇を生んだという因果は断定しない。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["nvidia_sec", "intel_ir", "marvell_ir", "mediatek_ir"],
+			"checkedSourceIds": [
+				"nvidia_sec",
+				"intel_ir",
+				"marvell_ir",
+				"mediatek_ir"
+			]
+		}
+	],
+	"noveltyQueries": [
+		"NVIDIA投資の構造差を一次資料で再監査する",
+		"NVIDIA投資の未取得値を制作runで更新する"
+	],
+	"tags": [
+		"秒算マネー",
+		"NVIDIA",
+		"投資",
+		"資本循環",
+		"AI工場",
+		"株価",
+		"因果"
+	],
+	"sources": [
+		{
+			"id": "nvidia_sec",
+			"name": "NVIDIA SEC filings",
+			"url": "https://investor.nvidia.com/financial-info/sec-filings/default.aspx",
+			"tier": "L1"
+		},
+		{
+			"id": "intel_ir",
+			"name": "Intel investor relations",
+			"url": "https://www.intc.com/news-events/press-releases",
+			"tier": "L1"
+		},
+		{
+			"id": "marvell_ir",
+			"name": "Marvell investor relations",
+			"url": "https://investor.marvell.com/",
+			"tier": "L1"
+		},
+		{
+			"id": "mediatek_ir",
+			"name": "MediaTek investor relations",
+			"url": "https://corp.mediatek.com/investor-relations",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_instrument",
+			"claim": "NVIDIAとの関係は普通株、転換証券、commitment、戦略契約を分離し、実行済み保有株と将来条件を同じ数字にしない。",
+			"sourceIds": ["nvidia_sec", "intel_ir", "marvell_ir", "mediatek_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_relationship",
+			"claim": "投資先の製品・顧客・AIインフラ上の役割は、NVIDIA製品購入との関係をconfirmed、inferred、unknownに分類して記録する。",
+			"sourceIds": ["nvidia_sec", "intel_ir", "marvell_ir", "mediatek_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_causality",
+			"claim": "投資先のYTDや発表後リターンは観測値として分け、NVIDIA出資が株価上昇を生んだという因果は断定しない。",
+			"sourceIds": ["nvidia_sec", "intel_ir", "marvell_ir", "mediatek_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点1",
+			"headline": "NVIDIA投資の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "構造を分解し、投資推奨ではない形でNVIDIAとの関係は普通株、転換証券、commitment、戦略契約を分離し、実行済み保有株と将来条件を同じ数字にしない。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点1",
+			"headline": "NVIDIA投資の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "一次資料と定義を監査する。NVIDIAとの関係は普通株、転換証券、commitment、戦略契約を分離し、実行済み保有株と将来条件を同じ数字にしない。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点1",
+			"headline": "NVIDIA投資の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。NVIDIAとの関係は普通株、転換証券、commitment、戦略契約を分離し、実行済み保有株と将来条件を同じ数字にしない。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点1",
+			"headline": "NVIDIA投資の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "確定できる境界を確認する。投資推奨ではない。NVIDIAとの関係は普通株、転換証券、commitment、戦略契約を分離し、実行済み保有株と将来条件を同じ数字にしない。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_relationship"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点2",
+			"headline": "NVIDIA投資の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "まず主張を提示する。投資先の製品・顧客・AIインフラ上の役割は、NVIDIA製品購入との関係をconfirmed、inferred、unknownに分類して記録する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_relationship"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点2",
+			"headline": "NVIDIA投資の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "一次資料と定義を監査する。投資先の製品・顧客・AIインフラ上の役割は、NVIDIA製品購入との関係をconfirmed、inferred、unknownに分類して記録する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_relationship"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点2",
+			"headline": "NVIDIA投資の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。投資先の製品・顧客・AIインフラ上の役割は、NVIDIA製品購入との関係をconfirmed、inferred、unknownに分類して記録する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_relationship"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点2",
+			"headline": "NVIDIA投資の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "確定できる境界を確認する。投資推奨ではない。投資先の製品・顧客・AIインフラ上の役割は、NVIDIA製品購入との関係をconfirmed、inferred、unknownに分類して記録する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_causality"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点3",
+			"headline": "NVIDIA投資の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "まず主張を提示する。投資先のYTDや発表後リターンは観測値として分け、NVIDIA出資が株価上昇を生んだという因果は断定しない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_causality"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点3",
+			"headline": "NVIDIA投資の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "一次資料と定義を監査する。投資先のYTDや発表後リターンは観測値として分け、NVIDIA出資が株価上昇を生んだという因果は断定しない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_causality"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点3",
+			"headline": "NVIDIA投資の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。投資先のYTDや発表後リターンは観測値として分け、NVIDIA出資が株価上昇を生んだという因果は断定しない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_causality"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点3",
+			"headline": "NVIDIA投資の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "確定できる境界を確認する。投資推奨ではない。投資先のYTDや発表後リターンは観測値として分け、NVIDIA出資が株価上昇を生んだという因果は断定しない。"
+		},
+		{
+			"chapter": "全体地図",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "全体地図",
+			"headline": "NVIDIA投資を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "定義",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "定義",
+			"headline": "NVIDIA投資を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "データ境界",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "データ境界",
+			"headline": "NVIDIA投資を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "構成",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "構成",
+			"headline": "NVIDIA投資を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "Short案",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "Short案",
+			"headline": "NVIDIA投資を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "出典",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "出典",
+			"headline": "NVIDIA投資を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "QA",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "QA",
+			"headline": "NVIDIA投資を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "結論",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_instrument"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "結論",
+			"headline": "NVIDIA投資を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_sec",
+			"text": "NVIDIA投資先を投資手段、製品関係、株価変化、資本循環の確度で分類する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		}
+	]
+}

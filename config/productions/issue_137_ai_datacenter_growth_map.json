@@ -1,0 +1,649 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-issue-137",
+	"asOf": "2026-09-24",
+	"angle": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く",
+	"searchQuery": "AI data center growth CAGR HBM optics cooling 2026 primary sources",
+	"title": "GPUの次に伸びる市場をAIデータセンターの連鎖で比較する",
+	"thumbnailTitle": "成長率マップを構造で見る",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "構造",
+		"accent": "比較",
+		"reaction": "？",
+		"secondLine": "一次資料で監査",
+		"calloutTop": "構造を分解",
+		"calloutBottom": "推奨ではない"
+	},
+	"descriptionLead": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。最新値は制作runで再取得し、事実、推論、未確認を分離して動画へ落とし込む。",
+	"descriptionBullets": [
+		"一次資料のURLと取得日を保存する",
+		"構成銘柄・市場定義・KPIを機械可読化する",
+		"観測値と将来シナリオを画面上で分ける",
+		"投資推奨ではなく構造理解として締める"
+	],
+	"disclaimer": "本動画は情報整理と構造説明を目的とし、特定銘柄の売買を推奨しません。最新値や定義は制作runで再確認します。",
+	"hookPromises": ["構造を分解", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires reproducible source-backed production planning.",
+			"未取得の最新値を推測で補わない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_measurement",
+		"claimIds": ["claim_measurement", "claim_measurement", "claim_measurement"]
+	},
+	"narrative": {
+		"hiddenMechanism": "同じ見出しでも測定単位、証券階層、将来条件が異なるため構造を分解する。",
+		"counterfactual": "もし定義と取得日を混ぜれば、見かけの比較が誤った結論になる。",
+		"audiencePayoff": "一次資料と未確認を分けて読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_1",
+			"kind": "no_counter_evidence",
+			"targetClaim": "CAGR、単年YoY、市場規模、需要量は別の測定軸であり、同じ棒グラフへ混ぜず対象期間・単位・市場定義を併記する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"gartner_semiconductor",
+				"trendforce_hbm",
+				"delloro_network",
+				"lightcounting_optics"
+			],
+			"checkedSourceIds": [
+				"gartner_semiconductor",
+				"trendforce_hbm",
+				"delloro_network",
+				"lightcounting_optics"
+			]
+		},
+		{
+			"id": "evidence_2",
+			"kind": "no_counter_evidence",
+			"targetClaim": "GPU、HBM、scale-up・scale-out通信、光、先端パッケージ、電源・冷却は連鎖するが、各市場の連動性は仮説と観測値を分けて扱う。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"gartner_semiconductor",
+				"trendforce_hbm",
+				"delloro_network",
+				"lightcounting_optics"
+			],
+			"checkedSourceIds": [
+				"gartner_semiconductor",
+				"trendforce_hbm",
+				"delloro_network",
+				"lightcounting_optics"
+			]
+		},
+		{
+			"id": "evidence_3",
+			"kind": "no_counter_evidence",
+			"targetClaim": "CPOなど初期市場の高CAGRは小さい基準額の影響を受けるため、市場規模と成長率を同時表示し株価予測へ変換しない。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"delloro_network",
+				"lightcounting_optics",
+				"trendforce_hbm"
+			],
+			"checkedSourceIds": [
+				"delloro_network",
+				"lightcounting_optics",
+				"trendforce_hbm"
+			]
+		}
+	],
+	"noveltyQueries": [
+		"成長率マップの構造差を一次資料で再監査する",
+		"成長率マップの未取得値を制作runで更新する"
+	],
+	"tags": [
+		"秒算マネー",
+		"AIデータセンター",
+		"CAGR",
+		"YoY",
+		"HBM",
+		"CPO",
+		"液冷"
+	],
+	"sources": [
+		{
+			"id": "gartner_semiconductor",
+			"name": "Gartner semiconductor forecast",
+			"url": "https://www.gartner.com/en/newsroom/press-releases/2026-08-24-gartner-forecasts-worldwide-semiconductor-revenue-to-reach-1-trillion-dollars-in-2026",
+			"tier": "L1"
+		},
+		{
+			"id": "trendforce_hbm",
+			"name": "TrendForce HBM demand",
+			"url": "https://www.trendforce.com/presscenter/news/20251030-12762.html",
+			"tier": "L1"
+		},
+		{
+			"id": "delloro_network",
+			"name": "Dell'Oro AI networking",
+			"url": "https://www.delloro.com/news/ai-back-end-switch-sales-to-approach-1-trillion-over-the-next-five-years/",
+			"tier": "L1"
+		},
+		{
+			"id": "lightcounting_optics",
+			"name": "LightCounting AI cluster optics",
+			"url": "https://www.lightcounting.com/newsletter/en/january-2025-optics-for-ai-clusters-319",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_measurement",
+			"claim": "CAGR、単年YoY、市場規模、需要量は別の測定軸であり、同じ棒グラフへ混ぜず対象期間・単位・市場定義を併記する。",
+			"sourceIds": [
+				"gartner_semiconductor",
+				"trendforce_hbm",
+				"delloro_network",
+				"lightcounting_optics"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_chain",
+			"claim": "GPU、HBM、scale-up・scale-out通信、光、先端パッケージ、電源・冷却は連鎖するが、各市場の連動性は仮説と観測値を分けて扱う。",
+			"sourceIds": [
+				"gartner_semiconductor",
+				"trendforce_hbm",
+				"delloro_network",
+				"lightcounting_optics"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_base_effect",
+			"claim": "CPOなど初期市場の高CAGRは小さい基準額の影響を受けるため、市場規模と成長率を同時表示し株価予測へ変換しない。",
+			"sourceIds": [
+				"delloro_network",
+				"lightcounting_optics",
+				"trendforce_hbm"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点1",
+			"headline": "成長率マップの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "構造を分解し、投資推奨ではない形でCAGR、単年YoY、市場規模、需要量は別の測定軸であり、同じ棒グラフへ混ぜず対象期間・単位・市場定義を併記する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点1",
+			"headline": "成長率マップの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "一次資料と定義を監査する。CAGR、単年YoY、市場規模、需要量は別の測定軸であり、同じ棒グラフへ混ぜず対象期間・単位・市場定義を併記する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点1",
+			"headline": "成長率マップの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。CAGR、単年YoY、市場規模、需要量は別の測定軸であり、同じ棒グラフへ混ぜず対象期間・単位・市場定義を併記する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点1",
+			"headline": "成長率マップの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "確定できる境界を確認する。投資推奨ではない。CAGR、単年YoY、市場規模、需要量は別の測定軸であり、同じ棒グラフへ混ぜず対象期間・単位・市場定義を併記する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点2",
+			"headline": "成長率マップの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "まず主張を提示する。GPU、HBM、scale-up・scale-out通信、光、先端パッケージ、電源・冷却は連鎖するが、各市場の連動性は仮説と観測値を分けて扱う。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_chain"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点2",
+			"headline": "成長率マップの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "一次資料と定義を監査する。GPU、HBM、scale-up・scale-out通信、光、先端パッケージ、電源・冷却は連鎖するが、各市場の連動性は仮説と観測値を分けて扱う。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_chain"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点2",
+			"headline": "成長率マップの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。GPU、HBM、scale-up・scale-out通信、光、先端パッケージ、電源・冷却は連鎖するが、各市場の連動性は仮説と観測値を分けて扱う。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_chain"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点2",
+			"headline": "成長率マップの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "確定できる境界を確認する。投資推奨ではない。GPU、HBM、scale-up・scale-out通信、光、先端パッケージ、電源・冷却は連鎖するが、各市場の連動性は仮説と観測値を分けて扱う。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_base_effect"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点3",
+			"headline": "成長率マップの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "delloro_network",
+			"text": "まず主張を提示する。CPOなど初期市場の高CAGRは小さい基準額の影響を受けるため、市場規模と成長率を同時表示し株価予測へ変換しない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_base_effect"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点3",
+			"headline": "成長率マップの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "delloro_network",
+			"text": "一次資料と定義を監査する。CPOなど初期市場の高CAGRは小さい基準額の影響を受けるため、市場規模と成長率を同時表示し株価予測へ変換しない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_base_effect"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点3",
+			"headline": "成長率マップの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "delloro_network",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。CPOなど初期市場の高CAGRは小さい基準額の影響を受けるため、市場規模と成長率を同時表示し株価予測へ変換しない。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_base_effect"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点3",
+			"headline": "成長率マップの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "delloro_network",
+			"text": "確定できる境界を確認する。投資推奨ではない。CPOなど初期市場の高CAGRは小さい基準額の影響を受けるため、市場規模と成長率を同時表示し株価予測へ変換しない。"
+		},
+		{
+			"chapter": "全体地図",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "全体地図",
+			"headline": "成長率マップを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "定義",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "定義",
+			"headline": "成長率マップを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "データ境界",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "データ境界",
+			"headline": "成長率マップを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "構成",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "構成",
+			"headline": "成長率マップを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "Short案",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "Short案",
+			"headline": "成長率マップを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "出典",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "出典",
+			"headline": "成長率マップを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "QA",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "QA",
+			"headline": "成長率マップを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "結論",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_measurement"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "結論",
+			"headline": "成長率マップを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "gartner_semiconductor",
+			"text": "CAGRと2026年単年YoYを分け、GPUからHBM、通信、光、電力・冷却への連鎖を描く。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		}
+	]
+}

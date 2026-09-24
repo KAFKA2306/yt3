@@ -1,0 +1,614 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-issue-130",
+	"asOf": "2026-09-24",
+	"angle": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する",
+	"searchQuery": "DRAM 221A 楽天SOX 実保有 比較 一次資料",
+	"title": "半導体ETFは同じじゃない　DRAM・日経半導体・SOXを中身で比較",
+	"thumbnailTitle": "半導体ETFを構造で見る",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "構造",
+		"accent": "比較",
+		"reaction": "？",
+		"secondLine": "一次資料で監査",
+		"calloutTop": "構造を分解",
+		"calloutBottom": "推奨ではない"
+	},
+	"descriptionLead": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。最新値は制作runで再取得し、事実、推論、未確認を分離して動画へ落とし込む。",
+	"descriptionBullets": [
+		"一次資料のURLと取得日を保存する",
+		"構成銘柄・市場定義・KPIを機械可読化する",
+		"観測値と将来シナリオを画面上で分ける",
+		"投資推奨ではなく構造理解として締める"
+	],
+	"disclaimer": "本動画は情報整理と構造説明を目的とし、特定銘柄の売買を推奨しません。最新値や定義は制作runで再確認します。",
+	"hookPromises": ["構造を分解", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires reproducible source-backed production planning.",
+			"未取得の最新値を推測で補わない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_roles",
+		"claimIds": ["claim_roles", "claim_roles", "claim_roles"]
+	},
+	"narrative": {
+		"hiddenMechanism": "同じ見出しでも測定単位、証券階層、将来条件が異なるため構造を分解する。",
+		"counterfactual": "もし定義と取得日を混ぜれば、見かけの比較が誤った結論になる。",
+		"audiencePayoff": "一次資料と未確認を分けて読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_1",
+			"kind": "no_counter_evidence",
+			"targetClaim": "DRAMはメモリ・ストレージ集中、221Aは日本半導体、楽天SOXは米国上場半導体コアという役割差を比較する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["roundhill_dram", "mufg_221a", "rakuten_sox"],
+			"checkedSourceIds": ["roundhill_dram", "mufg_221a", "rakuten_sox"]
+		},
+		{
+			"id": "evidence_2",
+			"kind": "no_counter_evidence",
+			"targetClaim": "MU、TSM、NVDA、AMAT、LRCX、KLAC、東京エレクトロン、SK hynixの8社を3商品ごとの直接保有・未取得・実質エクスポージャーに分ける。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["roundhill_dram", "mufg_221a", "rakuten_sox"],
+			"checkedSourceIds": ["roundhill_dram", "mufg_221a", "rakuten_sox"]
+		},
+		{
+			"id": "evidence_3",
+			"kind": "no_counter_evidence",
+			"targetClaim": "3商品を重ねるときは構成銘柄、ADR、指数経由の実質エクスポージャー、経費率を分離し、購入推奨ではなく構造説明として表示する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"roundhill_dram",
+				"mufg_221a",
+				"rakuten_sox",
+				"sox_methodology"
+			],
+			"checkedSourceIds": [
+				"roundhill_dram",
+				"mufg_221a",
+				"rakuten_sox",
+				"sox_methodology"
+			]
+		}
+	],
+	"noveltyQueries": [
+		"半導体ETFの構造差を一次資料で再監査する",
+		"半導体ETFの未取得値を制作runで更新する"
+	],
+	"tags": ["秒算マネー", "半導体", "ETF", "DRAM", "SOX", "構成銘柄", "実保有"],
+	"sources": [
+		{
+			"id": "roundhill_dram",
+			"name": "Roundhill DRAM official",
+			"url": "https://www.roundhillinvestments.com/etf/dram/",
+			"tier": "L1"
+		},
+		{
+			"id": "mufg_221a",
+			"name": "三菱UFJアセットマネジメント 221A",
+			"url": "https://www.am.mufg.jp/",
+			"tier": "L1"
+		},
+		{
+			"id": "rakuten_sox",
+			"name": "楽天投信 SOX fund",
+			"url": "https://www.rakuten-toushin.co.jp/fund/nav/rirsox/",
+			"tier": "L1"
+		},
+		{
+			"id": "sox_methodology",
+			"name": "NYSE Semiconductor Index methodology",
+			"url": "https://www.nyse.com/indices/nyse-semiconductor-index",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_roles",
+			"claim": "DRAMはメモリ・ストレージ集中、221Aは日本半導体、楽天SOXは米国上場半導体コアという役割差を比較する。",
+			"sourceIds": ["roundhill_dram", "mufg_221a", "rakuten_sox"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_matrix",
+			"claim": "MU、TSM、NVDA、AMAT、LRCX、KLAC、東京エレクトロン、SK hynixの8社を3商品ごとの直接保有・未取得・実質エクスポージャーに分ける。",
+			"sourceIds": ["roundhill_dram", "mufg_221a", "rakuten_sox"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_overlap",
+			"claim": "3商品を重ねるときは構成銘柄、ADR、指数経由の実質エクスポージャー、経費率を分離し、購入推奨ではなく構造説明として表示する。",
+			"sourceIds": [
+				"roundhill_dram",
+				"mufg_221a",
+				"rakuten_sox",
+				"sox_methodology"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点1",
+			"headline": "半導体ETFの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "構造を分解し、投資推奨ではない形でDRAMはメモリ・ストレージ集中、221Aは日本半導体、楽天SOXは米国上場半導体コアという役割差を比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点1",
+			"headline": "半導体ETFの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "一次資料と定義を監査する。DRAMはメモリ・ストレージ集中、221Aは日本半導体、楽天SOXは米国上場半導体コアという役割差を比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点1",
+			"headline": "半導体ETFの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。DRAMはメモリ・ストレージ集中、221Aは日本半導体、楽天SOXは米国上場半導体コアという役割差を比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点1",
+			"headline": "半導体ETFの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "確定できる境界を確認する。投資推奨ではない。DRAMはメモリ・ストレージ集中、221Aは日本半導体、楽天SOXは米国上場半導体コアという役割差を比較する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_matrix"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点2",
+			"headline": "半導体ETFの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "まず主張を提示する。MU、TSM、NVDA、AMAT、LRCX、KLAC、東京エレクトロン、SK hynixの8社を3商品ごとの直接保有・未取得・実質エクスポージャーに分ける。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_matrix"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点2",
+			"headline": "半導体ETFの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "一次資料と定義を監査する。MU、TSM、NVDA、AMAT、LRCX、KLAC、東京エレクトロン、SK hynixの8社を3商品ごとの直接保有・未取得・実質エクスポージャーに分ける。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_matrix"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点2",
+			"headline": "半導体ETFの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。MU、TSM、NVDA、AMAT、LRCX、KLAC、東京エレクトロン、SK hynixの8社を3商品ごとの直接保有・未取得・実質エクスポージャーに分ける。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_matrix"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点2",
+			"headline": "半導体ETFの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "確定できる境界を確認する。投資推奨ではない。MU、TSM、NVDA、AMAT、LRCX、KLAC、東京エレクトロン、SK hynixの8社を3商品ごとの直接保有・未取得・実質エクスポージャーに分ける。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_overlap"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点3",
+			"headline": "半導体ETFの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "まず主張を提示する。3商品を重ねるときは構成銘柄、ADR、指数経由の実質エクスポージャー、経費率を分離し、購入推奨ではなく構造説明として表示する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_overlap"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点3",
+			"headline": "半導体ETFの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "一次資料と定義を監査する。3商品を重ねるときは構成銘柄、ADR、指数経由の実質エクスポージャー、経費率を分離し、購入推奨ではなく構造説明として表示する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_overlap"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点3",
+			"headline": "半導体ETFの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。3商品を重ねるときは構成銘柄、ADR、指数経由の実質エクスポージャー、経費率を分離し、購入推奨ではなく構造説明として表示する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_overlap"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点3",
+			"headline": "半導体ETFの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "確定できる境界を確認する。投資推奨ではない。3商品を重ねるときは構成銘柄、ADR、指数経由の実質エクスポージャー、経費率を分離し、購入推奨ではなく構造説明として表示する。"
+		},
+		{
+			"chapter": "全体地図",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "全体地図",
+			"headline": "半導体ETFを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "定義",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "定義",
+			"headline": "半導体ETFを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "データ境界",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "データ境界",
+			"headline": "半導体ETFを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "構成",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "構成",
+			"headline": "半導体ETFを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "Short案",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "Short案",
+			"headline": "半導体ETFを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "出典",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "出典",
+			"headline": "半導体ETFを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "QA",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "QA",
+			"headline": "半導体ETFを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "結論",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "結論",
+			"headline": "半導体ETFを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "roundhill_dram",
+			"text": "DRAM、日経半導体ETF、楽天SOXを8社とバリューチェーンから比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		}
+	]
+}

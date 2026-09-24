@@ -1,0 +1,611 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-issue-132",
+	"asOf": "2026-09-24",
+	"angle": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する",
+	"searchQuery": "GO 大和自動車交通 ヴィッツ マクニカ 自動運転 資本 一次資料",
+	"title": "自動運転で増幅される資本を四社で比較する",
+	"thumbnailTitle": "自動運転を構造で見る",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "構造",
+		"accent": "比較",
+		"reaction": "？",
+		"secondLine": "一次資料で監査",
+		"calloutTop": "構造を分解",
+		"calloutBottom": "推奨ではない"
+	},
+	"descriptionLead": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。最新値は制作runで再取得し、事実、推論、未確認を分離して動画へ落とし込む。",
+	"descriptionBullets": [
+		"一次資料のURLと取得日を保存する",
+		"構成銘柄・市場定義・KPIを機械可読化する",
+		"観測値と将来シナリオを画面上で分ける",
+		"投資推奨ではなく構造理解として締める"
+	],
+	"disclaimer": "本動画は情報整理と構造説明を目的とし、特定銘柄の売買を推奨しません。最新値や定義は制作runで再確認します。",
+	"hookPromises": ["構造を分解", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires reproducible source-backed production planning.",
+			"未取得の最新値を推測で補わない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_capital_roles",
+		"claimIds": [
+			"claim_capital_roles",
+			"claim_capital_roles",
+			"claim_capital_roles"
+		]
+	},
+	"narrative": {
+		"hiddenMechanism": "同じ見出しでも測定単位、証券階層、将来条件が異なるため構造を分解する。",
+		"counterfactual": "もし定義と取得日を混ぜれば、見かけの比較が誤った結論になる。",
+		"audiencePayoff": "一次資料と未確認を分けて読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_1",
+			"kind": "no_counter_evidence",
+			"targetClaim": "GOは需要・配車ネットワーク、大和は営業網・運行拠点、ヴィッツは安全技術、マクニカは技術統合と顧客関係という資本仮説を比較する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"],
+			"checkedSourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"]
+		},
+		{
+			"id": "evidence_2",
+			"kind": "no_counter_evidence",
+			"targetClaim": "各社の資本仮説は、配車率・運行台数・ライセンス比率・接続車両数など観測可能なKPIへ逆引きする。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"],
+			"checkedSourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"]
+		},
+		{
+			"id": "evidence_3",
+			"kind": "no_counter_evidence",
+			"targetClaim": "10倍という表現は株価予測にせず、限界費用、複製困難性、再利用可能性、利益への変換という構造シナリオとして扱う。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"],
+			"checkedSourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"]
+		}
+	],
+	"noveltyQueries": [
+		"自動運転の構造差を一次資料で再監査する",
+		"自動運転の未取得値を制作runで更新する"
+	],
+	"tags": [
+		"秒算マネー",
+		"自動運転",
+		"GO",
+		"タクシー",
+		"安全技術",
+		"統合",
+		"資本"
+	],
+	"sources": [
+		{
+			"id": "go_company",
+			"name": "GO company information",
+			"url": "https://go.goinc.jp/",
+			"tier": "L1"
+		},
+		{
+			"id": "daiwa_ir",
+			"name": "大和自動車交通 IR",
+			"url": "https://www.daiwaj.com/ir/",
+			"tier": "L1"
+		},
+		{
+			"id": "witz_ir",
+			"name": "ヴィッツ IR",
+			"url": "https://www.witz-inc.co.jp/ir/",
+			"tier": "L1"
+		},
+		{
+			"id": "macnica_ir",
+			"name": "マクニカ IR",
+			"url": "https://www.macnica.co.jp/company/ir/",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_capital_roles",
+			"claim": "GOは需要・配車ネットワーク、大和は営業網・運行拠点、ヴィッツは安全技術、マクニカは技術統合と顧客関係という資本仮説を比較する。",
+			"sourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_kpi_bridge",
+			"claim": "各社の資本仮説は、配車率・運行台数・ライセンス比率・接続車両数など観測可能なKPIへ逆引きする。",
+			"sourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_tenfold_boundary",
+			"claim": "10倍という表現は株価予測にせず、限界費用、複製困難性、再利用可能性、利益への変換という構造シナリオとして扱う。",
+			"sourceIds": ["go_company", "daiwa_ir", "witz_ir", "macnica_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点1",
+			"headline": "自動運転の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "構造を分解し、投資推奨ではない形でGOは需要・配車ネットワーク、大和は営業網・運行拠点、ヴィッツは安全技術、マクニカは技術統合と顧客関係という資本仮説を比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点1",
+			"headline": "自動運転の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "一次資料と定義を監査する。GOは需要・配車ネットワーク、大和は営業網・運行拠点、ヴィッツは安全技術、マクニカは技術統合と顧客関係という資本仮説を比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点1",
+			"headline": "自動運転の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "go_company",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。GOは需要・配車ネットワーク、大和は営業網・運行拠点、ヴィッツは安全技術、マクニカは技術統合と顧客関係という資本仮説を比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点1",
+			"headline": "自動運転の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "確定できる境界を確認する。投資推奨ではない。GOは需要・配車ネットワーク、大和は営業網・運行拠点、ヴィッツは安全技術、マクニカは技術統合と顧客関係という資本仮説を比較する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_kpi_bridge"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点2",
+			"headline": "自動運転の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "まず主張を提示する。各社の資本仮説は、配車率・運行台数・ライセンス比率・接続車両数など観測可能なKPIへ逆引きする。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_kpi_bridge"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点2",
+			"headline": "自動運転の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "一次資料と定義を監査する。各社の資本仮説は、配車率・運行台数・ライセンス比率・接続車両数など観測可能なKPIへ逆引きする。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_kpi_bridge"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点2",
+			"headline": "自動運転の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "go_company",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。各社の資本仮説は、配車率・運行台数・ライセンス比率・接続車両数など観測可能なKPIへ逆引きする。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_kpi_bridge"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点2",
+			"headline": "自動運転の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "確定できる境界を確認する。投資推奨ではない。各社の資本仮説は、配車率・運行台数・ライセンス比率・接続車両数など観測可能なKPIへ逆引きする。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_tenfold_boundary"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点3",
+			"headline": "自動運転の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "まず主張を提示する。10倍という表現は株価予測にせず、限界費用、複製困難性、再利用可能性、利益への変換という構造シナリオとして扱う。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_tenfold_boundary"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点3",
+			"headline": "自動運転の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "一次資料と定義を監査する。10倍という表現は株価予測にせず、限界費用、複製困難性、再利用可能性、利益への変換という構造シナリオとして扱う。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_tenfold_boundary"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点3",
+			"headline": "自動運転の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "go_company",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。10倍という表現は株価予測にせず、限界費用、複製困難性、再利用可能性、利益への変換という構造シナリオとして扱う。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_tenfold_boundary"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点3",
+			"headline": "自動運転の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "go_company",
+			"text": "確定できる境界を確認する。投資推奨ではない。10倍という表現は株価予測にせず、限界費用、複製困難性、再利用可能性、利益への変換という構造シナリオとして扱う。"
+		},
+		{
+			"chapter": "全体地図",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "全体地図",
+			"headline": "自動運転を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "go_company",
+			"text": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "定義",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "定義",
+			"headline": "自動運転を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "go_company",
+			"text": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "データ境界",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "データ境界",
+			"headline": "自動運転を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "go_company",
+			"text": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "構成",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "構成",
+			"headline": "自動運転を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "go_company",
+			"text": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "Short案",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "Short案",
+			"headline": "自動運転を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "go_company",
+			"text": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "出典",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "出典",
+			"headline": "自動運転を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "go_company",
+			"text": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "QA",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "QA",
+			"headline": "自動運転を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "go_company",
+			"text": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "結論",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_capital_roles"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "結論",
+			"headline": "自動運転を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "go_company",
+			"text": "GO、大和自動車交通、ヴィッツ、マクニカが持つ再利用可能な資本を比較する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		}
+	]
+}
