@@ -1,0 +1,176 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 138,
+	"runId": "byosan_money/2026-09-24-issue-138-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "The ledger defines a canonical Japanese security and ordered quote fallbacks, and records the issue snapshot as an unverified observation. The referenced Sheet is not readable in the current signed-in session, so counts, live GOOGLEFINANCE results, ratios, and representative examples require authenticated readback or an export.",
+	"observedSnapshot": {
+		"status": "OBSERVED_FROM_ISSUE_SNAPSHOT_UNVERIFIED",
+		"uniqueTokyoCodes": 94,
+		"adrIdentified": 42,
+		"adrPriceSuccess": 40,
+		"alternativeListingIdentified": 26,
+		"alternativePriceSuccess": 22,
+		"etfOrReit": 20,
+		"individualStocks": 74,
+		"individualStocksWithOverseasPrice": 62,
+		"reportedIndividualRecoveryRatePercent": 84,
+		"calculatedIndividualRecoveryRatePercent": 83.7838,
+		"reconciliationStatus": "UNVERIFIED_REQUIRES_SHEET_READBACK",
+		"note": "The category counts may overlap and must be reconciled against the current Securities_Master and ADR_Audit tabs before publication."
+	},
+	"canonicalModel": {
+		"status": "CONTRACT_DEFINED_NOT_DATA_VERIFIED",
+		"canonicalIdentity": [
+			"canonical_id",
+			"issuer_name",
+			"primary_exchange",
+			"primary_ticker",
+			"country"
+		],
+		"quoteRouteFields": [
+			"route_rank",
+			"provider",
+			"symbol",
+			"listing_type",
+			"currency",
+			"adr_ratio",
+			"program_type",
+			"audit_status",
+			"last_read_at"
+		],
+		"routeOrder": [
+			"primary_tokyo_listing",
+			"sponsored_or_unsponsored_adr",
+			"otc_f_share",
+			"european_cross_listing",
+			"japanese_quote_source"
+		],
+		"identityRule": "A fallback quote is a route for the canonical Japanese security, not a replacement for the canonical security."
+	},
+	"examples": [
+		{
+			"issuer": "Sony Group",
+			"primarySymbol": "TYO:6758",
+			"fallbackSymbol": "NYSE:SONY",
+			"fallbackType": "ADR",
+			"status": "UNVERIFIED_REQUIRES_LIVE_SHEET_READBACK",
+			"sourceIds": ["googlefinance_function", "adr_definition"]
+		},
+		{
+			"issuer": "SoftBank Group",
+			"primarySymbol": "TYO:9984",
+			"fallbackSymbol": "OTCMKTS:SFTBY",
+			"fallbackType": "OTC_F_SHARE_OR_ADR",
+			"status": "UNVERIFIED_REQUIRES_LIVE_SHEET_READBACK",
+			"sourceIds": ["googlefinance_function", "adr_definition"]
+		},
+		{
+			"issuer": "Tokyo Electron",
+			"primarySymbol": "TYO:8035",
+			"fallbackSymbol": "OTCMKTS:TOELY",
+			"fallbackType": "OTC_F_SHARE_OR_ADR",
+			"status": "UNVERIFIED_REQUIRES_LIVE_SHEET_READBACK",
+			"sourceIds": ["googlefinance_function", "adr_definition"]
+		},
+		{
+			"issuer": "Mitsui Fudosan",
+			"primarySymbol": "TYO:8801",
+			"fallbackSymbol": "OTCMKTS:MTSFY",
+			"fallbackType": "OTC_F_SHARE_OR_ADR",
+			"status": "UNVERIFIED_REQUIRES_LIVE_SHEET_READBACK",
+			"sourceIds": ["googlefinance_function", "adr_definition"]
+		},
+		{
+			"issuer": "Kagome",
+			"primarySymbol": "TYO:2811",
+			"fallbackSymbol": "FRA:5EW",
+			"fallbackType": "EUROPEAN_CROSS_LISTING",
+			"status": "UNVERIFIED_REQUIRES_LIVE_SHEET_READBACK",
+			"sourceIds": ["googlefinance_function", "jpx_foreign_stocks"]
+		}
+	],
+	"normalizationRules": [
+		"Do not compare ADR or F-share absolute prices to Tokyo prices without ADR ratio and currency conversion.",
+		"Use the same observation timestamp and timezone for primary and fallback quotes where possible.",
+		"Record stale, delayed, missing, and zero-value responses separately from successful prices.",
+		"Keep provider availability separate from issuer identity and listing status.",
+		"A successful fallback quote does not prove equivalent liquidity, trading hours, or price freshness."
+	],
+	"readbackBoundary": {
+		"status": "UNVERIFIED_SHEET_ACCESS_REQUIRED",
+		"sheetUrl": "https://docs.google.com/spreadsheets/d/1yoe606TGqmhRRgAmdhfdvJLZcabbWlG8kKeLU5Ou9YQ/edit",
+		"requiredTabs": ["Securities_Master", "ADR_Audit"],
+		"requiredChecks": [
+			"Recalculate the 94-code population and all category counts.",
+			"Run five live GOOGLEFINANCE examples and preserve the returned value or exact error.",
+			"Verify ADR ratio, program type, currency, timestamp, and fallback status.",
+			"Compare Sheets function behavior with Google Finance Web without treating either as a universal coverage claim."
+		],
+		"currentObservation": "The signed-in browser session showed a permission-required state; no access request was submitted."
+	},
+	"sources": [
+		{
+			"id": "googlefinance_function",
+			"url": "https://support.google.com/docs/answer/3093281",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["GOOGLEFINANCE_function_contract"]
+		},
+		{
+			"id": "googlefinance_disclaimer",
+			"url": "https://support.google.com/finance/answer/9006449?hl=en",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["quote_availability_and_delay_boundary"]
+		},
+		{
+			"id": "adr_definition",
+			"url": "https://www.investor.gov/introduction-investing/investing-basics/glossary/american-depositary-receipts-adrs",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["adr_definition", "ratio_and_underlying_security_boundary"]
+		},
+		{
+			"id": "jpx_foreign_stocks",
+			"url": "https://www.jpx.co.jp/english/equities/products/foreign-stocks/outline/index.html",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["foreign_listing_context"]
+		},
+		{
+			"id": "audit_sheet",
+			"url": "https://docs.google.com/spreadsheets/d/1yoe606TGqmhRRgAmdhfdvJLZcabbWlG8kKeLU5Ou9YQ/edit",
+			"tier": "L2",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"issue_data_reference_only",
+				"not_readable_in_current_session"
+			]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"Tokyo to ADR to OTC F-share to Europe fallback flow",
+			"before/after coverage counts with denominator and read timestamp",
+			"canonical issuer versus quote-route data model",
+			"ADR ratio, currency, liquidity, and delay warning panel"
+		],
+		"shorts": [
+			"the ticker can fail while the issuer still has a quote route",
+			"ADR price is not Tokyo price",
+			"84 percent is provisional until the Sheet is readable"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"stageRule": "Every count and example carries a source, readback status, denominator, and timestamp."
+	},
+	"openAcceptance": [
+		"Obtain authenticated Sheet access or an export and recalculate ADR_Audit and Securities_Master counts.",
+		"Verify five live GOOGLEFINANCE examples plus provider, timestamp, currency, and ADR ratio fields.",
+		"Complete the fallback architecture visual, before/after coverage visual, five examples, and Web-versus-Sheets explanation.",
+		"Complete factuality/source-policy QA, data reconciliation, render, ASR, and non-recommendation review."
+	]
+}

@@ -1,0 +1,183 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 132,
+	"runId": "byosan_money/2026-09-24-issue-132-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "The four companies' disclosed roles and dated operating facts are recorded, but comparable autonomous-driving KPI definitions, current valuation data, scenario calibration, render, ASR, and production acceptance remain outstanding.",
+	"capitalRoles": [
+		{
+			"id": "go",
+			"company": "GO",
+			"role": "demand_and_dispatch_network",
+			"status": "STRUCTURAL_SCOPE_VERIFIED",
+			"sourceIds": ["go_waymo_partnership"]
+		},
+		{
+			"id": "daiwa",
+			"company": "Daiwa Motor Transportation",
+			"role": "fleet_operations_and_transport_base",
+			"status": "OPERATING_CONTEXT_VERIFIED",
+			"sourceIds": ["daiwa_fy2026_results"]
+		},
+		{
+			"id": "witz",
+			"company": "Witz",
+			"role": "automotive_software_safety_and_simulation",
+			"status": "PRODUCT_SCOPE_VERIFIED",
+			"sourceIds": ["witz_business_scope", "witz_midterm_plan"]
+		},
+		{
+			"id": "macnica",
+			"company": "Macnica Holdings",
+			"role": "technology_integration_and_customer_network",
+			"status": "BUSINESS_SCOPE_VERIFIED",
+			"sourceIds": ["macnica_company_profile", "macnica_strategy"]
+		}
+	],
+	"reportedFacts": [
+		{
+			"id": "go_l4_plan",
+			"company": "GO",
+			"value": {
+				"targetYear": 2027,
+				"targetService": "Tokyo Level 4 fully unmanned taxi",
+				"targetFleetScale": 100,
+				"unit": "vehicles"
+			},
+			"status": "VERIFIED_AS_COMPANY_PLAN",
+			"sourceIds": ["go_waymo_partnership"]
+		},
+		{
+			"id": "daiwa_fy2026",
+			"company": "Daiwa Motor Transportation",
+			"period": "FY2026 ended 2026-03-31",
+			"value": {
+				"revenueMillionYen": 19907,
+				"operatingIncomeMillionYen": 384,
+				"ordinaryIncomeMillionYen": 263,
+				"netIncomeMillionYen": 222
+			},
+			"status": "VERIFIED_FROM_COMPANY_RESULTS",
+			"sourceIds": ["daiwa_fy2026_results"]
+		},
+		{
+			"id": "witz_plan",
+			"company": "Witz",
+			"period": "2025-08 to 2027-08 midterm plan",
+			"value": {
+				"salesTargetBillionYen": 6,
+				"operatingMarginTargetPercent": 11,
+				"roeTargetPercent": 14
+			},
+			"status": "VERIFIED_AS_COMPANY_PLAN",
+			"sourceIds": ["witz_midterm_plan"]
+		},
+		{
+			"id": "macnica_scale",
+			"company": "Macnica Holdings",
+			"period": "FY2025",
+			"value": {
+				"revenueBillionYen": 1214.2,
+				"countriesAndRegions": 33,
+				"sites": 100,
+				"employees": 5261,
+				"customers": 26000
+			},
+			"status": "VERIFIED_FROM_COMPANY_PROFILE",
+			"sourceIds": ["macnica_company_profile"]
+		}
+	],
+	"kpiMatrix": {
+		"status": "UNVERIFIED_REQUIRES_COMPARABLE_CURRENT_DATA",
+		"rows": [
+			"dispatch demand or completed rides",
+			"fleet and utilization",
+			"software/licensing or safety deployments",
+			"integrated vehicles/projects and customer reach"
+		],
+		"rule": "Do not compare a company plan, platform scale, vehicle count, and software revenue as if they were the same KPI."
+	},
+	"tenfoldScenario": {
+		"status": "SCENARIO_ONLY",
+		"nonPriceModel": [
+			"replicability",
+			"marginal cost",
+			"deployment bottleneck",
+			"conversion from capability to profit"
+		],
+		"prohibitedInference": "The ledger does not imply a tenfold share-price outcome."
+	},
+	"sources": [
+		{
+			"id": "go_waymo_partnership",
+			"url": "https://goinc.jp/news/pr/2026/09/15/6pzjypdxzuza8kawb2ocfg/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["l4Plan", "100VehicleTarget", "goRole"]
+		},
+		{
+			"id": "daiwa_fy2026_results",
+			"url": "https://www.daiwaj.com/sites/default/files/imce/2026-05/20260513_1.pdf",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"revenue",
+				"profit",
+				"taxiUtilization",
+				"maasAiAutonomousDrivingScope"
+			]
+		},
+		{
+			"id": "witz_business_scope",
+			"url": "https://www.witz-inc.co.jp/ir/investor/main_business/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["automotiveSoftware", "adas", "aiSafety", "simulation"]
+		},
+		{
+			"id": "witz_midterm_plan",
+			"url": "https://www.witz-inc.co.jp/ir/management/plan/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["salesTarget", "operatingMarginTarget", "roeTarget"]
+		},
+		{
+			"id": "macnica_company_profile",
+			"url": "https://holdings.macnica.co.jp/company/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["revenue", "network", "autonomousDrivingScope"]
+		},
+		{
+			"id": "macnica_strategy",
+			"url": "https://holdings.macnica.co.jp/content/dam/holdings/ir/ja/library/Strategy.pdf",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["growthInvestmentPlan"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"four-role capital map",
+			"KPI definition matrix",
+			"deployment-to-profit bridge",
+			"scenario panel without price targets"
+		],
+		"shorts": [
+			"GO/Witz/Macnica/Daiwa role cards",
+			"why platform scale is not the same as revenue",
+			"10x as a structural scenario only"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"planRule": "Company targets and plans must be labeled separately from realized results."
+	},
+	"openAcceptance": [
+		"Acquire current comparable KPI snapshots for all four companies.",
+		"Separate realized results, company plans, product scope, and analyst scenario assumptions.",
+		"Add current market data only with a dated, independently auditable readback.",
+		"Complete factuality/source-policy QA, render, ASR, and non-recommendation checks."
+	]
+}

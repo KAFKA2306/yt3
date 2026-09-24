@@ -1,0 +1,250 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 136,
+	"runId": "byosan_money/2026-09-24-issue-136-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "The ledger separates executed investment, conditional commitment, strategic agreement, product relationship, market observation, and causal inference. The ten-company current holdings, investment terms, prices, YTD returns, authenticated sheet readback, and production QA remain unverified.",
+	"instrumentClasses": [
+		"COMMON_STOCK",
+		"CONVERTIBLE_OR_OTHER_SECURITY",
+		"CONDITIONAL_COMMITMENT",
+		"STRATEGIC_AGREEMENT",
+		"UNKNOWN_REQUIRES_PRIMARY_READBACK"
+	],
+	"companies": [
+		{
+			"company": "MediaTek",
+			"ticker": "2454.TW",
+			"role": "compute_and_custom_silicon",
+			"investmentRelation": "UNVERIFIED_REQUIRES_PRIMARY_READBACK",
+			"instrument": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"nvidiaProductRelationship": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["mediatek_ir"]
+		},
+		{
+			"company": "Intel",
+			"ticker": "INTC",
+			"role": "cpu_and_foundry_infrastructure",
+			"investmentRelation": "CONDITIONAL_COMMITMENT_REPORTED",
+			"instrument": "CONDITIONAL_COMMITMENT",
+			"nvidiaProductRelationship": "CONFIRMED_STRATEGIC_PRODUCT_RELATIONSHIP",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["intel_nvidia_agreement", "intel_q2_2026"]
+		},
+		{
+			"company": "Marvell",
+			"ticker": "MRVL",
+			"role": "networking_custom_silicon_and_optical",
+			"investmentRelation": "UNVERIFIED_DO_NOT_INFER_FROM_PARTNERSHIP",
+			"instrument": "STRATEGIC_AGREEMENT",
+			"nvidiaProductRelationship": "CONFIRMED_STRATEGIC_PRODUCT_RELATIONSHIP",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["marvell_nvidia_nvlink_fusion"]
+		},
+		{
+			"company": "Nebius",
+			"ticker": "NBIS",
+			"role": "ai_cloud_and_datacenter",
+			"investmentRelation": "UNVERIFIED_REQUIRES_PRIMARY_READBACK",
+			"instrument": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"nvidiaProductRelationship": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["nvidia_sec"]
+		},
+		{
+			"company": "Lumentum",
+			"ticker": "LITE",
+			"role": "optical_networking",
+			"investmentRelation": "UNVERIFIED_REQUIRES_PRIMARY_READBACK",
+			"instrument": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"nvidiaProductRelationship": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["nvidia_sec"]
+		},
+		{
+			"company": "Coherent",
+			"ticker": "COHR",
+			"role": "optics_and_photonics",
+			"investmentRelation": "UNVERIFIED_REQUIRES_PRIMARY_READBACK",
+			"instrument": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"nvidiaProductRelationship": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["nvidia_sec"]
+		},
+		{
+			"company": "Nokia",
+			"ticker": "NOK",
+			"role": "ai_ran_and_telecom",
+			"investmentRelation": "UNVERIFIED_REQUIRES_PRIMARY_READBACK",
+			"instrument": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"nvidiaProductRelationship": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["nvidia_sec"]
+		},
+		{
+			"company": "IREN",
+			"ticker": "IREN",
+			"role": "ai_datacenter_and_power",
+			"investmentRelation": "UNVERIFIED_REQUIRES_PRIMARY_READBACK",
+			"instrument": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"nvidiaProductRelationship": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["nvidia_sec"]
+		},
+		{
+			"company": "CoreWeave",
+			"ticker": "CRWV",
+			"role": "ai_cloud",
+			"investmentRelation": "UNVERIFIED_REQUIRES_PRIMARY_READBACK",
+			"instrument": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"nvidiaProductRelationship": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["nvidia_sec"]
+		},
+		{
+			"company": "Synopsys",
+			"ticker": "SNPS",
+			"role": "eda_and_engineering_software",
+			"investmentRelation": "UNVERIFIED_REQUIRES_PRIMARY_READBACK",
+			"instrument": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"nvidiaProductRelationship": "UNKNOWN_REQUIRES_PRIMARY_READBACK",
+			"marketData": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+			"sourceIds": ["nvidia_sec"]
+		}
+	],
+	"reportedFacts": [
+		{
+			"id": "intel_conditional_commitment",
+			"status": "VERIFIED_COMPANY_REPORTED_CONDITIONAL",
+			"fact": "NVIDIA announced a planned $5 billion purchase of Intel common stock at $23.28 per share, subject to customary closing conditions and regulatory approvals.",
+			"sourceIds": ["intel_nvidia_agreement"]
+		},
+		{
+			"id": "intel_operating_context",
+			"status": "VERIFIED_COMPANY_REPORTED_PERIOD_BOUND",
+			"fact": "Intel reported Q2 2026 revenue of $16.1 billion and Q3 2026 revenue guidance of $15.8-$16.8 billion; these operating figures are not investment returns.",
+			"sourceIds": ["intel_q2_2026"]
+		},
+		{
+			"id": "marvell_strategic_relationship",
+			"status": "VERIFIED_COMPANY_REPORTED_STRATEGIC_RELATIONSHIP",
+			"fact": "Marvell announced that it joined NVIDIA NVLink Fusion for custom silicon, optical DSP, and silicon photonics ecosystem work; partnership evidence is not equity ownership evidence.",
+			"sourceIds": ["marvell_nvidia_nvlink_fusion"]
+		},
+		{
+			"id": "nvidia_investment_definition",
+			"status": "VERIFIED_SEC_DISCLOSURE_BOUNDARY",
+			"fact": "NVIDIA's SEC disclosures state that investments can be non-marketable and illiquid; the current position, instrument, and carrying value for each target require filing-level readback.",
+			"sourceIds": ["nvidia_sec"]
+		}
+	],
+	"marketDataBoundary": {
+		"status": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+		"requiredFields": [
+			"price_at_announcement",
+			"latest_price",
+			"return_since_announcement",
+			"ytd_return",
+			"source_timestamp"
+		],
+		"rules": [
+			"Use 2025-12-31 close as the YTD base only after provider readback.",
+			"Keep announcement-date return separate from YTD return.",
+			"Record the provider, timezone, timestamp, currency, and corporate-action treatment.",
+			"Do not copy the issue snapshot into production as current market data."
+		]
+	},
+	"causalityBoundary": {
+		"status": "UNVERIFIED_NO_CAUSAL_CLAIM",
+		"classification": ["confirmed", "inferred", "unknown"],
+		"prohibitedInference": "A target's positive YTD or post-announcement return does not establish that NVIDIA funding caused the move.",
+		"requiredControls": [
+			"Separate market observation from investment terms.",
+			"Separate product adoption from equity ownership.",
+			"Show scenario arrows only when each link has dated primary evidence."
+		]
+	},
+	"sources": [
+		{
+			"id": "nvidia_sec",
+			"url": "https://investor.nvidia.com/files/doc_financials/2026/q3/13e6981b-95ed-4aac-a602-ebc5865d0590.pdf",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"investment_definition_boundary",
+				"filing_level_readback_requirement"
+			]
+		},
+		{
+			"id": "intel_nvidia_agreement",
+			"url": "https://www.intc.com/news-events/press-releases/detail/1750/nvidia-and-intel-to-develop-ai-infrastructure-and-personal",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"conditional_commitment",
+				"intel_common_stock_price",
+				"nvlink_product_relationship"
+			]
+		},
+		{
+			"id": "intel_q2_2026",
+			"url": "https://www.intc.com/news-events/press-releases/detail/1776/intel-reports-second-quarter-2026-financial-results",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["operating_context", "q3_guidance"]
+		},
+		{
+			"id": "marvell_nvidia_nvlink_fusion",
+			"url": "https://investor.marvell.com/news-events/press-releases/detail/1019/nvidia-ai-ecosystem-expands-as-marvell-joins-forces-through-nvlink-fusion",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": [
+				"strategic_agreement",
+				"custom_silicon",
+				"optical_dsp",
+				"silicon_photonics"
+			]
+		},
+		{
+			"id": "mediatek_ir",
+			"url": "https://corp.mediatek.com/investor-relations",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["primary_readback_target"]
+		},
+		{
+			"id": "tracker_sheet",
+			"url": "https://docs.google.com/spreadsheets/d/1GhvFsu6zW9TgmsKbn7CLJ59kLq6vUVR_ICmvKHjyAHc/edit",
+			"tier": "L2",
+			"retrievedAt": "2026-09-24",
+			"supports": ["issue_tracker_reference_only", "not_authenticated_readback"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"ten-company YTD bar chart with provider timestamp",
+			"instrument and relationship matrix",
+			"NVIDIA to target to product-adoption evidence map",
+			"compute/cloud/optical/network/power/EDA ecosystem stack",
+			"investment and announcement timeline",
+			"observation versus causal-claim boundary"
+		],
+		"shorts": [
+			"partnership is not ownership",
+			"YTD is not post-investment return",
+			"the capital loop needs evidence at every arrow"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"stageRule": "Every number carries source, timestamp, currency, period, and evidence status."
+	},
+	"openAcceptance": [
+		"Reconfirm all ten companies' investment relationship, instrument, amount, and announcement date from primary filings or issuer releases.",
+		"Read back announcement-date close, latest price, YTD, and post-announcement return from the authenticated canonical tracker and record timestamps.",
+		"Verify NVIDIA product purchase, capacity, power, and datacenter links as confirmed, inferred, or unknown without inferring ownership from partnership language.",
+		"Complete six visuals, numeric reconciliation, factuality/source-policy QA, render, ASR, and non-recommendation review."
+	]
+}

@@ -1,0 +1,151 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 133,
+	"runId": "byosan_money/2026-09-24-issue-133-evidence",
+	"asOf": "2026-09-24",
+	"retrievedAt": "2026-09-24",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "The dated BOJ and Fed decisions are verified, but the current USD/JPY tape, forward path, two-year spread, positioning, flow data, and intervention-watch evidence require a production-time snapshot.",
+	"policyDecisions": [
+		{
+			"id": "boj_20260918",
+			"institution": "BOJ",
+			"date": "2026-09-18",
+			"value": {
+				"overnightCallRateTargetPercent": 1.25,
+				"effectiveDate": "2026-09-24",
+				"vote": "7-2"
+			},
+			"status": "VERIFIED_FROM_OFFICIAL_DECISION",
+			"sourceIds": ["boj_20260918"]
+		},
+		{
+			"id": "fed_20260916",
+			"institution": "Federal Reserve",
+			"date": "2026-09-16",
+			"value": {
+				"targetRangePercent": { "low": 3.75, "high": 4 },
+				"changeBasisPoints": 25
+			},
+			"status": "VERIFIED_FROM_OFFICIAL_STATEMENT",
+			"sourceIds": ["fed_20260916"]
+		},
+		{
+			"id": "fed_sep_20260916",
+			"institution": "Federal Reserve",
+			"date": "2026-09-16",
+			"value": {
+				"medianYearEndFedFundsPercent": {
+					"2026": 4.1,
+					"2027": 3.9,
+					"2028": 3.6,
+					"longerRun": 3.2
+				}
+			},
+			"status": "VERIFIED_AS_FOMC_PROJECTION_NOT_REALIZED_PATH",
+			"sourceIds": ["fed_sep_20260916"]
+		}
+	],
+	"fxDecomposition": {
+		"status": "UNVERIFIED_REQUIRES_PRODUCTION_SNAPSHOT",
+		"components": [
+			{ "id": "spot_usdjpy", "status": "UNVERIFIED_REQUIRES_CURRENT_PRICE" },
+			{
+				"id": "policy_path",
+				"status": "PARTIALLY_OBSERVED_FROM_POLICY_AND_PROJECTIONS"
+			},
+			{
+				"id": "two_year_rate_spread",
+				"status": "UNVERIFIED_REQUIRES_MARKET_SERIES"
+			},
+			{ "id": "positioning", "status": "UNVERIFIED_REQUIRES_POSITIONING_DATA" },
+			{ "id": "external_flows", "status": "UNVERIFIED_REQUIRES_FLOW_DATA" },
+			{
+				"id": "intervention_watch",
+				"status": "UNVERIFIED_REQUIRES_OFFICIAL_AND_WIRE_SNAPSHOT"
+			}
+		],
+		"interpretationRule": "A rate hike is an observed policy event; it is not by itself a forecast of the next USD/JPY move."
+	},
+	"scenarioPlan": [
+		{
+			"id": "policy_convergence",
+			"classification": "scenario",
+			"status": "NOT_A_FORECAST"
+		},
+		{
+			"id": "persistent_rate_gap",
+			"classification": "scenario",
+			"status": "NOT_A_FORECAST"
+		},
+		{
+			"id": "safe_haven_or_risk_flow",
+			"classification": "scenario",
+			"status": "NOT_A_FORECAST"
+		},
+		{
+			"id": "intervention_risk",
+			"classification": "watch_condition",
+			"status": "NOT_AN_OFFICIAL_LINE"
+		}
+	],
+	"sources": [
+		{
+			"id": "boj_20260918",
+			"url": "https://www.boj.or.jp/mopo/mpmdeci/mpr_2026/k260918a.pdf",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["policyRate", "effectiveDate", "vote", "officialOutlook"]
+		},
+		{
+			"id": "fed_20260916",
+			"url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["targetRange", "decisionDate", "change"]
+		},
+		{
+			"id": "fed_sep_20260916",
+			"url": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260916.htm",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["projections", "projectionDefinition"]
+		},
+		{
+			"id": "fx_reuters_0921",
+			"url": "https://www.reuters.com/world/asia-pacific/volatile-yen-draws-intervention-watch-other-currencies-subdued-2026-09-21/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["wireContextPendingProductionReadback"]
+		},
+		{
+			"id": "fx_reuters_0922",
+			"url": "https://www.reuters.com/world/asia-pacific/yen-squeezed-hawkish-turn-grips-central-banks-2026-09-22/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-24",
+			"supports": ["wireContextPendingProductionReadback"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"BOJ/Fed policy timeline",
+			"current versus expected rate path",
+			"two-year spread and flow decomposition",
+			"intervention watch boundary card"
+		],
+		"shorts": [
+			"BOJ hike versus Fed range",
+			"why policy level is not the whole FX path",
+			"observed versus scenario labels"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"forecastRule": "FOMC projections and scenario paths must never be displayed as realized market outcomes."
+	},
+	"openAcceptance": [
+		"Fetch current USD/JPY, two-year yields, positioning, and flow data at the production timestamp.",
+		"Re-read intervention-watch statements and distinguish official statements from wire interpretation.",
+		"Complete the time-series calculation and label all forecast/scenario content.",
+		"Complete factuality/source-policy QA, render, ASR, and non-recommendation checks."
+	]
+}
