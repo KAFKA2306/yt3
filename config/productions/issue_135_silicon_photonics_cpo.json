@@ -1,0 +1,637 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-issue-135",
+	"asOf": "2026-09-24",
+	"angle": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する",
+	"searchQuery": "silicon photonics CPO NVIDIA Broadcom TSMC Coherent 2026 primary sources",
+	"title": "GPUの次は光か　シリコンフォトニクスとCPOを検証する",
+	"thumbnailTitle": "シリコンフォトニクスを構造で見る",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "構造",
+		"accent": "比較",
+		"reaction": "？",
+		"secondLine": "一次資料で監査",
+		"calloutTop": "構造を分解",
+		"calloutBottom": "推奨ではない"
+	},
+	"descriptionLead": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。最新値は制作runで再取得し、事実、推論、未確認を分離して動画へ落とし込む。",
+	"descriptionBullets": [
+		"一次資料のURLと取得日を保存する",
+		"構成銘柄・市場定義・KPIを機械可読化する",
+		"観測値と将来シナリオを画面上で分ける",
+		"投資推奨ではなく構造理解として締める"
+	],
+	"disclaimer": "本動画は情報整理と構造説明を目的とし、特定銘柄の売買を推奨しません。最新値や定義は制作runで再確認します。",
+	"hookPromises": ["構造を分解", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires reproducible source-backed production planning.",
+			"未取得の最新値を推測で補わない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_physics",
+		"claimIds": ["claim_physics", "claim_physics", "claim_physics"]
+	},
+	"narrative": {
+		"hiddenMechanism": "同じ見出しでも測定単位、証券階層、将来条件が異なるため構造を分解する。",
+		"counterfactual": "もし定義と取得日を混ぜれば、見かけの比較が誤った結論になる。",
+		"audiencePayoff": "一次資料と未確認を分けて読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_1",
+			"kind": "no_counter_evidence",
+			"targetClaim": "シリコンフォトニクスの中心は光変調器・導波路・光I/OをスイッチASICの近傍へ寄せ、電気で運ぶ距離と電力を減らす構造にある。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["nvidia_vera_rubin", "tsmc_coupe", "coherent_cpo"],
+			"checkedSourceIds": ["nvidia_vera_rubin", "tsmc_coupe", "coherent_cpo"]
+		},
+		{
+			"id": "evidence_2",
+			"kind": "no_counter_evidence",
+			"targetClaim": "NVIDIA、Broadcom、TSMC、Coherentの一次資料を使い、試作、量産目標、量産出荷、展示を混同せず2026年時点の段階を区別する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"nvidia_vera_rubin",
+				"broadcom_cpo",
+				"tsmc_coupe",
+				"coherent_cpo"
+			],
+			"checkedSourceIds": [
+				"nvidia_vera_rubin",
+				"broadcom_cpo",
+				"tsmc_coupe",
+				"coherent_cpo"
+			]
+		},
+		{
+			"id": "evidence_3",
+			"kind": "no_counter_evidence",
+			"targetClaim": "CPOは全面置換と断定せず、pluggable、LPO/LRO、熱、歩留まり、保守性、外部レーザーを反証として同じ画面で扱う。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"nvidia_vera_rubin",
+				"broadcom_cpo",
+				"tsmc_coupe",
+				"coherent_cpo"
+			],
+			"checkedSourceIds": [
+				"nvidia_vera_rubin",
+				"broadcom_cpo",
+				"tsmc_coupe",
+				"coherent_cpo"
+			]
+		}
+	],
+	"noveltyQueries": [
+		"シリコンフォトニクスの構造差を一次資料で再監査する",
+		"シリコンフォトニクスの未取得値を制作runで更新する"
+	],
+	"tags": [
+		"秒算マネー",
+		"シリコンフォトニクス",
+		"CPO",
+		"光I/O",
+		"GPU",
+		"ネットワーク",
+		"半導体"
+	],
+	"sources": [
+		{
+			"id": "nvidia_vera_rubin",
+			"name": "NVIDIA Vera Rubin production",
+			"url": "https://nvidianews.nvidia.com/news/vera-rubin-full-production-agentic-ai-factory",
+			"tier": "L1"
+		},
+		{
+			"id": "broadcom_cpo",
+			"name": "Broadcom Tomahawk production",
+			"url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-now-shipping-worlds-first-1024-tbps-switch-production",
+			"tier": "L1"
+		},
+		{
+			"id": "tsmc_coupe",
+			"name": "TSMC annual report COUPE",
+			"url": "https://investor.tsmc.com/static/annualReports/2025/english/pdf/2025_tsmc_ar_e_ch5.pdf",
+			"tier": "L1"
+		},
+		{
+			"id": "coherent_cpo",
+			"name": "Coherent CPO technologies",
+			"url": "https://www.coherent.com/news/press-releases/coherent-co-packaged-optics-cpo-technologies-ofc-2026",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_physics",
+			"claim": "シリコンフォトニクスの中心は光変調器・導波路・光I/OをスイッチASICの近傍へ寄せ、電気で運ぶ距離と電力を減らす構造にある。",
+			"sourceIds": ["nvidia_vera_rubin", "tsmc_coupe", "coherent_cpo"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_ramp",
+			"claim": "NVIDIA、Broadcom、TSMC、Coherentの一次資料を使い、試作、量産目標、量産出荷、展示を混同せず2026年時点の段階を区別する。",
+			"sourceIds": [
+				"nvidia_vera_rubin",
+				"broadcom_cpo",
+				"tsmc_coupe",
+				"coherent_cpo"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_counterarguments",
+			"claim": "CPOは全面置換と断定せず、pluggable、LPO/LRO、熱、歩留まり、保守性、外部レーザーを反証として同じ画面で扱う。",
+			"sourceIds": [
+				"nvidia_vera_rubin",
+				"broadcom_cpo",
+				"tsmc_coupe",
+				"coherent_cpo"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点1",
+			"headline": "シリコンフォトニクスの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "構造を分解し、投資推奨ではない形でシリコンフォトニクスの中心は光変調器・導波路・光I/OをスイッチASICの近傍へ寄せ、電気で運ぶ距離と電力を減らす構造にある。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点1",
+			"headline": "シリコンフォトニクスの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "一次資料と定義を監査する。シリコンフォトニクスの中心は光変調器・導波路・光I/OをスイッチASICの近傍へ寄せ、電気で運ぶ距離と電力を減らす構造にある。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点1",
+			"headline": "シリコンフォトニクスの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。シリコンフォトニクスの中心は光変調器・導波路・光I/OをスイッチASICの近傍へ寄せ、電気で運ぶ距離と電力を減らす構造にある。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点1",
+			"headline": "シリコンフォトニクスの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "確定できる境界を確認する。投資推奨ではない。シリコンフォトニクスの中心は光変調器・導波路・光I/OをスイッチASICの近傍へ寄せ、電気で運ぶ距離と電力を減らす構造にある。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_ramp"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点2",
+			"headline": "シリコンフォトニクスの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "まず主張を提示する。NVIDIA、Broadcom、TSMC、Coherentの一次資料を使い、試作、量産目標、量産出荷、展示を混同せず2026年時点の段階を区別する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_ramp"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点2",
+			"headline": "シリコンフォトニクスの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "一次資料と定義を監査する。NVIDIA、Broadcom、TSMC、Coherentの一次資料を使い、試作、量産目標、量産出荷、展示を混同せず2026年時点の段階を区別する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_ramp"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点2",
+			"headline": "シリコンフォトニクスの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。NVIDIA、Broadcom、TSMC、Coherentの一次資料を使い、試作、量産目標、量産出荷、展示を混同せず2026年時点の段階を区別する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_ramp"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点2",
+			"headline": "シリコンフォトニクスの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "確定できる境界を確認する。投資推奨ではない。NVIDIA、Broadcom、TSMC、Coherentの一次資料を使い、試作、量産目標、量産出荷、展示を混同せず2026年時点の段階を区別する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_counterarguments"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点3",
+			"headline": "シリコンフォトニクスの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "まず主張を提示する。CPOは全面置換と断定せず、pluggable、LPO/LRO、熱、歩留まり、保守性、外部レーザーを反証として同じ画面で扱う。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_counterarguments"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点3",
+			"headline": "シリコンフォトニクスの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "一次資料と定義を監査する。CPOは全面置換と断定せず、pluggable、LPO/LRO、熱、歩留まり、保守性、外部レーザーを反証として同じ画面で扱う。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_counterarguments"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点3",
+			"headline": "シリコンフォトニクスの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。CPOは全面置換と断定せず、pluggable、LPO/LRO、熱、歩留まり、保守性、外部レーザーを反証として同じ画面で扱う。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_counterarguments"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点3",
+			"headline": "シリコンフォトニクスの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "確定できる境界を確認する。投資推奨ではない。CPOは全面置換と断定せず、pluggable、LPO/LRO、熱、歩留まり、保守性、外部レーザーを反証として同じ画面で扱う。"
+		},
+		{
+			"chapter": "全体地図",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "全体地図",
+			"headline": "シリコンフォトニクスを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "定義",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "定義",
+			"headline": "シリコンフォトニクスを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "データ境界",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "データ境界",
+			"headline": "シリコンフォトニクスを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "構成",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "構成",
+			"headline": "シリコンフォトニクスを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "Short案",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "Short案",
+			"headline": "シリコンフォトニクスを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "出典",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "出典",
+			"headline": "シリコンフォトニクスを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "QA",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "QA",
+			"headline": "シリコンフォトニクスを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "結論",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_physics"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "結論",
+			"headline": "シリコンフォトニクスを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_vera_rubin",
+			"text": "AIデータセンターの電気配線から光I/Oへの移行を量産事実と反証で説明する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		}
+	]
+}

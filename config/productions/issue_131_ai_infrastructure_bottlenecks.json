@@ -1,0 +1,622 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-issue-131",
+	"asOf": "2026-09-24",
+	"angle": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する",
+	"searchQuery": "AI infrastructure bottleneck GPU HBM optics power cooling primary sources",
+	"title": "NVIDIAだけでは見えない　AIインフラ六つのボトルネック",
+	"thumbnailTitle": "AIインフラを構造で見る",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "構造",
+		"accent": "比較",
+		"reaction": "？",
+		"secondLine": "一次資料で監査",
+		"calloutTop": "構造を分解",
+		"calloutBottom": "推奨ではない"
+	},
+	"descriptionLead": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。最新値は制作runで再取得し、事実、推論、未確認を分離して動画へ落とし込む。",
+	"descriptionBullets": [
+		"一次資料のURLと取得日を保存する",
+		"構成銘柄・市場定義・KPIを機械可読化する",
+		"観測値と将来シナリオを画面上で分ける",
+		"投資推奨ではなく構造理解として締める"
+	],
+	"disclaimer": "本動画は情報整理と構造説明を目的とし、特定銘柄の売買を推奨しません。最新値や定義は制作runで再確認します。",
+	"hookPromises": ["構造を分解", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires reproducible source-backed production planning.",
+			"未取得の最新値を推測で補わない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_layers",
+		"claimIds": ["claim_layers", "claim_layers", "claim_layers"]
+	},
+	"narrative": {
+		"hiddenMechanism": "同じ見出しでも測定単位、証券階層、将来条件が異なるため構造を分解する。",
+		"counterfactual": "もし定義と取得日を混ぜれば、見かけの比較が誤った結論になる。",
+		"audiencePayoff": "一次資料と未確認を分けて読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_1",
+			"kind": "no_counter_evidence",
+			"targetClaim": "AIデータセンターは演算、HBM・先端パッケージ、半導体装置、ネットワーク・光、電力、冷却・データセンターの複数レイヤーで成立する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["nvidia_datacenter", "tsmc_ir", "asml_ir", "broadcom_ir"],
+			"checkedSourceIds": [
+				"nvidia_datacenter",
+				"tsmc_ir",
+				"asml_ir",
+				"broadcom_ir"
+			]
+		},
+		{
+			"id": "evidence_2",
+			"kind": "no_counter_evidence",
+			"targetClaim": "レイヤーごとに売上成長率だけでなく、容量、受注、バックログ、リードタイム、電力密度など異なるKPIを追跡する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["nvidia_datacenter", "tsmc_ir", "asml_ir", "broadcom_ir"],
+			"checkedSourceIds": [
+				"nvidia_datacenter",
+				"tsmc_ir",
+				"asml_ir",
+				"broadcom_ir"
+			]
+		},
+		{
+			"id": "evidence_3",
+			"kind": "no_counter_evidence",
+			"targetClaim": "ハイパースケーラーの設備投資がGPU以外へ波及する経路は仮説として可視化し、一次資料で確認できた数値と未確認の因果を分離する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["nvidia_datacenter", "tsmc_ir", "asml_ir", "broadcom_ir"],
+			"checkedSourceIds": [
+				"nvidia_datacenter",
+				"tsmc_ir",
+				"asml_ir",
+				"broadcom_ir"
+			]
+		}
+	],
+	"noveltyQueries": [
+		"AIインフラの構造差を一次資料で再監査する",
+		"AIインフラの未取得値を制作runで更新する"
+	],
+	"tags": [
+		"秒算マネー",
+		"AI",
+		"データセンター",
+		"HBM",
+		"ネットワーク",
+		"電力",
+		"冷却"
+	],
+	"sources": [
+		{
+			"id": "nvidia_datacenter",
+			"name": "NVIDIA data center platform",
+			"url": "https://www.nvidia.com/en-us/data-center/",
+			"tier": "L1"
+		},
+		{
+			"id": "tsmc_ir",
+			"name": "TSMC investor relations",
+			"url": "https://investor.tsmc.com/english",
+			"tier": "L1"
+		},
+		{
+			"id": "asml_ir",
+			"name": "ASML investor relations",
+			"url": "https://www.asml.com/en/investors",
+			"tier": "L1"
+		},
+		{
+			"id": "broadcom_ir",
+			"name": "Broadcom investor relations",
+			"url": "https://investors.broadcom.com/",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_layers",
+			"claim": "AIデータセンターは演算、HBM・先端パッケージ、半導体装置、ネットワーク・光、電力、冷却・データセンターの複数レイヤーで成立する。",
+			"sourceIds": ["nvidia_datacenter", "tsmc_ir", "asml_ir", "broadcom_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_kpis",
+			"claim": "レイヤーごとに売上成長率だけでなく、容量、受注、バックログ、リードタイム、電力密度など異なるKPIを追跡する。",
+			"sourceIds": ["nvidia_datacenter", "tsmc_ir", "asml_ir", "broadcom_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_flow",
+			"claim": "ハイパースケーラーの設備投資がGPU以外へ波及する経路は仮説として可視化し、一次資料で確認できた数値と未確認の因果を分離する。",
+			"sourceIds": ["nvidia_datacenter", "tsmc_ir", "asml_ir", "broadcom_ir"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点1",
+			"headline": "AIインフラの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "構造を分解し、投資推奨ではない形でAIデータセンターは演算、HBM・先端パッケージ、半導体装置、ネットワーク・光、電力、冷却・データセンターの複数レイヤーで成立する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点1",
+			"headline": "AIインフラの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "一次資料と定義を監査する。AIデータセンターは演算、HBM・先端パッケージ、半導体装置、ネットワーク・光、電力、冷却・データセンターの複数レイヤーで成立する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点1",
+			"headline": "AIインフラの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。AIデータセンターは演算、HBM・先端パッケージ、半導体装置、ネットワーク・光、電力、冷却・データセンターの複数レイヤーで成立する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点1",
+			"headline": "AIインフラの論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "確定できる境界を確認する。投資推奨ではない。AIデータセンターは演算、HBM・先端パッケージ、半導体装置、ネットワーク・光、電力、冷却・データセンターの複数レイヤーで成立する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_kpis"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点2",
+			"headline": "AIインフラの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "まず主張を提示する。レイヤーごとに売上成長率だけでなく、容量、受注、バックログ、リードタイム、電力密度など異なるKPIを追跡する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_kpis"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点2",
+			"headline": "AIインフラの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "一次資料と定義を監査する。レイヤーごとに売上成長率だけでなく、容量、受注、バックログ、リードタイム、電力密度など異なるKPIを追跡する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_kpis"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点2",
+			"headline": "AIインフラの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。レイヤーごとに売上成長率だけでなく、容量、受注、バックログ、リードタイム、電力密度など異なるKPIを追跡する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_kpis"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点2",
+			"headline": "AIインフラの論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "確定できる境界を確認する。投資推奨ではない。レイヤーごとに売上成長率だけでなく、容量、受注、バックログ、リードタイム、電力密度など異なるKPIを追跡する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_flow"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点3",
+			"headline": "AIインフラの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "まず主張を提示する。ハイパースケーラーの設備投資がGPU以外へ波及する経路は仮説として可視化し、一次資料で確認できた数値と未確認の因果を分離する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_flow"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点3",
+			"headline": "AIインフラの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "一次資料と定義を監査する。ハイパースケーラーの設備投資がGPU以外へ波及する経路は仮説として可視化し、一次資料で確認できた数値と未確認の因果を分離する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_flow"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点3",
+			"headline": "AIインフラの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。ハイパースケーラーの設備投資がGPU以外へ波及する経路は仮説として可視化し、一次資料で確認できた数値と未確認の因果を分離する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_flow"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点3",
+			"headline": "AIインフラの論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "確定できる境界を確認する。投資推奨ではない。ハイパースケーラーの設備投資がGPU以外へ波及する経路は仮説として可視化し、一次資料で確認できた数値と未確認の因果を分離する。"
+		},
+		{
+			"chapter": "全体地図",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "全体地図",
+			"headline": "AIインフラを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "定義",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "定義",
+			"headline": "AIインフラを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "データ境界",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "データ境界",
+			"headline": "AIインフラを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "構成",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "構成",
+			"headline": "AIインフラを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "Short案",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "Short案",
+			"headline": "AIインフラを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "出典",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "出典",
+			"headline": "AIインフラを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "QA",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "QA",
+			"headline": "AIインフラを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "結論",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_layers"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "結論",
+			"headline": "AIインフラを再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "nvidia_datacenter",
+			"text": "AI設備投資を演算、メモリ、製造、ネットワーク、電力、冷却のレイヤーに分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		}
+	]
+}

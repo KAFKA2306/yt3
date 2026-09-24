@@ -1,0 +1,614 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-09-24-issue-133",
+	"asOf": "2026-09-24",
+	"angle": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する",
+	"searchQuery": "BOJ Fed USDJPY 159 2026 September rate differential intervention",
+	"title": "日銀が利上げしても円安になる理由を金利パスで分解する",
+	"thumbnailTitle": "ドル円を構造で見る",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "構造",
+		"accent": "比較",
+		"reaction": "？",
+		"secondLine": "一次資料で監査",
+		"calloutTop": "構造を分解",
+		"calloutBottom": "推奨ではない"
+	},
+	"descriptionLead": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。最新値は制作runで再取得し、事実、推論、未確認を分離して動画へ落とし込む。",
+	"descriptionBullets": [
+		"一次資料のURLと取得日を保存する",
+		"構成銘柄・市場定義・KPIを機械可読化する",
+		"観測値と将来シナリオを画面上で分ける",
+		"投資推奨ではなく構造理解として締める"
+	],
+	"disclaimer": "本動画は情報整理と構造説明を目的とし、特定銘柄の売買を推奨しません。最新値や定義は制作runで再確認します。",
+	"hookPromises": ["構造を分解", "投資推奨ではない"],
+	"production": {
+		"format": "deep_dive",
+		"targetMinutes": 7,
+		"minSegments": 20,
+		"maxSegments": 20,
+		"reasons": [
+			"Issue acceptance requires reproducible source-backed production planning.",
+			"未取得の最新値を推測で補わない。"
+		],
+		"narrativeArchetype": "standard",
+		"appliedPerformancePreference": "deep_dive"
+	},
+	"packaging": {
+		"primaryClaimId": "claim_policy",
+		"claimIds": ["claim_policy", "claim_policy", "claim_policy"]
+	},
+	"narrative": {
+		"hiddenMechanism": "同じ見出しでも測定単位、証券階層、将来条件が異なるため構造を分解する。",
+		"counterfactual": "もし定義と取得日を混ぜれば、見かけの比較が誤った結論になる。",
+		"audiencePayoff": "一次資料と未確認を分けて読める。"
+	},
+	"adversarialEvidence": [
+		{
+			"id": "evidence_1",
+			"kind": "no_counter_evidence",
+			"targetClaim": "2026年9月18日のBOJ決定と9月16日のFed決定は、日米金利差を一方向に縮めるだけの材料ではないため、両政策を同じ時系列で比較する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["boj_policy", "fed_policy"],
+			"checkedSourceIds": ["boj_policy", "fed_policy"]
+		},
+		{
+			"id": "evidence_2",
+			"kind": "no_counter_evidence",
+			"targetClaim": "ドル円は現在の政策金利だけでなく、次の政策パス、2年金利差、ポジショニング、外貨需給を分けて説明する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": [
+				"boj_policy",
+				"fed_policy",
+				"fx_reuters_0921",
+				"fx_reuters_0922"
+			],
+			"checkedSourceIds": [
+				"boj_policy",
+				"fed_policy",
+				"fx_reuters_0921",
+				"fx_reuters_0922"
+			]
+		},
+		{
+			"id": "evidence_3",
+			"kind": "no_counter_evidence",
+			"targetClaim": "介入警戒は公式の防衛ラインと同一視せず、財務省発言や過去の対応を時系列で並べ、観測・解釈・予測を区別する。",
+			"statement": "一次資料の定義差と最新値の更新有無を制作runで再確認する。",
+			"sourceIds": ["fx_reuters_0921", "fx_reuters_0922", "boj_policy"],
+			"checkedSourceIds": ["fx_reuters_0921", "fx_reuters_0922", "boj_policy"]
+		}
+	],
+	"noveltyQueries": [
+		"ドル円の構造差を一次資料で再監査する",
+		"ドル円の未取得値を制作runで更新する"
+	],
+	"tags": ["秒算マネー", "為替", "BOJ", "Fed", "金利差", "介入", "円安"],
+	"sources": [
+		{
+			"id": "boj_policy",
+			"name": "日本銀行 金融政策決定会合",
+			"url": "https://www.boj.or.jp/mopo/mpmdeci/state_2026/",
+			"tier": "L1"
+		},
+		{
+			"id": "fed_policy",
+			"name": "Federal Reserve monetary policy release",
+			"url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm",
+			"tier": "L1"
+		},
+		{
+			"id": "fx_reuters_0921",
+			"name": "Reuters yen intervention watch",
+			"url": "https://www.reuters.com/world/asia-pacific/volatile-yen-draws-intervention-watch-other-currencies-subdued-2026-09-21/",
+			"tier": "L1"
+		},
+		{
+			"id": "fx_reuters_0922",
+			"name": "Reuters yen central-bank outlook",
+			"url": "https://www.reuters.com/world/asia-pacific/yen-squeezed-hawkish-turn-grips-central-banks-2026-09-22/",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim_policy",
+			"claim": "2026年9月18日のBOJ決定と9月16日のFed決定は、日米金利差を一方向に縮めるだけの材料ではないため、両政策を同じ時系列で比較する。",
+			"sourceIds": ["boj_policy", "fed_policy"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_path",
+			"claim": "ドル円は現在の政策金利だけでなく、次の政策パス、2年金利差、ポジショニング、外貨需給を分けて説明する。",
+			"sourceIds": [
+				"boj_policy",
+				"fed_policy",
+				"fx_reuters_0921",
+				"fx_reuters_0922"
+			],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		},
+		{
+			"id": "claim_intervention",
+			"claim": "介入警戒は公式の防衛ラインと同一視せず、財務省発言や過去の対応を時系列で並べ、観測・解釈・予測を区別する。",
+			"sourceIds": ["fx_reuters_0921", "fx_reuters_0922", "boj_policy"],
+			"status": "derived_with_caveat",
+			"caveat": "制作runで最新値、定義、取得可否を再確認する。",
+			"confidence": 0.5,
+			"unresolvedMismatches": ["最新値は制作runで再取得"],
+			"epistemicBoundary": "これは構造仮説であり、最新値の取得後に確定する。"
+		}
+	],
+	"segments": [
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点1",
+			"headline": "ドル円の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "boj_policy",
+			"text": "構造を分解し、投資推奨ではない形で2026年9月18日のBOJ決定と9月16日のFed決定は、日米金利差を一方向に縮めるだけの材料ではないため、両政策を同じ時系列で比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点1",
+			"headline": "ドル円の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "boj_policy",
+			"text": "一次資料と定義を監査する。2026年9月18日のBOJ決定と9月16日のFed決定は、日米金利差を一方向に縮めるだけの材料ではないため、両政策を同じ時系列で比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": ["evidence_1"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点1",
+			"headline": "ドル円の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "boj_policy",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。2026年9月18日のBOJ決定と9月16日のFed決定は、日米金利差を一方向に縮めるだけの材料ではないため、両政策を同じ時系列で比較する。"
+		},
+		{
+			"chapter": "1つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点1",
+			"headline": "ドル円の論点1",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "boj_policy",
+			"text": "確定できる境界を確認する。投資推奨ではない。2026年9月18日のBOJ決定と9月16日のFed決定は、日米金利差を一方向に縮めるだけの材料ではないため、両政策を同じ時系列で比較する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_path"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点2",
+			"headline": "ドル円の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "boj_policy",
+			"text": "まず主張を提示する。ドル円は現在の政策金利だけでなく、次の政策パス、2年金利差、ポジショニング、外貨需給を分けて説明する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_path"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点2",
+			"headline": "ドル円の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "boj_policy",
+			"text": "一次資料と定義を監査する。ドル円は現在の政策金利だけでなく、次の政策パス、2年金利差、ポジショニング、外貨需給を分けて説明する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_path"],
+			"evidenceIds": ["evidence_2"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点2",
+			"headline": "ドル円の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "boj_policy",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。ドル円は現在の政策金利だけでなく、次の政策パス、2年金利差、ポジショニング、外貨需給を分けて説明する。"
+		},
+		{
+			"chapter": "2つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_path"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点2",
+			"headline": "ドル円の論点2",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "boj_policy",
+			"text": "確定できる境界を確認する。投資推奨ではない。ドル円は現在の政策金利だけでなく、次の政策パス、2年金利差、ポジショニング、外貨需給を分けて説明する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "fact",
+			"verificationRole": "presenter",
+			"claimIds": ["claim_intervention"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "論点3",
+			"headline": "ドル円の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "fx_reuters_0921",
+			"text": "まず主張を提示する。介入警戒は公式の防衛ラインと同一視せず、財務省発言や過去の対応を時系列で並べ、観測・解釈・予測を区別する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "context",
+			"verificationRole": "auditor",
+			"claimIds": ["claim_intervention"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "論点3",
+			"headline": "ドル円の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "fx_reuters_0921",
+			"text": "一次資料と定義を監査する。介入警戒は公式の防衛ラインと同一視せず、財務省発言や過去の対応を時系列で並べ、観測・解釈・予測を区別する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "impact",
+			"verificationRole": "resolution",
+			"claimIds": ["claim_intervention"],
+			"evidenceIds": ["evidence_3"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "論点3",
+			"headline": "ドル円の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "matrix",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "再確認",
+					"detail": "制作runで更新",
+					"color": "amber"
+				}
+			],
+			"source": "fx_reuters_0921",
+			"text": "ここは推論です。確度は50%。最新値は制作runで再取得。介入警戒は公式の防衛ラインと同一視せず、財務省発言や過去の対応を時系列で並べ、観測・解釈・予測を区別する。"
+		},
+		{
+			"chapter": "3つ目の論点",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_intervention"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "論点3",
+			"headline": "ドル円の論点3",
+			"subheadline": "一次資料と未確定部分を分ける",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "状態",
+					"value": "監査",
+					"detail": "制作runで更新",
+					"color": "cyan"
+				}
+			],
+			"source": "fx_reuters_0921",
+			"text": "確定できる境界を確認する。投資推奨ではない。介入警戒は公式の防衛ラインと同一視せず、財務省発言や過去の対応を時系列で並べ、観測・解釈・予測を区別する。"
+		},
+		{
+			"chapter": "全体地図",
+			"narrativeRole": "fact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "reveal",
+			"section": "全体地図",
+			"headline": "ドル円を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "diagram",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "boj_policy",
+			"text": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "定義",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "定義",
+			"headline": "ドル円を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "boj_policy",
+			"text": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "データ境界",
+			"narrativeRole": "context",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "データ境界",
+			"headline": "ドル円を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "warning-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "boj_policy",
+			"text": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "構成",
+			"narrativeRole": "impact",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "warm",
+			"section": "構成",
+			"headline": "ドル円を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "boj_policy",
+			"text": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "Short案",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "joy",
+			"section": "Short案",
+			"headline": "ドル円を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "title",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "boj_policy",
+			"text": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "出典",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "relieved",
+			"section": "出典",
+			"headline": "ドル円を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "source-card",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "boj_policy",
+			"text": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "QA",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "QA",
+			"headline": "ドル円を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "checklist",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "boj_policy",
+			"text": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		},
+		{
+			"chapter": "結論",
+			"narrativeRole": "action",
+			"verificationRole": "landing",
+			"claimIds": ["claim_policy"],
+			"evidenceIds": [],
+			"speaker": "春日部つむぎ",
+			"emotion": "confident",
+			"section": "結論",
+			"headline": "ドル円を再現可能にする",
+			"subheadline": "観測値と仮説を分離する",
+			"visualType": "outro",
+			"stats": [
+				{
+					"label": "QA",
+					"value": "必須",
+					"detail": "source / period / status",
+					"color": "muted"
+				}
+			],
+			"source": "boj_policy",
+			"text": "BOJとFedの政策変更、将来織り込み、需給、介入警戒を時系列で分解する。観測値、推論、未取得データを分離し、再生成できる形で監査する。"
+		}
+	]
+}
