@@ -6,6 +6,8 @@ import {
 	TtsOrchestrator,
 	type TtsVoiceControls,
 } from "../../io/utils/tts_orchestrator.js";
+import { compileEpisode } from "../../scripts/compile_episode.js";
+import { renderEpisode } from "../../scripts/render_episode.js";
 import { LayoutEngine } from "../layout/engine.js";
 import { ThumbnailGenerator } from "../media/thumbnail_generator.js";
 import type { AgentState, Metadata, NewsItem, Script } from "../types.js";
@@ -21,13 +23,11 @@ import {
 	probeEpisodeMedia,
 } from "./e2e_verifier.js";
 import {
-	EpisodeSchema,
 	type Episode,
+	EpisodeSchema,
 	type LocalePatch,
 	parseLocalePatch,
 } from "./schema.js";
-import { compileEpisode } from "../../scripts/compile_episode.js";
-import { renderEpisode } from "../../scripts/render_episode.js";
 
 const DEFAULT_ASR_THRESHOLD = 0.82;
 const DEFAULT_REPAIR_LIMIT = 1;
@@ -145,7 +145,9 @@ function id(prefix: string, index: number): string {
 	return `${prefix}-${String(index + 1).padStart(3, "0")}`;
 }
 
-function uniqueNewsSources(news: NewsItem[]): Array<NewsItem & { sourceId: string }> {
+function uniqueNewsSources(
+	news: NewsItem[],
+): Array<NewsItem & { sourceId: string }> {
 	const seen = new Set<string>();
 	const sources: Array<NewsItem & { sourceId: string }> = [];
 	for (const item of news) {
@@ -164,9 +166,12 @@ export function buildCanonicalEpisode(input: {
 	audioPaths: string[];
 	locales?: string[];
 }): Episode {
-	if (input.script.lines.length === 0) throw new Error("canonical episode requires dialogue");
+	if (input.script.lines.length === 0)
+		throw new Error("canonical episode requires dialogue");
 	if (input.audioPaths.length !== input.script.lines.length)
-		throw new Error("canonical episode audio path count does not match dialogue count");
+		throw new Error(
+			"canonical episode audio path count does not match dialogue count",
+		);
 	const research = uniqueNewsSources(input.news);
 	const sources = research.map((item) => ({
 		id: item.sourceId,
@@ -179,10 +184,16 @@ export function buildCanonicalEpisode(input: {
 		source_ids: [item.sourceId],
 	}));
 	const visuals = input.script.lines.map((line, index) => {
-		const source = research.length > 0 ? research[index % research.length] : undefined;
+		const source =
+			research.length > 0 ? research[index % research.length] : undefined;
 		return {
 			id: id("visual", index),
-			type: index === 0 ? ("title" as const) : source ? ("source-card" as const) : ("title" as const),
+			type:
+				index === 0
+					? ("title" as const)
+					: source
+						? ("source-card" as const)
+						: ("title" as const),
 			props:
 				index === 0
 					? { title: input.metadata.title, subtitle: line.text }
@@ -228,7 +239,10 @@ export function buildCanonicalEpisode(input: {
 		locales: input.locales ?? [],
 	});
 	const issues = auditEpisode(episode);
-	if (issues.length > 0) throw new Error(`canonical episode audit failed: ${JSON.stringify(issues)}`);
+	if (issues.length > 0)
+		throw new Error(
+			`canonical episode audit failed: ${JSON.stringify(issues)}`,
+		);
 	return episode;
 }
 
@@ -289,7 +303,10 @@ export class FasterWhisperEpisodeAsrEngine implements EpisodeAsrEngine {
 			.split("\n")
 			.filter(Boolean)
 			.map((line) => JSON.parse(line) as { text?: string });
-		return lines.map((line) => line.text ?? "").join("").trim();
+		return lines
+			.map((line) => line.text ?? "")
+			.join("")
+			.trim();
 	}
 }
 
@@ -349,7 +366,9 @@ async function synthesizeAndVerify(
 	for (const dialogue of dialogueList(episode)) {
 		const speakerId = speakers[dialogue.speaker];
 		if (speakerId === undefined)
-			throw new Error(`canonical TTS speaker is not configured: ${dialogue.speaker}`);
+			throw new Error(
+				`canonical TTS speaker is not configured: ${dialogue.speaker}`,
+			);
 		const audioPath = path.resolve(episodeDir, dialogue.audio.path);
 		await fs.ensureDir(path.dirname(audioPath));
 		let transcript = "";
@@ -413,16 +432,25 @@ async function synthesizeAndVerify(
 			);
 		audioPaths.push(audioPath);
 	}
-	const ttsManifestPath = path.join(episodeDir, `tts-manifest-${options.locale}.json`);
+	const ttsManifestPath = path.join(
+		episodeDir,
+		`tts-manifest-${options.locale}.json`,
+	);
 	const reportPath = path.join(episodeDir, `asr-report-${options.locale}.json`);
-	await fs.writeJson(ttsManifestPath, { language: options.locale, records: ttsRecords }, { spaces: 2 });
+	await fs.writeJson(
+		ttsManifestPath,
+		{ language: options.locale, records: ttsRecords },
+		{ spaces: 2 },
+	);
 	await fs.writeJson(
 		reportPath,
 		{
 			language: options.locale,
 			threshold: options.threshold,
 			all_passed: asrRecords.every((record) => record.passed),
-			targeted_repairs: asrRecords.filter((record) => record.attempts > 1).map((record) => record.dialogue_id),
+			targeted_repairs: asrRecords
+				.filter((record) => record.attempts > 1)
+				.map((record) => record.dialogue_id),
 			records: asrRecords,
 		},
 		{ spaces: 2 },
@@ -441,7 +469,10 @@ function resolveLocalePatches(
 		fs
 			.readdirSync(localeDir)
 			.filter((name) => name.endsWith(".json"))
-			.map((name) => [path.basename(name, ".json"), path.join(localeDir, name)]),
+			.map((name) => [
+				path.basename(name, ".json"),
+				path.join(localeDir, name),
+			]),
 	);
 }
 
@@ -453,7 +484,10 @@ function localeAudioPaths(
 ): string[] {
 	const audioDir = path.join(store.audioDir(), locale);
 	return dialogueList(episode).map((_, index) =>
-		path.relative(episodeDir, path.join(audioDir, `${String(index).padStart(3, "0")}.wav`)),
+		path.relative(
+			episodeDir,
+			path.join(audioDir, `${String(index).padStart(3, "0")}.wav`),
+		),
 	);
 }
 
@@ -468,9 +502,15 @@ function replaceAudioPaths(episode: Episode, audioPaths: string[]): Episode {
 	return EpisodeSchema.parse(next);
 }
 
-async function writeCanonicalEpisode(filePath: string, episode: Episode): Promise<void> {
+async function writeCanonicalEpisode(
+	filePath: string,
+	episode: Episode,
+): Promise<void> {
 	const issues = auditEpisode(episode);
-	if (issues.length > 0) throw new Error(`canonical episode audit failed: ${JSON.stringify(issues)}`);
+	if (issues.length > 0)
+		throw new Error(
+			`canonical episode audit failed: ${JSON.stringify(issues)}`,
+		);
 	await fs.writeJson(filePath, episode, { spaces: 2 });
 }
 
@@ -480,8 +520,10 @@ export async function runCanonicalEpisodeProduction(
 	options: CanonicalProductionOptions = {},
 ): Promise<CanonicalProductionResult> {
 	if (!state.script) throw new Error("canonical production requires script");
-	if (!state.metadata) throw new Error("canonical production requires metadata");
-	const dependencies = options.dependencies ?? createCanonicalProductionDependencies(store);
+	if (!state.metadata)
+		throw new Error("canonical production requires metadata");
+	const dependencies =
+		options.dependencies ?? createCanonicalProductionDependencies(store);
 	const threshold = options.asrThreshold ?? DEFAULT_ASR_THRESHOLD;
 	const repairLimit = options.repairLimit ?? DEFAULT_REPAIR_LIMIT;
 	const episodeDir = path.join(store.runDir, "episode");
@@ -510,19 +552,45 @@ export async function runCanonicalEpisodeProduction(
 	});
 	const episodePath = path.join(episodeDir, "episode.json");
 	await writeCanonicalEpisode(episodePath, episode);
-	const jaSpeech = await synthesizeAndVerify(episode, episodeDir, store, dependencies, {
-		threshold,
-		repairLimit,
-		locale: "ja",
-	});
+	const jaSpeech = await synthesizeAndVerify(
+		episode,
+		episodeDir,
+		store,
+		dependencies,
+		{
+			threshold,
+			repairLimit,
+			locale: "ja",
+		},
+	);
 	const jaCompiled = path.join(compiledRoot, "ja");
-	await compileEpisode({ episode: episodePath, out: jaCompiled, ffprobe: "ffprobe" });
-	const videoPath = path.join(store.videoDir(), store.cfg.workflow.filenames.video);
+	await compileEpisode({
+		episode: episodePath,
+		out: jaCompiled,
+		ffprobe: "ffprobe",
+	});
+	const videoPath = path.join(
+		store.videoDir(),
+		store.cfg.workflow.filenames.video,
+	);
 	const shortVideoPath = path.join(store.videoDir(), "short.mp4");
-	await renderEpisode({ compiled: jaCompiled, kind: "main", output: videoPath, dryRun: false });
-	await renderEpisode({ compiled: jaCompiled, kind: "short", output: shortVideoPath, dryRun: false });
+	await renderEpisode({
+		compiled: jaCompiled,
+		kind: "main",
+		output: videoPath,
+		dryRun: false,
+	});
+	await renderEpisode({
+		compiled: jaCompiled,
+		kind: "short",
+		output: shortVideoPath,
+		dryRun: false,
+	});
 
-	const thumbnailPath = path.join(store.runDir, store.cfg.workflow.filenames.thumbnail);
+	const thumbnailPath = path.join(
+		store.runDir,
+		store.cfg.workflow.filenames.thumbnail,
+	);
 	const thumbnailTitle = episode.thumbnail.lines.join(" ");
 	await dependencies.thumbnail.generate(thumbnailTitle, thumbnailPath);
 	if (!fs.existsSync(thumbnailPath) || fs.statSync(thumbnailPath).size === 0)
@@ -532,13 +600,21 @@ export async function runCanonicalEpisodeProduction(
 	for (const [locale, patchPath] of Object.entries(localePatches)) {
 		const patch = parseLocalePatch(await fs.readFile(patchPath, "utf8"));
 		if (patch.locale !== locale)
-			throw new Error(`locale patch key ${locale} does not match patch locale ${patch.locale}`);
+			throw new Error(
+				`locale patch key ${locale} does not match patch locale ${patch.locale}`,
+			);
 		const localeIssues = auditLocalePatch(episode, patch);
 		if (localeIssues.length > 0)
-			throw new Error(`locale patch audit failed: ${JSON.stringify(localeIssues)}`);
+			throw new Error(
+				`locale patch audit failed: ${JSON.stringify(localeIssues)}`,
+			);
 		let localized = EpisodeSchema.parse(applyLocalePatch(episode, patch));
-		localized = replaceAudioPaths(localized, localeAudioPaths(localized, episodeDir, store, locale));
-		if (locale === "en") assertEnglishLocale(extractTranslatableStrings(localized));
+		localized = replaceAudioPaths(
+			localized,
+			localeAudioPaths(localized, episodeDir, store, locale),
+		);
+		if (locale === "en")
+			assertEnglishLocale(extractTranslatableStrings(localized));
 		const localeEpisodePath = path.join(episodeDir, `episode.${locale}.json`);
 		await writeCanonicalEpisode(localeEpisodePath, localized);
 		await synthesizeAndVerify(localized, episodeDir, store, dependencies, {
@@ -547,20 +623,41 @@ export async function runCanonicalEpisodeProduction(
 			locale,
 		});
 		const localeCompiled = path.join(compiledRoot, locale);
-		await compileEpisode({ episode: localeEpisodePath, out: localeCompiled, ffprobe: "ffprobe" });
+		await compileEpisode({
+			episode: localeEpisodePath,
+			out: localeCompiled,
+			ffprobe: "ffprobe",
+		});
 		const localeVideo = path.join(store.videoDir(), `video.${locale}.mp4`);
-		await renderEpisode({ compiled: localeCompiled, kind: "main", output: localeVideo, dryRun: false });
+		await renderEpisode({
+			compiled: localeCompiled,
+			kind: "main",
+			output: localeVideo,
+			dryRun: false,
+		});
 		localeVideoPaths[locale] = localeVideo;
 	}
 
 	const mainProbe = probeEpisodeMedia(videoPath);
 	const shortProbe = probeEpisodeMedia(shortVideoPath);
-	const mainContract = assertMediaContract(mainProbe, { width: 1920, height: 1080 });
-	const shortContract = assertMediaContract(shortProbe, { width: 1080, height: 1920 });
+	const mainContract = assertMediaContract(mainProbe, {
+		width: 1920,
+		height: 1080,
+	});
+	const shortContract = assertMediaContract(shortProbe, {
+		width: 1080,
+		height: 1920,
+	});
 	const localeQa = Object.fromEntries(
 		Object.entries(localeVideoPaths).map(([locale, filePath]) => {
 			const probe = probeEpisodeMedia(filePath);
-			return [locale, { probe, contract: assertMediaContract(probe, { width: 1920, height: 1080 }) }];
+			return [
+				locale,
+				{
+					probe,
+					contract: assertMediaContract(probe, { width: 1920, height: 1080 }),
+				},
+			];
 		}),
 	);
 	const canonicalQaPath = path.join(episodeDir, "qa.json");
@@ -577,7 +674,9 @@ export async function runCanonicalEpisodeProduction(
 		{ spaces: 2 },
 	);
 
-	const timeline = await fs.readJson(path.join(jaCompiled, "timeline.json")) as Array<{
+	const timeline = (await fs.readJson(
+		path.join(jaCompiled, "timeline.json"),
+	)) as Array<{
 		startMs: number;
 		endMs: number;
 	}>;
@@ -597,6 +696,8 @@ export async function runCanonicalEpisodeProduction(
 		canonical_qa_path: canonicalQaPath,
 		locale_video_paths: localeVideoPaths,
 	};
-	await fs.writeJson(path.join(episodeDir, "production-result.json"), result, { spaces: 2 });
+	await fs.writeJson(path.join(episodeDir, "production-result.json"), result, {
+		spaces: 2,
+	});
 	return result;
 }

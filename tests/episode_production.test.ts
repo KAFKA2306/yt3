@@ -72,7 +72,11 @@ describe("canonical episode production", () => {
 	});
 
 	test("normalizes punctuation while still rejecting material ASR errors", () => {
-		expect(transcriptSimilarity("レンダリング、確認。", "レンダリング確認")).toBe(1);
-		expect(transcriptSimilarity("本編の要点", "完全に違う文章")).toBeLessThan(0.82);
+		expect(
+			transcriptSimilarity("レンダリング、確認。", "レンダリング確認"),
+		).toBe(1);
+		expect(transcriptSimilarity("本編の要点", "完全に違う文章")).toBeLessThan(
+			0.82,
+		);
 	});
 });

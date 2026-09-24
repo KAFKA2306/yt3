@@ -1,20 +1,18 @@
 import path from "node:path";
 import fs from "fs-extra";
 import sharp from "sharp";
-import {
-	extractTranslatableStrings,
-} from "../domain/episode/compiler.js";
+import { extractTranslatableStrings } from "../domain/episode/compiler.js";
 import {
 	assertEnglishLocale,
 	assertMediaContract,
 	probeEpisodeMedia,
 } from "../domain/episode/e2e_verifier.js";
 import {
-	buildCanonicalEpisode,
-	runCanonicalEpisodeProduction,
 	type CanonicalProductionDependencies,
 	type EpisodeAsrRequest,
 	type EpisodeTtsRequest,
+	buildCanonicalEpisode,
+	runCanonicalEpisodeProduction,
 } from "../domain/episode/production.js";
 import { parseEpisode } from "../domain/episode/schema.js";
 import type { AgentState } from "../domain/types.js";
@@ -58,7 +56,10 @@ class SyntheticTts {
 		this.calls.push(request);
 		const index = dialogueIndex(request.dialogueId);
 		const durations = [0.3, 0.4, 0.5];
-		return wavBuffer(durations[index % durations.length] ?? 0.3, 440 + index * 110);
+		return wavBuffer(
+			durations[index % durations.length] ?? 0.3,
+			440 + index * 110,
+		);
 	}
 }
 
@@ -115,7 +116,10 @@ function englishValue(value: string): string {
 	return value;
 }
 
-async function copyEvidence(root: string, result: Awaited<ReturnType<typeof runCanonicalEpisodeProduction>>) {
+async function copyEvidence(
+	root: string,
+	result: Awaited<ReturnType<typeof runCanonicalEpisodeProduction>>,
+) {
 	const evidence = path.join(root, "evidence");
 	await fs.remove(evidence);
 	await fs.ensureDir(evidence);
@@ -129,12 +133,19 @@ async function copyEvidence(root: string, result: Awaited<ReturnType<typeof runC
 		result.thumbnail_path,
 		...Object.values(result.locale_video_paths),
 	];
-	const enEpisode = path.join(path.dirname(result.episode_path), "episode.en.json");
-	const enAsr = path.join(path.dirname(result.episode_path), "asr-report-en.json");
+	const enEpisode = path.join(
+		path.dirname(result.episode_path),
+		"episode.en.json",
+	);
+	const enAsr = path.join(
+		path.dirname(result.episode_path),
+		"asr-report-en.json",
+	);
 	if (fs.existsSync(enEpisode)) files.push(enEpisode);
 	if (fs.existsSync(enAsr)) files.push(enAsr);
 	for (const filePath of files) {
-		if (!fs.existsSync(filePath)) throw new Error(`evidence file is missing: ${filePath}`);
+		if (!fs.existsSync(filePath))
+			throw new Error(`evidence file is missing: ${filePath}`);
 		await fs.copy(filePath, path.join(evidence, path.basename(filePath)));
 	}
 }
@@ -200,7 +211,10 @@ export async function smokeCanonicalProduction(
 		{
 			locale: "en",
 			strings: Object.fromEntries(
-				Object.entries(sourceStrings).map(([key, value]) => [key, englishValue(value)]),
+				Object.entries(sourceStrings).map(([key, value]) => [
+					key,
+					englishValue(value),
+				]),
 			),
 		},
 		{ spaces: 2 },
@@ -222,7 +236,9 @@ export async function smokeCanonicalProduction(
 
 	const episode = parseEpisode(await fs.readFile(result.episode_path, "utf8"));
 	if (episode.sources.length !== 1 || episode.claims.length !== 1)
-		throw new Error("Research/Evidence provenance was not preserved in canonical episode");
+		throw new Error(
+			"Research/Evidence provenance was not preserved in canonical episode",
+		);
 	if (episode.claims[0]?.source_ids[0] !== episode.sources[0]?.id)
 		throw new Error("claim/source provenance is broken");
 	const asrReport = fs.readJsonSync(result.asr_report_path) as {
@@ -230,13 +246,17 @@ export async function smokeCanonicalProduction(
 		targeted_repairs?: string[];
 	};
 	if (!asrReport.all_passed) throw new Error("ASR report did not pass");
-	if (JSON.stringify(asrReport.targeted_repairs) !== JSON.stringify(["line-002"]))
+	if (
+		JSON.stringify(asrReport.targeted_repairs) !== JSON.stringify(["line-002"])
+	)
 		throw new Error("targeted ASR repair did not isolate line-002");
 	const repairedTtsCalls = tts.calls.filter(
 		(call) => call.language === "ja" && call.dialogueId === "line-002",
 	);
 	if (repairedTtsCalls.length !== 2)
-		throw new Error("TTS targeted repair did not regenerate exactly one dialogue");
+		throw new Error(
+			"TTS targeted repair did not regenerate exactly one dialogue",
+		);
 
 	const timeline = fs.readJsonSync(
 		path.join(store.runDir, "episode", "compiled", "ja", "timeline.json"),
@@ -245,33 +265,49 @@ export async function smokeCanonicalProduction(
 		timeline.map((item) => Math.round(item.endMs - item.startMs)),
 	);
 	if (measuredDurations.size !== 3)
-		throw new Error("measured audio master timeline did not preserve 3 durations");
+		throw new Error(
+			"measured audio master timeline did not preserve 3 durations",
+		);
 	const main = assertMediaContract(probeEpisodeMedia(result.video_path), {
 		width: 1920,
 		height: 1080,
 	});
-	const short = assertMediaContract(probeEpisodeMedia(result.short_video_path), {
-		width: 1080,
-		height: 1920,
-	});
+	const short = assertMediaContract(
+		probeEpisodeMedia(result.short_video_path),
+		{
+			width: 1080,
+			height: 1920,
+		},
+	);
 	if (main.driftMs > 100 || short.driftMs > 100)
 		throw new Error("canonical production A/V drift exceeded gate");
 	const enVideo = result.locale_video_paths.en;
 	if (!enVideo) throw new Error("English production video was not generated");
-	assertMediaContract(probeEpisodeMedia(enVideo), { width: 1920, height: 1080 });
+	assertMediaContract(probeEpisodeMedia(enVideo), {
+		width: 1920,
+		height: 1080,
+	});
 	const enEpisode = parseEpisode(
-		await fs.readFile(path.join(store.runDir, "episode", "episode.en.json"), "utf8"),
+		await fs.readFile(
+			path.join(store.runDir, "episode", "episode.en.json"),
+			"utf8",
+		),
 	);
 	assertEnglishLocale(extractTranslatableStrings(enEpisode));
 	const thumbnail = await sharp(result.thumbnail_path).metadata();
 	if (thumbnail.width !== 1280 || thumbnail.height !== 720)
 		throw new Error("canonical thumbnail has wrong dimensions");
 
-	const workflowSource = await fs.readFile(path.resolve("src/workflow.ts"), "utf8");
+	const workflowSource = await fs.readFile(
+		path.resolve("src/workflow.ts"),
+		"utf8",
+	);
 	if (!workflowSource.includes("runCanonicalEpisodeProduction(store, state)"))
 		throw new Error("sequential workflow is not wired to canonical production");
 	if (workflowSource.includes("new VisualDirector"))
-		throw new Error("legacy VisualDirector remains an implicit sequential production fallback");
+		throw new Error(
+			"legacy VisualDirector remains an implicit sequential production fallback",
+		);
 
 	await copyEvidence(root, result);
 	await fs.writeJson(
