@@ -12,11 +12,12 @@ const dossierFiles = [
 	"issue_136_nvidia_capital_loop.json",
 	"issue_137_ai_datacenter_growth_map.json",
 	"issue_138_google_finance_fallback.json",
+	"issue_156_ai_datacenter_credit_risk.json",
 ];
 
 describe("open issue production dossiers", () => {
-	test("all nine content issues satisfy the byosan feature contract", () => {
-		expect(dossierFiles).toHaveLength(9);
+	test("all ten content issues satisfy the byosan feature contract", () => {
+		expect(dossierFiles).toHaveLength(10);
 		for (const file of dossierFiles) {
 			const spec = parseAndAuditByosanFeatureSpec(
 				fs.readJsonSync(`config/productions/${file}`),

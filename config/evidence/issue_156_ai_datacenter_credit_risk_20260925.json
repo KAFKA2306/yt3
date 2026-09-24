@@ -1,0 +1,141 @@
+{
+	"schemaVersion": "byosan_evidence_ledger_v1",
+	"issue": 156,
+	"runId": "byosan_money/2026-09-25-issue-156-evidence",
+	"asOf": "2026-09-25",
+	"retrievedAt": "2026-09-25",
+	"status": "PARTIAL_UNVERIFIED",
+	"statusReason": "Goldman Sachs provides a dated US power-demand and on-time activation forecast, while Bloomberg Law and Reuters report Project Jupiter force-majeure and loan-pricing observations. Contract text, facility-level energized MW, final debt terms, independent corroboration, production visuals, and publication remain outstanding.",
+	"lossLayers": [
+		{
+			"id": "developer_owner",
+			"label": "Data-center developer / owner",
+			"status": "STRUCTURAL_RISK_HYPOTHESIS",
+			"sourceIds": ["bloomberg_force_majeure", "reuters_debt"]
+		},
+		{
+			"id": "project_finance",
+			"label": "Project finance lender / credit investor",
+			"status": "REPORTED_MARKET_PRICE_OBSERVATION_NOT_LOSS_PROOF",
+			"sourceIds": ["reuters_debt"]
+		},
+		{
+			"id": "hyperscaler_tenant",
+			"label": "Hyperscaler / tenant",
+			"status": "CONTRACT_DEPENDENT_UNVERIFIED",
+			"sourceIds": ["bloomberg_force_majeure"]
+		},
+		{
+			"id": "ai_operator",
+			"label": "AI operator / compute user",
+			"status": "OPPORTUNITY_COST_HYPOTHESIS",
+			"sourceIds": ["goldman_power"]
+		},
+		{
+			"id": "high_leverage_neocloud",
+			"label": "High-leverage neocloud",
+			"status": "REQUIRES_ENTITY_SPECIFIC_CONTRACT_AND_POWER_READBACK",
+			"sourceIds": []
+		}
+	],
+	"marketForecastReadback": {
+		"status": "VERIFIED_FORECAST_NOT_FACILITY_ACTUAL",
+		"readAt": "2026-09-25",
+		"sourceId": "goldman_power",
+		"publicationDate": "2026-05-20",
+		"usDataCenterPowerDemandGw": {
+			"2025": 31,
+			"2026": 41,
+			"2027": 66
+		},
+		"end2027CapacityGw": 95,
+		"onTimeActivationForecast": {
+			"nextOneYearPercent": 60,
+			"nextTwoYearsPercent": 50,
+			"status": "FORECAST_RANGE"
+		},
+		"boundary": "Goldman Sachs Research forecast based on scheduled capacity and utilization assumptions; it does not prove any individual site's energized MW, COD, or loss."
+	},
+	"projectJupiterReadback": {
+		"status": "PARTIAL_REPORTED_READBACK",
+		"readAt": "2026-09-25",
+		"entries": [
+			{
+				"sourceId": "bloomberg_force_majeure",
+				"publicationDate": "2026-09-24",
+				"verifiedClaims": [
+					"Bloomberg Law reports that Oracle sent a force-majeure notice to a Blue Owl unit regarding Project Jupiter.",
+					"The report describes payment deferral protection if the project fails to come online in 2028 as planned."
+				],
+				"boundary": "People familiar with the matter are cited; the contract, notice text, and final outcome are not publicly verified here."
+			},
+			{
+				"sourceId": "reuters_debt",
+				"publicationDate": "2026-09-18",
+				"verifiedClaims": [
+					"Reuters reports that approximately US$18 billion of loans tied to an Oracle-leased New Mexico data center were quoted at 89–91 cents on the dollar by syndicate banks including Santander and Jefferies."
+				],
+				"boundary": "The quoted loan price is a reported market observation and does not establish a realized loss, default, or final lender exposure."
+			}
+		]
+	},
+	"interpretationBoundaries": [
+		"Planned MW, power secured, grid connected, construction complete, and energized MW are separate states.",
+		"A force-majeure notice is not proof of termination, default, or realized loss.",
+		"A loan quote below par is not the same as a realized impairment or lender loss.",
+		"Goldman Sachs forecast percentages must not be presented as facility-level production results.",
+		"The loss-propagation diagram is a conditional mechanism, not an investment recommendation."
+	],
+	"sources": [
+		{
+			"id": "goldman_power",
+			"url": "https://www.goldmansachs.com/insights/articles/us-data-center-power-demand-projected-to-double-by-2027",
+			"tier": "L1",
+			"retrievedAt": "2026-09-25",
+			"supports": ["us_power_forecast", "on_time_activation_forecast"]
+		},
+		{
+			"id": "bloomberg_force_majeure",
+			"url": "https://news.bloomberglaw.com/tech-and-telecom-law/oracle-cites-force-majeure-to-shield-itself-on-big-data-center",
+			"tier": "L2",
+			"retrievedAt": "2026-09-25",
+			"supports": ["reported_force_majeure", "reported_2028_schedule"]
+		},
+		{
+			"id": "reuters_force_majeure",
+			"url": "https://www.reuters.com/business/oracle-cites-force-majeure-shield-itself-controversial-data-center-bloomberg-2026-09-24/",
+			"tier": "L2",
+			"retrievedAt": "2026-09-25",
+			"supports": ["reported_force_majeure"]
+		},
+		{
+			"id": "reuters_debt",
+			"url": "https://www.reuters.com/business/finance/oracles-18-billion-data-center-debt-under-pressure-ft-reports-2026-09-18/",
+			"tier": "L2",
+			"retrievedAt": "2026-09-25",
+			"supports": ["reported_debt_amount", "reported_loan_quote"]
+		}
+	],
+	"visualPlan": {
+		"landscape": [
+			"planned MW to energized MW state ladder",
+			"Project Jupiter contract and debt flow",
+			"conditional loss propagation from developer to operator",
+			"Goldman forecast versus facility actual boundary panel"
+		],
+		"shorts": [
+			"planned MW is not energized MW",
+			"loan price is not realized loss",
+			"who absorbs a one-year delay?"
+		],
+		"formats": ["16:9", "9:16"],
+		"sourceDateOnScreen": true,
+		"nonRecommendationLabel": true
+	},
+	"openAcceptance": [
+		"Obtain exact Project Jupiter contract parties, notice text, facility MW, COD, and energized-MW readback.",
+		"Reconcile Reuters debt pricing with primary lender or filing evidence and distinguish quote, mark, and realized loss.",
+		"Add entity-specific power, permit, transmission, and tenant-obligation evidence for the loss-propagation diagram.",
+		"Complete factuality/source-policy QA, render, ASR, and non-recommendation review."
+	]
+}
