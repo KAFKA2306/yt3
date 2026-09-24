@@ -4,7 +4,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import yaml from "js-yaml";
-import type { z } from "zod";
+import { z } from "zod";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 export const ROOT = process.cwd();
 
@@ -93,7 +93,7 @@ export function createLlm(
 		"SYSTEM",
 		"CORE",
 		"API_CHECK",
-		`Using key ${keyName} starting with: ${apiKey.slice(0, 8)}... (Domain: ${domainId || "byosan_money"})`,
+		`Using key ${keyName} (Domain: ${domainId || "byosan_money"})`,
 	);
 
 	const llm = new ChatGoogleGenerativeAI({
@@ -110,6 +110,170 @@ export function createLlm(
 	llm.keyName = keyName;
 	return llm;
 }
+
+function redactLlmEvidence(value: string): string {
+	let redacted = value;
+	for (const name of [
+		"GEMINI_API_KEY",
+		"GEMINI_API_KEY_2",
+		"GEMINI_API_KEY_3",
+		"GEMINI_API_KEY_4",
+		"GEMINI_API_KEY_5",
+	]) {
+		const secret = process.env[name];
+		if (secret && secret.length >= 4) {
+			redacted = redacted.replaceAll(secret, "[REDACTED_KEY]");
+		}
+	}
+	return redacted
+		.replaceAll(/AIza[A-Za-z0-9_-]{16,}/g, "[REDACTED_KEY]")
+		.replaceAll(/\bsk-[A-Za-z0-9_-]{12,}\b/g, "[REDACTED_KEY]");
+}
+
+export type StructuredInvocationFailureClass =
+	| "PROVIDER_RATE_LIMIT"
+	| "PROVIDER_INVALID_KEY"
+	| "PROVIDER_NON_RETRYABLE"
+	| "SEMANTIC_VALIDATION";
+
+export type StructuredInvocationAttempt = {
+	attempt: number;
+	keyName: string;
+	status: "PASS" | "FAIL";
+	failureClass?: StructuredInvocationFailureClass;
+	details?: string;
+};
+
+export async function invokeStructuredLlm<T, U = T>(params: {
+	schema: z.ZodSchema<T>;
+	name: string;
+	llmOptions?: LlmOptions;
+	messages: (
+		attempt: number,
+		lastValidationError?: string,
+	) => Array<{ role: "system" | "user"; content: string }>;
+	validate?: (value: T) => U;
+	maxAttempts?: number;
+	evidencePath?: string;
+	llmFactory?: typeof createLlm;
+	sleep?: (ms: number) => Promise<void>;
+}): Promise<U> {
+	const maxAttempts = params.maxAttempts ?? 3;
+	const attempts: StructuredInvocationAttempt[] = [];
+	const factory = params.llmFactory ?? createLlm;
+	const sleep =
+		params.sleep ??
+		((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+	let lastValidationError: string | undefined;
+
+	const persist = (): void => {
+		if (!params.evidencePath) return;
+		fs.ensureDirSync(path.dirname(params.evidencePath));
+		fs.writeJsonSync(
+			params.evidencePath,
+			{
+				schemaVersion: "structured_llm_attempts_v1",
+				name: params.name,
+				attempts,
+			},
+			{ spaces: 2 },
+		);
+	};
+
+	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		const llm = factory(params.llmOptions ?? {});
+		const keyName = llm.keyName ?? "unknown";
+		await waitIfRateLimited(keyName);
+		const structured = llm.withStructuredOutput(params.schema, {
+			name: params.name,
+		});
+
+		let value: T;
+		try {
+			value = (await structured.invoke(
+				params.messages(attempt, lastValidationError),
+			)) as T;
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			const lower = message.toLowerCase();
+			const rateLimited =
+				message.includes("429") ||
+				lower.includes("quota") ||
+				lower.includes("rate limit");
+			const invalidKey =
+				lower.includes("api_key_invalid") ||
+				lower.includes("api key not found") ||
+				lower.includes("invalid api key");
+			const semanticOutputError =
+				error instanceof z.ZodError ||
+				lower.includes("schema") ||
+				lower.includes("failed to parse") ||
+				lower.includes("output parser") ||
+				lower.includes("structured output");
+			if (semanticOutputError) {
+				lastValidationError = message;
+				attempts.push({
+					attempt,
+					keyName,
+					status: "FAIL",
+					failureClass: "SEMANTIC_VALIDATION",
+					details: redactLlmEvidence(message).slice(0, 500),
+				});
+				persist();
+				continue;
+			}
+			if (!rateLimited && !invalidKey) {
+				attempts.push({
+					attempt,
+					keyName,
+					status: "FAIL",
+					failureClass: "PROVIDER_NON_RETRYABLE",
+					details: redactLlmEvidence(message).slice(0, 500),
+				});
+				persist();
+				throw error;
+			}
+			attempts.push({
+				attempt,
+				keyName,
+				status: "FAIL",
+				failureClass: invalidKey
+					? "PROVIDER_INVALID_KEY"
+					: "PROVIDER_RATE_LIMIT",
+				details: redactLlmEvidence(message).slice(0, 500),
+			});
+			persist();
+			markKeyRateLimited(keyName);
+			await sleep(invalidKey ? 2_000 : 10_000);
+			continue;
+		}
+
+		try {
+			const validated = params.validate
+				? params.validate(value)
+				: (value as unknown as U);
+			attempts.push({ attempt, keyName, status: "PASS" });
+			persist();
+			return validated;
+		} catch (error) {
+			lastValidationError =
+				error instanceof Error ? error.message : String(error);
+			attempts.push({
+				attempt,
+				keyName,
+				status: "FAIL",
+				failureClass: "SEMANTIC_VALIDATION",
+				details: redactLlmEvidence(lastValidationError).slice(0, 500),
+			});
+			persist();
+		}
+	}
+
+	throw new Error(
+		`STRUCTURED_OUTPUT_VALIDATION_EXHAUSTED: ${params.name}: ${lastValidationError ?? "provider attempts exhausted"}`,
+	);
+}
+
 export class AssetStore {
 	runDir: string;
 	cfg: AppConfig;
@@ -293,7 +457,7 @@ export abstract class BaseAgent {
 						"SYSTEM",
 						"CORE",
 						"LLM_RATE_LIMIT",
-						`Error for key ${keyName} (${isInvalidKey ? "invalid key" : "rate limit"}). Attempt ${attempts}/${maxAttempts}. Rotating key and sleeping ${sleepMs / 1000}s... Error: ${errMsg.slice(0, 150)}`,
+						`Error for key ${keyName} (${isInvalidKey ? "invalid key" : "rate limit"}). Attempt ${attempts}/${maxAttempts}. Rotating key and sleeping ${sleepMs / 1000}s... Error: ${redactLlmEvidence(errMsg).slice(0, 150)}`,
 					);
 					markKeyRateLimited(keyName);
 					await new Promise((resolve) => setTimeout(resolve, sleepMs));
