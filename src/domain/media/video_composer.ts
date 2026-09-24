@@ -2,6 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
+import { getKafkaVisualSystem } from "../design/kafka_visual_system.js";
 import type { RenderPlan } from "../types.js";
 
 export interface VideoCompositionConfig {
@@ -42,7 +43,7 @@ export class VideoComposer {
 		);
 
 		return new Promise((resolve, reject) => {
-			const bgColor = this.config.background_color ?? "#000000";
+			const bgColor = getKafkaVisualSystem().colors.background;
 			const codec = this.config.codec ?? "libx264";
 			const cmd = ffmpeg()
 				.input(`color=c=${bgColor}:s=${width}x${height}:r=${this.config.fps}`)

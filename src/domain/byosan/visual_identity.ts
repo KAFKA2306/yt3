@@ -100,45 +100,23 @@ function designTokens(input: unknown): RequiredDesignTokens {
 export function resolveByosanVisualIdentity(
 	input: unknown,
 ): ByosanVisualIdentity {
-	const tokens = designTokens(input);
+	designTokens(input);
+	const colors = getKafkaVisualSystem().colors;
 	return {
-		background: mixHex(
-			tokens.primary_brand_color,
-			tokens.contrast_text_color,
-			0.55,
-		),
-		backgroundAlt: mixHex(
-			tokens.primary_brand_color,
-			tokens.contrast_text_color,
-			0.35,
-		),
-		surface: mixHex(
-			tokens.primary_brand_color,
-			tokens.contrast_text_color,
-			0.18,
-		),
-		surfaceStrong: tokens.primary_brand_color,
-		lightSurface: tokens.humanity_base_white,
-		textPrimary: tokens.humanity_base_white,
-		textSecondary: mixHex(
-			tokens.humanity_base_white,
-			tokens.humanity_soft_gray,
-			0.55,
-		),
-		textMuted: mixHex(
-			tokens.humanity_gentle_blue,
-			tokens.humanity_text_charcoal,
-			0.48,
-		),
-		darkText: tokens.humanity_text_charcoal,
-		primaryAccent: tokens.humanity_gentle_blue,
-		secondaryAccent: mixHex(
-			tokens.humanity_soft_sky,
-			tokens.humanity_accent_pink,
-			0.35,
-		),
-		warning: tokens.humanity_evening_orange,
-		grid: tokens.humanity_soft_sky,
-		shadow: tokens.contrast_text_color,
+		background: colors.background,
+		backgroundAlt: colors.background_alt,
+		surface: colors.surface,
+		surfaceStrong: colors.surface_strong,
+		lightSurface: colors.human_cream,
+		textPrimary: colors.text_primary,
+		textSecondary: colors.text_secondary,
+		textMuted: colors.text_muted,
+		darkText: colors.text_dark,
+		primaryAccent: colors.accent_primary,
+		secondaryAccent: colors.accent_secondary,
+		warning: colors.warning,
+		grid: colors.grid,
+		shadow: colors.shadow,
 	};
 }
+import { getKafkaVisualSystem } from "../design/kafka_visual_system.js";

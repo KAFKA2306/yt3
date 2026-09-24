@@ -70,7 +70,7 @@ steps:
 
   video:
     resolution: "1920x1080"
-    fps: 25
+    fps: 30
     background_color: "#103766"
     intro_seconds: 5
     codec: "h264_nvenc"
@@ -333,6 +333,11 @@ prompts:
         3. Human Relevance (人間的関連性): 仕事、給料、住宅、教育、投資、生活へどう影響するか。
         4. Future Shift (未来のシフト): 次にどこへ資本や技術が流れる可能性があるか。
 
+        # COMEDY BEAT
+        動画全体で最大2セクションまで、source-supportedな反復・違和感・規模差がある場合だけ comedy_beat.enabled=true とする。
+        enabled=true の順序は normal → anomaly → escalation(2〜4回) → tsukkomi(1文) → pivot で固定し、pivotで必ず分析へ戻す。
+        事実・数字・企業・因果をComedy Beatのために創作しない。災害・被害・犯罪・健康・生活苦ではenabled=falseとする。
+
         # WRITING RULES (執筆ルール)
         - **抽象論の禁止**: 「時代」「社会」「変化」などの言葉を単独で使用することを禁止する。必ず具体的な主体や数値へ置き換えよ。
         - **固有名詞・数値の節度**: 具体的企業名、国名、制度名、金利、投資金額、スペック値は必要なぶんだけ使う。数字を増やすことより、視聴者の記憶に残る一文を作ることを優先せよ。
@@ -365,6 +370,7 @@ prompts:
           ]
         }
         ※target_character_countは必ず「数値」のみ（例: 500）で出力してください。「文字」などの単位は含めないでください。
+        comedy_beat は上記schemaに従い、source-supportedな構造がない場合は {"enabled":false} を返してください。
 
     segment:
       system: |
@@ -392,6 +398,11 @@ prompts:
         3. Human Relevance (仕事、給料、住宅、投資、生活への直接的影響)
         4. Future Shift (次に資本や技術がどこへ流れるか、何が起きるか)
 
+        **【COMEDY BEAT】**
+        渡されたComedy Beat contractがenabled=trueの場合だけ、normal → anomaly → escalation → tsukkomi → pivot の順で台詞化する。
+        各台詞に beat_role を付け、escalationは2〜4行、tsukkomiは1行、pivotはtsukkomi後2行以内とする。
+        beat_role付きの話者は roles の指定から変更しない。pivotの後は必ず通常の分析へ戻す。
+
         **【WRITING RULES】**
         - **抽象論の排除**: 「時代」「社会」「変化」などの抽象名詞を単独で使用することは禁止。必ず「NVIDIAのH100」「FRBの政策金利」「TSMCの2ナノプロセス」などの具体的固有名詞と数値へ変換せよ。
         - **情報の高密度化**: 具体的数値や固有名詞を文中に詰め込むこと。ただし、愛される台本は「詰め込み」より「刺さる一撃」を優先する。
@@ -415,6 +426,7 @@ prompts:
         Title: {section_title}
         Key Points: {key_points}
         Target Character Count: {target_chars} characters
+        Comedy Beat contract: {comedy_beat}
 
         【直前の会話（文脈）】
         {previous_context}
@@ -427,7 +439,8 @@ prompts:
           "lines": [
             {
               "speaker": "春日部つむぎ",
-              "text": "セリフ内容"
+              "text": "セリフ内容",
+              "beat_role": "normal"
             },
             {
               "speaker": "ずんだもん",

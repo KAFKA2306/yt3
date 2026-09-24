@@ -6,8 +6,17 @@ tasks:
     silent: true
 
   setup:
-    desc: "Install dependencies from the committed Bun lockfile"
-    cmds: ["bun run setup"]
+    desc: "Install Bun and production-audit Python dependencies from committed lockfiles"
+    cmds:
+      - bun run setup
+      - uv sync --frozen
+      - uv run --frozen python src/scripts/production_runtime_preflight.py --mode setup
+
+  byosan:runtime-smoke:
+    desc: "Verify the Byosan production Python runtime and model cache without publishing"
+    cmds:
+      - uv run --frozen python src/scripts/production_runtime_preflight.py --mode full
+      - BYOSAN_RUNTIME_MODE=smoke bun src/scripts/verify_byosan_runtime.ts
 
   loop:
     desc: "Run the daily production loop and audit"
@@ -38,11 +47,6 @@ tasks:
       - |
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
-
-  byosan:runtime-smoke:
-    desc: "Execute the non-secret Byosan Active Probe runtime smoke and write evidence"
-    cmds:
-      - BYOSAN_RUNTIME_MODE=smoke bun src/scripts/verify_byosan_runtime.ts
 
   byosan:runtime-verify:
     desc: "Verify Byosan prepare + probe + digest + release runtime without publishing (DATE=YYYY-MM-DD PERIOD=week|month; ANALYTICS=true optional)"
@@ -185,6 +189,14 @@ tasks:
   check:merge:
     desc: "Run the full PR merge gate used by CI"
     cmds: ["bun run check:merge"]
+
+  design:preview:
+    desc: "Render the canonical Visual Design System v1 preview artifacts"
+    cmds: ["bun run design:preview"]
+
+  audit:visual-design:
+    desc: "Reject viewer-facing visual literals outside the canonical design system"
+    cmds: ["bun run audit:visual-design"]
 
   clean:
     desc: "Reset logs and temporary artifacts"

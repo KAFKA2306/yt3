@@ -1,0 +1,15 @@
+[project]
+name = "yt3-python-tooling"
+version = "0.1.0"
+description = "Reproducible Python runtime used by YT3 production audits"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "huggingface-hub>=0.30.0",
+  "librosa>=0.10.2",
+  "numpy>=1.26.0",
+  "pydantic>=2.0",
+  "pyyaml>=6.0",
+  "requests>=2.0",
+  "speechbrain>=1.0.0",
+  "torch>=2.5.0",
+]

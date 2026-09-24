@@ -1,12 +1,14 @@
 import sharp from "sharp";
 import { resolvePath } from "../../io/core.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
+import { getKafkaVisualSystem } from "../design/kafka_visual_system.js";
 import type { AppConfig, RenderPlan } from "../types.js";
 
 type Palette = AppConfig["steps"]["thumbnail"]["palettes"][number];
 
 export class ThumbnailRenderer {
 	private validator: IqaValidator;
+	private design = getKafkaVisualSystem();
 	constructor(private config: AppConfig) {
 		this.validator = new IqaValidator(this.config);
 	}
@@ -25,8 +27,8 @@ export class ThumbnailRenderer {
 		}
 
 		const scored: ScoredPalette[] = palettes.map((p) => {
-			const bgHex = p.background_color || "#000000";
-			const textHex = p.title_color || "#FFFFFF";
+			const bgHex = this.design.colors.background;
+			const textHex = this.design.colors.text_primary;
 			const contrast = this.validator.calculateContrastRatio(textHex, bgHex);
 			const contrastScore = Math.min(contrast / 21, 1.0);
 			const bgRisk = this.validator.analyzeBackgroundRisk(bgHex);
@@ -44,6 +46,7 @@ export class ThumbnailRenderer {
 
 	async render(plan: RenderPlan, title: string, output: string): Promise<void> {
 		const cfg = this.config.steps.thumbnail;
+		const canvas = this.design.canvas.thumbnail;
 		const palettes = cfg.palettes;
 		if (!palettes || palettes.length === 0) throw new Error("No palette");
 		const palette = this.selectBestPalette(palettes);
@@ -52,17 +55,19 @@ export class ThumbnailRenderer {
 		if (palette.background_image) {
 			const bgPath = resolvePath(palette.background_image);
 			layers.push({
-				input: await sharp(bgPath).resize(cfg.width, cfg.height).toBuffer(),
+				input: await sharp(bgPath)
+					.resize(canvas.width, canvas.height)
+					.toBuffer(),
 				top: 0,
 				left: 0,
 			});
 		} else {
 			const backdrop = {
 				create: {
-					width: cfg.width,
-					height: cfg.height,
+					width: canvas.width,
+					height: canvas.height,
 					channels: 4 as const,
-					background: palette.background_color || "#000000",
+					background: this.design.colors.background,
 				},
 			};
 			layers.push({ input: backdrop, top: 0, left: 0 });
@@ -85,7 +90,7 @@ export class ThumbnailRenderer {
 		}
 
 		const rightSideOverlays = plan.overlays.filter(
-			(o: { bounds: { x: number } }) => o.bounds.x > cfg.width / 2,
+			(o: { bounds: { x: number } }) => o.bounds.x > canvas.width / 2,
 		);
 		let textMaxX =
 			(rightSideOverlays.length
@@ -94,16 +99,17 @@ export class ThumbnailRenderer {
 							(o: { bounds: { x: number } }) => o.bounds.x,
 						),
 					)
-				: cfg.width) - 20;
-
-		if (cfg.right_guard_band_px && cfg.right_guard_band_px > 0) {
-			textMaxX = Math.min(textMaxX, cfg.right_guard_band_px);
-		}
+				: canvas.width) - 20;
+		textMaxX = Math.min(
+			textMaxX,
+			this.design.thumbnail.title_zone.x +
+				this.design.thumbnail.title_zone.width,
+		);
 
 		layers = [
 			...layers,
 			{
-				input: Buffer.from(this.createSvg(title, textMaxX, cfg, palette)),
+				input: Buffer.from(this.createSvg(title, textMaxX)),
 				top: 0,
 				left: 0,
 			},
@@ -111,10 +117,10 @@ export class ThumbnailRenderer {
 
 		await sharp({
 			create: {
-				width: cfg.width,
-				height: cfg.height,
+				width: canvas.width,
+				height: canvas.height,
 				channels: 4 as const,
-				background: "#000",
+				background: this.design.colors.background,
 			},
 		})
 			.composite(layers)
@@ -122,17 +128,13 @@ export class ThumbnailRenderer {
 			.toFile(output);
 	}
 
-	private createSvg(
-		title: string,
-		maxX: number,
-		cfg: AppConfig["steps"]["thumbnail"],
-		pal: Palette,
-	): string {
-		const maxLines = Math.max(1, cfg.max_lines || 3);
+	private createSvg(title: string, maxX: number): string {
+		const titleZone = this.design.thumbnail.title_zone;
+		const maxLines = titleZone.max_lines;
 		const lineBudget = title.replace(/\n/g, "").length;
 		let maxChars = Math.max(
 			1,
-			cfg.max_chars_per_line || 12,
+			titleZone.max_chars_per_line,
 			Math.ceil(lineBudget / maxLines),
 		);
 		let lines = this.wrapTitleLines(title, maxChars);
@@ -141,14 +143,13 @@ export class ThumbnailRenderer {
 			lines = this.wrapTitleLines(title, maxChars);
 		}
 
-		const g = this.config.global_style;
-		const tokens = this.config.design_tokens;
-		const fz = cfg.title_font_size || g.thumbnail.title_size;
-		const fontName = `${tokens?.font_display || "Geist"}, "${tokens?.font_japanese || "Noto Sans JP"}", sans-serif`;
-		const lh = fz * 1.1;
-		const padding = cfg.padding || 80;
+		const fz = titleZone.font_size;
+		const fontName = `${this.design.typography.display}, "${this.design.typography.japanese}", sans-serif`;
+		const lh = titleZone.line_height;
+		const padding = titleZone.x;
 
-		const startY = (cfg.height - lines.length * lh) / 2 + lh / 2;
+		const startY =
+			(this.design.canvas.thumbnail.height - lines.length * lh) / 2 + lh / 2;
 
 		const txt = lines
 			.map((l, i) => {
@@ -164,18 +165,18 @@ export class ThumbnailRenderer {
 			.join("");
 
 		return `
-        <svg width="${cfg.width}" height="${cfg.height}" xmlns="http://www.w3.org/2000/svg">
+		<svg width="${this.design.canvas.thumbnail.width}" height="${this.design.canvas.thumbnail.height}" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <clipPath id="s">
-                    <rect x="0" y="0" width="${maxX}" height="${cfg.height}"/>
+					<rect x="${titleZone.x}" y="${titleZone.y}" width="${maxX - titleZone.x}" height="${titleZone.height}"/>
                 </clipPath>
             </defs>
             <style>
-                text { font-family: '${fontName}', sans-serif; font-size: ${fz}px; font-weight: 900; text-anchor: start; dominant-baseline: middle; letter-spacing: 0px; text-rendering: geometricPrecision; } 
-                .outline { fill: none; stroke: ${pal.outline_outer_color || "#000000"}; stroke-width: ${(pal.outline_outer_width || 20) * 2}px; stroke-linejoin: round; } 
-                .fill { fill: ${pal.title_color || "#FFFFFF"}; stroke: ${pal.outline_inner_color || "#FFFFFF"}; stroke-width: ${pal.outline_inner_width || 10}px; paint-order: stroke fill; stroke-linejoin: round; }
+				text { font-family: '${fontName}', sans-serif; font-size: ${fz}px; font-weight: ${titleZone.font_weight}; text-anchor: start; dominant-baseline: middle; letter-spacing: 0px; text-rendering: geometricPrecision; }
+				.outline { fill: none; stroke: ${titleZone.outer_stroke}; stroke-width: ${titleZone.outer_stroke_width}px; stroke-linejoin: round; }
+				.fill { fill: ${titleZone.fill}; stroke: ${titleZone.inner_stroke}; stroke-width: ${titleZone.inner_stroke_width}px; paint-order: stroke fill; stroke-linejoin: round; }
             </style>
-			<g clip-path="url(#s)">${txt}</g>
+				<g clip-path="url(#s)">${txt}</g>
         </svg>`;
 	}
 
