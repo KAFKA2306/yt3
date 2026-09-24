@@ -5,6 +5,15 @@ type EvidenceLedger = {
 	status: string;
 	capitalRoles: Array<{ id: string; status: string }>;
 	reportedFacts: Array<{ status: string; sourceIds: string[] }>;
+	primarySourceReadbacks: {
+		status: string;
+		readAt: string;
+		entries: Array<{
+			sourceId: string;
+			verifiedClaims: string[];
+			boundary: string;
+		}>;
+	};
 	kpiMatrix: { status: string };
 	tenfoldScenario: { status: string; prohibitedInference: string };
 	sources: Array<{ tier: string; url: string }>;
@@ -25,6 +34,16 @@ describe("issue 132 evidence ledger", () => {
 			expect(fact.status).toMatch(/^VERIFIED_/);
 			expect(fact.sourceIds.length).toBeGreaterThan(0);
 		}
+		expect(ledger.primarySourceReadbacks.status).toBe(
+			"PARTIAL_PRIMARY_SOURCE_READBACK",
+		);
+		expect(ledger.primarySourceReadbacks.readAt).toBe("2026-09-25");
+		expect(ledger.primarySourceReadbacks.entries).toHaveLength(3);
+		expect(
+			ledger.primarySourceReadbacks.entries.find(
+				(entry) => entry.sourceId === "go_waymo_partnership",
+			)?.boundary,
+		).toContain("company plan");
 		expect(ledger.kpiMatrix.status).toBe(
 			"UNVERIFIED_REQUIRES_COMPARABLE_CURRENT_DATA",
 		);
