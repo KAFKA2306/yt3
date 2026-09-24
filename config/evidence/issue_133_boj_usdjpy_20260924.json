@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "The dated BOJ and Fed decisions are verified, but the current USD/JPY tape, forward path, two-year spread, positioning, flow data, and intervention-watch evidence require a production-time snapshot.",
+	"statusReason": "The dated BOJ and Fed decisions and a dated USD/JPY market reference are verified, but the forward path, two-year spread, positioning, flow data, intervention-watch evidence, and production-time refresh remain unresolved.",
 	"policyDecisions": [
 		{
 			"id": "boj_20260918",
@@ -46,10 +46,30 @@
 			"sourceIds": ["fed_sep_20260916"]
 		}
 	],
+	"currentMarketReadback": {
+		"status": "VERIFIED_DATED_MARKET_REFERENCE",
+		"readAt": "2026-09-25",
+		"sourceId": "fx_market_20260924",
+		"instrument": "USD/JPY",
+		"close": {
+			"value": 158.34,
+			"currencyPerUsd": "JPY",
+			"asOf": "2026-09-24",
+			"definition": "Latest NY close as defined by the cited market-history source"
+		},
+		"oneMonthRange": {
+			"high": { "value": 160.2, "date": "2026-09-02" },
+			"low": { "value": 153.49, "date": "2026-09-14" }
+		},
+		"boundary": "This is a dated market reference, not an intraday production quote, official intervention evidence, or a complete FX decomposition."
+	},
 	"fxDecomposition": {
 		"status": "UNVERIFIED_REQUIRES_PRODUCTION_SNAPSHOT",
 		"components": [
-			{ "id": "spot_usdjpy", "status": "UNVERIFIED_REQUIRES_CURRENT_PRICE" },
+			{
+				"id": "spot_usdjpy",
+				"status": "VERIFIED_DATED_MARKET_REFERENCE_NOT_INTRADAY"
+			},
 			{
 				"id": "policy_path",
 				"status": "PARTIALLY_OBSERVED_FROM_POLICY_AND_PROJECTIONS"
@@ -124,6 +144,17 @@
 			"tier": "L1",
 			"retrievedAt": "2026-09-24",
 			"supports": ["wireContextPendingProductionReadback"]
+		},
+		{
+			"id": "fx_market_20260924",
+			"url": "https://lets-gold.net/chart-ex.php?c=gold&e_date=20260924&ma=9",
+			"tier": "L5",
+			"retrievedAt": "2026-09-25",
+			"supports": [
+				"2026-09-24UsdJpyClose",
+				"oneMonthHighLow",
+				"datedMarketReference"
+			]
 		}
 	],
 	"visualPlan": {
