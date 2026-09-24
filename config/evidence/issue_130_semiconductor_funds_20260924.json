@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "Official product definitions and dated documents are recorded, but current 8-company holdings and look-through weights still require the latest official holdings files.",
+	"statusReason": "Official product definitions are recorded and the 2026-08-31 Rakuten SOX monthly report now verifies six of the eight requested companies with top-10 weights. DRAM has only dated top-exposure names without weights, MAXIS 221A lacks a current readback, and the full 24-cell matrix/look-through calculation still require current official holdings files.",
 	"products": [
 		{
 			"id": "dram",
@@ -55,11 +55,44 @@
 			"expenseRatio": { "status": "UNVERIFIED_REQUIRES_CURRENT_PROSPECTUS" },
 			"active": true,
 			"holdingsAsOf": "2026-08",
-			"holdingsStatus": "MONTHLY_REPORT_AVAILABLE_CURRENT_WEIGHTS_UNVERIFIED",
+			"holdingsStatus": "CURRENT_MONTHLY_TOP10_READBACK_PARTIAL",
 			"structureNote": "The official monthly report identifies the master fund as the principal allocation; fund holdings and index constituents are separate evidence layers.",
 			"sourceIds": ["rakuten_sox", "sox_methodology"]
 		}
 	],
+	"currentPrimaryReadback": {
+		"status": "PARTIAL_VERIFIED",
+		"readAt": "2026-09-25",
+		"rakutenSox": {
+			"sourceId": "rakuten_sox_monthly_202608",
+			"asOf": "2026-08-31",
+			"investmentCount": 31,
+			"equityPercent": 93.9,
+			"top10": [
+				{ "companyId": "NVDA", "weightPercent": 13.1 },
+				{ "name": "Broadcom", "weightPercent": 8.8 },
+				{ "companyId": "MU", "weightPercent": 8.2 },
+				{ "name": "iShares Semiconductor ETF", "weightPercent": 4.8 },
+				{ "name": "Marvell", "weightPercent": 4.5 },
+				{ "name": "ASML", "weightPercent": 4.5 },
+				{ "companyId": "AMAT", "weightPercent": 4.4 },
+				{ "companyId": "TSM", "weightPercent": 4.2 },
+				{ "companyId": "LRCX", "weightPercent": 4.0 },
+				{ "companyId": "KLAC", "weightPercent": 3.9 }
+			],
+			"notTop10Rule": "A company absent from the top 10 is not treated as a verified 0% holding."
+		},
+		"dram": {
+			"sourceId": "roundhill_dram_current_page_20260925",
+			"asOf": "2026-06-30",
+			"topExposureNames": ["MU", "Samsung", "SKH", "SanDisk", "Kioxia"],
+			"weightStatus": "UNVERIFIED_PAGE_DOES_NOT_EXPOSE_NUMBERS_IN_READBACK",
+			"swapRule": "The official page says allocation combines stock positions with total-return swaps."
+		},
+		"maxis221a": {
+			"status": "UNVERIFIED_REQUIRES_CURRENT_MONTHLY_REPORT"
+		}
+	},
 	"companies": [
 		{ "id": "MU", "name": "Micron", "country": "US", "valueChain": "memory" },
 		{ "id": "TSM", "name": "TSMC", "country": "TW", "valueChain": "foundry" },
@@ -90,37 +123,37 @@
 			"companyId": "MU",
 			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
 			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
-			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+			"rakuten_sox": "VERIFIED_TOP10_WEIGHT_2026-08-31"
 		},
 		{
 			"companyId": "TSM",
 			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
 			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
-			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+			"rakuten_sox": "VERIFIED_TOP10_WEIGHT_2026-08-31"
 		},
 		{
 			"companyId": "NVDA",
 			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
 			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
-			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+			"rakuten_sox": "VERIFIED_TOP10_WEIGHT_2026-08-31"
 		},
 		{
 			"companyId": "AMAT",
 			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
 			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
-			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+			"rakuten_sox": "VERIFIED_TOP10_WEIGHT_2026-08-31"
 		},
 		{
 			"companyId": "LRCX",
 			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
 			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
-			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+			"rakuten_sox": "VERIFIED_TOP10_WEIGHT_2026-08-31"
 		},
 		{
 			"companyId": "KLAC",
 			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
 			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
-			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
+			"rakuten_sox": "VERIFIED_TOP10_WEIGHT_2026-08-31"
 		},
 		{
 			"companyId": "TEL",
@@ -130,7 +163,7 @@
 		},
 		{
 			"companyId": "SKH",
-			"dram": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
+			"dram": "SCOPE_ONLY_TOP_EXPOSURE_WEIGHT_UNVERIFIED",
 			"221a": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS",
 			"rakuten_sox": "UNVERIFIED_REQUIRES_LATEST_HOLDINGS"
 		}
@@ -197,6 +230,28 @@
 			"tier": "L1",
 			"retrievedAt": "2026-09-24",
 			"supports": ["indexMethodologyPendingCrossCheck"]
+		},
+		{
+			"id": "rakuten_sox_monthly_202608",
+			"url": "https://www.rakuten-toushin.co.jp/fund/nav/rirsox/pdf/rirsox_M202608.pdf",
+			"tier": "L1",
+			"retrievedAt": "2026-09-25",
+			"supports": [
+				"2026-08-31InvestmentCount",
+				"top10Weights",
+				"equityAllocation"
+			]
+		},
+		{
+			"id": "roundhill_dram_current_page_20260925",
+			"url": "https://www.roundhillinvestments.com/etf/dram/",
+			"tier": "L1",
+			"retrievedAt": "2026-09-25",
+			"supports": [
+				"2026-06-30TopExposureNames",
+				"swapCaveat",
+				"noWeightReadback"
+			]
 		}
 	],
 	"visualPlan": {
