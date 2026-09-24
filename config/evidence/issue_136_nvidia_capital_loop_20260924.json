@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "The ledger separates executed investment, conditional commitment, strategic agreement, product relationship, market observation, and causal inference. The ten-company current holdings, investment terms, prices, YTD returns, authenticated sheet readback, and production QA remain unverified.",
+	"statusReason": "The ledger separates executed investment, conditional commitment, strategic agreement, product relationship, market observation, and causal inference. The authenticated tracker now verifies current price, 2025 year-end base, and YTD display values for all ten rows, but investment terms, announcement-date returns, explicit currency/corporate-action treatment, and production QA remain unresolved.",
 	"instrumentClasses": [
 		"COMMON_STOCK",
 		"CONVERTIBLE_OR_OTHER_SECURITY",
@@ -115,6 +115,95 @@
 			"sourceIds": ["nvidia_sec"]
 		}
 	],
+	"authenticatedTrackerReadback": {
+		"status": "VERIFIED_CURRENT_YTD_READBACK",
+		"readAt": "2026-09-25",
+		"sourceId": "tracker_sheet",
+		"sheetName": "Tracker",
+		"sheetId": 1273760609,
+		"sheetTimezone": "Asia/Tokyo",
+		"trackerUpdatedAt": "2026-09-25 00:35",
+		"provider": "GOOGLEFINANCE",
+		"formulaEvidence": {
+			"currentPrice": "=IFERROR(GOOGLEFINANCE(E<row>,\"price\"),\"\")",
+			"ytdBase": "=IFERROR(INDEX(GOOGLEFINANCE(E<row>,\"close\",DATE(2025,12,31),DATE(2026,1,3),\"DAILY\"),2,2),\"\")",
+			"ytd": "=IFERROR(F<row>/G<row>-1,\"\")"
+		},
+		"currencyStatus": "UNVERIFIED_TRACKER_DOES_NOT_EXPOSE_CURRENCY",
+		"corporateActionTreatmentStatus": "UNVERIFIED",
+		"rows": [
+			{
+				"ticker": "2454.TW",
+				"symbol": "TPE:2454",
+				"currentPrice": 5285,
+				"ytdBase": 1430,
+				"ytdDisplayed": "269.6%"
+			},
+			{
+				"ticker": "INTC",
+				"symbol": "NASDAQ:INTC",
+				"currentPrice": 122.65,
+				"ytdBase": 36.9,
+				"ytdDisplayed": "232.4%"
+			},
+			{
+				"ticker": "MRVL",
+				"symbol": "NASDAQ:MRVL",
+				"currentPrice": 255.82,
+				"ytdBase": 84.98,
+				"ytdDisplayed": "201.0%"
+			},
+			{
+				"ticker": "NBIS",
+				"symbol": "NASDAQ:NBIS",
+				"currentPrice": 240.61,
+				"ytdBase": 83.71,
+				"ytdDisplayed": "187.4%"
+			},
+			{
+				"ticker": "LITE",
+				"symbol": "NASDAQ:LITE",
+				"currentPrice": 922.11,
+				"ytdBase": 368.59,
+				"ytdDisplayed": "150.2%"
+			},
+			{
+				"ticker": "COHR",
+				"symbol": "NYSE:COHR",
+				"currentPrice": 294.16,
+				"ytdBase": 184.57,
+				"ytdDisplayed": "59.4%"
+			},
+			{
+				"ticker": "NOK",
+				"symbol": "NYSE:NOK",
+				"currentPrice": 10.27,
+				"ytdBase": 6.47,
+				"ytdDisplayed": "58.7%"
+			},
+			{
+				"ticker": "IREN",
+				"symbol": "NASDAQ:IREN",
+				"currentPrice": 45.49,
+				"ytdBase": 37.77,
+				"ytdDisplayed": "20.4%"
+			},
+			{
+				"ticker": "CRWV",
+				"symbol": "NASDAQ:CRWV",
+				"currentPrice": 86.33,
+				"ytdBase": 71.61,
+				"ytdDisplayed": "20.6%"
+			},
+			{
+				"ticker": "SNPS",
+				"symbol": "NASDAQ:SNPS",
+				"currentPrice": 420.68,
+				"ytdBase": 469.72,
+				"ytdDisplayed": "(10.4%)"
+			}
+		]
+	},
 	"reportedFacts": [
 		{
 			"id": "intel_conditional_commitment",
@@ -142,7 +231,7 @@
 		}
 	],
 	"marketDataBoundary": {
-		"status": "UNVERIFIED_REQUIRES_AUTHENTICATED_CURRENT_READBACK",
+		"status": "PARTIAL_CURRENT_YTD_READBACK_ANNOUNCEMENT_RETURN_UNVERIFIED",
 		"requiredFields": [
 			"price_at_announcement",
 			"latest_price",
@@ -155,6 +244,19 @@
 			"Keep announcement-date return separate from YTD return.",
 			"Record the provider, timezone, timestamp, currency, and corporate-action treatment.",
 			"Do not copy the issue snapshot into production as current market data."
+		],
+		"verifiedReadbackFields": [
+			"latest_price",
+			"2025-12-31_base",
+			"ytd_return_display",
+			"provider",
+			"tracker_timestamp"
+		],
+		"unverifiedFields": [
+			"price_at_announcement",
+			"return_since_announcement",
+			"currency",
+			"corporate_action_treatment"
 		]
 	},
 	"causalityBoundary": {
@@ -220,7 +322,11 @@
 			"url": "https://docs.google.com/spreadsheets/d/1GhvFsu6zW9TgmsKbn7CLJ59kLq6vUVR_ICmvKHjyAHc/edit",
 			"tier": "L2",
 			"retrievedAt": "2026-09-24",
-			"supports": ["issue_tracker_reference_only", "not_authenticated_readback"]
+			"supports": [
+				"authenticated_current_ytd_readback",
+				"provider_timestamp",
+				"formula_evidence"
+			]
 		}
 	],
 	"visualPlan": {
