@@ -4,6 +4,15 @@ import fs from "fs-extra";
 type EvidenceLedger = {
 	status: string;
 	maturityMatrix: Array<{ stage: string; sourceIds: string[] }>;
+	issuerReadbacks: {
+		status: string;
+		readAt: string;
+		entries: Array<{
+			sourceId: string;
+			verifiedClaims: string[];
+			boundary: string;
+		}>;
+	};
 	counterarguments: Array<{ status: string }>;
 	sources: Array<{ tier: string; url: string }>;
 	visualPlan: { formats: string[]; sourceDateOnScreen: boolean };
@@ -24,6 +33,9 @@ describe("issue 135 evidence ledger", () => {
 			"DEMONSTRATION_REPORTED",
 			"PACKET_SWITCH_PRODUCTION_CONTROL",
 		]);
+		expect(ledger.issuerReadbacks.status).toBe("PARTIAL_ISSUER_READBACK");
+		expect(ledger.issuerReadbacks.readAt).toBe("2026-09-25");
+		expect(ledger.issuerReadbacks.entries).toHaveLength(5);
 	});
 
 	test("keeps counterarguments explicitly unresolved", () => {
@@ -33,6 +45,11 @@ describe("issue 135 evidence ledger", () => {
 				item.status.startsWith("UNVERIFIED_"),
 			),
 		).toBe(true);
+		expect(
+			ledger.issuerReadbacks.entries.find(
+				(entry) => entry.sourceId === "broadcom_control",
+			)?.boundary,
+		).toContain("not evidence that CPO itself is in production");
 	});
 
 	test("requires dated primary links and both delivery formats", () => {

@@ -5,7 +5,7 @@
 	"asOf": "2026-09-24",
 	"retrievedAt": "2026-09-24",
 	"status": "PARTIAL_UNVERIFIED",
-	"statusReason": "The ledger separates production, development, demonstration, and control evidence for silicon photonics/CPO, but deployment volume, yield, thermal, maintenance, cost, and final production QA remain outstanding.",
+	"statusReason": "The ledger separates production, development, demonstration, and control evidence for silicon photonics/CPO, and a 2026-09-25 issuer readback confirms the dated stage boundaries. Deployment volume, yield, thermal, maintenance, cost, and final production QA remain outstanding.",
 	"maturityMatrix": [
 		{
 			"id": "nvidia_spectrum_x_photonics",
@@ -47,6 +47,54 @@
 			"sourceIds": ["broadcom_control"]
 		}
 	],
+	"issuerReadbacks": {
+		"status": "PARTIAL_ISSUER_READBACK",
+		"readAt": "2026-09-25",
+		"entries": [
+			{
+				"sourceId": "nvidia_vera_rubin",
+				"publicationDate": "2026-05-31",
+				"verifiedClaims": [
+					"Vera Rubin is described as ramping into full production",
+					"Spectrum-X Ethernet Photonics is described as a CPO-based switch with 200Gbps SerDes now in production",
+					"Production shipments of Vera Rubin are stated to begin in fall 2026"
+				],
+				"boundary": "These are NVIDIA-reported product and timing claims with forward-looking and availability caveats."
+			},
+			{
+				"sourceId": "nvidia_photonics",
+				"verifiedClaims": [
+					"NVIDIA describes CPO as replacing pluggable transceivers with silicon photonics integrated on the ASIC",
+					"The page lists up to 409.6 Tbps bandwidth and second-half-2026 availability"
+				],
+				"boundary": "NVIDIA's 5x power-efficiency and runtime claims are issuer claims, not independent system measurements."
+			},
+			{
+				"sourceId": "tsmc_coupe",
+				"publicationDate": "2025",
+				"verifiedClaims": [
+					"TSMC reports COUPE development, several customers at 200Gbps in 2025, and CPO volume production targeting 2026"
+				],
+				"boundary": "The annual-report text describes technology development and a target, not current volume production."
+			},
+			{
+				"sourceId": "coherent_cpo",
+				"publicationDate": "2026-03-17",
+				"verifiedClaims": [
+					"Coherent demonstrated a 6.4T socketed CPO, 400G-per-lane InP modulation, and multiple optical architectures at OFC 2026"
+				],
+				"boundary": "The source explicitly describes demonstrations and early-stage customer exploration, not production deployment."
+			},
+			{
+				"sourceId": "broadcom_control",
+				"publicationDate": "2026-03-12",
+				"verifiedClaims": [
+					"Broadcom Tomahawk 6 is shipping in production volume at 102.4 Tbps"
+				],
+				"boundary": "This packet-switch control is not evidence that CPO itself is in production."
+			}
+		]
+	},
 	"physicsBoundary": {
 		"status": "STRUCTURAL_EXPLANATION_REQUIRES_REVIEW",
 		"mechanism": [
