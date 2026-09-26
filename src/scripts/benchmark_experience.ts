@@ -16,6 +16,7 @@ import type {
 	ExperienceRenderInput,
 	ExperienceRenderItem,
 } from "../domain/experience/schema.js";
+import { installBunWorkspace } from "./experience_workspace.js";
 import {
 	renderMotionCanvasInput,
 	resolveMotionCanvasChromiumPath,
@@ -89,7 +90,7 @@ export async function benchmarkExperience(outPath: string): Promise<void> {
 		);
 	}
 	const baselineSetupClock = performance.now();
-	await run(["bun", "install", "--no-save"], baselineWorkspace);
+	await installBunWorkspace(baselineWorkspace);
 	const baselineSetupSeconds = (performance.now() - baselineSetupClock) / 1000;
 	const motionCanvasWorkspace = path.join(
 		runDirectory,
