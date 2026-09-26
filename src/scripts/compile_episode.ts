@@ -25,6 +25,7 @@ import {
 	parseEpisode,
 	parseLocalePatch,
 } from "../domain/episode/schema.js";
+import { auditExperienceEpisode } from "../domain/experience/audit.js";
 import { loadByosanExperienceConfig } from "../domain/experience/config.js";
 
 export interface CompileEpisodeArgs {
@@ -74,6 +75,20 @@ export async function compileEpisode(args: CompileEpisodeArgs): Promise<void> {
 			throw new Error(JSON.stringify(localeIssues, null, 2));
 		episode = EpisodeSchema.parse(applyLocalePatch(episode, patch));
 	}
+	const usesExperience =
+		episode.experience !== undefined ||
+		episode.visuals.some((visual) => visual.type === "experience");
+	const experienceConfig = usesExperience
+		? await loadByosanExperienceConfig()
+		: undefined;
+	if (experienceConfig) {
+		const experienceIssues = auditExperienceEpisode(
+			episode,
+			experienceConfig.profile,
+		);
+		if (experienceIssues.length > 0)
+			throw new Error(JSON.stringify(experienceIssues, null, 2));
+	}
 
 	for (const asset of episode.assets) {
 		const assetPath = path.resolve(episodeDir, asset.path);
@@ -90,12 +105,6 @@ export async function compileEpisode(args: CompileEpisodeArgs): Promise<void> {
 	const shortPlan = episode.shorts.enabled
 		? buildShortPlan(episode, timeline)
 		: null;
-	const usesExperience =
-		episode.experience !== undefined ||
-		episode.visuals.some((visual) => visual.type === "experience");
-	const experienceConfig = usesExperience
-		? await loadByosanExperienceConfig()
-		: undefined;
 	const manifest = buildEpisodeManifest(episode, timeline, shortPlan);
 	const remotionDir = path.join(outDir, "remotion");
 	await mkdir(remotionDir, { recursive: true });
