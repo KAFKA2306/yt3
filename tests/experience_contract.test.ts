@@ -394,6 +394,9 @@ describe("Experience Contract and OSS benchmark", () => {
 		});
 
 		expect(evidence.status).toBe("PARTIALLY_VERIFIED");
+		expect(evidence.review_scope).toContain(
+			"package.json dependency license declarations are inventoried separately but not independently verified",
+		);
 		expect(evidence.code_projects).toEqual([
 			expect.objectContaining({
 				engine: "remotion-existing",
