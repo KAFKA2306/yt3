@@ -25,6 +25,7 @@ import {
 	parseEpisode,
 	parseLocalePatch,
 } from "../domain/episode/schema.js";
+import { loadByosanExperienceConfig } from "../domain/experience/config.js";
 
 export interface CompileEpisodeArgs {
 	episode: string;
@@ -89,6 +90,12 @@ export async function compileEpisode(args: CompileEpisodeArgs): Promise<void> {
 	const shortPlan = episode.shorts.enabled
 		? buildShortPlan(episode, timeline)
 		: null;
+	const usesExperience =
+		episode.experience !== undefined ||
+		episode.visuals.some((visual) => visual.type === "experience");
+	const experienceConfig = usesExperience
+		? await loadByosanExperienceConfig()
+		: undefined;
 	const manifest = buildEpisodeManifest(episode, timeline, shortPlan);
 	const remotionDir = path.join(outDir, "remotion");
 	await mkdir(remotionDir, { recursive: true });
@@ -162,7 +169,9 @@ export async function compileEpisode(args: CompileEpisodeArgs): Promise<void> {
 			buildRemotionInput(episode, timeline, shortPlan),
 		);
 	}
-	for (const [name, content] of Object.entries(buildRemotionWorkspaceFiles())) {
+	for (const [name, content] of Object.entries(
+		buildRemotionWorkspaceFiles(experienceConfig?.world),
+	)) {
 		await writeFile(path.join(remotionDir, name), content, "utf8");
 	}
 }

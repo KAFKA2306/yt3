@@ -1,0 +1,120 @@
+{
+	"fps": 30,
+	"width": 1920,
+	"height": 1080,
+	"durationInFrames": 450,
+	"items": [
+		{
+			"id": "dividend-coin-rain",
+			"startFrame": 0,
+			"endFrame": 90,
+			"speaker": "ナレーター",
+			"text": "配当がコインになって降り、箱からあふれる。",
+			"subtitle": "配当がコインになって降り、箱からあふれる。",
+			"shortRole": null,
+			"visual": {
+				"type": "experience",
+				"props": {
+					"scene_kind": "coin_rain",
+					"title": "配当があふれる",
+					"coin_count": 12
+				},
+				"action": "overflow",
+				"subject": "coins",
+				"reaction": "happy",
+				"concept_id": "distribution",
+				"asset_strategy": "deterministic"
+			}
+		},
+		{
+			"id": "per-balloon",
+			"startFrame": 90,
+			"endFrame": 180,
+			"speaker": "ナレーター",
+			"text": "利益が同じでも、株価だけが上がるとPERの風船は膨らむ。",
+			"subtitle": "利益が同じでも、株価だけが上がるとPERは膨らむ。",
+			"shortRole": null,
+			"visual": {
+				"type": "experience",
+				"props": {
+					"scene_kind": "per_balloon",
+					"title": "PERが膨らむ",
+					"start_per": 10,
+					"end_per": 24
+				},
+				"action": "inflate",
+				"subject": "valuation balloon",
+				"reaction": "worried",
+				"concept_id": "valuation",
+				"asset_strategy": "deterministic"
+			}
+		},
+		{
+			"id": "covered-call-tether",
+			"startFrame": 180,
+			"endFrame": 270,
+			"speaker": "ナレーター",
+			"text": "株価が上がっても、カバードコールのテザーが受取側の上値を止める。",
+			"subtitle": "株価が上がっても、テザーが受取側の上値を止める。",
+			"shortRole": null,
+			"visual": {
+				"type": "experience",
+				"props": {
+					"scene_kind": "covered_call_tether",
+					"title": "上昇と上限",
+					"rise_label": "株価",
+					"cap_label": "受取側"
+				},
+				"action": "connect",
+				"subject": "rising stock and capped payoff",
+				"reaction": "confused",
+				"concept_id": "covered_call",
+				"asset_strategy": "deterministic"
+			}
+		},
+		{
+			"id": "drawdown-floor",
+			"startFrame": 270,
+			"endFrame": 360,
+			"speaker": "ナレーター",
+			"text": "大きな下落では、足元の床が落ちて損失が広がる。",
+			"subtitle": "大きな下落で、足元の床が落ちる。",
+			"shortRole": null,
+			"visual": {
+				"type": "experience",
+				"props": {
+					"scene_kind": "drawdown_floor",
+					"title": "下落で床が落ちる",
+					"drop_ratio": 0.42
+				},
+				"action": "fall",
+				"subject": "floor beneath the viewer",
+				"reaction": "panic",
+				"concept_id": "drawdown",
+				"asset_strategy": "deterministic"
+			}
+		},
+		{
+			"id": "capex-capacity",
+			"startFrame": 360,
+			"endFrame": 450,
+			"speaker": "ナレーター",
+			"text": "設備投資で工場ができ、搬送ラインが動き、生産能力が増える。",
+			"subtitle": "設備投資から工場、搬送ライン、生産能力へ。",
+			"shortRole": null,
+			"visual": {
+				"type": "experience",
+				"props": {
+					"scene_kind": "capex_capacity",
+					"title": "投資から生産能力へ",
+					"build_steps": ["factory", "conveyor", "output"]
+				},
+				"action": "build",
+				"subject": "factory and conveyor output",
+				"reaction": "relief",
+				"concept_id": "capex_capacity",
+				"asset_strategy": "deterministic"
+			}
+		}
+	]
+}

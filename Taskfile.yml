@@ -137,6 +137,41 @@ tasks:
         fi
         bun src/scripts/render_episode.ts --compiled "{{.COMPILED}}" --output "{{.OUTPUT}}" --kind "{{default "main" .KIND}}" {{.CLI_ARGS}}
 
+  episode:render:motion-canvas:
+    desc: "Render the same compiled renderer-neutral input in an isolated Motion Canvas workspace (COMPILED=... OUTPUT=... KIND=main|short)"
+    cmds:
+      - |
+        if [ -z "{{.COMPILED}}" ] || [ -z "{{.OUTPUT}}" ]; then
+          echo "COMPILED and OUTPUT are required" >&2
+          exit 2
+        fi
+        MOTION_CANVAS_CHROMIUM="{{.CHROMIUM}}" bun src/scripts/render_episode_motion_canvas.ts --compiled "{{.COMPILED}}" --output "{{.OUTPUT}}" --kind "{{default "main" .KIND}}" {{.CLI_ARGS}}
+
+  experience:audit:
+    desc: "Audit a byosan episode against the Experience Contract (EPISODE=...)"
+    cmds:
+      - |
+        if [ -z "{{.EPISODE}}" ]; then
+          echo "EPISODE is required" >&2
+          exit 2
+        fi
+        bun src/scripts/audit_experience_contract.ts --episode "{{.EPISODE}}" {{.CLI_ARGS}}
+
+  experience:baseline:
+    desc: "Compile and render an audited episode through the existing Remotion baseline (EPISODE=... OUT=...)"
+    cmds:
+      - |
+        if [ -z "{{.EPISODE}}" ] || [ -z "{{.OUT}}" ]; then
+          echo "EPISODE and OUT are required" >&2
+          exit 2
+        fi
+        bun src/scripts/benchmark_experience_baseline.ts --episode "{{.EPISODE}}" --out "{{.OUT}}" {{.CLI_ARGS}}
+
+  experience:benchmark:
+    desc: "Render the fixed five-scene fixture through Remotion and Motion Canvas and write measured metrics (OUT=... optional)"
+    cmds:
+      - bun src/scripts/benchmark_experience.ts --out "{{default "artifacts/benchmarks/experience-os" .OUT}}" {{.CLI_ARGS}}
+
   publish:visibility-audit:
     desc: "Audit published video visibility"
     cmds: ["bun src/scripts/public_visibility_audit.ts"]

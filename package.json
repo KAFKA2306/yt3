@@ -10,9 +10,10 @@
 		"typecheck": "bun node_modules/typescript/lib/tsc.js --noEmit",
 		"design:preview": "bun src/scripts/design_preview.ts",
 		"audit:visual-design": "bun src/scripts/audit_visual_design_literals.ts",
+		"audit:experience-config": "bun src/scripts/audit_experience_config.ts",
 		"audit:repo-contract": "bun src/scripts/audit_repository_contract.ts",
 		"audit:no-fallback:source": "bun src/scripts/audit_no_fallback_policy.ts --scope=source",
-		"check:merge:fast": "bun run lint && bun run typecheck && bun run audit:repo-contract && bun run audit:visual-design && bun src/scripts/audit_publish_routing.ts && bun run audit:no-fallback:source",
+		"check:merge:fast": "bun run lint && bun run typecheck && bun run audit:repo-contract && bun run audit:visual-design && bun run audit:experience-config && bun src/scripts/audit_publish_routing.ts && bun run audit:no-fallback:source",
 		"check:merge": "bun run check:merge:fast && SKIP_LLM=true DRY_RUN=true bun run test"
 	},
 	"repository": {
