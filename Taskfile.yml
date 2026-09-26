@@ -172,6 +172,26 @@ tasks:
     cmds:
       - bun src/scripts/benchmark_experience.ts --out "{{default "artifacts/benchmarks/experience-os" .OUT}}" {{.CLI_ARGS}}
 
+  experience:review:template:
+    desc: "Create a blank five-scene human review template bound to benchmark artifact hashes (RUN=... OUT=...)"
+    cmds:
+      - |
+        if [ -z "{{.RUN}}" ] || [ -z "{{.OUT}}" ]; then
+          echo "RUN and OUT are required" >&2
+          exit 2
+        fi
+        bun src/scripts/experience_review.ts template --run "{{.RUN}}" --out "{{.OUT}}" {{.CLI_ARGS}}
+
+  experience:review:audit:
+    desc: "Validate a completed human review against one benchmark run without overwriting artifacts (RUN=... REVIEW=... OUT=...)"
+    cmds:
+      - |
+        if [ -z "{{.RUN}}" ] || [ -z "{{.REVIEW}}" ] || [ -z "{{.OUT}}" ]; then
+          echo "RUN, REVIEW, and OUT are required" >&2
+          exit 2
+        fi
+        bun src/scripts/experience_review.ts audit --run "{{.RUN}}" --review "{{.REVIEW}}" --out "{{.OUT}}" {{.CLI_ARGS}}
+
   publish:visibility-audit:
     desc: "Audit published video visibility"
     cmds: ["bun src/scripts/public_visibility_audit.ts"]
