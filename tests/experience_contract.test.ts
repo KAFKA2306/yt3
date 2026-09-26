@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import yaml from "js-yaml";
 import ts from "typescript";
@@ -23,6 +25,7 @@ import {
 	ExperienceWorldSchema,
 	parseExperienceBenchmark,
 } from "../src/domain/experience/schema.js";
+import { compileEpisode } from "../src/scripts/compile_episode.js";
 
 const root = process.cwd();
 
@@ -145,6 +148,37 @@ describe("Experience Contract and OSS benchmark", () => {
 				"action_forbidden",
 			]),
 		);
+	});
+
+	test("audits opted-in experience episodes before media processing", async () => {
+		const directory = await mkdtemp(
+			path.join(tmpdir(), "yt3-experience-compile-"),
+		);
+		try {
+			const episode = validEpisode({
+				experience: undefined,
+				visuals: [
+					{
+						id: "coin-rain",
+						type: "experience",
+						props: {},
+						action: "rise",
+					},
+				],
+			});
+			const episodePath = path.join(directory, "episode.json");
+			await writeFile(episodePath, JSON.stringify(episode), "utf8");
+
+			await expect(
+				compileEpisode({
+					episode: episodePath,
+					out: path.join(directory, "out"),
+					ffprobe: "missing-ffprobe",
+				}),
+			).rejects.toThrow(/experience_missing/);
+		} finally {
+			await rm(directory, { recursive: true, force: true });
+		}
 	});
 
 	test("requires an explicit asset reference when a scene claims asset reuse", () => {
