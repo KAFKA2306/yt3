@@ -169,8 +169,8 @@ describe("episode canonical pipeline", () => {
 			"/tmp/out.mp4",
 		);
 		expect(command.slice(0, 5)).toEqual([
-			"bunx",
-			"remotion",
+			"bun",
+			"node_modules/@remotion/cli/remotion-cli.js",
 			"render",
 			"entry.tsx",
 			"Episode",

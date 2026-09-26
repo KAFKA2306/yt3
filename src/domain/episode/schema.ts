@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+	ExperienceContractSchema,
+	ExperienceSceneFieldsSchema,
+} from "../experience/schema.js";
 
 export const EpisodeTemplateSchema = z.enum([
 	"title",
@@ -11,6 +15,7 @@ export const EpisodeTemplateSchema = z.enum([
 	"image",
 	"terminal",
 	"github",
+	"experience",
 ]);
 
 const IdSchema = z.string().regex(/^[A-Za-z0-9_-]+$/);
@@ -48,6 +53,11 @@ export const EpisodeVisualSchema = z.object({
 	elements: z.array(EpisodeVisualElementSchema).default([]),
 	asset_ref: IdSchema.optional(),
 	source_ref: IdSchema.optional(),
+	action: ExperienceSceneFieldsSchema.shape.action,
+	subject: ExperienceSceneFieldsSchema.shape.subject,
+	reaction: ExperienceSceneFieldsSchema.shape.reaction,
+	concept_id: ExperienceSceneFieldsSchema.shape.concept_id,
+	asset_strategy: ExperienceSceneFieldsSchema.shape.asset_strategy,
 });
 
 export const EpisodeDialogueSchema = z.object({
@@ -81,6 +91,7 @@ export const EpisodeSchema = z.object({
 	claims: z.array(EpisodeClaimSchema).default([]),
 	assets: z.array(EpisodeAssetSchema).default([]),
 	visuals: z.array(EpisodeVisualSchema).default([]),
+	experience: ExperienceContractSchema.optional(),
 	sections: z.array(EpisodeSectionSchema).min(1),
 	thumbnail: z.object({
 		lines: z.array(z.string().min(1)).min(1).max(2),

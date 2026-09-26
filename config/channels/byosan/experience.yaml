@@ -1,0 +1,30 @@
+schema_version: 1
+channel: byosan_money
+action_vocabulary:
+  - rise
+  - fall
+  - inflate
+  - shrink
+  - split
+  - block
+  - connect
+  - build
+  - overflow
+  - exchange
+forbidden_actions:
+  - explain
+  - show
+  - describe
+lane_limits:
+  LIGHT:
+    max_concepts: 1
+    max_scenes: 6
+    max_generated_assets: 1
+  EXPLAIN:
+    max_concepts: 3
+    max_scenes: 12
+    max_generated_assets: 2
+  DEEP:
+    max_concepts: 8
+    max_scenes: 24
+    max_generated_assets: 4

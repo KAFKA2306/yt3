@@ -1,0 +1,45 @@
+schema_version: 1
+channel: byosan_money
+identity:
+  character: 秒算マネーの既存キャラクター
+  reuse_existing_asset: true
+palette:
+  background: "#10172A"
+  surface: "#1B2640"
+  text_primary: "#F4F7FC"
+  accent_primary: "#77E0C0"
+  accent_secondary: "#FFC857"
+  danger: "#FF6B6B"
+  coin: "#F6C453"
+  tether: "#A78BFA"
+visual_vocabulary:
+  - id: coin-rain
+    metaphor: 配当がコインになって降り、箱からあふれる
+    action: overflow
+  - id: per-balloon
+    metaphor: 株価だけが上がると評価の風船が膨らむ
+    action: inflate
+  - id: stock-elevator
+    metaphor: 株価の上昇をエレベーターの高さで見せる
+    action: rise
+  - id: debt-weight
+    metaphor: 借金の重りが床や足場を押し下げる
+    action: fall
+  - id: factory-builder
+    metaphor: 設備投資で工場が組み上がる
+    action: build
+  - id: covered-call-tether
+    metaphor: 上昇する株価と上値を結ぶテザー
+    action: connect
+  - id: falling-floor
+    metaphor: 下落に合わせて足元の床が落ちる
+    action: fall
+  - id: power-plug
+    metaphor: 電力供給をプラグの接続で表す
+    action: connect
+  - id: capacity-conveyor
+    metaphor: 工場の生産能力を搬送量で見せる
+    action: exchange
+  - id: upside-cap
+    metaphor: 上値の上限で値動きが止まる
+    action: block
