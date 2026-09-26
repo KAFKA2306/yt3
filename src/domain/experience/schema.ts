@@ -63,6 +63,61 @@ const LaneLimitSchema = z.object({
 	max_generated_assets: z.number().int().nonnegative(),
 });
 
+const ExperienceIdentityMarkerSchema = z.enum([
+	"existing_character_asset",
+	"palette.background",
+	"palette.accent_primary",
+]);
+
+const ExperienceIdentityRecognitionSchema = z
+	.object({
+		protocol_version: z.literal(1),
+		fixed_markers: z.array(ExperienceIdentityMarkerSchema).length(3),
+		frame_sample_rule: z.literal("midpoint_of_first_scene"),
+		blinded_fields: z
+			.array(z.enum(["channel_name", "episode_title", "captions", "audio"]))
+			.length(4),
+		randomized_order: z.literal(true),
+		respondent_cohort: z.literal("self_reported_unfamiliar_viewers"),
+		answer_options: z
+			.array(
+				z.enum([
+					"byosan_money",
+					"humanity_observatory",
+					"yawa_archive",
+					"not_sure",
+				]),
+			)
+			.length(4),
+		report_metrics: z
+			.array(
+				z.enum([
+					"per_channel_top1_accuracy",
+					"confusion_matrix",
+					"wilson_95_percent_interval",
+				]),
+			)
+			.length(3),
+		acceptance_threshold: z.null(),
+	})
+	.strict()
+	.superRefine((protocol, context) => {
+		for (const field of [
+			"fixed_markers",
+			"blinded_fields",
+			"answer_options",
+			"report_metrics",
+		] as const) {
+			if (new Set(protocol[field]).size !== protocol[field].length) {
+				context.addIssue({
+					code: "custom",
+					path: [field],
+					message: `${field} must not contain duplicates`,
+				});
+			}
+		}
+	});
+
 export const ExperienceProfileSchema = z.object({
 	schema_version: z.literal(1),
 	channel: z.literal("byosan_money"),
@@ -75,27 +130,60 @@ export const ExperienceProfileSchema = z.object({
 	}),
 });
 
-export const ExperienceWorldSchema = z.object({
-	schema_version: z.literal(1),
-	channel: z.literal("byosan_money"),
-	identity: z.object({
-		character: z.string().trim().min(1),
-		reuse_existing_asset: z.boolean(),
-	}),
-	palette: z.record(
-		z.string().regex(/^[a-z][a-z0-9_]*$/),
-		z.string().regex(/^#[0-9a-fA-F]{6}$/),
-	),
-	visual_vocabulary: z
-		.array(
-			z.object({
-				id: z.string().regex(/^[a-z][a-z0-9_-]*$/),
-				metaphor: z.string().trim().min(1),
-				action: ExperienceActionSchema,
-			}),
-		)
-		.min(10),
-});
+export const ExperienceWorldSchema = z
+	.object({
+		schema_version: z.literal(1),
+		channel: z.literal("byosan_money"),
+		identity: z.object({
+			character: z.string().trim().min(1),
+			reuse_existing_asset: z.boolean(),
+			single_frame_recognition: ExperienceIdentityRecognitionSchema,
+		}),
+		palette: z.record(
+			z.string().regex(/^[a-z][a-z0-9_]*$/),
+			z.string().regex(/^#[0-9a-fA-F]{6}$/),
+		),
+		visual_vocabulary: z
+			.array(
+				z.object({
+					id: z.string().regex(/^[a-z][a-z0-9_-]*$/),
+					metaphor: z.string().trim().min(1),
+					action: ExperienceActionSchema,
+				}),
+			)
+			.min(10),
+	})
+	.superRefine((world, context) => {
+		const fixedMarkers = world.identity.single_frame_recognition.fixed_markers;
+		if (
+			fixedMarkers.includes("existing_character_asset") &&
+			!world.identity.reuse_existing_asset
+		) {
+			context.addIssue({
+				code: "custom",
+				path: ["identity", "single_frame_recognition", "fixed_markers"],
+				message:
+					"existing_character_asset requires identity.reuse_existing_asset",
+			});
+		}
+		for (const [index, marker] of fixedMarkers.entries()) {
+			if (
+				marker.startsWith("palette.") &&
+				!Object.hasOwn(world.palette, marker.slice("palette.".length))
+			) {
+				context.addIssue({
+					code: "custom",
+					path: [
+						"identity",
+						"single_frame_recognition",
+						"fixed_markers",
+						index,
+					],
+					message: `fixed frame marker ${marker} is missing from the palette`,
+				});
+			}
+		}
+	});
 
 export const ExperienceRenderVisualSchema = ExperienceSceneFieldsSchema.extend({
 	type: z.string().trim().min(1),
@@ -190,6 +278,9 @@ export type ExperienceAssetStrategy = z.infer<
 export type ExperienceSceneFields = z.infer<typeof ExperienceSceneFieldsSchema>;
 export type ExperienceProfile = z.infer<typeof ExperienceProfileSchema>;
 export type ExperienceWorld = z.infer<typeof ExperienceWorldSchema>;
+export type ExperienceIdentityRecognition = z.infer<
+	typeof ExperienceIdentityRecognitionSchema
+>;
 export type ExperienceRenderInput = z.infer<typeof ExperienceRenderInputSchema>;
 export type ExperienceRenderItem = z.infer<typeof ExperienceRenderItemSchema>;
 export type ExperienceBenchmark = z.infer<typeof ExperienceBenchmarkSchema>;
