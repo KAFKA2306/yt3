@@ -86,6 +86,7 @@ export function auditExperienceEpisode(
 	profile: ExperienceProfile,
 ): ExperienceAuditIssue[] {
 	const issues: ExperienceAuditIssue[] = [];
+	const assetIds = new Set(episode.assets.map((asset) => asset.id));
 	const experience = episode.experience;
 	if (!experience) {
 		issues.push({
@@ -118,6 +119,21 @@ export function auditExperienceEpisode(
 	}
 
 	for (const visual of episode.visuals) {
+		if (visual.asset_strategy === "reuse") {
+			if (!visual.asset_ref) {
+				issues.push({
+					code: "asset_reuse_reference_missing",
+					path: `visuals.${visual.id}.asset_ref`,
+					message: "reuse strategy requires an explicit asset_ref",
+				});
+			} else if (!assetIds.has(visual.asset_ref)) {
+				issues.push({
+					code: "asset_reuse_reference_unknown",
+					path: `visuals.${visual.id}.asset_ref`,
+					message: `reused asset ${visual.asset_ref} is not declared by the episode`,
+				});
+			}
+		}
 		if (!visual.action) {
 			issues.push({
 				code: "scene_action_missing",

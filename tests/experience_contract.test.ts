@@ -147,6 +147,44 @@ describe("Experience Contract and OSS benchmark", () => {
 		);
 	});
 
+	test("requires an explicit asset reference when a scene claims asset reuse", () => {
+		const profile = ExperienceProfileSchema.parse(
+			yaml.load(
+				readFileSync(
+					path.join(root, "config/channels/byosan/experience.yaml"),
+					"utf8",
+				),
+			),
+		);
+		const reusedScene = {
+			id: "mascot-reaction",
+			type: "image",
+			props: {},
+			action: "exchange",
+			asset_strategy: "reuse",
+		};
+		const withoutReference = validEpisode({ visuals: [reusedScene] });
+		const withReference = validEpisode({
+			assets: [{ id: "mascot", path: "assets/byosan/character/base.svg" }],
+			visuals: [{ ...reusedScene, asset_ref: "mascot" }],
+		});
+		const withUndeclaredReference = validEpisode({
+			visuals: [{ ...reusedScene, asset_ref: "missing-mascot" }],
+		});
+
+		expect(
+			auditExperienceEpisode(withoutReference, profile).map(
+				(issue) => issue.code,
+			),
+		).toContain("asset_reuse_reference_missing");
+		expect(
+			auditExperienceEpisode(withUndeclaredReference, profile).map(
+				(issue) => issue.code,
+			),
+		).toContain("asset_reuse_reference_unknown");
+		expect(auditExperienceEpisode(withReference, profile)).toEqual([]);
+	});
+
 	test("validates both byosan config files and the fixed five-scene fixture", () => {
 		const profile = ExperienceProfileSchema.parse(
 			yaml.load(
