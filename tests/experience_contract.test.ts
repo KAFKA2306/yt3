@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import yaml from "js-yaml";
@@ -26,6 +26,7 @@ import {
 	parseExperienceBenchmark,
 } from "../src/domain/experience/schema.js";
 import { compileEpisode } from "../src/scripts/compile_episode.js";
+import { installBunWorkspace } from "../src/scripts/experience_workspace.js";
 
 const root = process.cwd();
 
@@ -96,6 +97,37 @@ describe("Experience Contract and OSS benchmark", () => {
 			ExperienceContractSchema.safeParse({ ...contract, viewer_question: " " })
 				.success,
 		).toBe(false);
+	});
+
+	test("installs isolated benchmark workspaces with a persistent lockfile", async () => {
+		const workspace = await mkdtemp(
+			path.join(tmpdir(), "yt3-experience-workspace-"),
+		);
+		try {
+			const localPackage = path.join(workspace, "local-package");
+			await mkdir(localPackage);
+			await writeFile(
+				path.join(localPackage, "package.json"),
+				JSON.stringify({ name: "yt3-lockfile-fixture", version: "1.0.0" }),
+				"utf8",
+			);
+			await writeFile(
+				path.join(workspace, "package.json"),
+				JSON.stringify({
+					name: "yt3-experience-workspace-test",
+					version: "1.0.0",
+					dependencies: { "yt3-lockfile-fixture": "file:./local-package" },
+				}),
+				"utf8",
+			);
+			await installBunWorkspace(workspace);
+
+			expect(
+				readFileSync(path.join(workspace, "bun.lock"), "utf8").length,
+			).toBeGreaterThan(0);
+		} finally {
+			await rm(workspace, { recursive: true, force: true });
+		}
 	});
 
 	test("audits the byosan LIGHT lane and rejects explain-only scenes", () => {

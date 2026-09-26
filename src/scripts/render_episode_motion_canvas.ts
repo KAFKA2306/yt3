@@ -11,6 +11,7 @@ import {
 import { buildMotionCanvasWorkspaceFiles } from "../domain/episode/motion_canvas_workspace.js";
 import { loadByosanExperienceConfig } from "../domain/experience/config.js";
 import { ExperienceRenderInputSchema } from "../domain/experience/schema.js";
+import { installBunWorkspace } from "./experience_workspace.js";
 
 export interface RenderMotionCanvasArgs {
 	compiled: string;
@@ -451,7 +452,7 @@ export async function renderMotionCanvasInput(
 			}
 		}
 	} else {
-		await run(["bun", "install", "--no-save"], workspace);
+		await installBunWorkspace(workspace);
 	}
 	await run(["bun", "run", "typecheck"], workspace);
 	const renderClock = performance.now();
