@@ -17,7 +17,10 @@ import type {
 	ExperienceRenderInput,
 	ExperienceRenderItem,
 } from "../domain/experience/schema.js";
-import { installBunWorkspace } from "./experience_workspace.js";
+import {
+	collectBunWorkspaceLicenseInventory,
+	installBunWorkspace,
+} from "./experience_workspace.js";
 import {
 	renderMotionCanvasInput,
 	resolveMotionCanvasChromiumPath,
@@ -252,6 +255,29 @@ export async function benchmarkExperience(outPath: string): Promise<void> {
 		});
 	}
 
+	const dependencyLicenseInventory = {
+		status: "INVENTORIED",
+		scope:
+			"Installed package.json license/licences declarations reachable from each isolated workspace's node_modules; declarations are recorded, not independently verified.",
+		engines: {
+			"remotion-existing":
+				await collectBunWorkspaceLicenseInventory(baselineWorkspace),
+			"motion-canvas": await collectBunWorkspaceLicenseInventory(
+				motionCanvasWorkspace,
+			),
+		},
+		limitations: [
+			"This inventory does not establish license-text accuracy, compatibility, commercial eligibility, or legal advice.",
+			"Dependencies not installed in the benchmark workspaces are outside this inventory.",
+		],
+	};
+	const licenseEvidence = {
+		...buildExperienceLicenseEvidence({
+			remotionVersion: REMOTION_VERSION,
+			motionCanvasVersion: MOTION_CANVAS_VERSION,
+		}),
+		transitive_dependency_inventory: dependencyLicenseInventory,
+	};
 	const manifest = {
 		schema_version: 1,
 		status: "COMPLETE",
@@ -278,10 +304,7 @@ export async function benchmarkExperience(outPath: string): Promise<void> {
 			},
 		},
 		license_status: "PARTIALLY_VERIFIED",
-		license_evidence: buildExperienceLicenseEvidence({
-			remotionVersion: REMOTION_VERSION,
-			motionCanvasVersion: MOTION_CANVAS_VERSION,
-		}),
+		license_evidence: licenseEvidence,
 		human_quality_review: "NOT_RUN",
 	};
 	await writeJson(path.join(runDirectory, "manifest.json"), manifest);
@@ -291,7 +314,24 @@ export async function benchmarkExperience(outPath: string): Promise<void> {
 	);
 	console.log(
 		JSON.stringify(
-			{ status: "PASS", run_directory: runDirectory, manifest },
+			{
+				status: "PASS",
+				run_directory: runDirectory,
+				license_status: manifest.license_status,
+				dependency_inventory_status: dependencyLicenseInventory.status,
+				dependency_package_counts: Object.fromEntries(
+					Object.entries(dependencyLicenseInventory.engines).map(
+						([engine, inventory]) => [
+							engine,
+							{
+								packages: inventory.package_instance_count,
+								unique_packages: inventory.unique_package_count,
+								undeclared_license: inventory.undeclared_license_count,
+							},
+						],
+					),
+				),
+			},
 			null,
 			2,
 		),

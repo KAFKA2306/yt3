@@ -56,7 +56,7 @@ export function buildExperienceLicenseEvidence({
 			? ("PARTIALLY_VERIFIED" as const)
 			: ("UNVERIFIED" as const),
 		review_scope:
-			"Version-pinned engine project licenses and model-weight use only; not a complete dependency or legal review.",
+			"Version-pinned engine project license status and model-weight use are reviewed; package.json dependency license declarations are inventoried separately but not independently verified; this is not a complete dependency or legal review.",
 		code_projects: codeProjects,
 		model_weights: {
 			status: "NOT_USED" as const,
