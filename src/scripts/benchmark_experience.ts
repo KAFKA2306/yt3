@@ -12,6 +12,7 @@ import {
 	buildRendererMetrics,
 } from "../domain/experience/audit.js";
 import { loadByosanExperienceConfig } from "../domain/experience/config.js";
+import { buildExperienceLicenseEvidence } from "../domain/experience/license_evidence.js";
 import type {
 	ExperienceRenderInput,
 	ExperienceRenderItem,
@@ -276,7 +277,11 @@ export async function benchmarkExperience(outPath: string): Promise<void> {
 				setup_seconds: motionCanvasSetupSeconds,
 			},
 		},
-		license_status: "UNVERIFIED",
+		license_status: "PARTIALLY_VERIFIED",
+		license_evidence: buildExperienceLicenseEvidence({
+			remotionVersion: REMOTION_VERSION,
+			motionCanvasVersion: MOTION_CANVAS_VERSION,
+		}),
 		human_quality_review: "NOT_RUN",
 	};
 	await writeJson(path.join(runDirectory, "manifest.json"), manifest);

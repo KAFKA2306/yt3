@@ -10,6 +10,7 @@ import {
 	buildMotionCanvasWorkspaceFiles,
 } from "../src/domain/episode/motion_canvas_workspace.js";
 import {
+	REMOTION_VERSION,
 	buildRemotionInput,
 	buildRemotionWorkspaceFiles,
 } from "../src/domain/episode/remotion_workspace.js";
@@ -19,6 +20,7 @@ import {
 	buildExperienceBenchmarkSummary,
 	buildRendererMetrics,
 } from "../src/domain/experience/audit.js";
+import { buildExperienceLicenseEvidence } from "../src/domain/experience/license_evidence.js";
 import {
 	ExperienceContractSchema,
 	ExperienceProfileSchema,
@@ -383,5 +385,58 @@ describe("Experience Contract and OSS benchmark", () => {
 		expect(summary.scenes[0]?.quality_delta.visual_quality_delta).toBeNull();
 		expect(summary.scenes[0]?.production_delta.render_seconds).toBe(0);
 		expect(summary).not.toHaveProperty("overall_quality_score");
+	});
+
+	test("license evidence separates project code, model weights, and unresolved scope", () => {
+		const evidence = buildExperienceLicenseEvidence({
+			remotionVersion: REMOTION_VERSION,
+			motionCanvasVersion: MOTION_CANVAS_VERSION,
+		});
+
+		expect(evidence.status).toBe("PARTIALLY_VERIFIED");
+		expect(evidence.code_projects).toEqual([
+			expect.objectContaining({
+				engine: "remotion-existing",
+				version: REMOTION_VERSION,
+				classification: "SOURCE_AVAILABLE_PROPRIETARY",
+				source_license_status: "VERIFIED",
+				production_eligibility: "UNVERIFIED",
+				source_url: `https://github.com/remotion-dev/remotion/blob/v${REMOTION_VERSION}/LICENSE.md`,
+			}),
+			expect.objectContaining({
+				engine: "motion-canvas",
+				package: "@motion-canvas/core",
+				version: MOTION_CANVAS_VERSION,
+				classification: "OSI_OPEN_SOURCE",
+				license: "MIT",
+				source_license_status: "VERIFIED",
+				production_eligibility: "VERIFIED",
+				source_url: `https://raw.githubusercontent.com/motion-canvas/motion-canvas/v${MOTION_CANVAS_VERSION}/LICENSE`,
+			}),
+		]);
+		expect(evidence.model_weights).toMatchObject({
+			status: "NOT_USED",
+			engines: ["remotion-existing", "motion-canvas"],
+		});
+		expect(evidence.transitive_dependency_licenses).toBe("UNVERIFIED");
+	});
+
+	test("license changes require fresh review when an engine version changes", () => {
+		const evidence = buildExperienceLicenseEvidence({
+			remotionVersion: "4.0.525",
+			motionCanvasVersion: "3.17.3",
+		});
+
+		expect(evidence.status).toBe("UNVERIFIED");
+		expect(evidence.code_projects[0]).toMatchObject({
+			classification: "UNREVIEWED",
+			source_license_status: "UNVERIFIED",
+			production_eligibility: "UNVERIFIED",
+		});
+		expect(evidence.code_projects[1]).toMatchObject({
+			classification: "UNREVIEWED",
+			source_license_status: "UNVERIFIED",
+			production_eligibility: "UNVERIFIED",
+		});
 	});
 });
