@@ -16,9 +16,11 @@ import {
 } from "../src/domain/episode/remotion_workspace.js";
 import { EpisodeSchema } from "../src/domain/episode/schema.js";
 import {
+	ExperienceRendererMetricsSchema,
 	auditExperienceEpisode,
 	buildExperienceBenchmarkSummary,
 	buildRendererMetrics,
+	countDistinctGeneratedAssets,
 } from "../src/domain/experience/audit.js";
 import { buildExperienceLicenseEvidence } from "../src/domain/experience/license_evidence.js";
 import {
@@ -258,10 +260,12 @@ describe("Experience Contract and OSS benchmark", () => {
 		});
 
 		expect(auditExperienceEpisode(sharedGeneratedAsset, profile)).toEqual([]);
+		expect(countDistinctGeneratedAssets(sharedGeneratedAsset.visuals)).toBe(1);
 		for (const episode of [
 			distinctGeneratedAssets,
 			unreferencedGeneratedScenes,
 		]) {
+			expect(countDistinctGeneratedAssets(episode.visuals)).toBe(2);
 			expect(
 				auditExperienceEpisode(episode, profile).map((issue) => issue.code),
 			).toContain("light_generated_asset_limit");
@@ -469,6 +473,52 @@ describe("Experience Contract and OSS benchmark", () => {
 		expect(summary.scenes[0]?.quality_delta.visual_quality_delta).toBeNull();
 		expect(summary.scenes[0]?.production_delta.render_seconds).toBe(0);
 		expect(summary).not.toHaveProperty("overall_quality_score");
+	});
+
+	test("records asset reuse ratio only when asset counts are measurable", () => {
+		const metrics = buildRendererMetrics({
+			engine: "remotion-existing",
+			scene_id: "asset-reuse",
+			started_at: "2026-09-26T00:00:00.000Z",
+			finished_at: "2026-09-26T00:00:02.500Z",
+			output_bytes: 4096,
+			output_sha256: "a".repeat(64),
+			new_asset_count: 2,
+			reused_asset_count: 3,
+		});
+		const noAssetPlacements = buildRendererMetrics({
+			engine: "remotion-existing",
+			scene_id: "no-assets",
+			started_at: "2026-09-26T00:00:00.000Z",
+			finished_at: "2026-09-26T00:00:02.500Z",
+			output_bytes: 4096,
+			output_sha256: "b".repeat(64),
+			new_asset_count: 0,
+			reused_asset_count: 0,
+		});
+		const unknownAssetCount = buildRendererMetrics({
+			engine: "remotion-existing",
+			scene_id: "unknown-assets",
+			started_at: "2026-09-26T00:00:00.000Z",
+			finished_at: "2026-09-26T00:00:02.500Z",
+			output_bytes: 4096,
+			output_sha256: "c".repeat(64),
+			new_asset_count: 2,
+		});
+
+		expect(metrics.asset_reuse_ratio).toBe(0.6);
+		expect(noAssetPlacements.asset_reuse_ratio).toBeNull();
+		expect(unknownAssetCount.asset_reuse_ratio).toBeNull();
+		const { asset_reuse_ratio: _assetReuseRatio, ...legacyMetrics } = metrics;
+		expect(
+			ExperienceRendererMetricsSchema.safeParse(legacyMetrics).success,
+		).toBe(true);
+		expect(
+			ExperienceRendererMetricsSchema.safeParse({
+				...metrics,
+				asset_reuse_ratio: 1.2,
+			}).success,
+		).toBe(false);
 	});
 
 	test("license evidence separates project code, model weights, and unresolved scope", () => {

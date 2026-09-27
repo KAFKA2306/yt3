@@ -23,6 +23,7 @@ export const ExperienceRendererMetricsSchema = z.object({
 	regeneration_count: z.number().int().nonnegative().nullable(),
 	new_asset_count: z.number().int().nonnegative().nullable(),
 	reused_asset_count: z.number().int().nonnegative().nullable(),
+	asset_reuse_ratio: z.number().finite().min(0).max(1).nullable().optional(),
 	source_lines_changed: z.number().int().nonnegative().nullable(),
 	custom_code_lines: z.number().int().nonnegative().nullable(),
 	dependency_lock_bytes: z.number().int().positive().nullable(),
@@ -59,6 +60,18 @@ export function buildRendererMetrics(
 	}
 	if (finishedAt < startedAt)
 		throw new Error("renderer finished_at precedes started_at");
+	const newAssetCount = input.new_asset_count ?? null;
+	const reusedAssetCount = input.reused_asset_count ?? null;
+	const totalAssetPlacements =
+		newAssetCount === null || reusedAssetCount === null
+			? null
+			: newAssetCount + reusedAssetCount;
+	const assetReuseRatio =
+		newAssetCount === null ||
+		reusedAssetCount === null ||
+		totalAssetPlacements === 0
+			? null
+			: reusedAssetCount / (newAssetCount + reusedAssetCount);
 	return ExperienceRendererMetricsSchema.parse({
 		schema_version: 1,
 		...input,
@@ -67,8 +80,9 @@ export function buildRendererMetrics(
 		gpu_seconds: null,
 		manual_fix_count: null,
 		regeneration_count: null,
-		new_asset_count: input.new_asset_count ?? null,
-		reused_asset_count: input.reused_asset_count ?? null,
+		new_asset_count: newAssetCount,
+		reused_asset_count: reusedAssetCount,
+		asset_reuse_ratio: assetReuseRatio,
 		source_lines_changed: input.source_lines_changed ?? null,
 		custom_code_lines: input.custom_code_lines ?? null,
 		dependency_lock_bytes: input.dependency_lock_bytes ?? null,
@@ -79,6 +93,19 @@ function isKnownAction(action: string, profile: ExperienceProfile): boolean {
 	return profile.action_vocabulary.includes(
 		action as (typeof profile.action_vocabulary)[number],
 	);
+}
+
+export function countDistinctGeneratedAssets(
+	visuals: Episode["visuals"],
+): number {
+	const assetKeys = new Set<string>();
+	for (const [index, visual] of visuals.entries()) {
+		if (visual.asset_strategy !== "generated") continue;
+		assetKeys.add(
+			visual.asset_ref ? `asset:${visual.asset_ref}` : `visual:${index}`,
+		);
+	}
+	return assetKeys.size;
 }
 
 export function auditExperienceEpisode(
@@ -168,14 +195,7 @@ export function auditExperienceEpisode(
 			visual.concept_id ? [visual.concept_id] : [],
 		),
 	);
-	const generatedAssetKeys = new Set(
-		episode.visuals.flatMap((visual, index) =>
-			visual.asset_strategy === "generated"
-				? [visual.asset_ref ? `asset:${visual.asset_ref}` : `visual:${index}`]
-				: [],
-		),
-	);
-	const generatedAssets = generatedAssetKeys.size;
+	const generatedAssets = countDistinctGeneratedAssets(episode.visuals);
 
 	if (concepts.size > limits.max_concepts) {
 		issues.push({
