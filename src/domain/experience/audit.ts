@@ -168,9 +168,14 @@ export function auditExperienceEpisode(
 			visual.concept_id ? [visual.concept_id] : [],
 		),
 	);
-	const generatedAssets = episode.visuals.filter(
-		(visual) => visual.asset_strategy === "generated",
-	).length;
+	const generatedAssetKeys = new Set(
+		episode.visuals.flatMap((visual, index) =>
+			visual.asset_strategy === "generated"
+				? [visual.asset_ref ? `asset:${visual.asset_ref}` : `visual:${index}`]
+				: [],
+		),
+	);
+	const generatedAssets = generatedAssetKeys.size;
 
 	if (concepts.size > limits.max_concepts) {
 		issues.push({

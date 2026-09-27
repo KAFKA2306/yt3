@@ -184,6 +184,90 @@ describe("Experience Contract and OSS benchmark", () => {
 		);
 	});
 
+	test("counts distinct generated assets instead of generated scenes", () => {
+		const profile = ExperienceProfileSchema.parse(
+			yaml.load(
+				readFileSync(
+					path.join(root, "config/channels/byosan/experience.yaml"),
+					"utf8",
+				),
+			),
+		);
+		const sharedGeneratedAsset = validEpisode({
+			assets: [{ id: "generated-background", path: "assets/background.png" }],
+			visuals: [
+				{
+					id: "scene-one",
+					type: "image",
+					props: {},
+					action: "rise",
+					asset_strategy: "generated",
+					asset_ref: "generated-background",
+				},
+				{
+					id: "scene-two",
+					type: "image",
+					props: {},
+					action: "fall",
+					asset_strategy: "generated",
+					asset_ref: "generated-background",
+				},
+			],
+		});
+		const distinctGeneratedAssets = validEpisode({
+			assets: [
+				{ id: "generated-one", path: "assets/one.png" },
+				{ id: "generated-two", path: "assets/two.png" },
+			],
+			visuals: [
+				{
+					id: "scene-one",
+					type: "image",
+					props: {},
+					action: "rise",
+					asset_strategy: "generated",
+					asset_ref: "generated-one",
+				},
+				{
+					id: "scene-two",
+					type: "image",
+					props: {},
+					action: "fall",
+					asset_strategy: "generated",
+					asset_ref: "generated-two",
+				},
+			],
+		});
+		const unreferencedGeneratedScenes = validEpisode({
+			visuals: [
+				{
+					id: "scene-one",
+					type: "image",
+					props: {},
+					action: "rise",
+					asset_strategy: "generated",
+				},
+				{
+					id: "scene-two",
+					type: "image",
+					props: {},
+					action: "fall",
+					asset_strategy: "generated",
+				},
+			],
+		});
+
+		expect(auditExperienceEpisode(sharedGeneratedAsset, profile)).toEqual([]);
+		for (const episode of [
+			distinctGeneratedAssets,
+			unreferencedGeneratedScenes,
+		]) {
+			expect(
+				auditExperienceEpisode(episode, profile).map((issue) => issue.code),
+			).toContain("light_generated_asset_limit");
+		}
+	});
+
 	test("audits opted-in experience episodes before media processing", async () => {
 		const directory = await mkdtemp(
 			path.join(tmpdir(), "yt3-experience-compile-"),
