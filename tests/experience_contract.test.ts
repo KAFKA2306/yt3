@@ -478,15 +478,23 @@ describe("Experience Contract and OSS benchmark", () => {
 	test("metrics distinguish measured values from unknown GPU and human-review values", () => {
 		const metrics = buildRendererMetrics({
 			engine: "remotion-existing",
+			lane: "EXPLAIN",
 			scene_id: "dividend-coin-rain",
 			started_at: "2026-09-26T00:00:00.000Z",
 			finished_at: "2026-09-26T00:00:02.500Z",
 			output_bytes: 4096,
 			output_sha256: "a".repeat(64),
 		});
+		expect(metrics.lane).toBe("EXPLAIN");
 		expect(metrics.render_seconds).toBe(2.5);
 		expect(metrics.gpu_seconds).toBeNull();
 		expect(metrics.manual_fix_count).toBeNull();
+		expect(
+			ExperienceRendererMetricsSchema.safeParse({
+				...metrics,
+				lane: "UNSUPPORTED",
+			}).success,
+		).toBe(false);
 
 		const summary = buildExperienceBenchmarkSummary([
 			{
@@ -534,7 +542,11 @@ describe("Experience Contract and OSS benchmark", () => {
 		expect(metrics.asset_reuse_ratio).toBe(0.6);
 		expect(noAssetPlacements.asset_reuse_ratio).toBeNull();
 		expect(unknownAssetCount.asset_reuse_ratio).toBeNull();
-		const { asset_reuse_ratio: _assetReuseRatio, ...legacyMetrics } = metrics;
+		const {
+			asset_reuse_ratio: _assetReuseRatio,
+			lane: _lane,
+			...legacyMetrics
+		} = metrics;
 		expect(
 			ExperienceRendererMetricsSchema.safeParse(legacyMetrics).success,
 		).toBe(true);
