@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Episode } from "../episode/schema.js";
+import { ExperienceLaneSchema } from "./schema.js";
 import type { ExperienceProfile } from "./schema.js";
 
 export interface ExperienceAuditIssue {
@@ -13,6 +14,7 @@ const MetricValueSchema = z.number().finite().nonnegative().nullable();
 export const ExperienceRendererMetricsSchema = z.object({
 	schema_version: z.literal(1),
 	engine: z.enum(["remotion-existing", "motion-canvas"]),
+	lane: ExperienceLaneSchema.optional(),
 	scene_id: z.string().min(1),
 	started_at: z.string().datetime(),
 	finished_at: z.string().datetime(),
@@ -37,6 +39,7 @@ export type ExperienceRendererMetrics = z.infer<
 
 export interface RendererMetricsInput {
 	engine: ExperienceRendererMetrics["engine"];
+	lane?: ExperienceRendererMetrics["lane"];
 	scene_id: string;
 	started_at: string;
 	finished_at: string;

@@ -74,6 +74,7 @@ export async function benchmarkExperienceBaseline(
 		: null;
 	const metrics = buildRendererMetrics({
 		engine: "remotion-existing",
+		lane: parsed.experience?.lane,
 		scene_id: "episode",
 		started_at: productionStart.toISOString(),
 		finished_at: finish.toISOString(),
