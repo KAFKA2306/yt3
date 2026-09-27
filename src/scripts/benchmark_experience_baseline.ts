@@ -7,6 +7,7 @@ import { EpisodeSchema } from "../domain/episode/schema.js";
 import {
 	auditExperienceEpisode,
 	buildRendererMetrics,
+	countDistinctAssetsByStrategy,
 	countDistinctGeneratedAssets,
 } from "../domain/experience/audit.js";
 import { loadByosanExperienceConfig } from "../domain/experience/config.js";
@@ -80,9 +81,7 @@ export async function benchmarkExperienceBaseline(
 		output_bytes: outputBuffer.byteLength,
 		output_sha256: createHash("sha256").update(outputBuffer).digest("hex"),
 		new_asset_count: countDistinctGeneratedAssets(parsed.visuals),
-		reused_asset_count: parsed.visuals.filter(
-			(visual) => visual.asset_strategy === "reuse",
-		).length,
+		reused_asset_count: countDistinctAssetsByStrategy(parsed.visuals, "reuse"),
 		custom_code_lines: generatedSourceLines,
 		dependency_lock_bytes: dependencyLockBytes,
 	});

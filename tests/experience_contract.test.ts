@@ -20,6 +20,7 @@ import {
 	auditExperienceEpisode,
 	buildExperienceBenchmarkSummary,
 	buildRendererMetrics,
+	countDistinctAssetsByStrategy,
 	countDistinctGeneratedAssets,
 } from "../src/domain/experience/audit.js";
 import { buildExperienceLicenseEvidence } from "../src/domain/experience/license_evidence.js";
@@ -258,9 +259,33 @@ describe("Experience Contract and OSS benchmark", () => {
 				},
 			],
 		});
+		const sharedReusedAsset = validEpisode({
+			assets: [{ id: "reused-icon", path: "assets/icon.svg" }],
+			visuals: [
+				{
+					id: "reuse-one",
+					type: "image",
+					props: {},
+					action: "rise",
+					asset_strategy: "reuse",
+					asset_ref: "reused-icon",
+				},
+				{
+					id: "reuse-two",
+					type: "image",
+					props: {},
+					action: "fall",
+					asset_strategy: "reuse",
+					asset_ref: "reused-icon",
+				},
+			],
+		});
 
 		expect(auditExperienceEpisode(sharedGeneratedAsset, profile)).toEqual([]);
 		expect(countDistinctGeneratedAssets(sharedGeneratedAsset.visuals)).toBe(1);
+		expect(
+			countDistinctAssetsByStrategy(sharedReusedAsset.visuals, "reuse"),
+		).toBe(1);
 		for (const episode of [
 			distinctGeneratedAssets,
 			unreferencedGeneratedScenes,

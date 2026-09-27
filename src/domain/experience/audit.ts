@@ -62,14 +62,14 @@ export function buildRendererMetrics(
 		throw new Error("renderer finished_at precedes started_at");
 	const newAssetCount = input.new_asset_count ?? null;
 	const reusedAssetCount = input.reused_asset_count ?? null;
-	const totalAssetPlacements =
+	const totalClassifiedAssets =
 		newAssetCount === null || reusedAssetCount === null
 			? null
 			: newAssetCount + reusedAssetCount;
 	const assetReuseRatio =
 		newAssetCount === null ||
 		reusedAssetCount === null ||
-		totalAssetPlacements === 0
+		totalClassifiedAssets === 0
 			? null
 			: reusedAssetCount / (newAssetCount + reusedAssetCount);
 	return ExperienceRendererMetricsSchema.parse({
@@ -95,17 +95,24 @@ function isKnownAction(action: string, profile: ExperienceProfile): boolean {
 	);
 }
 
-export function countDistinctGeneratedAssets(
+export function countDistinctAssetsByStrategy(
 	visuals: Episode["visuals"],
+	strategy: "generated" | "reuse",
 ): number {
 	const assetKeys = new Set<string>();
 	for (const [index, visual] of visuals.entries()) {
-		if (visual.asset_strategy !== "generated") continue;
+		if (visual.asset_strategy !== strategy) continue;
 		assetKeys.add(
 			visual.asset_ref ? `asset:${visual.asset_ref}` : `visual:${index}`,
 		);
 	}
 	return assetKeys.size;
+}
+
+export function countDistinctGeneratedAssets(
+	visuals: Episode["visuals"],
+): number {
+	return countDistinctAssetsByStrategy(visuals, "generated");
 }
 
 export function auditExperienceEpisode(
