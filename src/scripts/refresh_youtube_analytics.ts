@@ -3,14 +3,17 @@ import path from "node:path";
 import fs from "fs-extra";
 import { writeByosanPerformanceSummary } from "../domain/byosan/performance.js";
 import {
+	MAX_AUTHORIZATION_AGE_DAYS,
+	analyticsAuthorizationCutoff,
+} from "../domain/youtube_analytics_policy.js";
+import {
 	discoverVideos,
 	ensureTrafficSourceAnalyticsTable,
 	purgeTrafficSourceAnalytics,
 } from "./ingest_youtube_analytics.js";
+import { purgeReachAnalyticsPastAuthorizationDeadline } from "./ingest_youtube_reporting_reach.js";
 
 const DEFAULT_DB_FILE = "db/evolution.db";
-const MAX_AUTHORIZATION_AGE_DAYS = 30;
-
 export function purgeAnalyticsPastAuthorizationDeadline(
 	db: Database,
 	baseDir = process.cwd(),
@@ -18,7 +21,12 @@ export function purgeAnalyticsPastAuthorizationDeadline(
 	maxAgeDays = MAX_AUTHORIZATION_AGE_DAYS,
 ): number {
 	ensureTrafficSourceAnalyticsTable(db);
-	const cutoff = new Date(now.getTime() - maxAgeDays * 86_400_000)
+	const reachPurged = purgeReachAnalyticsPastAuthorizationDeadline(
+		db,
+		now,
+		maxAgeDays,
+	);
+	const cutoff = analyticsAuthorizationCutoff(now, maxAgeDays)
 		.toISOString()
 		.replace("T", " ")
 		.replace("Z", "");
@@ -27,7 +35,7 @@ export function purgeAnalyticsPastAuthorizationDeadline(
 			"SELECT video_id, age_window FROM youtube_analytics WHERE recorded_at < ?",
 		)
 		.all(cutoff) as Array<{ video_id: string; age_window: string }>;
-	if (stale.length === 0) return 0;
+	if (stale.length === 0) return reachPurged;
 
 	const runByVideoId = new Map(
 		discoverVideos(baseDir).map((video) => [video.videoId, video.runDir]),
@@ -43,7 +51,7 @@ export function purgeAnalyticsPastAuthorizationDeadline(
 			fs.removeSync(path.join(runDir, "analytics", `${row.age_window}.json`));
 		}
 	}
-	return stale.length;
+	return stale.length + reachPurged;
 }
 
 async function main() {

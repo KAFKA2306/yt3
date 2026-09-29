@@ -207,3 +207,31 @@ CREATE TABLE IF NOT EXISTS youtube_analytics_traffic_sources (
     recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (video_id, age_window, traffic_source_type)
 );
+
+-- Daily thumbnail reach from the YouTube Reporting API. CSV files are not retained;
+-- report metadata and linked metrics share the existing 30-day local retention rule.
+CREATE TABLE IF NOT EXISTS youtube_analytics_reach_daily (
+    episode_id TEXT NOT NULL,
+    video_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    report_date TEXT NOT NULL,
+    thumbnail_impressions INTEGER NOT NULL,
+    thumbnail_impressions_ctr REAL NOT NULL,
+    report_id TEXT NOT NULL,
+    report_created_at TEXT NOT NULL,
+    downloaded_at TEXT NOT NULL,
+    PRIMARY KEY (channel_id, report_date, video_id)
+);
+
+CREATE TABLE IF NOT EXISTS youtube_analytics_reach_reports (
+    report_id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    report_date TEXT NOT NULL,
+    report_created_at TEXT NOT NULL,
+    source_row_count INTEGER NOT NULL,
+    linked_row_count INTEGER NOT NULL,
+    unlinked_row_count INTEGER NOT NULL,
+    sha256 TEXT NOT NULL,
+    downloaded_at TEXT NOT NULL
+);
