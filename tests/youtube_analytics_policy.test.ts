@@ -21,6 +21,20 @@ function createAnalyticsTable(db: Database) {
 			PRIMARY KEY (video_id, age_window)
 		)
 	`);
+	db.exec(`
+		CREATE TABLE youtube_analytics_traffic_sources (
+			episode_id TEXT NOT NULL,
+			video_id TEXT NOT NULL,
+			channel_id TEXT NOT NULL,
+			age_window TEXT NOT NULL,
+			traffic_source_type TEXT NOT NULL,
+			views INTEGER,
+			engaged_views INTEGER,
+			watch_time_minutes REAL,
+			recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+			PRIMARY KEY (video_id, age_window, traffic_source_type)
+		)
+	`);
 }
 
 describe("YouTube Analytics 30-day storage boundary", () => {
@@ -61,6 +75,23 @@ describe("YouTube Analytics 30-day storage boundary", () => {
 			200,
 			"2026-08-10 00:00:00",
 		);
+		db.prepare(
+			`INSERT INTO youtube_analytics_traffic_sources
+				(episode_id, video_id, channel_id, age_window, traffic_source_type, views)
+			 VALUES (?, ?, ?, ?, ?, ?)`,
+		).run(
+			"episode-stale",
+			"video-stale",
+			"channel-1",
+			"first_7d",
+			"YT_SEARCH",
+			4,
+		);
+		db.prepare(
+			`INSERT INTO youtube_analytics_traffic_sources
+				(episode_id, video_id, channel_id, age_window, traffic_source_type, views)
+			 VALUES (?, ?, ?, ?, ?, ?)`,
+		).run("episode-fresh", "video-fresh", "channel-1", "first_7d", "SHORTS", 9);
 
 		const purged = purgeAnalyticsPastAuthorizationDeadline(
 			db,
@@ -73,6 +104,13 @@ describe("YouTube Analytics 30-day storage boundary", () => {
 				n: number;
 			},
 		).toEqual({ n: 1 });
+		expect(
+			db
+				.query(
+					"SELECT video_id FROM youtube_analytics_traffic_sources ORDER BY video_id",
+				)
+				.all(),
+		).toEqual([{ video_id: "video-fresh" }]);
 		expect(fs.existsSync(path.join(runDir, "analytics", "first_7d.json"))).toBe(
 			false,
 		);

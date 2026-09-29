@@ -2,7 +2,11 @@ import { Database } from "bun:sqlite";
 import path from "node:path";
 import fs from "fs-extra";
 import { writeByosanPerformanceSummary } from "../domain/byosan/performance.js";
-import { discoverVideos } from "./ingest_youtube_analytics.js";
+import {
+	discoverVideos,
+	ensureTrafficSourceAnalyticsTable,
+	purgeTrafficSourceAnalytics,
+} from "./ingest_youtube_analytics.js";
 
 const DEFAULT_DB_FILE = "db/evolution.db";
 const MAX_AUTHORIZATION_AGE_DAYS = 30;
@@ -13,6 +17,7 @@ export function purgeAnalyticsPastAuthorizationDeadline(
 	now = new Date(),
 	maxAgeDays = MAX_AUTHORIZATION_AGE_DAYS,
 ): number {
+	ensureTrafficSourceAnalyticsTable(db);
 	const cutoff = new Date(now.getTime() - maxAgeDays * 86_400_000)
 		.toISOString()
 		.replace("T", " ")
@@ -32,6 +37,7 @@ export function purgeAnalyticsPastAuthorizationDeadline(
 	);
 	for (const row of stale) {
 		remove.run(row.video_id, row.age_window);
+		purgeTrafficSourceAnalytics(db, row.video_id, row.age_window);
 		const runDir = runByVideoId.get(row.video_id);
 		if (runDir) {
 			fs.removeSync(path.join(runDir, "analytics", `${row.age_window}.json`));
