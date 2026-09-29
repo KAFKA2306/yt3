@@ -165,8 +165,10 @@ CREATE TABLE IF NOT EXISTS media_audits (
     UNIQUE(run_id, media_type)
 );
 
--- 11. YouTube Analytics (raw API metrics; no unapproved derived score)
+-- 11. YouTube Analytics (official metrics and evidence-backed derived values)
 CREATE TABLE IF NOT EXISTS youtube_analytics (
+    -- The published receipt's canonical runs/<bucket>/<run> identity.
+    episode_id TEXT,
     video_id TEXT NOT NULL,
     channel_id TEXT NOT NULL,
     age_window TEXT NOT NULL,
