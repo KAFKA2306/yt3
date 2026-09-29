@@ -3,6 +3,11 @@ import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
+	type CardMetrics,
+	buildCardMetricsQuery,
+	parseCardMetricsRow,
+} from "../domain/youtube_analytics_cards.js";
+import {
 	type First3sAudienceWatchRatio,
 	buildAudienceRetentionQuery,
 	deriveAudienceWatchRatioAtThreeSeconds,
@@ -46,7 +51,7 @@ type PublishedVideo = {
 	privacyStatus: string;
 };
 
-export interface AnalyticsRecord {
+export interface AnalyticsRecord extends Partial<CardMetrics> {
 	/** Run directory containing the receipt; this is YT3's canonical episode identity. */
 	episode_id: string;
 	video_id: string;
@@ -214,6 +219,18 @@ async function fetchAnalytics(
 		filters: `video==${videoId}`,
 	};
 	const response = await youtubeAnalytics.reports.query(query);
+	const cardMetricsQuery = buildCardMetricsQuery({
+		channelId,
+		videoId,
+		startDate: window.startDate,
+		endDate: window.endDate,
+	});
+	const cardMetricsResponse =
+		await youtubeAnalytics.reports.query(cardMetricsQuery);
+	const cardMetrics = parseCardMetricsRow(
+		cardMetricsResponse.data.columnHeaders,
+		cardMetricsResponse.data.rows,
+	);
 	const retentionQuery = buildAudienceRetentionQuery({
 		channelId,
 		videoId,
@@ -255,6 +272,11 @@ async function fetchAnalytics(
 		episode_id: runId,
 		query,
 		response: response.data,
+		card_metrics: {
+			source: "YouTube Analytics API reports.query",
+			query: cardMetricsQuery,
+			response: cardMetricsResponse.data,
+		},
 		retention_curve: {
 			source: "YouTube Analytics API reports.query",
 			query: retentionQuery,
@@ -295,6 +317,7 @@ async function fetchAnalytics(
 		shares: Number(row[8] || 0),
 		subscribers_gained: Number(row[9] || 0),
 		subscribers_lost: Number(row[10] || 0),
+		...cardMetrics,
 		first_3s_audience_watch_ratio:
 			first3sAudienceWatchRatio.status === "DERIVED"
 				? first3sAudienceWatchRatio.value
@@ -378,6 +401,12 @@ function ensureAnalyticsColumns(db: Database) {
 		["subscribers_lost", "INTEGER"],
 		["first_3s_audience_watch_ratio", "REAL"],
 		["first_3s_audience_watch_ratio_evidence_json", "TEXT"],
+		["card_impressions", "INTEGER"],
+		["card_clicks", "INTEGER"],
+		["card_click_rate", "REAL"],
+		["card_teaser_impressions", "INTEGER"],
+		["card_teaser_clicks", "INTEGER"],
+		["card_teaser_click_rate", "REAL"],
 	] as const) {
 		if (!columns.has(name))
 			db.exec(`ALTER TABLE youtube_analytics ADD COLUMN ${name} ${type}`);
@@ -392,12 +421,16 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 			watch_time_minutes, average_view_duration_seconds, average_view_percentage,
 			likes, comments, shares, subscribers_gained, subscribers_lost,
 			first_3s_audience_watch_ratio, first_3s_audience_watch_ratio_evidence_json,
+			card_impressions, card_clicks, card_click_rate,
+			card_teaser_impressions, card_teaser_clicks, card_teaser_click_rate,
 			recorded_at
 		) VALUES (
 			$episode_id, $video_id, $channel_id, $age_window, $views, $engaged_views,
 			$watch_time_minutes, $average_view_duration_seconds, $average_view_percentage,
 			$likes, $comments, $shares, $subscribers_gained, $subscribers_lost,
 			$first_3s_audience_watch_ratio, $first_3s_audience_watch_ratio_evidence_json,
+			$card_impressions, $card_clicks, $card_click_rate,
+			$card_teaser_impressions, $card_teaser_clicks, $card_teaser_click_rate,
 			datetime('now')
 		) ON CONFLICT(video_id, age_window) DO UPDATE SET
 			episode_id = excluded.episode_id,
@@ -413,6 +446,12 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 			subscribers_lost = excluded.subscribers_lost,
 			first_3s_audience_watch_ratio = excluded.first_3s_audience_watch_ratio,
 			first_3s_audience_watch_ratio_evidence_json = excluded.first_3s_audience_watch_ratio_evidence_json,
+			card_impressions = excluded.card_impressions,
+			card_clicks = excluded.card_clicks,
+			card_click_rate = excluded.card_click_rate,
+			card_teaser_impressions = excluded.card_teaser_impressions,
+			card_teaser_clicks = excluded.card_teaser_clicks,
+			card_teaser_click_rate = excluded.card_teaser_click_rate,
 			recorded_at = datetime('now')
 	`);
 	insert.run({
@@ -436,6 +475,12 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 			record.first_3s_audience_watch_ratio_evidence
 				? JSON.stringify(record.first_3s_audience_watch_ratio_evidence)
 				: null,
+		$card_impressions: record.card_impressions ?? null,
+		$card_clicks: record.card_clicks ?? null,
+		$card_click_rate: record.card_click_rate ?? null,
+		$card_teaser_impressions: record.card_teaser_impressions ?? null,
+		$card_teaser_clicks: record.card_teaser_clicks ?? null,
+		$card_teaser_click_rate: record.card_teaser_click_rate ?? null,
 	});
 }
 
