@@ -187,3 +187,17 @@ CREATE TABLE IF NOT EXISTS youtube_analytics (
     recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (video_id, age_window)
 );
+
+-- Per-video traffic-source breakdown from the YouTube Analytics API.
+CREATE TABLE IF NOT EXISTS youtube_analytics_traffic_sources (
+    episode_id TEXT NOT NULL,
+    video_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    age_window TEXT NOT NULL,
+    traffic_source_type TEXT NOT NULL,
+    views INTEGER,
+    engaged_views INTEGER,
+    watch_time_minutes REAL,
+    recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (video_id, age_window, traffic_source_type)
+);

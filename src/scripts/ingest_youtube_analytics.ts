@@ -10,6 +10,11 @@ import {
 	parseYouTubeDurationSeconds,
 } from "../domain/youtube_analytics_retention.js";
 import {
+	type TrafficSourceMetrics,
+	buildTrafficSourceQuery,
+	parseTrafficSourceRows,
+} from "../domain/youtube_analytics_traffic_sources.js";
+import {
 	createYouTubeOAuthClient,
 	getYouTubeProfileForBucket,
 } from "../domain/youtube_profiles.js";
@@ -59,6 +64,18 @@ export interface AnalyticsRecord {
 	subscribers_lost: number;
 	first_3s_audience_watch_ratio?: number | null;
 	first_3s_audience_watch_ratio_evidence?: First3sAudienceWatchRatio | null;
+}
+
+export interface TrafficSourceSnapshot {
+	episode_id: string;
+	video_id: string;
+	channel_id: string;
+	age_window: AnalyticsWindow;
+	rows: TrafficSourceMetrics[];
+}
+
+interface AnalyticsFetchResult extends AnalyticsRecord {
+	trafficSourceSnapshot: TrafficSourceSnapshot;
 }
 
 function isoDate(date: Date): string {
@@ -186,7 +203,7 @@ async function fetchAnalytics(
 	window: { name: AnalyticsWindow; startDate: string; endDate: string },
 	runDir: string,
 	durationSeconds: number | null,
-): Promise<AnalyticsRecord> {
+): Promise<AnalyticsFetchResult> {
 	const youtubeAnalytics = google.youtubeAnalytics({ version: "v2", auth });
 	const query = {
 		ids: `channel==${channelId}`,
@@ -213,6 +230,25 @@ async function fetchAnalytics(
 		durationSeconds,
 		retentionSamples,
 	);
+	const trafficSourceQuery = buildTrafficSourceQuery({
+		channelId,
+		videoId,
+		startDate: window.startDate,
+		endDate: window.endDate,
+	});
+	const trafficSourceResponse =
+		await youtubeAnalytics.reports.query(trafficSourceQuery);
+	const trafficSourceRows = parseTrafficSourceRows(
+		trafficSourceResponse.data.columnHeaders,
+		trafficSourceResponse.data.rows,
+	);
+	const trafficSourceSnapshot: TrafficSourceSnapshot = {
+		episode_id: runId,
+		video_id: videoId,
+		channel_id: channelId,
+		age_window: window.name,
+		rows: trafficSourceRows,
+	};
 	const raw = {
 		source: "YouTube Analytics API reports.query",
 		retrieved_at: new Date().toISOString(),
@@ -226,6 +262,11 @@ async function fetchAnalytics(
 			video_duration_source:
 				"YouTube Data API videos.list contentDetails.duration",
 			derived_first_3s_audience_watch_ratio: first3sAudienceWatchRatio,
+		},
+		traffic_sources: {
+			source: "YouTube Analytics API reports.query",
+			query: trafficSourceQuery,
+			response: trafficSourceResponse.data,
 		},
 	};
 	const analyticsDir = path.join(runDir, "analytics");
@@ -259,7 +300,67 @@ async function fetchAnalytics(
 				? first3sAudienceWatchRatio.value
 				: null,
 		first_3s_audience_watch_ratio_evidence: first3sAudienceWatchRatio,
+		trafficSourceSnapshot,
 	};
+}
+
+export function ensureTrafficSourceAnalyticsTable(db: Database) {
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS youtube_analytics_traffic_sources (
+			episode_id TEXT NOT NULL,
+			video_id TEXT NOT NULL,
+			channel_id TEXT NOT NULL,
+			age_window TEXT NOT NULL,
+			traffic_source_type TEXT NOT NULL,
+			views INTEGER,
+			engaged_views INTEGER,
+			watch_time_minutes REAL,
+			recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+			PRIMARY KEY (video_id, age_window, traffic_source_type)
+		)
+	`);
+}
+
+export function saveTrafficSourceSnapshot(
+	db: Database,
+	snapshot: TrafficSourceSnapshot,
+) {
+	ensureTrafficSourceAnalyticsTable(db);
+	const save = db.transaction(() => {
+		db.prepare(
+			"DELETE FROM youtube_analytics_traffic_sources WHERE video_id = ? AND age_window = ?",
+		).run(snapshot.video_id, snapshot.age_window);
+		const insert = db.prepare(`
+			INSERT INTO youtube_analytics_traffic_sources (
+				episode_id, video_id, channel_id, age_window, traffic_source_type,
+				views, engaged_views, watch_time_minutes
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		`);
+		for (const row of snapshot.rows) {
+			insert.run(
+				snapshot.episode_id,
+				snapshot.video_id,
+				snapshot.channel_id,
+				snapshot.age_window,
+				row.traffic_source_type,
+				row.views,
+				row.engaged_views,
+				row.watch_time_minutes,
+			);
+		}
+	});
+	save();
+}
+
+export function purgeTrafficSourceAnalytics(
+	db: Database,
+	videoId: string,
+	ageWindow: string,
+) {
+	ensureTrafficSourceAnalyticsTable(db);
+	db.prepare(
+		"DELETE FROM youtube_analytics_traffic_sources WHERE video_id = ? AND age_window = ?",
+	).run(videoId, ageWindow);
 }
 
 function ensureAnalyticsColumns(db: Database) {
@@ -374,7 +475,7 @@ async function main() {
 					continue;
 				}
 				for (const window of windows) {
-					const record = await fetchAnalytics(
+					const result = await fetchAnalytics(
 						auth,
 						profile.expectedChannelId,
 						video.videoId,
@@ -383,9 +484,10 @@ async function main() {
 						video.runDir,
 						videoMetadata.durationSeconds,
 					);
-					saveAnalyticsRecord(db, record);
+					saveAnalyticsRecord(db, result);
+					saveTrafficSourceSnapshot(db, result.trafficSourceSnapshot);
 					console.log(
-						`[SUCCESS] ${video.videoId} ${window.name}: ${record.views} views, ${record.engaged_views} engaged views`,
+						`[SUCCESS] ${video.videoId} ${window.name}: ${result.views} views, ${result.engaged_views} engaged views, ${result.trafficSourceSnapshot.rows.length} traffic sources`,
 					);
 				}
 			} catch (error) {
