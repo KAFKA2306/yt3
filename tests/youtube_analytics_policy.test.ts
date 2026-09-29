@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import { afterEach, describe, expect, test } from "bun:test";
 import path from "node:path";
 import fs from "fs-extra";
+import { ensureReachAnalyticsTables } from "../src/scripts/ingest_youtube_reporting_reach.js";
 import { purgeAnalyticsPastAuthorizationDeadline } from "../src/scripts/refresh_youtube_analytics.js";
 
 const tempRoots: string[] = [];
@@ -115,5 +116,68 @@ describe("YouTube Analytics 30-day storage boundary", () => {
 			false,
 		);
 		db.close();
+	});
+
+	test("the regular refresh also purges expired channel-reach reports", () => {
+		const db = new Database(":memory:");
+		createAnalyticsTable(db);
+		ensureReachAnalyticsTables(db);
+		db.prepare(`
+			INSERT INTO youtube_analytics_reach_daily (
+				episode_id, video_id, channel_id, report_date,
+				thumbnail_impressions, thumbnail_impressions_ctr, report_id,
+				report_created_at, downloaded_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`).run(
+			"byosan_money/2026-07-01-demo",
+			"video-old",
+			"channel-1",
+			"2026-07-01",
+			12,
+			0.2,
+			"report-old",
+			"2026-07-02T00:00:00.000Z",
+			"2026-07-03T00:00:00.000Z",
+		);
+		db.prepare(`
+			INSERT INTO youtube_analytics_reach_reports (
+				report_id, job_id, channel_id, report_date, report_created_at,
+				source_row_count, linked_row_count, unlinked_row_count, sha256, downloaded_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`).run(
+			"report-old",
+			"job-1",
+			"channel-1",
+			"2026-07-01",
+			"2026-07-02T00:00:00.000Z",
+			1,
+			1,
+			0,
+			"0".repeat(64),
+			"2026-07-03T00:00:00.000Z",
+		);
+		try {
+			expect(
+				purgeAnalyticsPastAuthorizationDeadline(
+					db,
+					process.cwd(),
+					new Date("2026-08-10T00:00:00Z"),
+				),
+			).toBe(2);
+			expect(
+				db
+					.query("SELECT count(*) AS count FROM youtube_analytics_reach_daily")
+					.get(),
+			).toEqual({ count: 0 });
+			expect(
+				db
+					.query(
+						"SELECT count(*) AS count FROM youtube_analytics_reach_reports",
+					)
+					.get(),
+			).toEqual({ count: 0 });
+		} finally {
+			db.close();
+		}
 	});
 });

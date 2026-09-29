@@ -200,6 +200,26 @@ tasks:
     desc: "Refresh authorized YouTube Analytics and purge data past the 30-day authorization boundary"
     cmds: ["bun src/scripts/refresh_youtube_analytics.ts"]
 
+  analytics:reach:setup:
+    desc: "Create or verify the YouTube Reporting API channel-reach job (PROFILE=byosan|yawa|humanity; creates remote job state when missing)"
+    cmds:
+      - |
+        if [ -z "{{.PROFILE}}" ]; then
+          echo "PROFILE is required (byosan, yawa, or humanity)" >&2
+          exit 2
+        fi
+        bun src/scripts/ingest_youtube_reporting_reach.ts setup "{{.PROFILE}}" {{.CLI_ARGS}}
+
+  analytics:reach:
+    desc: "Ingest recent channel-reach reports and link metrics to published episodes (PROFILE=byosan|yawa|humanity)"
+    cmds:
+      - |
+        if [ -z "{{.PROFILE}}" ]; then
+          echo "PROFILE is required (byosan, yawa, or humanity)" >&2
+          exit 2
+        fi
+        bun src/scripts/ingest_youtube_reporting_reach.ts ingest "{{.PROFILE}}" {{.CLI_ARGS}}
+
   asmr:ops:
     desc: "Run ASMR archive/index operations"
     cmds: ["bun --env-file=config/.env src/scripts/asmr_ops.ts"]
