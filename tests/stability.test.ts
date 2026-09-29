@@ -11,6 +11,7 @@ const originalCwd = process.cwd;
 const TEMP_DIR = path.join(__dirname, "temp_stability_test_cwd");
 
 type AnalyticsRow = {
+	episode_id: string | null;
 	views: number;
 	engaged_views: number;
 	likes: number;
@@ -148,6 +149,7 @@ describe("YouTube Analytics Seam", () => {
 		const match = videos.find((v) => v.videoId === "XYZ789");
 		expect(match).toBeDefined();
 		expect(match?.channelId).toBe("UCYtjO-PYBfdG3MuPLXfhA-Q");
+		expect(match?.runId).toBe("byosan_money/2026-07-11-test");
 	});
 
 	test("saveAnalyticsRecord persists only raw official metrics", async () => {
@@ -178,6 +180,7 @@ describe("YouTube Analytics Seam", () => {
 		`);
 
 		const record = {
+			episode_id: "byosan_money/2026-07-11-test",
 			video_id: "XYZ789",
 			channel_id: "UCYtjO-PYBfdG3MuPLXfhA-Q",
 			age_window: "published_day" as const,
@@ -199,6 +202,7 @@ describe("YouTube Analytics Seam", () => {
 			.query("SELECT * FROM youtube_analytics WHERE video_id = 'XYZ789'")
 			.get() as AnalyticsRow;
 		expect(row).toBeDefined();
+		expect(row.episode_id).toBe("byosan_money/2026-07-11-test");
 		expect(row.views).toBe(150);
 		expect(row.engaged_views).toBe(140);
 		expect(row.likes).toBe(12);
@@ -215,6 +219,7 @@ describe("YouTube Analytics Seam", () => {
 			.query("SELECT * FROM youtube_analytics WHERE video_id = 'XYZ789'")
 			.get() as AnalyticsRow;
 		expect(updatedRow.views).toBe(200);
+		expect(updatedRow.episode_id).toBe("byosan_money/2026-07-11-test");
 		expect(updatedRow.likes).toBe(15);
 		expect(updatedRow.satisfaction_score).toBeNull();
 

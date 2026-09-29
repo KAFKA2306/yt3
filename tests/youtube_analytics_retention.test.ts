@@ -41,8 +41,8 @@ describe("YouTube first-three-second audience-watch metric", () => {
 				likes INTEGER,
 				comments INTEGER,
 				shares INTEGER,
-				subscribers_gained INTEGER,
-				subscribers_lost INTEGER,
+			subscribers_gained INTEGER,
+			subscribers_lost INTEGER,
 				recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
 				PRIMARY KEY (video_id, age_window)
 			)
@@ -55,6 +55,7 @@ describe("YouTube first-three-second audience-watch metric", () => {
 			throw new Error("expected a derived value");
 
 		saveAnalyticsRecord(db, {
+			episode_id: "byosan_money/2026-09-01-test",
 			video_id: "video-1",
 			channel_id: "channel-1",
 			age_window: "first_7d",
@@ -74,13 +75,15 @@ describe("YouTube first-three-second audience-watch metric", () => {
 
 		const row = db
 			.query(
-				"SELECT first_3s_audience_watch_ratio, first_3s_audience_watch_ratio_evidence_json FROM youtube_analytics WHERE video_id = ?",
+				"SELECT episode_id, first_3s_audience_watch_ratio, first_3s_audience_watch_ratio_evidence_json FROM youtube_analytics WHERE video_id = ?",
 			)
 			.get("video-1") as {
+			episode_id: string;
 			first_3s_audience_watch_ratio: number;
 			first_3s_audience_watch_ratio_evidence_json: string;
 		};
 		expect(row.first_3s_audience_watch_ratio).toBe(evidence.value);
+		expect(row.episode_id).toBe("byosan_money/2026-09-01-test");
 		expect(JSON.parse(row.first_3s_audience_watch_ratio_evidence_json)).toEqual(
 			evidence,
 		);

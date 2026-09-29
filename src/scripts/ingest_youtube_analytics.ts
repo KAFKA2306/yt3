@@ -42,6 +42,8 @@ type PublishedVideo = {
 };
 
 export interface AnalyticsRecord {
+	/** Run directory containing the receipt; this is YT3's canonical episode identity. */
+	episode_id: string;
 	video_id: string;
 	channel_id: string;
 	age_window: AnalyticsWindow;
@@ -180,6 +182,7 @@ async function fetchAnalytics(
 	auth: InstanceType<typeof google.auth.OAuth2>,
 	channelId: string,
 	videoId: string,
+	runId: string,
 	window: { name: AnalyticsWindow; startDate: string; endDate: string },
 	runDir: string,
 	durationSeconds: number | null,
@@ -213,6 +216,7 @@ async function fetchAnalytics(
 	const raw = {
 		source: "YouTube Analytics API reports.query",
 		retrieved_at: new Date().toISOString(),
+		episode_id: runId,
 		query,
 		response: response.data,
 		retention_curve: {
@@ -236,6 +240,7 @@ async function fetchAnalytics(
 			`No analytics data returned for ${videoId} / ${window.name}`,
 		);
 	return {
+		episode_id: runId,
 		video_id: videoId,
 		channel_id: channelId,
 		age_window: window.name,
@@ -266,6 +271,7 @@ function ensureAnalyticsColumns(db: Database) {
 		).map((row) => row.name),
 	);
 	for (const [name, type] of [
+		["episode_id", "TEXT"],
 		["engaged_views", "INTEGER"],
 		["subscribers_gained", "INTEGER"],
 		["subscribers_lost", "INTEGER"],
@@ -281,18 +287,19 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 	ensureAnalyticsColumns(db);
 	const insert = db.prepare(`
 		INSERT INTO youtube_analytics (
-			video_id, channel_id, age_window, views, engaged_views,
+			episode_id, video_id, channel_id, age_window, views, engaged_views,
 			watch_time_minutes, average_view_duration_seconds, average_view_percentage,
 			likes, comments, shares, subscribers_gained, subscribers_lost,
 			first_3s_audience_watch_ratio, first_3s_audience_watch_ratio_evidence_json,
 			recorded_at
 		) VALUES (
-			$video_id, $channel_id, $age_window, $views, $engaged_views,
+			$episode_id, $video_id, $channel_id, $age_window, $views, $engaged_views,
 			$watch_time_minutes, $average_view_duration_seconds, $average_view_percentage,
 			$likes, $comments, $shares, $subscribers_gained, $subscribers_lost,
 			$first_3s_audience_watch_ratio, $first_3s_audience_watch_ratio_evidence_json,
 			datetime('now')
 		) ON CONFLICT(video_id, age_window) DO UPDATE SET
+			episode_id = excluded.episode_id,
 			views = excluded.views,
 			engaged_views = excluded.engaged_views,
 			watch_time_minutes = excluded.watch_time_minutes,
@@ -308,6 +315,7 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 			recorded_at = datetime('now')
 	`);
 	insert.run({
+		$episode_id: record.episode_id,
 		$video_id: record.video_id,
 		$channel_id: record.channel_id,
 		$age_window: record.age_window,
@@ -370,6 +378,7 @@ async function main() {
 						auth,
 						profile.expectedChannelId,
 						video.videoId,
+						video.runId,
 						window,
 						video.runDir,
 						videoMetadata.durationSeconds,
