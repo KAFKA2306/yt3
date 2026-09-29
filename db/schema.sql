@@ -180,6 +180,8 @@ CREATE TABLE IF NOT EXISTS youtube_analytics (
     shares INTEGER,
     subscribers_gained INTEGER,
     subscribers_lost INTEGER,
+    first_3s_audience_watch_ratio REAL,
+    first_3s_audience_watch_ratio_evidence_json TEXT,
     recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (video_id, age_window)
 );

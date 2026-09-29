@@ -3,6 +3,13 @@ import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
+	type First3sAudienceWatchRatio,
+	buildAudienceRetentionQuery,
+	deriveAudienceWatchRatioAtThreeSeconds,
+	parseAudienceRetentionRows,
+	parseYouTubeDurationSeconds,
+} from "../domain/youtube_analytics_retention.js";
+import {
 	createYouTubeOAuthClient,
 	getYouTubeProfileForBucket,
 } from "../domain/youtube_profiles.js";
@@ -48,6 +55,8 @@ export interface AnalyticsRecord {
 	shares: number;
 	subscribers_gained: number;
 	subscribers_lost: number;
+	first_3s_audience_watch_ratio?: number | null;
+	first_3s_audience_watch_ratio_evidence?: First3sAudienceWatchRatio | null;
 }
 
 function isoDate(date: Date): string {
@@ -141,7 +150,7 @@ async function verifyAuthorizationAndVideo(
 	auth: InstanceType<typeof google.auth.OAuth2>,
 	expectedChannelId: string,
 	videoId: string,
-): Promise<boolean> {
+): Promise<{ exists: boolean; durationSeconds: number | null }> {
 	const youtube = google.youtube({ version: "v3", auth });
 	const channels = await youtube.channels.list({
 		mine: true,
@@ -155,10 +164,16 @@ async function verifyAuthorizationAndVideo(
 		);
 	}
 	const videos = await youtube.videos.list({
-		part: ["id", "status"],
+		part: ["id", "status", "contentDetails"],
 		id: [videoId],
 	});
-	return Boolean(videos.data.items?.[0]);
+	const video = videos.data.items?.[0];
+	return {
+		exists: Boolean(video),
+		durationSeconds: parseYouTubeDurationSeconds(
+			video?.contentDetails?.duration,
+		),
+	};
 }
 
 async function fetchAnalytics(
@@ -167,6 +182,7 @@ async function fetchAnalytics(
 	videoId: string,
 	window: { name: AnalyticsWindow; startDate: string; endDate: string },
 	runDir: string,
+	durationSeconds: number | null,
 ): Promise<AnalyticsRecord> {
 	const youtubeAnalytics = google.youtubeAnalytics({ version: "v2", auth });
 	const query = {
@@ -178,11 +194,35 @@ async function fetchAnalytics(
 		filters: `video==${videoId}`,
 	};
 	const response = await youtubeAnalytics.reports.query(query);
+	const retentionQuery = buildAudienceRetentionQuery({
+		channelId,
+		videoId,
+		startDate: window.startDate,
+		endDate: window.endDate,
+	});
+	const retentionResponse =
+		await youtubeAnalytics.reports.query(retentionQuery);
+	const retentionSamples = parseAudienceRetentionRows(
+		retentionResponse.data.columnHeaders ?? [],
+		retentionResponse.data.rows ?? [],
+	);
+	const first3sAudienceWatchRatio = deriveAudienceWatchRatioAtThreeSeconds(
+		durationSeconds,
+		retentionSamples,
+	);
 	const raw = {
 		source: "YouTube Analytics API reports.query",
 		retrieved_at: new Date().toISOString(),
 		query,
 		response: response.data,
+		retention_curve: {
+			source: "YouTube Analytics API reports.query",
+			query: retentionQuery,
+			response: retentionResponse.data,
+			video_duration_source:
+				"YouTube Data API videos.list contentDetails.duration",
+			derived_first_3s_audience_watch_ratio: first3sAudienceWatchRatio,
+		},
 	};
 	const analyticsDir = path.join(runDir, "analytics");
 	fs.ensureDirSync(analyticsDir);
@@ -209,6 +249,11 @@ async function fetchAnalytics(
 		shares: Number(row[8] || 0),
 		subscribers_gained: Number(row[9] || 0),
 		subscribers_lost: Number(row[10] || 0),
+		first_3s_audience_watch_ratio:
+			first3sAudienceWatchRatio.status === "DERIVED"
+				? first3sAudienceWatchRatio.value
+				: null,
+		first_3s_audience_watch_ratio_evidence: first3sAudienceWatchRatio,
 	};
 }
 
@@ -224,6 +269,8 @@ function ensureAnalyticsColumns(db: Database) {
 		["engaged_views", "INTEGER"],
 		["subscribers_gained", "INTEGER"],
 		["subscribers_lost", "INTEGER"],
+		["first_3s_audience_watch_ratio", "REAL"],
+		["first_3s_audience_watch_ratio_evidence_json", "TEXT"],
 	] as const) {
 		if (!columns.has(name))
 			db.exec(`ALTER TABLE youtube_analytics ADD COLUMN ${name} ${type}`);
@@ -236,11 +283,14 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 		INSERT INTO youtube_analytics (
 			video_id, channel_id, age_window, views, engaged_views,
 			watch_time_minutes, average_view_duration_seconds, average_view_percentage,
-			likes, comments, shares, subscribers_gained, subscribers_lost, recorded_at
+			likes, comments, shares, subscribers_gained, subscribers_lost,
+			first_3s_audience_watch_ratio, first_3s_audience_watch_ratio_evidence_json,
+			recorded_at
 		) VALUES (
 			$video_id, $channel_id, $age_window, $views, $engaged_views,
 			$watch_time_minutes, $average_view_duration_seconds, $average_view_percentage,
 			$likes, $comments, $shares, $subscribers_gained, $subscribers_lost,
+			$first_3s_audience_watch_ratio, $first_3s_audience_watch_ratio_evidence_json,
 			datetime('now')
 		) ON CONFLICT(video_id, age_window) DO UPDATE SET
 			views = excluded.views,
@@ -253,6 +303,8 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 			shares = excluded.shares,
 			subscribers_gained = excluded.subscribers_gained,
 			subscribers_lost = excluded.subscribers_lost,
+			first_3s_audience_watch_ratio = excluded.first_3s_audience_watch_ratio,
+			first_3s_audience_watch_ratio_evidence_json = excluded.first_3s_audience_watch_ratio_evidence_json,
 			recorded_at = datetime('now')
 	`);
 	insert.run({
@@ -269,6 +321,12 @@ export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 		$shares: record.shares,
 		$subscribers_gained: record.subscribers_gained,
 		$subscribers_lost: record.subscribers_lost,
+		$first_3s_audience_watch_ratio:
+			record.first_3s_audience_watch_ratio ?? null,
+		$first_3s_audience_watch_ratio_evidence_json:
+			record.first_3s_audience_watch_ratio_evidence
+				? JSON.stringify(record.first_3s_audience_watch_ratio_evidence)
+				: null,
 	});
 }
 
@@ -292,12 +350,12 @@ async function main() {
 						`Receipt channel mismatch for ${video.videoId}: expected ${profile.expectedChannelId}, got ${video.channelId}`,
 					);
 				}
-				const exists = await verifyAuthorizationAndVideo(
+				const videoMetadata = await verifyAuthorizationAndVideo(
 					auth,
 					profile.expectedChannelId,
 					video.videoId,
 				);
-				if (!exists) {
+				if (!videoMetadata.exists) {
 					db.prepare("DELETE FROM youtube_analytics WHERE video_id = ?").run(
 						video.videoId,
 					);
@@ -314,6 +372,7 @@ async function main() {
 						video.videoId,
 						window,
 						video.runDir,
+						videoMetadata.durationSeconds,
 					);
 					saveAnalyticsRecord(db, record);
 					console.log(
