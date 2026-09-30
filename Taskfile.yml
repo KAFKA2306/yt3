@@ -172,6 +172,16 @@ tasks:
     cmds:
       - bun src/scripts/benchmark_experience.ts --out "{{default "artifacts/benchmarks/experience-os" .OUT}}" {{.CLI_ARGS}}
 
+  experience:cost-report:
+    desc: "Aggregate validated Experience renderer wall-time and asset-count metrics by production lane (ROOT=... OUT=...)"
+    cmds:
+      - |
+        if [ -z "{{.ROOT}}" ] || [ -z "{{.OUT}}" ]; then
+          echo "ROOT and OUT are required" >&2
+          exit 2
+        fi
+        bun src/scripts/report_experience_cost.ts --root "{{.ROOT}}" --out "{{.OUT}}" {{.CLI_ARGS}}
+
   experience:review:template:
     desc: "Create a blank five-scene human review template bound to benchmark artifact hashes (RUN=... OUT=...)"
     cmds:

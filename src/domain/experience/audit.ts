@@ -37,6 +37,111 @@ export type ExperienceRendererMetrics = z.infer<
 	typeof ExperienceRendererMetricsSchema
 >;
 
+const AssetCountSummarySchema = z.object({
+	total: z.number().int().nonnegative().nullable(),
+	measured_metrics: z.number().int().nonnegative(),
+	unmeasured_metrics: z.number().int().nonnegative(),
+});
+
+const DurationSummarySchema = z.object({
+	total: z.number().finite().nonnegative(),
+	mean: z.number().finite().nonnegative().nullable(),
+});
+
+const LaneCostSummarySchema = z.object({
+	metric_count: z.number().int().nonnegative(),
+	production_seconds: DurationSummarySchema,
+	render_seconds: DurationSummarySchema,
+	new_asset_count: AssetCountSummarySchema,
+	reused_asset_count: AssetCountSummarySchema,
+});
+
+export const ExperienceLaneCostSummarySchema = z.object({
+	schema_version: z.literal(1),
+	metrics_without_lane: z.number().int().nonnegative(),
+	measurement_scope: z.object({
+		duration_basis: z.literal("wall_clock_seconds_from_source_metrics"),
+		durations_may_overlap: z.literal(true),
+		input_metrics_deduplicated: z.literal(false),
+		currency_cost_included: z.literal(false),
+		human_labor_included: z.literal(false),
+		generation_wall_seconds_measured: z.literal(false),
+	}),
+	by_lane: z.record(ExperienceLaneSchema, LaneCostSummarySchema),
+});
+
+export type ExperienceLaneCostSummary = z.infer<
+	typeof ExperienceLaneCostSummarySchema
+>;
+
+type ExperienceLane = z.infer<typeof ExperienceLaneSchema>;
+
+function summarizeDuration(
+	values: number[],
+): z.infer<typeof DurationSummarySchema> {
+	const total = values.reduce((sum, value) => sum + value, 0);
+	return {
+		total,
+		mean: values.length === 0 ? null : total / values.length,
+	};
+}
+
+function summarizeAssetCount(
+	values: Array<number | null>,
+): z.infer<typeof AssetCountSummarySchema> {
+	const measured = values.filter((value): value is number => value !== null);
+	return {
+		total:
+			measured.length === 0
+				? null
+				: measured.reduce((sum, value) => sum + value, 0),
+		measured_metrics: measured.length,
+		unmeasured_metrics: values.length - measured.length,
+	};
+}
+
+export function buildExperienceLaneCostSummary(
+	metrics: readonly ExperienceRendererMetrics[],
+): ExperienceLaneCostSummary {
+	const byLane = Object.fromEntries(
+		ExperienceLaneSchema.options.map((lane: ExperienceLane) => {
+			const laneMetrics = metrics.filter((metric) => metric.lane === lane);
+			return [
+				lane,
+				{
+					metric_count: laneMetrics.length,
+					production_seconds: summarizeDuration(
+						laneMetrics.map((metric) => metric.production_seconds),
+					),
+					render_seconds: summarizeDuration(
+						laneMetrics.map((metric) => metric.render_seconds),
+					),
+					new_asset_count: summarizeAssetCount(
+						laneMetrics.map((metric) => metric.new_asset_count),
+					),
+					reused_asset_count: summarizeAssetCount(
+						laneMetrics.map((metric) => metric.reused_asset_count),
+					),
+				},
+			];
+		}),
+	) as Record<ExperienceLane, z.infer<typeof LaneCostSummarySchema>>;
+
+	return ExperienceLaneCostSummarySchema.parse({
+		schema_version: 1,
+		metrics_without_lane: metrics.filter((metric) => !metric.lane).length,
+		measurement_scope: {
+			duration_basis: "wall_clock_seconds_from_source_metrics",
+			durations_may_overlap: true,
+			input_metrics_deduplicated: false,
+			currency_cost_included: false,
+			human_labor_included: false,
+			generation_wall_seconds_measured: false,
+		},
+		by_lane: byLane,
+	});
+}
+
 export interface RendererMetricsInput {
 	engine: ExperienceRendererMetrics["engine"];
 	lane?: ExperienceRendererMetrics["lane"];

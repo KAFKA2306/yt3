@@ -19,6 +19,7 @@ import {
 	ExperienceRendererMetricsSchema,
 	auditExperienceEpisode,
 	buildExperienceBenchmarkSummary,
+	buildExperienceLaneCostSummary,
 	buildRendererMetrics,
 	countDistinctAssetsByStrategy,
 	countDistinctGeneratedAssets,
@@ -506,6 +507,71 @@ describe("Experience Contract and OSS benchmark", () => {
 		expect(summary.scenes[0]?.quality_delta.visual_quality_delta).toBeNull();
 		expect(summary.scenes[0]?.production_delta.render_seconds).toBe(0);
 		expect(summary).not.toHaveProperty("overall_quality_score");
+	});
+
+	test("lane cost summary aggregates only labeled wall time and reports unknown asset counts", () => {
+		const explainFirst = buildRendererMetrics({
+			engine: "remotion-existing",
+			lane: "EXPLAIN",
+			scene_id: "explain-a",
+			started_at: "2026-09-26T00:00:00.000Z",
+			finished_at: "2026-09-26T00:00:05.000Z",
+			render_seconds: 3,
+			output_bytes: 4096,
+			output_sha256: "a".repeat(64),
+			new_asset_count: 2,
+			reused_asset_count: 1,
+		});
+		const explainSecond = buildRendererMetrics({
+			engine: "remotion-existing",
+			lane: "EXPLAIN",
+			scene_id: "explain-b",
+			started_at: "2026-09-26T00:00:00.000Z",
+			finished_at: "2026-09-26T00:00:07.000Z",
+			render_seconds: 4,
+			output_bytes: 4096,
+			output_sha256: "b".repeat(64),
+			reused_asset_count: 0,
+		});
+		const unassigned = buildRendererMetrics({
+			engine: "motion-canvas",
+			scene_id: "unassigned",
+			started_at: "2026-09-26T00:00:00.000Z",
+			finished_at: "2026-09-26T00:00:09.000Z",
+			output_bytes: 4096,
+			output_sha256: "c".repeat(64),
+		});
+
+		const summary = buildExperienceLaneCostSummary([
+			explainFirst,
+			explainSecond,
+			unassigned,
+		]);
+
+		expect(summary.by_lane.EXPLAIN).toMatchObject({
+			metric_count: 2,
+			production_seconds: { total: 12, mean: 6 },
+			render_seconds: { total: 7, mean: 3.5 },
+			new_asset_count: {
+				total: 2,
+				measured_metrics: 1,
+				unmeasured_metrics: 1,
+			},
+			reused_asset_count: {
+				total: 1,
+				measured_metrics: 2,
+				unmeasured_metrics: 0,
+			},
+		});
+		expect(summary.metrics_without_lane).toBe(1);
+		expect(summary.measurement_scope).toMatchObject({
+			duration_basis: "wall_clock_seconds_from_source_metrics",
+			durations_may_overlap: true,
+			input_metrics_deduplicated: false,
+			currency_cost_included: false,
+			human_labor_included: false,
+			generation_wall_seconds_measured: false,
+		});
 	});
 
 	test("records asset reuse ratio only when asset counts are measurable", () => {
