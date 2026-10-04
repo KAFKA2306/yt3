@@ -3,6 +3,7 @@ import {
 	ComedyBeatRoleSchema,
 	ComedyBeatSchema,
 } from "./content/comedy_beat.js";
+import { ExperienceContractSchema } from "./experience/schema.js";
 export enum RunStage {
 	RESEARCH = "research",
 	CONTENT = "content",
@@ -315,6 +316,7 @@ export type ZeroTrustAuditChecklist = z.infer<
 export const AgentStateSchema = z.object({
 	run_id: z.string(),
 	bucket: z.string(),
+	experience_contract: ExperienceContractSchema.optional(),
 	limit: z.number().optional(),
 	news: z.array(NewsItemSchema).optional(),
 	script: ScriptSchema.optional(),

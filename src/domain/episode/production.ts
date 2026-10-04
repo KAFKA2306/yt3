@@ -154,6 +154,21 @@ export function elapsedGenerationSeconds(
 	return (finishedAt - startedAt) / 1000;
 }
 
+export function buildTtsGenerationManifest(input: {
+	episode: Episode;
+	language: string;
+	records: Array<Record<string, unknown>>;
+}) {
+	return {
+		language: input.language,
+		...(input.episode.experience
+			? { lane: input.episode.experience.lane }
+			: {}),
+		generation_duration_basis: "tts_synthesize_call_wall_clock_seconds",
+		records: input.records,
+	};
+}
+
 function id(prefix: string, index: number): string {
 	return `${prefix}-${String(index + 1).padStart(3, "0")}`;
 }
@@ -178,6 +193,7 @@ export function buildCanonicalEpisode(input: {
 	fps: number;
 	audioPaths: string[];
 	locales?: string[];
+	experience?: AgentState["experience_contract"];
 }): Episode {
 	if (input.script.lines.length === 0)
 		throw new Error("canonical episode requires dialogue");
@@ -230,6 +246,7 @@ export function buildCanonicalEpisode(input: {
 		claims,
 		assets: [],
 		visuals,
+		...(input.experience ? { experience: input.experience } : {}),
 		sections: [
 			{
 				id: "main",
@@ -458,11 +475,11 @@ async function synthesizeAndVerify(
 	const reportPath = path.join(episodeDir, `asr-report-${options.locale}.json`);
 	await fs.writeJson(
 		ttsManifestPath,
-		{
+		buildTtsGenerationManifest({
+			episode,
 			language: options.locale,
-			generation_duration_basis: "tts_synthesize_call_wall_clock_seconds",
 			records: ttsRecords,
-		},
+		}),
 		{ spaces: 2 },
 	);
 	await fs.writeJson(
@@ -560,6 +577,7 @@ export async function runCanonicalEpisodeProduction(
 			news: state.news ?? [],
 			fps: store.cfg.steps.video.fps,
 			audioPaths: state.script.lines.map(() => "placeholder.wav"),
+			experience: state.experience_contract,
 		}),
 		episodeDir,
 		store,
@@ -572,6 +590,7 @@ export async function runCanonicalEpisodeProduction(
 		fps: store.cfg.steps.video.fps,
 		audioPaths: jaAudioPaths,
 		locales: Object.keys(localePatches),
+		experience: state.experience_contract,
 	});
 	const episodePath = path.join(episodeDir, "episode.json");
 	await writeCanonicalEpisode(episodePath, episode);

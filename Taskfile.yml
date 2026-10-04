@@ -173,7 +173,7 @@ tasks:
       - bun src/scripts/benchmark_experience.ts --out "{{default "artifacts/benchmarks/experience-os" .OUT}}" {{.CLI_ARGS}}
 
   experience:cost-report:
-    desc: "Aggregate validated Experience renderer wall-time and asset-count metrics by production lane (ROOT=... OUT=...)"
+    desc: "Aggregate validated renderer and TTS generation wall-time by Experience lane (ROOT=... OUT=...)"
     cmds:
       - |
         if [ -z "{{.ROOT}}" ] || [ -z "{{.OUT}}" ]; then

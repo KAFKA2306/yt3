@@ -6,6 +6,8 @@ import {
 	ExperienceLaneCostSummarySchema,
 	type ExperienceRendererMetrics,
 	ExperienceRendererMetricsSchema,
+	type TtsGenerationManifest,
+	TtsGenerationManifestSchema,
 	buildExperienceLaneCostSummary,
 } from "../domain/experience/audit.js";
 
@@ -26,7 +28,18 @@ interface CollectedMetric {
 	sha256: string;
 }
 
-async function findMetricFiles(directory: string): Promise<string[]> {
+interface CollectedGenerationManifest {
+	manifest: TtsGenerationManifest;
+	path: string;
+	sha256: string;
+}
+
+interface CollectedInput {
+	path: string;
+	sha256: string;
+}
+
+async function findInputFiles(directory: string): Promise<string[]> {
 	const entries = await readdir(directory, { withFileTypes: true });
 	const files: string[] = [];
 	for (const entry of entries.sort((left, right) =>
@@ -37,24 +50,36 @@ async function findMetricFiles(directory: string): Promise<string[]> {
 			throw new Error(`symlinked benchmark path is not allowed: ${entryPath}`);
 		}
 		if (entry.isDirectory()) {
-			files.push(...(await findMetricFiles(entryPath)));
-		} else if (entry.isFile() && entry.name === "metrics.json") {
+			files.push(...(await findInputFiles(entryPath)));
+		} else if (
+			entry.isFile() &&
+			(entry.name === "metrics.json" ||
+				/^tts-manifest-.+\.json$/.test(entry.name))
+		) {
 			files.push(entryPath);
 		}
 	}
 	return files;
 }
 
-async function readMetric(filePath: string): Promise<CollectedMetric> {
+async function readJsonInput(filePath: string): Promise<{
+	value: unknown;
+	contents: Buffer;
+}> {
 	const contents = await readFile(filePath);
 	let value: unknown;
 	try {
 		value = JSON.parse(contents.toString("utf8"));
 	} catch (error) {
 		throw new Error(
-			`invalid JSON in Experience renderer metrics ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+			`invalid JSON in Experience cost input ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
+	return { value, contents };
+}
+
+async function readMetric(filePath: string): Promise<CollectedMetric> {
+	const { value, contents } = await readJsonInput(filePath);
 	const parsed = ExperienceRendererMetricsSchema.safeParse(value);
 	if (!parsed.success) {
 		throw new Error(
@@ -68,31 +93,69 @@ async function readMetric(filePath: string): Promise<CollectedMetric> {
 	};
 }
 
+async function readGenerationManifest(
+	filePath: string,
+): Promise<CollectedGenerationManifest> {
+	const { value, contents } = await readJsonInput(filePath);
+	const parsed = TtsGenerationManifestSchema.safeParse(value);
+	if (!parsed.success) {
+		throw new Error(
+			`invalid TTS generation manifest ${filePath}: ${parsed.error.message}`,
+		);
+	}
+	return {
+		manifest: parsed.data,
+		path: filePath,
+		sha256: createHash("sha256").update(contents).digest("hex"),
+	};
+}
+
 export async function generateExperienceCostReport(
 	rootPath: string,
 	outputPath: string,
 ): Promise<ExperienceCostReport> {
 	const root = path.resolve(rootPath);
 	const output = path.resolve(outputPath);
-	if (path.basename(output) === "metrics.json") {
-		throw new Error("report output must not be named metrics.json");
+	if (
+		path.basename(output) === "metrics.json" ||
+		/^tts-manifest-.+\.json$/.test(path.basename(output))
+	) {
+		throw new Error("report output must not use an Experience cost input name");
 	}
 	if (!(await stat(root)).isDirectory()) {
 		throw new Error(`benchmark root is not a directory: ${root}`);
 	}
-	const files = await findMetricFiles(root);
+	const files = await findInputFiles(root);
 	if (files.length === 0) {
 		throw new Error(
-			`no metrics.json files found under benchmark root: ${root}`,
+			`no metrics.json or TTS generation manifests found under benchmark root: ${root}`,
 		);
 	}
 	if (files.includes(output)) {
-		throw new Error("report output must not overwrite an input metrics file");
+		throw new Error(
+			"report output must not overwrite an Experience cost input",
+		);
 	}
-	const collected = await Promise.all(files.map(readMetric));
+	const [metricFiles, manifestFiles] = [
+		files.filter((file) => path.basename(file) === "metrics.json"),
+		files.filter((file) => /^tts-manifest-.+\.json$/.test(path.basename(file))),
+	];
+	const [collectedMetrics, collectedManifests] = await Promise.all([
+		Promise.all(metricFiles.map(readMetric)),
+		Promise.all(manifestFiles.map(readGenerationManifest)),
+	]);
+	const collectedInputs: CollectedInput[] = [
+		...collectedMetrics,
+		...collectedManifests,
+	].sort((left, right) =>
+		left.path < right.path ? -1 : left.path > right.path ? 1 : 0,
+	);
 	const report = ExperienceCostReportSchema.parse({
-		...buildExperienceLaneCostSummary(collected.map((item) => item.metrics)),
-		inputs: collected.map(({ path: filePath, sha256 }) => ({
+		...buildExperienceLaneCostSummary(
+			collectedMetrics.map((item) => item.metrics),
+			collectedManifests.map((item) => item.manifest),
+		),
+		inputs: collectedInputs.map(({ path: filePath, sha256 }) => ({
 			path: path.relative(root, filePath).split(path.sep).join("/"),
 			sha256,
 		})),
@@ -121,6 +184,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
 					status: "PASS",
 					input_count: report.inputs.length,
 					metrics_without_lane: report.metrics_without_lane,
+					generation_manifests_without_lane:
+						report.generation_manifests_without_lane,
 					output: path.resolve(requiredArg(argv, "out")),
 				},
 				null,

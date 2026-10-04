@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	buildCanonicalEpisode,
+	buildTtsGenerationManifest,
 	elapsedGenerationSeconds,
 	transcriptSimilarity,
 } from "../src/domain/episode/production.js";
@@ -53,6 +54,50 @@ describe("canonical episode production", () => {
 		expect(episode.claims[0]?.source_ids).toEqual([episode.sources[0]?.id]);
 		expect(episode.visuals[1]?.source_ref).toBe(episode.sources[0]?.id);
 		expect(episode.locales).toEqual(["en"]);
+		expect(
+			buildTtsGenerationManifest({
+				episode,
+				language: "ja",
+				records: [{ generation_seconds: 1.5 }],
+			}),
+		).not.toHaveProperty("lane");
+	});
+
+	test("preserves an explicitly selected Experience lane", () => {
+		const experience = {
+			lane: "LIGHT" as const,
+			viewer_question: "配当はどう動く？",
+			visual_metaphor: "コインが箱からあふれる",
+			hook: {
+				setup: "箱を見る",
+				surprise: "コインがあふれる",
+				payoff: "配当の意味が分かる",
+			},
+			visible_change: "コインが箱からあふれる",
+			cute_moment: "主人公がコインを抱える",
+			learning_goal: "配当と利益を区別する",
+		};
+		const episode = buildCanonicalEpisode({
+			script,
+			metadata,
+			news: [],
+			fps: 25,
+			audioPaths: ["audio/000.wav", "audio/001.wav"],
+			experience,
+		});
+
+		expect(episode.experience?.lane).toBe("LIGHT");
+		expect(
+			buildTtsGenerationManifest({
+				episode,
+				language: "ja",
+				records: [{ generation_seconds: 1.5 }],
+			}),
+		).toMatchObject({
+			language: "ja",
+			lane: "LIGHT",
+			generation_duration_basis: "tts_synthesize_call_wall_clock_seconds",
+		});
 	});
 
 	test("deduplicates repeated research URLs without losing a valid claim source", () => {
