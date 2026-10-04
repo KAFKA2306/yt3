@@ -28,15 +28,31 @@ function metrics(lane: "LIGHT" | "EXPLAIN" | "DEEP" | undefined) {
 	});
 }
 
+function ttsManifest(
+	lane: "LIGHT" | "EXPLAIN" | "DEEP" | undefined,
+	seconds: number[],
+) {
+	return {
+		language: "ja",
+		...(lane ? { lane } : {}),
+		generation_duration_basis: "tts_synthesize_call_wall_clock_seconds",
+		records: seconds.map((generation_seconds) => ({ generation_seconds })),
+	};
+}
+
 describe("experience lane cost report", () => {
 	test("summarizes validated metrics with lane and source-hash provenance", async () => {
 		const root = await mkdtemp(path.join(tmpdir(), "yt3-experience-cost-"));
 		try {
 			const baseline = path.join(root, "run-a", "baseline");
+			const tts = path.join(root, "run-a", "episode");
 			const unassigned = path.join(root, "run-a", "scenes", "scene-1");
+			const unassignedTts = path.join(root, "run-b", "episode");
 			await Promise.all([
 				mkdir(baseline, { recursive: true }),
+				mkdir(tts, { recursive: true }),
 				mkdir(unassigned, { recursive: true }),
+				mkdir(unassignedTts, { recursive: true }),
 			]);
 			await Promise.all([
 				writeFile(
@@ -47,17 +63,38 @@ describe("experience lane cost report", () => {
 					path.join(unassigned, "metrics.json"),
 					`${JSON.stringify(metrics(undefined))}\n`,
 				),
+				writeFile(
+					path.join(tts, "tts-manifest-ja.json"),
+					`${JSON.stringify(ttsManifest("LIGHT", [1.25, 0.75]))}\n`,
+				),
+				writeFile(
+					path.join(unassignedTts, "tts-manifest-ja.json"),
+					`${JSON.stringify(ttsManifest(undefined, [2.5]))}\n`,
+				),
 			]);
 			const output = path.join(root, "cost-report.json");
 
 			const report = await generateExperienceCostReport(root, output);
 
 			expect(report.by_lane.EXPLAIN.metric_count).toBe(1);
+			expect(report.by_lane.LIGHT.generation_seconds).toEqual({
+				total: 2,
+				mean: 1,
+				measured_attempts: 2,
+				manifest_count: 1,
+			});
 			expect(report.metrics_without_lane).toBe(1);
-			expect(report.inputs).toHaveLength(2);
+			expect(report.generation_manifests_without_lane).toBe(1);
+			expect(report.generation_attempts_without_lane).toBe(1);
+			expect(report.measurement_scope.generation_wall_seconds_measured).toBe(
+				true,
+			);
+			expect(report.inputs).toHaveLength(4);
 			expect(report.inputs.map((source) => source.path)).toEqual([
 				"run-a/baseline/metrics.json",
+				"run-a/episode/tts-manifest-ja.json",
 				"run-a/scenes/scene-1/metrics.json",
+				"run-b/episode/tts-manifest-ja.json",
 			]);
 			expect(report.inputs[0]?.sha256).toMatch(/^[a-f0-9]{64}$/);
 			expect(JSON.parse(await readFile(output, "utf8"))).toEqual(report);
@@ -77,11 +114,32 @@ describe("experience lane cost report", () => {
 			const output = path.join(root, "report.json");
 
 			await expect(generateExperienceCostReport(root, output)).rejects.toThrow(
-				"invalid JSON in Experience renderer metrics",
+				"invalid JSON in Experience cost input",
 			);
 			await writeFile(invalid, "{}\n");
 			await expect(generateExperienceCostReport(root, output)).rejects.toThrow(
 				"invalid Experience renderer metrics",
+			);
+			expect(await stat(output).catch(() => null)).toBeNull();
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+
+	test("rejects malformed TTS timing evidence instead of omitting it", async () => {
+		const root = await mkdtemp(
+			path.join(tmpdir(), "yt3-experience-cost-invalid-tts-"),
+		);
+		try {
+			const manifest = path.join(root, "run", "tts-manifest-ja.json");
+			await mkdir(path.dirname(manifest), { recursive: true });
+			await writeFile(
+				manifest,
+				`${JSON.stringify(ttsManifest("LIGHT", [1, Number.NaN]))}\n`,
+			);
+			const output = path.join(root, "report.json");
+			await expect(generateExperienceCostReport(root, output)).rejects.toThrow(
+				"invalid TTS generation manifest",
 			);
 			expect(await stat(output).catch(() => null)).toBeNull();
 		} finally {
@@ -96,7 +154,7 @@ describe("experience lane cost report", () => {
 		try {
 			const output = path.join(root, "report.json");
 			await expect(generateExperienceCostReport(root, output)).rejects.toThrow(
-				"no metrics.json files found",
+				"no metrics.json or TTS generation manifests found",
 			);
 
 			const outside = path.join(root, "outside-metrics.json");

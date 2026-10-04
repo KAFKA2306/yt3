@@ -37,6 +37,23 @@ export type ExperienceRendererMetrics = z.infer<
 	typeof ExperienceRendererMetricsSchema
 >;
 
+export const TtsGenerationManifestSchema = z.object({
+	language: z.string().min(2),
+	lane: ExperienceLaneSchema.optional(),
+	generation_duration_basis: z.literal(
+		"tts_synthesize_call_wall_clock_seconds",
+	),
+	records: z
+		.array(
+			z.object({
+				generation_seconds: z.number().finite().nonnegative(),
+			}),
+		)
+		.min(1),
+});
+
+export type TtsGenerationManifest = z.infer<typeof TtsGenerationManifestSchema>;
+
 const AssetCountSummarySchema = z.object({
 	total: z.number().int().nonnegative().nullable(),
 	measured_metrics: z.number().int().nonnegative(),
@@ -48,24 +65,35 @@ const DurationSummarySchema = z.object({
 	mean: z.number().finite().nonnegative().nullable(),
 });
 
+const GenerationDurationSummarySchema = DurationSummarySchema.extend({
+	measured_attempts: z.number().int().nonnegative(),
+	manifest_count: z.number().int().nonnegative(),
+});
+
 const LaneCostSummarySchema = z.object({
 	metric_count: z.number().int().nonnegative(),
 	production_seconds: DurationSummarySchema,
 	render_seconds: DurationSummarySchema,
+	generation_seconds: GenerationDurationSummarySchema,
 	new_asset_count: AssetCountSummarySchema,
 	reused_asset_count: AssetCountSummarySchema,
 });
 
 export const ExperienceLaneCostSummarySchema = z.object({
-	schema_version: z.literal(1),
+	schema_version: z.literal(2),
 	metrics_without_lane: z.number().int().nonnegative(),
+	generation_manifests_without_lane: z.number().int().nonnegative(),
+	generation_attempts_without_lane: z.number().int().nonnegative(),
 	measurement_scope: z.object({
 		duration_basis: z.literal("wall_clock_seconds_from_source_metrics"),
 		durations_may_overlap: z.literal(true),
 		input_metrics_deduplicated: z.literal(false),
 		currency_cost_included: z.literal(false),
 		human_labor_included: z.literal(false),
-		generation_wall_seconds_measured: z.literal(false),
+		generation_wall_seconds_measured: z.boolean(),
+		generation_duration_basis: z
+			.literal("tts_synthesize_call_wall_clock_seconds")
+			.nullable(),
 	}),
 	by_lane: z.record(ExperienceLaneSchema, LaneCostSummarySchema),
 });
@@ -102,10 +130,21 @@ function summarizeAssetCount(
 
 export function buildExperienceLaneCostSummary(
 	metrics: readonly ExperienceRendererMetrics[],
+	generationManifests: readonly TtsGenerationManifest[] = [],
 ): ExperienceLaneCostSummary {
 	const byLane = Object.fromEntries(
 		ExperienceLaneSchema.options.map((lane: ExperienceLane) => {
 			const laneMetrics = metrics.filter((metric) => metric.lane === lane);
+			const laneManifests = generationManifests.filter(
+				(manifest) => manifest.lane === lane,
+			);
+			const generationSeconds = laneManifests.flatMap((manifest) =>
+				manifest.records.map((record) => record.generation_seconds),
+			);
+			const generationTotal = generationSeconds.reduce(
+				(sum, seconds) => sum + seconds,
+				0,
+			);
 			return [
 				lane,
 				{
@@ -116,6 +155,15 @@ export function buildExperienceLaneCostSummary(
 					render_seconds: summarizeDuration(
 						laneMetrics.map((metric) => metric.render_seconds),
 					),
+					generation_seconds: {
+						total: generationTotal,
+						mean:
+							generationSeconds.length === 0
+								? null
+								: generationTotal / generationSeconds.length,
+						measured_attempts: generationSeconds.length,
+						manifest_count: laneManifests.length,
+					},
 					new_asset_count: summarizeAssetCount(
 						laneMetrics.map((metric) => metric.new_asset_count),
 					),
@@ -128,15 +176,25 @@ export function buildExperienceLaneCostSummary(
 	) as Record<ExperienceLane, z.infer<typeof LaneCostSummarySchema>>;
 
 	return ExperienceLaneCostSummarySchema.parse({
-		schema_version: 1,
+		schema_version: 2,
 		metrics_without_lane: metrics.filter((metric) => !metric.lane).length,
+		generation_manifests_without_lane: generationManifests.filter(
+			(manifest) => !manifest.lane,
+		).length,
+		generation_attempts_without_lane: generationManifests
+			.filter((manifest) => !manifest.lane)
+			.reduce((count, manifest) => count + manifest.records.length, 0),
 		measurement_scope: {
 			duration_basis: "wall_clock_seconds_from_source_metrics",
 			durations_may_overlap: true,
 			input_metrics_deduplicated: false,
 			currency_cost_included: false,
 			human_labor_included: false,
-			generation_wall_seconds_measured: false,
+			generation_wall_seconds_measured: generationManifests.length > 0,
+			generation_duration_basis:
+				generationManifests.length > 0
+					? "tts_synthesize_call_wall_clock_seconds"
+					: null,
 		},
 		by_lane: byLane,
 	});
