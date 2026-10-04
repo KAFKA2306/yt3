@@ -13,6 +13,7 @@ export const ExperienceActionSchema = z.enum([
 	"build",
 	"overflow",
 	"exchange",
+	"compare",
 ]);
 
 export const ExperienceReactionSchema = z.enum([

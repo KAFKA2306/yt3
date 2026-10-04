@@ -26,6 +26,7 @@ import {
 } from "../src/domain/experience/audit.js";
 import { buildExperienceLicenseEvidence } from "../src/domain/experience/license_evidence.js";
 import {
+	ExperienceActionSchema,
 	ExperienceContractSchema,
 	ExperienceProfileSchema,
 	ExperienceWorldSchema,
@@ -186,6 +187,37 @@ describe("Experience Contract and OSS benchmark", () => {
 				"action_forbidden",
 			]),
 		);
+	});
+
+	test("accepts the visual compare action required by the #163 payoff scene", () => {
+		const profile = ExperienceProfileSchema.parse(
+			yaml.load(
+				readFileSync(
+					path.join(root, "config/channels/byosan/experience.yaml"),
+					"utf8",
+				),
+			),
+		);
+		const episode = validEpisode({
+			visuals: [
+				{
+					id: "total-return-comparison",
+					type: "comparison",
+					props: { left: "NVII", right: "NVDA" },
+					action: "compare",
+					subject: "total return",
+					reaction: "confused",
+					concept_id: "total-return",
+					asset_strategy: "deterministic",
+				},
+			],
+		});
+
+		expect(ExperienceActionSchema.options).toContain("compare");
+		expect(profile.action_vocabulary).toContain("compare");
+		expect(
+			auditExperienceEpisode(episode, profile).map((issue) => issue.code),
+		).not.toContain("action_unknown");
 	});
 
 	test("rejects an episode whose lane differs from a routed task lane", () => {

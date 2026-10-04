@@ -11,6 +11,7 @@ action_vocabulary:
   - build
   - overflow
   - exchange
+  - compare
 forbidden_actions:
   - explain
   - show
