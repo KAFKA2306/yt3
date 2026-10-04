@@ -413,6 +413,9 @@ export function buildShortPlan(
 	const maxMs = episode.shorts.max_seconds * 1000;
 	const selected: EpisodeTimelineItem[] = [];
 	for (const item of timeline) {
+		if (selected.length === 0 && item.endMs - item.startMs > maxMs) {
+			throw new Error("first dialogue exceeds configured short duration");
+		}
 		const projected =
 			selected.length === 0 ? item.endMs - item.startMs : item.endMs;
 		if (selected.length > 0 && projected > maxMs) break;

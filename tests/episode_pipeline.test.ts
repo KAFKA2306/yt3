@@ -136,6 +136,57 @@ describe("episode canonical pipeline", () => {
 		expect(first).toEqual(second);
 	});
 
+	test("keeps a short at or below its configured duration when the first dialogue fits", () => {
+		const limitedEpisode = {
+			...episode,
+			shorts: { enabled: true, max_seconds: 1.2 },
+		};
+		const shortTimeline = [
+			{
+				sectionId: "intro",
+				dialogueId: "d1",
+				startMs: 0,
+				endMs: 700,
+				startFrame: 0,
+				endFrame: 21,
+			},
+			{
+				sectionId: "intro",
+				dialogueId: "d2",
+				startMs: 700,
+				endMs: 1200,
+				startFrame: 21,
+				endFrame: 36,
+			},
+		];
+
+		const shortPlan = buildShortPlan(limitedEpisode, shortTimeline);
+
+		expect(shortPlan.dialogue_ids).toEqual(["d1", "d2"]);
+		expect(shortPlan.duration_ms).toBe(1200);
+	});
+
+	test("rejects a first dialogue that alone exceeds the short duration limit", () => {
+		const limitedEpisode = {
+			...episode,
+			shorts: { enabled: true, max_seconds: 1.2 },
+		};
+		const overlongFirstDialogue = [
+			{
+				sectionId: "intro",
+				dialogueId: "d1",
+				startMs: 0,
+				endMs: 1201,
+				startFrame: 0,
+				endFrame: 37,
+			},
+		];
+
+		expect(() => buildShortPlan(limitedEpisode, overlongFirstDialogue)).toThrow(
+			"first dialogue exceeds configured short duration",
+		);
+	});
+
 	test("builds main and short Remotion inputs with ten fixed templates", () => {
 		const main = buildRemotionInput(episode, timeline);
 		const short = buildRemotionInput(
