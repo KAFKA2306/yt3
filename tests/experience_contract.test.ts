@@ -188,6 +188,33 @@ describe("Experience Contract and OSS benchmark", () => {
 		);
 	});
 
+	test("rejects an episode whose lane differs from a routed task lane", () => {
+		const profile = ExperienceProfileSchema.parse(
+			yaml.load(
+				readFileSync(
+					path.join(root, "config/channels/byosan/experience.yaml"),
+					"utf8",
+				),
+			),
+		);
+		const deepEpisode = validEpisode({
+			experience: { ...contract, lane: "DEEP" },
+		});
+
+		expect(
+			auditExperienceEpisode(deepEpisode, profile, { requiredLane: "LIGHT" }),
+		).toContainEqual({
+			code: "experience_lane_mismatch",
+			path: "experience.lane",
+			message: "task requires LIGHT lane; episode declares DEEP",
+		});
+		expect(
+			auditExperienceEpisode(validEpisode({ experience: undefined }), profile, {
+				requiredLane: "LIGHT",
+			}).map((issue) => issue.code),
+		).toContain("experience_lane_mismatch");
+	});
+
 	test("counts distinct generated assets instead of generated scenes", () => {
 		const profile = ExperienceProfileSchema.parse(
 			yaml.load(

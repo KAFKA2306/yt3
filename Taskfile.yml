@@ -148,14 +148,14 @@ tasks:
         MOTION_CANVAS_CHROMIUM="{{.CHROMIUM}}" bun src/scripts/render_episode_motion_canvas.ts --compiled "{{.COMPILED}}" --output "{{.OUTPUT}}" --kind "{{default "main" .KIND}}" {{.CLI_ARGS}}
 
   experience:audit:
-    desc: "Audit a byosan episode against the Experience Contract (EPISODE=...)"
+    desc: "Audit a byosan episode against the Experience Contract (EPISODE=...; LANE=LIGHT|EXPLAIN|DEEP optional)"
     cmds:
       - |
         if [ -z "{{.EPISODE}}" ]; then
           echo "EPISODE is required" >&2
           exit 2
         fi
-        bun src/scripts/audit_experience_contract.ts --episode "{{.EPISODE}}" {{.CLI_ARGS}}
+        bun src/scripts/audit_experience_contract.ts --episode "{{.EPISODE}}" {{if .LANE}}--lane "{{.LANE}}" {{end}}{{.CLI_ARGS}}
 
   experience:baseline:
     desc: "Compile and render an audited episode through the existing Remotion baseline (EPISODE=... OUT=...)"
@@ -166,6 +166,18 @@ tasks:
           exit 2
         fi
         bun src/scripts/benchmark_experience_baseline.ts --episode "{{.EPISODE}}" --out "{{.OUT}}" {{.CLI_ARGS}}
+
+  experience:render-light:
+    desc: "Audit and render a prepared LIGHT episode as a Short without DEEP research or main render (EPISODE=... COMPILED=... OUTPUT=...)"
+    cmds:
+      - |
+        if [ -z "{{.EPISODE}}" ] || [ -z "{{.COMPILED}}" ] || [ -z "{{.OUTPUT}}" ]; then
+          echo "EPISODE, COMPILED, and OUTPUT are required" >&2
+          exit 2
+        fi
+      - task experience:audit EPISODE="{{.EPISODE}}" LANE=LIGHT
+      - task episode:compile EPISODE="{{.EPISODE}}" OUT="{{.COMPILED}}"
+      - task episode:render COMPILED="{{.COMPILED}}" OUTPUT="{{.OUTPUT}}" KIND=short
 
   experience:benchmark:
     desc: "Render the fixed five-scene fixture through Remotion and Motion Canvas and write measured metrics (OUT=... optional)"
