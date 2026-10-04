@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	buildCanonicalEpisode,
+	elapsedGenerationSeconds,
 	transcriptSimilarity,
 } from "../src/domain/episode/production.js";
 
@@ -22,6 +23,16 @@ const metadata = {
 };
 
 describe("canonical episode production", () => {
+	test("measures elapsed generation wall time and rejects invalid clock ranges", () => {
+		expect(elapsedGenerationSeconds(250, 1_750)).toBe(1.5);
+		expect(() => elapsedGenerationSeconds(2, 1)).toThrow(
+			"generation finished before it started",
+		);
+		expect(() => elapsedGenerationSeconds(Number.NaN, 1)).toThrow(
+			"generation timestamps must be finite",
+		);
+	});
+
 	test("preserves research source and claim provenance", () => {
 		const episode = buildCanonicalEpisode({
 			script,

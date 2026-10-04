@@ -246,6 +246,29 @@ export async function smokeCanonicalProduction(
 		targeted_repairs?: string[];
 	};
 	if (!asrReport.all_passed) throw new Error("ASR report did not pass");
+	const ttsManifest = fs.readJsonSync(
+		path.join(store.runDir, "episode", "tts-manifest-ja.json"),
+	) as {
+		generation_duration_basis?: string;
+		records?: Array<{ generation_seconds?: number }>;
+	};
+	if (
+		ttsManifest.generation_duration_basis !==
+		"tts_synthesize_call_wall_clock_seconds"
+	) {
+		throw new Error("TTS manifest did not declare its generation time basis");
+	}
+	if (
+		!ttsManifest.records?.length ||
+		ttsManifest.records.some(
+			(record) =>
+				typeof record.generation_seconds !== "number" ||
+				!Number.isFinite(record.generation_seconds) ||
+				record.generation_seconds < 0,
+		)
+	) {
+		throw new Error("TTS manifest did not record valid generation durations");
+	}
 	if (
 		JSON.stringify(asrReport.targeted_repairs) !== JSON.stringify(["line-002"])
 	)
