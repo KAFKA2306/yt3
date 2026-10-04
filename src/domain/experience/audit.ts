@@ -284,6 +284,7 @@ export function countDistinctGeneratedAssets(
 export function auditExperienceEpisode(
 	episode: Episode,
 	profile: ExperienceProfile,
+	options: { requiredLane?: ExperienceLane } = {},
 ): ExperienceAuditIssue[] {
 	const issues: ExperienceAuditIssue[] = [];
 	const assetIds = new Set(episode.assets.map((asset) => asset.id));
@@ -295,6 +296,13 @@ export function auditExperienceEpisode(
 			message: "byosan episodes require an Experience Contract",
 		});
 	} else {
+		if (options.requiredLane && experience.lane !== options.requiredLane) {
+			issues.push({
+				code: "experience_lane_mismatch",
+				path: "experience.lane",
+				message: `task requires ${options.requiredLane} lane; episode declares ${experience.lane}`,
+			});
+		}
 		if (!experience.viewer_question.trim()) {
 			issues.push({
 				code: "viewer_question_missing",
@@ -316,6 +324,13 @@ export function auditExperienceEpisode(
 				message: "visual metaphor must not be empty",
 			});
 		}
+	}
+	if (!experience && options.requiredLane) {
+		issues.push({
+			code: "experience_lane_mismatch",
+			path: "experience.lane",
+			message: `task requires ${options.requiredLane} lane; episode declares no lane`,
+		});
 	}
 
 	for (const visual of episode.visuals) {
