@@ -141,6 +141,19 @@ export function transcriptSimilarity(expected: string, actual: string): number {
 	return Math.max(0, 1 - levenshteinDistance(left, right) / denominator);
 }
 
+export function elapsedGenerationSeconds(
+	startedAt: number,
+	finishedAt: number,
+): number {
+	if (!Number.isFinite(startedAt) || !Number.isFinite(finishedAt)) {
+		throw new Error("generation timestamps must be finite");
+	}
+	if (finishedAt < startedAt) {
+		throw new Error("generation finished before it started");
+	}
+	return (finishedAt - startedAt) / 1000;
+}
+
 function id(prefix: string, index: number): string {
 	return `${prefix}-${String(index + 1).padStart(3, "0")}`;
 }
@@ -378,6 +391,7 @@ async function synthesizeAndVerify(
 		for (let attempt = 0; attempt <= options.repairLimit; attempt++) {
 			finalAttempt = attempt;
 			const voice = repairVoice(attempt);
+			const generationStartedAt = performance.now();
 			const audio = await dependencies.tts.synthesize({
 				dialogueId: dialogue.id,
 				text: dialogue.text,
@@ -387,6 +401,10 @@ async function synthesizeAndVerify(
 				attempt,
 				voice,
 			});
+			const generationSeconds = elapsedGenerationSeconds(
+				generationStartedAt,
+				performance.now(),
+			);
 			await fs.writeFile(audioPath, audio);
 			ttsRecords.push({
 				dialogue_id: dialogue.id,
@@ -394,6 +412,7 @@ async function synthesizeAndVerify(
 				speaker_id: speakerId,
 				language: options.locale,
 				attempt,
+				generation_seconds: generationSeconds,
 				voice: voice ?? {},
 				audio_path: audioPath,
 			});
@@ -439,7 +458,11 @@ async function synthesizeAndVerify(
 	const reportPath = path.join(episodeDir, `asr-report-${options.locale}.json`);
 	await fs.writeJson(
 		ttsManifestPath,
-		{ language: options.locale, records: ttsRecords },
+		{
+			language: options.locale,
+			generation_duration_basis: "tts_synthesize_call_wall_clock_seconds",
+			records: ttsRecords,
+		},
 		{ spaces: 2 },
 	);
 	await fs.writeJson(
