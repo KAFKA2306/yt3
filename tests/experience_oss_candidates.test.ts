@@ -28,10 +28,16 @@ describe("Experience OSS candidate registry", () => {
 			process.cwd(),
 		);
 
-		expect(result).toMatchObject({ status: "PASS", candidate_count: 8 });
+		expect(result).toMatchObject({
+			status: "PASS",
+			candidate_count: 8,
+			classified_candidate_count: 8,
+			blocked_candidate_count: 8,
+			blocked_evaluation_candidate_count: 7,
+		});
 		expect(result.candidates[0]).toMatchObject({
 			candidate_id: "motion-canvas",
-			adoption_decision: null,
+			adoption_decision: "BLOCKED_LICENSE",
 			commercial_use: { code: "UNKNOWN", model_weights: "NOT_USED" },
 		});
 		expect(
@@ -44,10 +50,67 @@ describe("Experience OSS candidate registry", () => {
 		).toEqual(["motion-canvas", "birefnet", "liveportrait"]);
 		expect(
 			registry.candidates.every(
-				(candidate: { adoption_decision: string | null }) =>
-					candidate.adoption_decision === null,
+				(candidate: { adoption_decision: string }) =>
+					candidate.adoption_decision === "BLOCKED_LICENSE",
 			),
 		).toBe(true);
+	});
+
+	test("requires a classification and evidence for every non-license decision", async () => {
+		const registry = JSON.parse(await readFile(registryPath, "utf8"));
+		registry.candidates[0].adoption_decision = null;
+		expect(
+			ExperienceOssCandidateRegistrySchema.safeParse(registry).success,
+		).toBe(false);
+
+		registry.candidates[0].adoption_decision = "BENCHMARK_ONLY";
+		expect(
+			ExperienceOssCandidateRegistrySchema.safeParse(registry).success,
+		).toBe(false);
+	});
+
+	test("does not allow BLOCKED_LICENSE when commercial use is permitted", () => {
+		const result = ExperienceOssCandidateRegistrySchema.safeParse({
+			schema_version: 2,
+			channel: "byosan_money",
+			selection_policy: "measured_evidence_only",
+			candidates: [
+				{
+					candidate_id: "motion-canvas",
+					display_name: "Motion Canvas",
+					quality_target: "deterministic scene motion",
+					benchmark_priority: "CORE",
+					evaluation_status: "READY_FOR_BENCHMARK",
+					adoption_decision: "BLOCKED_LICENSE",
+					code_license_status: "VERIFIED",
+					code_license_evidence: {
+						version: "3.17.2",
+						source_url: "https://example.test/LICENSE",
+					},
+					model_weight_license_status: "NOT_USED",
+					model_weight_license_evidence: null,
+					commercial_use: {
+						code: {
+							status: "PERMITTED",
+							evidence: {
+								version: "3.17.2",
+								source_url: "https://example.test/LICENSE",
+							},
+						},
+						model_weights: { status: "NOT_USED", evidence: null },
+					},
+					state_reason: "test fixture",
+					benchmark_evidence: null,
+				},
+			],
+		});
+
+		expect(result.success).toBe(false);
+		if (result.success)
+			throw new Error("permitted commercial use cannot be blocked");
+		expect(result.error.issues.map((issue) => issue.message)).toContain(
+			"BLOCKED_LICENSE requires unresolved or restricted license terms",
+		);
 	});
 
 	test("requires linked benchmark artifacts and reviewed licenses before adoption", () => {

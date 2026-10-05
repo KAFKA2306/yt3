@@ -9,7 +9,7 @@
 			"quality_target": "Deterministic scene animation and renderer iteration cost",
 			"benchmark_priority": "CORE",
 			"evaluation_status": "READY_FOR_BENCHMARK",
-			"adoption_decision": null,
+			"adoption_decision": "BLOCKED_LICENSE",
 			"code_license_status": "VERIFIED",
 			"code_license_evidence": {
 				"version": "3.17.2",
@@ -21,7 +21,7 @@
 				"code": { "status": "UNKNOWN", "evidence": null },
 				"model_weights": { "status": "NOT_USED", "evidence": null }
 			},
-			"state_reason": "The project license is recorded, but commercial-use terms have not been separately reviewed; no adoption decision is made.",
+			"state_reason": "The code license is pinned, but commercial-use terms remain UNKNOWN; production adoption is blocked until reviewed. Isolated benchmarking remains possible.",
 			"benchmark_evidence": null
 		},
 		{
@@ -30,7 +30,7 @@
 			"quality_target": "Character edge quality, matting quality, and manual correction count",
 			"benchmark_priority": "CORE",
 			"evaluation_status": "BLOCKED_LICENSE",
-			"adoption_decision": null,
+			"adoption_decision": "BLOCKED_LICENSE",
 			"code_license_status": "UNVERIFIED",
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
@@ -39,7 +39,7 @@
 				"code": { "status": "UNKNOWN", "evidence": null },
 				"model_weights": { "status": "UNKNOWN", "evidence": null }
 			},
-			"state_reason": "First-priority benchmark candidate; code, model-weight, and commercial-use rights have not been verified.",
+			"state_reason": "BLOCKED_LICENSE: code, model-weight, and commercial-use rights have not been verified.",
 			"benchmark_evidence": null
 		},
 		{
@@ -48,7 +48,7 @@
 			"quality_target": "Character consistency and regeneration count for expression assets",
 			"benchmark_priority": "CORE",
 			"evaluation_status": "BLOCKED_LICENSE",
-			"adoption_decision": null,
+			"adoption_decision": "BLOCKED_LICENSE",
 			"code_license_status": "UNVERIFIED",
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
@@ -57,7 +57,7 @@
 				"code": { "status": "UNKNOWN", "evidence": null },
 				"model_weights": { "status": "UNKNOWN", "evidence": null }
 			},
-			"state_reason": "First-priority benchmark candidate; code, model-weight, and commercial-use rights have not been verified.",
+			"state_reason": "BLOCKED_LICENSE: code, model-weight, and commercial-use rights have not been verified.",
 			"benchmark_evidence": null
 		},
 		{
@@ -66,7 +66,7 @@
 			"quality_target": "Subtitle alignment error versus the current alignment path",
 			"benchmark_priority": "BENCHMARK",
 			"evaluation_status": "BLOCKED_LICENSE",
-			"adoption_decision": null,
+			"adoption_decision": "BLOCKED_LICENSE",
 			"code_license_status": "UNVERIFIED",
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
@@ -75,7 +75,7 @@
 				"code": { "status": "UNKNOWN", "evidence": null },
 				"model_weights": { "status": "UNKNOWN", "evidence": null }
 			},
-			"state_reason": "Benchmark scope is planned; code, model, dependency, and commercial-use license evidence is not yet reviewed.",
+			"state_reason": "BLOCKED_LICENSE: code, model, dependency, and commercial-use license evidence is not yet reviewed.",
 			"benchmark_evidence": null
 		},
 		{
@@ -84,7 +84,7 @@
 			"quality_target": "Repaired source asset quality delta",
 			"benchmark_priority": "BENCHMARK",
 			"evaluation_status": "BLOCKED_LICENSE",
-			"adoption_decision": null,
+			"adoption_decision": "BLOCKED_LICENSE",
 			"code_license_status": "UNVERIFIED",
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
@@ -93,7 +93,7 @@
 				"code": { "status": "UNKNOWN", "evidence": null },
 				"model_weights": { "status": "UNKNOWN", "evidence": null }
 			},
-			"state_reason": "Adopt only after a positive measured quality delta and code, model-weight, and commercial-use license review.",
+			"state_reason": "BLOCKED_LICENSE: code, model-weight, and commercial-use rights are unresolved; adopt only after positive measured quality delta and review.",
 			"benchmark_evidence": null
 		},
 		{
@@ -102,7 +102,7 @@
 			"quality_target": "2.5D depth effect quality delta and production effort",
 			"benchmark_priority": "BENCHMARK",
 			"evaluation_status": "BLOCKED_LICENSE",
-			"adoption_decision": null,
+			"adoption_decision": "BLOCKED_LICENSE",
 			"code_license_status": "UNVERIFIED",
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
@@ -111,7 +111,7 @@
 				"code": { "status": "UNKNOWN", "evidence": null },
 				"model_weights": { "status": "UNKNOWN", "evidence": null }
 			},
-			"state_reason": "Adopt only after a positive measured quality delta and code, model-weight, and commercial-use license review.",
+			"state_reason": "BLOCKED_LICENSE: code, model-weight, and commercial-use rights are unresolved; adopt only after positive measured quality delta and review.",
 			"benchmark_evidence": null
 		},
 		{
@@ -120,7 +120,7 @@
 			"quality_target": "Hero-shot quality and generation cost as an isolated sidecar",
 			"benchmark_priority": "SIDECAR",
 			"evaluation_status": "BLOCKED_LICENSE",
-			"adoption_decision": null,
+			"adoption_decision": "BLOCKED_LICENSE",
 			"code_license_status": "UNVERIFIED",
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
@@ -129,7 +129,7 @@
 				"code": { "status": "UNKNOWN", "evidence": null },
 				"model_weights": { "status": "UNKNOWN", "evidence": null }
 			},
-			"state_reason": "Hero-shot-only sidecar candidate; code, model-weight, and commercial-use rights have not been verified.",
+			"state_reason": "BLOCKED_LICENSE: hero-shot-only sidecar; code, model-weight, and commercial-use rights have not been verified.",
 			"benchmark_evidence": null
 		},
 		{
@@ -138,7 +138,7 @@
 			"quality_target": "Physical gag quality gain versus implementation and maintenance effort",
 			"benchmark_priority": "OPTIONAL",
 			"evaluation_status": "BLOCKED_LICENSE",
-			"adoption_decision": null,
+			"adoption_decision": "BLOCKED_LICENSE",
 			"code_license_status": "UNVERIFIED",
 			"code_license_evidence": null,
 			"model_weight_license_status": "NOT_USED",
@@ -147,7 +147,7 @@
 				"code": { "status": "UNKNOWN", "evidence": null },
 				"model_weights": { "status": "NOT_USED", "evidence": null }
 			},
-			"state_reason": "Optional physical-rendering benchmark only; license and commercial-use evidence plus quality/effort comparison are not recorded.",
+			"state_reason": "BLOCKED_LICENSE: code and commercial-use evidence plus the physical-quality/effort comparison are not recorded.",
 			"benchmark_evidence": null
 		}
 	]
