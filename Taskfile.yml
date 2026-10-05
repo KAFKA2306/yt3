@@ -194,6 +194,16 @@ tasks:
         fi
         bun src/scripts/report_experience_cost.ts --root "{{.ROOT}}" --out "{{.OUT}}" {{.CLI_ARGS}}
 
+  experience:evidence:record:
+    desc: "Append one validated Experience evidence claim to db/evolution.db (INPUT=record.json)"
+    cmds:
+      - |
+        if [ -z "{{.INPUT}}" ]; then
+          echo "INPUT is required (path to an Experience evidence JSON record)" >&2
+          exit 2
+        fi
+        bun src/scripts/record_experience_evidence.ts --input "{{.INPUT}}" {{.CLI_ARGS}}
+
   experience:review:template:
     desc: "Create a blank five-scene human review template bound to benchmark artifact hashes (RUN=... OUT=...)"
     cmds:
