@@ -181,6 +181,15 @@ printf '[%s] INFO  starting unified agentic loop (pid=%s)\n' "$(timestamp)" "$$"
 
 if (cd "${repo_dir}" && task loop); then
   run_exit=0
+  for post_task in analytics:refresh improve:report; do
+    printf '[%s] INFO  running post-publish task: %s\n' "$(timestamp)" "${post_task}"
+    if (cd "${repo_dir}" && task "${post_task}"); then
+      printf '[%s] INFO  post-publish task succeeded: %s\n' "$(timestamp)" "${post_task}"
+    else
+      post_exit=$?
+      printf '[%s] WARN  post-publish task failed: %s exit_code=%s\n' "$(timestamp)" "${post_task}" "${post_exit}"
+    fi
+  done
   notify_success "${SECONDS}"
 else
   run_exit=$?
