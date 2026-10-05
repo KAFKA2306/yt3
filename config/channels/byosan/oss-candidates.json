@@ -1,0 +1,122 @@
+{
+	"schema_version": 1,
+	"channel": "byosan_money",
+	"selection_policy": "measured_evidence_only",
+	"candidates": [
+		{
+			"candidate_id": "motion-canvas",
+			"display_name": "Motion Canvas",
+			"quality_target": "Deterministic scene animation and renderer iteration cost",
+			"benchmark_priority": "CORE",
+			"evaluation_status": "READY_FOR_BENCHMARK",
+			"adoption_decision": null,
+			"code_license_status": "VERIFIED",
+			"code_license_evidence": {
+				"version": "3.17.2",
+				"source_url": "https://raw.githubusercontent.com/motion-canvas/motion-canvas/v3.17.2/LICENSE"
+			},
+			"model_weight_license_status": "NOT_USED",
+			"model_weight_license_evidence": null,
+			"state_reason": "The pinned benchmark record verifies the project license; no final adoption decision is made until benchmark evidence is reviewed.",
+			"benchmark_evidence": null
+		},
+		{
+			"candidate_id": "birefnet",
+			"display_name": "BiRefNet",
+			"quality_target": "Character edge quality, matting quality, and manual correction count",
+			"benchmark_priority": "CORE",
+			"evaluation_status": "BLOCKED_LICENSE",
+			"adoption_decision": null,
+			"code_license_status": "UNVERIFIED",
+			"code_license_evidence": null,
+			"model_weight_license_status": "UNVERIFIED",
+			"model_weight_license_evidence": null,
+			"state_reason": "First-priority benchmark candidate; code and model-weight rights have not been verified.",
+			"benchmark_evidence": null
+		},
+		{
+			"candidate_id": "liveportrait",
+			"display_name": "LivePortrait",
+			"quality_target": "Character consistency and regeneration count for expression assets",
+			"benchmark_priority": "CORE",
+			"evaluation_status": "BLOCKED_LICENSE",
+			"adoption_decision": null,
+			"code_license_status": "UNVERIFIED",
+			"code_license_evidence": null,
+			"model_weight_license_status": "UNVERIFIED",
+			"model_weight_license_evidence": null,
+			"state_reason": "First-priority benchmark candidate; code and model-weight rights have not been verified.",
+			"benchmark_evidence": null
+		},
+		{
+			"candidate_id": "whisperx",
+			"display_name": "WhisperX",
+			"quality_target": "Subtitle alignment error versus the current alignment path",
+			"benchmark_priority": "BENCHMARK",
+			"evaluation_status": "BLOCKED_LICENSE",
+			"adoption_decision": null,
+			"code_license_status": "UNVERIFIED",
+			"code_license_evidence": null,
+			"model_weight_license_status": "UNVERIFIED",
+			"model_weight_license_evidence": null,
+			"state_reason": "Benchmark scope is planned; code, model, and dependency license evidence is not yet reviewed.",
+			"benchmark_evidence": null
+		},
+		{
+			"candidate_id": "real-esrgan",
+			"display_name": "Real-ESRGAN",
+			"quality_target": "Repaired source asset quality delta",
+			"benchmark_priority": "BENCHMARK",
+			"evaluation_status": "BLOCKED_LICENSE",
+			"adoption_decision": null,
+			"code_license_status": "UNVERIFIED",
+			"code_license_evidence": null,
+			"model_weight_license_status": "UNVERIFIED",
+			"model_weight_license_evidence": null,
+			"state_reason": "Adopt only after a positive measured quality delta and code and model-weight license review.",
+			"benchmark_evidence": null
+		},
+		{
+			"candidate_id": "video-depth-anything",
+			"display_name": "Video Depth Anything",
+			"quality_target": "2.5D depth effect quality delta and production effort",
+			"benchmark_priority": "BENCHMARK",
+			"evaluation_status": "BLOCKED_LICENSE",
+			"adoption_decision": null,
+			"code_license_status": "UNVERIFIED",
+			"code_license_evidence": null,
+			"model_weight_license_status": "UNVERIFIED",
+			"model_weight_license_evidence": null,
+			"state_reason": "Adopt only after a positive measured quality delta and code and model-weight license review.",
+			"benchmark_evidence": null
+		},
+		{
+			"candidate_id": "comfyui-wan",
+			"display_name": "ComfyUI + Wan",
+			"quality_target": "Hero-shot quality and generation cost as an isolated sidecar",
+			"benchmark_priority": "SIDECAR",
+			"evaluation_status": "BLOCKED_LICENSE",
+			"adoption_decision": null,
+			"code_license_status": "UNVERIFIED",
+			"code_license_evidence": null,
+			"model_weight_license_status": "UNVERIFIED",
+			"model_weight_license_evidence": null,
+			"state_reason": "Hero-shot-only sidecar candidate; code and model-weight rights have not been verified.",
+			"benchmark_evidence": null
+		},
+		{
+			"candidate_id": "godot",
+			"display_name": "Godot",
+			"quality_target": "Physical gag quality gain versus implementation and maintenance effort",
+			"benchmark_priority": "OPTIONAL",
+			"evaluation_status": "BLOCKED_LICENSE",
+			"adoption_decision": null,
+			"code_license_status": "UNVERIFIED",
+			"code_license_evidence": null,
+			"model_weight_license_status": "NOT_USED",
+			"model_weight_license_evidence": null,
+			"state_reason": "Optional physical-rendering benchmark only; license evidence and quality/effort comparison are not recorded.",
+			"benchmark_evidence": null
+		}
+	]
+}
