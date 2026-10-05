@@ -185,7 +185,7 @@ tasks:
       - bun src/scripts/benchmark_experience.ts --out "{{default "artifacts/benchmarks/experience-os" .OUT}}" {{.CLI_ARGS}}
 
   experience:oss:audit:
-    desc: "Audit OSS evaluation states and evidence required for final adoption decisions"
+    desc: "Audit OSS evaluation, license, commercial-use states, and final adoption evidence"
     cmds: ["bun src/scripts/audit_experience_oss_candidates.ts"]
 
   experience:cost-report:

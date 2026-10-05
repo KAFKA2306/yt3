@@ -15,6 +15,13 @@ const LicenseEvidenceSchema = z
 	})
 	.strict();
 
+const CommercialUseReviewSchema = z
+	.object({
+		status: z.enum(["PERMITTED", "RESTRICTED", "UNKNOWN", "NOT_USED"]),
+		evidence: LicenseEvidenceSchema.nullable(),
+	})
+	.strict();
+
 const BenchmarkEvidenceSchema = z
 	.object({
 		run_id: RunIdSchema,
@@ -54,6 +61,12 @@ export const ExperienceOssCandidateSchema = z
 		code_license_evidence: LicenseEvidenceSchema.nullable(),
 		model_weight_license_status: z.enum(["VERIFIED", "UNVERIFIED", "NOT_USED"]),
 		model_weight_license_evidence: LicenseEvidenceSchema.nullable(),
+		commercial_use: z
+			.object({
+				code: CommercialUseReviewSchema,
+				model_weights: CommercialUseReviewSchema,
+			})
+			.strict(),
 		state_reason: z.string().trim().min(1),
 		benchmark_evidence: BenchmarkEvidenceSchema.nullable(),
 	})
@@ -92,6 +105,67 @@ export const ExperienceOssCandidateSchema = z
 				message: "NOT_USED model weights cannot have license evidence",
 			});
 		}
+		for (const [scope, review] of Object.entries(candidate.commercial_use)) {
+			if (scope === "code" && review.status === "NOT_USED") {
+				context.addIssue({
+					code: "custom",
+					path: ["commercial_use", scope],
+					message: "code commercial-use status cannot be NOT_USED",
+				});
+			}
+			if (
+				(review.status === "PERMITTED" || review.status === "RESTRICTED") &&
+				review.evidence === null
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["commercial_use", scope],
+					message:
+						"commercial-use conclusions require versioned source evidence",
+				});
+			}
+			if (review.status === "NOT_USED" && review.evidence !== null) {
+				context.addIssue({
+					code: "custom",
+					path: ["commercial_use", scope],
+					message: "NOT_USED scope cannot include commercial-use evidence",
+				});
+			}
+		}
+		if (
+			(candidate.model_weight_license_status === "NOT_USED") !==
+			(candidate.commercial_use.model_weights.status === "NOT_USED")
+		) {
+			context.addIssue({
+				code: "custom",
+				path: ["commercial_use", "model_weights"],
+				message:
+					"commercial-use review must match whether model weights are used",
+			});
+		}
+		if (
+			candidate.commercial_use.code.status !== "UNKNOWN" &&
+			candidate.code_license_status !== "VERIFIED"
+		) {
+			context.addIssue({
+				code: "custom",
+				path: ["commercial_use", "code"],
+				message:
+					"commercial-use review requires verified code-license evidence",
+			});
+		}
+		if (
+			candidate.commercial_use.model_weights.status !== "UNKNOWN" &&
+			candidate.commercial_use.model_weights.status !== "NOT_USED" &&
+			candidate.model_weight_license_status !== "VERIFIED"
+		) {
+			context.addIssue({
+				code: "custom",
+				path: ["commercial_use", "model_weights"],
+				message:
+					"commercial-use review requires verified model-weight license evidence",
+			});
+		}
 		if (hasDecision && candidate.benchmark_evidence === null) {
 			context.addIssue({
 				code: "custom",
@@ -103,13 +177,15 @@ export const ExperienceOssCandidateSchema = z
 			candidate.adoption_decision?.startsWith("ADOPT_") &&
 			(candidate.code_license_status !== "VERIFIED" ||
 				(candidate.model_weight_license_status !== "VERIFIED" &&
-					candidate.model_weight_license_status !== "NOT_USED"))
+					candidate.model_weight_license_status !== "NOT_USED") ||
+				candidate.commercial_use.code.status !== "PERMITTED" ||
+				(candidate.commercial_use.model_weights.status !== "PERMITTED" &&
+					candidate.commercial_use.model_weights.status !== "NOT_USED"))
 		) {
 			context.addIssue({
 				code: "custom",
-				path: ["code_license_status"],
-				message:
-					"adoption requires verified code and model-weight license status",
+				path: ["commercial_use"],
+				message: "adoption requires confirmed commercial-use permissions",
 			});
 		}
 		if (
@@ -164,7 +240,7 @@ export const ExperienceOssCandidateSchema = z
 
 export const ExperienceOssCandidateRegistrySchema = z
 	.object({
-		schema_version: z.literal(1),
+		schema_version: z.literal(2),
 		channel: z.literal("byosan_money"),
 		selection_policy: z.literal("measured_evidence_only"),
 		candidates: z.array(ExperienceOssCandidateSchema).min(1),
@@ -392,9 +468,13 @@ export async function auditExperienceOssCandidateRegistry(
 			benchmark_priority: candidate.benchmark_priority,
 			evaluation_status: candidate.evaluation_status,
 			adoption_decision: candidate.adoption_decision,
+			commercial_use: {
+				code: candidate.commercial_use.code.status,
+				model_weights: candidate.commercial_use.model_weights.status,
+			},
 			benchmark_run_id: candidate.benchmark_evidence?.run_id ?? null,
 		})),
 		decision_boundary:
-			"PASS verifies registry rules and linked artifact integrity; it does not independently establish benchmark quality, reviewer identity, license terms, or production suitability.",
+			"PASS verifies registry rules and linked artifact integrity; commercial-use statuses are reviewed declarations, not independent legal advice or proof of production suitability.",
 	};
 }
