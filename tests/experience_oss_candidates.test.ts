@@ -29,6 +29,11 @@ describe("Experience OSS candidate registry", () => {
 		);
 
 		expect(result).toMatchObject({ status: "PASS", candidate_count: 8 });
+		expect(result.candidates[0]).toMatchObject({
+			candidate_id: "motion-canvas",
+			adoption_decision: null,
+			commercial_use: { code: "UNKNOWN", model_weights: "NOT_USED" },
+		});
 		expect(
 			registry.candidates
 				.filter(
@@ -47,7 +52,7 @@ describe("Experience OSS candidate registry", () => {
 
 	test("requires linked benchmark artifacts and reviewed licenses before adoption", () => {
 		const result = ExperienceOssCandidateRegistrySchema.safeParse({
-			schema_version: 1,
+			schema_version: 2,
 			channel: "byosan_money",
 			selection_policy: "measured_evidence_only",
 			candidates: [
@@ -65,6 +70,16 @@ describe("Experience OSS candidate registry", () => {
 					},
 					model_weight_license_status: "NOT_USED",
 					model_weight_license_evidence: null,
+					commercial_use: {
+						code: {
+							status: "PERMITTED",
+							evidence: {
+								version: "3.17.2",
+								source_url: "https://example.test/LICENSE",
+							},
+						},
+						model_weights: { status: "NOT_USED", evidence: null },
+					},
 					state_reason: "benchmark evidence is required",
 					benchmark_evidence: null,
 				},
@@ -72,6 +87,55 @@ describe("Experience OSS candidate registry", () => {
 		});
 
 		expect(result.success).toBe(false);
+	});
+
+	test("blocks adoption when commercial-use permissions are unknown", () => {
+		const result = ExperienceOssCandidateRegistrySchema.safeParse({
+			schema_version: 2,
+			channel: "byosan_money",
+			selection_policy: "measured_evidence_only",
+			candidates: [
+				{
+					candidate_id: "motion-canvas",
+					display_name: "Motion Canvas",
+					quality_target: "deterministic scene motion",
+					benchmark_priority: "CORE",
+					evaluation_status: "BENCHMARKED",
+					adoption_decision: "ADOPT_CORE",
+					code_license_status: "VERIFIED",
+					code_license_evidence: {
+						version: "3.17.2",
+						source_url: "https://example.test/LICENSE",
+					},
+					model_weight_license_status: "NOT_USED",
+					model_weight_license_evidence: null,
+					commercial_use: {
+						code: { status: "UNKNOWN", evidence: null },
+						model_weights: { status: "NOT_USED", evidence: null },
+					},
+					state_reason: "commercial-use terms are unresolved",
+					benchmark_evidence: {
+						run_id: "test-run-001",
+						manifest_path:
+							"artifacts/benchmarks/experience-os/test-run-001/manifest.json",
+						summary_path:
+							"artifacts/benchmarks/experience-os/test-run-001/summary.json",
+						review_report_path:
+							"artifacts/benchmarks/experience-os/test-run-001/review.json",
+						manifest_sha256: "a".repeat(64),
+						summary_sha256: "b".repeat(64),
+						review_report_sha256: "c".repeat(64),
+					},
+				},
+			],
+		});
+
+		if (result.success) {
+			throw new Error("unknown commercial-use terms must block adoption");
+		}
+		expect(result.error.issues.map((issue) => issue.message)).toContain(
+			"adoption requires confirmed commercial-use permissions",
+		);
 	});
 
 	test("verifies run identity, canonical artifact scope, and content hashes", async () => {
@@ -169,6 +233,16 @@ describe("Experience OSS candidate registry", () => {
 				},
 				model_weight_license_status: "NOT_USED",
 				model_weight_license_evidence: null,
+				commercial_use: {
+					code: {
+						status: "PERMITTED",
+						evidence: {
+							version: "3.17.2",
+							source_url: "https://example.test/LICENSE",
+						},
+					},
+					model_weights: { status: "NOT_USED", evidence: null },
+				},
 				state_reason: "measured benchmark and human review passed",
 				benchmark_evidence: {
 					run_id: runId,
@@ -185,7 +259,7 @@ describe("Experience OSS candidate registry", () => {
 				},
 			};
 			const registry = {
-				schema_version: 1,
+				schema_version: 2,
 				channel: "byosan_money",
 				selection_policy: "measured_evidence_only",
 				candidates: [candidate],

@@ -1,5 +1,5 @@
 {
-	"schema_version": 1,
+	"schema_version": 2,
 	"channel": "byosan_money",
 	"selection_policy": "measured_evidence_only",
 	"candidates": [
@@ -17,7 +17,11 @@
 			},
 			"model_weight_license_status": "NOT_USED",
 			"model_weight_license_evidence": null,
-			"state_reason": "The pinned benchmark record verifies the project license; no final adoption decision is made until benchmark evidence is reviewed.",
+			"commercial_use": {
+				"code": { "status": "UNKNOWN", "evidence": null },
+				"model_weights": { "status": "NOT_USED", "evidence": null }
+			},
+			"state_reason": "The project license is recorded, but commercial-use terms have not been separately reviewed; no adoption decision is made.",
 			"benchmark_evidence": null
 		},
 		{
@@ -31,7 +35,11 @@
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
 			"model_weight_license_evidence": null,
-			"state_reason": "First-priority benchmark candidate; code and model-weight rights have not been verified.",
+			"commercial_use": {
+				"code": { "status": "UNKNOWN", "evidence": null },
+				"model_weights": { "status": "UNKNOWN", "evidence": null }
+			},
+			"state_reason": "First-priority benchmark candidate; code, model-weight, and commercial-use rights have not been verified.",
 			"benchmark_evidence": null
 		},
 		{
@@ -45,7 +53,11 @@
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
 			"model_weight_license_evidence": null,
-			"state_reason": "First-priority benchmark candidate; code and model-weight rights have not been verified.",
+			"commercial_use": {
+				"code": { "status": "UNKNOWN", "evidence": null },
+				"model_weights": { "status": "UNKNOWN", "evidence": null }
+			},
+			"state_reason": "First-priority benchmark candidate; code, model-weight, and commercial-use rights have not been verified.",
 			"benchmark_evidence": null
 		},
 		{
@@ -59,7 +71,11 @@
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
 			"model_weight_license_evidence": null,
-			"state_reason": "Benchmark scope is planned; code, model, and dependency license evidence is not yet reviewed.",
+			"commercial_use": {
+				"code": { "status": "UNKNOWN", "evidence": null },
+				"model_weights": { "status": "UNKNOWN", "evidence": null }
+			},
+			"state_reason": "Benchmark scope is planned; code, model, dependency, and commercial-use license evidence is not yet reviewed.",
 			"benchmark_evidence": null
 		},
 		{
@@ -73,7 +89,11 @@
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
 			"model_weight_license_evidence": null,
-			"state_reason": "Adopt only after a positive measured quality delta and code and model-weight license review.",
+			"commercial_use": {
+				"code": { "status": "UNKNOWN", "evidence": null },
+				"model_weights": { "status": "UNKNOWN", "evidence": null }
+			},
+			"state_reason": "Adopt only after a positive measured quality delta and code, model-weight, and commercial-use license review.",
 			"benchmark_evidence": null
 		},
 		{
@@ -87,7 +107,11 @@
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
 			"model_weight_license_evidence": null,
-			"state_reason": "Adopt only after a positive measured quality delta and code and model-weight license review.",
+			"commercial_use": {
+				"code": { "status": "UNKNOWN", "evidence": null },
+				"model_weights": { "status": "UNKNOWN", "evidence": null }
+			},
+			"state_reason": "Adopt only after a positive measured quality delta and code, model-weight, and commercial-use license review.",
 			"benchmark_evidence": null
 		},
 		{
@@ -101,7 +125,11 @@
 			"code_license_evidence": null,
 			"model_weight_license_status": "UNVERIFIED",
 			"model_weight_license_evidence": null,
-			"state_reason": "Hero-shot-only sidecar candidate; code and model-weight rights have not been verified.",
+			"commercial_use": {
+				"code": { "status": "UNKNOWN", "evidence": null },
+				"model_weights": { "status": "UNKNOWN", "evidence": null }
+			},
+			"state_reason": "Hero-shot-only sidecar candidate; code, model-weight, and commercial-use rights have not been verified.",
 			"benchmark_evidence": null
 		},
 		{
@@ -115,7 +143,11 @@
 			"code_license_evidence": null,
 			"model_weight_license_status": "NOT_USED",
 			"model_weight_license_evidence": null,
-			"state_reason": "Optional physical-rendering benchmark only; license evidence and quality/effort comparison are not recorded.",
+			"commercial_use": {
+				"code": { "status": "UNKNOWN", "evidence": null },
+				"model_weights": { "status": "NOT_USED", "evidence": null }
+			},
+			"state_reason": "Optional physical-rendering benchmark only; license and commercial-use evidence plus quality/effort comparison are not recorded.",
 			"benchmark_evidence": null
 		}
 	]
