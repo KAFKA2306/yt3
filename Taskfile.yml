@@ -184,6 +184,10 @@ tasks:
     cmds:
       - bun src/scripts/benchmark_experience.ts --out "{{default "artifacts/benchmarks/experience-os" .OUT}}" {{.CLI_ARGS}}
 
+  experience:oss:audit:
+    desc: "Audit OSS evaluation states and evidence required for final adoption decisions"
+    cmds: ["bun src/scripts/audit_experience_oss_candidates.ts"]
+
   experience:cost-report:
     desc: "Aggregate validated renderer and TTS generation wall-time by Experience lane (ROOT=... OUT=...)"
     cmds:
