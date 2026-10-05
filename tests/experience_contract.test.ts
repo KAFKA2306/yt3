@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import {
+	chmod,
+	mkdir,
+	mkdtemp,
+	readFile,
+	rm,
+	writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import yaml from "js-yaml";
@@ -18,6 +25,7 @@ import { EpisodeSchema } from "../src/domain/episode/schema.js";
 import {
 	ExperienceRendererMetricsSchema,
 	auditExperienceEpisode,
+	auditExperienceViewerQuestionTiming,
 	buildExperienceBenchmarkSummary,
 	buildExperienceLaneCostSummary,
 	buildRendererMetrics,
@@ -32,6 +40,7 @@ import {
 	ExperienceWorldSchema,
 	parseExperienceBenchmark,
 } from "../src/domain/experience/schema.js";
+import { auditExperienceContract } from "../src/scripts/audit_experience_contract.js";
 import { compileEpisode } from "../src/scripts/compile_episode.js";
 import { installBunWorkspace } from "../src/scripts/experience_workspace.js";
 
@@ -218,6 +227,217 @@ describe("Experience Contract and OSS benchmark", () => {
 		expect(
 			auditExperienceEpisode(episode, profile).map((issue) => issue.code),
 		).not.toContain("action_unknown");
+	});
+
+	test("measures the complete viewer-question line at the 12-second boundary", () => {
+		const episode = validEpisode({
+			sections: [
+				{
+					id: "main",
+					title: "Hook",
+					dialogue: [
+						{
+							id: "setup",
+							speaker: "Host",
+							text: "分配金が多いETFなら有利？",
+							audio: { path: "setup.wav" },
+						},
+						{
+							id: "question",
+							speaker: "Host",
+							text: contract.viewer_question,
+							audio: { path: "question.wav" },
+						},
+					],
+				},
+			],
+		});
+		const result = auditExperienceViewerQuestionTiming(episode, [
+			{
+				sectionId: "main",
+				dialogueId: "setup",
+				startMs: 0,
+				endMs: 4_000,
+				startFrame: 0,
+				endFrame: 120,
+			},
+			{
+				sectionId: "main",
+				dialogueId: "question",
+				startMs: 4_000,
+				endMs: 12_000,
+				startFrame: 120,
+				endFrame: 360,
+			},
+		]);
+
+		expect(result.issues).toEqual([]);
+		expect(result.evidence).toEqual({
+			viewer_question: contract.viewer_question,
+			dialogue_id: "question",
+			question_end_ms: 12_000,
+			deadline_ms: 12_000,
+			measurement_basis: "cumulative_measured_dialogue_audio_duration",
+		});
+	});
+
+	test("rejects a viewer-question line that ends after 12 seconds", () => {
+		const episode = validEpisode({
+			sections: [
+				{
+					id: "main",
+					title: "Hook",
+					dialogue: [
+						{
+							id: "question",
+							speaker: "Host",
+							text: contract.viewer_question,
+							audio: { path: "question.wav" },
+						},
+					],
+				},
+			],
+		});
+		const result = auditExperienceViewerQuestionTiming(episode, [
+			{
+				sectionId: "main",
+				dialogueId: "question",
+				startMs: 0,
+				endMs: 12_001,
+				startFrame: 0,
+				endFrame: 360,
+			},
+		]);
+
+		expect(result.evidence).toBeNull();
+		expect(result.issues.map((issue) => issue.code)).toEqual([
+			"viewer_question_too_late",
+		]);
+	});
+
+	test("rejects a contract question that is not present in the spoken script", () => {
+		const result = auditExperienceViewerQuestionTiming(validEpisode(), [
+			{
+				sectionId: "main",
+				dialogueId: "line-1",
+				startMs: 0,
+				endMs: 1_000,
+				startFrame: 0,
+				endFrame: 30,
+			},
+		]);
+
+		expect(result.evidence).toBeNull();
+		expect(result.issues.map((issue) => issue.code)).toEqual([
+			"viewer_question_not_in_script",
+		]);
+	});
+
+	test("compile fails when measured speech places the full question after 12 seconds", async () => {
+		const directory = await mkdtemp(
+			path.join(tmpdir(), "yt3-experience-question-timing-"),
+		);
+		try {
+			const ffprobe = path.join(directory, "fake-ffprobe");
+			await writeFile(
+				ffprobe,
+				[
+					"#!/bin/sh",
+					"for last_arg do :; done",
+					'case "$last_arg" in',
+					"  *setup.wav) printf '3.000\\n' ;;",
+					"  *question.wav) printf '9.001\\n' ;;",
+					"  *) exit 2 ;;",
+					"esac",
+				].join("\n"),
+				"utf8",
+			);
+			await chmod(ffprobe, 0o755);
+			const episodePath = path.join(directory, "episode.json");
+			await writeFile(
+				episodePath,
+				JSON.stringify(
+					validEpisode({
+						sections: [
+							{
+								id: "main",
+								title: "Hook",
+								dialogue: [
+									{
+										id: "setup",
+										speaker: "Host",
+										text: "分配金が多いETFなら有利？",
+										audio: { path: "setup.wav" },
+									},
+									{
+										id: "question",
+										speaker: "Host",
+										text: contract.viewer_question,
+										audio: { path: "question.wav" },
+									},
+								],
+							},
+						],
+					}),
+				),
+				"utf8",
+			);
+
+			await expect(
+				compileEpisode({
+					episode: episodePath,
+					out: path.join(directory, "compiled"),
+					ffprobe,
+				}),
+			).rejects.toThrow(/viewer_question_too_late/);
+			const capturedAuditOutput: string[] = [];
+			const originalConsoleLog = console.log;
+			try {
+				console.log = (...values: unknown[]) => {
+					capturedAuditOutput.push(values.map(String).join(" "));
+				};
+				await expect(
+					auditExperienceContract(episodePath, root, undefined, ffprobe),
+				).resolves.toBe(1);
+			} finally {
+				console.log = originalConsoleLog;
+			}
+			expect(capturedAuditOutput.join("\n")).toContain(
+				"viewer_question_too_late",
+			);
+			await writeFile(
+				ffprobe,
+				[
+					"#!/bin/sh",
+					"for last_arg do :; done",
+					'case "$last_arg" in',
+					"  *setup.wav) printf '3.000\\n' ;;",
+					"  *question.wav) printf '9.000\\n' ;;",
+					"  *) exit 2 ;;",
+					"esac",
+				].join("\n"),
+				"utf8",
+			);
+			const compiledOutput = path.join(directory, "compiled-at-deadline");
+			await compileEpisode({
+				episode: episodePath,
+				out: compiledOutput,
+				ffprobe,
+			});
+			const manifest = JSON.parse(
+				await readFile(
+					path.join(compiledOutput, "episode.manifest.json"),
+					"utf8",
+				),
+			);
+			expect(manifest.experience_question_timing).toMatchObject({
+				dialogue_id: "question",
+				question_end_ms: 12_000,
+				deadline_ms: 12_000,
+			});
+		} finally {
+			await rm(directory, { recursive: true, force: true });
+		}
 	});
 
 	test("rejects an episode whose lane differs from a routed task lane", () => {

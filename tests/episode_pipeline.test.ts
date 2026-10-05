@@ -136,6 +136,24 @@ describe("episode canonical pipeline", () => {
 		expect(first).toEqual(second);
 	});
 
+	test("records measured viewer-question timing in the episode manifest", () => {
+		const timingEvidence = {
+			viewer_question: "What changed?",
+			dialogue_id: "d1",
+			question_end_ms: 1_000,
+			deadline_ms: 12_000,
+			measurement_basis: "cumulative_measured_dialogue_audio_duration" as const,
+		};
+		const manifest = buildEpisodeManifest(
+			episode,
+			timeline,
+			null,
+			timingEvidence,
+		);
+
+		expect(manifest.experience_question_timing).toEqual(timingEvidence);
+	});
+
 	test("keeps a short at or below its configured duration when the first dialogue fits", () => {
 		const limitedEpisode = {
 			...episode,

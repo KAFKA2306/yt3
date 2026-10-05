@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { EpisodeTimelineItem } from "../episode/compiler.js";
 import type { Episode } from "../episode/schema.js";
 import { ExperienceLaneSchema } from "./schema.js";
 import type { ExperienceProfile } from "./schema.js";
@@ -7,6 +8,91 @@ export interface ExperienceAuditIssue {
 	code: string;
 	path: string;
 	message: string;
+}
+
+export const EXPERIENCE_VIEWER_QUESTION_DEADLINE_MS = 12_000;
+
+export interface ExperienceViewerQuestionTimingEvidence {
+	viewer_question: string;
+	dialogue_id: string;
+	question_end_ms: number;
+	deadline_ms: number;
+	measurement_basis: "cumulative_measured_dialogue_audio_duration";
+}
+
+export interface ExperienceViewerQuestionTimingAudit {
+	evidence: ExperienceViewerQuestionTimingEvidence | null;
+	issues: ExperienceAuditIssue[];
+}
+
+/**
+ * Measures the end of the complete spoken line containing the exact contract
+ * question. This conservative boundary uses measured dialogue audio durations,
+ * not character-count or estimated speech-rate heuristics.
+ */
+export function auditExperienceViewerQuestionTiming(
+	episode: Episode,
+	timeline: readonly EpisodeTimelineItem[],
+): ExperienceViewerQuestionTimingAudit {
+	const experience = episode.experience;
+	if (!experience) return { evidence: null, issues: [] };
+
+	const questionDialogue = episode.sections
+		.flatMap((section) => section.dialogue)
+		.find((dialogue) => dialogue.text.includes(experience.viewer_question));
+	if (!questionDialogue) {
+		return {
+			evidence: null,
+			issues: [
+				{
+					code: "viewer_question_not_in_script",
+					path: "experience.viewer_question",
+					message: "the exact contract question must appear in spoken dialogue",
+				},
+			],
+		};
+	}
+
+	const timing = timeline.find(
+		(item) => item.dialogueId === questionDialogue.id,
+	);
+	if (!timing || !Number.isFinite(timing.endMs) || timing.endMs < 0) {
+		return {
+			evidence: null,
+			issues: [
+				{
+					code: "viewer_question_timing_missing",
+					path: `sections.${questionDialogue.id}.audio`,
+					message:
+						"measured audio timing is required for the viewer-question dialogue",
+				},
+			],
+		};
+	}
+
+	if (timing.endMs > EXPERIENCE_VIEWER_QUESTION_DEADLINE_MS) {
+		return {
+			evidence: null,
+			issues: [
+				{
+					code: "viewer_question_too_late",
+					path: `sections.${questionDialogue.id}.audio`,
+					message: `the complete viewer-question line ends at ${timing.endMs}ms, after the ${EXPERIENCE_VIEWER_QUESTION_DEADLINE_MS}ms deadline`,
+				},
+			],
+		};
+	}
+
+	return {
+		evidence: {
+			viewer_question: experience.viewer_question,
+			dialogue_id: questionDialogue.id,
+			question_end_ms: timing.endMs,
+			deadline_ms: EXPERIENCE_VIEWER_QUESTION_DEADLINE_MS,
+			measurement_basis: "cumulative_measured_dialogue_audio_duration",
+		},
+		issues: [],
+	};
 }
 
 const MetricValueSchema = z.number().finite().nonnegative().nullable();
