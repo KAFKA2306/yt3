@@ -210,7 +210,11 @@ const BenchmarkManifestSchema = z
 		status: z.literal("COMPLETE"),
 		decision: z.literal("BENCHMARK_ONLY"),
 		run_id: RunIdSchema,
-		candidate: z.object({ id: CandidateIdSchema }).passthrough(),
+		engines: z
+			.object({
+				candidate: z.object({ id: CandidateIdSchema }).passthrough(),
+			})
+			.passthrough(),
 	})
 	.passthrough();
 
@@ -322,7 +326,7 @@ async function auditCandidateEvidence(
 			"benchmark manifest run id does not match registry evidence",
 		);
 	}
-	if (manifest.candidate.id !== candidate.candidate_id) {
+	if (manifest.engines.candidate.id !== candidate.candidate_id) {
 		throw new Error(
 			"benchmark manifest candidate does not match registry candidate",
 		);

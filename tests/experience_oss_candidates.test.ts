@@ -125,7 +125,10 @@ describe("Experience OSS candidate registry", () => {
 					status: "COMPLETE",
 					decision: "BENCHMARK_ONLY",
 					run_id: runId,
-					candidate: { id: "motion-canvas" },
+					engines: {
+						baseline: { id: "remotion-existing" },
+						candidate: { id: "motion-canvas" },
+					},
 				}),
 			);
 			await writeFile(
@@ -209,7 +212,7 @@ describe("Experience OSS candidate registry", () => {
 			esrganCandidate.state_reason = "negative quality control fixture";
 			const manifestPath = path.join(runDirectory, "manifest.json");
 			const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-			manifest.candidate.id = "real-esrgan";
+			manifest.engines.candidate.id = "real-esrgan";
 			await writeFile(manifestPath, JSON.stringify(manifest));
 			const reviewPath = path.join(runDirectory, "review.json");
 			const review = JSON.parse(await readFile(reviewPath, "utf8"));
