@@ -1,8 +1,12 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { auditEpisode } from "../domain/episode/compiler.js";
+import { measureEpisodeAudio } from "../domain/episode/audio.js";
+import { auditEpisode, buildTimeline } from "../domain/episode/compiler.js";
 import { EpisodeSchema } from "../domain/episode/schema.js";
-import { auditExperienceEpisode } from "../domain/experience/audit.js";
+import {
+	auditExperienceEpisode,
+	auditExperienceViewerQuestionTiming,
+} from "../domain/experience/audit.js";
 import { loadByosanExperienceConfig } from "../domain/experience/config.js";
 import { ExperienceLaneSchema } from "../domain/experience/schema.js";
 
@@ -27,10 +31,18 @@ function requestedLane(argv: string[]): ExperienceLane | undefined {
 	return undefined;
 }
 
+function ffprobeCommand(argv: string[]): string {
+	for (let index = 0; index < argv.length; index++) {
+		if (argv[index] === "--ffprobe") return argv[index + 1] ?? "";
+	}
+	return "ffprobe";
+}
+
 export async function auditExperienceContract(
 	episodePath: string,
 	root = process.cwd(),
 	requiredLane?: ExperienceLane,
+	ffprobe = "ffprobe",
 ): Promise<number> {
 	const absoluteEpisodePath = path.resolve(episodePath);
 	const parsed = EpisodeSchema.safeParse(
@@ -59,6 +71,29 @@ export async function auditExperienceContract(
 		...auditEpisode(parsed.data),
 		...auditExperienceEpisode(parsed.data, profile, { requiredLane }),
 	];
+	let questionTimingEvidence = null;
+	if (parsed.data.experience && issues.length === 0) {
+		try {
+			const durations = measureEpisodeAudio(
+				parsed.data,
+				(audioPath) =>
+					path.resolve(path.dirname(absoluteEpisodePath), audioPath),
+				ffprobe,
+			);
+			const timingAudit = auditExperienceViewerQuestionTiming(
+				parsed.data,
+				buildTimeline(parsed.data, durations),
+			);
+			issues.push(...timingAudit.issues);
+			questionTimingEvidence = timingAudit.evidence;
+		} catch (error) {
+			issues.push({
+				code: "viewer_question_audio_unmeasured",
+				path: "sections.dialogue.audio",
+				message: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
 	console.log(
 		JSON.stringify(
 			{
@@ -66,6 +101,7 @@ export async function auditExperienceContract(
 				profile: profile.channel,
 				episode: absoluteEpisodePath,
 				required_lane: requiredLane ?? null,
+				experience_question_timing: questionTimingEvidence,
 				issue_count: issues.length,
 				issues,
 			},
@@ -82,6 +118,7 @@ if (import.meta.main) {
 			episodeArg(process.argv.slice(2)),
 			process.cwd(),
 			requestedLane(process.argv.slice(2)),
+			ffprobeCommand(process.argv.slice(2)),
 		);
 	} catch (error) {
 		console.error(error instanceof Error ? error.message : String(error));

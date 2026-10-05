@@ -25,7 +25,10 @@ import {
 	parseEpisode,
 	parseLocalePatch,
 } from "../domain/episode/schema.js";
-import { auditExperienceEpisode } from "../domain/experience/audit.js";
+import {
+	auditExperienceEpisode,
+	auditExperienceViewerQuestionTiming,
+} from "../domain/experience/audit.js";
 import { loadByosanExperienceConfig } from "../domain/experience/config.js";
 
 export interface CompileEpisodeArgs {
@@ -102,10 +105,20 @@ export async function compileEpisode(args: CompileEpisodeArgs): Promise<void> {
 		args.ffprobe,
 	);
 	const timeline = buildTimeline(episode, durations);
+	const questionTiming = experienceConfig
+		? auditExperienceViewerQuestionTiming(episode, timeline)
+		: null;
+	if (questionTiming && questionTiming.issues.length > 0)
+		throw new Error(JSON.stringify(questionTiming.issues, null, 2));
 	const shortPlan = episode.shorts.enabled
 		? buildShortPlan(episode, timeline)
 		: null;
-	const manifest = buildEpisodeManifest(episode, timeline, shortPlan);
+	const manifest = buildEpisodeManifest(
+		episode,
+		timeline,
+		shortPlan,
+		questionTiming?.evidence ?? undefined,
+	);
 	const remotionDir = path.join(outDir, "remotion");
 	await mkdir(remotionDir, { recursive: true });
 

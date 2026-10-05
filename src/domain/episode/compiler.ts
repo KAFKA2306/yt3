@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { ExperienceViewerQuestionTimingEvidence } from "../experience/audit.js";
 import type { Episode, LocalePatch } from "./schema.js";
 
 export interface EpisodeTimelineItem {
@@ -458,6 +459,7 @@ export function buildEpisodeManifest(
 	episode: Episode,
 	timeline: EpisodeTimelineItem[],
 	shortPlan: EpisodeShortPlan | null,
+	experienceQuestionTiming?: ExperienceViewerQuestionTimingEvidence,
 ): Record<string, unknown> {
 	const episodeSha256 = createHash("sha256")
 		.update(stableStringify(episode))
@@ -474,5 +476,8 @@ export function buildEpisodeManifest(
 		dialogue_count: timeline.length,
 		duration_ms: timeline.at(-1)?.endMs ?? 0,
 		short: shortPlan,
+		...(experienceQuestionTiming
+			? { experience_question_timing: experienceQuestionTiming }
+			: {}),
 	};
 }
