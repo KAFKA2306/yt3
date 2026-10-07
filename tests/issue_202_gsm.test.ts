@@ -44,6 +44,9 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		expect(snapshot.results.ci_first_attempt_pass_rate_percent.value).toBe(
 			plan.metrics[1].value,
 		);
+		expect(plan.metrics[1].limitations).toContain(
+			"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
+		);
 		expect(plan.anti_patterns).toContain(
 			"Do not treat lines of code or commit counts as productivity outcomes.",
 		);

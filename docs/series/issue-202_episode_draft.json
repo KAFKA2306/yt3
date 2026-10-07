@@ -53,7 +53,7 @@
 		},
 		{
 			"id": "claim-ci-observation",
-			"text": "2026-09-07T09:57:03Zから2026-10-07T09:57:03Zまでに観測した、完了済み初回pull_request CIワークフロー88件のうち63件が成功し、p95所要時間は159秒だった。",
+			"text": "2026-09-07T09:57:03Zから2026-10-07T09:57:03Zまでに観測した、run_attempt=1の完了済みpull_request CI workflow runは88件で、63件が成功し、p95所要時間は159秒だった。これはPRの件数ではなく、同じPRから複数runが含まれうる。",
 			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
@@ -93,7 +93,8 @@
 			"props": {
 				"p95_seconds": 159,
 				"median_seconds": 124,
-				"first_attempt_success": "63/88 (71.6%)"
+				"run_attempt_1_success": "63/88 workflow runs (71.6%)",
+				"unit_of_analysis": "workflow_run; multiple runs from one PR may be counted"
 			}
 		},
 		{
@@ -167,7 +168,7 @@
 				{
 					"id": "metrics-outcome",
 					"speaker": "Narrator (voice pending)",
-					"text": "初回成功率は63割る88で71.6%。これはGitHub ActionsのCIワークフローを測った値です。",
+					"text": "run_attempt=1は88件、63件成功で71.6%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。",
 					"visual_ref": "metric-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/metrics-outcome.wav"

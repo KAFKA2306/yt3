@@ -46,6 +46,7 @@
 	"limitations": [
 		"Workflow elapsed time is a proxy, not developer waiting time or engineering productivity.",
 		"Failed workflow runs are included in elapsed-time statistics; workflow failure can reflect code, tests, or infrastructure.",
+		"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
 		"The observed CI workflow is not a configured branch-protection required status check on main.",
 		"The pass rate is descriptive and does not establish that a specific change caused CI outcomes.",
 		"This is a single 30-day repository snapshot; compare future windows with identical filters and inspect sample composition before acting."

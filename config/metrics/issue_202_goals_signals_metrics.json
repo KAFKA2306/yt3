@@ -68,12 +68,12 @@
 		{
 			"id": "ci-first-attempt-pass-rate",
 			"signal_ids": ["actionable-check-feedback", "ci-outcome"],
-			"name": "CI workflow first-attempt pass rate",
-			"definition": "The proportion of completed first-attempt pull-request CI runs whose conclusion is success.",
+			"name": "CI workflow-run success rate (run_attempt = 1)",
+			"definition": "The proportion of completed pull-request CI workflow runs whose GitHub Actions run_attempt is 1 and whose conclusion is success. This counts workflow runs, not distinct pull requests; one pull request can contribute multiple runs.",
 			"unit": "percent",
 			"data_source_ids": ["github-actions-run-api"],
 			"formula": "100 * successful completed first-attempt pull_request CI workflow runs / all completed first-attempt pull_request CI workflow runs",
-			"aggregation": "63 successful / 88 completed first attempts = 71.6%; report numerator and denominator",
+			"aggregation": "63 successful / 88 completed workflow runs with run_attempt=1 = 71.6%; multiple runs from one pull request can be counted; report numerator and denominator",
 			"observation_window": "2026-09-07T09:57:03Z to 2026-10-07T09:57:03Z (UTC)",
 			"status": "MEASURED",
 			"value": 71.6,
@@ -82,6 +82,7 @@
 			],
 			"limitations": [
 				"A green CI run is not proof that a change is defect-free.",
+				"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
 				"This CI workflow is not configured as a required branch-protection status check in the observed repository state.",
 				"Cancelled, skipped, and infrastructure-failure conclusions must be reported separately rather than silently counted as success or failure.",
 				"A pass-rate change is descriptive and does not establish that a particular process change caused it."

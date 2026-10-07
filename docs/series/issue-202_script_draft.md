@@ -7,6 +7,7 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 - Research/evidence: saved in `config/evidence/issue_202_goals_signals_metrics_20261007.json`; the dated CI observation and metric plan are in `config/metrics/`.
 - Episode: `issue-202_episode_draft.json` is intended for schema and content-reference audit only. Its audio paths are placeholders; compile/render is deferred until the destination channel and voice are selected and rights are reviewed.
 - Script: this file contains the narration and proposed visual beats. The 25 failures are not classified; the displayed categories are hypotheses, not measured counts.
+- Metric interpretation: the denominator is 88 workflow runs with `run_attempt=1`, not 88 distinct pull requests; one PR can contribute multiple runs. The metric plan, evidence note, and narration now state this boundary.
 - Verification: the episode schema/content audit and `task productivity:gsm:audit` passed. `task check:merge` passed (including lint, typecheck, repository/product audits, and 264 tests). Its first run caught JSON formatting only; the formatter was applied and the full check rerun successfully. Canonical compile/render were deliberately not attempted because the audio paths are placeholders.
 - Release: not authorized from this two-hour improvement loop. Daily publication remains a separate automation and must still pass its configured channel, rights, and QA gates.
 - Resume point: confirm the intended channel/profile and rights-cleared source or permission. Then refresh the dated repository observations, finalize the episode, create approved narration/audio, compile/render, run QA/release gates, and leave publication to the dedicated daily flow.
@@ -23,11 +24,11 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 
 ### 0:00–0:12 — Hook
 
-**Visual:** Large `88` counter; split into `63 success` and `25 failure`.
+**Visual:** Large `88 workflow runs (run_attempt=1)` counter; split into `63 success` and `25 failure`.
 
 **Narration:**
 
-「このリポジトリのCI、30日で88回。初回成功は63回、失敗は25回。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。」
+「このリポジトリのCI、30日で1回目のworkflow runが88件。63件が成功、25件が失敗。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。」
 
 ### 0:12–0:29 — Goal
 
@@ -47,11 +48,11 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 
 ### 0:45–1:03 — Metrics
 
-**Visual:** `p95 159秒`, `中央値 124秒`, `初回成功率 71.6% (63/88)`; label the 30-day UTC window.
+**Visual:** `p95 159秒`, `中央値 124秒`, `63/88 workflow runs (71.6%)`; label `run_attempt=1`, the 30-day UTC window, and that runs—not PRs—are counted.
 
 **Narration:**
 
-「この30日では、CIの作成から完了までのp95が159秒、中央値は124秒。初回成功率は63割る88で71.6%。これはGitHub ActionsのCIワークフローを測った値です。」
+「この30日では、CIの作成から完了までのp95が159秒、中央値は124秒。run_attempt=1は88件、63件成功で71.6%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。」
 
 ### 1:03–1:18 — Boundary
 
@@ -72,6 +73,7 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 ## Production notes
 
 - Keep every displayed metric labeled with the exact 30-day UTC observation window and sample size.
+- The 88 denominator is GitHub Actions workflow runs with `run_attempt=1`, not 88 distinct pull requests; one PR can have multiple runs.
 - Do not describe the CI workflow as a required check, merge gate, or direct productivity measure.
 - The 25 failures have not yet been classified; the three buckets are proposed follow-up work, not observed counts.
 - Refresh GitHub Actions data before rendering; do not reuse this snapshot as current data.
