@@ -157,6 +157,11 @@ tasks:
         fi
         bun src/scripts/audit_experience_contract.ts --episode "{{.EPISODE}}" {{if .LANE}}--lane "{{.LANE}}" {{end}}{{.CLI_ARGS}}
 
+  productivity:gsm:audit:
+    desc: "Audit Goals → Signals → Metrics traceability (INPUT=...; defaults to the Issue #202 repo example)"
+    cmds:
+      - bun src/scripts/audit_goals_signals_metrics.ts --input "{{default "config/metrics/issue_202_goals_signals_metrics.json" .INPUT}}" {{.CLI_ARGS}}
+
   experience:baseline:
     desc: "Compile and render an audited episode through the existing Remotion baseline (EPISODE=... OUT=...)"
     cmds:
