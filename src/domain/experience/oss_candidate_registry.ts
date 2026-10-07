@@ -56,7 +56,7 @@ export const ExperienceOssCandidateSchema = z
 			"AWAITING_BENCHMARK",
 			"BENCHMARKED",
 		]),
-		adoption_decision: AdoptionStatusSchema.nullable(),
+		adoption_decision: AdoptionStatusSchema,
 		code_license_status: z.enum(["VERIFIED", "UNVERIFIED"]),
 		code_license_evidence: LicenseEvidenceSchema.nullable(),
 		model_weight_license_status: z.enum(["VERIFIED", "UNVERIFIED", "NOT_USED"]),
@@ -72,7 +72,13 @@ export const ExperienceOssCandidateSchema = z
 	})
 	.strict()
 	.superRefine((candidate, context) => {
-		const hasDecision = candidate.adoption_decision !== null;
+		const unresolvedLicenseTerms =
+			candidate.code_license_status !== "VERIFIED" ||
+			(candidate.model_weight_license_status !== "VERIFIED" &&
+				candidate.model_weight_license_status !== "NOT_USED") ||
+			candidate.commercial_use.code.status !== "PERMITTED" ||
+			(candidate.commercial_use.model_weights.status !== "PERMITTED" &&
+				candidate.commercial_use.model_weights.status !== "NOT_USED");
 		if (
 			(candidate.code_license_status === "VERIFIED") !==
 			(candidate.code_license_evidence !== null)
@@ -166,7 +172,21 @@ export const ExperienceOssCandidateSchema = z
 					"commercial-use review requires verified model-weight license evidence",
 			});
 		}
-		if (hasDecision && candidate.benchmark_evidence === null) {
+		if (
+			candidate.adoption_decision === "BLOCKED_LICENSE" &&
+			!unresolvedLicenseTerms
+		) {
+			context.addIssue({
+				code: "custom",
+				path: ["adoption_decision"],
+				message:
+					"BLOCKED_LICENSE requires unresolved or restricted license terms",
+			});
+		}
+		if (
+			candidate.adoption_decision !== "BLOCKED_LICENSE" &&
+			candidate.benchmark_evidence === null
+		) {
 			context.addIssue({
 				code: "custom",
 				path: ["benchmark_evidence"],
@@ -174,7 +194,7 @@ export const ExperienceOssCandidateSchema = z
 			});
 		}
 		if (
-			candidate.adoption_decision?.startsWith("ADOPT_") &&
+			candidate.adoption_decision.startsWith("ADOPT_") &&
 			(candidate.code_license_status !== "VERIFIED" ||
 				(candidate.model_weight_license_status !== "VERIFIED" &&
 					candidate.model_weight_license_status !== "NOT_USED") ||
@@ -210,13 +230,13 @@ export const ExperienceOssCandidateSchema = z
 		}
 		if (
 			candidate.evaluation_status === "BLOCKED_LICENSE" &&
-			candidate.code_license_status === "VERIFIED" &&
-			candidate.model_weight_license_status !== "UNVERIFIED"
+			!unresolvedLicenseTerms
 		) {
 			context.addIssue({
 				code: "custom",
 				path: ["evaluation_status"],
-				message: "BLOCKED_LICENSE requires an unverified license status",
+				message:
+					"BLOCKED_LICENSE evaluation requires unresolved or restricted license terms",
 			});
 		}
 		if (
@@ -229,7 +249,10 @@ export const ExperienceOssCandidateSchema = z
 				message: "BENCHMARKED candidates require linked benchmark evidence",
 			});
 		}
-		if (hasDecision && candidate.evaluation_status !== "BENCHMARKED") {
+		if (
+			candidate.adoption_decision !== "BLOCKED_LICENSE" &&
+			candidate.evaluation_status !== "BENCHMARKED"
+		) {
 			context.addIssue({
 				code: "custom",
 				path: ["evaluation_status"],
@@ -429,7 +452,7 @@ async function auditCandidateEvidence(
 	if (
 		(candidate.candidate_id === "real-esrgan" ||
 			candidate.candidate_id === "video-depth-anything") &&
-		candidate.adoption_decision?.startsWith("ADOPT_")
+		candidate.adoption_decision.startsWith("ADOPT_")
 	) {
 		const meanVisualQualityDelta =
 			review.scenes.reduce(
@@ -457,11 +480,15 @@ export async function auditExperienceOssCandidateRegistry(
 		channel: registry.channel,
 		selection_policy: registry.selection_policy,
 		candidate_count: registry.candidates.length,
+		classified_candidate_count: registry.candidates.length,
 		adopted_candidate_count: registry.candidates.filter((candidate) =>
-			candidate.adoption_decision?.startsWith("ADOPT_"),
+			candidate.adoption_decision.startsWith("ADOPT_"),
 		).length,
-		blocked_candidate_count: registry.candidates.filter((candidate) =>
-			candidate.evaluation_status.startsWith("BLOCKED_"),
+		blocked_candidate_count: registry.candidates.filter(
+			(candidate) => candidate.adoption_decision === "BLOCKED_LICENSE",
+		).length,
+		blocked_evaluation_candidate_count: registry.candidates.filter(
+			(candidate) => candidate.evaluation_status.startsWith("BLOCKED_"),
 		).length,
 		candidates: registry.candidates.map((candidate) => ({
 			candidate_id: candidate.candidate_id,
