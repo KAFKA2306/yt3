@@ -20,6 +20,10 @@ const failureTriagePath = path.join(
 	process.cwd(),
 	"config/evidence/issue_202_failure_triage_20261008.json",
 );
+const episodePath = path.join(
+	process.cwd(),
+	"docs/series/issue-202_episode_draft.json",
+);
 
 describe("Issue #202 Goals → Signals → Metrics example", () => {
 	test("keeps a source-backed, traceable repo metric set with recorded observations", async () => {
@@ -93,7 +97,7 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 			failureModes.map((mode) => mode.count).sort((a, b) => a - b),
 		).toEqual([1, 1, 1, 2, 20]);
 		expect(failureTriage.results.classification_scope).toContain(
-			"deeper causal attribution for each failure is not asserted",
+			"deeper causal attribution",
 		);
 		expect(failureModes.reduce((total, mode) => total + mode.count, 0)).toBe(
 			25,
@@ -116,6 +120,80 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		).toEqual(
 			failureLabels.flatMap((label) => label.run_ids).sort((a, b) => a - b),
 		);
+		const branchClusters = Object.values(
+			failureTriage.results.head_branch_clusters,
+		) as Array<{
+			count: number;
+			run_ids: number[];
+			failure_mode_counts: Record<string, number>;
+		}>;
+		expect(
+			failureTriage.results.head_branch_clusters["agent/issue-119-episode-json"]
+				.count,
+		).toBe(14);
+		expect(
+			failureTriage.results.head_branch_clusters["agent/issue-119-episode-json"]
+				.failure_mode_counts,
+		).toEqual({
+			"Biome lint/check command failed": 13,
+			"Canonical production smoke missing ffmpeg": 1,
+		});
+		expect(
+			branchClusters.reduce((total, cluster) => total + cluster.count, 0),
+		).toBe(25);
+		const clusteredFailureModeCounts = new Map<string, number>();
+		for (const cluster of branchClusters) {
+			for (const [mode, count] of Object.entries(cluster.failure_mode_counts)) {
+				clusteredFailureModeCounts.set(
+					mode,
+					(clusteredFailureModeCounts.get(mode) ?? 0) + count,
+				);
+			}
+		}
+		expect(Object.fromEntries(clusteredFailureModeCounts)).toEqual(
+			Object.fromEntries(
+				Object.entries(failureTriage.results.immediate_failure_modes).map(
+					([mode, detail]) => [mode, detail.count],
+				),
+			),
+		);
+		expect(
+			new Set(branchClusters.flatMap((cluster) => cluster.run_ids)).size,
+		).toBe(25);
+		expect(
+			branchClusters
+				.flatMap((cluster) => cluster.run_ids)
+				.sort((a, b) => a - b),
+		).toEqual(
+			failureModes.flatMap((mode) => mode.run_ids).sort((a, b) => a - b),
+		);
+		const episode = JSON.parse(await readFile(episodePath, "utf8"));
+		const sourceIds = new Set(
+			episode.sources.map((source: { id: string }) => source.id),
+		);
+		const branchClaim = episode.claims.find(
+			(claim: { id: string }) => claim.id === "claim-head-branch-clusters",
+		);
+		expect(branchClaim.source_ids).toEqual([
+			"github-actions-run-api",
+			"yt3-ci-failure-mode-evidence",
+		]);
+		expect(
+			episode.claims.every((claim: { source_ids: string[] }) =>
+				claim.source_ids.every((sourceId) => sourceIds.has(sourceId)),
+			),
+		).toBe(true);
+		expect(
+			episode.visuals.find(
+				(visual: { id: string }) => visual.id === "action-card",
+			).props.largest_branch_cluster,
+		).toContain("14/25 runs");
+		expect(
+			episode.sections
+				.find((section: { id: string }) => section.id === "action")
+				.dialogue.find((line: { id: string }) => line.id === "action-triage")
+				.text,
+		).toContain("Issue #119系列");
 		expect(plan.metrics[1].limitations).toContain(
 			"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
 		);

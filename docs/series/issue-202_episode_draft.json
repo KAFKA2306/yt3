@@ -72,6 +72,11 @@
 			"source_ids": ["github-actions-jobs-api", "yt3-ci-failure-mode-evidence"]
 		},
 		{
+			"id": "claim-head-branch-clusters",
+			"text": "記録済みの失敗workflow run 25件をhead_branch別にまとめると、agent/issue-119-episode-jsonが14件で最多だった。これはworkflow runと枝名の集計であり、PR数・独立した不具合の数・原因を示さない。",
+			"source_ids": ["github-actions-run-api", "yt3-ci-failure-mode-evidence"]
+		},
+		{
 			"id": "claim-branch-controls",
 			"text": "2026-10-07T12:41:08Zの確認では、mainブランチ保護は未設定で、リポジトリrulesets一覧は空だった。",
 			"source_ids": [
@@ -129,6 +134,7 @@
 					"generated TSX syntax: 1",
 					"ffmpeg missing: 1"
 				],
+				"largest_branch_cluster": "14/25 runs: agent/issue-119-episode-json; run count, not defect or PR count",
 				"category_counts": null
 			}
 		}
@@ -237,7 +243,7 @@
 				{
 					"id": "action-triage",
 					"speaker": "Narrator (voice pending)",
-					"text": "失敗25件はBiome 20、TypeScript 2、timeout 1、生成TSX構文1、ffmpeg不在1。直接の失敗箇所を見て、次の判断へつなげます。",
+					"text": "失敗25 runを枝名でまとめると、Issue #119系列が14件。14回を14個の不具合とは数えず、まとまりとログを見て次の改善を選びます。",
 					"visual_ref": "action-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/action-triage.wav"

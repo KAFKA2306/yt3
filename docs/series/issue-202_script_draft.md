@@ -7,10 +7,11 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 - Research/evidence: saved in `config/evidence/issue_202_goals_signals_metrics_20261007.json`; the dated CI observation and metric plan are in `config/metrics/`. A follow-up Jobs API audit is saved in `config/evidence/issue_202_failure_triage_20261008.json`.
 - Episode: `issue-202_episode_draft.json` is intended for schema and content-reference audit only. Its audio paths are placeholders; compile/render is deferred until the destination channel and voice are selected and rights are reviewed.
 - Script: Jobs API logs identify the immediate failure mode for all 25 failed runs: 20 Biome lint/check failures, 2 TypeScript typecheck failures, 1 unit-test timeout, 1 generated-TSX syntax error in render smoke, and 1 canonical smoke run missing `ffmpeg`. Deeper causal attribution is not asserted.
+- Branch clustering: a follow-up read of `head_branch` for all 25 workflow runs found six branch labels; `agent/issue-119-episode-json` accounts for 14 runs (13 Biome failures and one missing-`ffmpeg` failure). This is a branch/run grouping, not a distinct-PR count or causal explanation.
 - Metric interpretation: the denominator is 88 workflow runs with `run_attempt=1`, not 88 distinct pull requests; one PR can contribute multiple runs. The metric plan, evidence note, and narration now state this boundary.
 - Verification: the episode schema/content audit (6 sections, 11 dialogue units) and `task productivity:gsm:audit` passed. Latest `task check:merge` passed: lint, typecheck, repository/product audits, and 264 tests with 994 expectations. An initial run caught formatting in the new evidence/episode/test files; targeted formatting was applied before the passing rerun. Canonical compile/render were deliberately not attempted because the audio paths are placeholders.
 - Release: not authorized from this two-hour improvement loop. Daily publication remains a separate automation and must still pass its configured channel, rights, and QA gates.
-- Resume point: assess whether the recorded immediate failure modes share deeper causes, refresh the dated repository observations, and confirm the intended channel/profile and rights-cleared source or permission. Then finalize the episode, create approved narration/audio, compile/render, run QA/release gates, and leave publication to the dedicated daily flow.
+- Resume point: investigate deeper causes only if source changes and logs establish them; branch clustering alone is not causal evidence. Refresh the dated repository observations and confirm the intended channel/profile and rights-cleared source or permission. Then finalize the episode, create approved narration/audio, compile/render, run QA/release gates, and leave publication to the dedicated daily flow.
 
 ## Brief
 
@@ -64,11 +65,11 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 
 ### 1:18–1:30 — Action
 
-**Visual:** Immediate failure modes: `Biome lint/check 20`, `TypeScript 2`, `test timeout 1`, `generated TSX syntax 1`, `ffmpeg missing 1`. Footer: `30-day workflow runs; deeper causes not inferred`.
+**Visual:** Immediate failure modes: `Biome lint/check 20`, `TypeScript 2`, `test timeout 1`, `generated TSX syntax 1`, `ffmpeg missing 1`. Beside them, show `14/25` for `agent/issue-119-episode-json`. Footer: `head_branch run cluster; not a distinct PR or defect count`.
 
 **Narration:**
 
-「失敗25件はBiome 20、TypeScript 2、timeout 1、生成TSX構文1、ffmpeg不在1。直接の失敗箇所を見て、次の判断へつなげます。」
+「失敗25 runを枝名でまとめると、Issue #119系列が14件。14回を14個の不具合とは数えず、まとまりとログを見て次の改善を選びます。」
 
 ## Production notes
 
@@ -76,6 +77,7 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 - The 88 denominator is GitHub Actions workflow runs with `run_attempt=1`, not 88 distinct pull requests; one PR can have multiple runs.
 - Do not describe the CI workflow as a required check, merge gate, or direct productivity measure.
 - The 25 failures are classified by immediate log evidence: 20 Biome lint/check, 2 TypeScript typecheck, 1 unit-test timeout, 1 generated-TSX syntax error, and 1 missing-`ffmpeg` prerequisite. This does not establish deeper systemic causes; keep that distinction explicit.
+- Those 25 failed workflow runs cluster under six `head_branch` labels; the largest is `agent/issue-119-episode-json` with 14 runs. A branch label is not a distinct PR or defect identifier; do not infer causality from the cluster.
 - Refresh GitHub Actions data before rendering; do not reuse this snapshot as current data.
 - Channel-specific voice, visual vocabulary, thumbnail, metadata, canonical `episode.json`, audio, and release-gate checks remain pending channel selection and rights review.
 
