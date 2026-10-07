@@ -30,9 +30,9 @@
 			"title": "GitHub Actions REST API: workflow jobs and steps"
 		},
 		{
-			"id": "yt3-failure-step-label-evidence",
+			"id": "yt3-ci-failure-mode-evidence",
 			"url": "https://github.com/KAFKA2306/yt3/blob/codex/issue-202-goals-signals/config/evidence/issue_202_failure_triage_20261008.json",
-			"title": "yt3 CI failed-step label observation (2026-10-08 JST)"
+			"title": "yt3 CI immediate failure-mode evidence (2026-10-08 JST)"
 		},
 		{
 			"id": "yt3-ci-snapshot",
@@ -67,12 +67,9 @@
 			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
-			"id": "claim-failure-step-labels",
-			"text": "記録済みのCI失敗25件について、Jobs APIで観測できたfailed-step labelはrender smokeが2件、一般的なPR merge gateが23件だった。step名は根本原因を示さず、原因分類は未確定である。",
-			"source_ids": [
-				"github-actions-jobs-api",
-				"yt3-failure-step-label-evidence"
-			]
+			"id": "claim-immediate-failure-modes",
+			"text": "記録済みのCI失敗25件について、Jobs APIログで直接の失敗箇所を分類した。Biome lint/check 20件、TypeScript typecheck 2件、unit-test timeout 1件、生成TSX syntax error 1件、ffmpeg不在1件。より深い原因は断定しない。",
+			"source_ids": ["github-actions-jobs-api", "yt3-ci-failure-mode-evidence"]
 		},
 		{
 			"id": "claim-branch-controls",
@@ -124,11 +121,13 @@
 			"id": "action-card",
 			"type": "source-card",
 			"props": {
-				"action": "failed-step labelを確認し、ログから原因を調べる",
+				"action": "ログで直接の失敗箇所を分類し、次の判断につなげる",
 				"categories": [
-					"render smoke: 2",
-					"PR merge gate: 23",
-					"root cause: 未確定"
+					"Biome lint/check: 20",
+					"TypeScript typecheck: 2",
+					"unit-test timeout: 1",
+					"generated TSX syntax: 1",
+					"ffmpeg missing: 1"
 				],
 				"category_counts": null
 			}
@@ -238,7 +237,7 @@
 				{
 					"id": "action-triage",
 					"speaker": "Narrator (voice pending)",
-					"text": "失敗のstep名はrender smokeが2件、PR merge gateが23件。ただしstep名だけでは根本原因は不明です。次はログを調べます。",
+					"text": "失敗25件はBiome 20、TypeScript 2、timeout 1、生成TSX構文1、ffmpeg不在1。直接の失敗箇所を見て、次の判断へつなげます。",
 					"visual_ref": "action-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/action-triage.wav"

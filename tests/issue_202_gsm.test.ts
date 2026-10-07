@@ -63,9 +63,42 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		expect(
 			failureTriage.results.failed_job_step_labels["PR merge gate"].count,
 		).toBe(23);
-		expect(failureTriage.results.causal_root_cause_classification).toBe(
-			"NOT_ESTABLISHED",
+		const failureModes = Object.values(
+			failureTriage.results.immediate_failure_modes,
+		) as Array<{ count: number; run_ids: number[] }>;
+		expect(
+			failureTriage.results.immediate_failure_modes[
+				"Biome lint/check command failed"
+			].count,
+		).toBe(20);
+		expect(
+			failureTriage.results.immediate_failure_modes[
+				"TypeScript typecheck failed"
+			].count,
+		).toBe(2);
+		expect(
+			failureTriage.results.immediate_failure_modes["Unit-test timeout"].count,
+		).toBe(1);
+		expect(
+			failureTriage.results.immediate_failure_modes[
+				"Remotion smoke generated TSX syntax error"
+			].count,
+		).toBe(1);
+		expect(
+			failureTriage.results.immediate_failure_modes[
+				"Canonical production smoke missing ffmpeg"
+			].count,
+		).toBe(1);
+		expect(
+			failureModes.map((mode) => mode.count).sort((a, b) => a - b),
+		).toEqual([1, 1, 1, 2, 20]);
+		expect(failureTriage.results.classification_scope).toContain(
+			"deeper causal attribution for each failure is not asserted",
 		);
+		expect(failureModes.reduce((total, mode) => total + mode.count, 0)).toBe(
+			25,
+		);
+		expect(new Set(failureModes.flatMap((mode) => mode.run_ids)).size).toBe(25);
 		const failureLabels = Object.values(
 			failureTriage.results.failed_job_step_labels,
 		) as Array<{ count: number; run_ids: number[] }>;
@@ -77,6 +110,11 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		);
 		expect(new Set(failureLabels.flatMap((label) => label.run_ids)).size).toBe(
 			failureTriage.results.failed_workflow_runs_inspected,
+		);
+		expect(
+			failureModes.flatMap((mode) => mode.run_ids).sort((a, b) => a - b),
+		).toEqual(
+			failureLabels.flatMap((label) => label.run_ids).sort((a, b) => a - b),
 		);
 		expect(plan.metrics[1].limitations).toContain(
 			"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",

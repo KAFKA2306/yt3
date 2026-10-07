@@ -6,11 +6,11 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 
 - Research/evidence: saved in `config/evidence/issue_202_goals_signals_metrics_20261007.json`; the dated CI observation and metric plan are in `config/metrics/`. A follow-up Jobs API audit is saved in `config/evidence/issue_202_failure_triage_20261008.json`.
 - Episode: `issue-202_episode_draft.json` is intended for schema and content-reference audit only. Its audio paths are placeholders; compile/render is deferred until the destination channel and voice are selected and rights are reviewed.
-- Script: this file contains the narration and proposed visual beats. The Jobs API exposes failed-step labels for all 25 failures: two named render-smoke steps and 23 generic `PR merge gate` steps. These labels are not root causes, so causal classification remains unestablished.
+- Script: Jobs API logs identify the immediate failure mode for all 25 failed runs: 20 Biome lint/check failures, 2 TypeScript typecheck failures, 1 unit-test timeout, 1 generated-TSX syntax error in render smoke, and 1 canonical smoke run missing `ffmpeg`. Deeper causal attribution is not asserted.
 - Metric interpretation: the denominator is 88 workflow runs with `run_attempt=1`, not 88 distinct pull requests; one PR can contribute multiple runs. The metric plan, evidence note, and narration now state this boundary.
-- Verification: the episode schema/content audit (6 sections, 11 dialogue units) and `task productivity:gsm:audit` passed. Latest `task check:merge` passed: lint, typecheck, repository/product audits, and 264 tests with 985 expectations. An initial run caught formatting in the new evidence/episode/test files; targeted formatting was applied before the passing rerun. Canonical compile/render were deliberately not attempted because the audio paths are placeholders.
+- Verification: the episode schema/content audit (6 sections, 11 dialogue units) and `task productivity:gsm:audit` passed. Latest `task check:merge` passed: lint, typecheck, repository/product audits, and 264 tests with 994 expectations. An initial run caught formatting in the new evidence/episode/test files; targeted formatting was applied before the passing rerun. Canonical compile/render were deliberately not attempted because the audio paths are placeholders.
 - Release: not authorized from this two-hour improvement loop. Daily publication remains a separate automation and must still pass its configured channel, rights, and QA gates.
-- Resume point: determine why the sampled failure's `gh run view --log-failed` returned no lines, retrieve and classify underlying failure logs without inferring cause from step labels, and confirm the intended channel/profile and rights-cleared source or permission. Then refresh the dated repository observations, finalize the episode, create approved narration/audio, compile/render, run QA/release gates, and leave publication to the dedicated daily flow.
+- Resume point: assess whether the recorded immediate failure modes share deeper causes, refresh the dated repository observations, and confirm the intended channel/profile and rights-cleared source or permission. Then finalize the episode, create approved narration/audio, compile/render, run QA/release gates, and leave publication to the dedicated daily flow.
 
 ## Brief
 
@@ -64,18 +64,18 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 
 ### 1:18–1:30 — Action
 
-**Visual:** Failed-step labels: `render smoke 2`, `PR merge gate 23`; below them `root cause: not established`.
+**Visual:** Immediate failure modes: `Biome lint/check 20`, `TypeScript 2`, `test timeout 1`, `generated TSX syntax 1`, `ffmpeg missing 1`. Footer: `30-day workflow runs; deeper causes not inferred`.
 
 **Narration:**
 
-「失敗のstep名はrender smokeが2件、PR merge gateが23件。ただしstep名だけでは根本原因は不明です。次はログを調べます。数字は、次の判断に結びついて初めて役に立ちます。」
+「失敗25件はBiome 20、TypeScript 2、timeout 1、生成TSX構文1、ffmpeg不在1。直接の失敗箇所を見て、次の判断へつなげます。」
 
 ## Production notes
 
 - Keep every displayed metric labeled with the exact 30-day UTC observation window and sample size.
 - The 88 denominator is GitHub Actions workflow runs with `run_attempt=1`, not 88 distinct pull requests; one PR can have multiple runs.
 - Do not describe the CI workflow as a required check, merge gate, or direct productivity measure.
-- The 25 failures have only been classified by failed-step label: 2 named render-smoke steps and 23 generic `PR merge gate` steps. None of these labels establishes a causal root cause; do not relabel them as test, code, or infrastructure failures without log evidence.
+- The 25 failures are classified by immediate log evidence: 20 Biome lint/check, 2 TypeScript typecheck, 1 unit-test timeout, 1 generated-TSX syntax error, and 1 missing-`ffmpeg` prerequisite. This does not establish deeper systemic causes; keep that distinction explicit.
 - Refresh GitHub Actions data before rendering; do not reuse this snapshot as current data.
 - Channel-specific voice, visual vocabulary, thumbnail, metadata, canonical `episode.json`, audio, and release-gate checks remain pending channel selection and rights review.
 

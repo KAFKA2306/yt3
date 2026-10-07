@@ -1,7 +1,7 @@
 {
 	"schema_version": 1,
 	"issue": 202,
-	"observed_at": "2026-10-07T16:40:39Z",
+	"observed_at": "2026-10-07T18:40:51Z",
 	"observation_window": {
 		"from": "2026-09-07T09:57:03Z",
 		"to": "2026-10-07T09:57:03Z",
@@ -10,9 +10,10 @@
 	"source": {
 		"workflow_runs": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-07T09%3A57%3A03Z&event=pull_request",
 		"job_steps_api_docs": "https://docs.github.com/en/rest/actions/workflow-jobs",
-		"job_steps_observed_via": "GET /repos/KAFKA2306/yt3/actions/runs/{run_id}/jobs"
+		"job_steps_observed_via": "GET /repos/KAFKA2306/yt3/actions/runs/{run_id}/jobs",
+		"job_logs_observed_via": "GET /repos/KAFKA2306/yt3/actions/jobs/{job_id}/logs"
 	},
-	"method": "For the 25 failed workflow runs in the recorded snapshot, inspected each run's job conclusion and failed step name through the GitHub Actions Jobs API. Counts below describe failed step labels only, not causal root causes.",
+	"method": "For all 25 failed workflow runs in the recorded snapshot, inspected each job's failed step label and retrieved the job log through the GitHub Actions Jobs API. Counts below classify the immediate failed command or message, not deeper root causes.",
 	"results": {
 		"failed_workflow_runs_inspected": 25,
 		"failed_job_step_labels": {
@@ -35,18 +36,56 @@
 				]
 			}
 		},
-		"causal_root_cause_classification": "NOT_ESTABLISHED"
+		"immediate_failure_modes": {
+			"Biome lint/check command failed": {
+				"count": 20,
+				"run_ids": [
+					35079793667, 35079622154, 35040851325, 35040829639, 35040757366,
+					35033717102, 35033699326, 35033677135, 35033622931, 35033609872,
+					35033588499, 35033558577, 35033536586, 35033510210, 35033483404,
+					35033294497, 35033276506, 35033173835, 34662691526, 34610441626
+				]
+			},
+			"TypeScript typecheck failed": {
+				"count": 2,
+				"run_ids": [35040901129, 34610166550],
+				"observed_diagnostics": [
+					"TS2322: Remotion render item type mismatch in src/domain/episode/remotion_workspace.ts:84",
+					"TS2339: RunStage.MEMORY is not present in src/io/core.ts:309"
+				]
+			},
+			"Unit-test timeout": {
+				"count": 1,
+				"run_ids": [34610641809],
+				"observed_diagnostics": [
+					"Two structured LLM retry tests exceeded their 5-second timeout; one reported elapsed time of 55 seconds."
+				]
+			},
+			"Remotion smoke generated TSX syntax error": {
+				"count": 1,
+				"run_ids": [36002315202],
+				"observed_diagnostics": [
+					"esbuild reported Expected } but found style at generated ja/remotion/entry.tsx:31:154."
+				]
+			},
+			"Canonical production smoke missing ffmpeg": {
+				"count": 1,
+				"run_ids": [35033744300],
+				"observed_diagnostics": ["Executable not found in PATH: ffmpeg."]
+			}
+		},
+		"classification_scope": "The failing command or immediate workflow failure mode is established for all 25 runs; deeper causal attribution for each failure is not asserted."
 	},
 	"log_access_notes": [
 		{
 			"run_id": 35079793667,
 			"check": "gh run view --log-failed",
-			"result": "No log lines returned; reason not established."
+			"result": "gh run view --log-failed returned no lines; the Actions Jobs REST log endpoint returned the job log. The CLI discrepancy is unexplained."
 		}
 	],
 	"limitations": [
-		"A failed step name is a workflow label, not a causal explanation; the 23 generic PR merge gate labels do not distinguish tests, implementation defects, or infrastructure failures.",
-		"The two render-smoke labels identify the failing step but do not establish why the render smoke failed.",
+		"The 20 Biome failures are grouped by the failing command; this record does not normalize each individual Biome diagnostic.",
+		"Failure modes identify the immediate failed command or message, not the deeper reason the source, test, or environment entered that state.",
 		"This follow-up inspects the failure records from the 2026-10-07 snapshot; it does not update the snapshot's 30-day counts or create a new metric window."
 	]
 }
