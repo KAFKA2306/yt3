@@ -16,6 +16,10 @@ const snapshotPath = path.join(
 	process.cwd(),
 	"config/metrics/snapshots/issue_202_ci_30d_20261007.json",
 );
+const failureTriagePath = path.join(
+	process.cwd(),
+	"config/evidence/issue_202_failure_triage_20261008.json",
+);
 
 describe("Issue #202 Goals → Signals → Metrics example", () => {
 	test("keeps a source-backed, traceable repo metric set with recorded observations", async () => {
@@ -43,6 +47,36 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		expect(snapshot.results.completed_first_attempts).toBe(88);
 		expect(snapshot.results.ci_first_attempt_pass_rate_percent.value).toBe(
 			plan.metrics[1].value,
+		);
+		const failureTriage = JSON.parse(readFileSync(failureTriagePath, "utf8"));
+		expect(failureTriage.results.failed_workflow_runs_inspected).toBe(25);
+		expect(
+			failureTriage.results.failed_job_step_labels[
+				"Episode production-quality render smoke"
+			].count,
+		).toBe(1);
+		expect(
+			failureTriage.results.failed_job_step_labels[
+				"Episode canonical render smoke"
+			].count,
+		).toBe(1);
+		expect(
+			failureTriage.results.failed_job_step_labels["PR merge gate"].count,
+		).toBe(23);
+		expect(failureTriage.results.causal_root_cause_classification).toBe(
+			"NOT_ESTABLISHED",
+		);
+		const failureLabels = Object.values(
+			failureTriage.results.failed_job_step_labels,
+		) as Array<{ count: number; run_ids: number[] }>;
+		expect(
+			failureLabels.every((label) => label.run_ids.length === label.count),
+		).toBe(true);
+		expect(failureLabels.reduce((total, label) => total + label.count, 0)).toBe(
+			failureTriage.results.failed_workflow_runs_inspected,
+		);
+		expect(new Set(failureLabels.flatMap((label) => label.run_ids)).size).toBe(
+			failureTriage.results.failed_workflow_runs_inspected,
 		);
 		expect(plan.metrics[1].limitations).toContain(
 			"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",

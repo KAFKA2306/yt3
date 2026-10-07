@@ -25,6 +25,16 @@
 			"title": "GitHub REST API: workflow runs"
 		},
 		{
+			"id": "github-actions-jobs-api",
+			"url": "https://docs.github.com/en/rest/actions/workflow-jobs",
+			"title": "GitHub Actions REST API: workflow jobs and steps"
+		},
+		{
+			"id": "yt3-failure-step-label-evidence",
+			"url": "https://github.com/KAFKA2306/yt3/blob/codex/issue-202-goals-signals/config/evidence/issue_202_failure_triage_20261008.json",
+			"title": "yt3 CI failed-step label observation (2026-10-08 JST)"
+		},
+		{
 			"id": "yt3-ci-snapshot",
 			"url": "https://github.com/KAFKA2306/yt3/blob/0a3cb56eaf71971884a7603719a30c4cf36389a7/config/metrics/snapshots/issue_202_ci_30d_20261007.json",
 			"title": "yt3 GitHub Actions 30-day CI snapshot (2026-10-07 UTC)"
@@ -55,6 +65,14 @@
 			"id": "claim-ci-observation",
 			"text": "2026-09-07T09:57:03Zから2026-10-07T09:57:03Zまでに観測した、run_attempt=1の完了済みpull_request CI workflow runは88件で、63件が成功し、p95所要時間は159秒だった。これはPRの件数ではなく、同じPRから複数runが含まれうる。",
 			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
+		},
+		{
+			"id": "claim-failure-step-labels",
+			"text": "記録済みのCI失敗25件について、Jobs APIで観測できたfailed-step labelはrender smokeが2件、一般的なPR merge gateが23件だった。step名は根本原因を示さず、原因分類は未確定である。",
+			"source_ids": [
+				"github-actions-jobs-api",
+				"yt3-failure-step-label-evidence"
+			]
 		},
 		{
 			"id": "claim-branch-controls",
@@ -106,8 +124,12 @@
 			"id": "action-card",
 			"type": "source-card",
 			"props": {
-				"action": "失敗25件を原因別に調べる",
-				"categories": ["テスト", "コード", "基盤"],
+				"action": "failed-step labelを確認し、ログから原因を調べる",
+				"categories": [
+					"render smoke: 2",
+					"PR merge gate: 23",
+					"root cause: 未確定"
+				],
 				"category_counts": null
 			}
 		}
@@ -216,7 +238,7 @@
 				{
 					"id": "action-triage",
 					"speaker": "Narrator (voice pending)",
-					"text": "次の一手は、失敗25件を原因別に調べること。",
+					"text": "失敗のstep名はrender smokeが2件、PR merge gateが23件。ただしstep名だけでは根本原因は不明です。次はログを調べます。",
 					"visual_ref": "action-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/action-triage.wav"

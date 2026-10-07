@@ -1,0 +1,52 @@
+{
+	"schema_version": 1,
+	"issue": 202,
+	"observed_at": "2026-10-07T16:40:39Z",
+	"observation_window": {
+		"from": "2026-09-07T09:57:03Z",
+		"to": "2026-10-07T09:57:03Z",
+		"timezone": "UTC"
+	},
+	"source": {
+		"workflow_runs": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-07T09%3A57%3A03Z&event=pull_request",
+		"job_steps_api_docs": "https://docs.github.com/en/rest/actions/workflow-jobs",
+		"job_steps_observed_via": "GET /repos/KAFKA2306/yt3/actions/runs/{run_id}/jobs"
+	},
+	"method": "For the 25 failed workflow runs in the recorded snapshot, inspected each run's job conclusion and failed step name through the GitHub Actions Jobs API. Counts below describe failed step labels only, not causal root causes.",
+	"results": {
+		"failed_workflow_runs_inspected": 25,
+		"failed_job_step_labels": {
+			"Episode production-quality render smoke": {
+				"count": 1,
+				"run_ids": [36002315202]
+			},
+			"Episode canonical render smoke": {
+				"count": 1,
+				"run_ids": [35033744300]
+			},
+			"PR merge gate": {
+				"count": 23,
+				"run_ids": [
+					35079793667, 35079622154, 35040901129, 35040851325, 35040829639,
+					35040757366, 35033717102, 35033699326, 35033677135, 35033622931,
+					35033609872, 35033588499, 35033558577, 35033536586, 35033510210,
+					35033483404, 35033294497, 35033276506, 35033173835, 34662691526,
+					34610641809, 34610441626, 34610166550
+				]
+			}
+		},
+		"causal_root_cause_classification": "NOT_ESTABLISHED"
+	},
+	"log_access_notes": [
+		{
+			"run_id": 35079793667,
+			"check": "gh run view --log-failed",
+			"result": "No log lines returned; reason not established."
+		}
+	],
+	"limitations": [
+		"A failed step name is a workflow label, not a causal explanation; the 23 generic PR merge gate labels do not distinguish tests, implementation defects, or infrastructure failures.",
+		"The two render-smoke labels identify the failing step but do not establish why the render smoke failed.",
+		"This follow-up inspects the failure records from the 2026-10-07 snapshot; it does not update the snapshot's 30-day counts or create a new metric window."
+	]
+}
