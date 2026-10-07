@@ -1,0 +1,248 @@
+{
+	"schema_version": 1,
+	"metadata": {
+		"title": "Goals → Signals → Metrics: yt3のCIで測ってみる",
+		"description": "yt3の2026-09-07〜2026-10-07 UTCのGitHub Actions CI観測値を例に、Goal・Signal・Metricをつなぐ。これは開発者の生産性やコード品質を直接測るものではない。",
+		"tags": [
+			"ソフトウェア開発",
+			"メトリクス",
+			"CI",
+			"GitHub Actions",
+			"Goals Signals Metrics"
+		],
+		"language": "ja-JP"
+	},
+	"fps": 30,
+	"sources": [
+		{
+			"id": "swe-book-ch07",
+			"url": "https://abseil.io/resources/swe-book/html/ch07.html",
+			"title": "Software Engineering at Google, Chapter 7: Measuring Engineering Productivity"
+		},
+		{
+			"id": "github-actions-run-api",
+			"url": "https://docs.github.com/en/rest/actions/workflow-runs",
+			"title": "GitHub REST API: workflow runs"
+		},
+		{
+			"id": "yt3-ci-snapshot",
+			"url": "https://github.com/KAFKA2306/yt3/blob/0a3cb56eaf71971884a7603719a30c4cf36389a7/config/metrics/snapshots/issue_202_ci_30d_20261007.json",
+			"title": "yt3 GitHub Actions 30-day CI snapshot (2026-10-07 UTC)"
+		},
+		{
+			"id": "github-main-branch-protection",
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/branches/main/protection",
+			"title": "GitHub REST API: observed main branch protection"
+		},
+		{
+			"id": "github-repository-rulesets",
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/rulesets",
+			"title": "GitHub REST API: observed repository rulesets"
+		},
+		{
+			"id": "swe-book-license",
+			"url": "https://abseil.io/resources/swe-book",
+			"title": "Software Engineering at Google online edition and license notice"
+		}
+	],
+	"claims": [
+		{
+			"id": "claim-goal-signal-metric",
+			"text": "Goals、Signals、Metricsを追跡可能につなぎ、指標が判断を変えられるかを確かめる枠組みを紹介する。",
+			"source_ids": ["swe-book-ch07"]
+		},
+		{
+			"id": "claim-ci-observation",
+			"text": "2026-09-07T09:57:03Zから2026-10-07T09:57:03Zまでに観測した、完了済み初回pull_request CIワークフロー88件のうち63件が成功し、p95所要時間は159秒だった。",
+			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
+		},
+		{
+			"id": "claim-branch-controls",
+			"text": "2026-10-07T12:41:08Zの確認では、mainブランチ保護は未設定で、リポジトリrulesets一覧は空だった。",
+			"source_ids": [
+				"github-main-branch-protection",
+				"github-repository-rulesets"
+			]
+		},
+		{
+			"id": "claim-rights-boundary",
+			"text": "Software Engineering at Googleの無料HTML版にはCC BY-NC-ND 4.0の表示があり、公開動画での利用条件は未確認である。",
+			"source_ids": ["swe-book-license"]
+		}
+	],
+	"assets": [],
+	"visuals": [
+		{
+			"id": "hook-count",
+			"type": "number-highlight",
+			"props": { "number": "88", "label": "完了した初回CI" }
+		},
+		{
+			"id": "goal-card",
+			"type": "title",
+			"props": { "title": "安全なフィードバックを、待たせすぎない" }
+		},
+		{
+			"id": "signal-flow",
+			"type": "two-column",
+			"props": { "left": "PRに結果が返る", "right": "レビューで使える" }
+		},
+		{
+			"id": "metric-card",
+			"type": "number-highlight",
+			"props": {
+				"p95_seconds": 159,
+				"median_seconds": 124,
+				"first_attempt_success": "63/88 (71.6%)"
+			}
+		},
+		{
+			"id": "boundary-card",
+			"type": "comparison",
+			"props": { "left": "CIの観測値", "right": "生産性・品質そのものではない" }
+		},
+		{
+			"id": "action-card",
+			"type": "source-card",
+			"props": {
+				"action": "失敗25件を原因別に調べる",
+				"categories": ["テスト", "コード", "基盤"],
+				"category_counts": null
+			}
+		}
+	],
+	"sections": [
+		{
+			"id": "hook",
+			"title": "Hook",
+			"dialogue": [
+				{
+					"id": "hook-narration",
+					"speaker": "Narrator (voice pending)",
+					"text": "このリポジトリのCI、30日で88回。初回成功は63回、失敗は25回。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。",
+					"visual_ref": "hook-count",
+					"audio": { "path": "audio/pending-channel-and-voice/hook.wav" }
+				}
+			]
+		},
+		{
+			"id": "goal",
+			"title": "Goal",
+			"dialogue": [
+				{
+					"id": "goal-narration",
+					"speaker": "Narrator (voice pending)",
+					"text": "Goalは、変更の結果を安全に、なるべく早く知れること。ここで大事なのは、数字を増やすことじゃなく、数字を見てどんな判断を変えるかです。",
+					"visual_ref": "goal-card",
+					"audio": { "path": "audio/pending-channel-and-voice/goal.wav" }
+				}
+			]
+		},
+		{
+			"id": "signal",
+			"title": "Signal",
+			"dialogue": [
+				{
+					"id": "signal-narration",
+					"speaker": "Narrator (voice pending)",
+					"text": "次にSignal。PRへ、レビューに使えるCI結果が返っているか。速さだけでなく、結果が分かりやすく、失敗を調べられることも見ます。",
+					"visual_ref": "signal-flow",
+					"audio": { "path": "audio/pending-channel-and-voice/signal.wav" }
+				}
+			]
+		},
+		{
+			"id": "metrics",
+			"title": "Metrics",
+			"dialogue": [
+				{
+					"id": "metrics-latency",
+					"speaker": "Narrator (voice pending)",
+					"text": "この30日では、CIの作成から完了までのp95が159秒、中央値は124秒。",
+					"visual_ref": "metric-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/metrics-latency.wav"
+					}
+				},
+				{
+					"id": "metrics-outcome",
+					"speaker": "Narrator (voice pending)",
+					"text": "初回成功率は63割る88で71.6%。これはGitHub ActionsのCIワークフローを測った値です。",
+					"visual_ref": "metric-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/metrics-outcome.wav"
+					}
+				}
+			]
+		},
+		{
+			"id": "boundary",
+			"title": "Measurement boundary",
+			"dialogue": [
+				{
+					"id": "boundary-not-productivity",
+					"speaker": "Narrator (voice pending)",
+					"text": "ただし、これは開発者の生産性でも、コード品質でもありません。",
+					"visual_ref": "boundary-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/boundary-not-productivity.wav"
+					}
+				},
+				{
+					"id": "boundary-protection",
+					"speaker": "Narrator (voice pending)",
+					"text": "2026年10月7日12:41 UTCの確認では、mainにブランチ保護の必須チェックがありませんでした。",
+					"visual_ref": "boundary-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/boundary-protection.wav"
+					}
+				},
+				{
+					"id": "boundary-conclusion",
+					"speaker": "Narrator (voice pending)",
+					"text": "CIの数字だけで、安全なマージを証明したことにはならないんです。",
+					"visual_ref": "boundary-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/boundary-conclusion.wav"
+					}
+				}
+			]
+		},
+		{
+			"id": "action",
+			"title": "Next decision",
+			"dialogue": [
+				{
+					"id": "action-triage",
+					"speaker": "Narrator (voice pending)",
+					"text": "次の一手は、失敗25件を原因別に調べること。",
+					"visual_ref": "action-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/action-triage.wav"
+					}
+				},
+				{
+					"id": "action-anti-pattern",
+					"speaker": "Narrator (voice pending)",
+					"text": "カバレッジを削って数字だけ良くするのは逆効果。",
+					"visual_ref": "action-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/action-anti-pattern.wav"
+					}
+				},
+				{
+					"id": "action-close",
+					"speaker": "Narrator (voice pending)",
+					"text": "GoalからSignal、Metricへ。数字は、次の判断に結びついて初めて役に立ちます。",
+					"visual_ref": "action-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/action-close.wav"
+					}
+				}
+			]
+		}
+	],
+	"thumbnail": { "lines": ["数字を増やすな", "repoのCIを測る"] },
+	"shorts": { "enabled": false },
+	"locales": []
+}

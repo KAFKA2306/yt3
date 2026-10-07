@@ -52,7 +52,26 @@
 			"url": "https://docs.github.com/en/rest/actions/workflow-runs",
 			"source_type": "metric_source",
 			"accessed_on": "2026-10-07"
+		},
+		{
+			"id": "github-main-branch-protection",
+			"title": "GitHub REST API: get branch protection",
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/branches/main/protection",
+			"source_type": "repository_controls",
+			"accessed_on": "2026-10-07"
+		},
+		{
+			"id": "github-repository-rulesets",
+			"title": "GitHub REST API: list repository rulesets",
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/rulesets",
+			"source_type": "repository_controls",
+			"accessed_on": "2026-10-07"
 		}
 	],
+	"repository_controls_observation": {
+		"observed_at": "2026-10-07T12:41:08Z",
+		"main_branch_protection": "not_configured; GitHub returned HTTP 404 Branch not protected",
+		"repository_rulesets": []
+	},
 	"content_boundary": "Research notes and the yt3 example are original summaries, not copied chapter text. Do not publish an adaptation from the CC BY-NC-ND source unless the relevant rights and channel use are cleared. No video has been published."
 }
