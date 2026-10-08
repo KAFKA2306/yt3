@@ -2,7 +2,7 @@
 	"schema_version": 1,
 	"metadata": {
 		"title": "Goals → Signals → Metrics: yt3のCIで測ってみる",
-		"description": "yt3の2026-09-07〜2026-10-07 UTCのGitHub Actions CI観測値を例に、Goal・Signal・Metricをつなぐ。これは開発者の生産性やコード品質を直接測るものではない。",
+		"description": "yt3の2026-09-07〜2026-10-07 UTCのGitHub Actions CI観測値を例に、Goal・Signal・Metricをつなぐ。これは開発者の生産性やコード品質を直接測るものではない。 Attribution: LinkedIn Corporation (2023), LinkedIn Developer Productivity & Happiness Framework, Goals, Signals, and Metrics (CC BY 4.0). Japanese summary and yt3 CI example adaptation; no endorsement implied. Source: https://linkedin.github.io/dph-framework/goals-signals-metrics.html License: https://creativecommons.org/licenses/by/4.0/",
 		"tags": [
 			"ソフトウェア開発",
 			"メトリクス",
@@ -17,7 +17,7 @@
 		{
 			"id": "swe-book-ch07",
 			"url": "https://abseil.io/resources/swe-book/html/ch07.html",
-			"title": "Software Engineering at Google, Chapter 7: Measuring Engineering Productivity"
+			"title": "Issue #202 original reference; license flagged and not used for production script content"
 		},
 		{
 			"id": "github-actions-run-api",
@@ -53,13 +53,28 @@
 			"id": "swe-book-license",
 			"url": "https://abseil.io/resources/swe-book",
 			"title": "Software Engineering at Google online edition and license notice"
+		},
+		{
+			"id": "linkedin-dph-gsm",
+			"url": "https://linkedin.github.io/dph-framework/goals-signals-metrics.html",
+			"title": "LinkedIn DPH Framework: Goals, Signals, and Metrics"
+		},
+		{
+			"id": "linkedin-dph-license",
+			"url": "https://github.com/linkedin/dph-framework/blob/main/README.md",
+			"title": "LinkedIn DPH Framework README and CC BY 4.0 notice"
+		},
+		{
+			"id": "cc-by-4-license",
+			"url": "https://creativecommons.org/licenses/by/4.0/",
+			"title": "Creative Commons Attribution 4.0 deed"
 		}
 	],
 	"claims": [
 		{
 			"id": "claim-goal-signal-metric",
 			"text": "Goals、Signals、Metricsを追跡可能につなぎ、指標が判断を変えられるかを確かめる枠組みを紹介する。",
-			"source_ids": ["swe-book-ch07"]
+			"source_ids": ["linkedin-dph-gsm"]
 		},
 		{
 			"id": "claim-ci-observation",
@@ -86,8 +101,13 @@
 		},
 		{
 			"id": "claim-rights-boundary",
-			"text": "Software Engineering at Googleの無料HTML版にはCC BY-NC-ND 4.0の表示があり、公開動画での利用条件は未確認である。",
-			"source_ids": ["swe-book-license"]
+			"text": "Issue #202 names Software Engineering at Google, whose online edition displays CC BY-NC-ND 4.0. This production draft uses LinkedIn DPH Framework as its GSM reference instead; channel/profile and other media rights remain pending.",
+			"source_ids": ["swe-book-license", "linkedin-dph-license"]
+		},
+		{
+			"id": "claim-linkedin-license",
+			"text": "LinkedIn DPH Framework README identifies the framework as CC BY 4.0 and Copyright 2023 LinkedIn Corporation. The proposed credit names the work and creator, links the source and license, identifies Japanese summary/adaptation, and does not imply endorsement; this is evidence tracking, not a legal opinion or complete release clearance.",
+			"source_ids": ["linkedin-dph-license", "cc-by-4-license"]
 		}
 	],
 	"assets": [],
@@ -95,17 +115,25 @@
 		{
 			"id": "hook-count",
 			"type": "number-highlight",
-			"props": { "number": "88", "label": "完了した初回CI" }
+			"props": {
+				"number": "88",
+				"label": "完了した初回CI"
+			}
 		},
 		{
 			"id": "goal-card",
 			"type": "title",
-			"props": { "title": "安全なフィードバックを、待たせすぎない" }
+			"props": {
+				"title": "安全なフィードバックを、待たせすぎない"
+			}
 		},
 		{
 			"id": "signal-flow",
 			"type": "two-column",
-			"props": { "left": "PRに結果が返る", "right": "レビューで使える" }
+			"props": {
+				"left": "PRに結果が返る",
+				"right": "レビューで使える"
+			}
 		},
 		{
 			"id": "metric-card",
@@ -120,7 +148,10 @@
 		{
 			"id": "boundary-card",
 			"type": "comparison",
-			"props": { "left": "CIの観測値", "right": "生産性・品質そのものではない" }
+			"props": {
+				"left": "CIの観測値",
+				"right": "生産性・品質そのものではない"
+			}
 		},
 		{
 			"id": "action-card",
@@ -137,6 +168,19 @@
 				"largest_branch_cluster": "14/25 runs: agent/issue-119-episode-json; run count, not defect or PR count",
 				"category_counts": null
 			}
+		},
+		{
+			"id": "attribution-card",
+			"type": "source-card",
+			"props": {
+				"creator": "LinkedIn Corporation (2023)",
+				"work": "LinkedIn Developer Productivity & Happiness Framework: Goals, Signals, and Metrics",
+				"license": "CC BY 4.0",
+				"source_url": "https://linkedin.github.io/dph-framework/goals-signals-metrics.html",
+				"license_url": "https://creativecommons.org/licenses/by/4.0/",
+				"changes": "Japanese summary and yt3 CI example adaptation",
+				"endorsement": "No endorsement implied"
+			}
 		}
 	],
 	"sections": [
@@ -149,7 +193,9 @@
 					"speaker": "Narrator (voice pending)",
 					"text": "このリポジトリのCI、30日で88回。初回成功は63回、失敗は25回。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。",
 					"visual_ref": "hook-count",
-					"audio": { "path": "audio/pending-channel-and-voice/hook.wav" }
+					"audio": {
+						"path": "audio/pending-channel-and-voice/hook.wav"
+					}
 				}
 			]
 		},
@@ -162,7 +208,9 @@
 					"speaker": "Narrator (voice pending)",
 					"text": "Goalは、変更の結果を安全に、なるべく早く知れること。ここで大事なのは、数字を増やすことじゃなく、数字を見てどんな判断を変えるかです。",
 					"visual_ref": "goal-card",
-					"audio": { "path": "audio/pending-channel-and-voice/goal.wav" }
+					"audio": {
+						"path": "audio/pending-channel-and-voice/goal.wav"
+					}
 				}
 			]
 		},
@@ -175,7 +223,9 @@
 					"speaker": "Narrator (voice pending)",
 					"text": "次にSignal。PRへ、レビューに使えるCI結果が返っているか。速さだけでなく、結果が分かりやすく、失敗を調べられることも見ます。",
 					"visual_ref": "signal-flow",
-					"audio": { "path": "audio/pending-channel-and-voice/signal.wav" }
+					"audio": {
+						"path": "audio/pending-channel-and-voice/signal.wav"
+					}
 				}
 			]
 		},
@@ -262,7 +312,7 @@
 					"id": "action-close",
 					"speaker": "Narrator (voice pending)",
 					"text": "GoalからSignal、Metricへ。数字は、次の判断に結びついて初めて役に立ちます。",
-					"visual_ref": "action-card",
+					"visual_ref": "attribution-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/action-close.wav"
 					}
@@ -270,7 +320,11 @@
 			]
 		}
 	],
-	"thumbnail": { "lines": ["数字を増やすな", "repoのCIを測る"] },
-	"shorts": { "enabled": false },
+	"thumbnail": {
+		"lines": ["数字を増やすな", "repoのCIを測る"]
+	},
+	"shorts": {
+		"enabled": false
+	},
 	"locales": []
 }

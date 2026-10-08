@@ -20,6 +20,10 @@ const failureTriagePath = path.join(
 	process.cwd(),
 	"config/evidence/issue_202_failure_triage_20261008.json",
 );
+const licenseReviewPath = path.join(
+	process.cwd(),
+	"config/evidence/issue_202_license_review_20261008.json",
+);
 const episodePath = path.join(
 	process.cwd(),
 	"docs/series/issue-202_episode_draft.json",
@@ -171,6 +175,34 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		const sourceIds = new Set(
 			episode.sources.map((source: { id: string }) => source.id),
 		);
+		const licenseReview = JSON.parse(readFileSync(licenseReviewPath, "utf8"));
+		expect(plan.framework_source_ids).toEqual(["linkedin-dph-gsm"]);
+		expect(
+			plan.sources.find(
+				(source: { id: string }) => source.id === "linkedin-dph-gsm",
+			).role,
+		).toBe("PRIMARY_FRAMEWORK");
+		expect(sourceIds.has("linkedin-dph-gsm")).toBe(true);
+		expect(licenseReview.status).toBe(
+			"ALTERNATE_PRIMARY_SOURCE_FOUND_ATTRIBUTION_REQUIRED",
+		);
+		expect(licenseReview.unresolved).toContain(
+			"YouTube channel/profile identity and authorization for this series",
+		);
+		expect(
+			episode.claims.find(
+				(claim: { id: string }) => claim.id === "claim-linkedin-license",
+			).source_ids,
+		).toEqual(["linkedin-dph-license", "cc-by-4-license"]);
+		expect(
+			episode.visuals.find(
+				(visual: { id: string }) => visual.id === "attribution-card",
+			).props,
+		).toMatchObject({
+			creator: "LinkedIn Corporation (2023)",
+			license: "CC BY 4.0",
+			endorsement: "No endorsement implied",
+		});
 		const branchClaim = episode.claims.find(
 			(claim: { id: string }) => claim.id === "claim-head-branch-clusters",
 		);

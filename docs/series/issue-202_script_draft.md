@@ -5,13 +5,14 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 ## Production checkpoint — 2026-10-08
 
 - Research/evidence: saved in `config/evidence/issue_202_goals_signals_metrics_20261007.json`; the dated CI observation and metric plan are in `config/metrics/`. A follow-up Jobs API audit is saved in `config/evidence/issue_202_failure_triage_20261008.json`.
+- License evidence: `config/evidence/issue_202_license_review_20261008.json` records the LinkedIn DPH Framework CC BY 4.0 source, README/LICENSE, the attribution plan, and remaining release checks.
 - Episode: `issue-202_episode_draft.json` is intended for schema and content-reference audit only. Its audio paths are placeholders; compile/render is deferred until the destination channel and voice are selected and rights are reviewed.
 - Script: Jobs API logs identify the immediate failure mode for all 25 failed runs: 20 Biome lint/check failures, 2 TypeScript typecheck failures, 1 unit-test timeout, 1 generated-TSX syntax error in render smoke, and 1 canonical smoke run missing `ffmpeg`. Deeper causal attribution is not asserted.
 - Branch clustering: a follow-up read of `head_branch` for all 25 workflow runs found six branch labels; `agent/issue-119-episode-json` accounts for 14 runs (13 Biome failures and one missing-`ffmpeg` failure). This is a branch/run grouping, not a distinct-PR count or causal explanation.
 - Metric interpretation: the denominator is 88 workflow runs with `run_attempt=1`, not 88 distinct pull requests; one PR can contribute multiple runs. The metric plan, evidence note, and narration now state this boundary.
-- Verification: the episode schema/content audit (6 sections, 11 dialogue units) and `task productivity:gsm:audit` passed. On 2026-10-08T00:34Z, `task check:merge` passed: lint, typecheck, repository/product audits, and 264 tests with 1,004 assertions. An initial run caught formatting in the new evidence/episode/test files; targeted formatting was applied before the passing rerun. Canonical compile/render were deliberately not attempted because the audio paths are placeholders.
-- Release: not authorized from this two-hour improvement loop. Daily publication remains a separate automation and must still pass its configured channel, rights, and QA gates.
-- Resume point: investigate deeper causes only if source changes and logs establish them; branch clustering alone is not causal evidence. Refresh the dated repository observations and confirm the intended channel/profile and rights-cleared source or permission. Then finalize the episode, create approved narration/audio, compile/render, run QA/release gates, and leave publication to the dedicated daily flow.
+- Verification: the episode schema/content audit (6 sections, 11 dialogue units), focused GSM test, and `task productivity:gsm:audit` passed. The 2026-10-08T00:34Z `task check:merge` pass had 264 tests and 1,004 assertions. The first full check after adding the license ledger caught its formatting; after applying the repository formatter, `task check:merge` passed again at 2026-10-08T01:22:33Z with lint, typecheck, repository/product audits, 264 tests, and 1,011 assertions. Canonical compile/render were deliberately not attempted because audio paths are placeholders.
+- Release: no render or publication was attempted. The selected channel/profile, voice, and remaining media-asset rights are unresolved; the separate daily flow may publish only after its configured profile and all rights, QA, and release gates pass.
+- Resume point: investigate deeper causes only if source changes and logs establish them; branch clustering alone is not causal evidence. Refresh dated repository observations before rendering, finalize the LinkedIn attribution card/description, confirm the intended channel/profile and voice plus rights for all remaining assets, create approved narration/audio, compile/render, and pass QA/release gates before publication.
 
 ## Brief
 
@@ -19,7 +20,7 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 - Platform: YouTube explainer; approximately 90 seconds
 - Goal: show how one real repository decision leads to observable signals and bounded metrics
 - Source asset: yt3 CI workflow snapshot for 2026-09-07T09:57:03Z through 2026-10-07T09:57:03Z
-- Rights boundary: original narration based on yt3's own observed data. No source text is quoted. The cited Software Engineering at Google chapter has a CC BY-NC-ND 4.0 notice; rights review or a different cleared source is still required before publication.
+- Rights boundary: Issue #202 names the SWE Book, whose CC BY-NC-ND 4.0 notice remains recorded. The production GSM reference is instead the LinkedIn DPH Framework, whose README/LICENSE identify CC BY 4.0; attribution is planned, but this is not complete release clearance.
 
 ## Script and visual beats
 
@@ -79,6 +80,7 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 - The 25 failures are classified by immediate log evidence: 20 Biome lint/check, 2 TypeScript typecheck, 1 unit-test timeout, 1 generated-TSX syntax error, and 1 missing-`ffmpeg` prerequisite. This does not establish deeper systemic causes; keep that distinction explicit.
 - Those 25 failed workflow runs cluster under six `head_branch` labels; the largest is `agent/issue-119-episode-json` with 14 runs. A branch label is not a distinct PR or defect identifier; do not infer causality from the cluster.
 - Refresh GitHub Actions data before rendering; do not reuse this snapshot as current data.
+- Attribution planned for the video description and closing card: LinkedIn Corporation (2023), work title, source and CC BY 4.0 links, Japanese summary/adaptation notice, and no-endorsement statement.
 - Channel-specific voice, visual vocabulary, thumbnail, metadata, canonical `episode.json`, audio, and release-gate checks remain pending channel selection and rights review.
 
 ## Sources
@@ -86,4 +88,6 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 - yt3 30-day workflow snapshot: `config/metrics/snapshots/issue_202_ci_30d_20261007.json`
 - GitHub Actions workflow runs API: https://docs.github.com/en/rest/actions/workflow-runs
 - Software Engineering at Google, Chapter 7: https://abseil.io/resources/swe-book/html/ch07.html
+- LinkedIn DPH Framework, Goals, Signals, and Metrics: https://linkedin.github.io/dph-framework/goals-signals-metrics.html (README/LICENSE: CC BY 4.0; Copyright 2023 LinkedIn Corporation).
+- CC BY 4.0 deed: https://creativecommons.org/licenses/by/4.0/
 - Online-edition license notice: https://abseil.io/resources/swe-book

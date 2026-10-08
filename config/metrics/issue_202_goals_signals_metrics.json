@@ -3,14 +3,14 @@
 	"plan_id": "yt3-change-feedback",
 	"observed_at": "2026-10-07T09:57:03Z",
 	"decision_question": "How can yt3 reduce avoidable time to trustworthy change feedback without weakening the checks that protect main?",
-	"framework_source_ids": ["swe-book-ch07"],
+	"framework_source_ids": ["linkedin-dph-gsm"],
 	"sources": [
 		{
-			"id": "swe-book-ch07",
-			"title": "Software Engineering at Google, Chapter 7: Measuring Engineering Productivity",
-			"url": "https://abseil.io/resources/swe-book/html/ch07.html",
+			"id": "linkedin-dph-gsm",
+			"title": "LinkedIn DPH Framework: Goals, Signals, and Metrics",
+			"url": "https://linkedin.github.io/dph-framework/goals-signals-metrics.html",
 			"role": "PRIMARY_FRAMEWORK",
-			"accessed_on": "2026-10-07"
+			"accessed_on": "2026-10-08"
 		},
 		{
 			"id": "github-actions-run-api",
