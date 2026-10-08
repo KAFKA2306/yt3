@@ -121,7 +121,9 @@ export const GoalsSignalsMetricsPlanSchema = z
 			["metrics"],
 		);
 
-		const sourcesById = new Map(plan.sources.map((source) => [source.id, source]));
+		const sourcesById = new Map(
+			plan.sources.map((source) => [source.id, source]),
+		);
 		const goalIds = new Set(plan.goals.map((goal) => goal.id));
 		const signalIds = new Set(plan.signals.map((signal) => signal.id));
 		const metricSignalIds = new Set(

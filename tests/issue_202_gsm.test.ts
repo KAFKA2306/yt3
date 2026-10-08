@@ -413,7 +413,10 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		const plan = structuredClone(examplePlan);
 		const metric = plan.metrics.find(
 			(item) => item.id === "ci-first-attempt-pass-rate",
-		)!;
+		);
+		if (!metric) {
+			throw new Error("CI pass-rate metric fixture is missing");
+		}
 		metric.status = "NOT_MEASURABLE";
 		metric.value = null;
 		metric.evidence_urls = [];
@@ -430,14 +433,19 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 
 	test("rejects a not-measurable signal linked to a measured metric", () => {
 		const plan = structuredClone(examplePlan);
-		plan.signals.find((signal) => signal.id === "ci-outcome")!.measurement_state =
-			"NOT_MEASURABLE";
+		const signal = plan.signals.find((item) => item.id === "ci-outcome");
+		if (!signal) {
+			throw new Error("CI outcome signal fixture is missing");
+		}
+		signal.measurement_state = "NOT_MEASURABLE";
 		const result = GoalsSignalsMetricsPlanSchema.safeParse(plan);
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(
 				result.error.issues.some((issue) =>
-					issue.message.includes("not-measurable signal links to a viable metric"),
+					issue.message.includes(
+					"not-measurable signal links to a viable metric",
+				),
 				),
 			).toBe(true);
 		}
@@ -445,14 +453,19 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 
 	test("rejects a not-yet-measured signal linked to a measured metric", () => {
 		const plan = structuredClone(examplePlan);
-		plan.signals.find((signal) => signal.id === "ci-outcome")!.measurement_state =
-			"NOT_YET_MEASURED";
+		const signal = plan.signals.find((item) => item.id === "ci-outcome");
+		if (!signal) {
+			throw new Error("CI outcome signal fixture is missing");
+		}
+		signal.measurement_state = "NOT_YET_MEASURED";
 		const result = GoalsSignalsMetricsPlanSchema.safeParse(plan);
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(
 				result.error.issues.some((issue) =>
-					issue.message.includes("not-yet-measured signal links to a measured metric"),
+					issue.message.includes(
+					"not-yet-measured signal links to a measured metric",
+				),
 				),
 			).toBe(true);
 		}
