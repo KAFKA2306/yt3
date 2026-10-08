@@ -105,7 +105,10 @@ export function auditByosanActiveProbeEvidence(
 	}
 	// The current tokenizer runner hashes caller-supplied counts; it does not query a tokenizer.
 	// Never promote a fingerprint of unmeasured inputs to direct experimental proof.
-	if (evidence.probeType === "tokenizer_fingerprint" && evidence.status === "VERIFIED") {
+	if (
+		evidence.probeType === "tokenizer_fingerprint" &&
+		evidence.status === "VERIFIED"
+	) {
 		issues.push({
 			code: "tokenizer_fingerprint_direct_measurement_missing",
 			details: evidence.id,
