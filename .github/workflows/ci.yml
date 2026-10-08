@@ -8,10 +8,10 @@ on:
 
 jobs:
   merge-gate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 2
 
@@ -27,7 +27,7 @@ jobs:
       run: bun biome check --write src/domain/episode/production.ts src/scripts/smoke_canonical_production.ts src/workflow.ts tests/episode_production.test.ts
 
     - name: Upload formatted Issue 123 files
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: issue-123-formatted
         path: |
@@ -61,7 +61,7 @@ jobs:
         fi
 
     - name: Upload episode render smoke evidence
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: episode-render-smoke
         path: .artifacts/episode-render-smoke-evidence.zip
@@ -84,7 +84,7 @@ jobs:
         fi
 
     - name: Upload canonical production evidence
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: canonical-production-smoke
         path: .artifacts/canonical-production-smoke-evidence.zip
@@ -96,7 +96,7 @@ jobs:
         BYOSAN_RUNTIME_MODE: smoke
 
     - name: Upload Byosan runtime smoke evidence
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: byosan-runtime-smoke
         path: .artifacts/byosan-runtime-smoke/

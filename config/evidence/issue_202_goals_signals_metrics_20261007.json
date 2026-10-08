@@ -1,0 +1,77 @@
+{
+	"schema_version": 1,
+	"issue": 202,
+	"reviewed_on": "2026-10-07",
+	"status": "RESEARCHED_LICENSE_REVIEW_REQUIRED",
+	"research_summary": [
+		{
+			"source_id": "swe-book-ch07",
+			"sections": [
+				"Triage: Is It Even Worth Measuring?",
+				"Selecting Meaningful Metrics with Goals and Signals",
+				"Goals",
+				"Signals",
+				"Metrics",
+				"Using Data to Validate Metrics"
+			],
+			"finding": "The chapter separates desired outcomes from indications of those outcomes and from measurable proxies. It stresses traceability, considering whether results can change a decision, and validating quantitative proxies with qualitative context."
+		},
+		{
+			"source_id": "swe-book-ch07",
+			"sections": [
+				"Triage: Is It Even Worth Measuring?",
+				"Goals",
+				"Using Data to Validate Metrics"
+			],
+			"finding": "A convenient count can mislead when it is not connected to the desired outcome; the chapter recommends stating an actionable decision first and recording where measurement is not currently possible."
+		},
+		{
+			"source_id": "swe-book-license",
+			"finding": "The publisher states that the free HTML edition is offered under Creative Commons Attribution-NonCommercial-NoDerivatives 4.0. Public availability therefore does not by itself establish permission for a commercial or adapted video. This is a rights flag, not a legal determination."
+		}
+	],
+	"sources": [
+		{
+			"id": "swe-book-ch07",
+			"title": "Software Engineering at Google, Chapter 7: Measuring Engineering Productivity",
+			"url": "https://abseil.io/resources/swe-book/html/ch07.html",
+			"source_type": "primary",
+			"accessed_on": "2026-10-07"
+		},
+		{
+			"id": "swe-book-license",
+			"title": "Software Engineering at Google online edition and license notice",
+			"url": "https://abseil.io/resources/swe-book",
+			"source_type": "rights_notice",
+			"accessed_on": "2026-10-07",
+			"license": "CC BY-NC-ND 4.0"
+		},
+		{
+			"id": "github-actions-run-api",
+			"title": "GitHub REST API endpoints for workflow runs",
+			"url": "https://docs.github.com/en/rest/actions/workflow-runs",
+			"source_type": "metric_source",
+			"accessed_on": "2026-10-07"
+		},
+		{
+			"id": "github-main-branch-protection",
+			"title": "GitHub REST API: get branch protection",
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/branches/main/protection",
+			"source_type": "repository_controls",
+			"accessed_on": "2026-10-07"
+		},
+		{
+			"id": "github-repository-rulesets",
+			"title": "GitHub REST API: list repository rulesets",
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/rulesets",
+			"source_type": "repository_controls",
+			"accessed_on": "2026-10-07"
+		}
+	],
+	"repository_controls_observation": {
+		"observed_at": "2026-10-07T12:41:08Z",
+		"main_branch_protection": "not_configured; GitHub returned HTTP 404 Branch not protected",
+		"repository_rulesets": []
+	},
+	"content_boundary": "Research notes and the yt3 example are original summaries, not copied chapter text. Do not publish an adaptation from the CC BY-NC-ND source unless the relevant rights and channel use are cleared. No video has been published."
+}

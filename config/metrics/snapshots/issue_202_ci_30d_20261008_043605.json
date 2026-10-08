@@ -1,0 +1,55 @@
+{
+	"schema_version": 1,
+	"snapshot_id": "yt3-ci-30d-20261008T043605Z",
+	"observed_at": "2026-10-08T04:36:05Z",
+	"window": {
+		"from": "2026-09-08T04:36:05Z",
+		"to": "2026-10-08T04:36:05Z",
+		"timezone": "UTC",
+		"duration_days": 30
+	},
+	"source": {
+		"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T04%3A36%3A05Z&event=pull_request",
+		"workflow_id": 226201883,
+		"workflow_name": "CI",
+		"request_method": "GET",
+		"pagination": "The API reported total_count=101; --paginate retrieved all 101 results in two pages; filtered locally to the recorded UTC window",
+		"filters": [
+			"event == pull_request",
+			"workflow name == CI",
+			"status == completed",
+			"run_attempt == 1",
+			"created_at within the recorded UTC window"
+		]
+	},
+	"repository_policy_observation": {
+		"observed_at": "2026-10-08T04:37:23Z",
+		"branch_protection_required_status_checks": "not configured for main (branch protection API returned HTTP 404)",
+		"repository_ruleset_count": 0,
+		"interpretation": "CI workflow metrics are feedback proxies, not proof of a required merge gate."
+	},
+	"results": {
+		"completed_first_attempts": 101,
+		"attempt_counts": { "1": 101 },
+		"conclusions": { "success": 76, "failure": 25 },
+		"ci_workflow_elapsed_seconds": {
+			"method": "updated_at - created_at; median is the mean of the two middle values for even n; p95 uses nearest-rank",
+			"median": 126,
+			"p95": 238,
+			"maximum": 2892
+		},
+		"ci_first_attempt_pass_rate_percent": {
+			"numerator": 76,
+			"denominator": 101,
+			"value": 75.2
+		}
+	},
+	"limitations": [
+		"Workflow elapsed time is a proxy, not developer waiting time or engineering productivity.",
+		"Failed workflow runs are included in elapsed-time statistics; workflow failure can reflect code, tests, or infrastructure.",
+		"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
+		"The observed CI workflow is not a configured branch-protection required status check on main.",
+		"The pass rate is descriptive and does not establish that a specific change caused CI outcomes.",
+		"This is a single 30-day repository snapshot; compare future windows with identical filters and inspect sample composition before acting."
+	]
+}

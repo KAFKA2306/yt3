@@ -1,0 +1,73 @@
+{
+	"schema_version": 1,
+	"issue": 202,
+	"reviewed_on": "2026-10-08",
+	"status": "ALTERNATE_PRIMARY_SOURCE_FOUND_ATTRIBUTION_REQUIRED",
+	"research_summary": [
+		{
+			"source_id": "linkedin-dph-gsm",
+			"finding": "The LinkedIn DPH Framework page directly documents Goals, Signals, and Metrics and explains the relationship between the three. The repository README identifies the framework and links its license."
+		},
+		{
+			"source_id": "linkedin-dph-license",
+			"finding": "The repository README states CC BY 4.0 and Copyright 2023 LinkedIn Corporation; the repository LICENSE contains the Creative Commons Attribution 4.0 International Public License. GitHub repository metadata also identifies SPDX CC-BY-4.0."
+		},
+		{
+			"source_id": "cc-by-4-license",
+			"finding": "The CC deed says sharing and adapting, including commercially, are permitted under the terms; attribution, a license link, and an indication of changes are required, and use must not imply endorsement. The deed is a summary, not the full legal code or legal advice."
+		},
+		{
+			"source_id": "swe-book-license",
+			"finding": "The issue original source remains documented as displaying CC BY-NC-ND 4.0. It is retained for provenance but is not used as the production script framework source."
+		}
+	],
+	"sources": [
+		{
+			"id": "linkedin-dph-gsm",
+			"title": "LinkedIn DPH Framework: Goals, Signals, and Metrics",
+			"url": "https://linkedin.github.io/dph-framework/goals-signals-metrics.html",
+			"source_type": "primary_framework",
+			"accessed_on": "2026-10-08"
+		},
+		{
+			"id": "linkedin-dph-readme-license",
+			"title": "LinkedIn DPH Framework README",
+			"url": "https://github.com/linkedin/dph-framework/blob/main/README.md",
+			"source_type": "license_notice",
+			"accessed_on": "2026-10-08",
+			"license": "CC BY 4.0",
+			"copyright": "Copyright 2023 LinkedIn Corporation"
+		},
+		{
+			"id": "linkedin-dph-license-file",
+			"title": "LinkedIn DPH Framework repository LICENSE",
+			"url": "https://github.com/linkedin/dph-framework/blob/main/LICENSE",
+			"source_type": "license_text",
+			"accessed_on": "2026-10-08",
+			"license": "CC BY 4.0"
+		},
+		{
+			"id": "cc-by-4-license",
+			"title": "Creative Commons Attribution 4.0 deed",
+			"url": "https://creativecommons.org/licenses/by/4.0/",
+			"source_type": "license_summary",
+			"accessed_on": "2026-10-08"
+		},
+		{
+			"id": "swe-book-license",
+			"title": "Software Engineering at Google online edition and license notice",
+			"url": "https://abseil.io/resources/swe-book",
+			"source_type": "issue_original_source_rights_flag",
+			"accessed_on": "2026-10-08",
+			"license": "CC BY-NC-ND 4.0",
+			"production_use": "not used as the production GSM framework source"
+		}
+	],
+	"planned_attribution": "LinkedIn Corporation (2023), LinkedIn Developer Productivity & Happiness Framework, Goals, Signals, and Metrics, CC BY 4.0. Japanese summary and adaptation to yt3 CI example. Source: https://linkedin.github.io/dph-framework/goals-signals-metrics.html License: https://creativecommons.org/licenses/by/4.0/. No endorsement implied.",
+	"content_boundary": "The draft uses original Japanese narration and yt3-observed CI data, with the LinkedIn framework as the production reference. No verbatim passage or third-party examples/assets from the cited works are planned. This evidence record is not a legal opinion or a complete release clearance; confirm attribution placement and rights for channel, voice, music, fonts, graphics, and any later assets before publishing.",
+	"unresolved": [
+		"YouTube channel/profile identity and authorization for this series",
+		"Final voice, music, font, and graphic asset rights",
+		"Fresh repository/CI observation before render and release"
+	]
+}

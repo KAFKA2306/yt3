@@ -1,0 +1,146 @@
+{
+	"schema_version": 1,
+	"issue": 202,
+	"observed_at": "2026-10-07T18:40:51Z",
+	"observation_window": {
+		"from": "2026-09-07T09:57:03Z",
+		"to": "2026-10-07T09:57:03Z",
+		"timezone": "UTC"
+	},
+	"source": {
+		"workflow_runs": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-07T09%3A57%3A03Z&event=pull_request",
+		"workflow_run_branch_details_observed_via": "GET /repos/KAFKA2306/yt3/actions/runs/{run_id}; read the head_branch field",
+		"job_steps_api_docs": "https://docs.github.com/en/rest/actions/workflow-jobs",
+		"job_steps_observed_via": "GET /repos/KAFKA2306/yt3/actions/runs/{run_id}/jobs",
+		"job_logs_observed_via": "GET /repos/KAFKA2306/yt3/actions/jobs/{job_id}/logs"
+	},
+	"method": "For all 25 failed workflow runs in the recorded snapshot, inspected each job's failed step label and retrieved the job log through the GitHub Actions Jobs API. Also recorded each run's head_branch and grouped repeated run observations by that label. Counts classify immediate failures and branch clustering, not deeper root causes or independent defects.",
+	"results": {
+		"failed_workflow_runs_inspected": 25,
+		"head_branch_clusters_observed_at": "2026-10-07T20:48:02Z",
+		"failed_job_step_labels": {
+			"Episode production-quality render smoke": {
+				"count": 1,
+				"run_ids": [36002315202]
+			},
+			"Episode canonical render smoke": {
+				"count": 1,
+				"run_ids": [35033744300]
+			},
+			"PR merge gate": {
+				"count": 23,
+				"run_ids": [
+					35079793667, 35079622154, 35040901129, 35040851325, 35040829639,
+					35040757366, 35033717102, 35033699326, 35033677135, 35033622931,
+					35033609872, 35033588499, 35033558577, 35033536586, 35033510210,
+					35033483404, 35033294497, 35033276506, 35033173835, 34662691526,
+					34610641809, 34610441626, 34610166550
+				]
+			}
+		},
+		"immediate_failure_modes": {
+			"Biome lint/check command failed": {
+				"count": 20,
+				"run_ids": [
+					35079793667, 35079622154, 35040851325, 35040829639, 35040757366,
+					35033717102, 35033699326, 35033677135, 35033622931, 35033609872,
+					35033588499, 35033558577, 35033536586, 35033510210, 35033483404,
+					35033294497, 35033276506, 35033173835, 34662691526, 34610441626
+				]
+			},
+			"TypeScript typecheck failed": {
+				"count": 2,
+				"run_ids": [35040901129, 34610166550],
+				"observed_diagnostics": [
+					"TS2322: Remotion render item type mismatch in src/domain/episode/remotion_workspace.ts:84",
+					"TS2339: RunStage.MEMORY is not present in src/io/core.ts:309"
+				]
+			},
+			"Unit-test timeout": {
+				"count": 1,
+				"run_ids": [34610641809],
+				"observed_diagnostics": [
+					"Two structured LLM retry tests exceeded their 5-second timeout; one reported elapsed time of 55 seconds."
+				]
+			},
+			"Remotion smoke generated TSX syntax error": {
+				"count": 1,
+				"run_ids": [36002315202],
+				"observed_diagnostics": [
+					"esbuild reported Expected } but found style at generated ja/remotion/entry.tsx:31:154."
+				]
+			},
+			"Canonical production smoke missing ffmpeg": {
+				"count": 1,
+				"run_ids": [35033744300],
+				"observed_diagnostics": ["Executable not found in PATH: ffmpeg."]
+			}
+		},
+		"head_branch_clusters": {
+			"agent/issue-119-episode-json": {
+				"count": 14,
+				"failure_mode_counts": {
+					"Biome lint/check command failed": 13,
+					"Canonical production smoke missing ffmpeg": 1
+				},
+				"run_ids": [
+					35033173835, 35033276506, 35033294497, 35033483404, 35033510210,
+					35033536586, 35033558577, 35033588499, 35033609872, 35033622931,
+					35033677135, 35033699326, 35033717102, 35033744300
+				]
+			},
+			"agent/issue-121-e2e-smoke": {
+				"count": 4,
+				"failure_mode_counts": {
+					"Biome lint/check command failed": 3,
+					"TypeScript typecheck failed": 1
+				},
+				"run_ids": [35040757366, 35040829639, 35040851325, 35040901129]
+			},
+			"agent/issue-123-canonical-production": {
+				"count": 2,
+				"failure_mode_counts": {
+					"Biome lint/check command failed": 2
+				},
+				"run_ids": [35079622154, 35079793667]
+			},
+			"fix/canonical-structured-llm-55": {
+				"count": 3,
+				"failure_mode_counts": {
+					"Biome lint/check command failed": 1,
+					"TypeScript typecheck failed": 1,
+					"Unit-test timeout": 1
+				},
+				"run_ids": [34610166550, 34610441626, 34610641809]
+			},
+			"feat/byosan-rollout-cost-archetypes-116": {
+				"count": 1,
+				"failure_mode_counts": {
+					"Biome lint/check command failed": 1
+				},
+				"run_ids": [34662691526]
+			},
+			"codex/resolve-open-issues": {
+				"count": 1,
+				"failure_mode_counts": {
+					"Remotion smoke generated TSX syntax error": 1
+				},
+				"run_ids": [36002315202]
+			}
+		},
+		"classification_scope": "The failing command or immediate workflow failure mode is established for all 25 runs. The head_branch grouping shows repeated run observations by branch label only; it does not establish distinct PR counts, independent defects, or deeper causal attribution."
+	},
+	"log_access_notes": [
+		{
+			"run_id": 35079793667,
+			"check": "gh run view --log-failed",
+			"result": "gh run view --log-failed returned no lines; the Actions Jobs REST log endpoint returned the job log. The CLI discrepancy is unexplained."
+		}
+	],
+	"limitations": [
+		"The 20 Biome failures are grouped by the failing command; this record does not normalize each individual Biome diagnostic.",
+		"Branch clusters use the workflow run's head_branch label. A branch label is not a distinct PR or defect identifier, and cluster size must not be read as an independent failure count.",
+		"Failure modes identify the immediate failed command or message, not the deeper reason the source, test, or environment entered that state.",
+		"This follow-up inspects the failure records from the 2026-10-07 snapshot; it does not update the snapshot's 30-day counts or create a new metric window."
+	]
+}

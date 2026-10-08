@@ -1,0 +1,54 @@
+{
+	"schema_version": 1,
+	"snapshot_id": "yt3-ci-30d-20261007",
+	"observed_at": "2026-10-07T09:57:03Z",
+	"window": {
+		"from": "2026-09-07T09:57:03Z",
+		"to": "2026-10-07T09:57:03Z",
+		"timezone": "UTC",
+		"duration_days": 30
+	},
+	"source": {
+		"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-07T09%3A57%3A03Z&event=pull_request",
+		"workflow_id": 226201883,
+		"workflow_name": "CI",
+		"request_method": "GET",
+		"pagination": "All pages fetched; filtered locally after retrieval",
+		"filters": [
+			"event == pull_request",
+			"workflow name == CI",
+			"status == completed",
+			"run_attempt == 1",
+			"created_at within the recorded UTC window"
+		]
+	},
+	"repository_policy_observation": {
+		"branch_protection_required_status_checks": "not configured for main",
+		"repository_ruleset_count": 0,
+		"interpretation": "CI workflow metrics are feedback proxies, not proof of a required merge gate."
+	},
+	"results": {
+		"completed_first_attempts": 88,
+		"attempt_counts": { "1": 88 },
+		"conclusions": { "success": 63, "failure": 25 },
+		"ci_workflow_elapsed_seconds": {
+			"method": "nearest-rank percentile of updated_at - created_at",
+			"median": 124,
+			"p95": 159,
+			"maximum": 452
+		},
+		"ci_first_attempt_pass_rate_percent": {
+			"numerator": 63,
+			"denominator": 88,
+			"value": 71.6
+		}
+	},
+	"limitations": [
+		"Workflow elapsed time is a proxy, not developer waiting time or engineering productivity.",
+		"Failed workflow runs are included in elapsed-time statistics; workflow failure can reflect code, tests, or infrastructure.",
+		"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
+		"The observed CI workflow is not a configured branch-protection required status check on main.",
+		"The pass rate is descriptive and does not establish that a specific change caused CI outcomes.",
+		"This is a single 30-day repository snapshot; compare future windows with identical filters and inspect sample composition before acting."
+	]
+}

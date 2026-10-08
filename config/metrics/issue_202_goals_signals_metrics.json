@@ -1,0 +1,97 @@
+{
+	"schema_version": 1,
+	"plan_id": "yt3-change-feedback",
+	"observed_at": "2026-10-08T06:35:34Z",
+	"decision_question": "How can yt3 reduce avoidable time to trustworthy change feedback without weakening the checks that protect main?",
+	"framework_source_ids": ["linkedin-dph-gsm"],
+	"sources": [
+		{
+			"id": "linkedin-dph-gsm",
+			"title": "LinkedIn DPH Framework: Goals, Signals, and Metrics",
+			"url": "https://linkedin.github.io/dph-framework/goals-signals-metrics.html",
+			"role": "PRIMARY_FRAMEWORK",
+			"accessed_on": "2026-10-08"
+		},
+		{
+			"id": "github-actions-run-api",
+			"title": "GitHub REST API: workflow runs",
+			"url": "https://docs.github.com/en/rest/actions/workflow-runs",
+			"role": "METRIC_DATA_SOURCE",
+			"accessed_on": "2026-10-08"
+		}
+	],
+	"goals": [
+		{
+			"id": "trustworthy-feedback",
+			"statement": "Changes receive timely, interpretable CI feedback while existing safety checks stay intact.",
+			"positive_action": "Inspect slow CI stages and optimize without weakening the canonical validation gate.",
+			"negative_action": "Do not infer that green Actions alone proves quality; preserve the current gate and investigate flaky results."
+		}
+	],
+	"signals": [
+		{
+			"id": "actionable-check-feedback",
+			"goal_ids": ["trustworthy-feedback"],
+			"statement": "A pull request receives an actionable CI workflow result early enough to inform review.",
+			"measurement_state": "MEASURABLE"
+		},
+		{
+			"id": "ci-outcome",
+			"goal_ids": ["trustworthy-feedback"],
+			"statement": "The first CI workflow attempt returns an explicit outcome that supports failure triage.",
+			"measurement_state": "MEASURABLE"
+		}
+	],
+	"metrics": [
+		{
+			"id": "ci-workflow-p95-latency",
+			"signal_ids": ["actionable-check-feedback"],
+			"name": "CI workflow p95 elapsed time",
+			"definition": "The 95th-percentile elapsed time from a pull-request CI workflow run being created to its completed result.",
+			"unit": "seconds",
+			"data_source_ids": ["github-actions-run-api"],
+			"formula": "p95(updated_at - created_at) for completed pull_request CI workflow runs with run_attempt = 1",
+			"aggregation": "Nearest-rank p95; n=102; median=125.5 seconds; max=2892 seconds",
+			"observation_window": "2026-09-08T06:35:34Z to 2026-10-08T06:35:34Z (UTC)",
+			"status": "MEASURED",
+			"value": 238,
+			"evidence_urls": [
+				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T06%3A35%3A34Z&event=pull_request"
+			],
+			"limitations": [
+				"The run timestamps are a proxy for time to feedback and can include queue and service-update delay.",
+				"The CI workflow is not configured as a required branch-protection status check in the observed repository state.",
+				"CI duration is not a measurement of developer focus, total engineering effort, or software quality.",
+				"A low sample count or changes in runner capacity can make comparisons misleading."
+			]
+		},
+		{
+			"id": "ci-first-attempt-pass-rate",
+			"signal_ids": ["actionable-check-feedback", "ci-outcome"],
+			"name": "CI workflow-run success rate (run_attempt = 1)",
+			"definition": "The proportion of completed pull-request CI workflow runs whose GitHub Actions run_attempt is 1 and whose conclusion is success. This counts workflow runs, not distinct pull requests; one pull request can contribute multiple runs.",
+			"unit": "percent",
+			"data_source_ids": ["github-actions-run-api"],
+			"formula": "100 * successful completed first-attempt pull_request CI workflow runs / all completed first-attempt pull_request CI workflow runs",
+			"aggregation": "77 successful / 102 completed workflow runs with run_attempt=1 = 75.5%; multiple runs from one pull request can be counted; report numerator and denominator",
+			"observation_window": "2026-09-08T06:35:34Z to 2026-10-08T06:35:34Z (UTC)",
+			"status": "MEASURED",
+			"value": 75.5,
+			"evidence_urls": [
+				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T06%3A35%3A34Z&event=pull_request"
+			],
+			"limitations": [
+				"A green CI run is not proof that a change is defect-free.",
+				"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
+				"This CI workflow is not configured as a required branch-protection status check in the observed repository state.",
+				"Cancelled, skipped, and infrastructure-failure conclusions must be reported separately rather than silently counted as success or failure.",
+				"A pass-rate change is descriptive and does not establish that a particular process change caused it."
+			]
+		}
+	],
+	"anti_patterns": [
+		"Do not treat lines of code or commit counts as productivity outcomes.",
+		"Do not optimize a convenient metric before stating the decision and desired outcome.",
+		"Do not claim that green CI proves code quality or that a single before/after change establishes causality."
+	]
+}
