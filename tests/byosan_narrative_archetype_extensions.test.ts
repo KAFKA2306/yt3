@@ -193,7 +193,8 @@ describe("extended byosan narrative archetypes", () => {
 			],
 		};
 		const evidenceBundle = candidate.archetypeEvidence.at(0);
-		if (!evidenceBundle) throw new Error("Expected active falsification fixture");
+		if (!evidenceBundle)
+			throw new Error("Expected active falsification fixture");
 		const selected = selectByosanNarrativeArchetype(candidate, {
 			format: "deep_dive",
 		});
