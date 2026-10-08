@@ -1,7 +1,7 @@
 {
 	"schema_version": 1,
 	"plan_id": "yt3-change-feedback",
-	"observed_at": "2026-10-08T04:36:05Z",
+	"observed_at": "2026-10-08T06:35:34Z",
 	"decision_question": "How can yt3 reduce avoidable time to trustworthy change feedback without weakening the checks that protect main?",
 	"framework_source_ids": ["linkedin-dph-gsm"],
 	"sources": [
@@ -51,12 +51,12 @@
 			"unit": "seconds",
 			"data_source_ids": ["github-actions-run-api"],
 			"formula": "p95(updated_at - created_at) for completed pull_request CI workflow runs with run_attempt = 1",
-			"aggregation": "Nearest-rank p95; n=101; median=126 seconds; max=2892 seconds",
-			"observation_window": "2026-09-08T04:36:05Z to 2026-10-08T04:36:05Z (UTC)",
+			"aggregation": "Nearest-rank p95; n=102; median=125.5 seconds; max=2892 seconds",
+			"observation_window": "2026-09-08T06:35:34Z to 2026-10-08T06:35:34Z (UTC)",
 			"status": "MEASURED",
 			"value": 238,
 			"evidence_urls": [
-				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T04%3A36%3A05Z&event=pull_request"
+				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T06%3A35%3A34Z&event=pull_request"
 			],
 			"limitations": [
 				"The run timestamps are a proxy for time to feedback and can include queue and service-update delay.",
@@ -73,12 +73,12 @@
 			"unit": "percent",
 			"data_source_ids": ["github-actions-run-api"],
 			"formula": "100 * successful completed first-attempt pull_request CI workflow runs / all completed first-attempt pull_request CI workflow runs",
-			"aggregation": "76 successful / 101 completed workflow runs with run_attempt=1 = 75.2%; multiple runs from one pull request can be counted; report numerator and denominator",
-			"observation_window": "2026-09-08T04:36:05Z to 2026-10-08T04:36:05Z (UTC)",
+			"aggregation": "77 successful / 102 completed workflow runs with run_attempt=1 = 75.5%; multiple runs from one pull request can be counted; report numerator and denominator",
+			"observation_window": "2026-09-08T06:35:34Z to 2026-10-08T06:35:34Z (UTC)",
 			"status": "MEASURED",
-			"value": 75.2,
+			"value": 75.5,
 			"evidence_urls": [
-				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T04%3A36%3A05Z&event=pull_request"
+				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T06%3A35%3A34Z&event=pull_request"
 			],
 			"limitations": [
 				"A green CI run is not proof that a change is defect-free.",

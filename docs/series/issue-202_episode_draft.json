@@ -36,8 +36,8 @@
 		},
 		{
 			"id": "yt3-ci-snapshot",
-			"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T04%3A36%3A05Z&event=pull_request",
-			"title": "yt3 GitHub Actions 30-day CI snapshot (2026-10-08 04:36 UTC)"
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T06%3A35%3A34Z&event=pull_request",
+			"title": "yt3 GitHub Actions 30-day CI snapshot (2026-10-08 06:35 UTC)"
 		},
 		{
 			"id": "github-main-branch-protection",
@@ -78,7 +78,7 @@
 		},
 		{
 			"id": "claim-ci-observation",
-			"text": "2026-09-08T04:36:05Zから2026-10-08T04:36:05Zまでに観測した、run_attempt=1の完了済みpull_request CI workflow runは101件で、76件が成功し、p95所要時間は238秒だった。これはPRの件数ではなく、同じPRから複数runが含まれうる。",
+			"text": "2026-09-08T06:35:34Zから2026-10-08T06:35:34Zまでに観測した、run_attempt=1の完了済みpull_request CI workflow runは102件で、77件が成功し、p95所要時間は238秒だった。これはPRの件数ではなく、同じPRから複数runが含まれうる。",
 			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
@@ -93,7 +93,7 @@
 		},
 		{
 			"id": "claim-branch-controls",
-			"text": "2026-10-08T04:37:23Zの確認では、mainブランチ保護は未設定で、リポジトリrulesets一覧は空だった。",
+			"text": "2026-10-08T06:36:16Zの確認では、mainブランチ保護は未設定で、リポジトリrulesets一覧は空だった。",
 			"source_ids": [
 				"github-main-branch-protection",
 				"github-repository-rulesets"
@@ -116,7 +116,7 @@
 			"id": "hook-count",
 			"type": "number-highlight",
 			"props": {
-				"number": "101",
+				"number": "102",
 				"label": "完了した初回CI"
 			}
 		},
@@ -140,8 +140,8 @@
 			"type": "number-highlight",
 			"props": {
 				"p95_seconds": 238,
-				"median_seconds": 126,
-				"run_attempt_1_success": "76/101 workflow runs (75.2%)",
+				"median_seconds": 125.5,
+				"run_attempt_1_success": "77/102 workflow runs (75.5%)",
 				"unit_of_analysis": "workflow_run; multiple runs from one PR may be counted"
 			}
 		},
@@ -191,7 +191,7 @@
 				{
 					"id": "hook-narration",
 					"speaker": "Narrator (voice pending)",
-					"text": "このリポジトリのCI、直近30日で初回runが101件。76件は成功、25件は失敗。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。",
+					"text": "このリポジトリのCI、直近30日で初回runが102件。77件は成功、25件は失敗。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。",
 					"visual_ref": "hook-count",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/hook.wav"
@@ -236,7 +236,7 @@
 				{
 					"id": "metrics-latency",
 					"speaker": "Narrator (voice pending)",
-					"text": "この30日では、CIの作成から完了までのp95が238秒、中央値は126秒。",
+					"text": "この30日では、CIの作成から完了までのp95が238秒、中央値は125.5秒。",
 					"visual_ref": "metric-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/metrics-latency.wav"
@@ -245,7 +245,7 @@
 				{
 					"id": "metrics-outcome",
 					"speaker": "Narrator (voice pending)",
-					"text": "run_attempt=1は101件、76件成功で75.2%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。",
+					"text": "run_attempt=1は102件、77件成功で75.5%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。",
 					"visual_ref": "metric-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/metrics-outcome.wav"
