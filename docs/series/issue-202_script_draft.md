@@ -9,8 +9,8 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 - Episode: `issue-202_episode_draft.json` is intended for schema and content-reference audit only. Its audio paths are placeholders; compile/render is deferred until the destination channel and voice are selected and rights are reviewed.
 - Script: Jobs API logs identify the immediate failure mode for all 25 failed runs: 20 Biome lint/check failures, 2 TypeScript typecheck failures, 1 unit-test timeout, 1 generated-TSX syntax error in render smoke, and 1 canonical smoke run missing `ffmpeg`. Deeper causal attribution is not asserted.
 - Branch clustering: a follow-up read of `head_branch` for all 25 workflow runs found six branch labels; `agent/issue-119-episode-json` accounts for 14 runs (13 Biome failures and one missing-`ffmpeg` failure). This is a branch/run grouping, not a distinct-PR count or causal explanation.
-- Metric interpretation: the denominator is 100 workflow runs with `run_attempt=1`, not 100 distinct pull requests; one PR can contribute multiple runs. The metric plan, dated snapshot, and narration state this boundary.
-- Verification: earlier `task check:merge` runs passed with 264 tests and 1,004, then 1,011 assertions. The first full check after adding the license ledger caught its formatting; repository formatting fixed it. The latest `task check:merge` passed at 2026-10-08T02:45 UTC: lint, typecheck, repository/product audits, 264 tests, and 1,016 assertions. `task productivity:gsm:audit` passed earlier in this turn. The canonical `task episode:compile` preflight failed before writing output because `audio/pending-channel-and-voice/hook.wav` does not exist; no substitute audio was created. The fresh 30-day snapshot at 02:42:28Z is stored in `config/metrics/snapshots/issue_202_ci_30d_20261008.json`; its window, totals, latency, and rate are asserted in the test.
+- Metric interpretation: the denominator is 101 workflow runs with `run_attempt=1`, not 101 distinct pull requests; one PR can contribute multiple runs. The metric plan, dated snapshot, and narration state this boundary.
+- Verification: earlier `task check:merge` runs passed with 264 tests and 1,004, then 1,011 assertions. The first full check after adding the license ledger caught its formatting; repository formatting fixed it. A recent `task check:merge` passed at 2026-10-08T04:41 UTC: lint, typecheck, repository/product audits, 264 tests, and 1,018 assertions. The focused GSM test passed (4 tests, 53 assertions), and `task productivity:gsm:audit` passed. A fresh canonical `task episode:compile` preflight at 04:41 UTC failed before writing output because `audio/pending-channel-and-voice/hook.wav` does not exist; the output directory remained absent and no substitute audio was created. The current 30-day snapshot at 04:36:05Z is stored in `config/metrics/snapshots/issue_202_ci_30d_20261008_043605.json`; its window, totals, latency, and rate are asserted in the test. This refresh adds one successful run (n=101) without changing the 25 failed-run IDs.
 - Release: no #202-specific render or YouTube publication was attempted. The generic CI render smoke is not a render of this episode. The selected channel/profile, voice, and remaining media-asset rights are unresolved; the daily flow may publish only after its configured profile and all rights, QA, and release gates pass.
 - Resume point: investigate deeper causes only if source changes and logs establish them; branch clustering alone is not causal evidence. Finalize the LinkedIn attribution card/description, confirm the intended channel/profile and voice plus rights for all remaining assets, create approved narration/audio, run canonical compile/render, and pass QA/release gates before publication.
 
@@ -19,18 +19,18 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 - Audience: software builders and repository maintainers
 - Platform: YouTube explainer; approximately 90 seconds
 - Goal: show how one real repository decision leads to observable signals and bounded metrics
-- Source asset: yt3 CI workflow snapshot for 2026-09-08T02:42:28Z through 2026-10-08T02:42:28Z UTC
+- Source asset: yt3 CI workflow snapshot for 2026-09-08T04:36:05Z through 2026-10-08T04:36:05Z UTC
 - Rights boundary: Issue #202 names the SWE Book, whose CC BY-NC-ND 4.0 notice remains recorded. The production GSM reference is instead the LinkedIn DPH Framework, whose README/LICENSE identify CC BY 4.0; attribution is planned, but this is not complete release clearance.
 
 ## Script and visual beats
 
 ### 0:00–0:12 — Hook
 
-**Visual:** Large `100 workflow runs (run_attempt=1)` counter; split into `75 success` and `25 failure`.
+**Visual:** Large `101 workflow runs (run_attempt=1)` counter; split into `76 success` and `25 failure`.
 
 **Narration:**
 
-「このリポジトリのCI、直近30日で初回runが100件。75件は成功、25件は失敗。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。」
+「このリポジトリのCI、直近30日で初回runが101件。76件は成功、25件は失敗。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。」
 
 ### 0:12–0:29 — Goal
 
@@ -50,11 +50,11 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 
 ### 0:45–1:03 — Metrics
 
-**Visual:** `p95 238秒`, `中央値 125.5秒`, `75/100 workflow runs (75%)`; label `run_attempt=1`, the 30-day UTC window, and that runs—not PRs—are counted.
+**Visual:** `p95 238秒`, `中央値 126秒`, `76/101 workflow runs (75.2%)`; label `run_attempt=1`, the 30-day UTC window, and that runs—not PRs—are counted.
 
 **Narration:**
 
-「この30日では、CIの作成から完了までのp95が238秒、中央値は125.5秒。run_attempt=1は100件、75件成功で75%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。」
+「この30日では、CIの作成から完了までのp95が238秒、中央値は126秒。run_attempt=1は101件、76件成功で75.2%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。」
 
 ### 1:03–1:18 — Boundary
 
@@ -62,7 +62,7 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 
 **Narration:**
 
-「ただし、これは開発者の生産性でも、コード品質でもありません。2026年10月7日12:41 UTCの確認では、mainにブランチ保護の必須チェックがありませんでした。CIの数字だけで、安全なマージを証明したことにはならないんです。」
+「ただし、これは開発者の生産性でも、コード品質でもありません。2026年10月8日04:37 UTCの確認では、mainにブランチ保護の必須チェックがありませんでした。CIの数字だけで、安全なマージを証明したことにはならないんです。」
 
 ### 1:18–1:30 — Action
 
@@ -75,7 +75,7 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 ## Production notes
 
 - Keep every displayed metric labeled with the exact 30-day UTC observation window and sample size.
-- The 100 denominator is GitHub Actions workflow runs with `run_attempt=1`, not 100 distinct pull requests; one PR can have multiple runs.
+- The 101 denominator is GitHub Actions workflow runs with `run_attempt=1`, not 101 distinct pull requests; one PR can have multiple runs.
 - Do not describe the CI workflow as a required check, merge gate, or direct productivity measure.
 - The 25 failures are classified by immediate log evidence: 20 Biome lint/check, 2 TypeScript typecheck, 1 unit-test timeout, 1 generated-TSX syntax error, and 1 missing-`ffmpeg` prerequisite. This does not establish deeper systemic causes; keep that distinction explicit.
 - Those 25 failed workflow runs cluster under six `head_branch` labels; the largest is `agent/issue-119-episode-json` with 14 runs. A branch label is not a distinct PR or defect identifier; do not infer causality from the cluster.
@@ -85,7 +85,7 @@ Status: editorial script draft only. A schema-shaped episode draft now exists at
 
 ## Sources
 
-- yt3 30-day workflow snapshot: `config/metrics/snapshots/issue_202_ci_30d_20261008.json`
+- yt3 30-day workflow snapshot: `config/metrics/snapshots/issue_202_ci_30d_20261008_043605.json`
 - GitHub Actions workflow runs API: https://docs.github.com/en/rest/actions/workflow-runs
 - Software Engineering at Google, Chapter 7: https://abseil.io/resources/swe-book/html/ch07.html
 - LinkedIn DPH Framework, Goals, Signals, and Metrics: https://linkedin.github.io/dph-framework/goals-signals-metrics.html (README/LICENSE: CC BY 4.0; Copyright 2023 LinkedIn Corporation).

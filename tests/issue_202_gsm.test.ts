@@ -14,7 +14,7 @@ const planPath = path.join(
 const examplePlan = JSON.parse(readFileSync(planPath, "utf8"));
 const snapshotPath = path.join(
 	process.cwd(),
-	"config/metrics/snapshots/issue_202_ci_30d_20261008.json",
+	"config/metrics/snapshots/issue_202_ci_30d_20261008_043605.json",
 );
 const failureTriagePath = path.join(
 	process.cwd(),
@@ -50,16 +50,22 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		).toBe(true);
 		expect(
 			plan.metrics.map((metric: { value: number }) => metric.value),
-		).toEqual([238, 75]);
+		).toEqual([238, 75.2]);
 		const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8"));
-		expect(snapshot.results.completed_first_attempts).toBe(100);
-		expect(snapshot.window.from).toBe("2026-09-08T02:42:28Z");
-		expect(snapshot.window.to).toBe("2026-10-08T02:42:28Z");
-		expect(snapshot.results.conclusions).toEqual({ success: 75, failure: 25 });
+		expect(snapshot.results.completed_first_attempts).toBe(101);
+		expect(snapshot.window.from).toBe("2026-09-08T04:36:05Z");
+		expect(snapshot.window.to).toBe("2026-10-08T04:36:05Z");
+		expect(snapshot.results.conclusions).toEqual({ success: 76, failure: 25 });
 		expect(snapshot.results.ci_workflow_elapsed_seconds.p95).toBe(
 			plan.metrics[0].value,
 		);
-		expect(snapshot.results.ci_workflow_elapsed_seconds.median).toBe(125.5);
+		expect(snapshot.results.ci_workflow_elapsed_seconds.median).toBe(126);
+		expect(snapshot.results.ci_first_attempt_pass_rate_percent.numerator).toBe(
+			76,
+		);
+		expect(
+			snapshot.results.ci_first_attempt_pass_rate_percent.denominator,
+		).toBe(101);
 		expect(snapshot.results.ci_first_attempt_pass_rate_percent.value).toBe(
 			plan.metrics[1].value,
 		);
