@@ -159,4 +159,75 @@ describe("extended byosan narrative archetypes", () => {
 			details: "rollout_verification:quota_consumption:missing-probe",
 		});
 	});
+
+	test("active falsification requires a verified observation, discriminating test, and evidence boundary", () => {
+		const requiredSlots = [
+			"target_claim",
+			"probe_method",
+			"observation",
+			"competing_hypothesis",
+			"discriminating_test",
+			"falsification_boundary",
+			"bounded_conclusion",
+		];
+		const candidate = {
+			sources,
+			adversarialEvidence,
+			activeProbes: [
+				{ id: "diff-probe", probeType: "git_diff", status: "VERIFIED" },
+			],
+			archetypeEvidence: [
+				{
+					archetype: "active_falsification" as const,
+					slots: requiredSlots.map((name) =>
+						slot(name, {
+							...(name === "observation" || name === "discriminating_test"
+								? { activeProbeIds: ["diff-probe"] }
+								: {}),
+							...(name === "falsification_boundary"
+								? { adversarialEvidenceIds: ["vendor-boundary"] }
+								: {}),
+						}),
+					),
+				},
+			],
+		};
+		const evidenceBundle = candidate.archetypeEvidence.at(0);
+		if (!evidenceBundle)
+			throw new Error("Expected active falsification fixture");
+		const selected = selectByosanNarrativeArchetype(candidate, {
+			format: "deep_dive",
+		});
+		expect(selected.archetype).toBe("active_falsification");
+		expect(selected.requiredSlots).toEqual(requiredSlots);
+		expect(
+			selectByosanNarrativeArchetype(
+				{
+					...candidate,
+					activeProbes: [
+						{ id: "diff-probe", probeType: "git_diff", status: "UNVERIFIED" },
+					],
+				},
+				{ format: "deep_dive" },
+			).archetype,
+		).toBe("standard");
+		expect(
+			selectByosanNarrativeArchetype(
+				{
+					...candidate,
+					archetypeEvidence: [
+						{
+							...evidenceBundle,
+							slots: evidenceBundle.slots.map((item) =>
+								item.slot === "falsification_boundary"
+									? { ...item, adversarialEvidenceIds: [] }
+									: item,
+							),
+						},
+					],
+				},
+				{ format: "deep_dive" },
+			).archetype,
+		).toBe("standard");
+	});
 });

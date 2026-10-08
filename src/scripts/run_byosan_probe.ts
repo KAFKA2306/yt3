@@ -125,9 +125,9 @@ async function execute(request: z.infer<typeof ProbeRequestSchema>) {
 		return {
 			target: request.target,
 			fingerprint: fingerprintProbeInput(request.cases),
-			observation: `tokenizer_fingerprint=${tokenizerFingerprint(request.cases)} cases=${request.cases.length}`,
+			observation: `provided_counts_fingerprint=${tokenizerFingerprint(request.cases)} cases=${request.cases.length}; no tokenizer was called`,
 			reproducibility:
-				"Re-run the same ordered input strings, record integer token counts, normalize NFKC, sort by input, and SHA-256 the resulting pairs.",
+				"Caller-supplied counts were normalized and hashed, not measured against the target tokenizer. Direct tokenizer integration and raw token observations are needed for verification.",
 			authorizationRequired: false,
 			authorizationConfirmed: true,
 		};
@@ -187,7 +187,8 @@ async function main() {
 	const evidence = ByosanActiveProbeEvidenceSchema.parse({
 		id: request.id,
 		probeType: request.probeType,
-		status: "VERIFIED",
+		status:
+			request.probeType === "tokenizer_fingerprint" ? "UNVERIFIED" : "VERIFIED",
 		target: observed.target,
 		executedAt: new Date().toISOString(),
 		requestOrInputFingerprint: observed.fingerprint,
@@ -215,7 +216,7 @@ async function main() {
 			`${request.id}.probe-evidence.json`,
 		);
 	await fs.outputJson(outputPath, evidence, { spaces: 2 });
-	console.log(`ACTIVE_PROBE_VERIFIED=${outputPath}`);
+	console.log(`ACTIVE_PROBE_${evidence.status}=${outputPath}`);
 }
 
 if (import.meta.main) {

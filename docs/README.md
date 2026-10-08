@@ -15,6 +15,7 @@ This directory contains maintained operational standards and architecture decisi
 - [`standard/humanity-observatory-audit-standard.md`](./standard/humanity-observatory-audit-standard.md): Humanity Observatory audit standard
 - [`standard/kafka-visual-identity.md`](./standard/kafka-visual-identity.md): shared visual identity rules
 - [`standard/viral-retention-engineering.md`](./standard/viral-retention-engineering.md): retention-oriented production standard
+- [`standard/byosan-reference-patterns.md`](./standard/byosan-reference-patterns.md): evidence-first architecture for adapting external video patterns
 - [`standard/asmr-workflow.md`](./standard/asmr-workflow.md): ASMR workflow standard
 
 ## Publication
