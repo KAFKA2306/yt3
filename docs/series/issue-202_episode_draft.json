@@ -2,7 +2,7 @@
 	"schema_version": 1,
 	"metadata": {
 		"title": "Goals → Signals → Metrics: yt3のCIで測ってみる",
-		"description": "yt3の2026-09-07〜2026-10-07 UTCのGitHub Actions CI観測値を例に、Goal・Signal・Metricをつなぐ。これは開発者の生産性やコード品質を直接測るものではない。 Attribution: LinkedIn Corporation (2023), LinkedIn Developer Productivity & Happiness Framework, Goals, Signals, and Metrics (CC BY 4.0). Japanese summary and yt3 CI example adaptation; no endorsement implied. Source: https://linkedin.github.io/dph-framework/goals-signals-metrics.html License: https://creativecommons.org/licenses/by/4.0/",
+		"description": "yt3の2026-09-08〜2026-10-08 UTCのGitHub Actions CI観測値を例に、Goal・Signal・Metricをつなぐ。これは開発者の生産性やコード品質を直接測るものではない。 Attribution: LinkedIn Corporation (2023), LinkedIn Developer Productivity & Happiness Framework, Goals, Signals, and Metrics (CC BY 4.0). Japanese summary and yt3 CI example adaptation; no endorsement implied. Source: https://linkedin.github.io/dph-framework/goals-signals-metrics.html License: https://creativecommons.org/licenses/by/4.0/",
 		"tags": [
 			"ソフトウェア開発",
 			"メトリクス",
@@ -36,8 +36,8 @@
 		},
 		{
 			"id": "yt3-ci-snapshot",
-			"url": "https://github.com/KAFKA2306/yt3/blob/0a3cb56eaf71971884a7603719a30c4cf36389a7/config/metrics/snapshots/issue_202_ci_30d_20261007.json",
-			"title": "yt3 GitHub Actions 30-day CI snapshot (2026-10-07 UTC)"
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T02%3A42%3A28Z&event=pull_request",
+			"title": "yt3 GitHub Actions 30-day CI snapshot (2026-10-08 UTC)"
 		},
 		{
 			"id": "github-main-branch-protection",
@@ -78,7 +78,7 @@
 		},
 		{
 			"id": "claim-ci-observation",
-			"text": "2026-09-07T09:57:03Zから2026-10-07T09:57:03Zまでに観測した、run_attempt=1の完了済みpull_request CI workflow runは88件で、63件が成功し、p95所要時間は159秒だった。これはPRの件数ではなく、同じPRから複数runが含まれうる。",
+			"text": "2026-09-08T02:42:28Zから2026-10-08T02:42:28Zまでに観測した、run_attempt=1の完了済みpull_request CI workflow runは100件で、75件が成功し、p95所要時間は238秒だった。これはPRの件数ではなく、同じPRから複数runが含まれうる。",
 			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
@@ -93,7 +93,7 @@
 		},
 		{
 			"id": "claim-branch-controls",
-			"text": "2026-10-07T12:41:08Zの確認では、mainブランチ保護は未設定で、リポジトリrulesets一覧は空だった。",
+			"text": "2026-10-08T02:42:28Zの確認では、mainブランチ保護は未設定で、リポジトリrulesets一覧は空だった。",
 			"source_ids": [
 				"github-main-branch-protection",
 				"github-repository-rulesets"
@@ -116,7 +116,7 @@
 			"id": "hook-count",
 			"type": "number-highlight",
 			"props": {
-				"number": "88",
+				"number": "100",
 				"label": "完了した初回CI"
 			}
 		},
@@ -139,9 +139,9 @@
 			"id": "metric-card",
 			"type": "number-highlight",
 			"props": {
-				"p95_seconds": 159,
-				"median_seconds": 124,
-				"run_attempt_1_success": "63/88 workflow runs (71.6%)",
+				"p95_seconds": 238,
+				"median_seconds": 125.5,
+				"run_attempt_1_success": "75/100 workflow runs (75%)",
 				"unit_of_analysis": "workflow_run; multiple runs from one PR may be counted"
 			}
 		},
@@ -191,7 +191,7 @@
 				{
 					"id": "hook-narration",
 					"speaker": "Narrator (voice pending)",
-					"text": "このリポジトリのCI、30日で88回。初回成功は63回、失敗は25回。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。",
+					"text": "このリポジトリのCI、直近30日で初回runが100件。75件は成功、25件は失敗。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。",
 					"visual_ref": "hook-count",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/hook.wav"
@@ -236,7 +236,7 @@
 				{
 					"id": "metrics-latency",
 					"speaker": "Narrator (voice pending)",
-					"text": "この30日では、CIの作成から完了までのp95が159秒、中央値は124秒。",
+					"text": "この30日では、CIの作成から完了までのp95が238秒、中央値は125.5秒。",
 					"visual_ref": "metric-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/metrics-latency.wav"
@@ -245,7 +245,7 @@
 				{
 					"id": "metrics-outcome",
 					"speaker": "Narrator (voice pending)",
-					"text": "run_attempt=1は88件、63件成功で71.6%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。",
+					"text": "run_attempt=1は100件、75件成功で75%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。",
 					"visual_ref": "metric-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/metrics-outcome.wav"
