@@ -31,7 +31,7 @@
 		},
 		{
 			"id": "yt3-ci-failure-mode-evidence",
-			"url": "https://github.com/KAFKA2306/yt3/blob/codex/issue-202-goals-signals/config/evidence/issue_202_failure_triage_20261008.json",
+			"url": "https://github.com/KAFKA2306/yt3/blob/fee5019609884a92dbd0665f62a102f2fad40b34/config/evidence/issue_202_failure_triage_20261008.json",
 			"title": "yt3 CI immediate failure-mode evidence (2026-10-08 JST)"
 		},
 		{

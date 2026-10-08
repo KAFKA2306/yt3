@@ -216,6 +216,12 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 			license: "CC BY 4.0",
 			endorsement: "No endorsement implied",
 		});
+		const failureEvidenceSource = episode.sources.find(
+			(source: { id: string }) => source.id === "yt3-ci-failure-mode-evidence",
+		);
+		expect(failureEvidenceSource.url).toBe(
+			"https://github.com/KAFKA2306/yt3/blob/fee5019609884a92dbd0665f62a102f2fad40b34/config/evidence/issue_202_failure_triage_20261008.json",
+		);
 		const branchClaim = episode.claims.find(
 			(claim: { id: string }) => claim.id === "claim-head-branch-clusters",
 		);
@@ -371,6 +377,95 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 			expect(
 				result.error.issues.some((issue) =>
 					issue.message.includes("measured metrics require"),
+				),
+			).toBe(true);
+		}
+	});
+	test("requires framework references to use PRIMARY_FRAMEWORK sources", () => {
+		const plan = structuredClone(examplePlan);
+		plan.framework_source_ids = ["github-actions-run-api"];
+		const result = GoalsSignalsMetricsPlanSchema.safeParse(plan);
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(
+				result.error.issues.some((issue) =>
+					issue.message.includes("role PRIMARY_FRAMEWORK"),
+				),
+			).toBe(true);
+		}
+	});
+
+	test("requires metric data references to use METRIC_DATA_SOURCE sources", () => {
+		const plan = structuredClone(examplePlan);
+		plan.metrics[0].data_source_ids = ["linkedin-dph-gsm"];
+		const result = GoalsSignalsMetricsPlanSchema.safeParse(plan);
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(
+				result.error.issues.some((issue) =>
+					issue.message.includes("role METRIC_DATA_SOURCE"),
+				),
+			).toBe(true);
+		}
+	});
+
+	test("rejects a measurable signal linked only to not-measurable metrics", () => {
+		const plan = structuredClone(examplePlan);
+		const metric = plan.metrics.find(
+			(item) => item.id === "ci-first-attempt-pass-rate",
+		);
+		if (!metric) {
+			throw new Error("CI pass-rate metric fixture is missing");
+		}
+		metric.status = "NOT_MEASURABLE";
+		metric.value = null;
+		metric.evidence_urls = [];
+		const result = GoalsSignalsMetricsPlanSchema.safeParse(plan);
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(
+				result.error.issues.some((issue) =>
+					issue.message.includes("no viable candidate or measured metric"),
+				),
+			).toBe(true);
+		}
+	});
+
+	test("rejects a not-measurable signal linked to a measured metric", () => {
+		const plan = structuredClone(examplePlan);
+		const signal = plan.signals.find((item) => item.id === "ci-outcome");
+		if (!signal) {
+			throw new Error("CI outcome signal fixture is missing");
+		}
+		signal.measurement_state = "NOT_MEASURABLE";
+		const result = GoalsSignalsMetricsPlanSchema.safeParse(plan);
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(
+				result.error.issues.some((issue) =>
+					issue.message.includes(
+						"not-measurable signal links to a viable metric",
+					),
+				),
+			).toBe(true);
+		}
+	});
+
+	test("rejects a not-yet-measured signal linked to a measured metric", () => {
+		const plan = structuredClone(examplePlan);
+		const signal = plan.signals.find((item) => item.id === "ci-outcome");
+		if (!signal) {
+			throw new Error("CI outcome signal fixture is missing");
+		}
+		signal.measurement_state = "NOT_YET_MEASURED";
+		const result = GoalsSignalsMetricsPlanSchema.safeParse(plan);
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(
+				result.error.issues.some((issue) =>
+					issue.message.includes(
+						"not-yet-measured signal links to a measured metric",
+					),
 				),
 			).toBe(true);
 		}

@@ -121,7 +121,9 @@ export const GoalsSignalsMetricsPlanSchema = z
 			["metrics"],
 		);
 
-		const sourceIds = new Set(plan.sources.map((source) => source.id));
+		const sourcesById = new Map(
+			plan.sources.map((source) => [source.id, source]),
+		);
 		const goalIds = new Set(plan.goals.map((goal) => goal.id));
 		const signalIds = new Set(plan.signals.map((signal) => signal.id));
 		const metricSignalIds = new Set(
@@ -131,11 +133,18 @@ export const GoalsSignalsMetricsPlanSchema = z
 			plan.signals.flatMap((signal) => signal.goal_ids),
 		);
 		for (const [index, sourceId] of plan.framework_source_ids.entries()) {
-			if (!sourceIds.has(sourceId)) {
+			const source = sourcesById.get(sourceId);
+			if (!source) {
 				context.addIssue({
 					code: "custom",
 					path: ["framework_source_ids", index],
 					message: `unknown framework source: ${sourceId}`,
+				});
+			} else if (source.role !== "PRIMARY_FRAMEWORK") {
+				context.addIssue({
+					code: "custom",
+					path: ["framework_source_ids", index],
+					message: `framework source must have role PRIMARY_FRAMEWORK: ${sourceId}`,
 				});
 			}
 		}
@@ -159,6 +168,40 @@ export const GoalsSignalsMetricsPlanSchema = z
 					message: `signal has no metric or explicit not-measurable state: ${signal.id}`,
 				});
 			}
+			const linkedMetrics = plan.metrics.filter((metric) =>
+				metric.signal_ids.includes(signal.id),
+			);
+			if (
+				signal.measurement_state !== "NOT_MEASURABLE" &&
+				linkedMetrics.length > 0 &&
+				linkedMetrics.every((metric) => metric.status === "NOT_MEASURABLE")
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["signals", signalIndex, "measurement_state"],
+					message: `signal has no viable candidate or measured metric: ${signal.id}`,
+				});
+			}
+			if (
+				signal.measurement_state === "NOT_MEASURABLE" &&
+				linkedMetrics.some((metric) => metric.status !== "NOT_MEASURABLE")
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["signals", signalIndex, "measurement_state"],
+					message: `not-measurable signal links to a viable metric: ${signal.id}`,
+				});
+			}
+			if (
+				signal.measurement_state === "NOT_YET_MEASURED" &&
+				linkedMetrics.some((metric) => metric.status === "MEASURED")
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["signals", signalIndex, "measurement_state"],
+					message: `not-yet-measured signal links to a measured metric: ${signal.id}`,
+				});
+			}
 			for (const [goalIndex, goalId] of signal.goal_ids.entries()) {
 				if (!goalIds.has(goalId)) {
 					context.addIssue({
@@ -180,11 +223,18 @@ export const GoalsSignalsMetricsPlanSchema = z
 				}
 			}
 			for (const [sourceIndex, sourceId] of metric.data_source_ids.entries()) {
-				if (!sourceIds.has(sourceId)) {
+				const source = sourcesById.get(sourceId);
+				if (!source) {
 					context.addIssue({
 						code: "custom",
 						path: ["metrics", metricIndex, "data_source_ids", sourceIndex],
 						message: `unknown metric data source: ${sourceId}`,
+					});
+				} else if (source.role !== "METRIC_DATA_SOURCE") {
+					context.addIssue({
+						code: "custom",
+						path: ["metrics", metricIndex, "data_source_ids", sourceIndex],
+						message: `metric data source must have role METRIC_DATA_SOURCE: ${sourceId}`,
 					});
 				}
 			}
