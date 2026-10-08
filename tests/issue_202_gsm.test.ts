@@ -444,8 +444,8 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 			expect(
 				result.error.issues.some((issue) =>
 					issue.message.includes(
-					"not-measurable signal links to a viable metric",
-				),
+						"not-measurable signal links to a viable metric",
+					),
 				),
 			).toBe(true);
 		}
@@ -464,8 +464,8 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 			expect(
 				result.error.issues.some((issue) =>
 					issue.message.includes(
-					"not-yet-measured signal links to a measured metric",
-				),
+						"not-yet-measured signal links to a measured metric",
+					),
 				),
 			).toBe(true);
 		}
