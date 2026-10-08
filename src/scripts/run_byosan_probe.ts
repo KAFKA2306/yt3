@@ -187,7 +187,8 @@ async function main() {
 	const evidence = ByosanActiveProbeEvidenceSchema.parse({
 		id: request.id,
 		probeType: request.probeType,
-		status: request.probeType === "tokenizer_fingerprint" ? "UNVERIFIED" : "VERIFIED",
+		status:
+			request.probeType === "tokenizer_fingerprint" ? "UNVERIFIED" : "VERIFIED",
 		target: observed.target,
 		executedAt: new Date().toISOString(),
 		requestOrInputFingerprint: observed.fingerprint,
