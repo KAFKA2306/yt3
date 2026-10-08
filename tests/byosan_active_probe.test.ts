@@ -84,4 +84,22 @@ describe("byosan active probe contract", () => {
 			auditByosanActiveProbeEvidence(item).map((issue) => issue.code),
 		).toContain("probe_artifact_contains_secret_like_material");
 	});
+
+	test("caller-supplied tokenizer counts cannot be attested as direct measurements", () => {
+		const providedCounts = evidence({
+			probeType: "tokenizer_fingerprint",
+			status: "VERIFIED",
+			observedResult: "fingerprint computed from supplied counts",
+		});
+		expect(
+			auditByosanActiveProbeEvidence(providedCounts).map((issue) => issue.code),
+		).toContain("tokenizer_fingerprint_direct_measurement_missing");
+		expect(
+			auditByosanActiveProbeEvidence({
+				...providedCounts,
+				status: "UNVERIFIED",
+			}),
+		).toEqual([]);
+	});
+
 });
