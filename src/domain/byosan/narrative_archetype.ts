@@ -273,15 +273,17 @@ function isEligible(
 
 	if (archetype === "active_falsification") {
 		if (!hasVerifiedActiveProbe(bundle, candidate, "observation")) return false;
-		if (!hasVerifiedActiveProbe(bundle, candidate, "discriminating_test")) return false;
+		if (!hasVerifiedActiveProbe(bundle, candidate, "discriminating_test"))
+			return false;
 		if (
-			!hasRequiredAdversarialKind(
-				bundle,
-				candidate,
-				"falsification_boundary",
-				["measurement_condition", "counter_metric", "third_party_disagreement", "source_limitation"],
-			)
-		) return false;
+			!hasRequiredAdversarialKind(bundle, candidate, "falsification_boundary", [
+				"measurement_condition",
+				"counter_metric",
+				"third_party_disagreement",
+				"source_limitation",
+			])
+		)
+			return false;
 	}
 
 	if (archetype === "rollout_verification") {
