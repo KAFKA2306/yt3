@@ -192,6 +192,8 @@ describe("extended byosan narrative archetypes", () => {
 				},
 			],
 		};
+		const evidenceBundle = candidate.archetypeEvidence.at(0);
+		if (!evidenceBundle) throw new Error("Expected active falsification fixture");
 		const selected = selectByosanNarrativeArchetype(candidate, {
 			format: "deep_dive",
 		});
@@ -214,8 +216,8 @@ describe("extended byosan narrative archetypes", () => {
 					...candidate,
 					archetypeEvidence: [
 						{
-							...candidate.archetypeEvidence[0]!,
-							slots: candidate.archetypeEvidence[0]!.slots.map((item) =>
+							...evidenceBundle,
+							slots: evidenceBundle.slots.map((item) =>
 								item.slot === "falsification_boundary"
 									? { ...item, adversarialEvidenceIds: [] }
 									: item,
@@ -227,5 +229,4 @@ describe("extended byosan narrative archetypes", () => {
 			).archetype,
 		).toBe("standard");
 	});
-
 });
