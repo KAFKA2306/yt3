@@ -101,5 +101,4 @@ describe("byosan active probe contract", () => {
 			}),
 		).toEqual([]);
 	});
-
 });
