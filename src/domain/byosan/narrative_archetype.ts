@@ -14,6 +14,7 @@ export const ByosanNarrativeArchetypeSchema = z.enum([
 	"supply_chain_dependency",
 	"regulatory_game_theory",
 	"hardware_capital",
+	"active_falsification",
 ]);
 
 export type ByosanNarrativeArchetype = z.infer<
@@ -114,10 +115,20 @@ const REQUIRED_SLOTS: Record<ByosanNarrativeArchetype, readonly string[]> = {
 		"supplier_capital",
 		"remaining_spof",
 	],
+	active_falsification: [
+		"target_claim",
+		"probe_method",
+		"observation",
+		"competing_hypothesis",
+		"discriminating_test",
+		"falsification_boundary",
+		"bounded_conclusion",
+	],
 };
 
 const PRIORITY: readonly ByosanNarrativeArchetype[] = [
 	"rollout_verification",
+	"active_falsification",
 	"progressive_comparison",
 	"paradox_resolution",
 	"timeline_motive",
@@ -258,6 +269,19 @@ function isEligible(
 		])
 	) {
 		return false;
+	}
+
+	if (archetype === "active_falsification") {
+		if (!hasVerifiedActiveProbe(bundle, candidate, "observation")) return false;
+		if (!hasVerifiedActiveProbe(bundle, candidate, "discriminating_test")) return false;
+		if (
+			!hasRequiredAdversarialKind(
+				bundle,
+				candidate,
+				"falsification_boundary",
+				["measurement_condition", "counter_metric", "third_party_disagreement", "source_limitation"],
+			)
+		) return false;
 	}
 
 	if (archetype === "rollout_verification") {
