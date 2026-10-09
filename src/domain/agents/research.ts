@@ -110,6 +110,11 @@ export function settleResearchPayload(
 		...topic,
 		results: topic.results.map((result) => {
 			if (result.byosan_angle === undefined) {
+				rejected.push({
+					topic: topic.selected_topic,
+					angle: result.angle,
+					issues: ["byosan_angle: missing from LLM result"],
+				});
 				return { ...result, byosan_angle: undefined };
 			}
 			const settled = settleByosanAngleCandidate(result.byosan_angle);
@@ -125,6 +130,12 @@ export function settleResearchPayload(
 		}),
 	}));
 	return { selected_topics, rejected_byosan_candidates: rejected };
+}
+
+export function saveResearchRawResponse(runDir: string, text: string): void {
+	const rawPath = path.join(runDir, "research", "raw_response.json");
+	if (fs.existsSync(rawPath)) return;
+	fs.outputJsonSync(rawPath, { text }, { spaces: 2 });
 }
 
 export class TrendScout extends BaseAgent {
@@ -195,8 +206,10 @@ export class TrendScout extends BaseAgent {
 				)
 				.replace("{current_date}", currentDate),
 			userPrompt,
-			(text) =>
-				settleResearchPayload(parseLlmJson(text, ResearchPayloadSchema)),
+			(text) => {
+				saveResearchRawResponse(this.store.runDir, text);
+				return settleResearchPayload(parseLlmJson(text, ResearchPayloadSchema));
+			},
 			{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
 		);
 		if (research.rejected_byosan_candidates.length > 0) {
