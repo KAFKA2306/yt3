@@ -190,6 +190,17 @@ Documentation must describe current executable behavior. Maintained boundaries a
 - `docs/standard/` — operational standards
 - `docs/adr/` — architecture decisions
 
+Repository layout, root allowlist, ADR indexing, branch/worktree, and uncommitted-state rules: [docs/standard/repository-layout-standard.md](docs/standard/repository-layout-standard.md).
+
 Never expose secrets, OAuth credentials, private tokens, or private local metadata in public artifacts.
 
 Final reporting should state only verified facts relevant to the task: repository/PR, what changed, deterministic checks actually run, exact-head CI, merge state, and any separately verified product/runtime/external result. Stop when the requested scope reaches its fixed point.
+
+## 8. Delegate next work to the agent team and act autonomously
+
+- Delegate each independent next task to an agent team member. The lead agent integrates results, runs the final verification, and reports.
+- Give each agent an explicit file or directory ownership set. Do not let two agents edit the same file.
+- Agents do not commit. The lead stages only the files it owns, so uncommitted changes from other sessions stay untouched.
+- Proceed without asking when the next step is reversible and inside the requested scope. Record the choices made in the final report.
+- Autonomy never authorizes publication, merge, deletion, billing, external posting, or secret handling. Those still follow §3, §5, and §7.
+- When another session's changes appear in the working tree, do not revert or overwrite them. Report them.
