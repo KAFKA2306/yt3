@@ -1,6 +1,7 @@
-import sys
 import os
 import re
+import sys
+
 
 def export():
     calc_path = "reports/markdown/latest_nav_calc.md"
@@ -103,6 +104,6 @@ def export():
         f.write(html_content)
     print("INFO: HTML report exported to reports/html/sbg_nav_report.html")
 
+
 if __name__ == "__main__":
     export()
-

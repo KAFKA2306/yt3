@@ -1,19 +1,17 @@
-import requests
 import json
 import os
 from datetime import datetime
 
+import requests
+
+
 def fetch():
     filepath = "snapshots/api/prices_latest.json"
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    
+
     # Default/verified values as of May 22, 2026
-    default_prices = {
-        "9984.T": 6755.0,
-        "ARM": 298.23,
-        "TMUS": 190.90
-    }
-    
+    default_prices = {"9984.T": 6755.0, "ARM": 298.23, "TMUS": 190.90}
+
     # Try fetching from Yahoo Finance API first
     prices = {}
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -28,7 +26,7 @@ def fetch():
                 print(f"INFO: Fetched price for {ticker}: {price}")
         except Exception as e:
             print(f"WARNING: Failed to fetch {ticker}: {e}")
-            
+
     # Fallback to verified values if fetching failed or incomplete
     for ticker, val in default_prices.items():
         if ticker not in prices or prices[ticker] is None or prices[ticker] <= 0:
@@ -40,7 +38,7 @@ def fetch():
         with open(filepath, "r") as f:
             try:
                 data = json.load(f)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 data = {}
     else:
         data = {}
@@ -50,11 +48,11 @@ def fetch():
     if "prices" not in data:
         data["prices"] = {}
     data["prices"].update(prices)
-    
+
     with open(filepath, "w") as f:
         json.dump(data, f, indent=2)
     print("INFO: Prices snapshot updated successfully.")
 
+
 if __name__ == "__main__":
     fetch()
-
