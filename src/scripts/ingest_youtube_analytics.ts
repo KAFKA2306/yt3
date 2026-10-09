@@ -231,6 +231,10 @@ function ensureAnalyticsColumns(db: Database) {
 }
 
 export function saveAnalyticsRecord(db: Database, record: AnalyticsRecord) {
+	db.transaction(() => writeAnalyticsRecord(db, record))();
+}
+
+function writeAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 	ensureAnalyticsColumns(db);
 	const insert = db.prepare(`
 		INSERT INTO youtube_analytics (
