@@ -8,6 +8,14 @@ This directory contains maintained operational standards and architecture decisi
 - [`content_freshness_metrics.md`](./content_freshness_metrics.md): deterministic freshness metrics and thresholds
 - [`QUALITY_GATES.md`](./QUALITY_GATES.md): ownership of lint, typecheck, tests, hooks, and CI gates
 
+## Data Model
+
+Three layers describe the data. Each has one role; see [`standard/ontology-standard.md`](./standard/ontology-standard.md#layer-relation).
+
+- [`standard/ontology-standard.md`](./standard/ontology-standard.md): meaning of objects, relations, and actions (`config/ontology/yt3.yaml`)
+- [`standard/star-schema-standard.md`](./standard/star-schema-standard.md): fact and dimension tables by grain, and the migration plan
+- [`standard/ledger-standard.md`](./standard/ledger-standard.md): append-only records of what happened, and where each ledger lives
+
 ## Standards
 
 - [`standard/system-audit-protocol.md`](./standard/system-audit-protocol.md): system audit protocol

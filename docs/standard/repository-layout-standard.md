@@ -27,6 +27,7 @@ Rules:
 - `docs/QUALITY_GATES.md`: gate ownership only.
 - `docs/standard/`: operational standards. One topic per file, kebab-case, dated or versioned only when the standard itself is versioned.
 - `docs/adr/`: architecture decisions. Each ADR has a unique number and a status (`Accepted`, `Superseded by NNNN`, `Rejected`).
+- `docs/archive/`: superseded or proposal-stage documents, kept for history, never deleted, not linked from the index (see `docs/archive/README.md`).
 - `docs/production/`, `docs/issues/`: no permanent records. Maintained standards live in `docs/standard/`; closed issue notes are removed after their outcome is captured in an ADR or Git history.
 
 Rules:
