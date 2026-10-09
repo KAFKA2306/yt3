@@ -63,6 +63,23 @@ export const ByosanAngleCandidateSchema = z.object({
 
 export type ByosanAngleCandidate = z.infer<typeof ByosanAngleCandidateSchema>;
 
+export type ByosanAngleCandidateSettlement =
+	| { status: "VALID"; candidate: ByosanAngleCandidate }
+	| { status: "REJECTED"; issues: string[] };
+
+export function settleByosanAngleCandidate(
+	raw: unknown,
+): ByosanAngleCandidateSettlement {
+	const parsed = ByosanAngleCandidateSchema.safeParse(raw);
+	if (parsed.success) return { status: "VALID", candidate: parsed.data };
+	return {
+		status: "REJECTED",
+		issues: parsed.error.issues.map(
+			(issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`,
+		),
+	};
+}
+
 export const ByosanAngleScoresSchema = z.object({
 	evidence: z.number().min(0).max(100),
 	surprise: z.number().min(0).max(100),

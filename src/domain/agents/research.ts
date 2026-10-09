@@ -13,10 +13,11 @@ import {
 	parseLlmJson,
 } from "../../io/core.js";
 import {
-	ByosanAngleCandidateSchema,
+	type ByosanAngleCandidate,
 	type ByosanAngleDecision,
 	loadRecentByosanTitles,
 	selectByosanAngle,
+	settleByosanAngleCandidate,
 } from "../byosan/news_angle.js";
 import { composeResearchMemoryContext } from "../byosan/power_macro_memory.js";
 import { type NewsItem, NewsItemSchema } from "../types.js";
@@ -52,6 +53,78 @@ export function resolveResearchPromptContext(
 		promptMemory: composeResearchMemoryContext(bucket, recent, root),
 		promptThemes: recentThemes,
 	};
+}
+
+const ResearchPayloadSchema = z.object({
+	selected_topics: z.array(
+		z.object({
+			category: z.string(),
+			selected_topic: z.string(),
+			reason: z.string(),
+			angle: z.string(),
+			search_query: z.string(),
+			results: z.array(
+				z.object({
+					angle: z.string(),
+					title_hook: z.string(),
+					key_questions: z.array(z.string()),
+					news: z.array(NewsItemSchema),
+					byosan_angle: z.unknown().optional(),
+				}),
+			),
+		}),
+	),
+});
+
+type ResearchPayload = z.infer<typeof ResearchPayloadSchema>;
+
+export type RejectedByosanCandidate = {
+	topic: string;
+	angle: string;
+	issues: string[];
+};
+
+export type SettledResearchPayload = {
+	selected_topics: Array<{
+		category: string;
+		selected_topic: string;
+		reason: string;
+		angle: string;
+		search_query: string;
+		results: Array<{
+			angle: string;
+			title_hook: string;
+			key_questions: string[];
+			news: NewsItem[];
+			byosan_angle?: ByosanAngleCandidate;
+		}>;
+	}>;
+	rejected_byosan_candidates: RejectedByosanCandidate[];
+};
+
+export function settleResearchPayload(
+	payload: ResearchPayload,
+): SettledResearchPayload {
+	const rejected: RejectedByosanCandidate[] = [];
+	const selected_topics = payload.selected_topics.map((topic) => ({
+		...topic,
+		results: topic.results.map((result) => {
+			if (result.byosan_angle === undefined) {
+				return { ...result, byosan_angle: undefined };
+			}
+			const settled = settleByosanAngleCandidate(result.byosan_angle);
+			if (settled.status === "VALID") {
+				return { ...result, byosan_angle: settled.candidate };
+			}
+			rejected.push({
+				topic: topic.selected_topic,
+				angle: result.angle,
+				issues: settled.issues,
+			});
+			return { ...result, byosan_angle: undefined };
+		}),
+	}));
+	return { selected_topics, rejected_byosan_candidates: rejected };
 }
 
 export class TrendScout extends BaseAgent {
@@ -114,22 +187,7 @@ export class TrendScout extends BaseAgent {
 			);
 		}
 
-		const research = await this.runLlm<{
-			selected_topics: Array<{
-				category: string;
-				selected_topic: string;
-				reason: string;
-				angle: string;
-				search_query: string;
-				results: Array<{
-					angle: string;
-					title_hook: string;
-					key_questions: string[];
-					news: NewsItem[];
-					byosan_angle?: z.infer<typeof ByosanAngleCandidateSchema>;
-				}>;
-			}>;
-		}>(
+		const research = await this.runLlm<SettledResearchPayload>(
 			`${promptCfg.consolidated_research.system}${bucket === "byosan_money" ? this.buildSharpAnglePrompt() : ""}`
 				.replace(
 					"{regions}",
@@ -138,31 +196,20 @@ export class TrendScout extends BaseAgent {
 				.replace("{current_date}", currentDate),
 			userPrompt,
 			(text) =>
-				parseLlmJson(
-					text,
-					z.object({
-						selected_topics: z.array(
-							z.object({
-								category: z.string(),
-								selected_topic: z.string(),
-								reason: z.string(),
-								angle: z.string(),
-								search_query: z.string(),
-								results: z.array(
-									z.object({
-										angle: z.string(),
-										title_hook: z.string(),
-										key_questions: z.array(z.string()),
-										news: z.array(NewsItemSchema),
-										byosan_angle: ByosanAngleCandidateSchema.optional(),
-									}),
-								),
-							}),
-						),
-					}),
-				),
+				settleResearchPayload(parseLlmJson(text, ResearchPayloadSchema)),
 			{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
 		);
+		if (research.rejected_byosan_candidates.length > 0) {
+			fs.outputJsonSync(
+				path.join(
+					this.store.runDir,
+					"research",
+					"rejected_byosan_candidates.json",
+				),
+				research.rejected_byosan_candidates,
+				{ spaces: 2 },
+			);
+		}
 
 		const allTopics = research.selected_topics || [];
 		const candidateLocations = allTopics.flatMap((topic) =>
@@ -176,7 +223,7 @@ export class TrendScout extends BaseAgent {
 					(
 						entry,
 					): entry is typeof entry & {
-						candidate: z.infer<typeof ByosanAngleCandidateSchema>;
+						candidate: ByosanAngleCandidate;
 					} => Boolean(entry.candidate),
 				),
 		);
