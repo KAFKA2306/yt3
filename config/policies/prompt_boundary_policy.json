@@ -8,6 +8,7 @@
 	],
 	"editable_paths": ["prompts/system/**"],
 	"readonly_paths": ["artifacts/generated/**", "outputs/**"],
+	"external_allowed_paths": ["~/.claude/settings.json", "~/.claude/CLAUDE.md"],
 	"deny_symlink_outside_repo": true,
 	"hooks": [
 		{

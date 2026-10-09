@@ -282,11 +282,17 @@ export class AuditAgent extends BaseAgent {
 		const repoVenv = path.join(ROOT, ".venv");
 		const repoVenvBin = path.join(repoVenv, "bin");
 		const pythonBin = path.join(repoVenvBin, "python");
+		const huggingfaceCache = path.join(ROOT, "data", "cache", "huggingface");
+		fs.ensureDirSync(huggingfaceCache);
 		const cleanPythonEnv = {
 			...process.env,
 			VIRTUAL_ENV: repoVenv,
 			PYTHONHOME: "",
 			PYTHONPATH: "",
+			HF_HOME: huggingfaceCache,
+			HF_HUB_CACHE: path.join(huggingfaceCache, "hub"),
+			HF_TOKEN_PATH: path.join(huggingfaceCache, "token"),
+			HF_HUB_DISABLE_IMPLICIT_TOKEN: "1",
 			PATH: `${repoVenvBin}:${process.env.PATH || ""}`,
 		};
 

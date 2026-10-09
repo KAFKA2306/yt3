@@ -1,0 +1,382 @@
+{
+  "entries": [
+    {
+      "run_id": "humanity_observatory/2026-06-11",
+      "bucket": "humanity_observatory",
+      "stage": "content",
+      "kind": "fallback",
+      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
+      "signals": [
+        "rate limit / quota exhaustion",
+        "3 attempted generations failed",
+        "deterministic fallback preserved pipeline continuity"
+      ],
+      "fixes": [
+        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
+        "prime future runs with cached research and loop memory",
+        "prefer concise, audit-safe fallback patterns when the model pool is dry"
+      ],
+      "timestamp": "2026-06-11T14:02:05.033Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-11",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: LLM invocation failed after 5 attempts due to rate limit/quota exhaustion."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-11T14:10:29.361Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-12",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: LLM invocation failed after 5 attempts due to rate limit/quota exhaustion."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-11T22:17:53.246Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-13",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-12T22:19:54.651Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-14",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-13T22:12:49.656Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-19",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Unexpected identifier \"DAILY\""
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-19T10:10:58.421Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-20",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-19T22:18:44.818Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-21",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-20T22:11:53.646Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-22",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-21T20:20:20.783Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-23",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-22T22:26:08.524Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-24",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Unexpected identifier \"DAILY\""
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-23T22:02:11.137Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-25",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-24T22:11:51.227Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-26",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-25T22:12:53.615Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-27",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-26T22:17:26.556Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-06-28",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Unexpected identifier \"DAILY\""
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-27T22:01:26.725Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-07-03",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "[\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      0,\n      \"results\",\n      0,\n      \"news\",\n      0,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      1,\n      \"results\",\n      0,\n      \"news\",\n      0,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  }\n]"
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-07-02T22:01:19.725Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-07-05",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "[\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      0,\n      \"results\",\n      0,\n      \"news\",\n      0,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      1,\n      \"results\",\n      0,\n      \"news\",\n      0,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  }\n]"
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-07-04T22:01:10.660Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-07-11",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Expected ']'"
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-07-10T22:13:10.834Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-07-15",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Unexpected identifier \"DAILY\""
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-07-14T15:02:17.763Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-07-21",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Unexpected identifier \"DAILY\""
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-07-20T15:02:00.703Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-07-22",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Unexpected identifier \"DAILY\""
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-07-21T15:01:38.375Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-07-27",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Unexpected identifier \"DAILY\""
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-07-26T15:01:23.818Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-08-05",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "JSON Parse error: Unexpected identifier \"DAILY\""
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-08-04T22:02:29.907Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-08-12",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "[\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      0,\n      \"results\",\n      0,\n      \"news\",\n      0,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      1,\n      \"results\",\n      0,\n      \"news\",\n      0,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  }\n]"
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-08-11T22:01:41.984Z"
+    },
+    {
+      "run_id": "humanity_observatory/2026-08-30",
+      "bucket": "humanity_observatory",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent: [503 Service Unavailable] This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-08-30T14:09:48.752Z"
+    }
+  ]
+}

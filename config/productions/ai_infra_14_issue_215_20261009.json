@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "byosan_feature_v1",
+  "runId": "byosan_money/2026-10-09-issue-215-spec",
+  "asOf": "2026-10-09",
+  "angle": "14社を同一式で採点し、順位だけでなく補完性と役割重複を使って仮想ポートフォリオを再選考する",
+  "searchQuery": "GitHub issue 215 AI infrastructure 14 company scorecard portfolio complementarity",
+  "title": "AIインフラ14社を同じルールで採点したら、4社が入れ替わった",
+  "thumbnailTitle": "AI株14社",
+  "thumbnail": {
+    "eyebrow": "仮想PFを再選考",
+    "lead": "14社",
+    "accent": "4社",
+    "reaction": "入替",
+    "secondLine": "順位より役割",
+    "calloutTop": "AMDは高順位でも除外",
+    "calloutBottom": "CEGは10位でも残す"
+  },
+  "descriptionLead": "GitHub Issue #215の企画をもとに、AIインフラ14社を同じ6軸で採点した仮想ポートフォリオを検証します。数字は2026-10-08終値までのシート記録。銘柄の優劣や売買推奨ではなく、順位と役割がどう違うかを見ます。",
+  "descriptionBullets": [
+    "AI純度・実証度・Fundamental・Technical・補完性・過熱ペナルティを同じ式で比較",
+    "KEEP 5社、ADD 4社、REMOVE 4社、WATCH 1社。ランク11は3社の同点",
+    "AMDはデータセンター売上が前年同期比107%増でも、補完性2.5でこの仮想PFから除外",
+    "SandiskとSK hynixは2026年8月にHBF仕様を公開。仕様公開と量産採用は別の証拠",
+    "選考表のテクニカル指標は2026-10-08終値まで。RSIだけで判断しない",
+    "掲載ポートフォリオは仮想構成で、実口座や個別の投資助言ではありません"
+  ],
+  "disclaimer": "本動画は公開情報と仮想スコア表を使った情報提供です。銘柄の売買推奨、将来リターンの予測、個別事情に基づく投資助言ではありません。採点項目と重みは編集上の判断で、数値と技術状況は更新されます。",
+  "centralQuestion": "総合順位が高い会社を外し、順位が低い会社を残すのはなぜか？",
+  "whyItMatters": "同じAI投資でもGPU、メモリ、光、電力、システム、設計ではリスク要因が違うため、役割を分けて考えると集中を見つけやすくなります。",
+  "counterargument": "補完性の点数も主観的です。技術、会社業績、価格の動きが変われば、この仮想ポートフォリオの結論も変わります。",
+  "conclusion": "この表が示すのは銘柄の絶対順位ではなく、同じテーマの中で事業の役割と重複を説明してから比率を考える方法です。",
+  "nextWatchNumbers": ["2026-10-08終値", "RSI14", "HBF量産採用"],
+  "editorialReferencePlan": {
+    "schemaVersion": "byosan_editorial_reference_plan_v1",
+    "selectionSeed": "byosan_money/2026-10-09-issue-215-spec|14社スコアと役割補完性",
+    "selectedReferences": [
+      {
+        "referenceId": "ref_visual_capitalist",
+        "role": "comparison_diagram",
+        "roleGroup": "visualization",
+        "surface": "chart",
+        "element": "一画面の比較ランキング",
+        "application": "同じ採点式の14社を、順位と採否が分かる表へ整理する",
+        "provenance": "editorial_reference_observation",
+        "avoidImitation": "既存インフォグラフィックの配色、図版、結論やアイコンを使わない"
+      },
+      {
+        "referenceId": "ref_our_world_in_data",
+        "role": "simple_chart",
+        "roleGroup": "data",
+        "surface": "caption",
+        "element": "軸・単位・期間を明記",
+        "application": "各スコアの尺度、RSIの取得終値、仮想PFの基準日を併記する",
+        "provenance": "editorial_reference_observation",
+        "avoidImitation": "データ系列やチャート画像を事実ソースとして転載しない"
+      },
+      {
+        "referenceId": "ref_the_pudding",
+        "role": "data_story",
+        "roleGroup": "storytelling",
+        "surface": "structure",
+        "element": "データから問いを立てる順序",
+        "application": "AMDとCEGの順位差を問いにして、6軸と最終配分を順に説明する",
+        "provenance": "editorial_reference_observation",
+        "avoidImitation": "作品固有の物語、表現、データセットや結論を再利用しない"
+      },
+      {
+        "referenceId": "ref_canva_youtube_thumbnails",
+        "role": "thumbnail_composition",
+        "roleGroup": "thumbnail",
+        "surface": "thumbnail",
+        "element": "小画面での文字可読性",
+        "application": "14社と4社の入替という主張を短い文字と余白で見せる",
+        "provenance": "editorial_reference_observation",
+        "avoidImitation": "テンプレート、素材画像、人物配置や固有の文言を模倣しない"
+      }
+    ],
+    "combinationPolicy": "vary_per_run_3_to_5_sources_no_fixed_combo"
+  },
+  "hookPromises": ["14社", "4社"],
+  "noveltyQueries": [
+    "site:youtube.com/watch AIインフラ14社 4社入れ替わり 補完性 2026",
+    "site:youtube.com/watch AMD CEG スコア 順位 ポートフォリオ 役割 補完性",
+    "site:youtube.com/watch AIインフラ LITE HPE SNPS SK hynix 仮想ポートフォリオ"
+  ],
+  "tags": ["AIインフラ", "米国株", "半導体", "光通信", "電力", "仮想ポートフォリオ", "秒算マネー"],
+  "sources": [
+    {"id":"I215","name":"GitHub Issue #215 — video brief","url":"https://github.com/KAFKA2306/yt3/issues/215"},
+    {"id":"W215","name":"投資アイデア運用｜Star Log — selection / technical / portfolio / trades","url":"https://docs.google.com/spreadsheets/d/1vOmXaVINVNqIVjKp_nB4V5tAHFUubJjcomGSpssZaOo/edit"},
+    {"id":"NVDA_Q2","name":"NVIDIA FY2027 Q2 results, Aug 26 2026","url":"https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx"},
+    {"id":"AMD_Q2","name":"AMD Q2 2026 results, Aug 4 2026","url":"https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results"},
+    {"id":"SNDK_HBF","name":"Sandisk and SK hynix HBF specification, Aug 3 2026","url":"https://www.sandisk.com/company/newsroom/press-releases/2026/2026-08-03-Sandisk-and-sk-hynix-advance-global-standardization-of-hbf"},
+    {"id":"GLW_Q2","name":"Corning Q2 2026 results, Jul 28 2026","url":"https://investor.corning.com/news-and-events/news/news-details/2026/Cornings-Strong-Second-Quarter-2026-Financial-Results1-Demonstrate-Progress-on-Recently-Upgraded-Springboard-Plan/default.aspx"},
+    {"id":"CEG_Q2","name":"Constellation Energy Q2 2026 results, Aug 6 2026","url":"https://investors.constellationenergy.com/news-releases/news-release-details/constellation-reports-second-quarter-2026-results"},
+    {"id":"VST_Q2","name":"Vistra Q2 2026 results, Aug 7 2026","url":"https://investor.vistracorp.com/2026-08-07-Vistra-Reports-Second-Quarter-2026-Results?asPDF=1"},
+    {"id":"SKH_Q2","name":"SK hynix Q2 2026 results, Jul 29 2026","url":"https://news.skhynix.com/en/q2-2026-business-results/"},
+    {"id":"LITE_Q4","name":"Lumentum Q4 and FY2026 results, Aug 11 2026","url":"https://investor.lumentum.com/financial-news-releases/news-details/2026/Lumentum-Announces-Fourth-Quarter-and-Full-Fiscal-Year-2026-Results/default.aspx"},
+    {"id":"HPE_Q3","name":"HPE Q3 FY2026 results, Sep 2 2026","url":"https://investors.hpe.com/?ReleaseID=909541"},
+    {"id":"SNPS_AMZ","name":"Synopsys and Amazon custom-silicon IP agreement, Sep 30 2026","url":"https://news.synopsys.com/2026-09-30-Synopsys-and-Amazon-Announce-Strategic%2C-Multi-year-IP-Agreement-for-Custom-Silicon-Collaboration-Also-Extends-to-Cloud-and-AI-Powered-Engineering"}
+  ],
+  "claims": [
+    {"claim":"選考シートはAI純度×6 + 実証度×5 + Fundamental×4 + Technical/8×20 + 補完性 − 過熱ペナルティで14社を採点した","sourceIds":["W215"],"status":"verified"},
+    {"claim":"選考シートのテクニカル履歴の最終日は2026年10月8日","sourceIds":["W215"],"status":"verified"},
+    {"claim":"仮想PFの判断はKEEP5社、ADD4社、REMOVE4社、WATCH1社である","sourceIds":["I215","W215"],"status":"verified"},
+    {"claim":"AMDのQ2 2026 Data Center売上は67億ドルで前年同期比107%増","sourceIds":["AMD_Q2"],"status":"verified"},
+    {"claim":"NVIDIAのFY2027 Q2 Data Center売上は890億ドルで前年同期比117%増","sourceIds":["NVDA_Q2"],"status":"verified"},
+    {"claim":"SandiskとSK hynixは2026年8月にHBF仕様を公表したが、仕様公開は量産採用の証明ではない","sourceIds":["SNDK_HBF"],"status":"verified"},
+    {"claim":"CorningのQ2 2026 Optical Communications売上は20.7億ドルで前年同期比32%増","sourceIds":["GLW_Q2"],"status":"verified"},
+    {"claim":"Constellation EnergyはQ2 2026に920MWの長期PPAを追加したと発表した","sourceIds":["CEG_Q2"],"status":"verified"},
+    {"claim":"VistraのQ2 2026 ongoing operations adjusted EBITDAは17.67億ドルだった","sourceIds":["VST_Q2"],"status":"verified"},
+    {"claim":"SK hynixはQ2 2026にHBM4の量産出荷を開始し、約10社と長期契約を確定したと発表した","sourceIds":["SKH_Q2"],"status":"verified"},
+    {"claim":"LumentumのQ4 FY2026売上は10.1億ドルで、OCSと1.6T採用は立ち上がり始めた段階だった","sourceIds":["LITE_Q4"],"status":"verified"},
+    {"claim":"HPEはQ3 FY2026のNetworks for AI受注が7億ドルだったと説明した","sourceIds":["HPE_Q3"],"status":"verified"},
+    {"claim":"SynopsysとAmazonは2026年9月に複数年10億ドル超のIP契約を発表したが、契約額は当期売上ではない","sourceIds":["SNPS_AMZ"],"status":"verified"},
+    {"claim":"前後の比率はSheet tradesの開始取引と最終re-balanceを合計し、現金10%を含む仮想構成として表示する","sourceIds":["W215"],"status":"verified"}
+  ],
+  "segments": [
+    {"chapter":"14社を同じ表へ","speaker":"春日部つむぎ","emotion":"shock","section":"THE QUESTION","headline":"AIインフラ14社","subheadline":"4社が入れ替わった","visualType":"hero","stats":[{"label":"対象","value":"14社","detail":"同一スコア式","color":"cyan"},{"label":"再選考","value":"4社","detail":"ADDとREMOVE","color":"amber"}],"source":"Issue #215 / selection sheet","text":"AIインフラ14社を、同じルールでもう一度採点。すると4社が入れ替わりました。AMDは5位でも外れ、CEGは10位でも残ります。なぜ順位と採否が違うのでしょう？"},
+    {"chapter":"6軸と計算式","speaker":"ずんだもん","emotion":"curious","section":"SCORE RULE","headline":"順位だけで決めない","subheadline":"6軸を同じ式で計算","visualType":"formula","stats":[{"label":"式","value":"30+25+20+20+5","detail":"AI・実証・基礎・技術・補完","color":"cyan"},{"label":"控除","value":"過熱penalty","detail":"RSIルール","color":"amber"}],"source":"Google Sheet • selection","text":"6軸って具体的には何なのだ？AI純度、実証度、ファンダメンタル、テクニカル、補完性、過熱ペナルティ。技術8項目は20点に換算し、補完性を加えて過熱分を引きます。"},
+    {"chapter":"順位と役割の違い","speaker":"春日部つむぎ","emotion":"analytical","section":"RANK IS NOT THE PORTFOLIO","headline":"高順位でもREMOVE","subheadline":"低順位でもKEEP","visualType":"ranking","stats":[{"label":"AMD","value":"87.5点 / 5位","detail":"このPFではREMOVE","color":"amber"},{"label":"CEG","value":"77点 / 10位","detail":"このPFではKEEP","color":"cyan"}],"source":"Google Sheet • selection","text":"一番の反実仮想は順位だけで選ぶこと。上位9社ならAMDは残り、CEGは除外されます。今回は計算枠と電力枠の役割が違うため、補完性も一緒に見ました。"},
+    {"chapter":"1位から14位を確認","speaker":"春日部つむぎ","emotion":"reveal","section":"RANK 1","headline":"Lumentum","subheadline":"光通信・1.6T / ADD","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"5/5/5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"8/8・4.5","detail":"RSI65.4 / penalty0","color":"white"},{"label":"score / rank","value":"99.5 / 1","detail":"ADD","color":"amber"}],"source":"Google Sheet / Lumentum Q4 FY26","text":"1位のLumentumは99.5点でADD。AI純度、実証、基礎がすべて5。技術は8点中8、補完性4.5です。会社発表では四半期売上10.1億ドル。OCSと1.6Tは採用が立ち上がる段階です。"},
+    {"chapter":"HBMと計算","speaker":"ずんだもん","emotion":"analytical","section":"RANK 2","headline":"Micron","subheadline":"HBM・DRAM・NAND / KEEP","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"5/5/5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"7/8・5","detail":"RSI53.0 / penalty0","color":"white"},{"label":"score / rank","value":"97.5 / 2","detail":"KEEP","color":"amber"}],"source":"Google Sheet • selection","text":"2位はMicron、97.5点でKEEP。AI、実証、基礎が5点、技術7、補完性5。ここではシートの評価を示します。会社同士の将来シェアや売上を予測しているわけではありません。"},
+    {"speaker":"春日部つむぎ","emotion":"confident","section":"RANK 3","headline":"NVIDIA","subheadline":"GPU・AI計算 / KEEP","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"5/5/5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"7/8・3","detail":"RSI60.9 / penalty0","color":"white"},{"label":"score / rank","value":"95.5 / 3","detail":"KEEP • DC売上$89B","color":"amber"}],"source":"Google Sheet / NVIDIA FY27 Q2","text":"3位はNVIDIA、95.5点。Data Center売上はFY2027第2四半期に890億ドル、前年同期比117%増でした。補完性は3点。強い事業でも、構成比は別の判断です。"},
+    {"speaker":"ずんだもん","emotion":"analytical","section":"RANK 4","headline":"HPE","subheadline":"AIラック・ネットワーク / ADD","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"4/5/5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"7/8・4","detail":"RSI75.8 / penalty2","color":"white"},{"label":"score / rank","value":"88.5 / 4","detail":"ADD • AI網受注$700M","color":"amber"}],"source":"Google Sheet / HPE Q3 FY26","text":"4位はHPE、88.5点でADD。シートのRSIは75.8、過熱控除2点。HPEはQ3にNetworks for AIの受注7億ドルを説明しました。受注額を売上額と取り違えないようにします。"},
+    {"speaker":"春日部つむぎ","emotion":"serious","section":"RANK 5","headline":"AMD","subheadline":"GPU・CPU / REMOVE","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"4.5/4/4.5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"8/8・2.5","detail":"RSI66.3 / penalty0","color":"white"},{"label":"score / rank","value":"87.5 / 5","detail":"REMOVE • DC +107%","color":"amber"}],"source":"Google Sheet / AMD Q2 2026","text":"5位のAMDは87.5点、技術8点中8でもREMOVE。Q2のData Center売上は前年同期比107%増で、業績不振が理由ではありません。NVIDIAと計算リスクが重なり、補完性2.5という仮想PF判断です。"},
+    {"speaker":"ずんだもん","emotion":"reveal","section":"RANK 6","headline":"Coherent","subheadline":"光I/O・レーザー / KEEP","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"4.5/5/5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"4/8・5","detail":"RSI45.3 / penalty0","color":"white"},{"label":"score / rank","value":"87 / 6","detail":"KEEP","color":"amber"}],"source":"Google Sheet • selection","text":"6位のCoherentは87点でKEEP。技術は4点、補完性は5点。光の枠でも会社ごとに採点は違います。この点数はシートの入力値で、業界全体の統一評価ではありません。"},
+    {"speaker":"春日部つむぎ","emotion":"confident","section":"RANK 7","headline":"SK hynix","subheadline":"HBM・DRAM / ADD","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"5/5/5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"3/8・3.5","detail":"RSI49.2 / penalty0","color":"white"},{"label":"score / rank","value":"86 / 7","detail":"ADD • HBM4量産","color":"amber"}],"source":"Google Sheet / SK hynix Q2 2026","text":"7位のSK hynixは86点でADD。技術は3点でも、補完性は3.5。会社は第2四半期にHBM4量産出荷を開始し、約10社との長期契約を確定したと発表しています。"},
+    {"speaker":"ずんだもん","emotion":"analytical","section":"RANK 8","headline":"Broadcom","subheadline":"AI ASIC・ネットワーク / KEEP","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"5/5/4.5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"3/8・4","detail":"RSI51.4 / penalty0","color":"white"},{"label":"score / rank","value":"84.5 / 8","detail":"KEEP","color":"amber"}],"source":"Google Sheet • selection","text":"8位はBroadcom、84.5点でKEEP。AI純度と実証は5でも、技術は3点。順位だけで売買を決めないことが、この画面の要点です。"},
+    {"speaker":"春日部つむぎ","emotion":"caution","section":"RANK 9","headline":"Synopsys","subheadline":"EDA・IP / ADD","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"4.5/5/4.5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"6/8・5","detail":"RSI86.8 / penalty6","color":"white"},{"label":"score / rank","value":"84 / 9","detail":"ADD • Amazon $1B+","color":"amber"}],"source":"Google Sheet / Synopsys-Amazon","text":"9位のSynopsysは84点でADD。ただしRSI86.8のため過熱控除は6点。Amazonとの複数年10億ドル超契約は設計IPの実証材料で、当期に10億ドル売上が立った意味ではありません。"},
+    {"speaker":"ずんだもん","emotion":"warm","section":"RANK 10","headline":"Constellation Energy","subheadline":"原発・電力 / KEEP","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"3.5/5/4","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"4/8・5","detail":"RSI65.9 / penalty0","color":"white"},{"label":"score / rank","value":"77 / 10","detail":"KEEP • PPA +920MW","color":"amber"}],"source":"Google Sheet / Constellation Q2","text":"10位のConstellation Energyは77点でKEEP。補完性は5点です。会社はQ2に920メガワットの長期PPA追加を発表。VSTより優れた会社という結論ではなく、この仮想枠をCEGに寄せた判断です。"},
+    {"speaker":"春日部つむぎ","emotion":"analytical","section":"RANK 11 TIE","headline":"Corning","subheadline":"光ファイバー / REMOVE","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"3.5/5/4","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"3/8・4","detail":"RSI51.8 / penalty0","color":"white"},{"label":"score / rank","value":"73.5 / 11","detail":"同点 • REMOVE","color":"amber"}],"source":"Google Sheet / Corning Q2","text":"11位タイのCorningは73.5点でREMOVEですが、光通信売上はQ2に前年同期比32%増。需要が弱いから外すのではなく、シート上のAI純度3.5と技術3点を含む比較判断です。"},
+    {"speaker":"ずんだもん","emotion":"analytical","section":"RANK 11 TIE","headline":"Vistra","subheadline":"発電・電力 / REMOVE","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"3.5/4.5/4","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"4/8・4","detail":"RSI66.1 / penalty0","color":"white"},{"label":"score / rank","value":"73.5 / 11","detail":"同点 • REMOVE","color":"amber"}],"source":"Google Sheet / Vistra Q2","text":"Vistraも73.5点で11位タイ、REMOVE。Q2の継続事業adjusted EBITDAは17.67億ドル。CEGと事業が同一だからではなく、電力枠を一社にまとめるこの仮想PFの判断です。"},
+    {"speaker":"春日部つむぎ","emotion":"caution","section":"RANK 11 TIE","headline":"Schneider Electric","subheadline":"配電・DC設備 / WATCH","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"4/5/5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"1/8・5","detail":"RSI36.7 / penalty3","color":"white"},{"label":"score / rank","value":"73.5 / 11","detail":"同点 • WATCH","color":"amber"}],"source":"Google Sheet • technical","text":"Schneider Electricは同じ73.5点でもWATCH。Fundamentalと補完性は5、技術は1点、RSI36.7で控除3点。良い会社の評価と、シート上のテクニカル条件は分けました。"},
+    {"speaker":"ずんだもん","emotion":"serious","section":"RANK 14","headline":"Sandisk","subheadline":"Flash・HBF / REMOVE","visualType":"scorecard","stats":[{"label":"AI/実証/基礎","value":"4.5/3.5/4.5","detail":"各1〜5点","color":"cyan"},{"label":"技術/補完","value":"2/8・4","detail":"RSI36.7 / penalty3","color":"white"},{"label":"score / rank","value":"68.5 / 14","detail":"REMOVE • HBF仕様公開済","color":"amber"}],"source":"Google Sheet / Sandisk HBF","text":"14位のSandiskは68.5点でREMOVE。技術2点、RSI36.7、控除3点。なおHBF仕様は8月に公開済みです。仕様があることと顧客の量産採用が確認できることは、別の段階です。"},
+    {"chapter":"なぜ4社が入れ替わるか","speaker":"春日部つむぎ","emotion":"reveal","section":"FOUR IN / FOUR OUT","headline":"REMOVE 4 / ADD 4","subheadline":"1対1の交換ではない","visualType":"comparison","stats":[{"label":"REMOVE","value":"AMD・SNDK","detail":"GLW・VSTも外す","color":"amber"},{"label":"ADD","value":"LITE・SK hynix","detail":"HPE・SNPSも加える","color":"cyan"}],"source":"Google Sheet / Issue #215","text":"外すのはAMD、Sandisk、Corning、Vistra。加えるのはLumentum、SK hynix、HPE、Synopsys。四対四の交換ですが、一社ずつ同じ役割を置き換える取引ではありません。"},
+    {"speaker":"ずんだもん","emotion":"curious","section":"EVIDENCE IS NOT A BUY SIGNAL","headline":"業績が強くても外れる","subheadline":"事実と採否は別レイヤー","visualType":"balance","stats":[{"label":"AMD Data Center","value":"+107%","detail":"Q2 2026 YoY","color":"cyan"},{"label":"Corning Optical","value":"+32%","detail":"Q2 2026 YoY","color":"white"},{"label":"判断","value":"仮想PF","detail":"売買推奨ではない","color":"amber"}],"source":"AMD / Corning IR releases","text":"AMDもCorningも会社発表の業績や需要は強い。それとREMOVEは矛盾しません。前者は企業の事実、後者はこの表の重複度と補完性を使った編集・ポートフォリオ判断です。"},
+    {"chapter":"変更前の仮想構成","speaker":"春日部つむぎ","emotion":"analytical","section":"BEFORE • VIRTUAL","headline":"計算・電力・光が重なる","subheadline":"開始取引の目標配分","visualType":"portfolio","stats":[{"label":"NVDA / AVGO / AMD","value":"15 / 12.5 / 7.5%","detail":"計算・ネットワーク","color":"cyan"},{"label":"光・メモリ","value":"35%","detail":"MU, SNDK, GLW, COHR","color":"white"},{"label":"電力 / cash","value":"20 / 10%","detail":"CEG・VST / CASH","color":"amber"}],"source":"Google Sheet • trades","text":"変更前の開始配分は、NVDA15、AVGO12.5、AMD7.5、MU10、SNDK7.5、GLW10、COHR7.5、CEG10、VST10、現金10パーセント。計算・電力・光にどう配るかを見直しました。"},
+    {"chapter":"変更後の仮想構成","speaker":"ずんだもん","emotion":"reveal","section":"AFTER • VIRTUAL","headline":"6つの役割へ配分","subheadline":"株式90% + 現金10%","visualType":"portfolio","stats":[{"label":"MU / COHR / LITE","value":"15 / 15 / 10%","detail":"メモリ・光","color":"cyan"},{"label":"NVDA / AVGO","value":"10 / 10%","detail":"計算・ASIC網","color":"white"},{"label":"SKH / HPE / SNPS","value":"7.5%ずつ","detail":"HBM・system・EDA","color":"amber"}],"source":"Google Sheet • portfolio","text":"変更後はMU15、COHR15、LITE10、NVDA10、AVGO10。SK hynix、HPE、Synopsys、CEGを7.5パーセントずつ、現金10パーセント。全て仮想の目標配分です。"},
+    {"speaker":"春日部つむぎ","emotion":"warm","section":"THE LIMIT OF THE MODEL","headline":"順位は予測ではない","subheadline":"入力値と基準日は変わる","visualType":"risk","stats":[{"label":"テクニカル終値","value":"10/08","detail":"過去データ","color":"cyan"},{"label":"RSI","value":"14日","detail":"単独判断禁止","color":"amber"}],"source":"Google Sheet • technical_raw","text":"このスコアは将来リターンを当てるモデルではありません。6軸の重みも補完性も編集判断。株価指標は10月8日終値までの過去値で、RSI単独では売買判断できません。"},
+    {"speaker":"ずんだもん","emotion":"relieved","section":"WHAT TO WATCH NEXT","headline":"次の確認は3つ","subheadline":"数字と実証を更新する","visualType":"checklist","stats":[{"label":"基準日","value":"2026-10-08","detail":"Technical snapshot","color":"cyan"},{"label":"短期指標","value":"RSI14","detail":"単独使用しない","color":"white"},{"label":"技術の次段階","value":"HBF量産採用","detail":"仕様公開とは別","color":"amber"}],"source":"Google Sheet / issuer releases","text":"次に見るのは2026-10-08終値を更新した選考表、RSI14と他の7シグナル、そしてHBFの量産採用。数字と実証が変われば、同じ式でも選択は変わります。"},
+    {"speaker":"春日部つむぎ","emotion":"joy","section":"CONCLUSION","headline":"会社の強さと役割","subheadline":"同じ質問ではない","visualType":"verdict","stats":[{"label":"会社","value":"事実を確認","detail":"一次資料へ戻る","color":"cyan"},{"label":"構成","value":"役割と重複","detail":"自分で検証","color":"white"},{"label":"この動画","value":"情報提供","detail":"投資推奨ではない","color":"amber"}],"source":"秒算マネー • Issue #215","text":"結論。AI関連だから全部を同じ箱に入れず、何を供給し、何と重なり、何を補うかを確認する。これは一つの仮想ポートフォリオの例で、売買の指示ではありません。"}
+  ]
+}

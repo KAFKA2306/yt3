@@ -1,9 +1,15 @@
 # Dependencies & Build
 node_modules/
 dist/
+.venv/
+__pycache__/
+*.py[cod]
 
 # Environment
 .env
+IDENTITY.md
+SOUL.md
+USER.md
 *.env
 secret/
 config/.env.*
@@ -43,6 +49,7 @@ models/
 aim/
 .aim/
 copcon/
+data/cache/huggingface/
 data/state/
 *.pickle
 
@@ -64,3 +71,7 @@ audits/
 # Exclude repomix output and scratch directories
 repomix-output.xml
 scratch/
+
+# Migration residue and temporary test directories
+openclaw-workspace-state.json.migrated.*
+.tmp-*/

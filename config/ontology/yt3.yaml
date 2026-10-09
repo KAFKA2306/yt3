@@ -1,0 +1,174 @@
+schema_version: 1
+id: yt3.local-workflow
+label: YT3 local workflow vocabulary
+role: local domain vocabulary
+top_level_ontology:
+  status: not_implemented
+  reference: ISO/IEC 21838-1:2021
+  reference_role: requirements_baseline_only
+conformance_claim: "none"
+
+types:
+  - id: profile
+    label: Profile
+    status: implemented
+    scope: YouTube channel routing configuration
+    description: A configured YouTube channel identity and its run bucket.
+    evidence:
+      - src/domain/youtube_profiles.ts#YOUTUBE_PROFILES
+
+  - id: topic
+    label: Topic
+    status: conceptual
+    scope: Production planning
+    description: A proposed unit for a production theme or primary-source issue.
+    evidence:
+      - docs/standard/star-schema-standard.md#object-layer
+
+  - id: run
+    label: Run
+    status: implemented
+    scope: Production execution record
+    description: One identified production execution with lifecycle and artifact hashes.
+    evidence:
+      - db/schema.sql#runs
+
+  - id: raw-artifact
+    label: Raw Artifact
+    status: implemented
+    scope: Run input and output provenance
+    description: A run-associated artifact reference with a raw hash and normalization state.
+    evidence:
+      - db/schema.sql#raw_artifacts
+
+  - id: script
+    label: Script
+    status: implemented
+    scope: Typed script document
+    description: A validated title, description, and sequence of spoken lines.
+    evidence:
+      - src/domain/schemas/script.ts#ScriptSchema
+
+  - id: script-segment
+    label: Script Segment
+    status: implemented
+    scope: Run-scoped segment record
+    description: A run-associated segment with text, timing, and audit features.
+    evidence:
+      - db/schema.sql#script_segments
+
+  - id: source
+    label: Source
+    status: implemented
+    scope: Byosan feature specification
+    description: A named source with a stable feature-spec ID and URL.
+    evidence:
+      - src/domain/byosan/feature_spec.ts#ByosanFeatureSourceSchema
+
+  - id: claim
+    label: Claim
+    status: implemented
+    scope: Byosan feature specification
+    description: A factual statement with one or more source IDs and an evidence status.
+    evidence:
+      - src/domain/byosan/feature_spec.ts#ByosanFeatureClaimSchema
+
+  - id: asset
+    label: Asset
+    status: conceptual
+    scope: Production media
+    description: A proposed common type for audio, video, and thumbnail outputs.
+    evidence:
+      - docs/standard/star-schema-standard.md#object-layer
+
+  - id: audit-check
+    label: Audit Check
+    status: implemented
+    scope: Run quality evidence
+    description: A run-associated check result with status and evidence.
+    evidence:
+      - db/schema.sql#audit_checks
+
+  - id: publication
+    label: Publication
+    status: implemented
+    scope: YouTube publication workflow state
+    description: A run-scoped publication state that may reference a remote video ID.
+    evidence:
+      - src/domain/publication_state.ts#CanonicalPublicationStateSchema
+
+  - id: video
+    label: Video
+    status: implemented
+    scope: Remote YouTube resource reference
+    description: A remote YouTube video identified by video_id; no local video entity table is defined.
+    evidence:
+      - src/domain/publication_state.ts#video_id
+      - db/schema.sql#youtube_analytics.video_id
+
+  - id: metric-observation
+    label: Metric Observation
+    status: implemented
+    scope: YouTube Analytics API observations
+    description: An API-recorded observation for a video and age window; estimated values are excluded.
+    evidence:
+      - db/schema.sql#youtube_analytics
+      - src/scripts/ingest_youtube_analytics.ts
+
+relations:
+  - id: run-has-raw-artifact
+    source: run
+    target: raw-artifact
+    predicate: has_raw_artifact
+    status: implemented
+    evidence:
+      - db/schema.sql#raw_artifacts.run_id
+
+  - id: run-has-script-segment
+    source: run
+    target: script-segment
+    predicate: has_script_segment
+    status: implemented
+    evidence:
+      - db/schema.sql#script_segments.run_id
+
+  - id: run-has-audit-check
+    source: run
+    target: audit-check
+    predicate: has_audit_check
+    status: implemented
+    evidence:
+      - db/schema.sql#audit_checks.run_id
+
+  - id: claim-cites-source
+    source: claim
+    target: source
+    predicate: cites
+    status: implemented
+    evidence:
+      - src/domain/byosan/feature_spec.ts#ByosanFeatureClaimSchema.sourceIds
+      - src/domain/byosan/feature_spec.ts#auditByosanFeatureSpec
+
+  - id: run-has-publication
+    source: run
+    target: publication
+    predicate: has_publication_state
+    status: implemented
+    evidence:
+      - src/domain/publication_state.ts#CanonicalPublicationStateSchema.run_id
+
+  - id: publication-references-video
+    source: publication
+    target: video
+    predicate: references_video
+    status: implemented
+    evidence:
+      - src/domain/publication_state.ts#CanonicalPublicationStateSchema.video_id
+
+  - id: video-has-metric-observation
+    source: video
+    target: metric-observation
+    predicate: has_metric_observation
+    status: implemented
+    evidence:
+      - db/schema.sql#youtube_analytics.video_id

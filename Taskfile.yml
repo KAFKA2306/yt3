@@ -25,6 +25,13 @@ tasks:
     cmds:
       - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
+  byosan:issue:prepare:
+    desc: "Produce an Issue-assigned 秒算マネー feature from its audited spec, pass release check, and print its publish command (RUN_ID and SPEC required)"
+    cmds:
+      - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun src/scripts/prepare_byosan_issue.ts "{{.RUN_ID}}" "{{.SPEC}}"
+      - task release:check PROFILE=byosan -- "{{.RUN_ID}}"
+      - echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- {{.RUN_ID}}"
+
   byosan:prepare:
     desc: "Prepare one 秒算マネー run through the product release gate without publishing (DATE=YYYY-MM-DD required)"
     cmds:
@@ -149,6 +156,10 @@ tasks:
   audit:repo-contract:
     desc: "Verify Taskfile executables and documented repository entry points"
     cmds: ["bun src/scripts/audit_repository_contract.ts"]
+
+  audit:ontology:
+    desc: "Audit ontology terminology and its normative basis"
+    cmds: ["bun run audit:ontology"]
 
   stability:report:
     desc: "Regenerate the canonical cross-run stability report"

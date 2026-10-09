@@ -1721,7 +1721,28 @@ async function main(): Promise<void> {
 			});
 			await fs.writeFile(audioPath, result.audio);
 		}
-		const duration = audioDuration(audioPath);
+		let duration = audioDuration(audioPath);
+		if (duration > 16) {
+			const acceleratedPath = `${audioPath}.accelerated.wav`;
+			const tempo = Math.min(2, Math.max(1.01, duration / 15.5));
+			run(
+				"ffmpeg",
+				[
+					"-y",
+					"-hide_banner",
+					"-loglevel",
+					"error",
+					"-i",
+					audioPath,
+					"-filter:a",
+					`atempo=${tempo.toFixed(3)}`,
+					acceleratedPath,
+				],
+				"TTS duration normalization",
+			);
+			await fs.move(acceleratedPath, audioPath, { overwrite: true });
+			duration = audioDuration(audioPath);
+		}
 		if (!(await fs.pathExists(scenePath))) {
 			console.log(
 				`[SCENE ${index + 1}/${spec.segments.length}] ${segment.headline}`,

@@ -232,7 +232,7 @@
       "kind": "success",
       "summary": "Run completed successfully. Keep the audience framing, title shape, and audit-safe structure that passed this cycle.",
       "signals": [
-        "高金利と生活コスト: AI投資はどこへ向かう？",
+        "S&P500利益28.6%増の裏で「トランプ・アカウント」が210億ドルを市場に強制投入",
         "audit passed",
         "publish succeeded"
       ],
@@ -240,7 +240,157 @@
         "reuse the same audience-fitting angle if the topic family repeats",
         "treat this run as a positive exemplar in future memory context"
       ],
-      "timestamp": "2026-06-06T04:27:01.836Z"
+      "timestamp": "2026-06-06T09:30:09.864Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-09",
+      "bucket": "daily_pulse",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "[\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      0,\n      \"results\",\n      0,\n      \"news\",\n      0,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      1,\n      \"results\",\n      0,\n      \"news\",\n      0,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  },\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selected_topics\",\n      1,\n      \"results\",\n      0,\n      \"news\",\n      1,\n      \"url\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  }\n]"
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-09T12:32:38.092Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-09",
+      "bucket": "default",
+      "stage": "content",
+      "kind": "fallback",
+      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
+      "signals": [
+        "rate limit / quota exhaustion",
+        "3 attempted generations failed",
+        "deterministic fallback preserved pipeline continuity"
+      ],
+      "fixes": [
+        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
+        "prime future runs with cached research and loop memory",
+        "prefer concise, audit-safe fallback patterns when the model pool is dry"
+      ],
+      "timestamp": "2026-06-09T14:45:05.788Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-09",
+      "bucket": "daily_pulse",
+      "stage": "audit",
+      "kind": "failure",
+      "summary": "Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
+      "signals": [
+        "Operation: Error Classification",
+        "Build: Linter Validation"
+      ],
+      "fixes": [
+        "regenerate content and media rather than reusing stale artifacts",
+        "treat failing audit checks as state invalidation, not just a notification",
+        "prime the next loop with the specific failing check names"
+      ],
+      "timestamp": "2026-06-09T15:04:21.823Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-10",
+      "bucket": "daily_pulse",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: LLM invocation failed after 5 attempts due to rate limit/quota exhaustion."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-09T20:38:30.070Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-10",
+      "bucket": "default",
+      "stage": "content",
+      "kind": "fallback",
+      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
+      "signals": [
+        "rate limit / quota exhaustion",
+        "3 attempted generations failed",
+        "deterministic fallback preserved pipeline continuity"
+      ],
+      "fixes": [
+        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
+        "prime future runs with cached research and loop memory",
+        "prefer concise, audit-safe fallback patterns when the model pool is dry"
+      ],
+      "timestamp": "2026-06-10T14:57:00.632Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-10",
+      "bucket": "daily_pulse",
+      "stage": "audit",
+      "kind": "failure",
+      "summary": "Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
+      "signals": [
+        "Operation: Error Classification",
+        "Build: Linter Validation"
+      ],
+      "fixes": [
+        "regenerate content and media rather than reusing stale artifacts",
+        "treat failing audit checks as state invalidation, not just a notification",
+        "prime the next loop with the specific failing check names"
+      ],
+      "timestamp": "2026-06-10T15:15:27.863Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-11",
+      "bucket": "daily_pulse",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "CRITICAL: Failed to generate a script passing integrity audits after 3 attempts."
+      ],
+      "fixes": [
+        "read the terminal error once, then route the next run through cached research or deterministic fallback",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-06-11T07:04:38.894Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-11",
+      "bucket": "default",
+      "stage": "content",
+      "kind": "fallback",
+      "summary": "LLM quota exhaustion forced deterministic fallback content. The loop should skip wasted retries and bias future runs toward cached research plus fallback-safe synthesis.",
+      "signals": [
+        "rate limit / quota exhaustion",
+        "3 attempted generations failed",
+        "deterministic fallback preserved pipeline continuity"
+      ],
+      "fixes": [
+        "treat quota exhaustion as a terminal content-state, not a recoverable generation error",
+        "prime future runs with cached research and loop memory",
+        "prefer concise, audit-safe fallback patterns when the model pool is dry"
+      ],
+      "timestamp": "2026-06-11T13:20:22.686Z"
+    },
+    {
+      "run_id": "daily_pulse/2026-06-11",
+      "bucket": "daily_pulse",
+      "stage": "audit",
+      "kind": "failure",
+      "summary": "Critical audit failure blocked publish. Cache invalidation was triggered so the next run must regenerate from fresh state.",
+      "signals": [
+        "Operation: Error Classification",
+        "Build: Linter Validation"
+      ],
+      "fixes": [
+        "regenerate content and media rather than reusing stale artifacts",
+        "treat failing audit checks as state invalidation, not just a notification",
+        "prime the next loop with the specific failing check names"
+      ],
+      "timestamp": "2026-06-11T13:39:44.490Z"
     }
   ]
 }
