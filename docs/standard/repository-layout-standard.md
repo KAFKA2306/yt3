@@ -45,6 +45,9 @@ Rules:
 - Before a branch is deleted, its tip is preserved as an annotated or lightweight tag `archive/<branch>-<YYYYMMDD>`.
 - Remote branch deletion and force-push require a listed set of target branches and explicit user approval for that list. Approval for one list does not carry to another.
 - Each worktree corresponds to one live branch. Prunable worktrees are removed with `git worktree prune`.
+- 作業を branch や git worktree に分解することを禁止する。
+- 作業は一つの canonical branch で行い、必要なら同じ branch に commit する。新しい branch / worktree は、ユーザーが明示的に指示した場合のみ作る。
+- 完了後は同じ branch を速やかに `main` へ merge する。merge 条件は global rules の Autonomous Merge に従う。
 
 ## 4. Uncommitted state
 
