@@ -138,7 +138,7 @@ Taskfile.yml  canonical operator interface
 bun.lock      reproducible dependency graph
 ```
 
-System audit protocol: [docs/standard/system-audit-protocol.md](docs/standard/system-audit-protocol.md).  
+System audit protocol: [docs/standard/system-audit-protocol.md](docs/standard/system-audit-protocol.md).
 Humanity Observatory standard: [docs/standard/humanity-observatory-audit-standard.md](docs/standard/humanity-observatory-audit-standard.md).
 
 ## Completion boundary

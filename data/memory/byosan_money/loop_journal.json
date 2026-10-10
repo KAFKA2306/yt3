@@ -169,6 +169,36 @@
         "treat this run as a positive exemplar in future memory context"
       ],
       "timestamp": "2026-06-06T04:27:01.836Z"
+    },
+    {
+      "run_id": "byosan_money/2026-10-09-issue-215",
+      "bucket": "byosan_money",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "BYOSAN_ANGLE_STOP: fewer_than_five_candidates,fewer_than_three_publishers_in_candidate_set,no_candidate_passed_all_hard_gates. See research/angle_decision.json"
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-10-09T08:45:10.963Z"
+    },
+    {
+      "run_id": "byosan_money/2026-10-09-issue-215-r1",
+      "bucket": "byosan_money",
+      "stage": "pipeline",
+      "kind": "failure",
+      "summary": "Uncaught pipeline crash. The loop should convert this failure into a reusable memory note before the next scheduled run.",
+      "signals": [
+        "BYOSAN_ANGLE_STOP: insufficient_dataSurface_diversity,no_candidate_passed_all_hard_gates. See research/angle_decision.json"
+      ],
+      "fixes": [
+        "read the terminal error once, then fix the failing harness step before retrying",
+        "avoid repeated retries when the failure is already a quota or integrity terminal state"
+      ],
+      "timestamp": "2026-10-09T08:47:08.173Z"
     }
   ]
 }

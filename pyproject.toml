@@ -13,3 +13,54 @@ dependencies = [
   "speechbrain>=1.0.0",
   "torch>=2.5.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pyrefly>=0.26",
+    "ruff>=0.12",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = [
+    "node_modules",
+    "data",
+    "db",
+    "runs",
+    "sbg-nav-audit/reports",
+    "sbg-nav-audit/snapshots",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pyrefly]
+preset = "basic"
+project-includes = [
+	"scripts/check_python.py",
+
+    "sbg-nav-audit/scripts",
+    "src/scripts/voice_forensic_audit.py",
+]
+project-excludes = [
+    "**/.git/**",
+    "**/.venv/**",
+    "**/__pycache__/**",
+    "**/node_modules/**",
+]
+search-path = [".", "sbg-nav-audit/scripts"]
+python-platform = "linux"
+python-version = "3.11"
+ignore-missing-imports = [
+    "librosa",
+    "numpy",
+    "requests",
+	"speechbrain.*",
+    "torch",
+    "yaml",
+]

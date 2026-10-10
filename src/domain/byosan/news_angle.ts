@@ -21,13 +21,20 @@ export const ByosanSourceTierSchema = z.enum([
 	"unknown",
 ]);
 
+const ByosanSourceSupportsSchema = z.preprocess(
+	(value) => (typeof value === "string" ? [value] : value),
+	z.array(z.string().min(3)).min(1),
+);
+
 export const ByosanAngleSourceSchema = z.object({
 	id: z.string().min(1),
 	name: z.string().min(2),
 	url: z.string().url(),
 	publishedAt: z.string().min(4).optional(),
 	tier: ByosanSourceTierSchema,
-	supports: z.array(z.string().min(3)).min(1),
+	// Some providers serialize a single claim mapping as a string. Normalize
+	// that losslessly at the schema boundary; missing mappings still fail closed.
+	supports: ByosanSourceSupportsSchema,
 });
 
 export const ByosanAdversarialEvidenceKindSchema = z.enum([

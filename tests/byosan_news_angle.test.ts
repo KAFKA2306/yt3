@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	type ByosanAngleCandidate,
+	ByosanAngleSourceSchema,
 	byosanTextSimilarity,
 	evaluateByosanAngleCandidate,
 	selectByosanAngle,
@@ -258,5 +259,16 @@ describe("byosan sharp-angle gate", () => {
 		expect(result.decision).toBe("PASS");
 		expect(result.selectedIndex).not.toBeNull();
 		expect(result.distinctPublisherCount).toBeGreaterThanOrEqual(3);
+	});
+
+	test("normalizes one source-support claim without inventing evidence", () => {
+		const parsed = ByosanAngleSourceSchema.parse({
+			id: "sec",
+			name: "SEC filing",
+			url: "https://www.sec.gov/filing",
+			tier: "L1",
+			supports: "評価益と純利益",
+		});
+		expect(parsed.supports).toEqual(["評価益と純利益"]);
 	});
 });

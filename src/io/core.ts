@@ -6,6 +6,7 @@ import fs from "fs-extra";
 import yaml from "js-yaml";
 import { z } from "zod";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
+import { getYouTubeProfile } from "../domain/youtube_profiles.js";
 export const ROOT = process.cwd();
 
 export function loadConfig(
@@ -43,11 +44,14 @@ import {
 	classifyFailureMessage,
 } from "./utils/stability.js";
 
-const envFilePath = process.env.ENV_FILE
-	? path.isAbsolute(process.env.ENV_FILE)
-		? process.env.ENV_FILE
-		: path.join(ROOT, process.env.ENV_FILE)
-	: path.join(ROOT, "config/.env");
+const selectedEnvFile =
+	process.env.ENV_FILE ??
+	(process.env.YOUTUBE_CHANNEL_PROFILE
+		? getYouTubeProfile().envFile
+		: "config/.env");
+const envFilePath = path.isAbsolute(selectedEnvFile)
+	? selectedEnvFile
+	: path.join(ROOT, selectedEnvFile);
 dotenv.config({ path: envFilePath, override: true });
 
 export { Logger as AgentLogger };

@@ -350,6 +350,9 @@ tasks:
   audit:prompt-migration:
     desc: "Inventory prompt sources and audit model/profile migration debt"
     cmds: ["bun src/scripts/audit_prompt_migration.ts {{.CLI_ARGS}}"]
+  audit:ontology:
+    desc: "Audit ontology terminology and its normative basis"
+    cmds: ["bun run audit:ontology"]
 
   stability:report:
     desc: "Regenerate the canonical cross-run stability report"

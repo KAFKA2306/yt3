@@ -91,6 +91,7 @@ async function reportChannel(
 		channel === "byosan_money"
 			? [
 					path.join(runDir, "research.json"),
+					path.join(runDir, "source", "research_result.json"),
 					path.join(runDir, "content", "output.yaml"),
 					path.join(runDir, "research", "output.yaml"),
 					path.join(runDir, "web_search", "input.yaml"),
@@ -102,6 +103,7 @@ async function reportChannel(
 
 	const videoCandidates = [
 		path.join(runDir, "media", "video", "video.mp4"),
+		path.join(runDir, "media", "video", "publish_video.mp4"),
 		path.join(runDir, "video", "final_video.mp4"),
 	];
 

@@ -357,10 +357,20 @@ export function isEvidenceReady(runDir: string): boolean {
 		) {
 			return false;
 		}
-		if (!fs.existsSync(path.join(runDir, "media", "video", "video.mp4"))) {
+		const videoCandidates = [
+			path.join(runDir, "media", "video", "video.mp4"),
+			path.join(runDir, "media", "video", "publish_video.mp4"),
+		];
+		if (!videoCandidates.some((candidate) => fs.existsSync(candidate))) {
 			return false;
 		}
-		if (!fs.existsSync(path.join(runDir, "research.json"))) return false;
+		const researchCandidates = [
+			path.join(runDir, "research.json"),
+			path.join(runDir, "source", "research_result.json"),
+			path.join(runDir, "research", "output.yaml"),
+		];
+		if (!researchCandidates.some((candidate) => fs.existsSync(candidate)))
+			return false;
 		const auditReportPath = path.join(runDir, "audit", "report.json");
 		if (!fs.existsSync(auditReportPath)) return false;
 		return fs.readJsonSync(auditReportPath)?.decision === "PASS";
@@ -387,10 +397,19 @@ export function getMissingEvidence(runDir: string): string[] {
 	const publicationPath = path.join(runDir, "publish", "state.json");
 	if (!fs.existsSync(receiptPath)) missing.push("publish/receipt.json");
 	if (!fs.existsSync(publicationPath)) missing.push("publish/state.json");
-	if (!fs.existsSync(path.join(runDir, "media", "video", "video.mp4"))) {
+	const videoCandidates = [
+		path.join(runDir, "media", "video", "video.mp4"),
+		path.join(runDir, "media", "video", "publish_video.mp4"),
+	];
+	if (!videoCandidates.some((candidate) => fs.existsSync(candidate))) {
 		missing.push("media/video/video.mp4");
 	}
-	if (!fs.existsSync(path.join(runDir, "research.json"))) {
+	const researchCandidates = [
+		path.join(runDir, "research.json"),
+		path.join(runDir, "source", "research_result.json"),
+		path.join(runDir, "research", "output.yaml"),
+	];
+	if (!researchCandidates.some((candidate) => fs.existsSync(candidate))) {
 		missing.push("research.json");
 	}
 	const auditReportPath = path.join(runDir, "audit", "report.json");

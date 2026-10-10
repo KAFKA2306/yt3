@@ -31,7 +31,6 @@
 
 ### 5. 実行インフラ：Standardized Runtime
 - `src/humanity_observatory_workflow.ts` による専用ランタイム。
-- `data/humanity_pulse.md` をシードとした自律生成。
 - `PROFILE=humanity task run` で canonical production entrypoint を共有する。
 
 ## 帰結

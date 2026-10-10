@@ -127,6 +127,10 @@ describe("Stability and Audit Helpers", () => {
 });
 
 describe("YouTube Analytics Seam", () => {
+	beforeAll(async () => {
+		await fs.ensureDir(TEMP_DIR);
+	});
+
 	test("discoverVideos finds receipts in mock run directories", async () => {
 		const {
 			discoverVideos,
