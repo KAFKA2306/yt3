@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 import { resolvePath } from "../../io/core.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
 import { getKafkaVisualSystem } from "../design/kafka_visual_system.js";
@@ -51,7 +51,7 @@ export class ThumbnailRenderer {
 		if (!palettes || palettes.length === 0) throw new Error("No palette");
 		const palette = this.selectBestPalette(palettes);
 
-		let layers: sharp.OverlayOptions[] = [];
+		let layers: OverlayOptions[] = [];
 		if (palette.background_image) {
 			const bgPath = resolvePath(palette.background_image);
 			layers.push({
