@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import {
 	type ByosanFailureTrace,
+	type RepairResolution,
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
 	preflightBlockedMessage,
@@ -318,5 +319,85 @@ describe("byosan failure retry gate", () => {
 		expect(() => assertByosanRetryAllowed(runDir, "different-head")).toThrow(
 			"RETRY_BLOCKED_REPAIR_EVIDENCE_REQUIRED",
 		);
+	});
+
+	test("classifies BYOSAN_ANGLE_STOP as RESEARCH_ANGLE_STOP at the research stage", async () => {
+		const runDir = await makeRunDir();
+		const trace = recordByosanFailure(
+			runDir,
+			new Error("BYOSAN_ANGLE_STOP: no passing angle decision"),
+			"head-a",
+		);
+		expect(trace).toMatchObject({
+			failure_class: "RESEARCH_ANGLE_STOP",
+			stage: "RESEARCH",
+			retry_policy: "REQUIRES_REPAIR_EVIDENCE",
+		});
+	});
+
+	test("keeps the repair resolution when the same failure is re-recorded", async () => {
+		const runDir = await makeRunDir();
+		const message = "BYOSAN_ANGLE_STOP: no passing angle decision";
+		const first = recordByosanFailure(runDir, new Error(message), "head-a");
+		const resolution: RepairResolution = {
+			status: "VERIFIED",
+			root_cause: "angle contract missing adversarialEvidence",
+			regression_test: "tests/byosan_daily.test.ts::angle stop",
+			repair_commit: "repair-head",
+			validation: {
+				command: "task check:merge",
+				status: "PASS",
+				checked_at: "2026-10-10T09:00:00.000Z",
+			},
+		};
+		await fs.outputJson(
+			path.join(runDir, "audit/failure_trace.json"),
+			{ ...first, resolution },
+			{ spaces: 2 },
+		);
+		const again = recordByosanFailure(runDir, new Error(message), "head-b");
+		expect(again.resolution).toEqual(resolution);
+		expect(again.first_failed_at).toBe(first.first_failed_at);
+		expect(() => assertByosanRetryAllowed(runDir, "repair-head")).not.toThrow();
+	});
+
+	test("archives the previous resolution when a different failure is recorded", async () => {
+		const runDir = await makeRunDir();
+		const first = recordByosanFailure(
+			runDir,
+			new Error("BYOSAN_ANGLE_STOP: no passing angle decision"),
+			"head-a",
+		);
+		const resolution: RepairResolution = {
+			status: "VERIFIED",
+			root_cause: "angle contract missing adversarialEvidence",
+			regression_test: "tests/byosan_daily.test.ts::angle stop",
+			repair_commit: "repair-head",
+			validation: {
+				command: "task check:merge",
+				status: "PASS",
+				checked_at: "2026-10-10T09:00:00.000Z",
+			},
+		};
+		await fs.outputJson(
+			path.join(runDir, "audit/failure_trace.json"),
+			{ ...first, resolution },
+			{ spaces: 2 },
+		);
+		const next = recordByosanFailure(
+			runDir,
+			new Error(
+				"BYOSAN_FEATURE_GENERATION_FAILED: domain audit rejected draft",
+			),
+			"head-b",
+		);
+		expect(next.resolution).toBeUndefined();
+		expect(next.resolution_history).toEqual([
+			{
+				fingerprint: first.fingerprint,
+				failure_class: "RESEARCH_ANGLE_STOP",
+				resolution,
+			},
+		]);
 	});
 });

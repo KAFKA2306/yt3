@@ -18,7 +18,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-
 MODEL_ID = "speechbrain/spkrec-ecapa-voxceleb"
 REQUIRED_MODULES = (
     "huggingface_hub",

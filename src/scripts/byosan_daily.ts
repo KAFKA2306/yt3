@@ -50,6 +50,7 @@ export type ByosanFailureClass =
 	| "PROVIDER_RATE_LIMIT"
 	| "PROVIDER_SCHEMA"
 	| "SPEC_CONTRACT"
+	| "RESEARCH_ANGLE_STOP"
 	| "MEDIA_AUDIO"
 	| "MEDIA_VIDEO_MOTION"
 	| "SUBTITLE"
@@ -69,7 +70,7 @@ type RetryPolicy =
 	| "REQUIRES_REPAIR_EVIDENCE"
 	| "REMOTE_READBACK_ONLY";
 
-type RepairResolution = {
+export type RepairResolution = {
 	status: "VERIFIED";
 	root_cause: string;
 	regression_test: string;
@@ -103,6 +104,13 @@ export type ByosanFailureTrace = {
 	last_retry_at?: string;
 	recovered_at?: string;
 	resolution?: RepairResolution;
+	resolution_history?: ResolvedFailure[];
+};
+
+type ResolvedFailure = {
+	fingerprint: string;
+	failure_class: ByosanFailureClass;
+	resolution: RepairResolution;
 };
 
 function safeSourceId(raw: string, index: number): string {
@@ -188,6 +196,37 @@ export function classifyByosanFailure(message: string): {
 	maxRetries: number;
 } {
 	const stage = failureStage(message);
+	if (/BYOSAN_ANGLE_STOP/.test(message)) {
+		return {
+			failureClass: "RESEARCH_ANGLE_STOP",
+			stage: "RESEARCH",
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (
+		/BYOSAN_PREFLIGHT_BLOCKED/.test(message) &&
+		!/429|rate limit|quota exhausted|resource exhausted/i.test(message)
+	) {
+		if (
+			/\b(python_runtime|ffmpeg|ffprobe|voicevox) (FAIL|UNVERIFIED)/.test(
+				message,
+			)
+		) {
+			return {
+				failureClass: "INFRA_DEPENDENCY",
+				stage,
+				retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+				maxRetries: 0,
+			};
+		}
+		return {
+			failureClass: "NETWORK_AUTH",
+			stage,
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
 	if (
 		/COMMAND_FAILED: .*publish_youtube|DUPLICATE_PUBLISH_BLOCKED|PUBLISH_EVIDENCE_INCOMPLETE/i.test(
 			message,
@@ -410,6 +449,19 @@ export function recordByosanFailure(
 		/COMMAND_FAILED:\s+(.+?)\s+status=(\d+|signal)/,
 	);
 	const now = new Date().toISOString();
+	const sameFailure = previous?.fingerprint === fingerprint;
+	const resolutionHistory = [
+		...(previous?.resolution_history ?? []),
+		...(previous?.resolution && !sameFailure
+			? [
+					{
+						fingerprint: previous.fingerprint,
+						failure_class: previous.failure_class,
+						resolution: previous.resolution,
+					},
+				]
+			: []),
+	];
 	const trace: ByosanFailureTrace = {
 		schema_version: "byosan_failure_trace_v1",
 		status: "OPEN",
@@ -431,8 +483,13 @@ export function recordByosanFailure(
 		root_cause: "pending_trace_review",
 		regression_test: "pending",
 		failed_at: now,
-		first_failed_at:
-			previous?.fingerprint === fingerprint ? previous.first_failed_at : now,
+		first_failed_at: sameFailure ? previous.first_failed_at : now,
+		...(sameFailure && previous.resolution
+			? { resolution: previous.resolution }
+			: {}),
+		...(resolutionHistory.length > 0
+			? { resolution_history: resolutionHistory }
+			: {}),
 	};
 	fs.outputJsonSync(failureTracePath(runDir), trace, { spaces: 2 });
 	return trace;
