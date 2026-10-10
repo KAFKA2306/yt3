@@ -8,6 +8,7 @@ import {
 	findPublishedByosanRunForDate,
 	preflightBlockedMessage,
 	recordByosanFailure,
+	reusableResearchResult,
 } from "../src/scripts/byosan_daily.js";
 
 const tempRoots: string[] = [];
@@ -83,6 +84,65 @@ describe("byosan daily duplicate-publication gate", () => {
 			verified: true,
 			videoId: "video123",
 		});
+	});
+});
+
+describe("byosan research cache reuse", () => {
+	const base = {
+		director_data: {
+			angle: "a",
+			title_hook: "t",
+			search_query: "q",
+			key_questions: [],
+		},
+		news: [],
+		memory_context: "",
+	};
+
+	test("reuses a cached research result whose angle decision satisfies the current contract", () => {
+		const cached = {
+			...base,
+			angle_decision: {
+				decision: "STOP",
+				selectedIndex: null,
+				reason: "no candidate",
+				candidateCount: 0,
+				distinctPublisherCount: 0,
+				orthogonality: {
+					uniqueProfileCount: 0,
+					geography: 0,
+					sector: 0,
+					actorType: 0,
+					eventType: 0,
+					timeHorizon: 0,
+					causalDirection: 0,
+					financialMetric: 0,
+					supplyChainLayer: 0,
+					marketRealEconomy: 0,
+					dataSurface: 0,
+					scale: 0,
+					failedAxes: [],
+				},
+				evaluated: [],
+			},
+		};
+		expect(reusableResearchResult(cached)).toBe(cached);
+	});
+
+	test("rejects a cached research result built under an older candidate contract", () => {
+		const cached = {
+			...base,
+			angle_decision: {
+				decision: "PASS",
+				selectedIndex: 0,
+				reason: "stale",
+				candidateCount: 1,
+				distinctPublisherCount: 1,
+				orthogonality: {},
+				evaluated: [{ candidate: { angle: "old" } }],
+			},
+		};
+		expect(reusableResearchResult(cached)).toBeUndefined();
 	});
 });
 

@@ -19,6 +19,7 @@ import {
 import {
 	type ByosanAdversarialEvidence,
 	type ByosanAngleCandidate,
+	ByosanAngleDecisionSchema,
 	type ByosanProductionPlan,
 	selectByosanProductionPlan,
 } from "../domain/byosan/news_angle.js";
@@ -317,6 +318,14 @@ function readFailureTrace(runDir: string): ByosanFailureTrace | null {
 			`FAILURE_TRACE_UNREADABLE: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
+}
+
+export function reusableResearchResult(
+	cached: ResearchResult,
+): ResearchResult | undefined {
+	return ByosanAngleDecisionSchema.safeParse(cached.angle_decision).success
+		? cached
+		: undefined;
 }
 
 export function preflightBlockedMessage(
@@ -744,9 +753,15 @@ export async function runByosanDaily(): Promise<void> {
 		"source",
 		"research_result.json",
 	);
+	const cachedResearch =
+		checkpoint.stages.research_ready && (await fs.pathExists(researchPath))
+			? ((await fs.readJson(researchPath)) as ResearchResult)
+			: undefined;
+	const reusedResearch =
+		cachedResearch && reusableResearchResult(cachedResearch);
 	let research: ResearchResult;
-	if (checkpoint.stages.research_ready && (await fs.pathExists(researchPath))) {
-		research = (await fs.readJson(researchPath)) as ResearchResult;
+	if (reusedResearch) {
+		research = reusedResearch;
 	} else {
 		const scout = new TrendScout(store);
 		research = await scout.run("byosan_money", 5, missionPath);
