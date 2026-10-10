@@ -31,8 +31,11 @@ Each fact table has exactly one grain.
 | `fact_audit_check` | run × audit rule | PASS/FAIL, observed value | dim_profile, dim_check_rule |
 | `fact_publication` | 1 publish attempt | visibility, publish_at, read-back result | dim_date, dim_profile, dim_channel |
 | `fact_analytics_daily` | video × day × metric | views, retention, CTR (API-measured only) | dim_date, dim_profile |
+| `fact_script_selection` | 1 source script × selection decision | selected (0/1), reason code, duration in minutes, credit requirement | dim_date, dim_profile, dim_source |
 
-Dimension tables: `dim_date`, `dim_profile` (`byosan`, `yawa`, `humanity`), `dim_channel`, `dim_topic`, `dim_source`, `dim_check_rule`, `dim_asset`.
+Dimension tables: `dim_date`, `dim_profile` (`byosan`, `yawa`, `humanity`), `dim_channel`, `dim_topic`, `dim_source` (one row per external script source, with its license and credit terms), `dim_check_rule`, `dim_asset`.
+
+Selection evidence for `fact_script_selection` is recorded in [docs/evidence/asmr_script_selection_20261010.md](../evidence/asmr_script_selection_20261010.md). Its selection criteria are applied before a script enters production.
 
 Rules:
 
