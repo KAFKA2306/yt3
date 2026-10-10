@@ -20,6 +20,7 @@ import {
 	type ByosanAdversarialEvidence,
 	type ByosanAngleCandidate,
 	type ByosanProductionPlan,
+	isCurrentByosanAngleDecision,
 	selectByosanProductionPlan,
 } from "../domain/byosan/news_angle.js";
 import { loadPreferredByosanFormat } from "../domain/byosan/performance.js";
@@ -29,7 +30,10 @@ import {
 	getRunIdDateString,
 	invokeStructuredLlm,
 } from "../io/core.js";
-import { runByosanPreflight } from "./byosan_preflight.js";
+import {
+	type ByosanPreflightReport,
+	runByosanPreflight,
+} from "./byosan_preflight.js";
 
 type FeatureSource = ByosanFeatureSource;
 
@@ -46,6 +50,7 @@ export type ByosanFailureClass =
 	| "PROVIDER_RATE_LIMIT"
 	| "PROVIDER_SCHEMA"
 	| "SPEC_CONTRACT"
+	| "RESEARCH_ANGLE_STOP"
 	| "MEDIA_AUDIO"
 	| "MEDIA_VIDEO_MOTION"
 	| "SUBTITLE"
@@ -65,7 +70,7 @@ type RetryPolicy =
 	| "REQUIRES_REPAIR_EVIDENCE"
 	| "REMOTE_READBACK_ONLY";
 
-type RepairResolution = {
+export type RepairResolution = {
 	status: "VERIFIED";
 	root_cause: string;
 	regression_test: string;
@@ -99,6 +104,13 @@ export type ByosanFailureTrace = {
 	last_retry_at?: string;
 	recovered_at?: string;
 	resolution?: RepairResolution;
+	resolution_history?: ResolvedFailure[];
+};
+
+type ResolvedFailure = {
+	fingerprint: string;
+	failure_class: ByosanFailureClass;
+	resolution: RepairResolution;
 };
 
 function safeSourceId(raw: string, index: number): string {
@@ -184,6 +196,37 @@ export function classifyByosanFailure(message: string): {
 	maxRetries: number;
 } {
 	const stage = failureStage(message);
+	if (/BYOSAN_ANGLE_STOP/.test(message)) {
+		return {
+			failureClass: "RESEARCH_ANGLE_STOP",
+			stage: "RESEARCH",
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
+	if (
+		/BYOSAN_PREFLIGHT_BLOCKED/.test(message) &&
+		!/429|rate limit|quota exhausted|resource exhausted/i.test(message)
+	) {
+		if (
+			/\b(python_runtime|ffmpeg|ffprobe|voicevox) (FAIL|UNVERIFIED)/.test(
+				message,
+			)
+		) {
+			return {
+				failureClass: "INFRA_DEPENDENCY",
+				stage,
+				retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+				maxRetries: 0,
+			};
+		}
+		return {
+			failureClass: "NETWORK_AUTH",
+			stage,
+			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
+			maxRetries: 0,
+		};
+	}
 	if (
 		/COMMAND_FAILED: .*publish_youtube|DUPLICATE_PUBLISH_BLOCKED|PUBLISH_EVIDENCE_INCOMPLETE/i.test(
 			message,
@@ -216,7 +259,7 @@ export function classifyByosanFailure(message: string): {
 			maxRetries: 0,
 		};
 	}
-	if (/schema|zod|structured output|parse/i.test(message)) {
+	if (/schema|zod|invalid_type|structured output|parse/i.test(message)) {
 		return {
 			failureClass: "PROVIDER_SCHEMA",
 			stage,
@@ -316,6 +359,24 @@ function readFailureTrace(runDir: string): ByosanFailureTrace | null {
 	}
 }
 
+export function reusableResearchResult(
+	cached: ResearchResult,
+): ResearchResult | undefined {
+	return isCurrentByosanAngleDecision(cached.angle_decision)
+		? cached
+		: undefined;
+}
+
+export function preflightBlockedMessage(
+	report: ByosanPreflightReport,
+	reportPath: string,
+): string {
+	const failed = Object.values(report.checks)
+		.filter((check) => check.status !== "PASS")
+		.map((check) => `${check.component} ${check.status}: ${check.reason}`);
+	return `BYOSAN_PREFLIGHT_BLOCKED: ${report.status} ${reportPath} ${failed.join("; ")}`;
+}
+
 function repairResolutionIsValid(
 	resolution: RepairResolution | undefined,
 	currentHead: string,
@@ -388,6 +449,19 @@ export function recordByosanFailure(
 		/COMMAND_FAILED:\s+(.+?)\s+status=(\d+|signal)/,
 	);
 	const now = new Date().toISOString();
+	const sameFailure = previous?.fingerprint === fingerprint;
+	const resolutionHistory = [
+		...(previous?.resolution_history ?? []),
+		...(previous?.resolution && !sameFailure
+			? [
+					{
+						fingerprint: previous.fingerprint,
+						failure_class: previous.failure_class,
+						resolution: previous.resolution,
+					},
+				]
+			: []),
+	];
 	const trace: ByosanFailureTrace = {
 		schema_version: "byosan_failure_trace_v1",
 		status: "OPEN",
@@ -409,8 +483,13 @@ export function recordByosanFailure(
 		root_cause: "pending_trace_review",
 		regression_test: "pending",
 		failed_at: now,
-		first_failed_at:
-			previous?.fingerprint === fingerprint ? previous.first_failed_at : now,
+		first_failed_at: sameFailure ? previous.first_failed_at : now,
+		...(sameFailure && previous.resolution
+			? { resolution: previous.resolution }
+			: {}),
+		...(resolutionHistory.length > 0
+			? { resolution_history: resolutionHistory }
+			: {}),
 	};
 	fs.outputJsonSync(failureTracePath(runDir), trace, { spaces: 2 });
 	return trace;
@@ -718,22 +797,30 @@ export async function runByosanDaily(): Promise<void> {
 	const preflight = await runByosanPreflight(store.runDir);
 	if (preflight.status !== "PASS") {
 		throw new Error(
-			`BYOSAN_PREFLIGHT_BLOCKED: ${preflight.status} ${path.join(store.runDir, "audit", "preflight.json")}`,
+			preflightBlockedMessage(
+				preflight,
+				path.join(store.runDir, "audit", "preflight.json"),
+			),
 		);
 	}
 	assertByosanRetryAllowed(store.runDir);
-	const missionPath = path.join(store.runDir, "source", "no-mission-file.md");
 	const researchPath = path.join(
 		store.runDir,
 		"source",
 		"research_result.json",
 	);
+	const cachedResearch =
+		checkpoint.stages.research_ready && (await fs.pathExists(researchPath))
+			? ((await fs.readJson(researchPath)) as ResearchResult)
+			: undefined;
+	const reusedResearch =
+		cachedResearch && reusableResearchResult(cachedResearch);
 	let research: ResearchResult;
-	if (checkpoint.stages.research_ready && (await fs.pathExists(researchPath))) {
-		research = (await fs.readJson(researchPath)) as ResearchResult;
+	if (reusedResearch) {
+		research = reusedResearch;
 	} else {
 		const scout = new TrendScout(store);
-		research = await scout.run("byosan_money", 5, missionPath);
+		research = await scout.run("byosan_money", 5);
 		await fs.outputJson(researchPath, research, { spaces: 2 });
 		checkpoint.stages.research_ready = true;
 		writeByosanCheckpoint(store.runDir, checkpoint);

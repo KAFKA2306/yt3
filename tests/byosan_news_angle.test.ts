@@ -4,6 +4,7 @@ import {
 	ByosanAngleSourceSchema,
 	byosanTextSimilarity,
 	evaluateByosanAngleCandidate,
+	isCurrentByosanAngleDecision,
 	selectByosanAngle,
 	selectByosanProductionPlan,
 	settleByosanAngleCandidate,
@@ -340,5 +341,53 @@ describe("byosan sharp-angle gate", () => {
 			"insufficient_sector_diversity",
 		);
 		expect(result.orthogonality.uniqueProfileCount).toBe(1);
+	});
+});
+
+describe("byosan cached angle decision", () => {
+	const currentDecision = {
+		decision: "STOP",
+		selectedIndex: null,
+		reason: "no candidate",
+		candidateCount: 0,
+		distinctPublisherCount: 0,
+		orthogonality: {
+			uniqueProfileCount: 0,
+			geography: 0,
+			sector: 0,
+			actorType: 0,
+			eventType: 0,
+			timeHorizon: 0,
+			causalDirection: 0,
+			financialMetric: 0,
+			supplyChainLayer: 0,
+			marketRealEconomy: 0,
+			dataSurface: 0,
+			scale: 0,
+			failedAxes: [],
+		},
+		evaluated: [],
+	};
+
+	test("accepts a decision that satisfies the current contract", () => {
+		expect(isCurrentByosanAngleDecision(currentDecision)).toBe(true);
+	});
+
+	test("rejects a decision built under an older candidate contract", () => {
+		expect(
+			isCurrentByosanAngleDecision({
+				decision: "PASS",
+				selectedIndex: 0,
+				reason: "stale",
+				candidateCount: 1,
+				distinctPublisherCount: 1,
+				orthogonality: {},
+				evaluated: [{ candidate: { angle: "old" } }],
+			}),
+		).toBe(false);
+	});
+
+	test("rejects a missing decision", () => {
+		expect(isCurrentByosanAngleDecision(undefined)).toBe(false);
 	});
 });

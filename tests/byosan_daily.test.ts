@@ -4,9 +4,12 @@ import path from "node:path";
 import fs from "fs-extra";
 import {
 	type ByosanFailureTrace,
+	type RepairResolution,
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
+	preflightBlockedMessage,
 	recordByosanFailure,
+	reusableResearchResult,
 } from "../src/scripts/byosan_daily.js";
 
 const tempRoots: string[] = [];
@@ -85,7 +88,119 @@ describe("byosan daily duplicate-publication gate", () => {
 	});
 });
 
+describe("byosan research cache reuse", () => {
+	const base = {
+		director_data: {
+			angle: "a",
+			title_hook: "t",
+			search_query: "q",
+			key_questions: [],
+		},
+		news: [],
+		memory_context: "",
+	};
+
+	test("reuses a cached research result whose angle decision satisfies the current contract", () => {
+		const cached = {
+			...base,
+			angle_decision: {
+				decision: "STOP",
+				selectedIndex: null,
+				reason: "no candidate",
+				candidateCount: 0,
+				distinctPublisherCount: 0,
+				orthogonality: {
+					uniqueProfileCount: 0,
+					geography: 0,
+					sector: 0,
+					actorType: 0,
+					eventType: 0,
+					timeHorizon: 0,
+					causalDirection: 0,
+					financialMetric: 0,
+					supplyChainLayer: 0,
+					marketRealEconomy: 0,
+					dataSurface: 0,
+					scale: 0,
+					failedAxes: [],
+				},
+				evaluated: [],
+			},
+		};
+		expect(reusableResearchResult(cached)).toBe(cached);
+	});
+
+	test("rejects a cached research result built under an older candidate contract", () => {
+		const cached = {
+			...base,
+			angle_decision: {
+				decision: "PASS",
+				selectedIndex: 0,
+				reason: "stale",
+				candidateCount: 1,
+				distinctPublisherCount: 1,
+				orthogonality: {},
+				evaluated: [{ candidate: { angle: "old" } }],
+			},
+		};
+		expect(reusableResearchResult(cached)).toBeUndefined();
+	});
+});
+
 describe("byosan failure retry gate", () => {
+	test("carries the failing preflight check reason so the failure is classifiable", async () => {
+		const runDir = await makeRunDir();
+		const message = preflightBlockedMessage(
+			{
+				schema_version: "byosan_production_preflight_v1",
+				status: "FAIL",
+				profile: "byosan",
+				run_id: "byosan_money/2026-10-10-daily",
+				publication_attempted: false,
+				generated_at: "2026-10-10T06:00:44.331Z",
+				checks: {
+					ffmpeg: {
+						status: "PASS",
+						component: "ffmpeg",
+						method: "ffmpeg -version",
+						reason: "command is available",
+						evidence: [],
+					},
+					gemini: {
+						status: "FAIL",
+						component: "gemini",
+						method: "configuration + structured-output probe",
+						reason: "429 Too Many Requests: quota exhausted",
+						evidence: [],
+					},
+				},
+			},
+			"audit/preflight.json",
+		);
+		expect(message).toContain(
+			"gemini FAIL: 429 Too Many Requests: quota exhausted",
+		);
+		expect(message).not.toContain("ffmpeg FAIL");
+		const trace = recordByosanFailure(runDir, new Error(message), "head-a");
+		expect(trace.failure_class).toBe("PROVIDER_RATE_LIMIT");
+		expect(trace.retry_policy).toBe("TRANSIENT_BOUNDED");
+	});
+
+	test("classifies a Zod invalid_type issue from provider output as PROVIDER_SCHEMA", async () => {
+		const runDir = await makeRunDir();
+		const trace = recordByosanFailure(
+			runDir,
+			new Error(
+				'[{"expected":"array","code":"invalid_type","path":["candidate","adversarialEvidence"],"message":"Invalid input: expected array, received undefined"}]',
+			),
+			"head-a",
+		);
+		expect(trace).toMatchObject({
+			failure_class: "PROVIDER_SCHEMA",
+			retry_policy: "REQUIRES_REPAIR_EVIDENCE",
+		});
+	});
+
 	test("does not classify a path containing 'youtuber' as a YouTube publish failure", async () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
@@ -204,5 +319,85 @@ describe("byosan failure retry gate", () => {
 		expect(() => assertByosanRetryAllowed(runDir, "different-head")).toThrow(
 			"RETRY_BLOCKED_REPAIR_EVIDENCE_REQUIRED",
 		);
+	});
+
+	test("classifies BYOSAN_ANGLE_STOP as RESEARCH_ANGLE_STOP at the research stage", async () => {
+		const runDir = await makeRunDir();
+		const trace = recordByosanFailure(
+			runDir,
+			new Error("BYOSAN_ANGLE_STOP: no passing angle decision"),
+			"head-a",
+		);
+		expect(trace).toMatchObject({
+			failure_class: "RESEARCH_ANGLE_STOP",
+			stage: "RESEARCH",
+			retry_policy: "REQUIRES_REPAIR_EVIDENCE",
+		});
+	});
+
+	test("keeps the repair resolution when the same failure is re-recorded", async () => {
+		const runDir = await makeRunDir();
+		const message = "BYOSAN_ANGLE_STOP: no passing angle decision";
+		const first = recordByosanFailure(runDir, new Error(message), "head-a");
+		const resolution: RepairResolution = {
+			status: "VERIFIED",
+			root_cause: "angle contract missing adversarialEvidence",
+			regression_test: "tests/byosan_daily.test.ts::angle stop",
+			repair_commit: "repair-head",
+			validation: {
+				command: "task check:merge",
+				status: "PASS",
+				checked_at: "2026-10-10T09:00:00.000Z",
+			},
+		};
+		await fs.outputJson(
+			path.join(runDir, "audit/failure_trace.json"),
+			{ ...first, resolution },
+			{ spaces: 2 },
+		);
+		const again = recordByosanFailure(runDir, new Error(message), "head-b");
+		expect(again.resolution).toEqual(resolution);
+		expect(again.first_failed_at).toBe(first.first_failed_at);
+		expect(() => assertByosanRetryAllowed(runDir, "repair-head")).not.toThrow();
+	});
+
+	test("archives the previous resolution when a different failure is recorded", async () => {
+		const runDir = await makeRunDir();
+		const first = recordByosanFailure(
+			runDir,
+			new Error("BYOSAN_ANGLE_STOP: no passing angle decision"),
+			"head-a",
+		);
+		const resolution: RepairResolution = {
+			status: "VERIFIED",
+			root_cause: "angle contract missing adversarialEvidence",
+			regression_test: "tests/byosan_daily.test.ts::angle stop",
+			repair_commit: "repair-head",
+			validation: {
+				command: "task check:merge",
+				status: "PASS",
+				checked_at: "2026-10-10T09:00:00.000Z",
+			},
+		};
+		await fs.outputJson(
+			path.join(runDir, "audit/failure_trace.json"),
+			{ ...first, resolution },
+			{ spaces: 2 },
+		);
+		const next = recordByosanFailure(
+			runDir,
+			new Error(
+				"BYOSAN_FEATURE_GENERATION_FAILED: domain audit rejected draft",
+			),
+			"head-b",
+		);
+		expect(next.resolution).toBeUndefined();
+		expect(next.resolution_history).toEqual([
+			{
+				fingerprint: first.fingerprint,
+				failure_class: "RESEARCH_ANGLE_STOP",
+				resolution,
+			},
+		]);
 	});
 });

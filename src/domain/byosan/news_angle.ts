@@ -162,6 +162,12 @@ export const ByosanAngleDecisionSchema = z.object({
 
 export type ByosanAngleDecision = z.infer<typeof ByosanAngleDecisionSchema>;
 
+export function isCurrentByosanAngleDecision(
+	value: unknown,
+): value is ByosanAngleDecision {
+	return ByosanAngleDecisionSchema.safeParse(value).success;
+}
+
 export const ByosanProductionFormatSchema = z.enum([
 	"breaking",
 	"comparison",
@@ -426,6 +432,21 @@ export function selectByosanProductionPlan(
 	});
 }
 
+export const BYOSAN_COUNTERFACTUAL_TEST_MARKERS = [
+	"除",
+	"なければ",
+	"場合",
+	"without",
+	"excluding",
+	"分母",
+	"差し引",
+] as const;
+
+const BYOSAN_COUNTERFACTUAL_TEST_PATTERN = new RegExp(
+	BYOSAN_COUNTERFACTUAL_TEST_MARKERS.join("|"),
+	"i",
+);
+
 export function evaluateByosanAngleCandidate(
 	candidateInput: ByosanAngleCandidate,
 	recentTitles: string[],
@@ -516,11 +537,7 @@ export function evaluateByosanAngleCandidate(
 		hardGateFailures.push("fewer_than_two_numbers");
 	if (maxRecentSimilarity > 0.42)
 		hardGateFailures.push("recent_topic_similarity_above_0_42");
-	if (
-		!/(除|なければ|場合|without|excluding|分母|差し引)/i.test(
-			candidate.counterfactual,
-		)
-	)
+	if (!BYOSAN_COUNTERFACTUAL_TEST_PATTERN.test(candidate.counterfactual))
 		hardGateFailures.push("counterfactual_is_not_testable");
 	if (candidate.sources.some((source) => source.supports.length === 0))
 		hardGateFailures.push("claim_source_mapping_missing");

@@ -4,6 +4,10 @@ import path from "node:path";
 import { toJsonSchema } from "@langchain/core/utils/json_schema";
 import fs from "fs-extra";
 import {
+	classifyByosanFailure,
+	preflightBlockedMessage,
+} from "../src/scripts/byosan_daily.js";
+import {
 	type ByosanPreflightDependencies,
 	type PreflightCheck,
 	ProbeSchema,
@@ -70,10 +74,12 @@ describe("Byosan preflight aggregation", () => {
 		const cases: Array<{
 			name: string;
 			component: string;
+			failureClass: string;
 			inject: (dependencies: ByosanPreflightDependencies) => void;
 		}> = [
 			{
 				name: "Python dependency missing",
+				failureClass: "INFRA_DEPENDENCY",
 				component: "python_runtime",
 				inject: (dependencies) => {
 					dependencies.pythonRuntime = () =>
@@ -82,6 +88,7 @@ describe("Byosan preflight aggregation", () => {
 			},
 			{
 				name: "HF cache read-only",
+				failureClass: "INFRA_DEPENDENCY",
 				component: "python_runtime",
 				inject: (dependencies) => {
 					dependencies.pythonRuntime = () =>
@@ -90,6 +97,7 @@ describe("Byosan preflight aggregation", () => {
 			},
 			{
 				name: "VOICEVOX unavailable",
+				failureClass: "INFRA_DEPENDENCY",
 				component: "voicevox",
 				inject: (dependencies) => {
 					dependencies.voicevox = async () =>
@@ -98,6 +106,7 @@ describe("Byosan preflight aggregation", () => {
 			},
 			{
 				name: "Gemini invalid or rate-limited key pool",
+				failureClass: "PROVIDER_RATE_LIMIT",
 				component: "gemini",
 				inject: (dependencies) => {
 					dependencies.gemini = async () =>
@@ -106,6 +115,7 @@ describe("Byosan preflight aggregation", () => {
 			},
 			{
 				name: "outbound network unavailable",
+				failureClass: "NETWORK_AUTH",
 				component: "gemini",
 				inject: (dependencies) => {
 					dependencies.gemini = async () =>
@@ -114,6 +124,7 @@ describe("Byosan preflight aggregation", () => {
 			},
 			{
 				name: "YouTube profile mismatch",
+				failureClass: "NETWORK_AUTH",
 				component: "youtube",
 				inject: (dependencies) => {
 					dependencies.youtube = async () =>
@@ -128,6 +139,13 @@ describe("Byosan preflight aggregation", () => {
 			const runDir = await temporaryRunDir();
 			const report = await runByosanPreflight(runDir, dependencies);
 			expect(report.status, testCase.name).toBe("FAIL");
+			const message = preflightBlockedMessage(
+				report,
+				path.join(runDir, "audit", "preflight.json"),
+			);
+			expect(classifyByosanFailure(message).failureClass, testCase.name).toBe(
+				testCase.failureClass,
+			);
 			expect(report.checks[testCase.component]?.status, testCase.name).toBe(
 				"FAIL",
 			);
