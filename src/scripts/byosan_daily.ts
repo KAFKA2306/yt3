@@ -747,7 +747,6 @@ export async function runByosanDaily(): Promise<void> {
 		);
 	}
 	assertByosanRetryAllowed(store.runDir);
-	const missionPath = path.join(store.runDir, "source", "no-mission-file.md");
 	const researchPath = path.join(
 		store.runDir,
 		"source",
@@ -764,7 +763,7 @@ export async function runByosanDaily(): Promise<void> {
 		research = reusedResearch;
 	} else {
 		const scout = new TrendScout(store);
-		research = await scout.run("byosan_money", 5, missionPath);
+		research = await scout.run("byosan_money", 5);
 		await fs.outputJson(researchPath, research, { spaces: 2 });
 		checkpoint.stages.research_ready = true;
 		writeByosanCheckpoint(store.runDir, checkpoint);
