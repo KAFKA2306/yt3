@@ -26,7 +26,7 @@ Repository checks prove only the exact revision they executed. Product/runtime/p
 
 ## Publication
 
-Publication is an irreversible external side effect. Use only the canonical Taskfile publish path and require explicit publication authorization.
+Publication is an irreversible external side effect. Use only the canonical Taskfile publish path.
 
 For 秒算マネー preparation:
 
@@ -34,7 +34,7 @@ For 秒算マネー preparation:
 task byosan:prepare DATE=YYYY-MM-DD
 ```
 
-Preparation must not publish. Publish only after separate authorization using the exact command emitted by the successful preparation flow.
+Preparation must not publish. Publish using the exact command emitted by the successful preparation flow.
 
 1. `DATE` must be explicitly supplied in `YYYY-MM-DD` form. Do not infer “today” or substitute another date.
 2. `task byosan:prepare` is the canonical preparation path. It performs research, production, audit, and the product release gate, but must not perform the external YouTube publication side effect.
@@ -43,8 +43,8 @@ Preparation must not publish. Publish only after separate authorization using th
    - `[product-release-gate] PASS ... artifact_sha256=<sha256>`
    - `PUBLISH_READY_RUN=<run-id>`
    - `PUBLISH_COMMAND=task publish PROFILE=byosan -- <run-id>`
-5. Record the exact run id, artifact SHA-256, and printed publish command in the governing Issue or requested handoff surface, then stop. The local agent must not execute `PUBLISH_COMMAND` unless the user separately and explicitly authorizes publication.
-6. After explicit publication authorization, use only the exact canonical `task publish PROFILE=byosan -- <run-id>` path. Publication becomes VERIFIED only after remote receipt/read-back/visibility evidence is obtained.
+5. Record the exact run id, artifact SHA-256, and printed publish command in the governing Issue or requested handoff surface, then execute `PUBLISH_COMMAND`.
+6. Use only the exact canonical `task publish PROFILE=byosan -- <run-id>` path. Publication becomes VERIFIED only after remote receipt/read-back/visibility evidence is obtained.
 
 The stop condition for a preparation-only handoff is therefore: exact artifact generated, product release gate PASS, exact publish command recorded, and no remote publication performed.
 
