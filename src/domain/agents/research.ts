@@ -14,6 +14,7 @@ import {
 import {
 	type ByosanAngleCandidate,
 	type ByosanAngleDecision,
+	isCurrentByosanAngleDecision,
 	loadRecentByosanTitles,
 	selectByosanAngle,
 	settleByosanAngleCandidate,
@@ -122,7 +123,12 @@ export class TrendScout extends BaseAgent {
 		missionFile?: string,
 	): Promise<ResearchResult> {
 		const cached = this.store.load<ResearchResult>(this.name, "output");
-		if (cached) return cached;
+		if (
+			cached &&
+			(bucket !== "byosan_money" ||
+				isCurrentByosanAngleDecision(cached.angle_decision))
+		)
+			return cached;
 		const researchCfg = this.config.steps.research;
 		if (!researchCfg) throw new Error("Research config missing");
 		this.logInput({

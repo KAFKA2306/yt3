@@ -162,6 +162,12 @@ export const ByosanAngleDecisionSchema = z.object({
 
 export type ByosanAngleDecision = z.infer<typeof ByosanAngleDecisionSchema>;
 
+export function isCurrentByosanAngleDecision(
+	value: unknown,
+): value is ByosanAngleDecision {
+	return ByosanAngleDecisionSchema.safeParse(value).success;
+}
+
 export const ByosanProductionFormatSchema = z.enum([
 	"breaking",
 	"comparison",

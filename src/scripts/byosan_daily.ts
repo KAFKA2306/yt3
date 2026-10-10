@@ -19,8 +19,8 @@ import {
 import {
 	type ByosanAdversarialEvidence,
 	type ByosanAngleCandidate,
-	ByosanAngleDecisionSchema,
 	type ByosanProductionPlan,
+	isCurrentByosanAngleDecision,
 	selectByosanProductionPlan,
 } from "../domain/byosan/news_angle.js";
 import { loadPreferredByosanFormat } from "../domain/byosan/performance.js";
@@ -323,7 +323,7 @@ function readFailureTrace(runDir: string): ByosanFailureTrace | null {
 export function reusableResearchResult(
 	cached: ResearchResult,
 ): ResearchResult | undefined {
-	return ByosanAngleDecisionSchema.safeParse(cached.angle_decision).success
+	return isCurrentByosanAngleDecision(cached.angle_decision)
 		? cached
 		: undefined;
 }
