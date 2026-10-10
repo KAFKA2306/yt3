@@ -91,6 +91,8 @@ For repository changes:
 6. merge when repository acceptance passes;
 7. verify the intended base state afterward.
 
+Every commit must be pushed to `origin` before reporting completion. Do not leave commits local-only.
+
 Before final reporting, remove temporary workflows, scripts, debug output, abandoned intermediates, superseded paths, and stale task/document references. Branch deletion is not part of the agent responsibility when the connection lacks that capability.
 
 Documentation must describe current executable behavior. Maintained boundaries are:
