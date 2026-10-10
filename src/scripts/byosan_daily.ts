@@ -219,7 +219,7 @@ export function classifyByosanFailure(message: string): {
 			maxRetries: 0,
 		};
 	}
-	if (/schema|zod|structured output|parse/i.test(message)) {
+	if (/schema|zod|invalid_type|structured output|parse/i.test(message)) {
 		return {
 			failureClass: "PROVIDER_SCHEMA",
 			stage,

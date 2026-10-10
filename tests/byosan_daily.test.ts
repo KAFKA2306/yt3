@@ -125,6 +125,21 @@ describe("byosan failure retry gate", () => {
 		expect(trace.retry_policy).toBe("TRANSIENT_BOUNDED");
 	});
 
+	test("classifies a Zod invalid_type issue from provider output as PROVIDER_SCHEMA", async () => {
+		const runDir = await makeRunDir();
+		const trace = recordByosanFailure(
+			runDir,
+			new Error(
+				'[{"expected":"array","code":"invalid_type","path":["candidate","adversarialEvidence"],"message":"Invalid input: expected array, received undefined"}]',
+			),
+			"head-a",
+		);
+		expect(trace).toMatchObject({
+			failure_class: "PROVIDER_SCHEMA",
+			retry_policy: "REQUIRES_REPAIR_EVIDENCE",
+		});
+	});
+
 	test("does not classify a path containing 'youtuber' as a YouTube publish failure", async () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
