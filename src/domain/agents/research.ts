@@ -162,6 +162,7 @@ export const BYOSAN_ANGLE_SHAPE_EXAMPLE = {
 			checkedSourceIds: ["example-source-1", "example-source-2"],
 		},
 	],
+	archetypeEvidence: [],
 };
 
 export class TrendScout extends BaseAgent {
