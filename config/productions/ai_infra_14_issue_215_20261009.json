@@ -30,53 +30,6 @@
 	"counterargument": "補完性の点数も主観的です。技術、会社業績、価格の動きが変われば、この仮想ポートフォリオの結論も変わります。",
 	"conclusion": "この表が示すのは銘柄の絶対順位ではなく、同じテーマの中で事業の役割と重複を説明してから比率を考える方法です。",
 	"nextWatchNumbers": ["2026-10-08終値", "RSI14", "HBF量産採用"],
-	"editorialReferencePlan": {
-		"schemaVersion": "byosan_editorial_reference_plan_v1",
-		"selectionSeed": "byosan_money/2026-10-09-issue-215-spec|14社スコアと役割補完性",
-		"selectedReferences": [
-			{
-				"referenceId": "ref_visual_capitalist",
-				"role": "comparison_diagram",
-				"roleGroup": "visualization",
-				"surface": "chart",
-				"element": "一画面の比較ランキング",
-				"application": "同じ採点式の14社を、順位と採否が分かる表へ整理する",
-				"provenance": "editorial_reference_observation",
-				"avoidImitation": "既存インフォグラフィックの配色、図版、結論やアイコンを使わない"
-			},
-			{
-				"referenceId": "ref_our_world_in_data",
-				"role": "simple_chart",
-				"roleGroup": "data",
-				"surface": "caption",
-				"element": "軸・単位・期間を明記",
-				"application": "各スコアの尺度、RSIの取得終値、仮想PFの基準日を併記する",
-				"provenance": "editorial_reference_observation",
-				"avoidImitation": "データ系列やチャート画像を事実ソースとして転載しない"
-			},
-			{
-				"referenceId": "ref_the_pudding",
-				"role": "data_story",
-				"roleGroup": "storytelling",
-				"surface": "structure",
-				"element": "データから問いを立てる順序",
-				"application": "AMDとCEGの順位差を問いにして、6軸と最終配分を順に説明する",
-				"provenance": "editorial_reference_observation",
-				"avoidImitation": "作品固有の物語、表現、データセットや結論を再利用しない"
-			},
-			{
-				"referenceId": "ref_canva_youtube_thumbnails",
-				"role": "thumbnail_composition",
-				"roleGroup": "thumbnail",
-				"surface": "thumbnail",
-				"element": "小画面での文字可読性",
-				"application": "14社と4社の入替という主張を短い文字と余白で見せる",
-				"provenance": "editorial_reference_observation",
-				"avoidImitation": "テンプレート、素材画像、人物配置や固有の文言を模倣しない"
-			}
-		],
-		"combinationPolicy": "vary_per_run_3_to_5_sources_no_fixed_combo"
-	},
 	"hookPromises": ["14社", "4社"],
 	"noveltyQueries": [
 		"site:youtube.com/watch AIインフラ14社 4社入れ替わり 補完性 2026",
