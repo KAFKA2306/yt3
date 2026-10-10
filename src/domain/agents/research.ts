@@ -12,6 +12,7 @@ import {
 	parseLlmJson,
 } from "../../io/core.js";
 import {
+	BYOSAN_COUNTERFACTUAL_TEST_MARKERS,
 	type ByosanAngleCandidate,
 	type ByosanAngleDecision,
 	isCurrentByosanAngleDecision,
@@ -394,7 +395,7 @@ export class TrendScout extends BaseAgent {
 Return at least five total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
 topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, explorationProfile, adversarialEvidence, archetypeEvidence.
 explorationProfile must contain non-empty strings for geography, sector, actorType, eventType, timeHorizon, causalDirection, financialMetric, supplyChainLayer, marketRealEconomy, dataSurface, scale. Describe where this candidate sits on each axis; the candidate set must vary across every axis, or the deterministic harness stops.
-numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. source ids must be stable machine-readable identifiers. counterfactual must be testable by exclusion, subtraction, or a changed denominator.
+numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. source ids must be stable machine-readable identifiers. counterfactual must be testable by exclusion, subtraction, or a changed denominator, and must contain at least one of these markers: ${BYOSAN_COUNTERFACTUAL_TEST_MARKERS.join(" / ")}.
 
 Shape of one byosan_angle object (types only; replace every value with observed facts and never copy example text):
 ${JSON.stringify(BYOSAN_ANGLE_SHAPE_EXAMPLE, null, 2)}
@@ -414,7 +415,7 @@ archetypeEvidence is an array of zero or more evidence bundles. Do not choose a 
 - hardware_capital: headline_multiplier, robust_baseline, physical_bottleneck, supplier_capital, remaining_spof
 The deterministic harness will select among eligible bundles after production format is known. If no bundle is complete, it will use standard Fact -> Context -> Impact. Do not invent missing slots to qualify a bundle.
 
-adversarialEvidence must contain at least one object with id, kind, targetClaim, statement, sourceIds, checkedSourceIds. kind must be measurement_condition | counter_metric | third_party_disagreement | source_limitation | no_counter_evidence. Before returning a candidate, actively inspect footnotes, methodology notes, unfavorable metrics, changed denominators, exclusions, and third-party measurements that could weaken the headline claim. sourceIds must identify sources that directly support the adversarial statement. checkedSourceIds records the sources actually inspected for counter-evidence. Use no_counter_evidence only when at least two listed sources were checked and no material counter-evidence was found; never omit the search silently.
+adversarialEvidence must contain at least one object with id, kind, targetClaim, statement, sourceIds, checkedSourceIds. kind must be measurement_condition | counter_metric | third_party_disagreement | source_limitation | no_counter_evidence. Before returning a candidate, actively inspect footnotes, methodology notes, unfavorable metrics, changed denominators, exclusions, and third-party measurements that could weaken the headline claim. sourceIds must identify sources that directly support the adversarial statement. checkedSourceIds records the sources actually inspected for counter-evidence. sourceIds and checkedSourceIds must only reference ids listed in sources. Use no_counter_evidence only when at least two ids from sources appear in checkedSourceIds and no material counter-evidence was found; never omit the search silently.
 
 If explicit active-probe evidence is supplied through MISSION EVIDENCE, activeProbes may be included with the canonical probe fields and archetypeEvidence slots may reference those probe ids through activeProbeIds. Never invent a probe, never mark an unexecuted probe VERIFIED, and never upgrade an identity or causal inference to verified solely because a probe observation exists. Active probes are observation-only evidence. Do not infer a company's motive as fact: record observable document structure as evidence and keep interpretation in hiddenMechanism/risks. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.`;
 	}
