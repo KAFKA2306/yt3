@@ -6,6 +6,7 @@ import {
 	evaluateByosanAngleCandidate,
 	selectByosanAngle,
 	selectByosanProductionPlan,
+	settleByosanAngleCandidate,
 } from "../src/domain/byosan/news_angle.js";
 
 function candidate(
@@ -63,6 +64,19 @@ function candidate(
 				checkedSourceIds: ["sec", "factset"],
 			},
 		],
+		explorationProfile: {
+			geography: "US",
+			sector: "technology",
+			actorType: "index provider",
+			eventType: "earnings",
+			timeHorizon: "quarter",
+			causalDirection: "market_to_economy",
+			financialMetric: "earnings",
+			supplyChainLayer: "platform",
+			marketRealEconomy: "market",
+			dataSurface: "filing",
+			scale: "index",
+		},
 		...overrides,
 	};
 }
@@ -243,6 +257,23 @@ describe("byosan sharp-angle gate", () => {
 				angle: `見出し数字を異なる分母${index}で分解して市場の錯覚を測る`,
 				titleHook: `候補${index}の大数字を一次資料で分解すると何が残るか`,
 				noveltyFingerprint: `固有の反実仮想パターン${index}と比較単位${index}`,
+				explorationProfile: {
+					geography: ["US", "JP"][index % 2],
+					sector: ["technology", "energy", "finance"][index % 3],
+					actorType: ["index provider", "regulator", "utility"][index % 3],
+					eventType: ["earnings", "rule", "outage"][index % 3],
+					timeHorizon: ["quarter", "year"][index % 2],
+					causalDirection: [
+						"market_to_economy",
+						"economy_to_market",
+						"policy_to_market",
+					][index % 3],
+					financialMetric: ["earnings", "fcf", "credit"][index % 3],
+					supplyChainLayer: ["platform", "component", "logistics"][index % 3],
+					marketRealEconomy: ["market", "real_economy"][index % 2],
+					dataSurface: ["filing", "statistic", "tariff"][index % 3],
+					scale: ["index", "company"][index % 2],
+				},
 				sources: [
 					...candidate().sources,
 					{
@@ -270,5 +301,44 @@ describe("byosan sharp-angle gate", () => {
 			supports: "評価益と純利益",
 		});
 		expect(parsed.supports).toEqual(["評価益と純利益"]);
+	});
+
+	test("settles a complete candidate as VALID", () => {
+		const settled = settleByosanAngleCandidate(candidate());
+		expect(settled.status).toBe("VALID");
+	});
+
+	test("settles an incomplete candidate as REJECTED with field issues", () => {
+		const settled = settleByosanAngleCandidate({
+			...candidate(),
+			sources: [candidate().sources[0]],
+		});
+		expect(settled.status).toBe("REJECTED");
+		if (settled.status !== "REJECTED") return;
+		expect(settled.issues.some((issue) => issue.startsWith("sources"))).toBe(
+			true,
+		);
+	});
+
+	test("settles a non-object payload as REJECTED without throwing", () => {
+		const settled = settleByosanAngleCandidate("not a candidate");
+		expect(settled.status).toBe("REJECTED");
+	});
+
+	test("the collection gate stops when exploration axes lack diversity", () => {
+		const candidates = Array.from({ length: 5 }, (_, index) =>
+			candidate({
+				sources: [
+					{ ...candidate().sources[0], url: `https://a${index}.example/x` },
+					{ ...candidate().sources[1], url: `https://b${index}.example/y` },
+				],
+			}),
+		);
+		const result = selectByosanAngle(candidates, []);
+		expect(result.decision).toBe("STOP");
+		expect(result.orthogonality.failedAxes).toContain(
+			"insufficient_sector_diversity",
+		);
+		expect(result.orthogonality.uniqueProfileCount).toBe(1);
 	});
 });

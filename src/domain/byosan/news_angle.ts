@@ -58,6 +58,24 @@ export type ByosanAdversarialEvidence = z.infer<
 	typeof ByosanAdversarialEvidenceSchema
 >;
 
+export const ByosanExplorationProfileSchema = z.object({
+	geography: z.string().min(2),
+	sector: z.string().min(2),
+	actorType: z.string().min(2),
+	eventType: z.string().min(2),
+	timeHorizon: z.string().min(2),
+	causalDirection: z.string().min(2),
+	financialMetric: z.string().min(2),
+	supplyChainLayer: z.string().min(2),
+	marketRealEconomy: z.string().min(2),
+	dataSurface: z.string().min(2),
+	scale: z.string().min(2),
+});
+
+export type ByosanExplorationProfile = z.infer<
+	typeof ByosanExplorationProfileSchema
+>;
+
 export const ByosanAngleCandidateSchema = z.object({
 	topic: z.string().min(3),
 	angle: z.string().min(8),
@@ -71,6 +89,7 @@ export const ByosanAngleCandidateSchema = z.object({
 	noveltyFingerprint: z.string().min(8),
 	visualPlan: z.string().min(8),
 	risks: z.array(z.string().min(3)).min(1),
+	explorationProfile: ByosanExplorationProfileSchema,
 	adversarialEvidence: z.array(ByosanAdversarialEvidenceSchema).min(1).max(10),
 	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).max(8).optional(),
 	archetypeEvidence: z
@@ -80,6 +99,23 @@ export const ByosanAngleCandidateSchema = z.object({
 });
 
 export type ByosanAngleCandidate = z.infer<typeof ByosanAngleCandidateSchema>;
+
+export type ByosanAngleCandidateSettlement =
+	| { status: "VALID"; candidate: ByosanAngleCandidate }
+	| { status: "REJECTED"; issues: string[] };
+
+export function settleByosanAngleCandidate(
+	raw: unknown,
+): ByosanAngleCandidateSettlement {
+	const parsed = ByosanAngleCandidateSchema.safeParse(raw);
+	if (parsed.success) return { status: "VALID", candidate: parsed.data };
+	return {
+		status: "REJECTED",
+		issues: parsed.error.issues.map(
+			(issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`,
+		),
+	};
+}
 
 export const ByosanAngleScoresSchema = z.object({
 	evidence: z.number().min(0).max(100),
@@ -106,6 +142,21 @@ export const ByosanAngleDecisionSchema = z.object({
 	reason: z.string().min(1),
 	candidateCount: z.number().int().min(0),
 	distinctPublisherCount: z.number().int().min(0),
+	orthogonality: z.object({
+		uniqueProfileCount: z.number().int().min(0),
+		geography: z.number().int().min(0),
+		sector: z.number().int().min(0),
+		actorType: z.number().int().min(0),
+		eventType: z.number().int().min(0),
+		timeHorizon: z.number().int().min(0),
+		causalDirection: z.number().int().min(0),
+		financialMetric: z.number().int().min(0),
+		supplyChainLayer: z.number().int().min(0),
+		marketRealEconomy: z.number().int().min(0),
+		dataSurface: z.number().int().min(0),
+		scale: z.number().int().min(0),
+		failedAxes: z.array(z.string()),
+	}),
 	evaluated: z.array(ByosanEvaluatedAngleSchema),
 });
 
@@ -183,6 +234,50 @@ function distinctHosts(sources: ByosanAngleCandidate["sources"]): Set<string> {
 			}
 		}),
 	);
+}
+
+const ORTHOGONALITY_MINIMUMS = {
+	geography: 2,
+	sector: 3,
+	actorType: 3,
+	eventType: 3,
+	timeHorizon: 2,
+	causalDirection: 3,
+	financialMetric: 3,
+	supplyChainLayer: 3,
+	marketRealEconomy: 2,
+	dataSurface: 3,
+	scale: 2,
+} as const satisfies Record<keyof ByosanExplorationProfile, number>;
+
+type OrthogonalityAxis = keyof typeof ORTHOGONALITY_MINIMUMS;
+
+function evaluateOrthogonality(
+	candidates: ByosanAngleCandidate[],
+): ByosanAngleDecision["orthogonality"] {
+	const axes = Object.keys(ORTHOGONALITY_MINIMUMS) as OrthogonalityAxis[];
+	const diversity = Object.fromEntries(
+		axes.map((axis) => [
+			axis,
+			new Set(candidates.map((candidate) => candidate.explorationProfile[axis]))
+				.size,
+		]),
+	) as Record<OrthogonalityAxis, number>;
+	const uniqueProfileCount = new Set(
+		candidates.map((candidate) =>
+			axes.map((axis) => candidate.explorationProfile[axis]).join("\u001f"),
+		),
+	).size;
+	const failedAxes = axes.filter(
+		(axis) =>
+			diversity[axis] <
+			Math.min(ORTHOGONALITY_MINIMUMS[axis], candidates.length),
+	);
+	return {
+		uniqueProfileCount,
+		...diversity,
+		failedAxes: failedAxes.map((axis) => `insufficient_${axis}_diversity`),
+	};
 }
 
 function scoreTextDepth(text: string, targetLength: number): number {
@@ -487,11 +582,13 @@ export function selectByosanAngle(
 	const distinctPublishers = new Set(
 		candidates.flatMap((candidate) => [...distinctHosts(candidate.sources)]),
 	);
+	const orthogonality = evaluateOrthogonality(candidates);
 	const collectionFailures: string[] = [];
 	if (candidates.length < 5)
 		collectionFailures.push("fewer_than_five_candidates");
 	if (distinctPublishers.size < 3)
 		collectionFailures.push("fewer_than_three_publishers_in_candidate_set");
+	collectionFailures.push(...orthogonality.failedAxes);
 
 	const ranked = evaluated
 		.map((entry, index) => ({ entry, index }))
@@ -516,6 +613,7 @@ export function selectByosanAngle(
 				: `candidate_${selectedIndex}_won_deterministic_ranking`,
 		candidateCount: candidates.length,
 		distinctPublisherCount: distinctPublishers.size,
+		orthogonality,
 		evaluated,
 	});
 }

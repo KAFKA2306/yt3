@@ -12,10 +12,11 @@ import {
 	parseLlmJson,
 } from "../../io/core.js";
 import {
-	ByosanAngleCandidateSchema,
+	type ByosanAngleCandidate,
 	type ByosanAngleDecision,
 	loadRecentByosanTitles,
 	selectByosanAngle,
+	settleByosanAngleCandidate,
 } from "../byosan/news_angle.js";
 import { composeResearchMemoryContext } from "../byosan/power_macro_memory.js";
 import { type NewsItem, NewsItemSchema } from "../types.js";
@@ -30,6 +31,82 @@ export interface ResearchResult {
 	news: NewsItem[];
 	memory_context: string;
 	angle_decision?: ByosanAngleDecision;
+}
+
+const ResearchPayloadSchema = z.object({
+	selected_topics: z.array(
+		z.object({
+			category: z.string(),
+			selected_topic: z.string(),
+			reason: z.string(),
+			angle: z.string(),
+			search_query: z.string(),
+			results: z.array(
+				z.object({
+					angle: z.string(),
+					title_hook: z.string(),
+					key_questions: z.array(z.string()),
+					news: z.array(NewsItemSchema),
+					byosan_angle: z.unknown().optional(),
+				}),
+			),
+		}),
+	),
+});
+
+export type ResearchPayload = z.infer<typeof ResearchPayloadSchema>;
+
+export type RejectedByosanCandidate = {
+	topic: string;
+	angle: string;
+	issues: string[];
+};
+
+export type SettledResearchPayload = {
+	selected_topics: Array<
+		Omit<ResearchPayload["selected_topics"][number], "results"> & {
+			results: Array<
+				Omit<
+					ResearchPayload["selected_topics"][number]["results"][number],
+					"byosan_angle"
+				> & { byosan_angle?: ByosanAngleCandidate }
+			>;
+		}
+	>;
+	rejected_byosan_candidates: RejectedByosanCandidate[];
+};
+
+export function settleResearchPayload(
+	payload: ResearchPayload,
+	options: { requireByosanAngle: boolean },
+): SettledResearchPayload {
+	const rejected: RejectedByosanCandidate[] = [];
+	const selected_topics = payload.selected_topics.map((topic) => ({
+		...topic,
+		results: topic.results.map(({ byosan_angle, ...result }) => {
+			if (byosan_angle === undefined) {
+				if (options.requireByosanAngle) {
+					rejected.push({
+						topic: topic.selected_topic,
+						angle: result.angle,
+						issues: ["byosan_angle: missing from LLM result"],
+					});
+				}
+				return result;
+			}
+			const settled = settleByosanAngleCandidate(byosan_angle);
+			if (settled.status === "VALID") {
+				return { ...result, byosan_angle: settled.candidate };
+			}
+			rejected.push({
+				topic: topic.selected_topic,
+				angle: result.angle,
+				issues: settled.issues,
+			});
+			return result;
+		}),
+	}));
+	return { selected_topics, rejected_byosan_candidates: rejected };
 }
 
 export class TrendScout extends BaseAgent {
@@ -86,22 +163,7 @@ export class TrendScout extends BaseAgent {
 			);
 		}
 
-		const research = await this.runLlm<{
-			selected_topics: Array<{
-				category: string;
-				selected_topic: string;
-				reason: string;
-				angle: string;
-				search_query: string;
-				results: Array<{
-					angle: string;
-					title_hook: string;
-					key_questions: string[];
-					news: NewsItem[];
-					byosan_angle?: z.infer<typeof ByosanAngleCandidateSchema>;
-				}>;
-			}>;
-		}>(
+		const payload = await this.runLlm<ResearchPayload>(
 			promptCfg.consolidated_research.system
 				.replace(
 					"{regions}",
@@ -109,32 +171,12 @@ export class TrendScout extends BaseAgent {
 				)
 				.replace("{current_date}", currentDate),
 			userPrompt,
-			(text) =>
-				parseLlmJson(
-					text,
-					z.object({
-						selected_topics: z.array(
-							z.object({
-								category: z.string(),
-								selected_topic: z.string(),
-								reason: z.string(),
-								angle: z.string(),
-								search_query: z.string(),
-								results: z.array(
-									z.object({
-										angle: z.string(),
-										title_hook: z.string(),
-										key_questions: z.array(z.string()),
-										news: z.array(NewsItemSchema),
-										byosan_angle: ByosanAngleCandidateSchema.optional(),
-									}),
-								),
-							}),
-						),
-					}),
-				),
+			(text) => parseLlmJson(text, ResearchPayloadSchema),
 			{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
 		);
+		const research = settleResearchPayload(payload, {
+			requireByosanAngle: bucket === "byosan_money",
+		});
 
 		const allTopics = research.selected_topics || [];
 		const candidateLocations = allTopics.flatMap((topic) =>
@@ -148,7 +190,7 @@ export class TrendScout extends BaseAgent {
 					(
 						entry,
 					): entry is typeof entry & {
-						candidate: z.infer<typeof ByosanAngleCandidateSchema>;
+						candidate: ByosanAngleCandidate;
 					} => Boolean(entry.candidate),
 				),
 		);
@@ -164,6 +206,15 @@ export class TrendScout extends BaseAgent {
 			angleDecision = selectByosanAngle(
 				candidateLocations.map((entry) => entry.candidate),
 				recentTitles,
+			);
+			fs.outputJsonSync(
+				path.join(
+					this.store.runDir,
+					"research",
+					"rejected_byosan_candidates.json",
+				),
+				research.rejected_byosan_candidates,
+				{ spaces: 2 },
 			);
 			fs.outputJsonSync(
 				path.join(this.store.runDir, "research", "angle_decision.json"),
@@ -280,7 +331,8 @@ export class TrendScout extends BaseAgent {
 
 [BYOSAN SHARP-ANGLE STRUCTURED OUTPUT]
 Return at least five total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
-topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, adversarialEvidence, archetypeEvidence.
+topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, explorationProfile, adversarialEvidence, archetypeEvidence.
+explorationProfile must contain non-empty strings for geography, sector, actorType, eventType, timeHorizon, causalDirection, financialMetric, supplyChainLayer, marketRealEconomy, dataSurface, scale. Describe where this candidate sits on each axis; the candidate set must vary across every axis, or the deterministic harness stops.
 numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. source ids must be stable machine-readable identifiers. counterfactual must be testable by exclusion, subtraction, or a changed denominator.
 
 archetypeEvidence is an array of zero or more evidence bundles. Do not choose a winner or force a specialized pattern. Each bundle has archetype and slots. Each slot has slot, statement, sourceIds, optional adversarialEvidenceIds, optional activeProbeIds, and optional observedAt (YYYY-MM-DD). Only emit a bundle when every required slot is supported by listed sources. Supported archetypes/required slots are:
