@@ -1416,7 +1416,7 @@ async function auditProduction(
 	const hasUnitsOnDisplayedNumbers =
 		numericDisplayedStats.length > 0 &&
 		numericDisplayedStats.every((stat) =>
-			/[%％円ドル$€£兆億万千百十倍bpMWGWkWh]/i.test(stat.value),
+			/[%％円ドル$€£兆億万千百十倍点位社日bpMWGWkWh]/i.test(stat.value),
 		);
 	const editorialSceneAssignments = timed.map((segment, index) => ({
 		index: segment.index,
