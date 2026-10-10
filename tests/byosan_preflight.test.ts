@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
+import { toJsonSchema } from "@langchain/core/utils/json_schema";
 import fs from "fs-extra";
 import {
 	type ByosanPreflightDependencies,
 	type PreflightCheck,
+	ProbeSchema,
 	aggregateStatus,
 	runByosanPreflight,
 } from "../src/scripts/byosan_preflight.js";
@@ -134,5 +136,18 @@ describe("Byosan preflight aggregation", () => {
 				testCase.name,
 			).toBe(true);
 		}
+	});
+});
+
+describe("Byosan Gemini structured-output probe", () => {
+	test("sends a Gemini-compatible schema without const keywords", () => {
+		const jsonSchema = JSON.stringify(toJsonSchema(ProbeSchema));
+		expect(jsonSchema).not.toContain('"const"');
+	});
+
+	test("accepts only the ok=true contract", () => {
+		expect(ProbeSchema.safeParse({ ok: true }).success).toBe(true);
+		expect(ProbeSchema.safeParse({ ok: false }).success).toBe(false);
+		expect(ProbeSchema.safeParse({}).success).toBe(false);
 	});
 });

@@ -86,6 +86,28 @@ describe("byosan daily duplicate-publication gate", () => {
 });
 
 describe("byosan failure retry gate", () => {
+	test("does not classify a path containing 'youtuber' as a YouTube publish failure", async () => {
+		const runDir = await makeRunDir();
+		const trace = recordByosanFailure(
+			runDir,
+			new Error(
+				"BYOSAN_PREFLIGHT_BLOCKED: FAIL /home/kafka/2511youtuber/v3/yt3/runs/byosan_money/2026-10-10-daily/audit/preflight.json",
+			),
+			"head-a",
+		);
+		expect(trace.failure_class).not.toBe("PUBLISH_REMOTE");
+	});
+
+	test("still classifies a real YouTube publish error as PUBLISH_REMOTE", async () => {
+		const runDir = await makeRunDir();
+		const trace = recordByosanFailure(
+			runDir,
+			new Error("YouTube upload rejected by channel quota"),
+			"head-a",
+		);
+		expect(trace.failure_class).toBe("PUBLISH_REMOTE");
+	});
+
 	test("records a typed non-transient failure and blocks blind retry", async () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(

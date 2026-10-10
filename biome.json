@@ -20,7 +20,13 @@
 			".venv/**",
 			".artifacts/**",
 			"artifacts/**",
-			"data/**"
+			"data/**",
+			"sbg-nav-audit/snapshots/**"
 		]
+	},
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
 	}
 }
