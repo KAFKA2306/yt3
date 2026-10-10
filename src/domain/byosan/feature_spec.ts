@@ -3,6 +3,12 @@ import {
 	ByosanActiveProbeEvidenceSchema,
 	auditByosanActiveProbeEvidence,
 } from "./active_probe.js";
+import {
+	ByosanEditorialReferencePlanSchema,
+	auditByosanEditorialReferencePlan,
+	editorialReferenceIds,
+	isByosanEditorialReferenceId,
+} from "./editorial_references.js";
 import { requiredByosanArchetypeSlots } from "./narrative_archetype.js";
 import {
 	ByosanAdversarialEvidenceSchema,
@@ -145,6 +151,7 @@ export const ByosanFeatureSpecSchema = z.object({
 	disclaimer: z.string().min(20).max(400),
 	hookPromises: z.array(z.string().min(1).max(24)).min(2).max(4),
 	production: ByosanProductionPlanSchema.optional(),
+	editorialReferencePlan: ByosanEditorialReferencePlanSchema.optional(),
 	packaging: ByosanPackagingSchema.optional(),
 	narrative: ByosanNarrativeSchema.optional(),
 	adversarialEvidence: z
@@ -240,6 +247,18 @@ export function auditByosanFeatureSpec(
 	const claimIds = new Set(
 		spec.claims.flatMap((claim) => (claim.id ? [claim.id] : [])),
 	);
+	if (spec.editorialReferencePlan) {
+		auditByosanEditorialReferencePlan(spec.editorialReferencePlan);
+		const overlapping = [
+			...editorialReferenceIds(spec.editorialReferencePlan),
+		].filter((id) => sourceIds.has(id));
+		if (overlapping.length > 0) {
+			issues.push({
+				code: "editorial_reference_source_namespace_overlap",
+				details: overlapping.join(","),
+			});
+		}
+	}
 	if (sourceIds.size !== spec.sources.length) {
 		issues.push({
 			code: "duplicate_source_id",
@@ -247,6 +266,15 @@ export function auditByosanFeatureSpec(
 		});
 	}
 	for (const claim of spec.claims) {
+		const editorialSourceIds = claim.sourceIds.filter(
+			isByosanEditorialReferenceId,
+		);
+		if (editorialSourceIds.length > 0) {
+			issues.push({
+				code: "editorial_reference_used_as_fact_source",
+				details: `${claim.claim}: ${editorialSourceIds.join(",")}`,
+			});
+		}
 		const missing = claim.sourceIds.filter(
 			(sourceId) => !sourceIds.has(sourceId),
 		);

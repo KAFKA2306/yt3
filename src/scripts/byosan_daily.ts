@@ -8,6 +8,7 @@ import {
 	reconcileByosanCheckpoint,
 	writeByosanCheckpoint,
 } from "../domain/byosan/checkpoint.js";
+import { selectByosanEditorialReferencePlan } from "../domain/byosan/editorial_references.js";
 import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
@@ -530,6 +531,15 @@ async function generateFeatureSpec(
 			"BYOSAN_FEATURE_GENERATION_FAILED: at least two hook promises are required",
 		);
 	}
+	const editorialReferencePlan = selectByosanEditorialReferencePlan(
+		runId,
+		candidate.angle,
+	);
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "editorial_reference_plan.json"),
+		editorialReferencePlan,
+		{ spaces: 2 },
+	);
 	return invokeStructuredLlm({
 		schema: ByosanFeatureDraftSchema,
 		name: "byosan_feature_draft",
@@ -546,7 +556,7 @@ async function generateFeatureSpec(
 		messages: (attempt, lastValidationError) => [
 			{
 				role: "system",
-				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimはresolutionまたはlandingで「推論/推定/分析/確度」のいずれかとconfidenceを整数%で発話し、矛盾が残る場合はunresolvedMismatchesの少なくとも1つを原文一致で発話します。confidenceは事実の確率や公式確率ではなく、現在の証拠集合に対する分析確度です。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
+				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimはresolutionまたはlandingで「推論/推定/分析/確度」のいずれかとconfidenceを整数%で発話し、矛盾が残る場合はunresolvedMismatchesの少なくとも1つを原文一致で発話します。confidenceは事実の確率や公式確率ではなく、現在の証拠集合に対する分析確度です。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
 			},
 			{
 				role: "user",
@@ -555,6 +565,7 @@ async function generateFeatureSpec(
 						candidate,
 						hook_promises: hookPromises,
 						production_plan: productionPlan,
+						editorial_reference_plan: editorialReferencePlan,
 						allowed_sources: sources,
 						adversarial_evidence: adversarialEvidence,
 						active_probes: activeProbes,
@@ -575,6 +586,7 @@ async function generateFeatureSpec(
 				angle: candidate.angle,
 				searchQuery: research.director_data.search_query,
 				production: productionPlan,
+				editorialReferencePlan,
 				narrative: {
 					hiddenMechanism: candidate.hiddenMechanism,
 					counterfactual: candidate.counterfactual,
