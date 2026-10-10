@@ -110,6 +110,60 @@ export function settleResearchPayload(
 	return { selected_topics, rejected_byosan_candidates: rejected };
 }
 
+export const BYOSAN_ANGLE_SHAPE_EXAMPLE = {
+	topic: "EXAMPLE_TOPIC",
+	angle: "EXAMPLE_ANGLE_TEXT_FOR_THE_OBSERVED_CHANGE",
+	titleHook: "EXAMPLE_TITLE_HOOK_TEXT",
+	whyNow: "EXAMPLE_WHY_NOW_TEXT",
+	hiddenMechanism: "EXAMPLE_HIDDEN_MECHANISM_TEXT",
+	counterfactual: "EXAMPLE_COUNTERFACTUAL_TEXT",
+	audiencePayoff: "EXAMPLE_AUDIENCE_PAYOFF_TEXT",
+	numbers: ["EXAMPLE_NUMBER_1", "EXAMPLE_NUMBER_2"],
+	sources: [
+		{
+			id: "example-source-1",
+			name: "EXAMPLE_SOURCE_NAME",
+			url: "https://example.com/source-1",
+			publishedAt: "2026-01-01",
+			tier: "L1",
+			supports: ["EXAMPLE_SUPPORTED_CLAIM"],
+		},
+		{
+			id: "example-source-2",
+			name: "EXAMPLE_SOURCE_NAME",
+			url: "https://example.com/source-2",
+			tier: "L2",
+			supports: ["EXAMPLE_SUPPORTED_CLAIM"],
+		},
+	],
+	noveltyFingerprint: "EXAMPLE_NOVELTY_FINGERPRINT",
+	visualPlan: "EXAMPLE_VISUAL_PLAN_TEXT",
+	risks: ["EXAMPLE_RISK_TEXT"],
+	explorationProfile: {
+		geography: "EXAMPLE",
+		sector: "EXAMPLE",
+		actorType: "EXAMPLE",
+		eventType: "EXAMPLE",
+		timeHorizon: "EXAMPLE",
+		causalDirection: "EXAMPLE",
+		financialMetric: "EXAMPLE",
+		supplyChainLayer: "EXAMPLE",
+		marketRealEconomy: "EXAMPLE",
+		dataSurface: "EXAMPLE",
+		scale: "EXAMPLE",
+	},
+	adversarialEvidence: [
+		{
+			id: "example-adversarial-1",
+			kind: "no_counter_evidence",
+			targetClaim: "EXAMPLE_TARGET_CLAIM_TEXT",
+			statement: "EXAMPLE_ADVERSARIAL_STATEMENT_TEXT",
+			sourceIds: ["example-source-1"],
+			checkedSourceIds: ["example-source-1", "example-source-2"],
+		},
+	],
+};
+
 export class TrendScout extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.RESEARCH, {
@@ -340,6 +394,9 @@ Return at least five total results across selected_topics and cover at least thr
 topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, explorationProfile, adversarialEvidence, archetypeEvidence.
 explorationProfile must contain non-empty strings for geography, sector, actorType, eventType, timeHorizon, causalDirection, financialMetric, supplyChainLayer, marketRealEconomy, dataSurface, scale. Describe where this candidate sits on each axis; the candidate set must vary across every axis, or the deterministic harness stops.
 numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. source ids must be stable machine-readable identifiers. counterfactual must be testable by exclusion, subtraction, or a changed denominator.
+
+Shape of one byosan_angle object (types only; replace every value with observed facts and never copy example text):
+${JSON.stringify(BYOSAN_ANGLE_SHAPE_EXAMPLE, null, 2)}
 
 archetypeEvidence is an array of zero or more evidence bundles. Do not choose a winner or force a specialized pattern. Each bundle has archetype and slots. Each slot has slot, statement, sourceIds, optional adversarialEvidenceIds, optional activeProbeIds, and optional observedAt (YYYY-MM-DD). Only emit a bundle when every required slot is supported by listed sources. Supported archetypes/required slots are:
 - actionable_prescription: pain, cause, prescription, ordering
