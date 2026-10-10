@@ -6,6 +6,7 @@ import {
 	type ByosanFailureTrace,
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
+	preflightBlockedMessage,
 	recordByosanFailure,
 } from "../src/scripts/byosan_daily.js";
 
@@ -86,6 +87,44 @@ describe("byosan daily duplicate-publication gate", () => {
 });
 
 describe("byosan failure retry gate", () => {
+	test("carries the failing preflight check reason so the failure is classifiable", async () => {
+		const runDir = await makeRunDir();
+		const message = preflightBlockedMessage(
+			{
+				schema_version: "byosan_production_preflight_v1",
+				status: "FAIL",
+				profile: "byosan",
+				run_id: "byosan_money/2026-10-10-daily",
+				publication_attempted: false,
+				generated_at: "2026-10-10T06:00:44.331Z",
+				checks: {
+					ffmpeg: {
+						status: "PASS",
+						component: "ffmpeg",
+						method: "ffmpeg -version",
+						reason: "command is available",
+						evidence: [],
+					},
+					gemini: {
+						status: "FAIL",
+						component: "gemini",
+						method: "configuration + structured-output probe",
+						reason: "429 Too Many Requests: quota exhausted",
+						evidence: [],
+					},
+				},
+			},
+			"audit/preflight.json",
+		);
+		expect(message).toContain(
+			"gemini FAIL: 429 Too Many Requests: quota exhausted",
+		);
+		expect(message).not.toContain("ffmpeg FAIL");
+		const trace = recordByosanFailure(runDir, new Error(message), "head-a");
+		expect(trace.failure_class).toBe("PROVIDER_RATE_LIMIT");
+		expect(trace.retry_policy).toBe("TRANSIENT_BOUNDED");
+	});
+
 	test("does not classify a path containing 'youtuber' as a YouTube publish failure", async () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(

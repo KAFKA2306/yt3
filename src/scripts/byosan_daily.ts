@@ -29,7 +29,10 @@ import {
 	getRunIdDateString,
 	invokeStructuredLlm,
 } from "../io/core.js";
-import { runByosanPreflight } from "./byosan_preflight.js";
+import {
+	type ByosanPreflightReport,
+	runByosanPreflight,
+} from "./byosan_preflight.js";
 
 type FeatureSource = ByosanFeatureSource;
 
@@ -314,6 +317,16 @@ function readFailureTrace(runDir: string): ByosanFailureTrace | null {
 			`FAILURE_TRACE_UNREADABLE: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
+}
+
+export function preflightBlockedMessage(
+	report: ByosanPreflightReport,
+	reportPath: string,
+): string {
+	const failed = Object.values(report.checks)
+		.filter((check) => check.status !== "PASS")
+		.map((check) => `${check.component} ${check.status}: ${check.reason}`);
+	return `BYOSAN_PREFLIGHT_BLOCKED: ${report.status} ${reportPath} ${failed.join("; ")}`;
 }
 
 function repairResolutionIsValid(
@@ -718,7 +731,10 @@ export async function runByosanDaily(): Promise<void> {
 	const preflight = await runByosanPreflight(store.runDir);
 	if (preflight.status !== "PASS") {
 		throw new Error(
-			`BYOSAN_PREFLIGHT_BLOCKED: ${preflight.status} ${path.join(store.runDir, "audit", "preflight.json")}`,
+			preflightBlockedMessage(
+				preflight,
+				path.join(store.runDir, "audit", "preflight.json"),
+			),
 		);
 	}
 	assertByosanRetryAllowed(store.runDir);
