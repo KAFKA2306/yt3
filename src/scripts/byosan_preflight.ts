@@ -38,7 +38,9 @@ export type ByosanPreflightReport = {
 	checks: Record<string, PreflightCheck>;
 };
 
-const ProbeSchema = z.object({ ok: z.literal(true) });
+export const ProbeSchema = z
+	.object({ ok: z.boolean() })
+	.refine((value) => value.ok, "ok must be true");
 
 function check(
 	component: string,

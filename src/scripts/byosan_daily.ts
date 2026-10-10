@@ -256,7 +256,7 @@ export function classifyByosanFailure(message: string): {
 			maxRetries: 0,
 		};
 	}
-	if (/PUBLISH_|youtube/i.test(message)) {
+	if (/PUBLISH_|\byoutube\b/i.test(message)) {
 		return {
 			failureClass: "PUBLISH_REMOTE",
 			stage: "PUBLISH",
