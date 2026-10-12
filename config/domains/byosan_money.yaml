@@ -317,6 +317,20 @@ prompts:
 
         上記を元に、最高精度の「ありのままの観測結果」を提供してください。
 
+      candidate_repair_template: |
+        【CANDIDATE REPAIR】
+        前回の出力のうち、次の byosan_angle 候補は機械検証で却下されました。
+        {rejected_issues}
+
+        既に採用済みの候補（同じ事象を再提出しないこと）:
+        {accepted_topics}
+
+        上記と同じ観測条件のもとで、却下理由をすべて解消した新しい観測を {needed} 件以上 results に入れ、selected_topics 形式の JSON のみを返してください。
+        - sources は id・name・absolute url・tier・supports を持つものを 2 件以上にしてください。
+        - archetypeEvidence の各 slot は sourceIds を 1 件以上持つ必要があります。根拠が揃わない bundle は出力しないでください。
+        - adversarialEvidence の sourceIds と checkedSourceIds は 1 件以上にし、sources の id だけを参照してください。
+        - 登録済みソースで 2 件揃わない観測は出力せず、別の観測を選んでください。
+
   content:
     outline:
       system: |

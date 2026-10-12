@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { settleResearchPayload } from "../src/domain/agents/research.js";
+import {
+	BYOSAN_ANGLE_SHAPE_EXAMPLE,
+	countSettledByosanCandidates,
+	mergeSettledResearchPayloads,
+	settleResearchPayload,
+} from "../src/domain/agents/research.js";
 
 const topicWithResults = (results: Array<Record<string, unknown>>) => ({
 	selected_topics: [
@@ -60,5 +65,40 @@ describe("settleResearchPayload drop accounting", () => {
 			requireByosanAngle: true,
 		});
 		expect(settled.rejected_byosan_candidates).toEqual([]);
+	});
+});
+
+describe("byosan candidate repair accounting", () => {
+	test("counts only results whose byosan_angle passed settlement", () => {
+		const settled = settleResearchPayload(
+			topicWithResults([
+				{ byosan_angle: BYOSAN_ANGLE_SHAPE_EXAMPLE },
+				{ byosan_angle: undefined, angle: "別の角度" },
+			]) as never,
+			{ requireByosanAngle: true },
+		);
+		expect(countSettledByosanCandidates(settled)).toBe(1);
+	});
+
+	test("keeps the candidates and rejections of both research passes", () => {
+		const first = settleResearchPayload(
+			topicWithResults([
+				{ byosan_angle: BYOSAN_ANGLE_SHAPE_EXAMPLE },
+				{ byosan_angle: undefined, angle: "初回の却下" },
+			]) as never,
+			{ requireByosanAngle: true },
+		);
+		const second = settleResearchPayload(
+			topicWithResults([
+				{ byosan_angle: undefined, angle: "修復の却下" },
+			]) as never,
+			{ requireByosanAngle: true },
+		);
+		const merged = mergeSettledResearchPayloads(first, second);
+		expect(merged.selected_topics).toHaveLength(2);
+		expect(countSettledByosanCandidates(merged)).toBe(1);
+		expect(
+			merged.rejected_byosan_candidates.map((entry) => entry.angle),
+		).toEqual(["初回の却下", "修復の却下"]);
 	});
 });
