@@ -1,4 +1,3 @@
-import { execSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
@@ -22,6 +21,31 @@ import type {
 	ScriptLine,
 } from "../types.js";
 import { compareVoiceMaps, getCanonicalVoiceMap } from "../voice_registry.js";
+
+type CommandOutput = "stdout" | "merged" | "silent";
+
+export const runCommand = (
+	argv: string[],
+	options: {
+		cwd?: string;
+		env?: Record<string, string | undefined>;
+		output?: CommandOutput;
+	} = {},
+): string => {
+	const output = options.output ?? "stdout";
+	const proc = Bun.spawnSync({
+		cmd: argv,
+		cwd: options.cwd,
+		env: options.env,
+		stdout: output === "silent" ? "ignore" : "pipe",
+		stderr:
+			output === "merged" ? "pipe" : output === "silent" ? "ignore" : "inherit",
+	});
+	if (!proc.success) throw new Error(`Command failed: ${argv.join(" ")}`);
+	const stdout = proc.stdout?.toString() ?? "";
+	const stderr = proc.stderr?.toString() ?? "";
+	return output === "merged" ? stdout + stderr : stdout;
+};
 
 const HumanityAuditResultSchema = z.object({
 	humanity: z.object({
@@ -292,13 +316,9 @@ export class AuditAgent extends BaseAgent {
 		if (!fs.existsSync(manifestPath)) return {};
 
 		try {
-			const output = execSync(
-				`"${pythonBin}" "${pythonScript}" "${manifestPath}"`,
-				{
-					encoding: "utf-8",
-					env: cleanPythonEnv,
-				},
-			);
+			const output = runCommand([pythonBin, pythonScript, manifestPath], {
+				env: cleanPythonEnv,
+			});
 			const report = JSON.parse(output);
 			evidence.voice_forensic = report;
 
@@ -722,9 +742,19 @@ export class AuditAgent extends BaseAgent {
 
 		// B. Visual Defects (Freeze detection)
 		try {
-			const videoLog = execSync(
-				`ffmpeg -nostats -i "${videoPath}" -vf "freezedetect=d=5,blackdetect=d=2" -f null /dev/null 2>&1`,
-				{ encoding: "utf-8", maxBuffer: 100 * 1024 * 1024 },
+			const videoLog = runCommand(
+				[
+					"ffmpeg",
+					"-nostats",
+					"-i",
+					videoPath,
+					"-vf",
+					"freezedetect=d=5,blackdetect=d=2",
+					"-f",
+					"null",
+					"/dev/null",
+				],
+				{ output: "merged" },
 			);
 			const freezes = (videoLog.match(/freeze_start/g) || []).length;
 			const blacks = (videoLog.match(/black_start/g) || []).length;
@@ -754,9 +784,7 @@ export class AuditAgent extends BaseAgent {
 		// C. ASR Loopback (Zero-Trust Numeric Integrity)
 		try {
 			const asrDir = path.join(this.store.runDir, "audit_asr");
-			execSync(`task asr FILE="${videoPath}" OUT="${asrDir}"`, {
-				encoding: "utf-8",
-				maxBuffer: 100 * 1024 * 1024,
+			runCommand(["task", "asr", `FILE=${videoPath}`, `OUT=${asrDir}`], {
 				env: {
 					...process.env,
 					VIRTUAL_ENV: path.join(ROOT, ".venv"),
@@ -862,9 +890,19 @@ export class AuditAgent extends BaseAgent {
 		// D. Multimodal Scene Change & Silence Pacing Audit
 		try {
 			// Measure Scene Cuts
-			const sceneLog = execSync(
-				`ffmpeg -nostats -i "${videoPath}" -filter:v "select='gt(scene,0.1)',showinfo" -f null /dev/null 2>&1`,
-				{ encoding: "utf-8", maxBuffer: 100 * 1024 * 1024 },
+			const sceneLog = runCommand(
+				[
+					"ffmpeg",
+					"-nostats",
+					"-i",
+					videoPath,
+					"-filter:v",
+					"select='gt(scene,0.1)',showinfo",
+					"-f",
+					"null",
+					"/dev/null",
+				],
+				{ output: "merged" },
 			);
 			const cutMatches = [...sceneLog.matchAll(/pts_time:\s*([\d\.]+)/g)].map(
 				(m) => Number.parseFloat(m[1] || "0"),
@@ -874,10 +912,16 @@ export class AuditAgent extends BaseAgent {
 			// Get duration of the video
 			let videoDuration = 0;
 			try {
-				const durationStr = execSync(
-					`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`,
-					{ encoding: "utf-8" },
-				).trim();
+				const durationStr = runCommand([
+					"ffprobe",
+					"-v",
+					"error",
+					"-show_entries",
+					"format=duration",
+					"-of",
+					"default=noprint_wrappers=1:nokey=1",
+					videoPath,
+				]).trim();
 				videoDuration = Number.parseFloat(durationStr) || 0;
 			} catch {
 				videoDuration = (state.script?.lines || []).length * 4; // estimated duration
@@ -892,9 +936,19 @@ export class AuditAgent extends BaseAgent {
 			}
 
 			// Measure Silence Pacing
-			const silenceLog = execSync(
-				`ffmpeg -nostats -i "${videoPath}" -af "silencedetect=n=-40dB:d=0.3" -f null /dev/null 2>&1`,
-				{ encoding: "utf-8", maxBuffer: 100 * 1024 * 1024 },
+			const silenceLog = runCommand(
+				[
+					"ffmpeg",
+					"-nostats",
+					"-i",
+					videoPath,
+					"-af",
+					"silencedetect=n=-40dB:d=0.3",
+					"-f",
+					"null",
+					"/dev/null",
+				],
+				{ output: "merged" },
 			);
 			const silenceStarts = [
 				...silenceLog.matchAll(/silence_start:\s*([\d\.]+)/g),
@@ -1292,9 +1346,9 @@ export class AuditAgent extends BaseAgent {
 
 		// 1. Build Verification - Compilation Check
 		try {
-			execSync("bun node_modules/typescript/bin/tsc --noEmit", {
+			runCommand(["bun", "node_modules/typescript/bin/tsc", "--noEmit"], {
 				cwd: ROOT,
-				stdio: "ignore",
+				output: "silent",
 			});
 			checks.build_compilation = {
 				name: "Build: TypeScript Compilation",
@@ -1320,9 +1374,16 @@ export class AuditAgent extends BaseAgent {
 
 		// 2. Build Verification - Linter Check
 		try {
-			execSync(
-				"bun node_modules/@biomejs/biome/bin/biome check --formatter-enabled=true --linter-enabled=false src",
-				{ cwd: ROOT, stdio: "ignore" },
+			runCommand(
+				[
+					"bun",
+					"node_modules/@biomejs/biome/bin/biome",
+					"check",
+					"--formatter-enabled=true",
+					"--linter-enabled=false",
+					"src",
+				],
+				{ cwd: ROOT, output: "silent" },
 			);
 			checks.build_lint = {
 				name: "Build: Linter Validation",
@@ -1347,10 +1408,16 @@ export class AuditAgent extends BaseAgent {
 
 		// 3. Runtime Verification - Voicevox Nemo Service Check
 		try {
-			const voicevoxRunning = execSync(
-				"docker ps --filter name=voicevox-nemo --filter status=running --format '{{.Names}}'",
-				{ encoding: "utf-8" },
-			).trim();
+			const voicevoxRunning = runCommand([
+				"docker",
+				"ps",
+				"--filter",
+				"name=voicevox-nemo",
+				"--filter",
+				"status=running",
+				"--format",
+				"{{.Names}}",
+			]).trim();
 			const isRunning = voicevoxRunning.includes("voicevox-nemo");
 			checks.runtime_voicevox = {
 				name: "Runtime: VoiceVox Service Health",
@@ -1419,9 +1486,14 @@ export class AuditAgent extends BaseAgent {
 		const videoPath = state.video_path;
 		if (videoPath && fs.existsSync(videoPath)) {
 			try {
-				execSync(`ffprobe -v error -show_format -show_streams "${videoPath}"`, {
-					encoding: "utf-8",
-				});
+				runCommand([
+					"ffprobe",
+					"-v",
+					"error",
+					"-show_format",
+					"-show_streams",
+					videoPath,
+				]);
 				checks.artifact_decodability = {
 					name: "Artifact: Video Track Decodability",
 					description:
@@ -1810,7 +1882,7 @@ export class AuditAgent extends BaseAgent {
 	}
 
 	private checkProvenance(evidence: Record<string, unknown>): AuditCheck {
-		const commit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
+		const commit = runCommand(["git", "rev-parse", "HEAD"]).trim();
 		evidence.provenance = { commit };
 		return {
 			name: "Provenance: Commit Trace",
@@ -3027,9 +3099,12 @@ No markdown or raw tags, only valid JSON.`;
 
 		for (const service of services) {
 			try {
-				const status = execSync(`systemctl --user is-active ${service}`, {
-					encoding: "utf8",
-				}).trim();
+				const status = runCommand([
+					"systemctl",
+					"--user",
+					"is-active",
+					service,
+				]).trim();
 				serviceStatus[service] = status;
 				if (status !== "active") {
 					allActive = false;
