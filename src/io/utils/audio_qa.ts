@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
 
@@ -14,6 +14,38 @@ export interface AudioQAResult {
 		speech_rate_status: "optimal" | "too_fast" | "too_slow";
 		final_decision: "PASS" | "FAIL";
 	};
+}
+
+const MAX_OUTPUT_BYTES = 100 * 1024 * 1024;
+
+function runTool(
+	command: string,
+	args: string[],
+): { stdout: string; stderr: string } {
+	const result = spawnSync(command, args, {
+		encoding: "utf-8",
+		maxBuffer: MAX_OUTPUT_BYTES,
+	});
+	if (result.error) throw result.error;
+	if (result.status !== 0) {
+		throw new Error(
+			`${command} exited with status ${result.status}: ${result.stderr}`,
+		);
+	}
+	return { stdout: result.stdout, stderr: result.stderr };
+}
+
+export function probeDurationSeconds(mediaPath: string): number {
+	const { stdout } = runTool("ffprobe", [
+		"-v",
+		"error",
+		"-show_entries",
+		"format=duration",
+		"-of",
+		"default=noprint_wrappers=1:nokey=1",
+		mediaPath,
+	]);
+	return Number.parseFloat(stdout.trim() || "0");
 }
 
 function getSubtitleCharCount(subtitlePath: string): number {
@@ -54,10 +86,16 @@ export function runAudioQA(videoPath: string, runDir: string): AudioQAResult {
 			};
 		}
 
-		const audioLog = execSync(
-			`ffmpeg -nostats -i "${videoPath}" -af ebur128=peak=true -f null /dev/null 2>&1`,
-			{ encoding: "utf-8", maxBuffer: 100 * 1024 * 1024 },
-		);
+		const { stderr: audioLog } = runTool("ffmpeg", [
+			"-nostats",
+			"-i",
+			videoPath,
+			"-af",
+			"ebur128=peak=true",
+			"-f",
+			"null",
+			"/dev/null",
+		]);
 		const summaryPart = audioLog.split("Summary:")[1] || audioLog;
 		const integratedLUFS = Number.parseFloat(
 			summaryPart.match(/I:\s+([\-\d\.]+) LUFS/)?.[1] || "0",
@@ -66,10 +104,16 @@ export function runAudioQA(videoPath: string, runDir: string): AudioQAResult {
 			summaryPart.match(/Peak:\s+([\-\d\.]+) (dBTP|dBFS)/)?.[1] || "0",
 		);
 
-		const silenceLog = execSync(
-			`ffmpeg -nostats -i "${videoPath}" -af silencedetect=n=-40dB:d=2.0 -f null /dev/null 2>&1`,
-			{ encoding: "utf-8", maxBuffer: 100 * 1024 * 1024 },
-		);
+		const { stderr: silenceLog } = runTool("ffmpeg", [
+			"-nostats",
+			"-i",
+			videoPath,
+			"-af",
+			"silencedetect=n=-40dB:d=2.0",
+			"-f",
+			"null",
+			"/dev/null",
+		]);
 		const silenceMatches = Array.from(
 			silenceLog.matchAll(/silence_duration:\s+([\d\.]+)/g),
 		);
@@ -81,11 +125,7 @@ export function runAudioQA(videoPath: string, runDir: string): AudioQAResult {
 			totalSilence += dur;
 		}
 
-		const durationLog = execSync(
-			`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`,
-			{ encoding: "utf-8" },
-		);
-		const durationSeconds = Number.parseFloat(durationLog.trim() || "0");
+		const durationSeconds = probeDurationSeconds(videoPath);
 
 		const bucket = path.basename(path.dirname(runDir));
 		let minOptimalRate = 220;
