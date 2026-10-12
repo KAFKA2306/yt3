@@ -7,6 +7,7 @@ import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
 import type { AgentState } from "./domain/types.js";
 import { type AssetStore, ROOT, loadConfig } from "./io/core.js";
+import { probeDurationSeconds } from "./io/utils/audio_qa.js";
 import { sendAlert } from "./io/utils/discord.js";
 import { AgentLogger } from "./io/utils/logger.js";
 import {
@@ -125,17 +126,12 @@ export async function runHumanityObservatoryWorkflow(
 
 		// Map computed durations to cached script lines to satisfy Quality Audit requirements
 		if (state.script && cachedMediaResults.audio_paths) {
-			const { execSync } = require("node:child_process");
 			for (let i = 0; i < state.script.lines.length; i++) {
 				const line = state.script.lines[i];
 				const audioPath = cachedMediaResults.audio_paths[i];
 				if (line && audioPath && fs.existsSync(audioPath)) {
 					try {
-						const durationStr = execSync(
-							`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`,
-							{ encoding: "utf-8" },
-						).trim();
-						line.duration = Number.parseFloat(durationStr) || 0;
+						line.duration = probeDurationSeconds(audioPath) || 0;
 					} catch {
 						line.duration = 0;
 					}
