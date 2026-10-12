@@ -310,7 +310,6 @@ async function main(): Promise<void> {
 		ENV_FILE: "config/.env.byosan",
 		YOUTUBE_CHANNEL_PROFILE: "byosan",
 		BYOSAN_DATE: date,
-		BYOSAN_DAILY_NO_PUBLISH: "true",
 	};
 
 	const dailyRunId = `byosan_money/${date}-daily`;

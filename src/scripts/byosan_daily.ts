@@ -725,22 +725,6 @@ function runCommand(
 	}
 }
 
-function assertPublishEvidence(runDir: string): void {
-	const report = fs.readJsonSync(
-		path.join(runDir, "audit", "production_quality_report.json"),
-	) as { decision?: string };
-	if (report.decision !== "PASS") {
-		throw new Error("PUBLISH_BLOCKED: production audit is not PASS");
-	}
-	const runName = path.basename(runDir);
-	const evidence = findPublishedByosanRunForDate(ROOT, runName.slice(0, 10));
-	if (!evidence?.verified || evidence.runId !== `byosan_money/${runName}`) {
-		throw new Error(
-			`PUBLISH_EVIDENCE_INCOMPLETE: ${evidence?.reason ?? "missing_receipt"}`,
-		);
-	}
-}
-
 async function dryRun(): Promise<void> {
 	const referencePath = path.join(
 		ROOT,
@@ -915,22 +899,8 @@ export async function runByosanDaily(): Promise<void> {
 	if (!checkpoint.stages.quality_pass) {
 		throw new Error(`QUALITY_GATE_FAILED: ${qualityReportPath}`);
 	}
-	if (process.env.BYOSAN_DAILY_NO_PUBLISH === "true") {
-		markFailureRecovered(store.runDir);
-		console.log(`PRODUCTION_PASS_NO_PUBLISH=${runId}`);
-		return;
-	}
-	runCommand(process.execPath, ["src/scripts/publish_youtube.ts", runId], {
-		...process.env,
-		ENV_FILE: "config/.env.byosan",
-		YOUTUBE_CHANNEL_PROFILE: "byosan",
-		RUN_ID: runId,
-	});
-	assertPublishEvidence(store.runDir);
-	checkpoint.stages.publish_verified = true;
-	writeByosanCheckpoint(store.runDir, checkpoint);
 	markFailureRecovered(store.runDir);
-	console.log(`BYOSAN_DAILY_PASS=${runId}`);
+	console.log(`PRODUCTION_PASS=${runId}`);
 }
 
 if (import.meta.main) {

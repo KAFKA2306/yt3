@@ -52,7 +52,7 @@ See [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
 task loop
 task run                       # 秒算マネー by default
 PROFILE=humanity task run      # 人類観測所
-task byosan:daily
+task byosan:publish-daily      # 準備ゲート経由の日次公開（publish_approved が true のときのみ公開）
 ```
 
 `task run` resolves the workflow bucket and environment from `YOUTUBE_PROFILES`; it does not maintain a second profile-to-config mapping. 夜話アーカイブ uses the shared release and publication path with `PROFILE=yawa`; it does not use `src/index.ts`.
