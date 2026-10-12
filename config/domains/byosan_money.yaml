@@ -164,9 +164,6 @@ news_bot:
   thread_prefix: "video-"
   thread_message: "Progress will be posted here."
 
-discord:
-  notification_channel_id: "YOUR_DISCORD_CHANNEL_ID_HERE"
-
 automation:
   enabled: true
   venv_activate: ".venv/bin/activate"
