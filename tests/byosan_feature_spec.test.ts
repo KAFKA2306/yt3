@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
+import { z } from "zod";
 import {
+	ByosanFeatureDraftSchema,
 	type ByosanFeatureSpec,
 	ByosanFeatureSpecSchema,
 	type ByosanNarrativeRole,
@@ -340,5 +342,12 @@ describe("byosan feature specification", () => {
 		expect(() => staticSceneMotionFilter(0)).toThrow(
 			"Invalid static scene fps",
 		);
+	});
+});
+
+describe("byosan structured output schema", () => {
+	test("draft schema emits no const keyword that the Gemini response_schema rejects", () => {
+		const serialized = JSON.stringify(z.toJSONSchema(ByosanFeatureDraftSchema));
+		expect(serialized).not.toContain('"const"');
 	});
 });
