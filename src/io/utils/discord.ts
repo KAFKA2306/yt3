@@ -11,21 +11,26 @@ import fs from "fs-extra";
 import { ROOT } from "../core.js";
 import { AgentLogger } from "./logger.js";
 
-export type AlertType =
-	| "info"
-	| "success"
-	| "warn"
-	| "error"
-	| "audit_fail"
-	| "publish";
+export const ALERT_TYPES = [
+	"info",
+	"success",
+	"warn",
+	"error",
+	"audit_fail",
+	"publish",
+	"publish_start",
+] as const;
 
-const COLORS = {
+export type AlertType = (typeof ALERT_TYPES)[number];
+
+const COLORS: Record<AlertType, number> = {
 	info: 3447003, // Blue
 	success: 3066993, // Green
 	warn: 16776960, // Yellow
 	error: 15158332, // Red
 	audit_fail: 15158332, // Red
 	publish: 10181046, // Purple
+	publish_start: 3447003, // Blue
 };
 
 const DISCORD_NOTIFICATION_STATE = path.join(

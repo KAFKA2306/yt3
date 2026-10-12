@@ -26,6 +26,48 @@ import {
 	getYouTubeProfile,
 } from "../youtube_profiles.js";
 
+type DiscordNotifications = NonNullable<
+	AppConfig["steps"]["youtube"]
+>["discord_notifications"];
+
+type PublishNotice = {
+	runId: string;
+	title: string;
+	channelTitle?: string;
+	videoId?: string;
+	privacyStatus?: string;
+};
+
+export async function notifyPublishEvent(
+	settings: DiscordNotifications,
+	event: "start" | "complete",
+	notice: PublishNotice,
+	send: typeof sendAlert = sendAlert,
+): Promise<void> {
+	if (event === "start") {
+		if (!settings.publish_start) return;
+		await send("Publish started on YouTube", "publish_start", {
+			title: notice.title,
+			runId: notice.runId,
+			state: "PUBLISH_STARTED",
+		});
+		return;
+	}
+	if (!settings.publish_complete) return;
+	await send(
+		`✅ **Successfully uploaded** video to ${notice.channelTitle}!`,
+		"publish",
+		{
+			title: notice.title,
+			videoId: notice.videoId,
+			url: `https://www.youtube.com/watch?v=${notice.videoId}`,
+			privacy_status: notice.privacyStatus,
+			runId: notice.runId,
+			state: "PUBLISHED",
+		},
+	);
+}
+
 export class PublishAgent extends BaseAgent {
 	constructor(store: AssetStore) {
 		super(store, RunStage.PUBLISH);
@@ -65,25 +107,21 @@ export class PublishAgent extends BaseAgent {
 		const results: PublishResults = {};
 		const ytStep = this.config.steps.youtube;
 		if (ytStep?.enabled) {
+			const notice = {
+				runId: state.run_id,
+				title: state.metadata?.title || "N/A",
+			};
+			await notifyPublishEvent(ytStep.discord_notifications, "start", notice);
 			results.youtube = await this.uploadToYouTube(state, this.config, {
 				publishVideoPath,
 			});
 			if (results.youtube?.status === "uploaded") {
-				const videoId = results.youtube.video_id;
-				const channelTitle = results.youtube.channel_title;
-				const videoUrl = videoId
-					? `https://www.youtube.com/watch?v=${videoId}`
-					: "N/A";
-				await sendAlert(
-					`✅ **Successfully uploaded** video to ${channelTitle}!`,
-					"publish",
-					{
-						title: state.metadata?.title || "N/A",
-						videoId: videoId || "N/A",
-						url: videoUrl,
-						runId: state.run_id,
-					},
-				);
+				await notifyPublishEvent(ytStep.discord_notifications, "complete", {
+					...notice,
+					channelTitle: results.youtube.channel_title,
+					videoId: results.youtube.video_id,
+					privacyStatus: results.youtube.privacy_status,
+				});
 			}
 		}
 		const twStep = this.config.steps.twitter;
