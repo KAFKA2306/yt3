@@ -47,6 +47,41 @@ const DISCORD_LIMITS = {
 		Number(process.env.DISCORD_DUPLICATE_COOLDOWN_MINUTES || 60) * 60_000,
 };
 
+export const DISCORD_TRANSIENT_FAILURE_EXIT_CODE = 1;
+export const DISCORD_PERMANENT_FAILURE_EXIT_CODE = 78;
+
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_TOO_MANY_REQUESTS = 429;
+const PERMANENT_DISCORD_CODES: ReadonlySet<unknown> = new Set([
+	"TokenInvalid",
+	"DisallowedIntents",
+]);
+const PERMANENT_GATEWAY_MESSAGES: ReadonlySet<unknown> = new Set([
+	"Authentication failed",
+	"Used disallowed intents",
+]);
+
+let rateLimitedUntil = 0;
+
+export function isPermanentDiscordError(error: unknown): boolean {
+	const { code, status, message } = error as {
+		code?: unknown;
+		status?: unknown;
+		message?: unknown;
+	};
+	return (
+		PERMANENT_DISCORD_CODES.has(code) ||
+		status === HTTP_UNAUTHORIZED ||
+		PERMANENT_GATEWAY_MESSAGES.has(message)
+	);
+}
+
+export function discordFailureExitCode(error: unknown): number {
+	return isPermanentDiscordError(error)
+		? DISCORD_PERMANENT_FAILURE_EXIT_CODE
+		: DISCORD_TRANSIENT_FAILURE_EXIT_CODE;
+}
+
 type DiscordNotificationEntry = {
 	last_sent_at: string;
 	count: number;
@@ -180,6 +215,48 @@ function canSendDiscordNotification(
 	return { allowed: true };
 }
 
+export async function postDiscordWebhook(
+	webhookUrl: string,
+	body: unknown,
+): Promise<void> {
+	if (Date.now() < rateLimitedUntil) {
+		AgentLogger.warn(
+			"DISCORD",
+			"ALERT",
+			"RATE_LIMITED",
+			"Skipped Discord webhook until Retry-After elapses",
+		);
+		return;
+	}
+
+	const res = await fetch(webhookUrl, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	});
+
+	if (res.status === HTTP_TOO_MANY_REQUESTS) {
+		const retryAfterSec = Number(res.headers.get("retry-after"));
+		rateLimitedUntil = Date.now() + retryAfterSec * 1000;
+		AgentLogger.warn(
+			"DISCORD",
+			"ALERT",
+			"RATE_LIMITED",
+			`Discord webhook rate limited; retry after ${retryAfterSec}s`,
+		);
+		return;
+	}
+
+	if (!res.ok) {
+		AgentLogger.error(
+			"DISCORD",
+			"ALERT",
+			"HTTP_FAILED",
+			`Discord webhook responded ${res.status}`,
+		);
+	}
+}
+
 /**
  * Sends a notification via Discord Webhook.
  */
@@ -231,11 +308,7 @@ export async function sendAlert(
 	}
 
 	try {
-		await fetch(webhookUrl, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ embeds: [embed] }),
-		});
+		await postDiscordWebhook(webhookUrl, { embeds: [embed] });
 	} catch (err) {
 		const error = err as Error;
 		AgentLogger.error(

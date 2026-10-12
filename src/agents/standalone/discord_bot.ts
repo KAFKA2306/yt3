@@ -1,15 +1,122 @@
 import "dotenv/config";
 import { spawn } from "node:child_process";
 import {
+	type ChatInputCommandInteraction,
 	Client,
+	Events,
 	GatewayIntentBits,
 	REST,
 	Routes,
 	SlashCommandBuilder,
 	type TextChannel,
 } from "discord.js";
-import { validateQuery } from "../../domain/validation.js";
+import { validateQuerySafe } from "../../domain/validation.js";
 import { loadConfig } from "../../io/core.js";
+import {
+	discordFailureExitCode,
+	isPermanentDiscordError,
+	sendAlert,
+} from "../../io/utils/discord.js";
+import { AgentLogger } from "../../io/utils/logger.js";
+
+type NewsCommandMessages = {
+	starter: string;
+	response: string;
+	threadPrefix: string;
+	threadMessage: string;
+};
+
+const INVALID_QUERY_REPLY =
+	"Invalid query. Please use only letters, numbers, and basic punctuation.";
+const EXECUTION_FAILED_REPLY =
+	"Failed to start news generation. Check the bot log.";
+
+export async function handleNewsCommand(
+	interaction: ChatInputCommandInteraction,
+	messages: NewsCommandMessages,
+	launchWorkflow: (query: string) => Promise<void>,
+): Promise<void> {
+	const rawQuery = interaction.options.getString("query") || "";
+
+	try {
+		await interaction.deferReply({ ephemeral: true });
+
+		const validation = validateQuerySafe(rawQuery);
+		if (!validation.success || validation.data === undefined) {
+			await interaction.editReply(INVALID_QUERY_REPLY);
+			return;
+		}
+		const query = validation.data;
+
+		const channel = interaction.channel as TextChannel | null;
+		if (!channel) {
+			await interaction.editReply("Can only be used in a text channel.");
+			return;
+		}
+
+		const starterMsg = await channel.send(
+			messages.starter.replace("{query}", query),
+		);
+
+		const threadName = `${messages.threadPrefix}${query}`.substring(0, 50);
+		const thread = await starterMsg.startThread({
+			name: threadName,
+			autoArchiveDuration: 60,
+		});
+
+		await thread.send(messages.threadMessage.replace("{query}", query));
+
+		console.log(`Spawning workflow for: ${query}`);
+		await launchWorkflow(query);
+
+		await interaction.editReply(messages.response.replace("{query}", query));
+	} catch (error) {
+		AgentLogger.error(
+			"DISCORD",
+			"NEWS_COMMAND",
+			"FAILED",
+			"News command failed",
+			error as Error,
+		);
+		await interaction.editReply(EXECUTION_FAILED_REPLY);
+	}
+}
+
+function launchWorkflow(query: string): Promise<void> {
+	const child = spawn("npx", ["tsx", "src/index.ts", query], {
+		cwd: process.cwd(),
+		stdio: "ignore",
+		detached: true,
+	});
+	child.on("error", (error) =>
+		AgentLogger.error(
+			"DISCORD",
+			"WORKFLOW",
+			"SPAWN_ERROR",
+			`Workflow process error for: ${query}`,
+			error,
+		),
+	);
+	return new Promise((resolve, reject) => {
+		child.once("spawn", () => {
+			child.unref();
+			resolve();
+		});
+		child.once("error", reject);
+	});
+}
+
+async function exitOnFailure(error: unknown): Promise<never> {
+	const err = error as Error;
+	AgentLogger.error("DISCORD", "BOT", "FATAL", "Discord bot stopped", err);
+	if (isPermanentDiscordError(error)) {
+		await sendAlert(
+			`Discord bot stopped on a permanent error: ${err.message}. Systemd will not restart it until the token or intents are fixed.`,
+			"error",
+		);
+	}
+	process.exit(discordFailureExitCode(error));
+}
 
 async function main() {
 	const config = loadConfig();
@@ -29,12 +136,12 @@ async function main() {
 
 	const commandName = settings.command_name || "news";
 	const description = settings.command_description || "Generate news video";
-	const strTemplate =
-		settings.starter_template || "Starting generation for: {query}";
-	const resTemplate =
-		settings.response_template || "Generating video for: {query}";
-	const threadPrefix = settings.thread_prefix || "video-";
-	const threadMsg = settings.thread_message || "Progress will be posted here.";
+	const messages: NewsCommandMessages = {
+		starter: settings.starter_template || "Starting generation for: {query}",
+		response: settings.response_template || "Generating video for: {query}",
+		threadPrefix: settings.thread_prefix || "video-",
+		threadMessage: settings.thread_message || "Progress will be posted here.",
+	};
 
 	const commands = [
 		new SlashCommandBuilder()
@@ -60,53 +167,31 @@ async function main() {
 		}
 	});
 
-	client.on("interactionCreate", async (interaction) => {
-		if (!interaction.isChatInputCommand()) return;
-
-		if (interaction.commandName === commandName) {
-			const rawQuery = interaction.options.getString("query") || "";
-
-			await interaction.deferReply({ ephemeral: true });
-
-			try {
-				const query = validateQuery(rawQuery);
-
-				const channel = interaction.channel as TextChannel;
-				if (!channel) {
-					await interaction.editReply("Can only be used in a text channel.");
-					return;
-				}
-
-				const starterMsg = await channel.send(
-					strTemplate.replace("{query}", query),
-				);
-
-				const threadName = `${threadPrefix}${query}`.substring(0, 50);
-				const thread = await starterMsg.startThread({
-					name: threadName,
-					autoArchiveDuration: 60,
-				});
-
-				await thread.send(threadMsg.replace("{query}", query));
-
-				console.log(`Spawning workflow for: ${query}`);
-				const child = spawn("npx", ["tsx", "src/index.ts", query], {
-					cwd: process.cwd(),
-					stdio: "ignore",
-					detached: true,
-				});
-				child.unref();
-
-				await interaction.editReply(resTemplate.replace("{query}", query));
-			} catch (error) {
-				await interaction.editReply(
-					"Invalid query. Please use only letters, numbers, and basic punctuation.",
-				);
-			}
-		}
+	client.on(Events.ShardError, (error) => {
+		if (isPermanentDiscordError(error)) exitOnFailure(error);
 	});
 
-	client.login(token);
+	client.on("interactionCreate", (interaction) => {
+		if (!interaction.isChatInputCommand()) return;
+		if (interaction.commandName !== commandName) return;
+		handleNewsCommand(interaction, messages, launchWorkflow).catch((error) =>
+			AgentLogger.error(
+				"DISCORD",
+				"NEWS_COMMAND",
+				"UNHANDLED",
+				"News command handler failed",
+				error as Error,
+			),
+		);
+	});
+
+	try {
+		await client.login(token);
+	} catch (error) {
+		await exitOnFailure(error);
+	}
 }
 
-main().catch(console.error);
+if (import.meta.main) {
+	main().catch(exitOnFailure);
+}
