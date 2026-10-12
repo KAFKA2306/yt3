@@ -1,17 +1,7 @@
-import { type AlertType, sendAlert } from "../io/utils/discord.js";
+import { ALERT_TYPES, type AlertType, sendAlert } from "../io/utils/discord.js";
 
 function parseType(value: string | undefined): AlertType {
-	switch (value) {
-		case "success":
-		case "warn":
-		case "error":
-		case "audit_fail":
-		case "publish":
-		case "info":
-			return value;
-		default:
-			return "info";
-	}
+	return ALERT_TYPES.find((type) => type === value) ?? "info";
 }
 
 async function main() {

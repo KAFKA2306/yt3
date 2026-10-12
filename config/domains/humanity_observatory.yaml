@@ -119,6 +119,7 @@ steps:
     default_tags: ["Humanity", "Observatory", "VTuber"]
     category_id: 24
     default_visibility: "public"
+    discord_notifications: {publish_start: true, publish_complete: true}
 
 providers:
   llm:

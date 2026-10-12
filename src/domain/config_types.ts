@@ -174,6 +174,10 @@ export interface AppConfig {
 			default_tags: string[];
 			category_id: number;
 			default_visibility: string;
+			discord_notifications: {
+				publish_start: boolean;
+				publish_complete: boolean;
+			};
 		};
 		twitter?: { enabled: boolean };
 	};
