@@ -1,6 +1,3 @@
-import axios from "axios";
-import type { AxiosInstance } from "axios";
-
 export interface TtsVoiceControls {
 	speedScale?: number;
 	pitchScale?: number;
@@ -41,18 +38,12 @@ export class TtsOrchestrator {
 	private speakers: Record<string, number>;
 	private queryTimeout: number;
 	private synthesisTimeout: number;
-	private axiosInstance: AxiosInstance;
 
 	constructor(config: TtsOrchestrationConfig) {
 		this.ttsUrl = config.ttsUrl;
 		this.speakers = config.speakers;
 		this.queryTimeout = config.timeout.query;
 		this.synthesisTimeout = config.timeout.synthesis;
-		this.axiosInstance = axios.create({
-			headers: {
-				Connection: "close",
-			},
-		});
 	}
 
 	async synthesize(request: TtsRequest): Promise<TtsSynthesisResult> {
@@ -81,31 +72,51 @@ export class TtsOrchestrator {
 		text: string,
 		speakerId: number,
 	): Promise<TtsAudioQueryResponse> {
-		const response = await this.axiosInstance.post(
-			`${this.ttsUrl}/audio_query`,
-			null,
-			{
-				params: { text, speaker: speakerId },
-				timeout: this.queryTimeout,
-			},
+		const response = await this.post(
+			"/audio_query",
+			{ text, speaker: String(speakerId) },
+			this.queryTimeout,
 		);
-		return response.data as TtsAudioQueryResponse;
+		return (await response.json()) as TtsAudioQueryResponse;
 	}
 
 	private async synthesizeAudio(
 		queryData: TtsAudioQueryResponse,
 		speakerId: number,
 	): Promise<Buffer> {
-		const response = await this.axiosInstance.post(
-			`${this.ttsUrl}/synthesis`,
+		const response = await this.post(
+			"/synthesis",
+			{ speaker: String(speakerId) },
+			this.synthesisTimeout,
 			queryData,
+		);
+		return Buffer.from(await response.arrayBuffer());
+	}
+
+	private async post(
+		endpoint: string,
+		params: Record<string, string>,
+		timeout: number,
+		body?: TtsAudioQueryResponse,
+	): Promise<Response> {
+		const response = await fetch(
+			`${this.ttsUrl}${endpoint}?${new URLSearchParams(params)}`,
 			{
-				params: { speaker: speakerId },
-				responseType: "arraybuffer",
-				timeout: this.synthesisTimeout,
+				method: "POST",
+				headers: {
+					Connection: "close",
+					...(body && { "Content-Type": "application/json" }),
+				},
+				body: body && JSON.stringify(body),
+				signal: AbortSignal.timeout(timeout),
 			},
 		);
-		return Buffer.from(response.data as ArrayBuffer);
+		if (!response.ok) {
+			throw new Error(
+				`VOICEVOX ${endpoint} failed with HTTP ${response.status}`,
+			);
+		}
+		return response;
 	}
 
 	private assertSpeakerId(speakerId: number): void {

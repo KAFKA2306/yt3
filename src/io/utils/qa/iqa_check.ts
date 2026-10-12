@@ -1,6 +1,5 @@
 import path from "node:path";
 import fs from "fs-extra";
-import { glob } from "glob";
 import { loadConfig } from "../../core.js";
 import { type BackgroundRisk, IqaValidator } from "../iqa_validator.js";
 
@@ -257,6 +256,16 @@ function auditPalettes(): void {
 	);
 }
 
+export async function findThumbnailPaths(
+	runIdFilter: string | undefined,
+	cwd: string,
+): Promise<string[]> {
+	const pattern = runIdFilter
+		? `runs/${runIdFilter}/**/thumbnail.png`
+		: "runs/**/thumbnail.png";
+	return Array.fromAsync(new Bun.Glob(pattern).scan({ cwd, absolute: true }));
+}
+
 async function main(): Promise<void> {
 	const args = process.argv.slice(2);
 
@@ -267,13 +276,8 @@ async function main(): Promise<void> {
 
 	const runIdFilter = args.includes("--run-id")
 		? args[args.indexOf("--run-id") + 1]
-		: null;
-	const pattern = runIdFilter
-		? `runs/${runIdFilter}/**/thumbnail.png`
-		: "runs/**/thumbnail.png";
-	const imagePaths = (await glob(pattern, { cwd: process.cwd() })).map((p) =>
-		path.join(process.cwd(), p),
-	);
+		: undefined;
+	const imagePaths = await findThumbnailPaths(runIdFilter, process.cwd());
 
 	console.log(
 		`${COLORS.bold}${COLORS.cyan}IQA バッチ審査  — 対象: ${imagePaths.length} 枚${COLORS.reset}\n${"─".repeat(70)}`,
@@ -301,4 +305,4 @@ async function main(): Promise<void> {
 	);
 }
 
-main();
+if (import.meta.main) main();
