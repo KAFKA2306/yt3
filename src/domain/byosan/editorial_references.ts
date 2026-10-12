@@ -47,15 +47,15 @@ const EditorialReferencePlanItemSchema = z.object({
 	surface: ByosanEditorialReferenceSurfaceSchema,
 	element: z.string().min(4).max(80),
 	application: z.string().min(12).max(180),
-	provenance: z.literal("editorial_reference_observation"),
+	provenance: z.enum(["editorial_reference_observation"]),
 	avoidImitation: z.string().min(12).max(180),
 });
 
 export const ByosanEditorialReferencePlanSchema = z.object({
-	schemaVersion: z.literal("byosan_editorial_reference_plan_v1"),
+	schemaVersion: z.enum(["byosan_editorial_reference_plan_v1"]),
 	selectionSeed: z.string().min(8).max(240),
 	selectedReferences: z.array(EditorialReferencePlanItemSchema).min(3).max(5),
-	combinationPolicy: z.literal("vary_per_run_3_to_5_sources_no_fixed_combo"),
+	combinationPolicy: z.enum(["vary_per_run_3_to_5_sources_no_fixed_combo"]),
 });
 
 export type ByosanEditorialReference = z.infer<
