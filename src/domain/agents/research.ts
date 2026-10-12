@@ -13,6 +13,7 @@ import {
 } from "../../io/core.js";
 import {
 	BYOSAN_COUNTERFACTUAL_TEST_MARKERS,
+	BYOSAN_MIN_CANDIDATE_COUNT,
 	type ByosanAngleCandidate,
 	type ByosanAngleDecision,
 	isCurrentByosanAngleDecision,
@@ -111,6 +112,27 @@ export function settleResearchPayload(
 	return { selected_topics, rejected_byosan_candidates: rejected };
 }
 
+export function countSettledByosanCandidates(
+	research: SettledResearchPayload,
+): number {
+	return research.selected_topics
+		.flatMap((topic) => topic.results)
+		.filter((result) => result.byosan_angle !== undefined).length;
+}
+
+export function mergeSettledResearchPayloads(
+	first: SettledResearchPayload,
+	second: SettledResearchPayload,
+): SettledResearchPayload {
+	return {
+		selected_topics: [...first.selected_topics, ...second.selected_topics],
+		rejected_byosan_candidates: [
+			...first.rejected_byosan_candidates,
+			...second.rejected_byosan_candidates,
+		],
+	};
+}
+
 export const BYOSAN_ANGLE_SHAPE_EXAMPLE = {
 	topic: "EXAMPLE_TOPIC",
 	angle: "EXAMPLE_ANGLE_TEXT_FOR_THE_OBSERVED_CHANGE",
@@ -193,7 +215,11 @@ export class TrendScout extends BaseAgent {
 		});
 		const memoryContext = composeResearchMemoryContext(bucket, "", ROOT);
 		const promptCfg = this.loadPrompt<{
-			consolidated_research: { system: string; user_template: string };
+			consolidated_research: {
+				system: string;
+				user_template: string;
+				candidate_repair_template: string;
+			};
 		}>(this.name);
 		const currentDate = getCurrentDateString();
 		const recentThemes = fetchRecentThemes(this.store, 7);
@@ -225,20 +251,39 @@ export class TrendScout extends BaseAgent {
 			);
 		}
 
-		const payload = await this.runLlm<ResearchPayload>(
-			promptCfg.consolidated_research.system
-				.replace(
-					"{regions}",
-					researchCfg.regions.map((region) => region.lang).join(", "),
-				)
-				.replace("{current_date}", currentDate),
-			userPrompt,
-			(text) => parseLlmJson(text, ResearchPayloadSchema),
-			{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
-		);
-		const research = settleResearchPayload(payload, {
+		const systemPrompt = promptCfg.consolidated_research.system
+			.replace(
+				"{regions}",
+				researchCfg.regions.map((region) => region.lang).join(", "),
+			)
+			.replace("{current_date}", currentDate);
+		const invokeResearch = (prompt: string) =>
+			this.runLlm<ResearchPayload>(
+				systemPrompt,
+				prompt,
+				(text) => parseLlmJson(text, ResearchPayloadSchema),
+				{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
+			);
+		const payload = await invokeResearch(userPrompt);
+		let research = settleResearchPayload(payload, {
 			requireByosanAngle: bucket === "byosan_money",
 		});
+		if (
+			bucket === "byosan_money" &&
+			countSettledByosanCandidates(research) < BYOSAN_MIN_CANDIDATE_COUNT
+		) {
+			const repairPayload = await invokeResearch(
+				this.buildCandidateRepairPrompt(
+					userPrompt,
+					promptCfg.consolidated_research.candidate_repair_template,
+					research,
+				),
+			);
+			research = mergeSettledResearchPayloads(
+				research,
+				settleResearchPayload(repairPayload, { requireByosanAngle: true }),
+			);
+		}
 
 		const allTopics = research.selected_topics || [];
 		const candidateLocations = allTopics.flatMap((topic) =>
@@ -323,6 +368,31 @@ export class TrendScout extends BaseAgent {
 		return result;
 	}
 
+	private buildCandidateRepairPrompt(
+		userPrompt: string,
+		template: string,
+		research: SettledResearchPayload,
+	): string {
+		const rejected = research.rejected_byosan_candidates
+			.map(
+				(entry) =>
+					`- ${entry.topic}（${entry.angle}）: ${entry.issues.join(" / ")}`,
+			)
+			.join("\n");
+		const accepted = research.selected_topics
+			.flatMap((topic) => topic.results)
+			.flatMap((result) =>
+				result.byosan_angle ? [`- ${result.byosan_angle.topic}`] : [],
+			)
+			.join("\n");
+		const needed =
+			BYOSAN_MIN_CANDIDATE_COUNT - countSettledByosanCandidates(research);
+		return `${userPrompt}\n\n${template
+			.replace("{rejected_issues}", rejected)
+			.replace("{accepted_topics}", accepted)
+			.replace("{needed}", String(needed))}`;
+	}
+
 	private buildSourceRegistryPrompt(bucket: string): string {
 		if (bucket !== "byosan_money") return "";
 		const registryPath = path.join(
@@ -392,7 +462,7 @@ export class TrendScout extends BaseAgent {
 		return `
 
 [BYOSAN SHARP-ANGLE STRUCTURED OUTPUT]
-Return at least five total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
+Return at least ${BYOSAN_MIN_CANDIDATE_COUNT} total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
 topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, explorationProfile, adversarialEvidence, archetypeEvidence.
 explorationProfile must contain non-empty strings for geography, sector, actorType, eventType, timeHorizon, causalDirection, financialMetric, supplyChainLayer, marketRealEconomy, dataSurface, scale. Describe where this candidate sits on each axis; the candidate set must vary across every axis, or the deterministic harness stops.
 numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. source ids must be stable machine-readable identifiers. counterfactual must be testable by exclusion, subtraction, or a changed denominator, and must contain at least one of these markers: ${BYOSAN_COUNTERFACTUAL_TEST_MARKERS.join(" / ")}.

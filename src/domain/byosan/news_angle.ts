@@ -586,6 +586,8 @@ export function evaluateByosanAngleCandidate(
 	});
 }
 
+export const BYOSAN_MIN_CANDIDATE_COUNT = 5;
+
 export function selectByosanAngle(
 	candidateInputs: ByosanAngleCandidate[],
 	recentTitles: string[],
@@ -601,7 +603,7 @@ export function selectByosanAngle(
 	);
 	const orthogonality = evaluateOrthogonality(candidates);
 	const collectionFailures: string[] = [];
-	if (candidates.length < 5)
+	if (candidates.length < BYOSAN_MIN_CANDIDATE_COUNT)
 		collectionFailures.push("fewer_than_five_candidates");
 	if (distinctPublishers.size < 3)
 		collectionFailures.push("fewer_than_three_publishers_in_candidate_set");
