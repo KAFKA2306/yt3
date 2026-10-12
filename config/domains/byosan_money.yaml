@@ -145,7 +145,7 @@ providers:
 daily_publish:
   timezone: "Asia/Tokyo"
   resume_date: "2026-10-13"
-  publish_approved: false
+  publish_approved: true
 
 dashboard:
   port: 3000
