@@ -21,7 +21,7 @@ tasks:
   loop:
     desc: "Run the daily production loop and audit"
     cmds:
-      - task byosan:daily
+      - task byosan:publish-daily
       - PROFILE=humanity task run
       - bun src/scripts/audit_today.ts --gate
 
@@ -30,7 +30,7 @@ tasks:
     cmds: ["YOUTUBE_CHANNEL_PROFILE=${PROFILE:-byosan} bun src/index.ts {{.CLI_ARGS}}"]
 
   byosan:daily:
-    desc: "Research, produce, audit, and publish one 秒算マネー feature"
+    desc: "Research, produce, and audit one 秒算マネー feature without publishing"
     cmds:
       - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
@@ -42,11 +42,15 @@ tasks:
           echo "DATE=YYYY-MM-DD is required" >&2
           exit 2
         fi
-      - BYOSAN_DATE={{.DATE}} BYOSAN_DAILY_NO_PUBLISH=true task byosan:daily
+      - BYOSAN_DATE={{.DATE}} task byosan:daily
       - task release:check PROFILE=byosan -- byosan_money/{{.DATE}}-daily
       - |
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
+
+  byosan:publish-daily:
+    desc: "Prepare today's 秒算マネー run through the release gate and publish it only when publish_approved (no backfill before resume_date)"
+    cmds: ["bun src/scripts/byosan_publish_daily.ts"]
 
   byosan:runtime-verify:
     desc: "Verify Byosan prepare + probe + digest + release runtime without publishing (DATE=YYYY-MM-DD PERIOD=week|month; ANALYTICS=true optional)"

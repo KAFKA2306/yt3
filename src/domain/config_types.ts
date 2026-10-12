@@ -236,5 +236,10 @@ export interface AppConfig {
 		thread_message: string;
 	};
 	public_url?: string;
+	daily_publish?: {
+		timezone: string;
+		resume_date: string;
+		publish_approved: boolean;
+	};
 	prompts: Record<string, unknown>;
 }
