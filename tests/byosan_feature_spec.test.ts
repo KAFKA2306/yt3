@@ -10,6 +10,7 @@ import {
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
 } from "../src/domain/byosan/feature_spec.js";
+import { providerResponseJsonSchema } from "../src/io/core.js";
 
 const SPEC_PATH = "config/productions/sp500_anthropic_2026q2.json";
 
@@ -349,5 +350,15 @@ describe("byosan structured output schema", () => {
 	test("draft schema emits no const keyword that the Gemini response_schema rejects", () => {
 		const serialized = JSON.stringify(z.toJSONSchema(ByosanFeatureDraftSchema));
 		expect(serialized).not.toContain('"const"');
+	});
+
+	test("draft schema sent to Gemini carries no size limits", () => {
+		const serialized = JSON.stringify(
+			providerResponseJsonSchema(ByosanFeatureDraftSchema),
+		);
+		expect(serialized).not.toMatch(
+			/"(minItems|maxItems|minLength|maxLength|minimum|maximum|pattern)"/,
+		);
+		expect(serialized).toContain('"segments"');
 	});
 });
