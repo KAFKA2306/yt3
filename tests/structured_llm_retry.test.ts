@@ -177,4 +177,55 @@ describe("canonical structured LLM invocation", () => {
 		expect(quotaSource).not.toContain("Falling back to primary");
 		expect(coreSource).not.toContain("apiKey.slice");
 	});
+
+	test("provider response schema drops size limits and keeps required fields and enums", async () => {
+		const received: unknown[] = [];
+		await invokeStructuredLlm({
+			schema: z.object({
+				items: z.array(z.string().max(3)).min(1).max(2),
+				level: z.number().min(0).max(1),
+				code: z.string().regex(/^a+$/),
+				kind: z.enum(["a", "b"]),
+			}),
+			name: "provider_schema_test",
+			llmFactory: recordingFactory(
+				{ items: ["x"], level: 0.5, code: "aa", kind: "a" },
+				received,
+			),
+			sleep: async () => {},
+			messages: () => [{ role: "user", content: "test" }],
+		});
+		const serialized = JSON.stringify(received[0]);
+		expect(serialized).not.toMatch(
+			/"(minItems|maxItems|minLength|maxLength|minimum|maximum|pattern)"/,
+		);
+		expect(serialized).toContain('"required"');
+		expect(serialized).toContain('"enum"');
+	});
+
+	test("local zod still rejects output that exceeds the limits the provider no longer enforces", async () => {
+		await expect(
+			invokeStructuredLlm({
+				schema: z.object({ items: z.array(z.string()).max(2) }),
+				name: "local_zod_bounds_test",
+				maxAttempts: 1,
+				llmFactory: recordingFactory({ items: ["a", "b", "c"] }, []),
+				sleep: async () => {},
+				messages: () => [{ role: "user", content: "test" }],
+			}),
+		).rejects.toThrow("STRUCTURED_OUTPUT_VALIDATION_EXHAUSTED");
+	});
 });
+
+function recordingFactory(
+	value: unknown,
+	received: unknown[],
+): typeof createLlm {
+	return (() => ({
+		keyName: "TEST_RECORD_KEY",
+		withStructuredOutput: (schema: unknown) => {
+			received.push(schema);
+			return { invoke: async () => value };
+		},
+	})) as unknown as typeof createLlm;
+}

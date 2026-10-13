@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { toJsonSchema } from "@langchain/core/utils/json_schema";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import * as dotenv from "dotenv";
 import fs from "fs-extra";
@@ -148,6 +149,42 @@ export type StructuredInvocationAttempt = {
 	details?: string;
 };
 
+const PROVIDER_UNSUPPORTED_SIZE_KEYWORDS = new Set([
+	"minLength",
+	"maxLength",
+	"minItems",
+	"maxItems",
+	"minimum",
+	"maximum",
+	"pattern",
+]);
+
+function stripSizeKeywords(node: unknown): unknown {
+	if (Array.isArray(node)) return node.map(stripSizeKeywords);
+	if (node === null || typeof node !== "object") return node;
+	return Object.fromEntries(
+		Object.entries(node)
+			.filter(([key]) => !PROVIDER_UNSUPPORTED_SIZE_KEYWORDS.has(key))
+			.map(([key, child]) => [
+				key,
+				key === "properties" && child !== null && typeof child === "object"
+					? Object.fromEntries(
+							Object.entries(child).map(([name, schema]) => [
+								name,
+								stripSizeKeywords(schema),
+							]),
+						)
+					: stripSizeKeywords(child),
+			]),
+	);
+}
+
+export function providerResponseJsonSchema(
+	schema: z.ZodType,
+): Record<string, unknown> {
+	return stripSizeKeywords(toJsonSchema(schema)) as Record<string, unknown>;
+}
+
 export async function invokeStructuredLlm<T, U = T>(params: {
 	schema: z.ZodSchema<T>;
 	name: string;
@@ -165,6 +202,7 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 	const maxAttempts = params.maxAttempts ?? 3;
 	const attempts: StructuredInvocationAttempt[] = [];
 	const factory = params.llmFactory ?? createLlm;
+	const responseSchema = providerResponseJsonSchema(params.schema);
 	const sleep =
 		params.sleep ??
 		((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
@@ -188,15 +226,15 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 		const llm = factory(params.llmOptions ?? {});
 		const keyName = llm.keyName ?? "unknown";
 		await waitIfRateLimited(keyName);
-		const structured = llm.withStructuredOutput(params.schema, {
+		const structured = llm.withStructuredOutput(responseSchema, {
 			name: params.name,
 		});
 
 		let value: T;
 		try {
-			value = (await structured.invoke(
-				params.messages(attempt, lastValidationError),
-			)) as T;
+			value = params.schema.parse(
+				await structured.invoke(params.messages(attempt, lastValidationError)),
+			);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			const lower = message.toLowerCase();
