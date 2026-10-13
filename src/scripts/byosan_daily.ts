@@ -2,6 +2,8 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
+import yaml from "js-yaml";
+import { z } from "zod";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
 import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
 import {
@@ -36,6 +38,23 @@ import {
 } from "./byosan_preflight.js";
 
 type FeatureSource = ByosanFeatureSource;
+
+const ByosanDomainPromptConfigSchema = z.object({
+	prompts: z.object({
+		feature: z.object({
+			draft_hard_limits: z.array(z.string().min(1)).min(1),
+		}),
+	}),
+});
+
+const FEATURE_DRAFT_HARD_LIMITS = ByosanDomainPromptConfigSchema.parse(
+	yaml.load(
+		fs.readFileSync(
+			path.join(ROOT, "config/domains/byosan_money.yaml"),
+			"utf8",
+		),
+	),
+).prompts.feature.draft_hard_limits.join(" ");
 
 export type PublishedRunEvidence = {
 	runId: string;
@@ -652,7 +671,7 @@ async function generateFeatureSpec(
 					},
 					null,
 					2,
-				)}\n\n制約: タイトル100文字以下。thumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+				)}\n\n制約: ${FEATURE_DRAFT_HARD_LIMITS} タイトル100文字以下。thumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
 			},
 		],
 		validate: (draft) => {

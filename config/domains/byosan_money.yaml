@@ -248,6 +248,11 @@ source_policy:
     require_life_impact_connection: true
 
 prompts:
+  feature:
+    draft_hard_limits:
+      - "thumbnail.reaction は4文字以内にしてください。"
+      - "hookPromises の各要素は24文字以内にしてください。"
+      - "各 segment の stats は必ず1件以上3件以下を入れ、空配列にしないでください。"
   research:
     consolidated_research:
       system: |

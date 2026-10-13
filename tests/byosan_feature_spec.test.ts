@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
+import yaml from "js-yaml";
 import { z } from "zod";
 import {
 	ByosanFeatureDraftSchema,
+	ByosanFeatureSegmentSchema,
 	type ByosanFeatureSpec,
 	ByosanFeatureSpecSchema,
 	type ByosanNarrativeRole,
+	ByosanThumbnailSchema,
 	auditByosanFeatureSpec,
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
@@ -360,5 +363,56 @@ describe("byosan structured output schema", () => {
 			/"(minItems|maxItems|minLength|maxLength|minimum|maximum|pattern)"/,
 		);
 		expect(serialized).toContain('"segments"');
+	});
+});
+
+describe("byosan feature draft hard limits", () => {
+	test("thumbnail reaction rejects more than four characters", () => {
+		expect(
+			ByosanThumbnailSchema.shape.reaction.safeParse("12345").success,
+		).toBe(false);
+		expect(ByosanThumbnailSchema.shape.reaction.safeParse("1234").success).toBe(
+			true,
+		);
+	});
+
+	test("hook promises reject more than twenty-four characters", () => {
+		expect(
+			ByosanFeatureSpecSchema.shape.hookPromises.safeParse([
+				"a".repeat(25),
+				"b",
+			]).success,
+		).toBe(false);
+		expect(
+			ByosanFeatureSpecSchema.shape.hookPromises.safeParse([
+				"a".repeat(24),
+				"b",
+			]).success,
+		).toBe(true);
+	});
+
+	test("segment stats reject an empty list", () => {
+		const stat = {
+			label: "利益",
+			value: "28.8%",
+			detail: "前年比",
+			color: "cyan",
+		};
+		expect(ByosanFeatureSegmentSchema.shape.stats.safeParse([]).success).toBe(
+			false,
+		);
+		expect(
+			ByosanFeatureSegmentSchema.shape.stats.safeParse([stat]).success,
+		).toBe(true);
+	});
+
+	test("draft prompt config states the same limits as the schema", () => {
+		const config = yaml.load(
+			fs.readFileSync("config/domains/byosan_money.yaml", "utf8"),
+		) as { prompts: { feature: { draft_hard_limits: string[] } } };
+		const limits = config.prompts.feature.draft_hard_limits.join(" ");
+		expect(limits).toContain("thumbnail.reaction は4文字以内");
+		expect(limits).toContain("hookPromises の各要素は24文字以内");
+		expect(limits).toContain("各 segment の stats は必ず1件以上");
 	});
 });
