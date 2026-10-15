@@ -203,6 +203,50 @@ describe("canonical structured LLM invocation", () => {
 		expect(serialized).toContain('"enum"');
 	});
 
+	test("persists every raw structured response per attempt with secrets redacted", async () => {
+		const secret = "AIzaRawResponseSecretSecret123";
+		const old = process.env.GEMINI_API_KEY;
+		process.env.GEMINI_API_KEY = secret;
+		const dir = fs.mkdtempSync("/tmp/yt3-structured-raw-");
+		const rawResponseDir = `${dir}/raw_responses`;
+		try {
+			const result = await invokeStructuredLlm({
+				schema: z.object({ ok: z.boolean() }),
+				name: "raw_response_test",
+				rawResponseDir,
+				llmFactory: fakeFactory(
+					[
+						{ kind: "value", value: { ok: "no", note: secret } },
+						{ kind: "value", value: { ok: true } },
+					],
+					["TEST_RAW_KEY_1", "TEST_RAW_KEY_2"],
+				),
+				sleep: async () => {},
+				messages: () => [{ role: "user", content: "test" }],
+			});
+			expect(result).toEqual({ ok: true });
+			const first = fs.readJsonSync(`${rawResponseDir}/attempt-1.json`);
+			const second = fs.readJsonSync(`${rawResponseDir}/attempt-2.json`);
+			expect(first).toMatchObject({
+				schemaVersion: "structured_llm_raw_response_v1",
+				name: "raw_response_test",
+				attempt: 1,
+				keyName: "TEST_RAW_KEY_1",
+			});
+			expect(first.text).toContain('"ok": "no"');
+			expect(first.text).not.toContain(secret);
+			expect(first.text).toContain("[REDACTED_KEY]");
+			expect(second.text).toContain("true");
+		} finally {
+			if (old === undefined) {
+				Reflect.deleteProperty(process.env, "GEMINI_API_KEY");
+			} else {
+				process.env.GEMINI_API_KEY = old;
+			}
+			fs.removeSync(dir);
+		}
+	});
+
 	test("local zod still rejects output that exceeds the limits the provider no longer enforces", async () => {
 		await expect(
 			invokeStructuredLlm({

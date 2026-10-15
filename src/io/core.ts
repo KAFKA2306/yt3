@@ -196,6 +196,7 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 	validate?: (value: T) => U;
 	maxAttempts?: number;
 	evidencePath?: string;
+	rawResponseDir?: string;
 	llmFactory?: typeof createLlm;
 	sleep?: (ms: number) => Promise<void>;
 }): Promise<U> {
@@ -222,6 +223,25 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 		);
 	};
 
+	const persistRawResponse = (
+		attempt: number,
+		keyName: string,
+		raw: unknown,
+	): void => {
+		if (!params.rawResponseDir) return;
+		fs.outputJsonSync(
+			path.join(params.rawResponseDir, `attempt-${attempt}.json`),
+			{
+				schemaVersion: "structured_llm_raw_response_v1",
+				name: params.name,
+				attempt,
+				keyName,
+				text: redactLlmEvidence(JSON.stringify(raw, null, 2) ?? "null"),
+			},
+			{ spaces: 2 },
+		);
+	};
+
 	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 		const llm = factory(params.llmOptions ?? {});
 		const keyName = llm.keyName ?? "unknown";
@@ -232,9 +252,11 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 
 		let value: T;
 		try {
-			value = params.schema.parse(
-				await structured.invoke(params.messages(attempt, lastValidationError)),
+			const raw = await structured.invoke(
+				params.messages(attempt, lastValidationError),
 			);
+			persistRawResponse(attempt, keyName, raw);
+			value = params.schema.parse(raw);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			const lower = message.toLowerCase();

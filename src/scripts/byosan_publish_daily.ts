@@ -142,9 +142,14 @@ export function runByosanPublishDaily(deps: PublishDailyDeps): void {
 	}
 
 	const file = recordFile(deps.root, runId);
-	const record = fs.existsSync(file)
+	const existingRecord = fs.existsSync(file)
 		? ReadyRecordSchema.parse(fs.readJsonSync(file))
-		: prepareGate(deps, date, runId, file);
+		: null;
+	// GATE_FAILED means nothing was published, so a same-date retry re-prepares.
+	const record =
+		existingRecord && existingRecord.status !== "GATE_FAILED"
+			? existingRecord
+			: prepareGate(deps, date, runId, file);
 	if (record.status !== "READY") {
 		throw new Error(
 			`SAME_DATE_RETRY_BLOCKED: ${runId} status=${record.status} reason=${record.reason ?? "none"}`,

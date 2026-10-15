@@ -4,12 +4,13 @@ import { z } from "zod";
 import {
 	type AssetStore,
 	BaseAgent,
+	type LlmOptions,
 	AgentLogger as Logger,
 	ROOT,
 	RunStage,
 	fetchRecentThemes,
 	getCurrentDateString,
-	parseLlmJson,
+	invokeStructuredLlm,
 } from "../../io/core.js";
 import {
 	BYOSAN_COUNTERFACTUAL_TEST_MARKERS,
@@ -36,7 +37,7 @@ export interface ResearchResult {
 	angle_decision?: ByosanAngleDecision;
 }
 
-const ResearchPayloadSchema = z.object({
+export const ResearchPayloadSchema = z.object({
 	selected_topics: z.array(
 		z.object({
 			category: z.string(),
@@ -257,14 +258,38 @@ export class TrendScout extends BaseAgent {
 				researchCfg.regions.map((region) => region.lang).join(", "),
 			)
 			.replace("{current_date}", currentDate);
-		const invokeResearch = (prompt: string) =>
-			this.runLlm<ResearchPayload>(
-				systemPrompt,
-				prompt,
-				(text) => parseLlmJson(text, ResearchPayloadSchema),
-				{ extra: { tools: [{ googleSearchRetrieval: {} }] } },
-			);
-		const payload = await invokeResearch(userPrompt);
+		const invokeResearch = (label: "initial" | "repair", prompt: string) =>
+			invokeStructuredLlm<ResearchPayload>({
+				schema: ResearchPayloadSchema,
+				name: "byosan_research_selected_topics",
+				llmOptions: {
+					...this.opts,
+					sessionId: this.store.runDir,
+				} as LlmOptions,
+				maxAttempts: 5,
+				evidencePath: path.join(
+					this.store.runDir,
+					"research",
+					`structured_attempts_${label}.json`,
+				),
+				rawResponseDir: path.join(
+					this.store.runDir,
+					"research",
+					"raw_responses",
+					label,
+				),
+				messages: (attempt, lastValidationError) => [
+					{ role: "system", content: systemPrompt },
+					{
+						role: "user",
+						content:
+							lastValidationError === undefined
+								? prompt
+								: `${prompt}\n\n[SCHEMA VALIDATION FEEDBACK]\nattempt=${attempt}\n前回の出力は次の検証で不正でした。同じ観測条件を保ったまま、selected_topics の全要素に results 配列を含む JSON のみを返してください。\n前回の検証エラー: ${lastValidationError}`,
+					},
+				],
+			});
+		const payload = await invokeResearch("initial", userPrompt);
 		let research = settleResearchPayload(payload, {
 			requireByosanAngle: bucket === "byosan_money",
 		});
@@ -273,6 +298,7 @@ export class TrendScout extends BaseAgent {
 			countSettledByosanCandidates(research) < BYOSAN_MIN_CANDIDATE_COUNT
 		) {
 			const repairPayload = await invokeResearch(
+				"repair",
 				this.buildCandidateRepairPrompt(
 					userPrompt,
 					promptCfg.consolidated_research.candidate_repair_template,
