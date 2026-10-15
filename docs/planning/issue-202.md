@@ -81,14 +81,14 @@ https://abseil.io/resources/swe-book/html/toc.html
 | Goal / Signal / Metric を最低1セット実装例化 | 達成 | `config/metrics/issue_202_goals_signals_metrics.json`、main 統合済み（merge commit `fee5019609884a92dbd0665f62a102f2fad40b34`、Issue 本文の記載） |
 | 指標だけ増やすアンチパターンの説明 | 達成 | 本書 §5 |
 | 一次ソース根拠の保存 | 達成 | 本書 §2 と上記 JSON の `sources`（原典 URL、取得日） |
-| publish gate 通過 | 未達 | Issue 本文どおり。canonical compile が `docs/series/audio/pending-channel-and-voice/hook.wav` の不在で失敗、チャンネル profile・声・素材の権利確認も未解決 |
+| publish gate 通過 | 未達 | 2026-10-16 JST の canonical compile は `docs/series/audio/pending-channel-and-voice/hook-scene.wav` 不在で失敗。チャンネル profile・声・素材の権利確認も未解決 |
 
 ## 7. 残件
 
 - 動画の compile 失敗の解消（`hook-scene.wav` の用意、または正本の修正）。ソースの修正は別作業で行う。
 - チャンネル profile、声、素材の権利確認。
 - 本番レンダーと動画 QA。
-- publish gate の通過確認後に、Issue #202 の最後のチェックを更新する。公開そのものは別途の明示的な承認が必要。
+- publish gate の通過確認後に Issue #202 の最後のチェックを更新する。既に与えられた包括承認の範囲で、profile・権利・事実・品質・canonical gate がすべて通った場合に限り、追加の動画ごとの確認なしで既存の認証済み経路を使う。
 
 本書は publish を行っていない。Issue のクローズ、コメント投稿、外部公開は行わない。
 
@@ -102,3 +102,4 @@ https://abseil.io/resources/swe-book/html/toc.html
 - コント品質: setup→escalation→reversal/payoff の草稿あり。読み上げテンポと独立QAは未完了。
 - 最新CIスナップショット: 129件、104件成功、p95 221秒。定義・限界は上記JSONに保存。最新の監査は task productivity:gsm:audit PASS。
 - canonical compile: 2026-10-16 JSTに実行したが、docs/series/audio/pending-channel-and-voice/hook-scene.wav 不在で失敗。compiled outputなし。profile・voice・権利クリア音声が未確定のため、render/release gate/公開は未実施。YouTube実公開状態はUNVERIFIED。
+- `task check:merge` 初回は328 tests中327 pass / 1 fail。`tests/issue_202_gsm.test.ts` が前回の30日snapshotを固定参照し、更新済み計測（129件、p95 221秒、pass-rate 80.6%）と不一致だった。テストの観測値・snapshot参照を更新し、再実行で検証する。
