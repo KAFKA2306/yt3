@@ -31,6 +31,7 @@ import {
 	ROOT,
 	getRunIdDateString,
 	invokeStructuredLlm,
+	zodSizeConstraintLines,
 } from "../io/core.js";
 import {
 	type ByosanPreflightReport,
@@ -39,22 +40,9 @@ import {
 
 type FeatureSource = ByosanFeatureSource;
 
-const ByosanDomainPromptConfigSchema = z.object({
-	prompts: z.object({
-		feature: z.object({
-			draft_hard_limits: z.array(z.string().min(1)).min(1),
-		}),
-	}),
-});
-
-const FEATURE_DRAFT_HARD_LIMITS = ByosanDomainPromptConfigSchema.parse(
-	yaml.load(
-		fs.readFileSync(
-			path.join(ROOT, "config/domains/byosan_money.yaml"),
-			"utf8",
-		),
-	),
-).prompts.feature.draft_hard_limits.join(" ");
+const FEATURE_DRAFT_SIZE_LIMITS = zodSizeConstraintLines(
+	ByosanFeatureDraftSchema,
+).join("\n");
 
 export type PublishedRunEvidence = {
 	runId: string;
@@ -671,7 +659,7 @@ async function generateFeatureSpec(
 					},
 					null,
 					2,
-				)}\n\n制約: ${FEATURE_DRAFT_HARD_LIMITS} タイトル100文字以下。thumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+				)}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限。下記の全項目を守る）:\n${FEATURE_DRAFT_SIZE_LIMITS}\nthumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
 			},
 		],
 		validate: (draft) => {

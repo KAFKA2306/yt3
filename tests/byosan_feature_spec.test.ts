@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
-import yaml from "js-yaml";
 import { z } from "zod";
 import {
 	ByosanFeatureDraftSchema,
@@ -13,7 +12,10 @@ import {
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
 } from "../src/domain/byosan/feature_spec.js";
-import { providerResponseJsonSchema } from "../src/io/core.js";
+import {
+	providerResponseJsonSchema,
+	zodSizeConstraintLines,
+} from "../src/io/core.js";
 
 const SPEC_PATH = "config/productions/sp500_anthropic_2026q2.json";
 
@@ -406,13 +408,13 @@ describe("byosan feature draft hard limits", () => {
 		).toBe(true);
 	});
 
-	test("draft prompt config states the same limits as the schema", () => {
-		const config = yaml.load(
-			fs.readFileSync("config/domains/byosan_money.yaml", "utf8"),
-		) as { prompts: { feature: { draft_hard_limits: string[] } } };
-		const limits = config.prompts.feature.draft_hard_limits.join(" ");
-		expect(limits).toContain("thumbnail.reaction は4文字以内");
-		expect(limits).toContain("hookPromises の各要素は24文字以内");
-		expect(limits).toContain("各 segment の stats は必ず1件以上");
+	test("draft prompt limits are derived from the feature draft schema", () => {
+		const lines = zodSizeConstraintLines(ByosanFeatureDraftSchema);
+		expect(lines).toContain("thumbnail.reaction: 1〜4文字");
+		expect(lines).toContain("thumbnail.secondLine: 2〜12文字");
+		expect(lines).toContain("hookPromises[]: 1〜24文字");
+		expect(lines).toContain("segments: 20〜36件");
+		expect(lines).toContain("segments[].stats: 1〜3件");
+		expect(lines).toContain("segments[].text: 18〜180文字");
 	});
 });

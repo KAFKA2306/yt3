@@ -185,6 +185,120 @@ export function providerResponseJsonSchema(
 	return stripSizeKeywords(toJsonSchema(schema)) as Record<string, unknown>;
 }
 
+type JsonSchemaNode = Record<string, unknown>;
+
+const MAX_CONSTRAINT_DEPTH = 16;
+
+/**
+ * Lists the length and count limits of a Zod schema as prompt lines, derived
+ * from the same schema object that validates the output (the provider schema
+ * strips these keywords, so they are read from the unstripped JSON schema).
+ */
+export function zodSizeConstraintLines(schema: z.ZodType): string[] {
+	const root = toJsonSchema(schema) as JsonSchemaNode;
+	const defs = {
+		...((root.$defs as Record<string, JsonSchemaNode> | undefined) ?? {}),
+		...((root.definitions as Record<string, JsonSchemaNode> | undefined) ?? {}),
+	};
+	const lines: string[] = [];
+	const range = (
+		min: unknown,
+		max: unknown,
+		unit: string,
+	): string | undefined => {
+		if (typeof min === "number" && typeof max === "number")
+			return `${min}〜${max}${unit}`;
+		if (typeof max === "number") return `${max}${unit}以内`;
+		if (typeof min === "number") return `${min}${unit}以上`;
+		return undefined;
+	};
+	const record = (path: string, text: string | undefined): void => {
+		if (text && path) lines.push(`${path}: ${text}`);
+	};
+	const visit = (
+		node: JsonSchemaNode,
+		nodePath: string,
+		refStack: string[],
+	): void => {
+		if (refStack.length > MAX_CONSTRAINT_DEPTH) return;
+		if (typeof node.$ref === "string") {
+			const name = node.$ref.split("/").pop() ?? "";
+			const target = defs[name];
+			if (!target || refStack.includes(name)) return;
+			visit(target, nodePath, [...refStack, name]);
+			return;
+		}
+		for (const option of [node.anyOf, node.oneOf]) {
+			if (Array.isArray(option)) {
+				for (const branch of option)
+					visit(branch as JsonSchemaNode, nodePath, refStack);
+			}
+		}
+		if (node.type === "string") {
+			record(nodePath, range(node.minLength, node.maxLength, "文字"));
+		}
+		if (node.type === "number" || node.type === "integer") {
+			record(nodePath, range(node.minimum, node.maximum, ""));
+		}
+		if (node.type === "array") {
+			record(nodePath, range(node.minItems, node.maxItems, "件"));
+			if (node.items && typeof node.items === "object")
+				visit(node.items as JsonSchemaNode, `${nodePath}[]`, refStack);
+		}
+		const properties = node.properties as
+			| Record<string, JsonSchemaNode>
+			| undefined;
+		if (properties) {
+			for (const [key, child] of Object.entries(properties)) {
+				visit(child, nodePath ? `${nodePath}.${key}` : key, refStack);
+			}
+		}
+	};
+	visit(root, "", []);
+	return lines;
+}
+
+function issuePathLabel(path: PropertyKey[]): string {
+	if (path.length === 0) return "(root)";
+	return path
+		.map((segment, index) =>
+			typeof segment === "number"
+				? `[${segment}]`
+				: `${index === 0 ? "" : "."}${String(segment)}`,
+		)
+		.join("");
+}
+
+/**
+ * Formats Zod issues as the exact violated paths and their limits, so that a
+ * retry can correct those fields instead of re-reading a raw issue dump.
+ */
+export function formatZodIssuesForRetry(error: z.ZodError): string {
+	return error.issues
+		.map((issue) => {
+			const where = issuePathLabel(issue.path);
+			const detail = issue as unknown as {
+				origin?: string;
+				maximum?: unknown;
+				minimum?: unknown;
+			};
+			const unit =
+				detail.origin === "string"
+					? "文字"
+					: detail.origin === "array"
+						? "件"
+						: "";
+			if (issue.code === "too_big" && typeof detail.maximum === "number") {
+				return `- ${where}: ${detail.maximum}${unit}以内にしてください（現在の出力は超過）`;
+			}
+			if (issue.code === "too_small" && typeof detail.minimum === "number") {
+				return `- ${where}: ${detail.minimum}${unit}以上にしてください（現在の出力は不足）`;
+			}
+			return `- ${where}: ${issue.message}`;
+		})
+		.join("\n");
+}
+
 function llmContentText(content: unknown): string {
 	if (typeof content === "string") return content;
 	if (Array.isArray(content)) {
@@ -369,14 +483,17 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 		try {
 			value = parseResponse(response);
 		} catch (error) {
+			const rawMessage = error instanceof Error ? error.message : String(error);
 			lastValidationError =
-				error instanceof Error ? error.message : String(error);
+				error instanceof z.ZodError
+					? formatZodIssuesForRetry(error)
+					: rawMessage;
 			attempts.push({
 				attempt,
 				keyName,
 				status: "FAIL",
 				failureClass: "SEMANTIC_VALIDATION",
-				details: redactLlmEvidence(lastValidationError).slice(0, 500),
+				details: redactLlmEvidence(rawMessage).slice(0, 500),
 			});
 			persist();
 			continue;
