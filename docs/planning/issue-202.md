@@ -102,4 +102,4 @@ https://abseil.io/resources/swe-book/html/toc.html
 - コント品質: setup→escalation→reversal/payoff の草稿あり。読み上げテンポと独立QAは未完了。
 - 最新CIスナップショット: 129件、104件成功、p95 221秒。定義・限界は上記JSONに保存。最新の監査は task productivity:gsm:audit PASS。
 - canonical compile: 2026-10-16 JSTに実行したが、docs/series/audio/pending-channel-and-voice/hook-scene.wav 不在で失敗。compiled outputなし。profile・voice・権利クリア音声が未確定のため、render/release gate/公開は未実施。YouTube実公開状態はUNVERIFIED。
-- 初回の `task check:merge` は328 tests中327 pass / 1 fail。`tests/issue_202_gsm.test.ts` の30日snapshot固定値を更新後の観測値（129件、p95 221秒、pass-rate 80.6%）に合わせた後、PR #317 のexact-head CIも327/328でfailした。ログで、現行episode JSONにない旧claim IDと旧scene fieldsのassertionが残っていると確認し、現在のepisode/source構造に合わせてテストを更新中。再実行は未完了。
+- 初回の `task check:merge` は328 tests中327 pass / 1 fail。30日snapshot固定値を現行観測値（129件、p95 221秒、pass-rate 80.6%）に合わせた後、PR #317 のCI run 38759302105 も旧claim ID/scene fieldsのassertionで327/328となった。assertionを現行episode/source構造に合わせて更新。修正後のexact-head CI run 38759585928（run 668）の `PR merge gate` はPASSし、Secret Guard run 38759585951（run 107）もsuccess。CI内の汎用render smokeは#202本編のrender証拠ではない。
