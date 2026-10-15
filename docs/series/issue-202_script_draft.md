@@ -1,6 +1,6 @@
 # Issue #202 video script draft v2 — Goals → Signals → Metrics
 
-Status: original comedy-sketch draft with a refreshed, source-backed yt3 example. This is not production-ready: voice/audio assets and the destination channel profile remain unresolved. Canonical compile currently fails because docs/series/audio/pending-channel-and-voice/hook.wav is absent. No render, QA release gate, or publication has passed.
+Status: original comedy-sketch draft with a refreshed, source-backed yt3 example. This is not production-ready: voice/audio assets and the destination channel profile remain unresolved. Canonical compile currently fails because docs/series/audio/pending-channel-and-voice/hook-scene.wav is absent. No render, QA release gate, or publication has passed.
 
 ## New-work card — 2026-10-16 JST
 
@@ -81,7 +81,7 @@ Status: original comedy-sketch draft with a refreshed, source-backed yt3 example
 
 ## Release blockers and next step
 
-- The canonical compile command was run on 2026-10-16 JST and failed on the unresolved placeholder docs/series/audio/pending-channel-and-voice/hook.wav; no compiled output was created.
+- The canonical compile command was run on 2026-10-16 JST and failed on the unresolved placeholder docs/series/audio/pending-channel-and-voice/hook-scene.wav; no compiled output was created.
 - No channel/profile is mapped to this series; the byosan profile is a separate product and must not be inferred as the destination.
 - Voice and rights-cleared narration/audio are pending. Do not synthesize a substitute voice or skip the media checks.
 - Next: confirm destination profile and voice, prepare rights-cleared audio, then compile, render, conduct read-aloud/content QA, pass the canonical release gate, and only then use the authorized publish/read-back path.
