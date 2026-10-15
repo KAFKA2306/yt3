@@ -85,7 +85,7 @@ https://abseil.io/resources/swe-book/html/toc.html
 
 ## 7. 残件
 
-- 動画の compile 失敗の解消（`hook.wav` の用意、または正本の修正）。ソースの修正は別作業で行う。
+- 動画の compile 失敗の解消（`hook-scene.wav` の用意、または正本の修正）。ソースの修正は別作業で行う。
 - チャンネル profile、声、素材の権利確認。
 - 本番レンダーと動画 QA。
 - publish gate の通過確認後に、Issue #202 の最後のチェックを更新する。公開そのものは別途の明示的な承認が必要。
@@ -101,4 +101,4 @@ https://abseil.io/resources/swe-book/html/toc.html
 - 比較範囲: #202既存草案と #201〜#208の企画書。完成脚本・動画の全件比較はできていないため、新規性は暫定。
 - コント品質: setup→escalation→reversal/payoff の草稿あり。読み上げテンポと独立QAは未完了。
 - 最新CIスナップショット: 129件、104件成功、p95 221秒。定義・限界は上記JSONに保存。最新の監査は task productivity:gsm:audit PASS。
-- canonical compile: 2026-10-16 JSTに実行したが、docs/series/audio/pending-channel-and-voice/hook.wav 不在で失敗。compiled outputなし。profile・voice・権利クリア音声が未確定のため、render/release gate/公開は未実施。YouTube実公開状態はUNVERIFIED。
+- canonical compile: 2026-10-16 JSTに実行したが、docs/series/audio/pending-channel-and-voice/hook-scene.wav 不在で失敗。compiled outputなし。profile・voice・権利クリア音声が未確定のため、render/release gate/公開は未実施。YouTube実公開状態はUNVERIFIED。
