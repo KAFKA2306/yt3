@@ -3,11 +3,7 @@ import {
 	type ResearchPayload,
 	ResearchPayloadSchema,
 } from "../src/domain/agents/research.js";
-import {
-	type createLlm,
-	invokeStructuredLlm,
-	providerResponseJsonSchema,
-} from "../src/io/core.js";
+import { type createLlm, invokeStructuredLlm } from "../src/io/core.js";
 
 const selectedTopic = {
 	category: "マクロ経済",
@@ -35,57 +31,67 @@ const payloadWithResults = {
 	],
 };
 
-function scriptedFactory(values: unknown[]): typeof createLlm {
+function textFactory(
+	texts: string[],
+	calls: { structured: number },
+): typeof createLlm {
 	let index = 0;
 	return (() => {
-		const value = values[index];
+		const content = texts[index];
 		index++;
 		return {
 			keyName: `TEST_RESEARCH_KEY_${index}`,
-			withStructuredOutput: () => ({ invoke: async () => value }),
+			invoke: async () => ({ content }),
+			withStructuredOutput: () => {
+				calls.structured++;
+				throw new Error("research must not use the provider response schema");
+			},
 		};
 	}) as unknown as typeof createLlm;
 }
 
-describe("byosan research structured contract", () => {
-	test("the provider response schema requires results on every selected topic", () => {
-		const schema = providerResponseJsonSchema(ResearchPayloadSchema) as {
-			properties: {
-				selected_topics: { items: { required: string[] } };
-			};
-		};
-		expect(schema.properties.selected_topics.items.required).toContain(
-			"results",
-		);
-	});
-
-	test("a payload without results is retried with the validation error fed back", async () => {
+describe("byosan research contract", () => {
+	test("a text payload without results is retried with the validation error fed back", async () => {
 		const feedback: Array<string | undefined> = [];
+		const calls = { structured: 0 };
 		const result: ResearchPayload = await invokeStructuredLlm({
 			schema: ResearchPayloadSchema,
 			name: "byosan_research_selected_topics",
-			llmFactory: scriptedFactory([payloadWithoutResults, payloadWithResults]),
+			responseFormat: "json_text",
+			llmFactory: textFactory(
+				[
+					JSON.stringify(payloadWithoutResults),
+					JSON.stringify(payloadWithResults),
+				],
+				calls,
+			),
 			sleep: async () => {},
 			messages: (_attempt, lastValidationError) => {
 				feedback.push(lastValidationError);
 				return [{ role: "user", content: "prompt" }];
 			},
 		});
+		expect(calls.structured).toBe(0);
 		expect(feedback[0]).toBeUndefined();
 		expect(feedback[1]).toContain("results");
 		expect(result.selected_topics[0]?.results).toHaveLength(1);
 	});
 
 	test("a payload that never includes results fails after the attempt budget", async () => {
+		const calls = { structured: 0 };
 		await expect(
 			invokeStructuredLlm({
 				schema: ResearchPayloadSchema,
 				name: "byosan_research_selected_topics",
+				responseFormat: "json_text",
 				maxAttempts: 2,
-				llmFactory: scriptedFactory([
-					payloadWithoutResults,
-					payloadWithoutResults,
-				]),
+				llmFactory: textFactory(
+					[
+						JSON.stringify(payloadWithoutResults),
+						JSON.stringify(payloadWithoutResults),
+					],
+					calls,
+				),
 				sleep: async () => {},
 				messages: () => [{ role: "user", content: "prompt" }],
 			}),

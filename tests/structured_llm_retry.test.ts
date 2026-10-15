@@ -247,6 +247,51 @@ describe("canonical structured LLM invocation", () => {
 		}
 	});
 
+	test("json_text mode retries free text that fails the Zod contract and persists each raw text", async () => {
+		const rawResponseDir = fs.mkdtempSync("/tmp/yt3-structured-json-text-");
+		const feedback: Array<string | undefined> = [];
+		try {
+			const result = await invokeStructuredLlm({
+				schema: z.object({ ok: z.boolean() }),
+				name: "json_text_test",
+				responseFormat: "json_text",
+				rawResponseDir,
+				llmFactory: textFactory(['{"ok":"no"}', '{"ok":true}']),
+				sleep: async () => {},
+				messages: (_attempt, lastValidationError) => {
+					feedback.push(lastValidationError);
+					return [{ role: "user", content: "test" }];
+				},
+			});
+			expect(result).toEqual({ ok: true });
+			expect(feedback[0]).toBeUndefined();
+			expect(feedback[1]).toContain("expected boolean");
+			const first = fs.readJsonSync(`${rawResponseDir}/attempt-1.json`);
+			expect(first.text).toBe('{"ok":"no"}');
+			expect(fs.readJsonSync(`${rawResponseDir}/attempt-2.json`).text).toBe(
+				'{"ok":true}',
+			);
+		} finally {
+			fs.removeSync(rawResponseDir);
+		}
+	});
+
+	test("a final rate-limit failure surfaces as QuotaExhaustionError", async () => {
+		await expect(
+			invokeStructuredLlm({
+				schema: z.object({ ok: z.boolean() }),
+				name: "quota_exhaustion_test",
+				maxAttempts: 1,
+				llmFactory: fakeFactory(
+					[{ kind: "error", error: new Error("429 quota exceeded") }],
+					["TEST_QUOTA_KEY"],
+				),
+				sleep: async () => {},
+				messages: () => [{ role: "user", content: "test" }],
+			}),
+		).rejects.toThrow("rate limit/quota exhaustion");
+	});
+
 	test("local zod still rejects output that exceeds the limits the provider no longer enforces", async () => {
 		await expect(
 			invokeStructuredLlm({
@@ -260,6 +305,18 @@ describe("canonical structured LLM invocation", () => {
 		).rejects.toThrow("STRUCTURED_OUTPUT_VALIDATION_EXHAUSTED");
 	});
 });
+
+function textFactory(texts: string[]): typeof createLlm {
+	let index = 0;
+	return (() => {
+		const content = texts[index];
+		index++;
+		return {
+			keyName: `TEST_TEXT_KEY_${index}`,
+			invoke: async () => ({ content }),
+		};
+	}) as unknown as typeof createLlm;
+}
 
 function recordingFactory(
 	value: unknown,

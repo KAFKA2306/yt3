@@ -262,6 +262,7 @@ export class TrendScout extends BaseAgent {
 			invokeStructuredLlm<ResearchPayload>({
 				schema: ResearchPayloadSchema,
 				name: "byosan_research_selected_topics",
+				responseFormat: "json_text",
 				llmOptions: {
 					...this.opts,
 					sessionId: this.store.runDir,

@@ -185,10 +185,43 @@ export function providerResponseJsonSchema(
 	return stripSizeKeywords(toJsonSchema(schema)) as Record<string, unknown>;
 }
 
+function llmContentText(content: unknown): string {
+	if (typeof content === "string") return content;
+	if (Array.isArray(content)) {
+		return content
+			.map((part: unknown) =>
+				typeof part === "string"
+					? part
+					: part &&
+							typeof part === "object" &&
+							"text" in part &&
+							typeof (part as { text: unknown }).text === "string"
+						? (part as { text: string }).text
+						: "",
+			)
+			.join("");
+	}
+	throw new Error(
+		`LLM response content is invalid: type=${typeof content}, value=${JSON.stringify(content)?.slice(0, 100)}`,
+	);
+}
+
+type StructuredResponse = { text: string; value: unknown };
+
+/**
+ * provider_schema: the provider enforces the JSON schema derived from the Zod
+ * contract (feature draft and other provider-enforced outputs).
+ * json_text: the model returns free text, parsed with the same Zod contract.
+ * Use json_text when an untyped nested node would let the provider drop or
+ * stringify fields (see research: byosan_angle).
+ */
+export type StructuredResponseFormat = "provider_schema" | "json_text";
+
 export async function invokeStructuredLlm<T, U = T>(params: {
 	schema: z.ZodSchema<T>;
 	name: string;
 	llmOptions?: LlmOptions;
+	responseFormat?: StructuredResponseFormat;
 	messages: (
 		attempt: number,
 		lastValidationError?: string,
@@ -203,11 +236,32 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 	const maxAttempts = params.maxAttempts ?? 3;
 	const attempts: StructuredInvocationAttempt[] = [];
 	const factory = params.llmFactory ?? createLlm;
+	const responseFormat = params.responseFormat ?? "provider_schema";
 	const responseSchema = providerResponseJsonSchema(params.schema);
 	const sleep =
 		params.sleep ??
 		((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 	let lastValidationError: string | undefined;
+	let lastFailureWasQuota = false;
+
+	const invokeProvider = async (
+		llm: BaseChatModel & { keyName?: string },
+		messages: Array<{ role: "system" | "user"; content: string }>,
+	): Promise<StructuredResponse> => {
+		if (responseFormat === "json_text") {
+			const response = await llm.invoke(messages);
+			return { text: llmContentText(response.content), value: undefined };
+		}
+		const value = await llm
+			.withStructuredOutput(responseSchema, { name: params.name })
+			.invoke(messages);
+		return { text: JSON.stringify(value, null, 2) ?? "null", value };
+	};
+
+	const parseResponse = (response: StructuredResponse): T =>
+		responseFormat === "json_text"
+			? parseLlmJson(response.text, params.schema)
+			: params.schema.parse(response.value);
 
 	const persist = (): void => {
 		if (!params.evidencePath) return;
@@ -226,7 +280,7 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 	const persistRawResponse = (
 		attempt: number,
 		keyName: string,
-		raw: unknown,
+		text: string,
 	): void => {
 		if (!params.rawResponseDir) return;
 		fs.outputJsonSync(
@@ -236,7 +290,7 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 				name: params.name,
 				attempt,
 				keyName,
-				text: redactLlmEvidence(JSON.stringify(raw, null, 2) ?? "null"),
+				text: redactLlmEvidence(text),
 			},
 			{ spaces: 2 },
 		);
@@ -246,17 +300,14 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 		const llm = factory(params.llmOptions ?? {});
 		const keyName = llm.keyName ?? "unknown";
 		await waitIfRateLimited(keyName);
-		const structured = llm.withStructuredOutput(responseSchema, {
-			name: params.name,
-		});
+		lastFailureWasQuota = false;
 
-		let value: T;
+		let response: StructuredResponse;
 		try {
-			const raw = await structured.invoke(
+			response = await invokeProvider(
+				llm,
 				params.messages(attempt, lastValidationError),
 			);
-			persistRawResponse(attempt, keyName, raw);
-			value = params.schema.parse(raw);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			const lower = message.toLowerCase();
@@ -307,8 +358,27 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 				details: redactLlmEvidence(message).slice(0, 500),
 			});
 			persist();
+			lastFailureWasQuota = true;
 			markKeyRateLimited(keyName);
 			await sleep(invalidKey ? 2_000 : 10_000);
+			continue;
+		}
+
+		persistRawResponse(attempt, keyName, response.text);
+		let value: T;
+		try {
+			value = parseResponse(response);
+		} catch (error) {
+			lastValidationError =
+				error instanceof Error ? error.message : String(error);
+			attempts.push({
+				attempt,
+				keyName,
+				status: "FAIL",
+				failureClass: "SEMANTIC_VALIDATION",
+				details: redactLlmEvidence(lastValidationError).slice(0, 500),
+			});
+			persist();
 			continue;
 		}
 
@@ -333,6 +403,11 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 		}
 	}
 
+	if (lastFailureWasQuota) {
+		throw new QuotaExhaustionError(
+			`CRITICAL: ${params.name} failed after ${maxAttempts} attempts due to rate limit/quota exhaustion.`,
+		);
+	}
 	throw new Error(
 		`STRUCTURED_OUTPUT_VALIDATION_EXHAUSTED: ${params.name}: ${lastValidationError ?? "provider attempts exhausted"}`,
 	);
@@ -545,28 +620,7 @@ export abstract class BaseAgent {
 			);
 		}
 
-		let content: string;
-		if (typeof res.content === "string") {
-			content = res.content;
-		} else if (Array.isArray(res.content)) {
-			content = res.content
-				.map((c: unknown) =>
-					typeof c === "string"
-						? c
-						: c &&
-								typeof c === "object" &&
-								"text" in c &&
-								typeof (c as { text: unknown }).text === "string"
-							? (c as { text: string }).text
-							: "",
-				)
-				.join("");
-		} else {
-			throw new Error(
-				`LLM response content is invalid: type=${typeof res.content}, value=${JSON.stringify(res.content)?.slice(0, 100)}`,
-			);
-		}
-
+		const content = llmContentText(res.content);
 		if (!content) {
 			throw new Error("LLM response content is empty");
 		}
