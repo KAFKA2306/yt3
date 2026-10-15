@@ -9,7 +9,10 @@ import {
 	editorialReferenceIds,
 	isByosanEditorialReferenceId,
 } from "./editorial_references.js";
-import { requiredByosanArchetypeSlots } from "./narrative_archetype.js";
+import {
+	type ByosanNarrativeArchetype,
+	requiredByosanArchetypeSlots,
+} from "./narrative_archetype.js";
 import {
 	ByosanAdversarialEvidenceSchema,
 	ByosanProductionPlanSchema,
@@ -43,6 +46,20 @@ export const ByosanVerificationRoleSchema = z.enum([
 	"resolution",
 	"landing",
 ]);
+
+/**
+ * Prompt rule for segments[].archetypeSlot, derived from the same slot list
+ * that the archetype audit enforces (requiredByosanArchetypeSlots).
+ */
+export function archetypeSlotPromptPolicy(
+	narrativeArchetype: ByosanNarrativeArchetype | undefined,
+): string {
+	const slots = requiredByosanArchetypeSlots(narrativeArchetype ?? "standard");
+	if (slots.length === 0) {
+		return "segments[].archetypeSlot は出力しないでください。この format は専用 archetype を使わないため、値を入れると検証で却下されます。";
+	}
+	return `segments[].archetypeSlot は次の値だけを使い、この順番で各1回以上、segments の順序を保って出してください: ${slots.join(", ")}。それ以外の値は検証で却下されます。`;
+}
 
 export const ByosanFeatureSegmentSchema = z.object({
 	chapter: z.string().min(1).max(40).optional(),
