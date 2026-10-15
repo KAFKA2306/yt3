@@ -158,23 +158,66 @@ describe("byosan daily publish gate", () => {
 		expect(runner.calls).toEqual([]);
 	});
 
-	test("blocks a same-date retry after a recorded gate failure", async () => {
+	test("re-prepares a same-date run after a recorded gate failure", async () => {
 		const root = await makeRoot();
 		fs.outputJsonSync(path.join(publishDir(root), "ready.json"), {
 			run_id: RUN_ID,
 			status: "GATE_FAILED",
-			reason: "prepare_status=1",
+			reason: "prepare_status=201",
 			recorded_at: NOW_JST_NEXT_DAY.toISOString(),
 		});
-		const runner = recordingRunner(
-			() => ({ status: 0, output: gateOutput() }),
-			root,
-		);
+		const runner = recordingRunner((args, dir) => {
+			if (args[0] === "byosan:prepare")
+				return { status: 0, output: gateOutput() };
+			writeReceipt(dir);
+			return { status: 0, output: "" };
+		}, root);
+
+		runByosanPublishDaily(deps(root, runner.runTask));
+
+		expect(runner.calls).toEqual([
+			["byosan:prepare", "DATE=2026-10-13"],
+			["publish", "PROFILE=byosan", "--", RUN_ID],
+		]);
+		expect(readyRecord(root).status).toBe("PUBLISHED");
+	});
+
+	test("records the gate failure again when the same-date re-prepare fails", async () => {
+		const root = await makeRoot();
+		fs.outputJsonSync(path.join(publishDir(root), "ready.json"), {
+			run_id: RUN_ID,
+			status: "GATE_FAILED",
+			reason: "prepare_status=201",
+			recorded_at: NOW_JST_NEXT_DAY.toISOString(),
+		});
+		const runner = recordingRunner(() => ({ status: 1, output: "" }), root);
 
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
-			"SAME_DATE_RETRY_BLOCKED",
+			"PREPARE_GATE_FAILED",
 		);
-		expect(runner.calls).toEqual([]);
+		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
+		expect(readyRecord(root).status).toBe("GATE_FAILED");
+	});
+
+	test("blocks a same-date retry while a publish attempt is in flight or recorded as published", async () => {
+		for (const status of ["PUBLISH_ATTEMPTED", "PUBLISHED"]) {
+			const root = await makeRoot();
+			fs.outputJsonSync(path.join(publishDir(root), "ready.json"), {
+				run_id: RUN_ID,
+				status,
+				artifact_sha256: ARTIFACT_SHA,
+				recorded_at: NOW_JST_NEXT_DAY.toISOString(),
+			});
+			const runner = recordingRunner(
+				() => ({ status: 0, output: gateOutput() }),
+				root,
+			);
+
+			expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
+				"SAME_DATE_RETRY_BLOCKED",
+			);
+			expect(runner.calls).toEqual([]);
+		}
 	});
 
 	test("holds publication without calling publish when publish_approved is false", async () => {
