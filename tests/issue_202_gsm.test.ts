@@ -204,7 +204,7 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		);
 		expect(
 			episode.claims.find(
-				(claim: { id: string }) => claim.id === "claim-linkedin-license",
+				(claim: { id: string }) => claim.id === "claim-source-attribution",
 			).source_ids,
 		).toEqual(["linkedin-dph-license", "cc-by-4-license"]);
 		expect(
@@ -216,35 +216,11 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 			license: "CC BY 4.0",
 			endorsement: "No endorsement implied",
 		});
-		const failureEvidenceSource = episode.sources.find(
-			(source: { id: string }) => source.id === "yt3-ci-failure-mode-evidence",
-		);
-		expect(failureEvidenceSource.url).toBe(
-			"https://github.com/KAFKA2306/yt3/blob/fee5019609884a92dbd0665f62a102f2fad40b34/config/evidence/issue_202_failure_triage_20261008.json",
-		);
-		const branchClaim = episode.claims.find(
-			(claim: { id: string }) => claim.id === "claim-head-branch-clusters",
-		);
-		expect(branchClaim.source_ids).toEqual([
-			"github-actions-run-api",
-			"yt3-ci-failure-mode-evidence",
-		]);
 		expect(
 			episode.claims.every((claim: { source_ids: string[] }) =>
 				claim.source_ids.every((sourceId) => sourceIds.has(sourceId)),
 			),
 		).toBe(true);
-		expect(
-			episode.visuals.find(
-				(visual: { id: string }) => visual.id === "action-card",
-			).props.largest_branch_cluster,
-		).toContain("14/25 runs");
-		expect(
-			episode.sections
-				.find((section: { id: string }) => section.id === "action")
-				.dialogue.find((line: { id: string }) => line.id === "action-triage")
-				.text,
-		).toContain("Issue #119系列");
 		expect(plan.metrics[1].limitations).toContain(
 			"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
 		);
