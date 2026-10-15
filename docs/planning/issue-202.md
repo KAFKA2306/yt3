@@ -38,10 +38,10 @@ https://abseil.io/resources/swe-book/html/toc.html
 | Metric | `ci-workflow-p95-latency` | PR の CI 実行の作成から完了までの経過時間の p95（秒） |
 | Metric | `ci-first-attempt-pass-rate` | `run_attempt = 1` の完了実行のうち success の割合（%） |
 
-現在の計測値（観測窓 2026-09-08〜2026-10-08 UTC、GitHub Actions run API 由来）:
+現在の計測値（観測窓 2026-09-15T15:04:10Z〜2026-10-15T15:04:10Z UTC、GitHub Actions workflow 226201883 の run API 由来）:
 
-- `ci-workflow-p95-latency`: 238 秒（n=102、中央値 125.5 秒、最大 2892 秒）
-- `ci-first-attempt-pass-rate`: 75.5%（77 / 102 実行）
+- `ci-workflow-p95-latency`: 221 秒（n=129、中央値 129 秒、最大 2892 秒）
+- `ci-first-attempt-pass-rate`: 80.6%（104 / 129 workflow run）
 
 各 Metric の `limitations` に、次を明記している。
 - 実行時刻は代理指標であり、キュー待ちやサービス側の遅延を含む。
@@ -91,3 +91,14 @@ https://abseil.io/resources/swe-book/html/toc.html
 - publish gate の通過確認後に、Issue #202 の最後のチェックを更新する。公開そのものは別途の明示的な承認が必要。
 
 本書は publish を行っていない。Issue のクローズ、コメント投稿、外部公開は行わない。
+
+
+## 8. 新作カードと制作チェック — 2026-10-16 JST
+
+- 中心視点: 架空の月面基地の備品係。舞台は船外活動直前の返却窓口。
+- 状況・笑い: 手袋を同僚間で回し、返却スキャン回数だけ増やす。返却数は記録更新なのに、正しい持ち主には届かない。
+- オチ: 「目標は隊員が月へ出ること。グラフを外に出すな」。
+- 比較範囲: #202既存草案と #201〜#208の企画書。完成脚本・動画の全件比較はできていないため、新規性は暫定。
+- コント品質: setup→escalation→reversal/payoff の草稿あり。読み上げテンポと独立QAは未完了。
+- 最新CIスナップショット: 129件、104件成功、p95 221秒。定義・限界は上記JSONに保存。最新の監査は task productivity:gsm:audit PASS。
+- canonical compile: 2026-10-16 JSTに実行したが、docs/series/audio/pending-channel-and-voice/hook.wav 不在で失敗。compiled outputなし。profile・voice・権利クリア音声が未確定のため、render/release gate/公開は未実施。YouTube実公開状態はUNVERIFIED。
