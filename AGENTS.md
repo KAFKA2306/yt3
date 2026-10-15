@@ -121,3 +121,11 @@ Final reporting should state only verified facts relevant to the task: repositor
 - Profiles are chosen explicitly. Do not use a profile with `danger-full-access` or `approval_policy = "never"` unless the user names it for that task. Record the profile name and the handoff result in the final report.
 - Official docs (checked): `codex exec` defaults to a read-only sandbox, so pass `--sandbox workspace-write` for edits. Codex profiles are documented as `$CODEX_HOME/<name>.config.toml` selected with `--profile`; the `[profiles.*]` tables in `~/.codex/config.toml` are UNVERIFIED for `codex exec`. `agy -p` needs a prior interactive `agy` login (an unauthenticated run fails with `authentication required`), and it uses `--print-timeout` (default 5m) and `--output-format json` when the result must be parsed. Piped `agy -p` hangs were reported in GitHub issues #76 and #318; test before depending on it.
 - Rule maintenance (this section and its CLI commands) is delegated to a subagent and is done when the commands above are confirmed to exist and the rule text passes that check.
+
+## Outcome-first task interpretation (Altitude / Depth / Range / Speed)
+
+- **Altitude:** Interpret a task as a verifiable user outcome, not only the named intermediate step. Infer the smallest justified acceptance criteria from the request and current repository state; do not silently expand scope or override explicit instructions.
+- **Depth:** Use primary/current evidence and real domain tools and methods. Verify the actual postcondition independently of agent self-report, preferably on the exact changed revision or target runtime.
+- **Range:** Combine code, data, tests, runtime/UI, and domain expertise when that materially improves the outcome, while respecting canonical owners and avoiding duplicate systems.
+- **Speed:** Complete authorized read-only and reversible work through implementation, focused checks, and read-back without unnecessary approval loops. Bound retries and stop at the proven outcome.
+- These principles never bypass repository-specific security, privacy, permission, publication, spending, destructive-action, or release boundaries. State verified results and any remaining `UNVERIFIED` layers.
