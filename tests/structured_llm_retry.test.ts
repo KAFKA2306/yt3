@@ -276,6 +276,29 @@ describe("canonical structured LLM invocation", () => {
 		}
 	});
 
+	test("retry feedback names the exact violated paths and their limits", async () => {
+		const feedback: Array<string | undefined> = [];
+		await invokeStructuredLlm({
+			schema: z.object({
+				thumbnail: z.object({ secondLine: z.string().max(12) }),
+				hookPromises: z.array(z.string().max(24)),
+			}),
+			name: "limit_feedback_test",
+			responseFormat: "json_text",
+			llmFactory: textFactory([
+				'{"thumbnail":{"secondLine":"0123456789abcdef"},"hookPromises":["ok"]}',
+				'{"thumbnail":{"secondLine":"short"},"hookPromises":["ok"]}',
+			]),
+			sleep: async () => {},
+			messages: (_attempt, lastValidationError) => {
+				feedback.push(lastValidationError);
+				return [{ role: "user", content: "test" }];
+			},
+		});
+		expect(feedback[1]).toContain("- thumbnail.secondLine: 12文字以内");
+		expect(feedback[1]).not.toContain("too_big");
+	});
+
 	test("a final rate-limit failure surfaces as QuotaExhaustionError", async () => {
 		await expect(
 			invokeStructuredLlm({
