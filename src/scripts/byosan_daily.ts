@@ -15,6 +15,7 @@ import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
 	type ByosanFeatureSpec,
+	archetypeSlotPromptPolicy,
 	ensureByosanBrandTag,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
@@ -659,7 +660,7 @@ async function generateFeatureSpec(
 					},
 					null,
 					2,
-				)}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限。下記の全項目を守る）:\n${FEATURE_DRAFT_SIZE_LIMITS}\nthumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+				)}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限。下記の全項目を守る）:\n${FEATURE_DRAFT_SIZE_LIMITS}\n${archetypeSlotPromptPolicy(productionPlan.narrativeArchetype)}\nthumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
 			},
 		],
 		validate: (draft) => {

@@ -8,6 +8,7 @@ import {
 	ByosanFeatureSpecSchema,
 	type ByosanNarrativeRole,
 	ByosanThumbnailSchema,
+	archetypeSlotPromptPolicy,
 	auditByosanFeatureSpec,
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
@@ -406,6 +407,18 @@ describe("byosan feature draft hard limits", () => {
 		expect(
 			ByosanFeatureSegmentSchema.shape.stats.safeParse([stat]).success,
 		).toBe(true);
+	});
+
+	test("archetype slot prompt policy lists exactly the slots the audit accepts", () => {
+		expect(archetypeSlotPromptPolicy("standard")).toContain(
+			"出力しないでください",
+		);
+		expect(archetypeSlotPromptPolicy(undefined)).toContain(
+			"出力しないでください",
+		);
+		expect(archetypeSlotPromptPolicy("paradox_resolution")).toContain(
+			"fact_a, fact_b, hidden_mechanism, catalyst_or_incentive",
+		);
 	});
 
 	test("draft prompt limits are derived from the feature draft schema", () => {
