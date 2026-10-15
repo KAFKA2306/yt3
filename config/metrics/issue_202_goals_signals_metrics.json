@@ -3,9 +3,7 @@
 	"plan_id": "yt3-change-feedback",
 	"observed_at": "2026-10-15T15:04:10Z",
 	"decision_question": "How can yt3 reduce avoidable time to trustworthy change feedback without weakening the checks that protect main?",
-	"framework_source_ids": [
-		"linkedin-dph-gsm"
-	],
+	"framework_source_ids": ["linkedin-dph-gsm"],
 	"sources": [
 		{
 			"id": "linkedin-dph-gsm",
@@ -33,17 +31,13 @@
 	"signals": [
 		{
 			"id": "actionable-check-feedback",
-			"goal_ids": [
-				"trustworthy-feedback"
-			],
+			"goal_ids": ["trustworthy-feedback"],
 			"statement": "A pull request receives an actionable CI workflow result early enough to inform review.",
 			"measurement_state": "MEASURABLE"
 		},
 		{
 			"id": "ci-outcome",
-			"goal_ids": [
-				"trustworthy-feedback"
-			],
+			"goal_ids": ["trustworthy-feedback"],
 			"statement": "The first CI workflow attempt returns an explicit outcome that supports failure triage.",
 			"measurement_state": "MEASURABLE"
 		}
@@ -51,15 +45,11 @@
 	"metrics": [
 		{
 			"id": "ci-workflow-p95-latency",
-			"signal_ids": [
-				"actionable-check-feedback"
-			],
+			"signal_ids": ["actionable-check-feedback"],
 			"name": "CI workflow p95 elapsed time",
 			"definition": "The 95th-percentile elapsed time from a pull-request CI workflow run being created to its completed result.",
 			"unit": "seconds",
-			"data_source_ids": [
-				"github-actions-run-api"
-			],
+			"data_source_ids": ["github-actions-run-api"],
 			"formula": "p95(updated_at - created_at) for completed pull_request CI workflow runs with run_attempt = 1",
 			"aggregation": "Nearest-rank p95; n=129; median=129 seconds; max=2892 seconds",
 			"observation_window": "2026-09-15T15:04:10Z to 2026-10-15T15:04:10Z (UTC)",
@@ -77,16 +67,11 @@
 		},
 		{
 			"id": "ci-first-attempt-pass-rate",
-			"signal_ids": [
-				"actionable-check-feedback",
-				"ci-outcome"
-			],
+			"signal_ids": ["actionable-check-feedback", "ci-outcome"],
 			"name": "CI workflow-run success rate (run_attempt = 1)",
 			"definition": "The proportion of completed pull-request CI workflow runs whose GitHub Actions run_attempt is 1 and whose conclusion is success. This counts workflow runs, not distinct pull requests; one pull request can contribute multiple runs.",
 			"unit": "percent",
-			"data_source_ids": [
-				"github-actions-run-api"
-			],
+			"data_source_ids": ["github-actions-run-api"],
 			"formula": "100 * successful completed first-attempt pull_request CI workflow runs / all completed first-attempt pull_request CI workflow runs",
 			"aggregation": "104 successful / 129 completed workflow runs with run_attempt=1 = 80.6%; multiple runs from one pull request can be counted; report numerator and denominator",
 			"observation_window": "2026-09-15T15:04:10Z to 2026-10-15T15:04:10Z (UTC)",

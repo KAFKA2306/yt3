@@ -44,41 +44,27 @@
 		{
 			"id": "claim-goal-signal-metric",
 			"text": "Goalsは望む結果、Signalsは達成の兆候、MetricsはSignalを測る不完全な代理値として、意思決定につながるよう追跡可能にする。",
-			"source_ids": [
-				"linkedin-dph-gsm"
-			]
+			"source_ids": ["linkedin-dph-gsm"]
 		},
 		{
 			"id": "claim-ci-observation",
 			"text": "2026-09-15T15:04:10Zから2026-10-15T15:04:10ZまでのGitHub Actions workflow 226201883で、event=pull_request、status=completed、run_attempt=1のworkflow runは129件。作成から完了までのp95は221秒だった。",
-			"source_ids": [
-				"github-actions-run-api",
-				"yt3-ci-snapshot"
-			]
+			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
 			"id": "claim-ci-pass-rate",
 			"text": "同じ観測窓のcompleted first-attempt workflow runは104件がsuccess、25件がfailure（104/129=80.6%）。これはworkflow runの率でありPRごとの率ではない。",
-			"source_ids": [
-				"github-actions-run-api",
-				"yt3-ci-snapshot"
-			]
+			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
 			"id": "claim-measurement-limit",
 			"text": "CIの経過時間や成功率はフィードバックに関する代理指標で、開発者の生産性やソフトウェア品質を直接測定せず、因果関係も示さない。",
-			"source_ids": [
-				"github-actions-run-api",
-				"yt3-ci-snapshot"
-			]
+			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
 			"id": "claim-source-attribution",
 			"text": "LinkedIn DPH Frameworkの該当ページとREADMEはCC BY 4.0とCopyright 2023 LinkedIn Corporationを示す。この脚本では日本語要約・適応として出典とライセンスを表示し、推奨・承認を示唆しない。これは権利の包括的法的判断ではない。",
-			"source_ids": [
-				"linkedin-dph-license",
-				"cc-by-4-license"
-			]
+			"source_ids": ["linkedin-dph-license", "cc-by-4-license"]
 		}
 	],
 	"assets": [],
@@ -358,10 +344,7 @@
 		}
 	],
 	"thumbnail": {
-		"lines": [
-			"返却数は最高",
-			"手袋はどこ？"
-		]
+		"lines": ["返却数は最高", "手袋はどこ？"]
 	},
 	"shorts": {
 		"enabled": false
