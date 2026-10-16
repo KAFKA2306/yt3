@@ -4,6 +4,16 @@
 
 `Taskfile.yml` is the canonical executable interface.
 
+## 0. Operating principles (permanent)
+
+- Do not stop work. Find the cause, fix it, verify it, and finish the task.
+- Track every blocker as a GitHub Issue. Update an existing Issue if one exists; otherwise open one immediately. Record cause, evidence, impact, resolution steps, and completion criteria.
+- Opening an Issue is not completion. Keep investigating, fixing, verifying, merging, and confirming the result after opening it.
+- Treat over-strict safety denials and CI gates as faults. Identify the cause and fix it. Keep the protections that guard real secrets. Never bypass a permission restriction without authorization.
+- Do not end on a pending approval. Identify the exact permission and the layer that denied it, then finish every task that remains allowed.
+- Do not multiply leftovers: merge duplicate Issues, close unneeded PRs, and clean up stale branches.
+- Judge success by the real result. A PR, a green CI run, or a "merged" label is not enough. Re-fetch `main` and the produced artifact and confirm the expected behavior.
+
 ## Products
 
 YT3 contains three distinct products:

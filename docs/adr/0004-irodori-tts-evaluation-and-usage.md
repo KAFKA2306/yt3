@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (updated: v4.1 only)
 
 ## Context
 
@@ -15,16 +15,17 @@ Initial verification showed:
 
 ## Decision
 
-1. Install and run Irodori-TTS in `sandbox/Irodori-TTS` (not in `src/`) using `uv sync`.
+1. Install and run Irodori-TTS v4.1 in `sandbox/Irodori-TTS-v4.1` (not in `src/`) using `uv sync --extra cu128`.
 2. Use `UV_CACHE_DIR=.uv-cache` for runtime commands in this environment to avoid global uv cache permission failures.
-3. Establish `--no-ref` as the baseline validation path for script preview generation.
-4. Keep VoiceDesign as the preferred style-control path via `--caption` for persona/tone design without reference audio.
-5. Extract subtitle dialogue into a dedicated text artifact before synthesis:
+3. Use `Aratako/Irodori-TTS-v4.1-Small` as the only checkpoint. Older versions (v2, v2-VoiceDesign, v3) are removed and must not be reintroduced alongside it.
+4. Establish `--no-ref` as the baseline path for script preview and production generation.
+5. Use `--caption` for persona/tone control. The v4.1-Small checkpoint supports caption conditioning.
+6. Extract subtitle dialogue into a dedicated text artifact before synthesis:
    - `/home/kafka/2511youtuber/v3/yt3/runs/2026-05-09/script_for_tts.txt`
 
 ## Consequences
 
 - We now have a reproducible TTS preview flow that works in sandboxed operations.
-- Output quality checks can start from deterministic seed + `--no-ref`, then expand to human reference voice tests.
-- VoiceDesign generation is available and validated in this workspace (`outputs/kafka_voice.wav`).
+- Output quality checks start from deterministic seed + `--no-ref`. Reference-audio paths are not verified for v4.1 yet.
+- Smoke verification: `infer.py --hf-checkpoint Aratako/Irodori-TTS-v4.1-Small --no-ref` runs on CUDA and writes a WAV.
 - Gradio UI verification may still require running on the user host due to sandbox port/network limitations.
