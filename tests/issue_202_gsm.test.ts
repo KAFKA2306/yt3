@@ -14,7 +14,7 @@ const planPath = path.join(
 const examplePlan = JSON.parse(readFileSync(planPath, "utf8"));
 const snapshotPath = path.join(
 	process.cwd(),
-	"config/metrics/snapshots/issue_202_ci_30d_20261008_063534.json",
+	"config/metrics/snapshots/issue_202_ci_30d_20261016_000410.json",
 );
 const failureTriagePath = path.join(
 	process.cwd(),
@@ -28,8 +28,30 @@ const episodePath = path.join(
 	process.cwd(),
 	"docs/series/issue-202_episode_draft.json",
 );
+const scriptPath = path.join(
+	process.cwd(),
+	"docs/series/issue-202_script_draft.md",
+);
 
 describe("Issue #202 Goals → Signals → Metrics example", () => {
+	test("makes the eight-scan metric gag match its storyboard loop", () => {
+		const episode = JSON.parse(readFileSync(episodePath, "utf8"));
+		const actionCard = episode.visuals.find(
+			(visual: { id: string }) => visual.id === "action-card",
+		).props.fictional_anti_pattern;
+		const metricLoop = episode.sections
+			.find((section: { id: string }) => section.id === "metrics")
+			.dialogue.find((line: { id: string }) => line.id === "metric-loop").text;
+		const script = readFileSync(scriptPath, "utf8");
+
+		expect(actionCard).toContain("4往復");
+		expect(actionCard).toContain("1→8");
+		expect(metricLoop).toContain("4往復");
+		expect(metricLoop).toContain("8回");
+		expect(script).toContain("4往復");
+		expect(script).toContain("rises from 1 to 8");
+	});
+
 	test("keeps a source-backed, traceable repo metric set with recorded observations", async () => {
 		const plan = JSON.parse(await readFile(planPath, "utf8"));
 		const report = auditGoalsSignalsMetricsPlan(plan);
@@ -50,22 +72,22 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		).toBe(true);
 		expect(
 			plan.metrics.map((metric: { value: number }) => metric.value),
-		).toEqual([238, 75.5]);
+		).toEqual([221, 80.6]);
 		const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8"));
-		expect(snapshot.results.completed_first_attempts).toBe(102);
-		expect(snapshot.window.from).toBe("2026-09-08T06:35:34Z");
-		expect(snapshot.window.to).toBe("2026-10-08T06:35:34Z");
-		expect(snapshot.results.conclusions).toEqual({ success: 77, failure: 25 });
+		expect(snapshot.results.completed_first_attempts).toBe(129);
+		expect(snapshot.window.from).toBe("2026-09-15T15:04:10Z");
+		expect(snapshot.window.to).toBe("2026-10-15T15:04:10Z");
+		expect(snapshot.results.conclusions).toEqual({ success: 104, failure: 25 });
 		expect(snapshot.results.ci_workflow_elapsed_seconds.p95).toBe(
 			plan.metrics[0].value,
 		);
-		expect(snapshot.results.ci_workflow_elapsed_seconds.median).toBe(125.5);
+		expect(snapshot.results.ci_workflow_elapsed_seconds.median).toBe(129);
 		expect(snapshot.results.ci_first_attempt_pass_rate_percent.numerator).toBe(
-			77,
+			104,
 		);
 		expect(
 			snapshot.results.ci_first_attempt_pass_rate_percent.denominator,
-		).toBe(102);
+		).toBe(129);
 		expect(snapshot.results.ci_first_attempt_pass_rate_percent.value).toBe(
 			plan.metrics[1].value,
 		);
@@ -204,7 +226,7 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		);
 		expect(
 			episode.claims.find(
-				(claim: { id: string }) => claim.id === "claim-linkedin-license",
+				(claim: { id: string }) => claim.id === "claim-source-attribution",
 			).source_ids,
 		).toEqual(["linkedin-dph-license", "cc-by-4-license"]);
 		expect(
@@ -216,35 +238,11 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 			license: "CC BY 4.0",
 			endorsement: "No endorsement implied",
 		});
-		const failureEvidenceSource = episode.sources.find(
-			(source: { id: string }) => source.id === "yt3-ci-failure-mode-evidence",
-		);
-		expect(failureEvidenceSource.url).toBe(
-			"https://github.com/KAFKA2306/yt3/blob/fee5019609884a92dbd0665f62a102f2fad40b34/config/evidence/issue_202_failure_triage_20261008.json",
-		);
-		const branchClaim = episode.claims.find(
-			(claim: { id: string }) => claim.id === "claim-head-branch-clusters",
-		);
-		expect(branchClaim.source_ids).toEqual([
-			"github-actions-run-api",
-			"yt3-ci-failure-mode-evidence",
-		]);
 		expect(
 			episode.claims.every((claim: { source_ids: string[] }) =>
 				claim.source_ids.every((sourceId) => sourceIds.has(sourceId)),
 			),
 		).toBe(true);
-		expect(
-			episode.visuals.find(
-				(visual: { id: string }) => visual.id === "action-card",
-			).props.largest_branch_cluster,
-		).toContain("14/25 runs");
-		expect(
-			episode.sections
-				.find((section: { id: string }) => section.id === "action")
-				.dialogue.find((line: { id: string }) => line.id === "action-triage")
-				.text,
-		).toContain("Issue #119系列");
 		expect(plan.metrics[1].limitations).toContain(
 			"The unit is a workflow run, not a distinct pull request; multiple commits on one PR can create multiple run_attempt=1 records.",
 		);

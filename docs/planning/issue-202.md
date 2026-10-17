@@ -38,10 +38,10 @@ https://abseil.io/resources/swe-book/html/toc.html
 | Metric | `ci-workflow-p95-latency` | PR の CI 実行の作成から完了までの経過時間の p95（秒） |
 | Metric | `ci-first-attempt-pass-rate` | `run_attempt = 1` の完了実行のうち success の割合（%） |
 
-現在の計測値（観測窓 2026-09-08〜2026-10-08 UTC、GitHub Actions run API 由来）:
+現在の計測値（観測窓 2026-09-15T15:04:10Z〜2026-10-15T15:04:10Z UTC、GitHub Actions workflow 226201883 の run API 由来）:
 
-- `ci-workflow-p95-latency`: 238 秒（n=102、中央値 125.5 秒、最大 2892 秒）
-- `ci-first-attempt-pass-rate`: 75.5%（77 / 102 実行）
+- `ci-workflow-p95-latency`: 221 秒（n=129、中央値 129 秒、最大 2892 秒）
+- `ci-first-attempt-pass-rate`: 80.6%（104 / 129 workflow run）
 
 各 Metric の `limitations` に、次を明記している。
 - 実行時刻は代理指標であり、キュー待ちやサービス側の遅延を含む。
@@ -81,13 +81,25 @@ https://abseil.io/resources/swe-book/html/toc.html
 | Goal / Signal / Metric を最低1セット実装例化 | 達成 | `config/metrics/issue_202_goals_signals_metrics.json`、main 統合済み（merge commit `fee5019609884a92dbd0665f62a102f2fad40b34`、Issue 本文の記載） |
 | 指標だけ増やすアンチパターンの説明 | 達成 | 本書 §5 |
 | 一次ソース根拠の保存 | 達成 | 本書 §2 と上記 JSON の `sources`（原典 URL、取得日） |
-| publish gate 通過 | 未達 | Issue 本文どおり。canonical compile が `docs/series/audio/pending-channel-and-voice/hook.wav` の不在で失敗、チャンネル profile・声・素材の権利確認も未解決 |
+| publish gate 通過 | 未達 | 2026-10-16 JST の canonical compile は `docs/series/audio/pending-channel-and-voice/hook-scene.wav` 不在で失敗。チャンネル profile・声・素材の権利確認も未解決 |
 
 ## 7. 残件
 
-- 動画の compile 失敗の解消（`hook.wav` の用意、または正本の修正）。ソースの修正は別作業で行う。
+- 動画の compile 失敗の解消（`hook-scene.wav` の用意、または正本の修正）。ソースの修正は別作業で行う。
 - チャンネル profile、声、素材の権利確認。
 - 本番レンダーと動画 QA。
-- publish gate の通過確認後に、Issue #202 の最後のチェックを更新する。公開そのものは別途の明示的な承認が必要。
+- publish gate の通過確認後に Issue #202 の最後のチェックを更新する。既に与えられた包括承認の範囲で、profile・権利・事実・品質・canonical gate がすべて通った場合に限り、追加の動画ごとの確認なしで既存の認証済み経路を使う。
 
 本書は publish を行っていない。Issue のクローズ、コメント投稿、外部公開は行わない。
+
+
+## 8. 新作カードと制作チェック — 2026-10-16 JST
+
+- 中心視点: 架空の月面基地の備品係。舞台は船外活動直前の返却窓口。
+- 状況・笑い: 手袋を同僚間で回し、返却スキャン回数だけ増やす。返却数は記録更新なのに、正しい持ち主には届かない。
+- オチ: 「目標は隊員が月へ出ること。グラフを外に出すな」。
+- 比較範囲: #202既存草案と #201〜#208の企画書。完成脚本・動画の全件比較はできていないため、新規性は暫定。
+- コント品質: setup→escalation→reversal/payoff の草稿あり。読み上げテンポと独立QAは未完了。
+- 最新CIスナップショット: 129件、104件成功、p95 221秒。定義・限界は上記JSONに保存。最新の監査は task productivity:gsm:audit PASS。
+- canonical compile: 2026-10-16 JSTに実行したが、docs/series/audio/pending-channel-and-voice/hook-scene.wav 不在で失敗。compiled outputなし。profile・voice・権利クリア音声が未確定のため、render/release gate/公開は未実施。YouTube実公開状態はUNVERIFIED。
+- 初回の `task check:merge` は328 tests中327 pass / 1 fail。30日snapshot固定値を現行観測値（129件、p95 221秒、pass-rate 80.6%）に合わせた後、PR #317 のCI run 38759302105 も旧claim ID/scene fieldsのassertionで327/328となった。assertionを現行episode/source構造に合わせて更新。修正後のexact-head CI run 38759585928（run 668）の `PR merge gate` はPASSし、Secret Guard run 38759585951（run 107）もsuccess。CI内の汎用render smokeは#202本編のrender証拠ではない。
