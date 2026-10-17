@@ -28,8 +28,30 @@ const episodePath = path.join(
 	process.cwd(),
 	"docs/series/issue-202_episode_draft.json",
 );
+const scriptPath = path.join(
+	process.cwd(),
+	"docs/series/issue-202_script_draft.md",
+);
 
 describe("Issue #202 Goals → Signals → Metrics example", () => {
+	test("makes the eight-scan metric gag match its storyboard loop", () => {
+		const episode = JSON.parse(readFileSync(episodePath, "utf8"));
+		const actionCard = episode.visuals.find(
+			(visual: { id: string }) => visual.id === "action-card",
+		).props.fictional_anti_pattern;
+		const metricLoop = episode.sections
+			.find((section: { id: string }) => section.id === "metrics")
+			.dialogue.find((line: { id: string }) => line.id === "metric-loop").text;
+		const script = readFileSync(scriptPath, "utf8");
+
+		expect(actionCard).toContain("4往復");
+		expect(actionCard).toContain("1→8");
+		expect(metricLoop).toContain("4往復");
+		expect(metricLoop).toContain("8回");
+		expect(script).toContain("4往復");
+		expect(script).toContain("rises from 1 to 8");
+	});
+
 	test("keeps a source-backed, traceable repo metric set with recorded observations", async () => {
 		const plan = JSON.parse(await readFile(planPath, "utf8"));
 		const report = auditGoalsSignalsMetricsPlan(plan);

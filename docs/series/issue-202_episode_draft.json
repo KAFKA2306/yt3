@@ -116,7 +116,7 @@
 			"type": "source-card",
 			"props": {
 				"action": "測定値が悪いときの次の調査を先に決める",
-				"fictional_anti_pattern": "同じ手袋を回して返却スキャン回数だけ増やす",
+				"fictional_anti_pattern": "同じ手袋をA→B→Aと4往復させ、返却スキャンを1→8に増やす（受取人の装着は未達）",
 				"preserve_safety_checks": true
 			}
 		},
@@ -241,7 +241,7 @@
 				{
 					"id": "metric-loop",
 					"speaker": "Narrator (voice pending)",
-					"text": "係は同じ手袋を隊員AからBへ、BからAへ。ピッ、返却。ピッ、返却。",
+					"text": "係は同じ手袋を隊員AからBへ、BからAへ4往復。返却スキャンは8回。",
 					"visual_ref": "action-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/metric-loop.wav"

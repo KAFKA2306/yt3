@@ -32,13 +32,13 @@ Status: original comedy-sketch draft with a refreshed, source-backed yt3 example
 
 ### 0:28–0:48 — The wrong metric escalates
 
-**Visual:** The same glove circulates A → B → A, each handoff gets a scan.
+**Visual:** The same glove circles A → B → A four times; the return-scan counter visibly rises from 1 to 8 while “recipient equipped” stays blank.
 
 **Dialogue:**
 
 > 係「Metricは？」 ナレーター「Signalを測る不完全な代理値。初回の正しい受け渡し率と待ち時間、などです」 係「でも一番数えやすいのは返却スキャン！」
 >
-> （ピッ、返却。ピッ、返却。）
+> ナレーター「同じ手袋をAからBへ、BからAへ4往復。返却スキャンは8回です」
 >
 > 係「八回返却！先週の八倍です」
 
