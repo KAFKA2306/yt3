@@ -58,7 +58,7 @@ Status: original comedy-sketch draft with a refreshed, source-backed yt3 example
 
 **Narration:**
 
-> yt3のGoalは、安全チェックを弱めず、解釈できるCI結果を早く受け取ること。2026年9月15日15:04から10月15日15:04 UTCの30日では、完了した初回CI workflow runが129件、104件成功。作成から完了までのp95は221秒です。
+> yt3のGoalは、安全チェックを弱めず、解釈できるCI結果を早く受け取ること。9月18日から10月18日までの30日で、初回CIは110件。104件成功、6件失敗。成功率94.5%、p95は238秒です。
 >
 > これはPR数ではなくworkflow run数。同じPRから複数runがあり得ます。生産性やコード品質そのものではなく、遅い工程や失敗ログを調べるための代理値です。
 
@@ -73,15 +73,15 @@ Status: original comedy-sketch draft with a refreshed, source-backed yt3 example
 ## Evidence and interpretation
 
 - Current metric plan: config/metrics/issue_202_goals_signals_metrics.json.
-- Snapshot: config/metrics/snapshots/issue_202_ci_30d_20261016_000410.json.
+- Snapshot: config/metrics/snapshots/issue_202_ci_30d_20261019_025424.json.
 - Source: [GitHub REST API — workflow runs](https://docs.github.com/en/rest/actions/workflow-runs), workflow 226201883, event pull_request, completed first attempts, recorded UTC window.
-- Formula: nearest-rank p95 of updated_at - created_at; success rate is 104 / 129 = 80.6%. The denominator is workflow runs, not distinct PRs. Queue/service delay can be included. This does not establish causal effects or directly measure productivity or code quality.
+- Formula: nearest-rank p95 of updated_at - created_at; success rate is 104 / 110 = 94.5%. The median for this even-sized sample is the mean of the middle pair (133 seconds). The denominator is completed first-attempt workflow runs, not distinct PRs. Queue/service delay can be included. This does not establish causal effects or directly measure productivity or code quality.
 - Framework: [LinkedIn DPH — Goals, Signals, and Metrics](https://linkedin.github.io/dph-framework/goals-signals-metrics.html). Attribution planned: LinkedIn Corporation (2023), work title, source and [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) links, Japanese summary/adaptation notice, and no-endorsement statement. This is rights evidence, not a complete legal clearance.
 - The moon-base scene is fiction, not a claim about a real mission. Issue #202 references Software Engineering at Google; its online-edition notice was not used as source text in this script.
 
 ## Release blockers and next step
 
-- The canonical compile command was run on 2026-10-16 JST and failed on the unresolved placeholder docs/series/audio/pending-channel-and-voice/hook-scene.wav; no compiled output was created.
+- The latest canonical compile was run on 2026-10-19 JST and failed at ffprobe because docs/series/audio/pending-channel-and-voice/hook-scene.wav is absent; no compiled output was created.
 - No channel/profile is mapped to this series; the byosan profile is a separate product and must not be inferred as the destination.
 - Voice and rights-cleared narration/audio are pending. Do not synthesize a substitute voice or skip the media checks.
 - Next: confirm destination profile and voice, prepare rights-cleared audio, then compile, render, conduct read-aloud/content QA, pass the canonical release gate, and only then use the authorized publish/read-back path.

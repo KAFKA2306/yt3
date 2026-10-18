@@ -2,7 +2,7 @@
 	"schema_version": 1,
 	"metadata": {
 		"title": "Goalは手袋、Metricは返却回数？月面基地の備品窓口",
-		"description": "架空の月面基地の備品返却所を舞台に、Goal・Signal・Metricの違いをコントで説明し、yt3のGitHub Actions CIを具体例にする。観測窓 2026-09-15T15:04:10Z〜2026-10-15T15:04:10Z UTC: completed first-attempt workflow runs 129件、成功104件、p95 221秒。件数はPR数ではなくworkflow run数で、生産性やコード品質そのものではない。LinkedIn Corporation (2023), LinkedIn Developer Productivity & Happiness Framework: Goals, Signals, and Metrics (CC BY 4.0). Japanese summary/adaptation; no endorsement implied. Source: https://linkedin.github.io/dph-framework/goals-signals-metrics.html License: https://creativecommons.org/licenses/by/4.0/. The lunar-base sketch is fictional.",
+		"description": "架空の月面基地の備品返却所を舞台に、Goal・Signal・Metricの違いをコントで説明し、yt3のGitHub Actions CIを具体例にする。観測窓 2026-09-18T17:54:24Z〜2026-10-18T17:54:24Z UTC: completed first-attempt workflow runs 110件、成功104件・失敗6件、成功率94.5%、p95 238秒。件数はPR数ではなくworkflow run数で、生産性やコード品質そのものではない。LinkedIn Corporation (2023), LinkedIn Developer Productivity & Happiness Framework: Goals, Signals, and Metrics (CC BY 4.0). Japanese summary/adaptation; no endorsement implied. Source: https://linkedin.github.io/dph-framework/goals-signals-metrics.html License: https://creativecommons.org/licenses/by/4.0/. The lunar-base sketch is fictional.",
 		"tags": [
 			"ソフトウェア開発",
 			"メトリクス",
@@ -36,8 +36,8 @@
 		},
 		{
 			"id": "yt3-ci-snapshot",
-			"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-15T15%3A04%3A10Z&event=pull_request",
-			"title": "yt3 30-day CI snapshot observed 2026-10-16 JST"
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-18T17%3A54%3A24Z&event=pull_request",
+			"title": "yt3 30-day CI snapshot observed 2026-10-19 JST"
 		}
 	],
 	"claims": [
@@ -48,12 +48,12 @@
 		},
 		{
 			"id": "claim-ci-observation",
-			"text": "2026-09-15T15:04:10Zから2026-10-15T15:04:10ZまでのGitHub Actions workflow 226201883で、event=pull_request、status=completed、run_attempt=1のworkflow runは129件。作成から完了までのp95は221秒だった。",
+			"text": "2026-09-18T17:54:24Zから2026-10-18T17:54:24ZまでのGitHub Actions workflow 226201883で、event=pull_request、status=completed、run_attempt=1のworkflow runは110件。作成から完了までのp95は238秒だった。",
 			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
 			"id": "claim-ci-pass-rate",
-			"text": "同じ観測窓のcompleted first-attempt workflow runは104件がsuccess、25件がfailure（104/129=80.6%）。これはworkflow runの率でありPRごとの率ではない。",
+			"text": "同じ観測窓のcompleted first-attempt workflow runは104件がsuccess、6件がfailure（104/110=94.5%）。これはworkflow runの率でありPRごとの率ではない。",
 			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
@@ -96,11 +96,11 @@
 			"id": "metric-card",
 			"type": "number-highlight",
 			"props": {
-				"p95_seconds": 221,
-				"median_seconds": 129,
-				"run_attempt_1_success": "104/129 completed workflow runs (80.6%)",
+				"p95_seconds": 238,
+				"median_seconds": 133,
+				"run_attempt_1_success": "104/110 completed workflow runs (94.5%)",
 				"unit_of_analysis": "workflow_run; multiple runs may come from one PR",
-				"observation_window": "2026-09-15T15:04:10Z to 2026-10-15T15:04:10Z UTC"
+				"observation_window": "2026-09-18T17:54:24Z to 2026-10-18T17:54:24Z UTC"
 			}
 		},
 		{
@@ -307,7 +307,7 @@
 				{
 					"id": "action-metric",
 					"speaker": "Narrator (voice pending)",
-					"text": "最新の30日でcompleted first-attempt runは129件、104件success。CIのp95は221秒。1つのPRから複数runがあり得ます。",
+					"text": "9月18日〜10月18日の30日で初回CIは110件。104件成功、6件失敗。成功率94.5%、p95は238秒です。",
 					"visual_ref": "metric-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/action-metric.wav"

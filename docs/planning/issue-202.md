@@ -38,10 +38,10 @@ https://abseil.io/resources/swe-book/html/toc.html
 | Metric | `ci-workflow-p95-latency` | PR の CI 実行の作成から完了までの経過時間の p95（秒） |
 | Metric | `ci-first-attempt-pass-rate` | `run_attempt = 1` の完了実行のうち success の割合（%） |
 
-現在の計測値（観測窓 2026-09-15T15:04:10Z〜2026-10-15T15:04:10Z UTC、GitHub Actions workflow 226201883 の run API 由来）:
+現在の計測値（観測窓 2026-09-18T17:54:24Z〜2026-10-18T17:54:24Z UTC、GitHub Actions workflow 226201883 の run API 由来）:
 
-- `ci-workflow-p95-latency`: 221 秒（n=129、中央値 129 秒、最大 2892 秒）
-- `ci-first-attempt-pass-rate`: 80.6%（104 / 129 workflow run）
+- `ci-workflow-p95-latency`: 238 秒（n=110、中央値 133 秒、最大 2892 秒）
+- `ci-first-attempt-pass-rate`: 94.5%（104 success / 6 failure、110 completed first-attempt workflow run）
 
 各 Metric の `limitations` に、次を明記している。
 - 実行時刻は代理指標であり、キュー待ちやサービス側の遅延を含む。
@@ -81,7 +81,7 @@ https://abseil.io/resources/swe-book/html/toc.html
 | Goal / Signal / Metric を最低1セット実装例化 | 達成 | `config/metrics/issue_202_goals_signals_metrics.json`、main 統合済み（merge commit `fee5019609884a92dbd0665f62a102f2fad40b34`、Issue 本文の記載） |
 | 指標だけ増やすアンチパターンの説明 | 達成 | 本書 §5 |
 | 一次ソース根拠の保存 | 達成 | 本書 §2 と上記 JSON の `sources`（原典 URL、取得日） |
-| publish gate 通過 | 未達 | 2026-10-16 JST の canonical compile は `docs/series/audio/pending-channel-and-voice/hook-scene.wav` 不在で失敗。チャンネル profile・声・素材の権利確認も未解決 |
+| publish gate 通過 | 未達 | 2026-10-19 JST の最新 canonical compile は `docs/series/audio/pending-channel-and-voice/hook-scene.wav` 不在で失敗。チャンネル profile・声・素材の権利確認も未解決 |
 
 ## 7. 残件
 
@@ -100,6 +100,16 @@ https://abseil.io/resources/swe-book/html/toc.html
 - オチ: 「目標は隊員が月へ出ること。グラフを外に出すな」。
 - 比較範囲: #202既存草案と #201〜#208の企画書。完成脚本・動画の全件比較はできていないため、新規性は暫定。
 - コント品質: setup→escalation→reversal/payoff の草稿あり。読み上げテンポと独立QAは未完了。
-- 最新CIスナップショット: 129件、104件成功、p95 221秒。定義・限界は上記JSONに保存。最新の監査は task productivity:gsm:audit PASS。
+- 2026-10-16時点のCIスナップショット: 129件、104件成功、p95 221秒。これは当時の値で、最新値は下記2026-10-19更新に保存。
 - canonical compile: 2026-10-16 JSTに実行したが、docs/series/audio/pending-channel-and-voice/hook-scene.wav 不在で失敗。compiled outputなし。profile・voice・権利クリア音声が未確定のため、render/release gate/公開は未実施。YouTube実公開状態はUNVERIFIED。
 - 初回の `task check:merge` は328 tests中327 pass / 1 fail。30日snapshot固定値を現行観測値（129件、p95 221秒、pass-rate 80.6%）に合わせた後、PR #317 のCI run 38759302105 も旧claim ID/scene fieldsのassertionで327/328となった。assertionを現行episode/source構造に合わせて更新。修正後のexact-head CI run 38759585928（run 668）の `PR merge gate` はPASSし、Secret Guard run 38759585951（run 107）もsuccess。CI内の汎用render smokeは#202本編のrender証拠ではない。
+
+## 9. CI snapshot refresh and production checkpoint — 2026-10-19 JST
+
+- GitHub Actions workflow 226201883 の REST API を再取得。観測窓は 2026-09-18T17:54:24Z〜2026-10-18T17:54:24Z、completed first-attempt workflow run は110件（success 104、failure 6）。初回成功率は94.5%、経過時間の中央値は133秒（偶数件の中央2値の算術平均）、nearest-rank p95は238秒、最大は2892秒。新しいスナップショットは `config/metrics/snapshots/issue_202_ci_30d_20261019_025424.json`。
+- `task productivity:gsm:audit` は PASS（Goal 1、Signal 2、Metric 2）。指標数値・episode claim・表示用metric card・脚本を新スナップショットへ同期し、字幕長の回帰assertionも追加。
+- `task test` は329 tests / 903 assertionsでPASS。対象ファイルのBiome、`bun run typecheck`、`task audit:publish-routing` もPASS。`task check:merge:fast` はBiomeがGit-ignoredの `CLAUDE-SECURITY-20261017-005711/CLAUDE-SECURITY-REVISION-240029f438d8.json` を整形差分として検出し、lint段階で停止。この無関係なスキャナー成果物は変更せず残した。
+- 直近の前日分である2026-10-18 JSTについては、前回checkpointが「この制作workflowからの公開試行なし」と記録。read-back手段がないため、実際の公開有無はUNVERIFIEDであり、レシート不在から未公開とは断定しない。
+- 2026-10-19 JST の canonical `task episode:compile` は最初に `action-metric` 字幕が84文字上限を超過。文言を短縮して再実行したところ、`docs/series/audio/pending-channel-and-voice/hook-scene.wav` 不在で `ffprobe` が失敗。compiled output は作成されていない。
+- よって本編render、独立した読み上げ/コントQA、canonical release gate、YouTube公開は未実施。シリーズprofileと権利クリア音声は未確定で、YouTube実公開状態はUNVERIFIED。receipt/read-backの確認先もこの実行では利用できないため、不在receiptから未公開とは推定しない。
+- PR #317 はdraftのまま、Issue #202 はopenのままにする。次は明示された配信profileと権利クリア音声を確認後、compile→render→QA→release gateの順に再開する。

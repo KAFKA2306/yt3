@@ -14,7 +14,7 @@ const planPath = path.join(
 const examplePlan = JSON.parse(readFileSync(planPath, "utf8"));
 const snapshotPath = path.join(
 	process.cwd(),
-	"config/metrics/snapshots/issue_202_ci_30d_20261016_000410.json",
+	"config/metrics/snapshots/issue_202_ci_30d_20261019_025424.json",
 );
 const failureTriagePath = path.join(
 	process.cwd(),
@@ -72,25 +72,54 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 		).toBe(true);
 		expect(
 			plan.metrics.map((metric: { value: number }) => metric.value),
-		).toEqual([221, 80.6]);
+		).toEqual([238, 94.5]);
 		const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8"));
-		expect(snapshot.results.completed_first_attempts).toBe(129);
-		expect(snapshot.window.from).toBe("2026-09-15T15:04:10Z");
-		expect(snapshot.window.to).toBe("2026-10-15T15:04:10Z");
-		expect(snapshot.results.conclusions).toEqual({ success: 104, failure: 25 });
+		expect(snapshot.results.completed_first_attempts).toBe(110);
+		expect(snapshot.window.from).toBe("2026-09-18T17:54:24Z");
+		expect(snapshot.window.to).toBe("2026-10-18T17:54:24Z");
+		expect(snapshot.results.conclusions).toEqual({ success: 104, failure: 6 });
 		expect(snapshot.results.ci_workflow_elapsed_seconds.p95).toBe(
 			plan.metrics[0].value,
 		);
-		expect(snapshot.results.ci_workflow_elapsed_seconds.median).toBe(129);
+		expect(snapshot.results.ci_workflow_elapsed_seconds.median).toBe(133);
 		expect(snapshot.results.ci_first_attempt_pass_rate_percent.numerator).toBe(
 			104,
 		);
 		expect(
 			snapshot.results.ci_first_attempt_pass_rate_percent.denominator,
-		).toBe(129);
+		).toBe(110);
 		expect(snapshot.results.ci_first_attempt_pass_rate_percent.value).toBe(
 			plan.metrics[1].value,
 		);
+		const episodeForMetrics = JSON.parse(readFileSync(episodePath, "utf8"));
+		const observationClaim = episodeForMetrics.claims.find(
+			(claim: { id: string }) => claim.id === "claim-ci-observation",
+		).text;
+		const passRateClaim = episodeForMetrics.claims.find(
+			(claim: { id: string }) => claim.id === "claim-ci-pass-rate",
+		).text;
+		const metricCard = episodeForMetrics.visuals.find(
+			(visual: { id: string }) => visual.id === "metric-card",
+		).props;
+		const actionMetricDialogue = episodeForMetrics.sections
+			.flatMap(
+				(section: { dialogue: Array<{ id: string; text: string }> }) =>
+					section.dialogue,
+			)
+			.find((line: { id: string }) => line.id === "action-metric");
+		const script = readFileSync(scriptPath, "utf8");
+		expect(observationClaim).toContain("110件");
+		expect(observationClaim).toContain("p95は238秒");
+		expect(passRateClaim).toContain("104件がsuccess、6件がfailure");
+		expect(passRateClaim).toContain("104/110=94.5%");
+		expect(metricCard.p95_seconds).toBe(238);
+		expect(metricCard.median_seconds).toBe(133);
+		expect(metricCard.run_attempt_1_success).toBe(
+			"104/110 completed workflow runs (94.5%)",
+		);
+		expect(actionMetricDialogue.text.length).toBeLessThanOrEqual(84);
+		expect(script).toContain("104件成功、6件失敗");
+		expect(script).toContain("p95は238秒");
 		const failureTriage = JSON.parse(readFileSync(failureTriagePath, "utf8"));
 		expect(failureTriage.results.failed_workflow_runs_inspected).toBe(25);
 		expect(

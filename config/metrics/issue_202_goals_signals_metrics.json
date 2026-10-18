@@ -1,7 +1,7 @@
 {
 	"schema_version": 1,
 	"plan_id": "yt3-change-feedback",
-	"observed_at": "2026-10-15T15:04:10Z",
+	"observed_at": "2026-10-18T17:54:24Z",
 	"decision_question": "How can yt3 reduce avoidable time to trustworthy change feedback without weakening the checks that protect main?",
 	"framework_source_ids": ["linkedin-dph-gsm"],
 	"sources": [
@@ -10,14 +10,14 @@
 			"title": "LinkedIn DPH Framework: Goals, Signals, and Metrics",
 			"url": "https://linkedin.github.io/dph-framework/goals-signals-metrics.html",
 			"role": "PRIMARY_FRAMEWORK",
-			"accessed_on": "2026-10-16"
+			"accessed_on": "2026-10-19"
 		},
 		{
 			"id": "github-actions-run-api",
 			"title": "GitHub REST API: workflow runs",
 			"url": "https://docs.github.com/en/rest/actions/workflow-runs",
 			"role": "METRIC_DATA_SOURCE",
-			"accessed_on": "2026-10-16"
+			"accessed_on": "2026-10-19"
 		}
 	],
 	"goals": [
@@ -51,12 +51,12 @@
 			"unit": "seconds",
 			"data_source_ids": ["github-actions-run-api"],
 			"formula": "p95(updated_at - created_at) for completed pull_request CI workflow runs with run_attempt = 1",
-			"aggregation": "Nearest-rank p95; n=129; median=129 seconds; max=2892 seconds",
-			"observation_window": "2026-09-15T15:04:10Z to 2026-10-15T15:04:10Z (UTC)",
+			"aggregation": "Nearest-rank p95; n=110; median=133 seconds (mean of middle pair for even n); max=2892 seconds",
+			"observation_window": "2026-09-18T17:54:24Z to 2026-10-18T17:54:24Z (UTC)",
 			"status": "MEASURED",
-			"value": 221,
+			"value": 238,
 			"evidence_urls": [
-				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-15T15%3A04%3A10Z&event=pull_request"
+				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-18T17%3A54%3A24Z&event=pull_request"
 			],
 			"limitations": [
 				"The run timestamps are a proxy for time to feedback and can include queue and service-update delay.",
@@ -73,12 +73,12 @@
 			"unit": "percent",
 			"data_source_ids": ["github-actions-run-api"],
 			"formula": "100 * successful completed first-attempt pull_request CI workflow runs / all completed first-attempt pull_request CI workflow runs",
-			"aggregation": "104 successful / 129 completed workflow runs with run_attempt=1 = 80.6%; multiple runs from one pull request can be counted; report numerator and denominator",
-			"observation_window": "2026-09-15T15:04:10Z to 2026-10-15T15:04:10Z (UTC)",
+			"aggregation": "104 successful / 110 completed workflow runs with run_attempt=1 = 94.5%; multiple runs from one pull request can be counted; report numerator and denominator",
+			"observation_window": "2026-09-18T17:54:24Z to 2026-10-18T17:54:24Z (UTC)",
 			"status": "MEASURED",
-			"value": 80.6,
+			"value": 94.5,
 			"evidence_urls": [
-				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-15T15%3A04%3A10Z&event=pull_request"
+				"https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-18T17%3A54%3A24Z&event=pull_request"
 			],
 			"limitations": [
 				"A green CI run is not proof that a change is defect-free.",
