@@ -129,3 +129,7 @@ Final reporting should state only verified facts relevant to the task: repositor
 - **Range:** Combine code, data, tests, runtime/UI, and domain expertise when that materially improves the outcome, while respecting canonical owners and avoiding duplicate systems.
 - **Speed:** Complete authorized read-only and reversible work through implementation, focused checks, and read-back without unnecessary approval loops. Bound retries and stop at the proven outcome.
 - These principles never bypass repository-specific security, privacy, permission, publication, spending, destructive-action, or release boundaries. State verified results and any remaining `UNVERIFIED` layers.
+
+## Compute-scaling adoption
+
+Increasing model capability, context size or generation attempts must improve measured output quality on fixed source snapshots and comparable production tasks. Compare sourced-claim accuracy, contradictory claims, schema acceptance, completion rate, release-gate outcomes, runtime, and measured compute use before adoption. Maintain replaceable research/generation backends through current Taskfile and separate byosan, yawa and humanity profiles. Keep source attribution and privacy requirements intact. Additional compute does not grant publication authorization; production release and remote read-back retain their existing gates. Keep the prior lower-cost path when measured evidence does not support a change.
