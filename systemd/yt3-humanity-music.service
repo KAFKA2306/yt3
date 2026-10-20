@@ -1,9 +1,13 @@
 [Unit]
 Description=YT3 Humanity Observatory Daily Music Video
 After=network-online.target
+StartLimitIntervalSec=3600
+StartLimitBurst=3
 
 [Service]
 Type=oneshot
+Restart=on-failure
+RestartSec=300
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
 Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/snap/bin:/usr/lib/wsl/lib:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
