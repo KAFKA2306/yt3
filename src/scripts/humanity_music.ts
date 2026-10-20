@@ -474,6 +474,19 @@ async function youtubePlaylist(date: string): Promise<void> {
 		} while (pageToken);
 		return ids;
 	};
+	for (
+		let attempt = 0;
+		attempt < config.youtube_playlist.ready_attempts;
+		attempt++
+	) {
+		const status = (
+			await youtube.videos.list({ part: ["status"], id: [videoId] })
+		).data.items?.[0]?.status?.uploadStatus;
+		if (status === "processed") break;
+		await new Promise((resolve) =>
+			setTimeout(resolve, config.youtube_playlist.ready_interval_ms),
+		);
+	}
 	if (!(await listItems()).includes(videoId))
 		await youtube.playlistItems.insert({
 			part: ["snippet"],

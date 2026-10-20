@@ -62,6 +62,8 @@ export const ConfigSchema = z.object({
 		title: z.string(),
 		description: z.string(),
 		privacy: z.enum(["public", "unlisted", "private"]),
+		ready_attempts: z.number(),
+		ready_interval_ms: z.number(),
 	}),
 });
 export type MusicConfig = z.infer<typeof ConfigSchema>;

@@ -61,3 +61,5 @@ youtube_playlist:
   title: 人類観測所の音楽
   description: 人類の不器用さを愛おしむ曲を、毎日1曲ずつ。すべてAIで生成しています。
   privacy: public
+  ready_attempts: 20
+  ready_interval_ms: 6000
