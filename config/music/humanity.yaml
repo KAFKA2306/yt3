@@ -3,6 +3,10 @@ yue:
   hf_home: /home/kafka/.cache/hf-kafka
   python: .venv/bin/python
   script: examples/generate.py
+  license_file: /home/kafka/YuE/MODEL_LICENSE
+  license_clause: Individual creators and output monetization
+  min_free_vram_mib: 9000
+  snapshot_dir: /home/kafka/.cache/hf-kafka/hub/models--m-a-p--YuE2-3B/snapshots
 output_dir: runs/humanity_music
 style_base: Japanese, technopop, electropop, four-on-the-floor kick, sidechained saw synth arpeggios, processed female vocal, bright catchy hook, 128 BPM
 temperature: 0.9
@@ -22,3 +26,38 @@ axes:
 structure: [Verse, Chorus, Verse, Chorus, Bridge, Chorus]
 lines_per_section: 4
 lyrics_rule: 人類の不器用さを愛おしむ温度で、専門用語で威張らず、既存曲の歌詞や固有の言い回しを使わない。日本語で書く。Chorusは毎回同じ歌詞、VerseとBridgeは毎回違う歌詞にする。
+run:
+  bucket: humanity_observatory
+  name_prefix: music-
+cover:
+  file: cover.png
+  size: 1536x1024
+  prompt: 人類観測所の曲のカバー絵。やわらかい水彩風。配色は白(#FFFDF8)、空色(#BFE7FF)、夕焼けオレンジ(#FFB86B)。文字は入れない。16:9の構図。場面は{time}、{season}、{space}、{object}。感情は{emotion}。
+video:
+  file: video.mp4
+  width: 1920
+  height: 1080
+  fps: 24
+  crf: 28
+  audio_bitrate: 256k
+thumbnail:
+  file: thumbnail.jpg
+  width: 1280
+  height: 720
+  quality: 3
+audit:
+  min_seconds: 120
+  max_tail_mean_db: -35
+  tail_seconds: 1
+  duration_tolerance_seconds: 1.5
+metadata:
+  title_suffix: " | 人類観測所の音楽"
+  tags: [YuE2, AI音楽, テクノポップ, 人類観測所]
+  description: "{title}\n\n場面: {time} / {season} / {space} / {object} / {emotion}\n\n{lyrics}\n\n{ai_disclosure}\n{credit}"
+  credit: "Music: YuE2-3B (m-a-p) #YuE2 / Cover image: gpt-image-2 via Codex CLI"
+  ai_disclosure: この曲の音楽、歌詞、映像はAIで生成しています。
+rights_declaration: 個人の立場の運営者として、歌詞は当該 run で新規に生成し、第三者の歌詞と音源を使っていない。
+youtube_playlist:
+  title: 人類観測所の音楽
+  description: 人類の不器用さを愛おしむ曲を、毎日1曲ずつ。すべてAIで生成しています。
+  privacy: public

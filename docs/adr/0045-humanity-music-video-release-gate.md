@@ -2,7 +2,7 @@
 
 ## ステータス
 
-Proposed
+Accepted
 
 ## 背景
 
@@ -38,11 +38,14 @@ Proposed
 | リポジトリ | `task check:merge` と exact-head CI | UNVERIFIED |
 | 製品 | `task release:check PROFILE=humanity -- <run-id>` の PASS | UNVERIFIED |
 | 実行環境 | 12GB GPU で音楽 run が最後まで生成できること | 検証済み（2 曲、191.8 秒まで） |
-| 公開 | 動画とプレイリストの read-back | UNVERIFIED |
+| 公開 | 2026-10-20 に `3-l1o_GFg_o` が public になり、プレイリスト `PLVIqdnzwksiI` に read-back で含まれることを確認 | 検証済み |
+| AI ラベル | `containsSyntheticMedia` は送信したが、API の read-back に現れない | UNVERIFIED |
+| サムネイル | カスタムサムネイルの権限がなく設定をスキップ | 未達 |
 
 ## 未決事項
 
 - 映像の方式（静止画ループ、歌詞テロップ、生成画像の枚数）。
-- 毎日の公開時刻。
+- サムネイル権限（チャンネルの電話認証）。
+- `containsSyntheticMedia` の反映確認。
 - 常設の公開許可の文面と、その記録先。
 - 公開の最初の1回を private で行うか。

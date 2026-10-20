@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for YT3 Humanity Observatory Daily Music Video
+
+[Timer]
+OnCalendar=*-*-* 06:30:00
+Persistent=true
+Unit=yt3-humanity-music.service
+
+[Install]
+WantedBy=timers.target

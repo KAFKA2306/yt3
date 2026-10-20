@@ -30,8 +30,29 @@ tasks:
     cmds: ["YOUTUBE_CHANNEL_PROFILE=${PROFILE:-byosan} bun src/index.ts {{.CLI_ARGS}}"]
 
   humanity:music:
-    desc: "Humanity music archive: generate | rate <id> <score> [note] | report | playlist (local listening only, never publishes)"
+    desc: "Humanity music archive: generate | rate <id> <score> [note] | report | playlist | preflight (local only, never publishes)"
     cmds: ["bun src/scripts/humanity_music.ts {{.CLI_ARGS}}"]
+
+  humanity:music-prepare:
+    desc: "Prepare one 人類観測所 music video through the product release gate without publishing (DATE=YYYY-MM-DD required)"
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "DATE=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+      - bun src/scripts/humanity_music.ts prepare {{.DATE}}
+      - task release:check PROFILE=humanity -- humanity_observatory/music-{{.DATE}}
+      - |
+        echo "PUBLISH_READY_RUN=humanity_observatory/music-{{.DATE}}"
+        echo "PUBLISH_COMMAND=task publish PROFILE=humanity -- humanity_observatory/music-{{.DATE}}"
+
+  humanity:music-daily:
+    desc: "Prepare, publish, and add to the YouTube playlist one 人類観測所 music video (DATE=YYYY-MM-DD required)"
+    cmds:
+      - task humanity:music-prepare DATE={{.DATE}}
+      - task publish PROFILE=humanity -- humanity_observatory/music-{{.DATE}}
+      - bun src/scripts/humanity_music.ts youtube-playlist {{.DATE}}
 
   byosan:daily:
     desc: "Research, produce, and audit one 秒算マネー feature without publishing"
