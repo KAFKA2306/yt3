@@ -28,7 +28,8 @@ Proposed
    - 動画: `https://www.youtube.com/watch?v=<video_id>`
    - プレイリスト: `https://www.youtube.com/playlist?list=<playlist_id>`
    - 記録先: `publish/receipt.json`、`ledger.jsonl`、`playlist.m3u8`
-7. 映像素材の画像生成は、Codex CLI に委譲できる。使うときは `-s workspace-write` と出力ディレクトリ指定を明示する。`~/.codex/config.toml` の既定（`danger-full-access`、`approval_policy = "never"`）は使わない。
+7. 映像素材の画像生成は `codex-imagegen "<prompt>" <out.png> --size WxH` で行う（codex-bridge ce89dd4 のラッパー、MIT）。内部で `codex exec -C <出力先> -s workspace-write` を明示するため、`~/.codex/config.toml` の既定（`danger-full-access`、`approval_policy = "never"`）の権限は使わない。生成物ごとにプロンプトと SHA-256 を `visual_provenance` へ記録する。
+8. 人類観測所の既存の毎日投稿と同日に2本公開してよい（運営者の決定、2026-10-20）。
 
 ## 検証の層
 
@@ -42,6 +43,6 @@ Proposed
 ## 未決事項
 
 - 映像の方式（静止画ループ、歌詞テロップ、生成画像の枚数）。
-- 毎日の公開時刻と、人類観測所の既存の毎日投稿との関係（同日に2本公開してよいか）。
+- 毎日の公開時刻。
 - 常設の公開許可の文面と、その記録先。
 - 公開の最初の1回を private で行うか。
