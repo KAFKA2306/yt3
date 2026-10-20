@@ -29,6 +29,10 @@ tasks:
     desc: "Run the canonical workflow (PROFILE=byosan|humanity; default byosan)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE=${PROFILE:-byosan} bun src/index.ts {{.CLI_ARGS}}"]
 
+  humanity:music:
+    desc: "Humanity music archive: generate | rate <id> <score> [note] | report | playlist (local listening only, never publishes)"
+    cmds: ["bun src/scripts/humanity_music.ts {{.CLI_ARGS}}"]
+
   byosan:daily:
     desc: "Research, produce, and audit one 秒算マネー feature without publishing"
     cmds:

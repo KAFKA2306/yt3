@@ -1,0 +1,24 @@
+yue:
+  dir: /home/kafka/YuE
+  hf_home: /home/kafka/.cache/hf-kafka
+  python: .venv/bin/python
+  script: examples/generate.py
+output_dir: runs/humanity_music
+style_base: Japanese, technopop, electropop, four-on-the-floor kick, sidechained saw synth arpeggios, processed female vocal, bright catchy hook, 128 BPM
+temperature: 0.9
+playlist:
+  file: playlist.m3u8
+  audio_file: audio.mp3
+  bitrate: 256k
+rating:
+  min: 1
+  max: 5
+axes:
+  time: [深夜, 早朝, 朝, 昼, 夕方, 夜]
+  season: [春の雨, 夏の夕方, 秋の風, 冬の冷気]
+  space: [ベランダ, 洗面所, レジ前, 玄関, 駅のホーム, コンビニ]
+  object: [イヤホン, レシート, 充電器, スマホ, 傘, 鍵]
+  emotion: [ささやかな祝祭, 恥ずかしさ, 安心, えへへ, 放課後の安堵]
+structure: [Verse, Chorus, Verse, Chorus, Bridge, Chorus]
+lines_per_section: 4
+lyrics_rule: 人類の不器用さを愛おしむ温度で、専門用語で威張らず、既存曲の歌詞や固有の言い回しを使わない。日本語で書く。Chorusは毎回同じ歌詞、VerseとBridgeは毎回違う歌詞にする。
