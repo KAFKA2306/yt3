@@ -5,6 +5,6 @@ After=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
-Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/snap/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/snap/bin:/usr/lib/wsl/lib:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
 ExecStart=/usr/bin/bash -c 'task humanity:music-daily DATE=$(date +%%F) || { DISCORD_ALERT_TYPE=audit_fail DISCORD_ALERT_MESSAGE="Humanity music daily failed" bun src/scripts/send_discord_alert.ts; exit 1; }'

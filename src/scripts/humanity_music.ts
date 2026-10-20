@@ -318,51 +318,53 @@ async function prepare(date: string): Promise<void> {
 	}
 	const videoPath = path.join(dir, config.video.file);
 	const { width, height } = config.video;
-	run([
-		"ffmpeg",
-		"-y",
-		"-loglevel",
-		"error",
-		"-loop",
-		"1",
-		"-framerate",
-		String(config.video.fps),
-		"-i",
-		coverPath,
-		"-i",
-		song.audio,
-		"-vf",
-		`scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},format=yuv420p`,
-		"-c:v",
-		"libx264",
-		"-tune",
-		"stillimage",
-		"-crf",
-		String(config.video.crf),
-		"-c:a",
-		"aac",
-		"-b:a",
-		config.video.audio_bitrate,
-		"-t",
-		String(probeSeconds(song.audio)),
-		"-movflags",
-		"+faststart",
-		videoPath,
-	]);
+	if (!fs.existsSync(videoPath))
+		run([
+			"ffmpeg",
+			"-y",
+			"-loglevel",
+			"error",
+			"-loop",
+			"1",
+			"-framerate",
+			String(config.video.fps),
+			"-i",
+			coverPath,
+			"-i",
+			song.audio,
+			"-vf",
+			`scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},format=yuv420p`,
+			"-c:v",
+			"libx264",
+			"-tune",
+			"stillimage",
+			"-crf",
+			String(config.video.crf),
+			"-c:a",
+			"aac",
+			"-b:a",
+			config.video.audio_bitrate,
+			"-t",
+			String(probeSeconds(song.audio)),
+			"-movflags",
+			"+faststart",
+			videoPath,
+		]);
 	const thumbnailPath = path.join(dir, config.thumbnail.file);
-	run([
-		"ffmpeg",
-		"-y",
-		"-loglevel",
-		"error",
-		"-i",
-		coverPath,
-		"-vf",
-		`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
-		"-q:v",
-		String(config.thumbnail.quality),
-		thumbnailPath,
-	]);
+	if (!fs.existsSync(thumbnailPath))
+		run([
+			"ffmpeg",
+			"-y",
+			"-loglevel",
+			"error",
+			"-i",
+			coverPath,
+			"-vf",
+			`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
+			"-q:v",
+			String(config.thumbnail.quality),
+			thumbnailPath,
+		]);
 	const title = `${song.title}${config.metadata.title_suffix}`;
 	fs.writeJsonSync(
 		path.join(dir, "state.json"),
@@ -485,14 +487,19 @@ async function youtubePlaylist(date: string): Promise<void> {
 	if (!(await listItems()).includes(videoId))
 		throw new Error(`playlist read-back does not contain ${videoId}`);
 	const videoUrl = `${YOUTUBE_WATCH_URL}${videoId}`;
-	append({
-		kind: "publication",
-		id: song.id,
-		at: new Date().toISOString(),
-		video_id: videoId,
-		video_url: videoUrl,
-		playlist_url: playlistUrl,
-	});
+	if (
+		!readLedger().some(
+			(row) => row.kind === "publication" && row.video_id === videoId,
+		)
+	)
+		append({
+			kind: "publication",
+			id: song.id,
+			at: new Date().toISOString(),
+			video_id: videoId,
+			video_url: videoUrl,
+			playlist_url: playlistUrl,
+		});
 	console.log(
 		JSON.stringify({ video_url: videoUrl, playlist_url: playlistUrl }),
 	);
