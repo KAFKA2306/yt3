@@ -430,6 +430,25 @@ async function youtubePlaylist(date: string): Promise<void> {
 	const { auth } = await createYouTubeOAuthClient(profile.profileName);
 	await assertYouTubeChannelMatchesProfile(auth, profile);
 	const youtube = google.youtube({ version: "v3", auth });
+	const current = (
+		await youtube.videos.list({ part: ["status"], id: [videoId] })
+	).data.items?.[0]?.status;
+	const labeled = await youtube.videos.update({
+		part: ["status"],
+		requestBody: {
+			id: videoId,
+			status: {
+				privacyStatus: current?.privacyStatus,
+				selfDeclaredMadeForKids: current?.selfDeclaredMadeForKids ?? false,
+				embeddable: current?.embeddable,
+				license: current?.license,
+				publicStatsViewable: current?.publicStatsViewable,
+				containsSyntheticMedia: true,
+			},
+		},
+	});
+	if (labeled.data.status?.containsSyntheticMedia !== true)
+		throw new Error(`synthetic media label was not applied to ${videoId}`);
 	const stored = readLedger().find((row) => row.kind === "playlist");
 	const playlistId =
 		stored?.kind === "playlist"
