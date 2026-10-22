@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for YT3 Yawa Archive Daily Validation
+
+[Timer]
+OnCalendar=*-*-* 21:15:00
+Persistent=true
+Unit=yt3-yawa-validate.service
+
+[Install]
+WantedBy=timers.target
