@@ -1,0 +1,66 @@
+run:
+  bucket: yawa_archive
+  name_prefix: yawa-
+pool_file: config/yawa/script_pool.json
+audience: 日本人男性
+script:
+  tool: codex
+  sandbox: read-only
+  timeout_seconds: 600
+  min_segments: 36
+  max_segments: 60
+  max_segment_chars: 90
+  max_attempts: 3
+tts:
+  # 切り替えは backend の 1 行だけ。自動の代替はしない（失敗は失敗として止める）。
+  backend: irodori-v4.1-small
+  backends:
+    irodori-v4.1-small:
+      kind: irodori
+      dir: /home/kafka/2511youtuber/v3/yt3/sandbox/Irodori-TTS-v4.1
+      hf_checkpoint: Aratako/Irodori-TTS-v4.1-Small
+      num_steps: 10
+    irodori-v4-large:
+      kind: irodori
+      dir: /home/kafka/2511youtuber/v3/yt3/sandbox/Irodori-TTS-v4.1
+      hf_checkpoint: Aratako/Irodori-TTS-v4-Large
+      num_steps: 10
+  hf_home: /home/kafka/.cache/hf-yawa
+  seed: 4242
+  gap_seconds: 1.6
+  min_free_vram_mib: 6000
+mix:
+  room_tone_db: -42
+  target_lufs: -23
+asr:
+  model: small
+  min_similarity: 0.55
+cover:
+  tool: codex-imagegen
+  file: cover.png
+  size: 1536x1024
+video:
+  file: video.mp4
+  width: 1920
+  height: 1080
+  fps: 24
+  crf: 28
+  audio_bitrate: 192k
+thumbnail:
+  file: thumbnail.jpg
+  width: 1280
+  height: 720
+  quality: 3
+audit:
+  min_seconds: 300
+  max_seconds: 1500
+  max_tail_mean_db: -35
+  tail_seconds: 1
+  duration_tolerance_seconds: 1.5
+safety:
+  banned_terms: [未成年, 小学, 中学, 高校, 女子高生, JK, ロリ, 少女, 幼, 児童, 生徒, 制服, 性的, 性行為, 裸, エロ, 喘ぎ, 愛撫]
+metadata:
+  title_suffix: " | 夜話アーカイブ ASMR"
+  tags: [ASMR, 睡眠導入, 癒やし, 囁き, Irodori-TTS, AI音声]
+  ai_disclosure: この作品の台本、音声、画像はAIで生成しています。
+  rights_declaration: 台本は当該 run で新規に生成した日本語の原作で、第三者の台本・音声・画像の転載をしていない。

@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for YT3 Yawa Archive Daily ASMR Episode
+
+[Timer]
+OnCalendar=*-*-* 20:30:00
+Persistent=true
+Unit=yt3-yawa-daily.service
+
+[Install]
+WantedBy=timers.target
