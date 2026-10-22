@@ -107,6 +107,8 @@ Repository layout, root allowlist, ADR indexing, branch/worktree, and uncommitte
 
 Never expose secrets, OAuth credentials, private tokens, or private local metadata in public artifacts.
 
+Links are written as bare URLs on their own line, with a blank line before and after and no other character on that line. Never put text, punctuation, brackets, or markdown link syntax next to a URL, because the terminal cannot open it otherwise. This rule is invariant for every report, handoff, Issue, PR description, and document.
+
 Final reporting should state only verified facts relevant to the task: repository/PR, what changed, deterministic checks actually run, exact-head CI, merge state, and any separately verified product/runtime/external result. Stop when the requested scope reaches its fixed point.
 
 ## 8. Delegate next work to the agent team and act autonomously
