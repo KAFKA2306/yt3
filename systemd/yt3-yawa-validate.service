@@ -1,0 +1,10 @@
+[Unit]
+Description=YT3 Yawa Archive Daily Validation
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
+Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/snap/bin:/usr/lib/wsl/lib:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/kafka
+ExecStart=/usr/bin/bash -c 'exec >> logs/yawa_validate.log 2>&1; task yawa:validate DATE=$(date +%%F) || { DISCORD_ALERT_TYPE=audit_fail DISCORD_ALERT_MESSAGE="Yawa daily validation failed: see logs/yawa_validate.log" bun src/scripts/send_discord_alert.ts; exit 1; }'

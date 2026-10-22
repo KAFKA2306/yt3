@@ -68,6 +68,16 @@ tasks:
         echo "PUBLISH_READY_RUN=yawa_archive/yawa-{{.DATE}}"
         echo "PUBLISH_COMMAND=task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}"
 
+  yawa:validate:
+    desc: "Validate one 夜話アーカイブ episode end to end: audit, publish state, receipt, channel and privacy (DATE=YYYY-MM-DD required; read-only)"
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "DATE=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+      - bun src/scripts/yawa_validate.ts {{.DATE}}
+
   yawa:daily:
     desc: "Prepare and publish one 夜話アーカイブ ASMR episode (DATE=YYYY-MM-DD required; publishes only after the release gate passes)"
     cmds:
