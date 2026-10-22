@@ -1,0 +1,39 @@
+global_style:
+  font_path: "assets/fonts/Atkinson-Hyperlegible-Regular.ttf"
+  font_name: "Atkinson Hyperlegible"
+  thumbnail:
+    title_size: 110
+    subtitle_size: 48
+  video:
+    subtitle_size: 64
+
+workflow:
+  default_run_dir: "runs"
+  default_bucket: "yawa_archive"
+  checkpoint_enabled: true
+  trend_settings:
+    enabled: false
+    regions: ["JP"]
+    sources: []
+  paths:
+    lock_file: "logs/cron.lock"
+    runs_dir: "runs"
+    memory_dir: "data/memory"
+    state_dir: "data/state"
+  filenames:
+    output: "output.yaml"
+    state: "state.json"
+    audio_full: "full.wav"
+    subtitles: "subtitles.ass"
+    thumbnail: "thumbnail.jpg"
+    video: "video.mp4"
+
+steps:
+  youtube:
+    enabled: true
+    max_title_length: 100
+    max_description_length: 5000
+    default_tags: ["ASMR", "夜話アーカイブ", "睡眠導入", "AI音声"]
+    category_id: 24
+    default_visibility: "public"
+    discord_notifications: {publish_start: true, publish_complete: true}
