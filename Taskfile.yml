@@ -55,18 +55,18 @@ tasks:
       - bun src/scripts/humanity_music.ts youtube-playlist {{.DATE}}
 
   yawa:prepare:
-    desc: "Prepare one 夜話アーカイブ ASMR episode through the product release gate without publishing (DATE=YYYY-MM-DD required)"
+    desc: "Prepare one 夜話アーカイブ ASMR episode through the product release gate without publishing (DATE=YYYY-MM-DD required; SLOT=<alnum> optional for a second episode on the same date)"
     cmds:
       - |
         if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
           echo "DATE=YYYY-MM-DD is required" >&2
           exit 2
         fi
-      - bun src/scripts/yawa_daily.ts prepare {{.DATE}}
-      - task release:check PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}
+      - bun src/scripts/yawa_daily.ts prepare {{.DATE}} {{.SLOT}}
+      - task release:check PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
       - |
-        echo "PUBLISH_READY_RUN=yawa_archive/yawa-{{.DATE}}"
-        echo "PUBLISH_COMMAND=task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}"
+        echo "PUBLISH_READY_RUN=yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}"
+        echo "PUBLISH_COMMAND=task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}"
 
   yawa:validate:
     desc: "Validate one 夜話アーカイブ episode end to end: audit, publish state, receipt, channel and privacy (DATE=YYYY-MM-DD required; read-only)"
