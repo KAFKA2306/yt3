@@ -345,10 +345,13 @@ function mix(listPath: string, outPath: string): void {
 	fs.removeSync(raw);
 }
 
-async function prepare(date: string): Promise<void> {
+async function prepare(date: string, slot?: string): Promise<void> {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
 		throw new Error("DATE=YYYY-MM-DD is required");
-	const name = `${config.run.name_prefix}${date}`;
+	// 同じ日に 2 本目を作るときだけ SLOT（英数字）を付ける。省略時の名前は従来どおり。
+	if (slot && !/^[a-z0-9]+$/.test(slot))
+		throw new Error("SLOT must be lowercase letters or digits");
+	const name = `${config.run.name_prefix}${date}${slot ? `-${slot}` : ""}`;
 	const dir = path.join(bucketDir, name);
 	const runId = `${config.run.bucket}/${name}`;
 	const action = preparationAction({
@@ -532,7 +535,7 @@ async function prepare(date: string): Promise<void> {
 		);
 }
 
-const [command, date] = process.argv.slice(2);
+const [command, date, slot] = process.argv.slice(2);
 if (command === "preflight") preflight();
-else if (command === "prepare" && date) await prepare(date);
+else if (command === "prepare" && date) await prepare(date, slot);
 else throw new Error("usage: yawa_daily.ts preflight | prepare YYYY-MM-DD");
