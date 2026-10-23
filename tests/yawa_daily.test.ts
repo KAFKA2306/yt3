@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
+	type ReferenceCandidate,
 	type ScriptDraft,
 	assertUnprivileged,
-	irodoriArgs,
 	loadPool,
 	loadYawaConfig,
 	pickEntry,
+	referenceCandidateCall,
+	segmentCall,
+	selectReference,
 	similarity,
 	validateDraft,
 	yawaAudit,
@@ -14,6 +17,7 @@ import {
 const root = process.cwd();
 const config = loadYawaConfig(root);
 const pool = loadPool(root, config);
+const REF = "/tmp/ref.wav";
 
 function draft(overrides: Partial<ScriptDraft> = {}): ScriptDraft {
 	return {
@@ -72,27 +76,67 @@ describe("yawa daily safety", () => {
 	});
 });
 
+describe("yawa daily voice reference", () => {
+	test("every segment is generated from the reference clip, never caption-only", () => {
+		const call = segmentCall(config, "こんばんは", "囁く声", REF, "/tmp/x.wav");
+		expect(call.command).toContain("--ref-wavs");
+		expect(call.command).toContain(REF);
+		expect(call.command).not.toContain("--no-ref");
+	});
+	test("the seed for segments is fixed", () => {
+		const call = segmentCall(config, "a", "b", REF, "/tmp/x.wav");
+		expect(call.command).toContain(String(config.tts.seed));
+	});
+	test("reference candidates are the only caption-only generations", () => {
+		const call = referenceCandidateCall(config, "囁く声", 101, "/tmp/c.wav");
+		expect(call.command).toContain("--no-ref");
+		expect(call.command).toContain(config.reference.text);
+	});
+	test("selects the most intelligible candidate", () => {
+		const candidates: ReferenceCandidate[] = [
+			{ seed: 101, file: "a", asr_similarity: 0.7 },
+			{ seed: 202, file: "b", asr_similarity: 0.9 },
+			{ seed: 303, file: "c", asr_similarity: 0.85 },
+		];
+		expect(selectReference(candidates, config).seed).toBe(202);
+	});
+	test("breaks ties by lower seed", () => {
+		const candidates: ReferenceCandidate[] = [
+			{ seed: 303, file: "c", asr_similarity: 0.8 },
+			{ seed: 101, file: "a", asr_similarity: 0.8 },
+		];
+		expect(selectReference(candidates, config).seed).toBe(101);
+	});
+	test("fails when no candidate passes", () => {
+		expect(() =>
+			selectReference([{ seed: 101, file: "a", asr_similarity: 0.1 }], config),
+		).toThrow("no reference candidate passed");
+	});
+});
+
 describe("yawa daily tts backend", () => {
 	test("builds an irodori command with a pinned HF_HOME", () => {
-		const call = irodoriArgs(config, "こんばんは", "囁く声", "/tmp/x.wav");
+		const call = segmentCall(config, "こんばんは", "囁く声", REF, "/tmp/x.wav");
 		expect(call.command).toContain("--hf-checkpoint");
 		expect(call.env.HF_HOME).toBe(config.tts.hf_home);
 	});
 	test("switching backend is a config value", () => {
-		const call = irodoriArgs(
+		const call = segmentCall(
 			{ ...config, tts: { ...config.tts, backend: "irodori-v4-large" } },
 			"こんばんは",
 			"囁く声",
+			REF,
 			"/tmp/x.wav",
 		);
 		expect(call.command).toContain("Aratako/Irodori-TTS-v4-Large");
 	});
 	test("unknown backend fails loudly", () => {
 		expect(() =>
-			irodoriArgs(
+			segmentCall(
 				{ ...config, tts: { ...config.tts, backend: "nope" } },
 				"a",
 				"b",
+				REF,
 				"c",
 			),
 		).toThrow("unknown tts backend");
@@ -108,7 +152,9 @@ describe("yawa daily audit", () => {
 			backend: "irodori-v4.1-small",
 			checkpoint: "x",
 			seed: config.tts.seed,
+			reference_sha256: "ref1",
 		},
+		referenceSha256: "ref1",
 		audioSeconds: 600,
 		videoSeconds: 600,
 		tailMeanDb: -50,
@@ -119,8 +165,14 @@ describe("yawa daily audit", () => {
 	test("passes a complete run", () => {
 		const result = yawaAudit(base as never, config);
 		expect(Object.values(result).every((c) => c.status === "PASS")).toBe(true);
-		expect(Object.keys(result)).toContain("tts_provenance");
-		expect(Object.keys(result)).toContain("audio_integrity");
+		expect(Object.keys(result)).toContain("voice_reference");
+	});
+	test("fails when segments were not generated from the recorded reference", () => {
+		const result = yawaAudit(
+			{ ...base, referenceSha256: "other" } as never,
+			config,
+		);
+		expect(result.voice_reference?.status).toBe("QUALITY_FAIL");
 	});
 	test("fails on low ASR similarity and missing ASR", () => {
 		expect(
