@@ -20,6 +20,10 @@ Fix the owning source rather than generated output or stale prose. Do not hide m
 
 An explicit request to run or start a production path means executing its canonical Taskfile command on the target runtime when that capability is available. CI, mocks, simulations, and dry runs do not satisfy that request.
 
+### Standing authorization (yawa)
+
+The owner has authorized autonomous daily publication for 夜話アーカイブ ASMR (`yawa`) through `task yawa:daily`, without a per-episode approval, once the product release gate passes. This is a standing instruction for `yawa` only. It does not extend to `byosan` or `humanity`, and it does not cover manual publication of a run outside the daily path. Metadata rewrites of published `yawa` videos go only through `task yawa:metadata RUN=<run-id>`, which reads back and records the result.
+
 ## Evidence boundary
 
 Repository checks prove only the exact revision they executed. Product/runtime/publication are separate states and require direct evidence from the target artifact or service. Unchecked layers remain `UNVERIFIED`.
