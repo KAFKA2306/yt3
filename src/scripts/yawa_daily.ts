@@ -129,10 +129,10 @@ function scriptPrompt(entry: PoolEntry, lastError?: string): string {
 		"- 語り手は一人。聞き手を「あなた」と呼び、距離の近い囁きで、短い文と沈黙を使う。",
 		`- segments は ${config.script.min_segments} から ${config.script.max_segments} 個。各要素は ${config.script.max_segment_chars} 文字以内の話し言葉で、1〜2文。`,
 		"- 音声は TTS が読む。ト書き、括弧、記号、効果音の指示は書かない。読み仮名が要る語はひらがなで書く。",
-		"- voice_caption は声の描写（状況、距離、息、温度、年齢感は成人）を日本語で1〜2文。",
+		"- 声は固定の設定で読む（台本側で声の指定はしない）。語り手は成人の年上の女性として書く。",
 		"- cover_scene は文字を含まない1枚絵の情景描写（夜、柔らかい光、人物は後ろ姿か影）。",
 		"- adult_characters_confirmed は true にする。",
-		'JSON だけを返す: {"title","hook","voice_caption","cover_scene","adult_characters_confirmed","segments":[...]}',
+		'JSON だけを返す: {"title","hook","cover_scene","adult_characters_confirmed","segments":[...]}',
 		lastError ? `前回の失敗: ${lastError}。直してください。` : "",
 	]
 		.filter(Boolean)
@@ -237,7 +237,7 @@ function generateReference(dir: string, draft: ScriptDraft): ReferenceRecord {
 			if (!fs.existsSync(file)) {
 				const { cwd, command, env } = referenceCandidateCall(
 					config,
-					draft.voice_caption,
+					config.voice.caption,
 					seed,
 					file,
 				);
@@ -290,7 +290,7 @@ function synthesize(draft: ScriptDraft, dir: string, refWav: string): string {
 			const { cwd, command, env } = segmentCall(
 				config,
 				text,
-				draft.voice_caption,
+				config.voice.caption,
 				refWav,
 				wav,
 			);
@@ -403,7 +403,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			backend: config.tts.backend,
 			checkpoint: backend?.hf_checkpoint,
 			seed: config.tts.seed,
-			voice_caption: draft.voice_caption,
+			voice_caption: config.voice.caption,
 			reference_sha256: reference.sha256,
 		},
 		{ spaces: 2 },

@@ -32,6 +32,7 @@ const YawaConfigSchema = z.object({
 		gap_seconds: z.number().positive(),
 		min_free_vram_mib: z.number().positive(),
 	}),
+	voice: z.object({ caption: z.string().min(10).max(300) }),
 	reference: z.object({
 		text: z.string().min(10),
 		seeds: z.array(z.number().int()).min(1),
@@ -89,7 +90,6 @@ export type PoolEntry = z.infer<typeof PoolSchema>["entries"][number];
 export const ScriptDraftSchema = z.object({
 	title: z.string().min(4).max(60),
 	hook: z.string().min(10).max(160),
-	voice_caption: z.string().min(10).max(200),
 	cover_scene: z.string().min(20).max(400),
 	adult_characters_confirmed: z.literal(true),
 	segments: z.array(z.string().min(1)),
@@ -142,7 +142,6 @@ export function validateDraft(
 	const everything = [
 		draft.title,
 		draft.hook,
-		draft.voice_caption,
 		draft.cover_scene,
 		...draft.segments,
 	].join("\n");
