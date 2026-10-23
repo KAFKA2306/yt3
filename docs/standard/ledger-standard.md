@@ -22,12 +22,19 @@ A ledger is the record of what happened: state transitions, failures, decisions,
 | Publication state | `src/domain/publication_state.ts` (`CanonicalPublicationStateSchema`) | canonical publish state per run | VERIFIED: schema exists |
 | Analytics | `db/schema.sql` `youtube_analytics` | API-measured metrics, 30-day window | VERIFIED: table defined |
 | LLM quota | `data/state/llm_quotas.json` (`src/io/utils/quota/ledger.ts`) | quota usage per key | VERIFIED: path in code |
+| Yawa run ledger | `runs/yawa_archive/<run-id>/` (`selection.json`, `script.json`, `reference.json`, `tts.json`, `audit/result.json`, `publish/`) | each yawa episode: pool pick, script, voice reference, TTS record, audit, publish state and receipt | VERIFIED: directories exist |
+| Yawa daily logs | `logs/yawa_daily.log`, `logs/yawa_validate.log` | scheduled production and daily validation outcomes | VERIFIED: written by the systemd timers |
 
 ## Known deviations (UNVERIFIED against the rules above)
 
 - The failure ledger is overwritten on each new failure with the same fingerprint. Rule 2 is not met yet. Target: append each occurrence as an entry, and keep the current status as a projection.
 - The run ledger and the run table are not yet linked by a shared run identifier. Target: `runs/<run-id>` is the key in both.
 - Whether every publish attempt writes a read-back entry is not verified for all profiles.
+- Yawa: the daily timer re-prepared an already published run (`yawa-2026-10-23`). See Correction C-1 below. PR #322 stops this for published and pre-reference runs.
+
+## Corrections (append-only)
+
+- **C-1 (yawa-2026-10-23).** After publication, the 20:30 JST daily run re-prepared `runs/yawa_archive/yawa-2026-10-23`. It added `reference_sha256` to `tts.json` and `voice_reference: PASS` to `audit/result.json`, but the audio had been generated caption-only. The video was not re-uploaded (`IDEMPOTENT_REUSE`). Correction: the field and check were removed, the post-hoc reference files were deleted, and the validation was re-run and passed. Guard: `preparationAction` in PR #322. Status: corrected; the original entries are kept in the git history.
 
 ## Retention
 
