@@ -4,14 +4,17 @@ import fs from "fs-extra";
 import { sha256File } from "../domain/publication_state.js";
 import {
 	type PoolEntry,
+	type ReferenceCandidate,
 	type ScriptDraft,
 	ScriptDraftSchema,
 	assertUnprivileged,
 	buildDescription,
-	irodoriArgs,
 	loadPool,
 	loadYawaConfig,
 	pickEntry,
+	referenceCandidateCall,
+	segmentCall,
+	selectReference,
 	similarity,
 	validateDraft,
 	yawaAudit,
@@ -181,7 +184,84 @@ function generateScript(entry: PoolEntry, outPath: string): ScriptDraft {
 	throw new Error(`script generation failed: ${lastError}`);
 }
 
-function synthesize(draft: ScriptDraft, dir: string): string {
+function asrSimilarity(audio: string, expected: string): number {
+	const out = run(
+		[
+			"uv",
+			"run",
+			"--no-project",
+			"--with",
+			"faster-whisper",
+			"python",
+			"-I",
+			path.join(ROOT, "src/scripts/yawa_asr_qa.py"),
+			audio,
+			config.asr.model,
+		],
+		{ env: { HF_HOME: config.tts.hf_home } },
+	);
+	const line = out
+		.trim()
+		.split("\n")
+		.filter((l) => l.startsWith("{"))
+		.pop();
+	if (!line) throw new Error("ASR produced no JSON");
+	return similarity(JSON.parse(line).text as string, expected);
+}
+
+type ReferenceRecord = {
+	selected: ReferenceCandidate;
+	candidates: ReferenceCandidate[];
+	sha256: string;
+	text: string;
+};
+
+/**
+ * 動画ごとの参照音声を作る。候補は参照なしで生成し、聞き取れて割れていないものを選ぶ。
+ * 選んだ参照は、その動画のすべてのセグメントで使う。
+ */
+function generateReference(dir: string, draft: ScriptDraft): ReferenceRecord {
+	const refPath = path.join(dir, "reference.wav");
+	const recordPath = path.join(dir, "reference.json");
+	if (fs.existsSync(recordPath) && fs.existsSync(refPath)) {
+		const record = fs.readJsonSync(recordPath) as ReferenceRecord;
+		if (record.sha256 === sha256File(refPath)) return record;
+		throw new Error("reference.wav does not match reference.json");
+	}
+	const candidateDir = path.join(dir, "reference_candidates");
+	fs.ensureDirSync(candidateDir);
+	const candidates: ReferenceCandidate[] = config.reference.seeds.map(
+		(seed) => {
+			const file = path.join(candidateDir, `seed_${seed}.wav`);
+			if (!fs.existsSync(file)) {
+				const { cwd, command, env } = referenceCandidateCall(
+					config,
+					draft.voice_caption,
+					seed,
+					file,
+				);
+				run(command, { cwd, env });
+			}
+			return {
+				seed,
+				file,
+				asr_similarity: asrSimilarity(file, config.reference.text),
+			};
+		},
+	);
+	const selected = selectReference(candidates, config);
+	fs.copyFileSync(selected.file, refPath);
+	const record: ReferenceRecord = {
+		selected,
+		candidates,
+		sha256: sha256File(refPath),
+		text: config.reference.text,
+	};
+	fs.writeJsonSync(recordPath, record, { spaces: 2 });
+	return record;
+}
+
+function synthesize(draft: ScriptDraft, dir: string, refWav: string): string {
 	const ttsDir = path.join(dir, "tts");
 	fs.ensureDirSync(ttsDir);
 	const gap = path.join(ttsDir, "gap.wav");
@@ -206,10 +286,11 @@ function synthesize(draft: ScriptDraft, dir: string): string {
 			`seg_${String(index + 1).padStart(3, "0")}.wav`,
 		);
 		if (!fs.existsSync(wav)) {
-			const { cwd, command, env } = irodoriArgs(
+			const { cwd, command, env } = segmentCall(
 				config,
 				text,
 				draft.voice_caption,
+				refWav,
 				wav,
 			);
 			run(command, { cwd, env });
@@ -263,31 +344,6 @@ function mix(listPath: string, outPath: string): void {
 	fs.removeSync(raw);
 }
 
-function asrSimilarity(audio: string, draft: ScriptDraft): number {
-	const out = run(
-		[
-			"uv",
-			"run",
-			"--no-project",
-			"--with",
-			"faster-whisper",
-			"python",
-			"-I",
-			path.join(ROOT, "src/scripts/yawa_asr_qa.py"),
-			audio,
-			config.asr.model,
-		],
-		{ env: { HF_HOME: config.tts.hf_home } },
-	);
-	const line = out
-		.trim()
-		.split("\n")
-		.filter((l) => l.startsWith("{"))
-		.pop();
-	if (!line) throw new Error("ASR produced no JSON");
-	return similarity(JSON.parse(line).text as string, draft.segments.join(""));
-}
-
 async function prepare(date: string): Promise<void> {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
 		throw new Error("DATE=YYYY-MM-DD is required");
@@ -312,8 +368,12 @@ async function prepare(date: string): Promise<void> {
 		? ScriptDraftSchema.parse(fs.readJsonSync(scriptPath))
 		: generateScript(entry, scriptPath);
 
+	const reference = generateReference(dir, draft);
+	const refPath = path.join(dir, "reference.wav");
+
 	const audioPath = path.join(dir, "final_mix.wav");
-	if (!fs.existsSync(audioPath)) mix(synthesize(draft, dir), audioPath);
+	if (!fs.existsSync(audioPath))
+		mix(synthesize(draft, dir, refPath), audioPath);
 	const backend = config.tts.backends[config.tts.backend];
 	fs.writeJsonSync(
 		path.join(dir, "tts.json"),
@@ -322,13 +382,16 @@ async function prepare(date: string): Promise<void> {
 			checkpoint: backend?.hf_checkpoint,
 			seed: config.tts.seed,
 			voice_caption: draft.voice_caption,
+			reference_sha256: reference.sha256,
 		},
 		{ spaces: 2 },
 	);
 
 	const asrPath = path.join(dir, "asr.json");
 	if (!fs.existsSync(asrPath))
-		fs.writeJsonSync(asrPath, { similarity: asrSimilarity(audioPath, draft) });
+		fs.writeJsonSync(asrPath, {
+			similarity: asrSimilarity(audioPath, draft.segments.join("")),
+		});
 
 	const coverPath = path.join(dir, config.cover.file);
 	const coverRecordPath = path.join(dir, "cover.json");
@@ -419,6 +482,7 @@ async function prepare(date: string): Promise<void> {
 			entry,
 			scriptGeneratedInRun: fs.existsSync(scriptPath),
 			ttsRecord: fs.readJsonSync(path.join(dir, "tts.json")),
+			referenceSha256: sha256File(refPath),
 			audioSeconds,
 			videoSeconds: probeSeconds(videoPath),
 			tailMeanDb: tailMeanDb(audioPath, config.audit.tail_seconds),
@@ -437,6 +501,7 @@ async function prepare(date: string): Promise<void> {
 			run_id: runId,
 			entry: entry.id,
 			seconds: audioSeconds,
+			reference_seed: reference.selected.seed,
 			audit: Object.fromEntries(
 				Object.entries(audit).map(([n, c]) => [n, c.status]),
 			),

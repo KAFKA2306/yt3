@@ -32,6 +32,11 @@ const YawaConfigSchema = z.object({
 		gap_seconds: z.number().positive(),
 		min_free_vram_mib: z.number().positive(),
 	}),
+	reference: z.object({
+		text: z.string().min(10),
+		seeds: z.array(z.number().int()).min(1),
+		min_asr_similarity: z.number(),
+	}),
 	mix: z.object({ room_tone_db: z.number(), target_lufs: z.number() }),
 	asr: z.object({ model: z.string(), min_similarity: z.number() }),
 	cover: z.object({ tool: z.string(), file: z.string(), size: z.string() }),
@@ -162,12 +167,20 @@ export function assertUnprivileged(
 	}
 }
 
-export function irodoriArgs(
+export type IrodoriCall = {
+	cwd: string;
+	command: string[];
+	env: Record<string, string>;
+};
+
+function irodoriCall(
 	config: YawaConfig,
+	speaker: string[],
 	text: string,
 	caption: string,
+	seed: number,
 	outputWav: string,
-): { cwd: string; command: string[]; env: Record<string, string> } {
+): IrodoriCall {
 	const backend = config.tts.backends[config.tts.backend];
 	if (!backend)
 		throw new Error(
@@ -183,13 +196,13 @@ export function irodoriArgs(
 			"infer.py",
 			"--hf-checkpoint",
 			backend.hf_checkpoint,
-			"--no-ref",
+			...speaker,
 			"--text",
 			text,
 			"--caption",
 			caption,
 			"--seed",
-			String(config.tts.seed),
+			String(seed),
 			"--num-steps",
 			String(backend.num_steps),
 			"--output-wav",
@@ -197,6 +210,67 @@ export function irodoriArgs(
 		],
 		env: { HF_HOME: config.tts.hf_home },
 	};
+}
+
+/** 動画内の全セグメントを、同じ参照音声で生成する。声の同一性はこの参照が決める。 */
+export function segmentCall(
+	config: YawaConfig,
+	text: string,
+	caption: string,
+	refWav: string,
+	outputWav: string,
+): IrodoriCall {
+	return irodoriCall(
+		config,
+		["--ref-wavs", refWav],
+		text,
+		caption,
+		config.tts.seed,
+		outputWav,
+	);
+}
+
+/** 参照音声の候補だけを、参照なしで生成する。動画間の声は固定しない。 */
+export function referenceCandidateCall(
+	config: YawaConfig,
+	caption: string,
+	seed: number,
+	outputWav: string,
+): IrodoriCall {
+	return irodoriCall(
+		config,
+		["--no-ref"],
+		config.reference.text,
+		caption,
+		seed,
+		outputWav,
+	);
+}
+
+export type ReferenceCandidate = {
+	seed: number;
+	file: string;
+	asr_similarity: number;
+};
+
+/**
+ * 候補から参照音声を 1 つ選ぶ。基準は「聞き取れること」と「割れていないこと」。
+ * 魅力の判定はしない。聴いた人の評価は別に行う。
+ */
+export function selectReference(
+	candidates: ReferenceCandidate[],
+	config: YawaConfig,
+): ReferenceCandidate {
+	const eligible = candidates.filter(
+		(c) => c.asr_similarity >= config.reference.min_asr_similarity,
+	);
+	if (eligible.length === 0)
+		throw new Error(
+			`no reference candidate passed (min_asr ${config.reference.min_asr_similarity})`,
+		);
+	return [...eligible].sort(
+		(a, b) => b.asr_similarity - a.asr_similarity || a.seed - b.seed,
+	)[0] as ReferenceCandidate;
 }
 
 function bigrams(text: string): Map<string, number> {
@@ -240,7 +314,15 @@ export type YawaAuditInput = {
 	draft: ScriptDraft;
 	entry: PoolEntry;
 	scriptGeneratedInRun: boolean;
-	ttsRecord: { backend: string; checkpoint: string; seed: number } | undefined;
+	ttsRecord:
+		| {
+				backend: string;
+				checkpoint: string;
+				seed: number;
+				reference_sha256: string;
+		  }
+		| undefined;
+	referenceSha256: string | undefined;
 	audioSeconds: number;
 	videoSeconds: number;
 	tailMeanDb: number;
@@ -259,6 +341,13 @@ export function yawaAudit(
 		input.ttsRecord?.checkpoint ? "" : "tts checkpoint not recorded",
 		input.ttsRecord?.seed === config.tts.seed ? "" : "tts seed mismatch",
 		input.scriptGeneratedInRun ? "" : "script was not generated in this run",
+	];
+	const voice = [
+		input.referenceSha256 ? "" : "reference audio is missing",
+		input.ttsRecord?.reference_sha256 &&
+		input.ttsRecord.reference_sha256 === input.referenceSha256
+			? ""
+			: "segments were not generated from the recorded reference",
 	];
 	const integrity = [
 		input.audioSeconds >= audit.min_seconds
@@ -294,6 +383,11 @@ export function yawaAudit(
 			"tts_provenance",
 			"TTS backend, checkpoint and seed are recorded for this run",
 			provenance.filter(Boolean),
+		),
+		voice_reference: check(
+			"voice_reference",
+			"All segments were generated from one recorded reference clip",
+			voice.filter(Boolean),
 		),
 		audio_integrity: check(
 			"audio_integrity",
