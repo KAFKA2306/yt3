@@ -9,6 +9,7 @@ import {
 	ScriptDraftSchema,
 	assertUnprivileged,
 	buildDescription,
+	buildTitle,
 	loadPool,
 	loadYawaConfig,
 	pickEntry,
@@ -479,7 +480,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		]);
 
 	const audioSeconds = probeSeconds(audioPath);
-	const title = `${draft.title}${config.metadata.title_suffix}`;
+	const title = buildTitle(draft, config);
 	fs.writeJsonSync(
 		path.join(dir, "state.json"),
 		{
