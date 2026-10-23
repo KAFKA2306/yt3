@@ -24,7 +24,6 @@ function draft(overrides: Partial<ScriptDraft> = {}): ScriptDraft {
 	return {
 		title: "雨の夜のおやすみ",
 		hook: "今日もお疲れさまでした。雨の音と一緒にゆっくり休みましょう。",
-		voice_caption: "夜の静かな部屋で、耳元で囁く落ち着いた大人の女性の声。",
 		cover_scene: "雨の夜の窓辺に置かれた小さなランプと、湯気の立つマグカップ。",
 		adult_characters_confirmed: true,
 		segments: Array.from(
@@ -142,6 +141,30 @@ describe("yawa daily existing runs", () => {
 				referenceExists: false,
 			}),
 		).toBe("prepare");
+	});
+});
+
+describe("yawa daily voice identity", () => {
+	test("the channel voice is one fixed caption in config, not per episode", () => {
+		expect(config.voice.caption).toContain("年上");
+		expect(config.voice.caption).toContain("囁");
+	});
+	test("reference and segments use the same channel caption", () => {
+		const seg = segmentCall(
+			config,
+			"a",
+			config.voice.caption,
+			REF,
+			"/tmp/x.wav",
+		);
+		const cand = referenceCandidateCall(
+			config,
+			config.voice.caption,
+			101,
+			"/tmp/c.wav",
+		);
+		expect(seg.command).toContain(config.voice.caption);
+		expect(cand.command).toContain(config.voice.caption);
 	});
 });
 
