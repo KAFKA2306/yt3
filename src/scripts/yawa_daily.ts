@@ -12,6 +12,7 @@ import {
 	loadPool,
 	loadYawaConfig,
 	pickEntry,
+	preparationAction,
 	referenceCandidateCall,
 	segmentCall,
 	selectReference,
@@ -350,6 +351,24 @@ async function prepare(date: string): Promise<void> {
 	const name = `${config.run.name_prefix}${date}`;
 	const dir = path.join(bucketDir, name);
 	const runId = `${config.run.bucket}/${name}`;
+	const action = preparationAction({
+		publishVerified:
+			fs.existsSync(path.join(dir, "publish", "state.json")) &&
+			fs.readJsonSync(path.join(dir, "publish", "state.json")).phase ===
+				"VERIFIED",
+		finalMixExists: fs.existsSync(path.join(dir, "final_mix.wav")),
+		referenceExists: fs.existsSync(path.join(dir, "reference.json")),
+	});
+	if (action === "skip_verified") {
+		console.log(
+			`[yawa] ${runId} is already VERIFIED; artifacts are not regenerated`,
+		);
+		return;
+	}
+	if (action === "refuse_legacy")
+		throw new Error(
+			`${runId} was produced before the voice reference; refusing to add one to existing audio`,
+		);
 	preflight();
 	fs.ensureDirSync(dir);
 
