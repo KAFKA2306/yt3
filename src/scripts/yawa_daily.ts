@@ -479,7 +479,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		]);
 
 	const audioSeconds = probeSeconds(audioPath);
-	const title = `${draft.title}${config.metadata.title_suffix}`;
+	const title = `${config.metadata.title_prefix}${draft.title}${config.metadata.title_suffix}`;
 	fs.writeJsonSync(
 		path.join(dir, "state.json"),
 		{
