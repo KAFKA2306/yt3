@@ -70,7 +70,9 @@ audit:
 safety:
   banned_terms: [未成年, 小学, 中学, 高校, 女子高生, JK, ロリ, 少女, 幼, 児童, 生徒, 制服, 性的, 性行為, 裸, エロ, 喘ぎ, 愛撫]
 metadata:
+  # 検索されやすい語をタイトルの前半に置く（SEO の on-page 手順）。台本の題名は後ろに残す。
+  title_prefix: "甘い囁き・"
   title_suffix: " | 夜話アーカイブ ASMR"
-  tags: [ASMR, 睡眠導入, 癒やし, 囁き, Irodori-TTS, AI音声]
+  tags: [ASMR, 睡眠導入, 癒し, 囁き, 年上, 甘々, 添い寝, AI音声]
   ai_disclosure: この作品の台本、音声、画像はAIで生成しています。
   rights_declaration: 台本は当該 run で新規に生成した日本語の原作で、第三者の台本・音声・画像の転載をしていない。

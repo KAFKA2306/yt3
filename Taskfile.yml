@@ -78,6 +78,11 @@ tasks:
         fi
       - bun src/scripts/yawa_validate.ts {{.DATE}}
 
+  yawa:metadata:
+    desc: "Rewrite the title, description and tags of one published 夜話アーカイブ episode to the current rules, then read back and record it (RUN=yawa-YYYY-MM-DD[-slot])"
+    cmds:
+      - bun src/scripts/yawa_metadata.ts {{.RUN}}
+
   yawa:daily:
     desc: "Prepare and publish one 夜話アーカイブ ASMR episode (DATE=YYYY-MM-DD required; publishes only after the release gate passes)"
     cmds:

@@ -64,6 +64,7 @@ const YawaConfigSchema = z.object({
 	}),
 	safety: z.object({ banned_terms: z.array(z.string()) }),
 	metadata: z.object({
+		title_prefix: z.string(),
 		title_suffix: z.string(),
 		tags: z.array(z.string()),
 		ai_disclosure: z.string(),
@@ -434,6 +435,11 @@ export function yawaAudit(
 	};
 }
 
+/** 公開タイトル。新規投稿と既存動画の書き換えで、同じ規則を使う。 */
+export function buildTitle(draft: ScriptDraft, config: YawaConfig): string {
+	return `${config.metadata.title_prefix}${draft.title}${config.metadata.title_suffix}`;
+}
+
 export function buildDescription(
 	draft: ScriptDraft,
 	entry: PoolEntry,
@@ -444,6 +450,7 @@ export function buildDescription(
 	const inspired = `${entry.author ? `着想: ${entry.title} / ${entry.author}` : `着想: ${entry.title}`}\n\n${entry.url}\n`;
 	return [
 		draft.hook,
+		"年上の成人の女性が、耳元で甘く囁く癒しと安眠のASMRです。",
 		"",
 		`再生時間: 約${minutes}分。イヤホンでお聴きください。`,
 		"",

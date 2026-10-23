@@ -3,6 +3,7 @@ import {
 	type ReferenceCandidate,
 	type ScriptDraft,
 	assertUnprivileged,
+	buildDescription,
 	loadPool,
 	loadYawaConfig,
 	pickEntry,
@@ -141,6 +142,19 @@ describe("yawa daily existing runs", () => {
 				referenceExists: false,
 			}),
 		).toBe("prepare");
+	});
+});
+
+describe("yawa daily metadata", () => {
+	test("description keeps the AI disclosure and the inspiration credit", () => {
+		const text = buildDescription(draft(), pool[0], config, 430);
+		expect(text).toContain(config.metadata.ai_disclosure);
+		expect(text).toContain(pool[0].url);
+		expect(text).toContain("年上の成人の女性");
+	});
+	test("title leads with the search prefix and keeps the episode title", () => {
+		expect(config.metadata.title_prefix).toBeTruthy();
+		expect(config.metadata.tags).toContain("年上");
 	});
 });
 
