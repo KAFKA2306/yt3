@@ -435,6 +435,11 @@ export function yawaAudit(
 	};
 }
 
+/** 公開タイトル。新規投稿と既存動画の書き換えで、同じ規則を使う。 */
+export function buildTitle(draft: ScriptDraft, config: YawaConfig): string {
+	return `${config.metadata.title_prefix}${draft.title}${config.metadata.title_suffix}`;
+}
+
 export function buildDescription(
 	draft: ScriptDraft,
 	entry: PoolEntry,
