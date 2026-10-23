@@ -516,6 +516,15 @@ async function youtubePlaylist(date: string): Promise<void> {
 				},
 			},
 		});
+	for (
+		let attempt = 0;
+		attempt < config.youtube_playlist.ready_attempts &&
+		!(await listItems()).includes(videoId);
+		attempt++
+	)
+		await new Promise((resolve) =>
+			setTimeout(resolve, config.youtube_playlist.ready_interval_ms),
+		);
 	if (!(await listItems()).includes(videoId))
 		throw new Error(`playlist read-back does not contain ${videoId}`);
 	const videoUrl = `${YOUTUBE_WATCH_URL}${videoId}`;
