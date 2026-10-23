@@ -6,6 +6,7 @@ import {
 	loadPool,
 	loadYawaConfig,
 	pickEntry,
+	preparationAction,
 	referenceCandidateCall,
 	segmentCall,
 	selectReference,
@@ -111,6 +112,36 @@ describe("yawa daily voice reference", () => {
 		expect(() =>
 			selectReference([{ seed: 101, file: "a", asr_similarity: 0.1 }], config),
 		).toThrow("no reference candidate passed");
+	});
+});
+
+describe("yawa daily existing runs", () => {
+	test("never regenerates a published run", () => {
+		expect(
+			preparationAction({
+				publishVerified: true,
+				finalMixExists: true,
+				referenceExists: false,
+			}),
+		).toBe("skip_verified");
+	});
+	test("refuses to add a reference to audio made without one", () => {
+		expect(
+			preparationAction({
+				publishVerified: false,
+				finalMixExists: true,
+				referenceExists: false,
+			}),
+		).toBe("refuse_legacy");
+	});
+	test("prepares a new run", () => {
+		expect(
+			preparationAction({
+				publishVerified: false,
+				finalMixExists: false,
+				referenceExists: false,
+			}),
+		).toBe("prepare");
 	});
 });
 

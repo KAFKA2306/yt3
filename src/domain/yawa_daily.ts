@@ -247,6 +247,22 @@ export function referenceCandidateCall(
 	);
 }
 
+export type PreparationAction = "prepare" | "skip_verified" | "refuse_legacy";
+
+/**
+ * 既存の run に対して何をするかを決める。
+ * 公開済みの run は再生成しない。参照の導入前に作られた音声に、後から参照を付けない。
+ */
+export function preparationAction(input: {
+	publishVerified: boolean;
+	finalMixExists: boolean;
+	referenceExists: boolean;
+}): PreparationAction {
+	if (input.publishVerified) return "skip_verified";
+	if (input.finalMixExists && !input.referenceExists) return "refuse_legacy";
+	return "prepare";
+}
+
 export type ReferenceCandidate = {
 	seed: number;
 	file: string;
