@@ -1,19 +1,41 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import sharp from "sharp";
+import { getByosanChartTheme } from "../domain/byosan/charts.js";
+import {
+	displayUnits,
+	wrapDisplay,
+	xml,
+} from "../domain/byosan/display_text.js";
+import { ExplanationSchema } from "../domain/byosan/explanation.js";
 import {
 	type ByosanFeatureSegment,
 	type ByosanFeatureSpec,
-	type ByosanStatColor,
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
 } from "../domain/byosan/feature_spec.js";
 import {
+	evaluateOpeningCatch,
+	layoutCueSpans,
+	minimumCueSecondsAtAssPrecision,
+	planSpeechSegments,
+} from "../domain/byosan/production_audit.js";
+import {
 	BYOSAN_CONFIG_PATH,
 	getByosanProductionConfig,
 } from "../domain/byosan/production_config.js";
+import {
+	type ByosanSceneRender,
+	resolveSceneRender,
+} from "../domain/byosan/scene_render.js";
+import { compileScenes } from "../domain/byosan/scene_spec.js";
+import {
+	type SceneSvgStyle,
+	renderSceneSvg,
+} from "../domain/byosan/scene_svg.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
 import { getByosanVisualSystem } from "../domain/design/kafka_visual_system.js";
 import { runAudioQA } from "../io/utils/audio_qa.js";
@@ -22,10 +44,8 @@ import {
 	type TtsVoiceControls,
 } from "../io/utils/tts_orchestrator.js";
 
-type StatColor = ByosanStatColor;
 type FeatureSegment = ByosanFeatureSegment;
 type FeatureSpec = ByosanFeatureSpec;
-type FeatureStat = FeatureSegment["stats"][number];
 
 type TimedSegment = FeatureSegment & {
 	index: number;
@@ -55,49 +75,12 @@ const DEFAULT_SPEC = path.join(PROJECT_ROOT, F.default_spec);
 const VISUAL_IDENTITY = resolveByosanVisualIdentity(
 	yaml.load(fs.readFileSync(BYOSAN_CONFIG_PATH, "utf8")),
 );
-
-const COLORS: Record<StatColor, string> = {
-	cyan: VISUAL_IDENTITY.brandAccent,
-	amber: VISUAL_IDENTITY.warning,
-	white: VISUAL_IDENTITY.textPrimary,
-	muted: VISUAL_IDENTITY.textMuted,
+const SCENE_STYLE: SceneSvgStyle = {
+	design: DESIGN,
+	feature: F,
+	identity: VISUAL_IDENTITY,
+	chart: getByosanChartTheme(),
 };
-
-function xml(value: string): string {
-	return value
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;")
-		.replaceAll('"', "&quot;")
-		.replaceAll("'", "&apos;");
-}
-
-function displayUnits(value: string): number {
-	return Array.from(value).reduce(
-		(total, char) =>
-			total +
-			((char.codePointAt(0) ?? 0) <= 0xff ? F.captions.half_width_units : 1),
-		0,
-	);
-}
-
-function wrapDisplay(value: string, maxUnits: number): string[] {
-	const hardLines = value.split("\n");
-	const result: string[] = [];
-	for (const hardLine of hardLines) {
-		let current = "";
-		for (const char of Array.from(hardLine)) {
-			if (current && displayUnits(`${current}${char}`) > maxUnits) {
-				result.push(current);
-				current = char;
-			} else {
-				current += char;
-			}
-		}
-		if (current) result.push(current);
-	}
-	return result.length > 0 ? result : [""];
-}
 
 function captionProtectedRanges(value: string): Array<[number, number]> {
 	const ranges: Array<[number, number]> = [];
@@ -134,14 +117,21 @@ function isUnsafeCaptionBreak(value: string, index: number): boolean {
 }
 
 function wrapCaptionDisplay(value: string, maxUnits: number): string[] {
-	if (displayUnits(value) <= maxUnits) return [value];
+	if (displayUnits(value, F.captions.half_width_units) <= maxUnits)
+		return [value];
 	const chars = Array.from(value);
 	let bestIndex = 0;
 	let bestScore = Number.POSITIVE_INFINITY;
 	for (let index = 1; index < chars.length; index++) {
 		if (isUnsafeCaptionBreak(value, index)) continue;
-		const leftUnits = displayUnits(chars.slice(0, index).join(""));
-		const rightUnits = displayUnits(chars.slice(index).join(""));
+		const leftUnits = displayUnits(
+			chars.slice(0, index).join(""),
+			F.captions.half_width_units,
+		);
+		const rightUnits = displayUnits(
+			chars.slice(index).join(""),
+			F.captions.half_width_units,
+		);
 		const overflow =
 			Math.max(0, leftUnits - maxUnits) + Math.max(0, rightUnits - maxUnits);
 		const score =
@@ -152,22 +142,11 @@ function wrapCaptionDisplay(value: string, maxUnits: number): string[] {
 		}
 	}
 	if (bestIndex === 0)
-		return wrapDisplay(value, maxUnits).slice(0, F.captions.max_lines);
+		return wrapDisplay(value, maxUnits, F.captions.half_width_units).slice(
+			0,
+			F.captions.max_lines,
+		);
 	return [chars.slice(0, bestIndex).join(""), chars.slice(bestIndex).join("")];
-}
-
-function tspans(
-	lines: string[],
-	x: number,
-	y: number,
-	lineHeight: number,
-): string {
-	return lines
-		.map(
-			(line, index) =>
-				`<tspan x="${x}" y="${y + index * lineHeight}">${xml(line)}</tspan>`,
-		)
-		.join("");
 }
 
 function formatTimestamp(seconds: number): string {
@@ -234,131 +213,6 @@ function run(command: string, args: string[], label: string): void {
 	}
 }
 
-function statCard(
-	stat: FeatureStat,
-	x: number,
-	y: number,
-	width: number,
-): string {
-	const color = COLORS[stat.color];
-	const valueUnits = displayUnits(stat.value);
-	const compactValue = valueUnits > F.scene.stat_value_compact_threshold_units;
-	const valueSize = compactValue
-		? LANDSCAPE.stat_cards.value_compact_font_size
-		: valueUnits > F.scene.stat_value_medium_threshold_units
-			? LANDSCAPE.stat_cards.value_medium_font_size
-			: LANDSCAPE.stat_cards.value_short_font_size;
-	const valueLines = wrapDisplay(
-		stat.value,
-		compactValue
-			? F.scene.stat_value_compact_wrap_units
-			: F.scene.stat_value_wrap_units,
-	).slice(0, F.scene.stat_value_max_lines);
-	const textX = x + LANDSCAPE.stat_cards.padding_left;
-	return `
-		<g>
-			<rect x="${x}" y="${y}" width="${width}" height="${LANDSCAPE.stat_cards.height}" rx="${LANDSCAPE.stat_cards.radius}" fill="${LANDSCAPE.stat_cards.fill}" fill-opacity="${LANDSCAPE.stat_cards.fill_opacity}" stroke="${color}" stroke-opacity="${LANDSCAPE.stat_cards.stroke_opacity}" stroke-width="${LANDSCAPE.stat_cards.stroke_width}"/>
-			<rect x="${x}" y="${y}" width="${LANDSCAPE.stat_cards.accent_width}" height="${LANDSCAPE.stat_cards.accent_height}" rx="${LANDSCAPE.stat_cards.accent_radius}" fill="${color}"/>
-			<text x="${textX}" y="${y + LANDSCAPE.stat_cards.label_baseline_offset}" class="stat-label">${xml(stat.label)}</text>
-			<text x="${textX}" y="${y + LANDSCAPE.stat_cards.value_baseline_offset}" class="stat-value" font-size="${valueSize}" fill="${color}">${tspans(valueLines, textX, y + LANDSCAPE.stat_cards.value_baseline_offset, LANDSCAPE.stat_cards.value_line_height)}</text>
-			<text x="${textX}" y="${y + LANDSCAPE.stat_cards.detail_baseline_offset}" class="stat-detail">${xml(stat.detail)}</text>
-		</g>`;
-}
-
-function sceneSvg(
-	spec: FeatureSpec,
-	segment: FeatureSegment,
-	index: number,
-): Buffer {
-	const headlineLines = wrapDisplay(
-		segment.headline,
-		F.scene.headline_wrap_units,
-	).slice(0, LANDSCAPE.headline.max_lines);
-	const compactHeadline = headlineLines.some(
-		(line) => displayUnits(line) > F.scene.headline_compact_threshold_units,
-	);
-	const headlineSize = compactHeadline
-		? LANDSCAPE.headline.compact_font_size
-		: LANDSCAPE.headline.default_font_size;
-	const headlineLineHeight = compactHeadline
-		? LANDSCAPE.headline.compact_line_height
-		: LANDSCAPE.headline.default_line_height;
-	const statCount = Math.max(1, segment.stats.length);
-	const cardGap = LANDSCAPE.stat_cards.gap;
-	const available = LANDSCAPE.data_region.width;
-	const cardWidth = Math.floor(
-		(available - cardGap * (statCount - 1)) / statCount,
-	);
-	const cards = segment.stats
-		.map((stat, cardIndex) =>
-			statCard(
-				stat,
-				LANDSCAPE.data_region.x + cardIndex * (cardWidth + cardGap),
-				LANDSCAPE.data_region.y,
-				cardWidth,
-			),
-		)
-		.join("");
-	const speakerColor =
-		segment.speaker === "ずんだもん"
-			? DESIGN.colors.success
-			: VISUAL_IDENTITY.secondaryAccent;
-	const accent =
-		segment.emotion === "caution" || segment.emotion === "serious"
-			? VISUAL_IDENTITY.warning
-			: VISUAL_IDENTITY.primaryAccent;
-	const emotionLabel = F.emotion_labels[segment.emotion];
-	const Q = F.scene.question_mark;
-	const questionMark =
-		segment.visualType === "question"
-			? `<text x="${LANDSCAPE.chart_region.x + LANDSCAPE.chart_region.width - Q.right_inset}" y="${LANDSCAPE.chart_region.y + Q.baseline_offset}" font-family="${FONT}" font-size="${Q.font_size}" font-weight="${DESIGN.typography.weights.headline}" fill="${VISUAL_IDENTITY.primaryAccent}" fill-opacity="${Q.opacity}">?</text>`
-			: "";
-	const P = F.scene.speaker_pointer;
-	const characterX = LANDSCAPE.character_region.x;
-	const characterBottom =
-		LANDSCAPE.character_region.y + LANDSCAPE.character_region.height;
-	return Buffer.from(`
-	<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-		<defs>
-			<style>
-				text { font-family: '${FONT}', sans-serif; }
-				.brand { fill:${DESIGN.colors.text_primary}; font-size:${LANDSCAPE.brand_chip.font_size}px; font-weight:${LANDSCAPE.brand_chip.font_weight}; letter-spacing:${LANDSCAPE.brand_chip.letter_spacing}px; }
-				.section { fill:${DESIGN.colors.brand_accent}; font-size:${LANDSCAPE.section_label.font_size}px; font-weight:${LANDSCAPE.section_label.font_weight}; letter-spacing:${LANDSCAPE.section_label.letter_spacing}px; }
-				.headline { fill:${DESIGN.colors.text_primary}; font-weight:${LANDSCAPE.headline.font_weight}; letter-spacing:${LANDSCAPE.headline.letter_spacing}px; }
-				.subheadline { fill:${DESIGN.colors.text_secondary}; font-size:${LANDSCAPE.subheadline.font_size}px; font-weight:${LANDSCAPE.subheadline.font_weight}; }
-				.stat-label { fill:${DESIGN.colors.text_secondary}; font-size:${LANDSCAPE.stat_cards.label_font_size}px; font-weight:${LANDSCAPE.stat_cards.label_font_weight}; letter-spacing:${LANDSCAPE.stat_cards.label_letter_spacing}px; }
-				.stat-value { font-weight:${DESIGN.typography.weights.headline}; letter-spacing:${F.scene.stat_value_letter_spacing_px}px; }
-				.stat-detail { fill:${DESIGN.colors.text_muted}; font-size:${LANDSCAPE.stat_cards.detail_font_size}px; font-weight:${LANDSCAPE.stat_cards.detail_font_weight}; }
-				.source { fill:${DESIGN.colors.text_muted}; font-size:${LANDSCAPE.source.font_size}px; font-weight:${LANDSCAPE.source.font_weight}; }
-			</style>
-		</defs>
-		<rect width="${WIDTH}" height="${HEIGHT}" fill="${DESIGN.colors.background}"/>
-		<rect x="${LANDSCAPE.outer_frame.x}" y="${LANDSCAPE.outer_frame.y}" width="${LANDSCAPE.outer_frame.width}" height="${LANDSCAPE.outer_frame.height}" rx="${LANDSCAPE.outer_frame.radius}" fill="none" stroke="${LANDSCAPE.outer_frame.color}" stroke-opacity="${LANDSCAPE.outer_frame.opacity}" stroke-width="${LANDSCAPE.outer_frame.stroke_width}"/>
-		<rect x="${LANDSCAPE.caption_band.x}" y="${LANDSCAPE.caption_band.y}" width="${LANDSCAPE.caption_band.width}" height="${LANDSCAPE.caption_band.height}" fill="${LANDSCAPE.caption_band.color}" fill-opacity="${LANDSCAPE.caption_band.opacity}"/>
-		<rect x="${DESIGN.landscape.accent_rail.x}" y="${DESIGN.landscape.accent_rail.y}" width="${DESIGN.landscape.accent_rail.width}" height="${DESIGN.landscape.accent_rail.height}" fill="${accent}"/>
-		<g transform="translate(${LANDSCAPE.brand_chip.x},${LANDSCAPE.brand_chip.y})">
-			<rect width="${LANDSCAPE.brand_chip.width}" height="${LANDSCAPE.brand_chip.height}" rx="${LANDSCAPE.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${LANDSCAPE.outer_frame.color}" stroke-width="${DESIGN.stroke.default}"/>
-			<text x="${LANDSCAPE.brand_chip.text_x - LANDSCAPE.brand_chip.x}" y="${LANDSCAPE.brand_chip.baseline_y - LANDSCAPE.brand_chip.y}" class="brand">${xml(F.brand_label)}</text>
-		</g>
-		<text x="${LANDSCAPE.section_counter.x}" y="${LANDSCAPE.section_counter.baseline_y}" class="section">${String(index + 1).padStart(2, "0")} / ${String(spec.segments.length).padStart(2, "0")}</text>
-		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${LANDSCAPE.progress.width}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${LANDSCAPE.progress.track}"/>
-		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${Math.round(LANDSCAPE.progress.width * ((index + 1) / spec.segments.length))}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${accent}"/>
-		<text x="${LANDSCAPE.section_label.x}" y="${LANDSCAPE.section_label.baseline_y}" class="section">${xml(segment.section)}</text>
-		<text x="${LANDSCAPE.headline.x}" y="${LANDSCAPE.headline.baseline_y}" class="headline" font-size="${headlineSize}">${tspans(headlineLines, LANDSCAPE.headline.x, LANDSCAPE.headline.baseline_y, headlineLineHeight)}</text>
-		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline">${xml(segment.subheadline)}</text>
-		${cards}
-		${questionMark}
-			<path d="M${characterX + P.start_x} ${characterBottom - P.start_bottom} C${characterX + P.control1_x} ${characterBottom - P.control1_bottom} ${characterX + P.control2_x} ${characterBottom - P.control2_bottom} ${characterX + P.end_x} ${characterBottom - P.end_bottom}" fill="none" stroke="${speakerColor}" stroke-opacity="${P.stroke_opacity}" stroke-width="${P.stroke_width}" stroke-linecap="round"/>
-			<circle cx="${characterX + P.start_x}" cy="${characterBottom - P.start_bottom}" r="${P.dot_radius}" fill="${speakerColor}"/>
-		<g transform="translate(${LANDSCAPE.speaker_chip.x},${LANDSCAPE.speaker_chip.y})">
-			<rect width="${LANDSCAPE.speaker_chip.width}" height="${LANDSCAPE.speaker_chip.height}" rx="${LANDSCAPE.speaker_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${speakerColor}" stroke-width="${LANDSCAPE.speaker_chip.stroke_width}"/>
-			<text x="${LANDSCAPE.speaker_chip.text_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.baseline_y - LANDSCAPE.speaker_chip.y}" font-size="${LANDSCAPE.speaker_chip.font_size}" font-weight="${LANDSCAPE.speaker_chip.font_weight}" fill="${speakerColor}">${xml(segment.speaker)}</text>
-			<text x="${LANDSCAPE.speaker_chip.emotion_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.emotion_baseline_y - LANDSCAPE.speaker_chip.y}" text-anchor="end" font-size="${LANDSCAPE.speaker_chip.emotion_font_size}" font-weight="${LANDSCAPE.speaker_chip.emotion_font_weight}" fill="${DESIGN.colors.text_secondary}">${xml(emotionLabel)}</text>
-		</g>
-		<text x="${LANDSCAPE.source.x}" y="${LANDSCAPE.source.baseline_y}" class="source">${F.scene.source_label}  ${xml(segment.source)}</text>
-	</svg>`);
-}
-
 async function characterSourceBuffer(
 	speaker: FeatureSegment["speaker"],
 ): Promise<Buffer> {
@@ -387,12 +241,15 @@ async function characterBuffer(
 }
 
 async function renderScene(
-	spec: FeatureSpec,
 	segment: FeatureSegment,
+	render: ByosanSceneRender,
 	index: number,
+	total: number,
 	outputPath: string,
 ): Promise<void> {
-	const base = sceneSvg(spec, segment, index);
+	const base = Buffer.from(
+		renderSceneSvg({ segment, render, index, total }, SCENE_STYLE),
+	);
 	const character = await characterBuffer(segment.speaker);
 	const metadata = await sharp(character).metadata();
 	const left =
@@ -509,7 +366,9 @@ function captionChunks(text: string): string[] {
 		if (
 			wrapped.length <= F.captions.max_lines &&
 			wrapped.every(
-				(line) => displayUnits(line) <= maxUnits + F.captions.tolerance_units,
+				(line) =>
+					displayUnits(line, F.captions.half_width_units) <=
+					maxUnits + F.captions.tolerance_units,
 			)
 		) {
 			return [phrase];
@@ -519,8 +378,14 @@ function captionChunks(text: string): string[] {
 		let bestScore = Number.POSITIVE_INFINITY;
 		for (let index = 1; index < chars.length; index++) {
 			if (isUnsafeCaptionBreak(phrase, index)) continue;
-			const leftUnits = displayUnits(chars.slice(0, index).join(""));
-			const rightUnits = displayUnits(chars.slice(index).join(""));
+			const leftUnits = displayUnits(
+				chars.slice(0, index).join(""),
+				F.captions.half_width_units,
+			);
+			const rightUnits = displayUnits(
+				chars.slice(index).join(""),
+				F.captions.half_width_units,
+			);
 			if (Math.min(leftUnits, rightUnits) < F.captions.min_split_units)
 				continue;
 			const score = Math.abs(leftUnits - rightUnits);
@@ -571,32 +436,28 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 	const events: string[] = [];
 	for (const segment of timed) {
 		const chunks = captionChunks(segment.text);
-		const weights = chunks.map((chunk) => Math.max(1, displayUnits(chunk)));
-		const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+		const weights = chunks.map((chunk) =>
+			Math.max(1, displayUnits(chunk, F.captions.half_width_units)),
+		);
 		const usableStart = segment.start + F.captions.lead_in_seconds;
 		const usableDuration = Math.max(
 			F.captions.min_usable_seconds,
 			segment.duration - F.captions.tail_seconds,
 		);
-		let cursor = usableStart;
-		for (let i = 0; i < chunks.length; i++) {
-			const chunk = chunks[i] ?? "";
-			const share = (weights[i] ?? 1) / totalWeight;
-			const duration =
-				i === chunks.length - 1
-					? segment.start + segment.duration - cursor
-					: usableDuration * share;
-			const end = Math.max(
-				cursor + F.captions.min_cue_seconds,
-				cursor + duration,
-			);
-			const styleName =
-				segment.speaker === "ずんだもん" ? "Zundamon" : "Tsumugi";
+		const spans = layoutCueSpans(
+			weights,
+			usableStart,
+			usableStart + usableDuration,
+			F.captions.min_cue_seconds,
+		);
+		const styleName = segment.speaker === "ずんだもん" ? "Zundamon" : "Tsumugi";
+		chunks.forEach((chunk, i) => {
+			const span = spans[i];
+			if (!span) throw new Error(`BYOSAN_CUE_MISSING: ${segment.index}`);
 			events.push(
-				`Dialogue: 0,${assTimestamp(cursor)},${assTimestamp(end)},${styleName},${segment.speaker},0,0,0,,{\\fad(${F.captions.fade_in_ms},${F.captions.fade_out_ms})}${captionLines(chunk)}`,
+				`Dialogue: 0,${assTimestamp(span.start)},${assTimestamp(span.end)},${styleName},${segment.speaker},0,0,0,,{\\fad(${F.captions.fade_in_ms},${F.captions.fade_out_ms})}${captionLines(chunk)}`,
 			);
-			cursor = end;
-		}
+		});
 	}
 	return `${header}${events.join("\n")}\n`;
 }
@@ -1090,7 +951,7 @@ async function auditProduction(
 		(cue, index) =>
 			index > 0 && cue.start < (cues[index - 1]?.end ?? 0) - 0.001,
 	);
-	const minimumCueSeconds = Math.min(...cues.map((cue) => cue.end - cue.start));
+	const minimumCueSeconds = minimumCueSecondsAtAssPrecision(cues);
 	const maxSceneSeconds = Math.max(...timed.map((segment) => segment.duration));
 	const titleLength = Array.from(spec.title).length;
 	const sourceCoverage = spec.claims.every(
@@ -1102,19 +963,19 @@ async function auditProduction(
 			),
 	);
 	const openingSegments = timed.slice(0, openingCount);
-	const openingText = openingSegments.map((segment) => segment.text).join(" ");
-	const openingPromisesPaid = spec.hookPromises.every((promise) =>
-		openingText.includes(promise),
-	);
+	if (!spec.packaging) throw new Error("BYOSAN_PACKAGING_MISSING");
+	const opening = evaluateOpeningCatch({
+		primaryClaimId: spec.packaging.primaryClaimId,
+		claims: spec.claims,
+		openingSegments,
+	});
 	const motionFilter = staticSceneMotionFilter(FPS);
 	const forbiddenMotion = new RegExp(D.forbidden_motion_terms.join("|"));
 	const motionPolicyPass =
 		motionFilter === `fps=${FPS}` && !forbiddenMotion.test(motionFilter);
-	const distinctEmotions = Array.from(
-		new Set(timed.map((segment) => segment.emotion)),
+	const voiceEmotions = timed.every((segment) =>
+		Object.hasOwn(F.tts.voice_presets, segment.emotion),
 	);
-	const distinctEmotionsPass =
-		distinctEmotions.length >= D.min_distinct_emotions;
 	const requirements = {
 		audio_quality: {
 			status: audioQA.status === "PASS" ? "PASS" : "FAIL",
@@ -1135,8 +996,7 @@ async function auditProduction(
 		},
 		catch: {
 			status:
-				titleLength <= CONFIG.steps.youtube.max_title_length &&
-				openingPromisesPaid
+				titleLength <= CONFIG.steps.youtube.max_title_length && opening.passed
 					? "PASS"
 					: "FAIL",
 			evidence: {
@@ -1145,8 +1005,7 @@ async function auditProduction(
 					(sum, segment) => sum + segment.duration,
 					0,
 				),
-				promise: spec.hookPromises,
-				opening_text: openingText,
+				opening: opening.evidence,
 			},
 		},
 		content: {
@@ -1159,9 +1018,9 @@ async function auditProduction(
 			},
 		},
 		intonation: {
-			status: distinctEmotionsPass ? "PASS" : "FAIL",
+			status: voiceEmotions ? "PASS" : "FAIL",
 			evidence: {
-				emotion_presets: distinctEmotions,
+				emotion_presets: timed.map((segment) => segment.emotion),
 				manifest: path.join(runDir, RUN.audio_dir, RUN.audio_manifest),
 			},
 		},
@@ -1171,7 +1030,7 @@ async function auditProduction(
 				tooManyLines.length === 0 &&
 				badLineBreaks.length === 0 &&
 				overlappingCues.length === 0 &&
-				minimumCueSeconds >= D.min_cue_seconds &&
+				minimumCueSeconds >= F.captions.min_cue_seconds &&
 				maximumCaptionLineUnits <= maximumAllowedCaptionUnits
 					? "PASS"
 					: "FAIL",
@@ -1202,12 +1061,6 @@ async function auditProduction(
 				freeze_segments_diagnostic: defects.freezeSegments,
 			},
 		},
-		emotion: {
-			status: distinctEmotionsPass ? "PASS" : "FAIL",
-			evidence: {
-				arc: timed.map((segment) => segment.emotion),
-			},
-		},
 		gesture: {
 			status: timed.some((segment) => segment.speaker === "春日部つむぎ")
 				? "PASS"
@@ -1228,8 +1081,7 @@ async function auditProduction(
 				path: thumbnailPath,
 				continuity: {
 					thumbnail_title: spec.thumbnailTitle,
-					hook_promises: spec.hookPromises,
-					opening_promises_paid: openingPromisesPaid,
+					opening: opening.evidence,
 				},
 			},
 		},
@@ -1299,28 +1151,59 @@ async function main(): Promise<void> {
 		speakers: VOICEVOX.speakers,
 		timeout: VOICEVOX.timeout_ms,
 	});
+	const speechPlan = {
+		maxSceneSeconds: F.audit.max_scene_seconds,
+		charsPerSecond: CONFIG.scenes.chars_per_second,
+		minCueSeconds: F.captions.min_cue_seconds,
+	};
+	const explanation = ExplanationSchema.parse(
+		await fs.readJson(path.join(runDir, RUN.source_dir, RUN.explanation)),
+	);
+	const scenes = new Map(
+		compileScenes(spec, explanation, CONFIG.scenes).flatMap((scene) =>
+			scene.segmentIndexes.map(
+				(segmentIndex) => [segmentIndex, scene] as const,
+			),
+		),
+	);
+	const speechParts = spec.segments.flatMap((segment, segmentIndex) =>
+		planSpeechSegments([segment], speechPlan).map((part, partIndex) => ({
+			segment: part,
+			segmentIndex,
+			partIndex,
+		})),
+	);
 	const timed: TimedSegment[] = [];
 	let cursor = 0;
-	for (let index = 0; index < spec.segments.length; index++) {
-		const segment = spec.segments[index];
-		if (!segment) continue;
-		const audioPath = path.join(
-			audioDir,
-			`${String(index).padStart(3, "0")}.wav`,
+	for (let index = 0; index < speechParts.length; index++) {
+		const part = speechParts[index];
+		if (!part) continue;
+		const { segment } = part;
+		const scene = scenes.get(part.segmentIndex);
+		if (!scene) {
+			throw new Error(`BYOSAN_SCENE_MISSING: segment ${part.segmentIndex}`);
+		}
+		const render = resolveSceneRender(
+			scene,
+			spec,
+			explanation,
+			part.partIndex > 0,
 		);
-		const scenePath = path.join(
-			sceneDir,
-			`${String(index).padStart(3, "0")}.png`,
-		);
-		const segmentVideoPath = path.join(
-			segmentVideoDir,
-			`${String(index).padStart(3, "0")}.mp4`,
-		);
+		const key = createHash("sha256")
+			.update(JSON.stringify({ index, segment }))
+			.digest("hex");
+		const sceneKey = createHash("sha256")
+			.update(JSON.stringify({ segment, render }))
+			.digest("hex");
+		const stem = `${String(index).padStart(3, "0")}-${key}`;
+		const audioPath = path.join(audioDir, `${stem}.wav`);
+		const scenePath = path.join(sceneDir, `${stem}-${sceneKey}.png`);
+		const segmentVideoPath = path.join(segmentVideoDir, `${stem}.mp4`);
 		const speakerId = VOICEVOX.speakers[segment.speaker];
 		const voice = F.tts.voice_presets[segment.emotion];
 		if (!(await fs.pathExists(audioPath))) {
 			console.log(
-				`[TTS ${index + 1}/${spec.segments.length}] ${segment.speaker} ${segment.emotion}`,
+				`[TTS ${index + 1}/${speechParts.length}] ${segment.speaker} ${segment.emotion}`,
 			);
 			const result = await tts.synthesize({
 				text: narrationText(segment.text),
@@ -1332,9 +1215,9 @@ async function main(): Promise<void> {
 		const duration = audioDuration(audioPath);
 		if (!(await fs.pathExists(scenePath))) {
 			console.log(
-				`[SCENE ${index + 1}/${spec.segments.length}] ${segment.headline}`,
+				`[SCENE ${index + 1}/${speechParts.length}] ${segment.headline}`,
 			);
-			await renderScene(spec, segment, index, scenePath);
+			await renderScene(segment, render, index, speechParts.length, scenePath);
 		}
 		timed.push({
 			...segment,

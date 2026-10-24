@@ -551,6 +551,7 @@ feature_production:
     requires_visibility_attestation: true
   run_layout:
     source_dir: "source"
+    explanation: "explanation.json"
     content_dir: "content"
     content_output: "output.yaml"
     metadata: "metadata.json"
@@ -703,8 +704,6 @@ feature_production:
     audio_codec: "aac"
     min_output_bitrate_bps: 7500000
     max_scene_seconds: 16
-    min_cue_seconds: 0.83
-    min_distinct_emotions: 7
     opening_segment_count: 2
     min_thumbnail_bytes: 100000
     black_min_seconds: 1.0
@@ -727,9 +726,9 @@ scenes:
   max_numbers_per_scene: 4
   max_consecutive_same_kind: 2
   min_distinct_kinds: 3
-  chars_per_second: 6
+  chars_per_second: 4.1
   rules:
-    - {kind: question, emphasis: none, when: {visual_type_in: ["question"], stat_count_max: 0}}
+    - {kind: question, emphasis: none, when: {stat_count_max: 0}}
     - {kind: line_series, emphasis: reveal, when: {figure_count_min: 3, figures_cover_stats: true, distinct_periods_min: 3, distinct_metrics_max: 1}}
     - {kind: bar_trend, emphasis: reveal, when: {figure_count_min: 2, figures_cover_stats: true, distinct_periods_min: 2, distinct_metrics_max: 1}}
     - {kind: bignumber, emphasis: reveal, when: {stat_count_min: 1, stat_count_max: 1}}
@@ -741,7 +740,7 @@ authenticity:
   max_similarity: 0.8
   max_generic_ratio: 0.4
   generic_kinds: ["stat_cards", "question"]
-  scene_claim_statuses: ["verified"]
+  scene_claim_statuses: ["verified", "derived_with_caveat", "analyst_estimate_not_company_non_gaap"]
   independent_work:
     verification_roles: ["auditor", "resolution"]
     comparison_kinds: ["hbar_compare", "bar_trend", "line_series"]

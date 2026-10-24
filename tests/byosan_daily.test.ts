@@ -2,11 +2,13 @@ import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
+import { byosanLlmConfig, llmBackend } from "../src/domain/byosan/codex_llm.js";
 import {
 	type ByosanFailureTrace,
 	type RepairResolution,
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
+	pendingLlmBackends,
 	preflightBlockedMessage,
 	recordByosanFailure,
 	reusableResearchResult,
@@ -398,6 +400,20 @@ describe("byosan failure retry gate", () => {
 				failure_class: "RESEARCH_ANGLE_STOP",
 				resolution,
 			},
+		]);
+	});
+});
+
+describe("pendingLlmBackends", () => {
+	test("probes only the backends of stages that will call an LLM", () => {
+		const llm = byosanLlmConfig();
+		expect(pendingLlmBackends(llm, { research: true, spec: true })).toEqual([]);
+		expect(pendingLlmBackends(llm, { research: true, spec: false })).toEqual([
+			llmBackend(llm, "feature"),
+			"codex",
+		]);
+		expect(pendingLlmBackends(llm, { research: false, spec: true })).toEqual([
+			llmBackend(llm, "research"),
 		]);
 	});
 });

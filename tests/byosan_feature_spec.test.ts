@@ -241,6 +241,18 @@ describe("byosan feature specification", () => {
 		);
 	});
 
+	test("the primary packaging claim must carry a figure the catch can check", async () => {
+		const spec = productionAwareSpec(await loadReferenceSpec());
+		const primary = spec.claims.find(
+			(claim) => claim.id === spec.packaging?.primaryClaimId,
+		);
+		if (!primary) throw new Error("primary packaging claim is missing");
+		primary.claim = "物価上昇は耐久財にも広がった。";
+		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
+			"packaging_primary_claim_without_figure",
+		);
+	});
+
 	test("L3-only claims must speak their epistemic boundary", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
 		spec.sources = spec.sources.map((source) => ({
