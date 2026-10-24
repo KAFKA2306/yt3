@@ -26,7 +26,9 @@
 - `0037-visual-reference-mirroring-and-ctr-first-thumbnail-prompting.md`: CTR優先サムネイル方針
 - `0038-publish-destination-guard.md`: 投稿先取り違え防止
 - `0040-qd-driven-cognitive-ecology-archive.md`: QD駆動の認知生態アーカイブ
-- `0041-domain-definition-cognitive-cross-section.md`: 第3ドメイン「思考の断面」の定義
+- `0042-destructive-command-harness.md`: 破壊的コマンドの安全ハーネス
+- `0043-byosan-money-zero-trust-source-policy.md`: 秒算マネーのZero-Trust情報源ポリシー
+- `0044-byosan-editorial-reference-decomposition.md`: 秒算マネーの編集参照を分解観察へ限定する
 - `0045-humanity-music-video-release-gate.md`: 人類観測所の音楽動画の公開ゲート
 - `0046-irodori-tts-v4-1-checkpoint-setup.md`: Irodori-TTS v4.1 のローカル導入（sandbox）
 

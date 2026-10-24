@@ -1,4 +1,4 @@
-# ADR 0032: Zero-Trust Artifact Attestation & Provenance Chain
+# ADR 0047: Zero-Trust Artifact Attestation & Provenance Chain
 
 ## 📝 プロベナンス表示 (Claim Provenance)
 - **VERIFIED**: ADR-0028, ADR-0029, および ADR-0031 の構造を継承し、監査の決定論的深度を「存在確認」から「真正性・不変性証明」へ昇華させる必要性を特定した。

@@ -453,6 +453,10 @@ tasks:
     desc: "Verify Taskfile executables and documented repository entry points"
     cmds: ["bun src/scripts/audit_repository_contract.ts"]
 
+  audit:repo-layout:
+    desc: "Audit root allowlist, ADR index integrity, and inline doc path references"
+    cmds: ["bun src/scripts/audit_repo_layout.ts"]
+
   audit:prompt-migration:
     desc: "Inventory prompt sources and audit model/profile migration debt"
     cmds: ["bun src/scripts/audit_prompt_migration.ts {{.CLI_ARGS}}"]
