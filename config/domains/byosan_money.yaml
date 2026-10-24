@@ -551,6 +551,7 @@ feature_production:
     requires_visibility_attestation: true
   run_layout:
     source_dir: "source"
+    explanation: "explanation.json"
     content_dir: "content"
     content_output: "output.yaml"
     metadata: "metadata.json"
@@ -739,7 +740,7 @@ authenticity:
   max_similarity: 0.8
   max_generic_ratio: 0.4
   generic_kinds: ["stat_cards", "question"]
-  scene_claim_statuses: ["verified"]
+  scene_claim_statuses: ["verified", "derived_with_caveat", "analyst_estimate_not_company_non_gaap"]
   independent_work:
     verification_roles: ["auditor", "resolution"]
     comparison_kinds: ["hbar_compare", "bar_trend", "line_series"]

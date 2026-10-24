@@ -77,6 +77,7 @@ const FeatureProductionSchema = z.object({
 	}),
 	run_layout: z.object({
 		source_dir: nonEmptyString,
+		explanation: nonEmptyString,
 		content_dir: nonEmptyString,
 		content_output: nonEmptyString,
 		metadata: nonEmptyString,

@@ -61,6 +61,7 @@ import {
 	selectByosanProductionPlan,
 } from "../domain/byosan/news_angle.js";
 import { loadPreferredByosanFormat } from "../domain/byosan/performance.js";
+import type { ByosanScenesConfig } from "../domain/byosan/scene_spec.js";
 import {
 	AssetStore,
 	ROOT,
@@ -670,6 +671,10 @@ export async function generateFeatureSpec(
 	const bannedPhrases = (
 		loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
 	).explain.banned_conclusion_phrases;
+	const scenesConfig = (
+		loadConfig("byosan_money") as unknown as { scenes: ByosanScenesConfig }
+	).scenes;
+	const sceneRule = `画面の種類は${scenesConfig.min_distinct_kinds}種類以上にし、同じ種類の場面は${scenesConfig.max_consecutive_same_kind}つまでしか続けないでください。statsは場面あたり最大${scenesConfig.max_numbers_per_scene}件です。同じ単位の2〜3個の数値を並べて比べる場面（例: 同じ指標の別の対象、前年同月と今月など期の異なる同一指標）を、動画の中に複数入れてください。その数値は explanation の figures の value と candidateNumbers の範囲に限ります。1つの数字を大きく見せる場面はstatsを1件だけにします。数値カードのない場面はstatsを空にして問いの場面とし、その場面は連続させないでください。`;
 	const hookPromises = candidate.numbers.slice(0, 4);
 	if (hookPromises.length < 2) {
 		throw new Error(
@@ -729,7 +734,7 @@ export async function generateFeatureSpec(
 		messages: (attempt, lastValidationError) => [
 			{
 				role: "system",
-				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=目安${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimは台詞に「推論」「推定」「分析」のいずれかの区別語を含めて発話します。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesのうち1つ以上に触れます。各segmentにはnarrativeRoleとverificationRoleを付けます。packaging.claimIdsの主張について、別話者のauditorとresolutionをそれぞれ1つ以上置きます。固定の順序は要求しません。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。反証として挙がった論点は、必要な範囲でresolutionに含めてください。春日部つむぎとずんだもんの対話、statsの件数は後述のスキーマ由来の制約に従い、発話で提示する根拠のある数値カードだけを入れます。数値カードを示さない問い・つなぎ・結論のシーンではstatsを空配列にし、件数を埋めるための数字やカードを作らないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。explanationの結論・原理・数字を台本の骨格にし、順序は conclusion→数字→principle→check→出典の順にします。explanationのfiguresの各valueの数値と単位（例: 2.4%）を、segmentsのtextかstats.valueのいずれかに含めます。${titleRule}`,
+				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=目安${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimは台詞に「推論」「推定」「分析」のいずれかの区別語を含めて発話します。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesのうち1つ以上に触れます。各segmentにはnarrativeRoleとverificationRoleを付けます。packaging.claimIdsの主張について、別話者のauditorとresolutionをそれぞれ1つ以上置きます。固定の順序は要求しません。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。反証として挙がった論点は、必要な範囲でresolutionに含めてください。春日部つむぎとずんだもんの対話、statsの件数は後述のスキーマ由来の制約に従い、発話で提示する根拠のある数値カードだけを入れます。数値カードを示さない問い・つなぎ・結論のシーンではstatsを空配列にし、件数を埋めるための数字やカードを作らないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。explanationの結論・原理・数字を台本の骨格にし、順序は conclusion→数字→principle→check→出典の順にします。explanationのfiguresの各valueの数値と単位（例: 2.4%）を、segmentsのtextかstats.valueのいずれかに含めます。${sceneRule}${titleRule}`,
 			},
 			{
 				role: "user",
