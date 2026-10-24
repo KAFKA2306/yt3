@@ -65,10 +65,11 @@
 
 ## 日次経路
 
-- 日次の入口は `task byosan:publish-daily`。内部で `task byosan:auto DATE=<Asia/Tokyoの当日>` を実行し、準備ゲートのPASSと3証跡（`[product-release-gate] PASS`、`PUBLISH_READY_RUN`、`PUBLISH_COMMAND`）が同一runで揃い、`publish_approved` が true の場合にだけ `PUBLISH_COMMAND` を実行する。`resume_date` より前の日付は準備・公開しない。公開前の失敗に限り同日に再準備する。`task byosan:auto DATE=<日付>` は準備が失敗すると `task byosan:repair`（codex exec による保守）を挟んで再準備し、準備の総試行回数は `config/domains/byosan_money.yaml` の `auto.max_prepare_attempts` で上限を決めて、上限到達時に停止する。`byosan:publish-daily` は GATE_FAILED の記録がある同日に `task byosan:auto` で再準備する。公開済み・receipt検出時は再準備も再アップロードもしない。
+- 日次の入口は `task byosan:publish-daily`。内部で `task byosan:auto DATE=<Asia/Tokyoの当日>` を実行し、準備ゲートのPASSと3証跡（`[product-release-gate] PASS`、`PUBLISH_READY_RUN`、`PUBLISH_COMMAND`）が同一runで揃い、`publish_approved` が true の場合にだけ `PUBLISH_COMMAND` を実行する。`resume_date` より前の日付は準備・公開しない。公開前の失敗に限り同日に再準備する。`task byosan:auto DATE=<日付>` は準備が失敗すると `task byosan:repair`（codex exec による保守）を挟んで再準備し、準備の総試行回数は `config/domains/byosan_money.yaml` の `auto.max_prepare_attempts` で上限を決めて、上限到達時に停止する。`byosan:publish-daily` は GATE_FAILED の記録がある同日に `task byosan:auto` で再準備する。公開済み・receipt検出時は再準備も再アップロードもしない。`GATE_FAILED` と `PUBLISH_ATTEMPTED` は別状態として扱い、後者や公開の成否が不明な状態からは新規アップロードせず遠隔照合する。
 - systemd user timer `yt3-byosan-daily.timer` が毎日 09:00 JST（Asia/Tokyo）に `yt3-byosan-daily.service` を起動し、service は `task byosan:publish-daily` を実行する（失敗時は Discord に audit_fail を通知し、systemd による自動再起動はしない）。
 - `task byosan:daily` は公開せず、研究・制作・監査のみを行う。
 - `--dry-run` はスキーマ、基準spec、公開抑止を検証する。
 - ニュース候補は5件以上、発行主体3つ以上、直近30日との最大類似度0.42以下を要求する。
 - `LangChain.withStructuredOutput` とZodで企画・制作specを検証し、決定的ゲートを通らない出力は最大3回まで検証エラー付きで再生成する。
-- 同日のupload receiptを検出した場合は再アップロードしない。公開完了にはreceipt、public visibility、thumbnail attestationを必要とする。
+- 同日のupload receiptを検出した場合は再アップロードしない。公開完了にはreceipt、public visibility、thumbnail attestationを必要とする。企画は複数案検討してよいが、完成・公開対象は当日の1本とする。修復時は契約を緩めて通すのではなく、失敗した数値・スキーマ・制作要件の妥当性を確認する。`stats` の件数のような表現上の都合だけで根拠のない数字を追加しない。
+- **実装監査の留保**：現在の `byosan_publish_daily.ts` は `GATE_FAILED` 後の再準備を許すが、原因修正・テスト完了の機械的証拠をそこで独立確認するとは限らない。自律再試行の安全性は未検証であり、今後の実装確認・テスト対象とする。
