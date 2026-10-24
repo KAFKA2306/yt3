@@ -14,6 +14,8 @@ import { selectByosanEditorialReferencePlan } from "../domain/byosan/editorial_r
 import {
 	type ExplainConfig,
 	type Explanation,
+	ExplanationArticlesSchema,
+	buildExplanationEvidence,
 	runCodexExplanation,
 } from "../domain/byosan/explanation.js";
 import {
@@ -868,13 +870,14 @@ export async function runByosanDaily(): Promise<void> {
 		const explainConfig = (
 			loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
 		).explain;
-		const discoveryEvidence = await fs.readFile(
-			path.join(store.runDir, "research", "discovery_evidence.md"),
-			"utf8",
+		const discoveredArticles = ExplanationArticlesSchema.parse(
+			await fs.readJson(
+				path.join(store.runDir, "research", "discovery_articles.json"),
+			),
 		);
 		const explanation = runCodexExplanation(
 			explainConfig,
-			discoveryEvidence,
+			buildExplanationEvidence(candidate, discoveredArticles),
 			store.runDir,
 		);
 		await fs.outputJson(

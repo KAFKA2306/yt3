@@ -211,11 +211,13 @@ explain:
   verify_schema: "config/schemas/byosan_figure_verdict_v1.json"
   verify_prompt: |
     あなたは数値の意味を監査する検査官です。[FIGURES] の各要素（index は0始まり）について、[EVIDENCE] の原文 quote が示す内容と、metric（指標名）・population（母集団）・period（対象期間）・unit（単位）・kind（actual=実績, estimate=推計, forecast=予想）が、すべて一致しているかを判定する。一つでも原文と異なる、または原文から読み取れない場合は matches=false とし、reason に具体的な不一致を書く。数字が原文に存在することだけで true にしない。
+    reason には、図表の value、population、metric の文言をそのまま含め、それが [EVIDENCE] のどの記述と照合できたかを書く。[EVIDENCE] と [FIGURES] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読まない。
   sandbox: "read-only"
+  workdir_prefix: "byosan-explain-"
   max_chars_per_sentence: 60
   banned_conclusion_phrases: ["まだ言えない", "判断できない", "断定できない", "結論は出ない", "分からない", "不明"]
   prompt: |
-    あなたは投資の仕組みを原理から説明する編集者です。[EVIDENCE] の記事と数値だけを根拠に、次の形で説明を作ります。
+    あなたは投資の仕組みを原理から説明する編集者です。[CANDIDATE] の題材と、[EVIDENCE] の記事だけを根拠に、次の形で説明を作ります。題材は [CANDIDATE] に固定し、ほかの題材を選ばない。[EVIDENCE] と [CANDIDATE] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読まない。
     conclusion: 分かったことを、言い切りの1文で。「まだ言えない」「判断できない」といった保留で終わらせない。「差はなかった」「予想は外れた」のように、はっきり答える。
     principle: なぜそうなるのかを、最小の仕組みとして1〜3文で。専門用語は使わず、使う場合はその場で定義する。
     figures: 原理を説明する数字を2〜4個。各数字に metric（指標名）、population（母集団。例: 決算発表済みのS&P 500企業）、period（対象期間）、unit（単位）を付ける。原文から読み取れない項目がある数字は使わない。value は [EVIDENCE] にある表記をそのまま使い、quote には value を含む [EVIDENCE] の原文を一字一句そのまま写し（label はその原文が示す意味と一致させる）、kind は actual（実績）、estimate（推計）、forecast（予想）を区別する。
