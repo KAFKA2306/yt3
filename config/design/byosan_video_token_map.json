@@ -98,6 +98,8 @@
 	},
 	"overrides": {
 		"landscape.caption_band.opacity": 0.92,
+		"landscape.character_region.y": 216,
+		"landscape.character_region.height": 640,
 		"landscape.background.grid_opacity": 0,
 		"landscape.background.glow_opacity": 0,
 		"landscape.background.max_glows": 0

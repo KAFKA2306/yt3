@@ -229,9 +229,9 @@
 		},
 		"character_region": {
 			"x": 1424,
-			"y": 208,
+			"y": 216,
 			"width": 400,
-			"height": 648,
+			"height": 640,
 			"object_fit": "contain",
 			"horizontal_align": "center",
 			"vertical_align": "bottom"

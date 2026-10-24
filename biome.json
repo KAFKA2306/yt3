@@ -20,6 +20,8 @@
 			".venv/**",
 			".artifacts/**",
 			"artifacts/**",
+			"config/design/foundation.tokens.json",
+			"config/design/byosan_video_system_v1.json",
 			"data/**",
 			"sbg-nav-audit/snapshots/**"
 		]
