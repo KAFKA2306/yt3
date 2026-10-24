@@ -7,6 +7,10 @@ import { z } from "zod";
 import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
 import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
 import {
+	buildCanonicalAudit,
+	hostOf,
+} from "../domain/byosan/canonical_audit.js";
+import {
 	reconcileByosanCheckpoint,
 	writeByosanCheckpoint,
 } from "../domain/byosan/checkpoint.js";
@@ -25,9 +29,11 @@ import {
 	type ExplainConfig,
 	type Explanation,
 	ExplanationArticlesSchema,
+	ExplanationSchema,
 	buildExplanationEvidence,
 	runCodexExplanation,
 } from "../domain/byosan/explanation.js";
+import { auditFeatureSpecAgainstExplanation } from "../domain/byosan/explanation_contract.js";
 import {
 	type FeatureDraftContext,
 	type Json,
@@ -875,6 +881,89 @@ async function dryRun(): Promise<void> {
 	);
 }
 
+function byosanAllowedSourceHosts(): string[] {
+	const config = loadConfig("byosan_money") as unknown as {
+		discovery: { registry: string };
+		source_policy: {
+			power_macro_registry: string;
+			tier1_sources: { url: string }[];
+		};
+	};
+	const discovery = z
+		.object({ sources: z.array(z.object({ domain: z.string().min(1) })) })
+		.parse(fs.readJsonSync(path.join(ROOT, config.discovery.registry)));
+	const macro = z
+		.object({ sources: z.array(z.object({ url: z.string().url() })) })
+		.parse(
+			fs.readJsonSync(
+				path.join(ROOT, config.source_policy.power_macro_registry),
+			),
+		);
+	return [
+		...discovery.sources.map((source) => source.domain),
+		...macro.sources.map((source) => hostOf(source.url)),
+		...config.source_policy.tier1_sources.map((source) => hostOf(source.url)),
+	];
+}
+
+function writeByosanCanonicalAudit(
+	runDir: string,
+	spec: ByosanFeatureSpec,
+	candidateNumbers: string[],
+): void {
+	const explanationPath = path.join(runDir, "source", "explanation.json");
+	const explanation = ExplanationSchema.parse(fs.readJsonSync(explanationPath));
+	const explainConfig = (
+		loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
+	).explain;
+	const explanationIssues = auditFeatureSpecAgainstExplanation(
+		spec,
+		explanation,
+		{ numbers: candidateNumbers },
+		explainConfig.banned_conclusion_phrases,
+	).map((issue) => `${issue.code}:${issue.details}`);
+	const productionReportPath = path.join(
+		runDir,
+		"audit",
+		"production_quality_report.json",
+	);
+	const productionReport = z
+		.object({
+			decision: z.string(),
+			requirements: z.record(z.string(), z.object({ status: z.string() })),
+		})
+		.passthrough()
+		.parse(fs.readJsonSync(productionReportPath));
+	const authenticityPath = path.join(runDir, "audit", "authenticity.json");
+	const authenticity = z
+		.object({ status: z.string() })
+		.passthrough()
+		.parse(fs.readJsonSync(authenticityPath));
+	const checks = buildCanonicalAudit({
+		claims: spec.claims,
+		sources: spec.sources,
+		explanationIssues,
+		allowedHosts: byosanAllowedSourceHosts(),
+		productionReport: {
+			path: productionReportPath,
+			decision: productionReport.decision,
+			requirements: productionReport.requirements,
+		},
+		authenticity: { path: authenticityPath, status: authenticity.status },
+		specPath: path.join(runDir, "source", "feature_spec.json"),
+		explanationPath,
+	});
+	const failed = Object.values(checks)
+		.filter((check) => check.status !== "PASS")
+		.map((check) => `${check.name}: ${check.details}`);
+	if (failed.length > 0) {
+		throw new Error(`CANONICAL_AUDIT_FAILED: ${failed.join(" | ")}`);
+	}
+	fs.outputJsonSync(path.join(runDir, "audit", "result.json"), checks, {
+		spaces: 2,
+	});
+}
+
 export async function runByosanDaily(): Promise<void> {
 	if (
 		process.argv.includes("--dry-run") ||
@@ -1074,6 +1163,7 @@ export async function runByosanDaily(): Promise<void> {
 		["src/scripts/audit_byosan_authenticity.ts", "--run", runId],
 		process.env,
 	);
+	writeByosanCanonicalAudit(store.runDir, spec, candidate.numbers);
 	markFailureRecovered(store.runDir);
 	console.log(`PRODUCTION_PASS=${runId}`);
 }
