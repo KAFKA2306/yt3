@@ -189,11 +189,47 @@ export const BYOSAN_ANGLE_SHAPE_EXAMPLE = {
 	archetypeEvidence: [],
 };
 
+export type ResearchStructuredRequest = {
+	schema: z.ZodSchema<ResearchPayload>;
+	name: string;
+	maxAttempts: number;
+	evidencePath: string;
+	rawResponseDir: string;
+	messages: (
+		attempt: number,
+		lastValidationError?: string,
+	) => Array<{ role: "system" | "user"; content: string }>;
+};
+
+export type ResearchStructuredInvoker = (
+	request: ResearchStructuredRequest,
+) => Promise<ResearchPayload>;
+
+export function geminiResearchParams(
+	request: ResearchStructuredRequest,
+	opts: Record<string, unknown>,
+	runDir: string,
+) {
+	return {
+		...request,
+		responseFormat: "json_text" as const,
+		llmOptions: { ...opts, sessionId: runDir } as LlmOptions,
+	};
+}
+
 export class TrendScout extends BaseAgent {
-	constructor(store: AssetStore) {
+	private readonly invokeStructured: ResearchStructuredInvoker;
+
+	constructor(store: AssetStore, invokeStructured?: ResearchStructuredInvoker) {
 		super(store, RunStage.RESEARCH, {
 			temperature: store.cfg.steps.research?.temperature || 0.5,
 		});
+		this.invokeStructured =
+			invokeStructured ??
+			((request) =>
+				invokeStructuredLlm<ResearchPayload>(
+					geminiResearchParams(request, this.opts, store.runDir),
+				));
 	}
 
 	async run(
@@ -259,14 +295,9 @@ export class TrendScout extends BaseAgent {
 			)
 			.replace("{current_date}", currentDate);
 		const invokeResearch = (label: "initial" | "repair", prompt: string) =>
-			invokeStructuredLlm<ResearchPayload>({
+			this.invokeStructured({
 				schema: ResearchPayloadSchema,
 				name: "byosan_research_selected_topics",
-				responseFormat: "json_text",
-				llmOptions: {
-					...this.opts,
-					sessionId: this.store.runDir,
-				} as LlmOptions,
 				maxAttempts: 5,
 				evidencePath: path.join(
 					this.store.runDir,

@@ -116,7 +116,7 @@ export function createLlm(
 	return llm;
 }
 
-function redactLlmEvidence(value: string): string {
+export function redactLlmEvidence(value: string): string {
 	let redacted = value;
 	for (const name of [
 		"GEMINI_API_KEY",
@@ -227,6 +227,12 @@ export function zodSizeConstraintLines(schema: z.ZodType): string[] {
 			if (!target || refStack.includes(name)) return;
 			visit(target, nodePath, [...refStack, name]);
 			return;
+		}
+		if (typeof node.description === "string") {
+			record(nodePath, node.description);
+		}
+		if (Array.isArray(node.enum)) {
+			record(nodePath, `次のいずれか: ${node.enum.join("、")}`);
 		}
 		for (const option of [node.anyOf, node.oneOf]) {
 			if (Array.isArray(option)) {
