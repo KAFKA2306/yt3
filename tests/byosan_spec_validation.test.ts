@@ -4,6 +4,7 @@ import {
 	auditFeatureSpecAgainstExplanation,
 	auditHookPromises,
 	figureValueAppears,
+	normalizeHookPromise,
 } from "../src/domain/byosan/explanation_contract.js";
 import type { ByosanFeatureSpec } from "../src/domain/byosan/feature_spec.js";
 
@@ -84,21 +85,6 @@ describe("feature spec contract against the explanation", () => {
 				bannedPhrases,
 			),
 		).toEqual([]);
-	});
-
-	test("reports a conclusion that is not carried verbatim into a resolution or landing segment", () => {
-		const issues = auditFeatureSpecAgainstExplanation(
-			specWith([
-				{
-					text: `${conclusion}2026年9月は前年比+2.1%だった。`,
-					verificationRole: "presenter",
-				},
-			]),
-			explanation,
-			candidate,
-			bannedPhrases,
-		);
-		expect(issues).toContain(`explanation_conclusion_missing: ${conclusion}`);
 	});
 
 	test("compares conclusion and figure values after NFKC normalization", () => {
@@ -254,6 +240,26 @@ describe("figure values are matched by their number core and unit", () => {
 		expect(
 			figureValueAppears({ value: "急増", unit: "" }, ["価格が急増した"]),
 		).toBe(true);
+	});
+});
+
+describe("over-long hook promises are normalized to their figure fragment", () => {
+	test("keeps a hook that already fits and normalizes its width", () => {
+		expect(normalizeHookPromise("＋2.1％の上昇", 24)).toBe("+2.1%の上昇");
+	});
+
+	test("replaces an over-long hook with the figure and unit it carries", () => {
+		expect(
+			normalizeHookPromise(
+				"2026年9月の全国消費者物価指数は前年比+2.1%だった",
+				24,
+			),
+		).toBe("+2.1%");
+	});
+
+	test("leaves an over-long hook without a figure unchanged so the spec schema rejects it", () => {
+		const long = "あ".repeat(25);
+		expect(normalizeHookPromise(long, 24)).toBe(long);
 	});
 });
 

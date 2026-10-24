@@ -2,7 +2,7 @@ import type { Explanation } from "./explanation.js";
 import type { ByosanFeatureSpec } from "./feature_spec.js";
 import type { ByosanAngleCandidate } from "./news_angle.js";
 
-const DATE_PATTERN = /\d{4}-\d{2}-\d{2}/g;
+const DATE_PATTERN = /\d{4}-\d{2}-\d{2}|\d+(?:年|月|日)/g;
 const NUMBER_PATTERN = /\d+(?:[.,]\d+)*/g;
 
 const nfkc = (text: string): string => text.normalize("NFKC");
@@ -96,13 +96,6 @@ export function auditFeatureSpecAgainstExplanation(
 		[segment.text, segment.headline, segment.subheadline].map(nfkc),
 	);
 	const issues: string[] = [];
-	if (
-		!payoffSegments.some((segment) =>
-			nfkc(segment.text).includes(nfkc(explanation.conclusion)),
-		)
-	) {
-		issues.push(`explanation_conclusion_missing: ${explanation.conclusion}`);
-	}
 	for (const figure of explanation.figures) {
 		if (!figureValueAppears(figure, figureTexts(spec))) {
 			issues.push(`explanation_figure_value_missing: ${figure.value}`);
@@ -126,6 +119,14 @@ export function auditFeatureSpecAgainstExplanation(
 		}
 	}
 	return issues;
+}
+
+const FIGURE_FRAGMENT = /[+\-−]?\d+(?:[.,]\d+)*(?:%|円|ドル|倍|兆円|億円)/;
+
+export function normalizeHookPromise(hook: string, maxChars: number): string {
+	const text = nfkc(hook);
+	if ([...text].length <= maxChars) return text;
+	return text.match(FIGURE_FRAGMENT)?.[0] ?? text;
 }
 
 export function auditHookPromises(

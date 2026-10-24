@@ -3,18 +3,20 @@ import path from "node:path";
 import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import { z } from "zod";
-import { getByosanProductionConfig } from "../domain/byosan/production_config.js";
 import {
-	type CodexLlmConfig,
+	type LlmBackend,
+	byosanLlmConfig,
 	codexLlmLogPath,
 	invokeCodexStructured,
+	llmBackend,
 } from "../domain/byosan/codex_llm.js";
+import { getByosanProductionConfig } from "../domain/byosan/production_config.js";
 import {
 	assertYouTubeChannelMatchesProfile,
 	createYouTubeOAuthClient,
 	loadYouTubeProfileEnv,
 } from "../domain/youtube_profiles.js";
-import { ROOT, loadConfig } from "../io/core.js";
+import { ROOT, invokeStructuredLlm, loadConfig } from "../io/core.js";
 
 export type PreflightStatus = "PASS" | "FAIL" | "UNVERIFIED";
 
@@ -30,8 +32,10 @@ export type ByosanPreflightDependencies = {
 	commandAvailable?: (command: string) => PreflightCheck;
 	pythonRuntime?: (runDir: string) => PreflightCheck;
 	voicevox?: () => Promise<PreflightCheck>;
+	gemini?: (runDir: string) => Promise<PreflightCheck>;
 	codexLogin?: () => PreflightCheck;
 	codexExec?: (runDir: string) => Promise<PreflightCheck>;
+	llmBackends?: LlmBackend[];
 	youtube?: () => Promise<PreflightCheck>;
 };
 
@@ -149,6 +153,65 @@ async function checkVoicevox(): Promise<PreflightCheck> {
 	}
 }
 
+async function checkGemini(runDir: string): Promise<PreflightCheck> {
+	const envPath = path.join(ROOT, "config", ".env.byosan");
+	if (!fs.existsSync(envPath)) {
+		return check(
+			"gemini",
+			"configuration + structured-output probe",
+			"UNVERIFIED",
+			`profile env file is missing: ${envPath}`,
+			[envPath],
+		);
+	}
+	dotenv.config({ path: envPath, override: true });
+	if (
+		!Object.keys(process.env).some(
+			(name) => /^GEMINI_API_KEY(?:_\d+)?$/.test(name) && process.env[name],
+		)
+	) {
+		return check(
+			"gemini",
+			"configuration + structured-output probe",
+			"UNVERIFIED",
+			"no configured Gemini key is available",
+			[envPath],
+		);
+	}
+	try {
+		await invokeStructuredLlm({
+			schema: ProbeSchema,
+			name: "byosan_production_preflight",
+			llmOptions: { temperature: 0, sessionId: runDir },
+			maxAttempts: 1,
+			evidencePath: path.join(
+				runDir,
+				"audit",
+				"preflight_gemini_attempts.json",
+			),
+			messages: () => [
+				{ role: "system", content: 'Return exactly {"ok":true}.' },
+				{ role: "user", content: "Confirm the structured-output contract." },
+			],
+		});
+		return check(
+			"gemini",
+			"configuration + structured-output probe",
+			"PASS",
+			"Gemini structured-output contract passed",
+			[path.join(runDir, "audit", "preflight_gemini_attempts.json")],
+		);
+	} catch (error) {
+		return check(
+			"gemini",
+			"configuration + structured-output probe",
+			"FAIL",
+			`Gemini structured-output probe failed: ${redacted(error instanceof Error ? error.message : String(error))}`,
+			[path.join(runDir, "audit", "preflight_gemini_attempts.json")],
+		);
+	}
+}
+
 function codexLoginStatus(): PreflightCheck {
 	const result = spawnSync("codex", ["login", "status"], {
 		cwd: ROOT,
@@ -174,8 +237,7 @@ async function checkCodexExec(runDir: string): Promise<PreflightCheck> {
 	const evidence = path.join(runDir, "audit", "preflight_codex_attempts.json");
 	try {
 		await invokeCodexStructured({
-			llm: (loadConfig("byosan_money") as unknown as { llm: CodexLlmConfig })
-				.llm,
+			llm: byosanLlmConfig(),
 			logPath: codexLlmLogPath(runDir),
 			schema: ProbeSchema,
 			name: "byosan_production_preflight",
@@ -242,18 +304,25 @@ export async function runByosanPreflight(
 	const commandCheck = dependencies.commandAvailable ?? commandAvailable;
 	const pythonCheck = dependencies.pythonRuntime ?? runPythonRuntime;
 	const voicevoxCheck = dependencies.voicevox ?? checkVoicevox;
+	const geminiCheck = dependencies.gemini ?? checkGemini;
 	const loginCheck = dependencies.codexLogin ?? codexLoginStatus;
 	const execCheck = dependencies.codexExec ?? checkCodexExec;
 	const youtubeCheck = dependencies.youtube ?? checkYouTube;
+	const backends = new Set<LlmBackend>(
+		dependencies.llmBackends ?? Object.values(byosanLlmConfig().backends),
+	);
 	const checks: Record<string, PreflightCheck> = {
 		ffmpeg: commandCheck("ffmpeg"),
 		ffprobe: commandCheck("ffprobe"),
 		python_runtime: pythonCheck(runDir),
 		voicevox: await voicevoxCheck(),
-		codex_login: loginCheck(),
-		codex_exec: await execCheck(runDir),
 		youtube: await youtubeCheck(),
 	};
+	if (backends.has("gemini")) checks.gemini = await geminiCheck(runDir);
+	if (backends.has("codex")) {
+		checks.codex_login = loginCheck();
+		checks.codex_exec = await execCheck(runDir);
+	}
 	const report: ByosanPreflightReport = {
 		schema_version: "byosan_production_preflight_v1",
 		status: aggregateStatus(checks),

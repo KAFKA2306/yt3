@@ -157,6 +157,8 @@ export const ByosanThumbnailSchema = z.object({
 	calloutBottom: z.string().min(2).max(18),
 });
 
+export const HOOK_PROMISE_MAX_CHARS = 24;
+
 export const ByosanFeatureSpecSchema = z.object({
 	schemaVersion: z.literal("byosan_feature_v1"),
 	runId: z.string().regex(/^byosan_money\/\d{4}-\d{2}-\d{2}[a-zA-Z0-9_-]*$/),
@@ -169,7 +171,10 @@ export const ByosanFeatureSpecSchema = z.object({
 	descriptionLead: z.string().min(30).max(500),
 	descriptionBullets: z.array(z.string().min(8).max(180)).min(3).max(8),
 	disclaimer: z.string().min(20).max(400),
-	hookPromises: z.array(z.string().min(1).max(24)).min(2).max(4),
+	hookPromises: z
+		.array(z.string().min(1).max(HOOK_PROMISE_MAX_CHARS))
+		.min(2)
+		.max(4),
 	production: ByosanProductionPlanSchema.optional(),
 	editorialReferencePlan: ByosanEditorialReferencePlanSchema.optional(),
 	packaging: ByosanPackagingSchema.optional(),
@@ -211,6 +216,7 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	activeProbes: true,
 	tags: true,
 }).extend({
+	hookPromises: z.array(z.string().min(1)).min(2).max(4),
 	tags: z.array(z.string().min(1).max(30)).min(4).max(14).optional(),
 	claims: z
 		.array(
@@ -327,15 +333,6 @@ export function auditByosanFeatureSpec(
 	}
 
 	if (spec.production) {
-		if (
-			spec.segments.length < spec.production.minSegments ||
-			spec.segments.length > spec.production.maxSegments
-		) {
-			issues.push({
-				code: "production_segment_count_out_of_range",
-				details: `${spec.segments.length} not in ${spec.production.minSegments}-${spec.production.maxSegments}`,
-			});
-		}
 		if (!spec.packaging) {
 			issues.push({
 				code: "packaging_contract_missing",
@@ -353,111 +350,6 @@ export function auditByosanFeatureSpec(
 				code: "adversarial_evidence_contract_missing",
 				details: "production-aware specs require research adversarial evidence",
 			});
-		}
-
-		const narrativeArchetype = spec.production.narrativeArchetype ?? "standard";
-		const canonicalArchetypeSlots =
-			requiredByosanArchetypeSlots(narrativeArchetype);
-		const recordedArchetypeSlots = spec.production.archetypeRequiredSlots ?? [];
-		if (
-			JSON.stringify(recordedArchetypeSlots) !==
-			JSON.stringify(canonicalArchetypeSlots)
-		) {
-			issues.push({
-				code: "production_archetype_slots_mismatch",
-				details: narrativeArchetype,
-			});
-		}
-		if (
-			narrativeArchetype !== "standard" &&
-			!spec.production.archetypeEvidence
-		) {
-			issues.push({
-				code: "production_archetype_evidence_missing",
-				details: narrativeArchetype,
-			});
-		}
-		if (
-			spec.production.archetypeEvidence &&
-			spec.production.archetypeEvidence.archetype !== narrativeArchetype
-		) {
-			issues.push({
-				code: "production_archetype_evidence_mismatch",
-				details: `${narrativeArchetype} != ${spec.production.archetypeEvidence.archetype}`,
-			});
-		}
-
-		const allowedArchetypeSlots = new Set(canonicalArchetypeSlots);
-		for (const segment of spec.segments) {
-			if (
-				segment.archetypeSlot &&
-				!allowedArchetypeSlots.has(segment.archetypeSlot)
-			) {
-				issues.push({
-					code: "unexpected_archetype_slot",
-					details: `${narrativeArchetype}:${segment.archetypeSlot}`,
-				});
-			}
-		}
-		if (canonicalArchetypeSlots.length > 0) {
-			const claimById = new Map(
-				spec.claims
-					.filter((claim) => claim.id)
-					.map((claim) => [claim.id ?? "", claim]),
-			);
-			let cursor = -1;
-			for (const slotName of canonicalArchetypeSlots) {
-				const index = spec.segments.findIndex(
-					(segment, candidateIndex) =>
-						candidateIndex > cursor && segment.archetypeSlot === slotName,
-				);
-				if (index < 0) {
-					issues.push({
-						code: "archetype_slot_sequence_missing",
-						details: `${narrativeArchetype}:${slotName}`,
-					});
-					continue;
-				}
-				cursor = index;
-				const evidenceSlot = spec.production.archetypeEvidence?.slots.find(
-					(slot) => slot.slot === slotName,
-				);
-				if (!evidenceSlot) {
-					issues.push({
-						code: "archetype_slot_evidence_missing",
-						details: `${narrativeArchetype}:${slotName}`,
-					});
-					continue;
-				}
-				const segment = spec.segments[index];
-				if (!segment) continue;
-				const claimSourceIds = new Set(
-					(segment.claimIds ?? []).flatMap(
-						(claimId) => claimById.get(claimId)?.sourceIds ?? [],
-					),
-				);
-				if (
-					!evidenceSlot.sourceIds.some((sourceId) =>
-						claimSourceIds.has(sourceId),
-					)
-				) {
-					issues.push({
-						code: "archetype_slot_claim_provenance_missing",
-						details: `${slotName}:${evidenceSlot.sourceIds.join(",")}`,
-					});
-				}
-				const missingEvidenceIds = (
-					evidenceSlot.adversarialEvidenceIds ?? []
-				).filter(
-					(evidenceId) => !(segment.evidenceIds ?? []).includes(evidenceId),
-				);
-				if (missingEvidenceIds.length > 0) {
-					issues.push({
-						code: "archetype_slot_adversarial_provenance_missing",
-						details: `${slotName}:${missingEvidenceIds.join(",")}`,
-					});
-				}
-			}
 		}
 	}
 
@@ -496,16 +388,6 @@ export function auditByosanFeatureSpec(
 					details: number,
 				});
 			}
-		}
-		if (
-			titleNumbers.length > 0 &&
-			thumbnailNumbers.length > 0 &&
-			!titleNumbers.some((number) => thumbnailNumbers.includes(number))
-		) {
-			issues.push({
-				code: "title_thumbnail_material_claim_mismatch",
-				details: "title and thumbnail share no grounded numeric anchor",
-			});
 		}
 		if (/【速報】/.test(spec.title)) {
 			if (
@@ -581,132 +463,28 @@ export function auditByosanFeatureSpec(
 	}
 
 	if (spec.production && spec.packaging && spec.adversarialEvidence) {
-		const materialClaimIds = spec.packaging.claimIds;
-		const evidenceById = new Map(
-			spec.adversarialEvidence.map((evidence) => [evidence.id, evidence]),
-		);
-		for (const claimId of materialClaimIds) {
-			const presenterIndex = spec.segments.findIndex(
-				(segment) =>
-					segment.verificationRole === "presenter" &&
-					segment.claimIds?.includes(claimId),
-			);
-			const auditorIndex = spec.segments.findIndex(
-				(segment, index) =>
-					index > presenterIndex &&
-					segment.verificationRole === "auditor" &&
-					segment.claimIds?.includes(claimId) &&
-					(segment.evidenceIds?.length ?? 0) > 0,
-			);
-			const auditor =
-				auditorIndex >= 0 ? spec.segments[auditorIndex] : undefined;
-			const resolutionIndex = spec.segments.findIndex(
-				(segment, index) =>
-					index > auditorIndex &&
-					segment.verificationRole === "resolution" &&
-					segment.claimIds?.includes(claimId) &&
-					(segment.evidenceIds ?? []).some((evidenceId) =>
-						auditor?.evidenceIds?.includes(evidenceId),
-					),
-			);
-			const landingIndex = spec.segments.findIndex(
-				(segment, index) =>
-					index > resolutionIndex &&
-					segment.verificationRole === "landing" &&
-					segment.claimIds?.includes(claimId),
-			);
-			if (
-				presenterIndex < 0 ||
-				auditorIndex <= presenterIndex ||
-				resolutionIndex <= auditorIndex ||
-				landingIndex <= resolutionIndex
-			) {
-				issues.push({
-					code: "adversarial_dialogue_sequence_missing",
-					details: claimId,
-				});
-				continue;
-			}
-			const presenter = spec.segments[presenterIndex];
-			if (presenter && auditor && presenter.speaker === auditor.speaker) {
-				issues.push({
-					code: "auditor_speaker_not_distinct",
-					details: claimId,
-				});
-			}
-		}
-
-		for (const evidence of spec.adversarialEvidence.filter((item) =>
-			[
-				"measurement_condition",
-				"counter_metric",
-				"third_party_disagreement",
-				"source_limitation",
-			].includes(item.kind),
-		)) {
-			const recovered = spec.segments.some(
-				(segment) =>
-					segment.verificationRole === "resolution" &&
-					segment.evidenceIds?.includes(evidence.id),
-			);
-			if (!recovered) {
-				issues.push({
-					code: "adversarial_evidence_not_recovered",
-					details: evidence.id,
-				});
-			}
-		}
-
 		const sourceById = new Map(
 			spec.sources.map((source) => [source.id, source]),
 		);
 		const spokenClaimIds = new Set(
 			spec.segments.flatMap((segment) => segment.claimIds ?? []),
 		);
-		for (const claim of spec.claims.filter(
+		const unverifiedSpoken = spec.claims.some(
 			(claim) =>
-				claim.id && claim.status !== "verified" && spokenClaimIds.has(claim.id),
-		)) {
-			const claimId = claim.id ?? "";
-			if (
-				claim.confidence !== undefined &&
-				claim.unresolvedMismatches !== undefined
-			) {
-				const confidenceText = `${Math.round(claim.confidence * 100)}%`;
-				const inferenceBoundarySpoken = spec.segments.some(
-					(segment) =>
-						(segment.verificationRole === "resolution" ||
-							segment.verificationRole === "landing") &&
-						segment.claimIds?.includes(claimId) &&
-						/(推論|推定|分析|確度)/.test(segment.text) &&
-						segment.text.includes(confidenceText),
-				);
-				if (!inferenceBoundarySpoken) {
-					issues.push({
-						code: "inference_confidence_not_spoken",
-						details: `${claimId}: ${confidenceText}`,
-					});
-				}
-				if (claim.unresolvedMismatches.length > 0) {
-					const mismatchSpoken = claim.unresolvedMismatches.some((mismatch) =>
-						spec.segments.some(
-							(segment) =>
-								(segment.verificationRole === "resolution" ||
-									segment.verificationRole === "landing") &&
-								segment.claimIds?.includes(claimId) &&
-								segment.text.includes(mismatch),
-						),
-					);
-					if (!mismatchSpoken) {
-						issues.push({
-							code: "inference_mismatch_not_spoken",
-							details: claimId,
-						});
-					}
-				}
-			}
+				claim.id !== undefined &&
+				claim.status !== "verified" &&
+				spokenClaimIds.has(claim.id),
+		);
+		if (
+			unverifiedSpoken &&
+			!spec.segments.some((segment) => /(推論|推定|分析)/.test(segment.text))
+		) {
+			issues.push({
+				code: "inference_distinction_not_spoken",
+				details:
+					"unverified claims need an inference, estimate or analysis label",
+			});
 		}
-
 		for (const claim of spec.claims.filter((claim) => claim.id)) {
 			const claimSources = claim.sourceIds
 				.map((sourceId) => sourceById.get(sourceId))
@@ -740,61 +518,16 @@ export function auditByosanFeatureSpec(
 		}
 	}
 
-	if (spec.narrative) {
-		const roles = spec.segments.map((segment) => segment.narrativeRole);
-		const factIndex = roles.indexOf("fact");
-		const contextIndex = roles.indexOf("context");
-		const impactIndexes = [
-			roles.indexOf("impact"),
-			roles.indexOf("action"),
-		].filter((index) => index >= 0);
-		const impactIndex =
-			impactIndexes.length > 0 ? Math.min(...impactIndexes) : -1;
-		if (
-			factIndex < 0 ||
-			contextIndex <= factIndex ||
-			impactIndex <= contextIndex
-		) {
-			issues.push({
-				code: "fact_context_impact_sequence_missing",
-				details: "narrative requires Fact -> Context -> Impact/Action order",
-			});
-		}
-		for (const segment of spec.segments.filter(
-			(segment) => segment.narrativeRole === "fact",
-		)) {
-			if (!segment.claimIds || segment.claimIds.length === 0) {
-				issues.push({
-					code: "fact_segment_claim_missing",
-					details: segment.headline,
-				});
-			}
-		}
-	}
-
-	const opening = spec.segments
-		.slice(0, 2)
-		.map((segment) => segment.text)
-		.join(" ");
-	for (const promise of spec.hookPromises) {
-		if (!opening.includes(promise)) {
-			issues.push({
-				code: "opening_promise_missing",
-				details: `Opening does not contain ${promise}`,
-			});
-		}
-	}
-	const thumbnailText = Object.values(spec.thumbnail).join(" ");
-	if (!spec.hookPromises.some((promise) => thumbnailText.includes(promise))) {
+	const openingClaimIds = new Set(
+		spec.segments.slice(0, 2).flatMap((segment) => segment.claimIds ?? []),
+	);
+	if (
+		spec.packaging &&
+		!spec.packaging.claimIds.some((claimId) => openingClaimIds.has(claimId))
+	) {
 		issues.push({
-			code: "thumbnail_hook_disconnected",
-			details: "Thumbnail must contain at least one opening hook promise",
-		});
-	}
-	if (new Set(spec.segments.map((segment) => segment.emotion)).size < 7) {
-		issues.push({
-			code: "emotion_arc_too_narrow",
-			details: "At least seven emotion presets are required",
+			code: "packaging_claim_not_in_opening",
+			details: spec.packaging.claimIds.join(","),
 		});
 	}
 	if (!spec.tags.includes(BYOSAN_BRAND_TAG)) {

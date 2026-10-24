@@ -5,6 +5,7 @@ import fs from "fs-extra";
 import { z } from "zod";
 import {
 	formatZodIssuesForRetry,
+	loadConfig,
 	parseLlmJson,
 	redactLlmEvidence,
 } from "../../io/core.js";
@@ -20,6 +21,25 @@ export type CodexLlmConfig = CodexExecConfig & {
 };
 
 export type CodexMessage = { role: "system" | "user"; content: string };
+
+export type LlmBackend = "gemini" | "codex";
+export type LlmStage = "research" | "feature" | "digest" | "preflight";
+export type ByosanLlmConfig = CodexLlmConfig & {
+	backends: Record<LlmStage, LlmBackend>;
+};
+
+export function byosanLlmConfig(): ByosanLlmConfig {
+	return (loadConfig("byosan_money") as unknown as { llm: ByosanLlmConfig })
+		.llm;
+}
+
+export function llmBackend(cfg: ByosanLlmConfig, stage: LlmStage): LlmBackend {
+	const backend = cfg.backends?.[stage];
+	if (backend === "gemini" || backend === "codex") return backend;
+	throw new Error(
+		`LLM_BACKEND_INVALID: llm.backends.${stage} must be gemini or codex, got ${String(backend)}`,
+	);
+}
 
 export type CodexLogRecord = {
 	event: "start" | "exec_end" | "validation";
@@ -128,6 +148,17 @@ function codexPrompt(
 		),
 		jsonOnlyInstruction,
 	].join("\n\n");
+}
+
+export type StructuredCall<T, U> = Omit<
+	CodexStructuredRequest<T, U>,
+	"llm" | "logPath"
+>;
+
+export function structuredRequest<T, U = T>(
+	request: StructuredCall<T, U>,
+): StructuredCall<T, U> {
+	return request;
 }
 
 export type CodexStructuredRequest<T, U> = {

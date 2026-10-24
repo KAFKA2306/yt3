@@ -45,8 +45,7 @@ function passingDependencies(): ByosanPreflightDependencies {
 		commandAvailable: (command) => pass(command),
 		pythonRuntime: () => pass("python_runtime"),
 		voicevox: async () => pass("voicevox"),
-		codexLogin: () => pass("codex_login"),
-		codexExec: async () => pass("codex_exec"),
+		gemini: async () => pass("gemini"),
 		youtube: async () => pass("youtube"),
 	};
 }
@@ -105,21 +104,21 @@ describe("Byosan preflight aggregation", () => {
 				},
 			},
 			{
-				name: "codex exec rate-limited",
+				name: "Gemini structured-output rate-limited",
 				failureClass: "PROVIDER_RATE_LIMIT",
-				component: "codex_exec",
+				component: "gemini",
 				inject: (dependencies) => {
-					dependencies.codexExec = async () =>
-						fail("codex_exec", "structured output returned HTTP 429");
+					dependencies.gemini = async () =>
+						fail("gemini", "structured output returned HTTP 429");
 				},
 			},
 			{
 				name: "outbound network unavailable",
 				failureClass: "NETWORK_AUTH",
-				component: "codex_exec",
+				component: "gemini",
 				inject: (dependencies) => {
-					dependencies.codexExec = async () =>
-						fail("codex_exec", "outbound network unavailable");
+					dependencies.gemini = async () =>
+						fail("gemini", "outbound network unavailable");
 				},
 			},
 			{
@@ -154,6 +153,26 @@ describe("Byosan preflight aggregation", () => {
 				testCase.name,
 			).toBe(true);
 		}
+	});
+});
+
+describe("Byosan preflight probes the configured LLM backends", () => {
+	test("runs the codex probe only when codex is a configured backend", async () => {
+		const withoutCodex = await runByosanPreflight(await temporaryRunDir(), {
+			...passingDependencies(),
+			llmBackends: ["gemini"],
+		});
+		expect(withoutCodex.checks.codex_login).toBeUndefined();
+		expect(withoutCodex.checks.codex_exec).toBeUndefined();
+
+		const withCodex = await runByosanPreflight(await temporaryRunDir(), {
+			...passingDependencies(),
+			llmBackends: ["gemini", "codex"],
+			codexLogin: () => pass("codex_login"),
+			codexExec: async () => pass("codex_exec"),
+		});
+		expect(withCodex.checks.codex_login?.status).toBe("PASS");
+		expect(withCodex.checks.codex_exec?.status).toBe("PASS");
 	});
 });
 
