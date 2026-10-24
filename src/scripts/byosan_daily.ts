@@ -10,6 +10,11 @@ import {
 	reconcileByosanCheckpoint,
 	writeByosanCheckpoint,
 } from "../domain/byosan/checkpoint.js";
+import {
+	type CodexLlmConfig,
+	codexLlmLogPath,
+	invokeCodexStructured,
+} from "../domain/byosan/codex_llm.js";
 import { selectByosanEditorialReferencePlan } from "../domain/byosan/editorial_references.js";
 import {
 	type ExplainConfig,
@@ -18,6 +23,10 @@ import {
 	buildExplanationEvidence,
 	runCodexExplanation,
 } from "../domain/byosan/explanation.js";
+import {
+	auditFeatureSpecAgainstExplanation,
+	auditHookPromises,
+} from "../domain/byosan/explanation_contract.js";
 import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
@@ -42,7 +51,6 @@ import {
 	AssetStore,
 	ROOT,
 	getRunIdDateString,
-	invokeStructuredLlm,
 	loadConfig,
 	zodSizeConstraintLines,
 } from "../io/core.js";
@@ -615,6 +623,10 @@ function selectedCandidate(research: ResearchResult): ByosanAngleCandidate {
 	return candidate;
 }
 
+function byosanCodexLlm(): CodexLlmConfig {
+	return (loadConfig("byosan_money") as unknown as { llm: CodexLlmConfig }).llm;
+}
+
 async function generateFeatureSpec(
 	research: ResearchResult,
 	candidate: ByosanAngleCandidate,
@@ -632,6 +644,9 @@ async function generateFeatureSpec(
 			discovery: DiscoveryConfig;
 		}
 	).discovery.title_rule;
+	const bannedPhrases = (
+		loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
+	).explain.banned_conclusion_phrases;
 	const hookPromises = candidate.numbers.slice(0, 4);
 	if (hookPromises.length < 2) {
 		throw new Error(
@@ -647,14 +662,11 @@ async function generateFeatureSpec(
 		editorialReferencePlan,
 		{ spaces: 2 },
 	);
-	return invokeStructuredLlm({
+	return invokeCodexStructured({
+		llm: byosanCodexLlm(),
+		logPath: codexLlmLogPath(runDir),
 		schema: ByosanFeatureDraftSchema,
 		name: "byosan_feature_draft",
-		llmOptions: {
-			temperature: 0.28,
-			sessionId: runDir,
-		},
-		maxAttempts: 3,
 		evidencePath: path.join(
 			runDir,
 			"audit",
@@ -663,7 +675,7 @@ async function generateFeatureSpec(
 		messages: (attempt, lastValidationError) => [
 			{
 				role: "system",
-				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimはresolutionまたはlandingで「推論/推定/分析/確度」のいずれかとconfidenceを整数%で発話し、矛盾が残る場合はunresolvedMismatchesの少なくとも1つを原文一致で発話します。confidenceは事実の確率や公式確率ではなく、現在の証拠集合に対する分析確度です。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、statsの件数は後述のスキーマ由来の制約に従い、発話で提示する根拠のある数値カードだけを入れます。数値カードを示さない問い・つなぎ・結論のシーンではstatsを空配列にし、件数を埋めるための数字やカードを作らないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。explanationの結論・原理・数字を台本の骨格にし、順序は conclusion→数字→principle→check→出典の順にします。${titleRule}`,
+				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimはresolutionまたはlandingで「推論/推定/分析/確度」のいずれかとconfidenceを整数%で発話し、矛盾が残る場合はunresolvedMismatchesの少なくとも1つを原文一致で発話します。confidenceは事実の確率や公式確率ではなく、現在の証拠集合に対する分析確度です。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、statsの件数は後述のスキーマ由来の制約に従い、発話で提示する根拠のある数値カードだけを入れます。数値カードを示さない問い・つなぎ・結論のシーンではstatsを空配列にし、件数を埋めるための数字やカードを作らないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。explanationの結論・原理・数字を台本の骨格にし、順序は conclusion→数字→principle→check→出典の順にします。explanationのconclusionは一字一句そのまま、verificationRoleがresolutionまたはlandingのsegmentのtextに入れます。explanationのfiguresの各valueの数値と単位（例: 2.4%）を、segmentsのtextかstats.valueのいずれかに含めます。${titleRule}`,
 			},
 			{
 				role: "user",
@@ -681,7 +693,7 @@ async function generateFeatureSpec(
 					},
 					null,
 					2,
-				)}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限。下記の全項目を守る）:\n${FEATURE_DRAFT_SIZE_LIMITS}\n${archetypeSlotPromptPolicy(productionPlan.narrativeArchetype)}\nthumbnailTitleとthumbnailは同じmaterial claimを表す。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesはcandidate.numbersから2〜4個を原表記のまま選ぶ。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+				)}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限。下記の全項目を守る）:\n${FEATURE_DRAFT_SIZE_LIMITS}\n${archetypeSlotPromptPolicy(productionPlan.narrativeArchetype)}\nthumbnailTitleとthumbnailは同じmaterial claimを表す。thumbnailの欄（eyebrow・lead・accent・reaction・secondLine・calloutTop・calloutBottomのいずれか）に、hookPromisesのいずれか1つの文言を一字一句そのまま含める。titleと、thumbnailTitleまたはthumbnailのいずれかの欄は、同じ数値（例: +2.1%の2.1）を少なくとも1つ含める。タイトル・サムネイルに出す数値はpackaging.claimIdsが参照するclaims.claim本文にも同じ数値を含める。hookPromisesは candidate.numbers のいずれかの原文から、数値を含む連続した部分を24文字以内で2〜4個抜き出す（各要素は原文の部分文字列であること）。noveltyQueriesはYouTube上の完全一致・類似角度を点検できる検索式にする。descriptionBulletsは重要な限定条件を3〜8件含める。segmentsは${productionPlan.minSegments}〜${productionPlan.maxSegments}件。attempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
 			},
 		],
 		validate: (draft) => {
@@ -704,11 +716,24 @@ async function generateFeatureSpec(
 				activeProbes,
 				sources,
 			});
-			if (
-				JSON.stringify(audited.hookPromises) !== JSON.stringify(hookPromises)
-			) {
+			const contractIssues = auditFeatureSpecAgainstExplanation(
+				audited,
+				explanation,
+				candidate,
+				bannedPhrases,
+			);
+			if (contractIssues.length > 0) {
 				throw new Error(
-					"opening_hook_contract_mismatch: generated hookPromises differ from the pre-generation contract",
+					`BYOSAN_EXPLANATION_CONTRACT_INVALID: ${contractIssues.join("; ")}`,
+				);
+			}
+			const hookIssues = auditHookPromises(
+				audited.hookPromises,
+				candidate.numbers,
+			);
+			if (hookIssues.length > 0) {
+				throw new Error(
+					`opening_hook_contract_mismatch: ${hookIssues.join("; ")}`,
 				);
 			}
 			const rawHash = createHash("sha256")
@@ -832,7 +857,13 @@ export async function runByosanDaily(): Promise<void> {
 	if (reusedResearch) {
 		research = reusedResearch;
 	} else {
-		const scout = new TrendScout(store);
+		const scout = new TrendScout(store, (request) =>
+			invokeCodexStructured({
+				llm: byosanCodexLlm(),
+				logPath: codexLlmLogPath(store.runDir),
+				...request,
+			}),
+		);
 		const discovery = loadConfig("byosan_money") as unknown as {
 			discovery: DiscoveryConfig;
 		};

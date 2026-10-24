@@ -125,7 +125,10 @@ export const ByosanPackagingSchema = z.object({
 	freshness: z
 		.object({
 			claimId: z.string().min(1),
-			eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+			eventDate: z
+				.string()
+				.regex(/^\d{4}-\d{2}-\d{2}$/)
+				.describe("YYYY-MM-DD 形式の日付（例: 2026-10-24）"),
 		})
 		.optional(),
 	relativeAnchor: z

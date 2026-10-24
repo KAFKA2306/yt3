@@ -3,6 +3,11 @@ import path from "node:path";
 import fs from "fs-extra";
 import type { z } from "zod";
 import {
+	type CodexLlmConfig,
+	codexLlmLogPath,
+	invokeCodexStructured,
+} from "../domain/byosan/codex_llm.js";
+import {
 	type ByosanDigestContext,
 	ByosanDigestContextSchema,
 	auditByosanDigestContext,
@@ -15,7 +20,7 @@ import {
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
-import { invokeStructuredLlm } from "../io/core.js";
+import { loadConfig } from "../io/core.js";
 
 export type DigestPeriod = "week" | "month";
 
@@ -295,15 +300,13 @@ async function generateDigestContext(
 		}
 		draft = DigestContextDraftSchema.parse(supplied);
 	} else {
-		draft = await invokeStructuredLlm({
+		draft = await invokeCodexStructured({
+			llm: (loadConfig("byosan_money") as unknown as { llm: CodexLlmConfig })
+				.llm,
+			logPath: codexLlmLogPath(runDir),
+			search: true,
 			schema: DigestContextDraftSchema,
 			name: "byosan_digest_context",
-			llmOptions: {
-				temperature: 0.15,
-				sessionId: runDir,
-				extra: { tools: [{ googleSearchRetrieval: {} }] },
-			},
-			maxAttempts: 3,
 			evidencePath: path.join(
 				runDir,
 				"audit",

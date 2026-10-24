@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
-import { toJsonSchema } from "@langchain/core/utils/json_schema";
 import fs from "fs-extra";
 import {
 	classifyByosanFailure,
@@ -46,7 +45,8 @@ function passingDependencies(): ByosanPreflightDependencies {
 		commandAvailable: (command) => pass(command),
 		pythonRuntime: () => pass("python_runtime"),
 		voicevox: async () => pass("voicevox"),
-		gemini: async () => pass("gemini"),
+		codexLogin: () => pass("codex_login"),
+		codexExec: async () => pass("codex_exec"),
 		youtube: async () => pass("youtube"),
 	};
 }
@@ -105,21 +105,21 @@ describe("Byosan preflight aggregation", () => {
 				},
 			},
 			{
-				name: "Gemini invalid or rate-limited key pool",
+				name: "codex exec rate-limited",
 				failureClass: "PROVIDER_RATE_LIMIT",
-				component: "gemini",
+				component: "codex_exec",
 				inject: (dependencies) => {
-					dependencies.gemini = async () =>
-						fail("gemini", "structured output returned HTTP 429");
+					dependencies.codexExec = async () =>
+						fail("codex_exec", "structured output returned HTTP 429");
 				},
 			},
 			{
 				name: "outbound network unavailable",
 				failureClass: "NETWORK_AUTH",
-				component: "gemini",
+				component: "codex_exec",
 				inject: (dependencies) => {
-					dependencies.gemini = async () =>
-						fail("gemini", "outbound network unavailable");
+					dependencies.codexExec = async () =>
+						fail("codex_exec", "outbound network unavailable");
 				},
 			},
 			{
@@ -157,12 +157,7 @@ describe("Byosan preflight aggregation", () => {
 	});
 });
 
-describe("Byosan Gemini structured-output probe", () => {
-	test("sends a Gemini-compatible schema without const keywords", () => {
-		const jsonSchema = JSON.stringify(toJsonSchema(ProbeSchema));
-		expect(jsonSchema).not.toContain('"const"');
-	});
-
+describe("Byosan codex structured-output probe", () => {
 	test("accepts only the ok=true contract", () => {
 		expect(ProbeSchema.safeParse({ ok: true }).success).toBe(true);
 		expect(ProbeSchema.safeParse({ ok: false }).success).toBe(false);
