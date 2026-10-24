@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import yaml from "js-yaml";
 import { z } from "zod";
 import { ByosanFeatureSegmentSchema } from "./feature_spec.js";
+import { ByosanScenesConfigSchema } from "./scene_spec.js";
 
 export const BYOSAN_CONFIG_PATH = path.join(
 	process.cwd(),
@@ -76,6 +77,7 @@ const FeatureProductionSchema = z.object({
 	}),
 	run_layout: z.object({
 		source_dir: nonEmptyString,
+		explanation: nonEmptyString,
 		content_dir: nonEmptyString,
 		content_output: nonEmptyString,
 		metadata: nonEmptyString,
@@ -198,8 +200,6 @@ const FeatureProductionSchema = z.object({
 		audio_codec: nonEmptyString,
 		min_output_bitrate_bps: positiveInteger,
 		max_scene_seconds: positiveInteger,
-		min_cue_seconds: nonNegativeNumber,
-		min_distinct_emotions: positiveInteger,
 		opening_segment_count: positiveInteger,
 		min_thumbnail_bytes: positiveInteger,
 		black_min_seconds: nonNegativeNumber,
@@ -244,6 +244,7 @@ const ByosanProductionConfigSchema = z.object({
 		}),
 	}),
 	feature_production: FeatureProductionSchema,
+	scenes: ByosanScenesConfigSchema,
 });
 
 export type ByosanProductionConfig = z.infer<

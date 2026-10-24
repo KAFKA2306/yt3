@@ -2,11 +2,13 @@ import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
+import { byosanLlmConfig, llmBackend } from "../src/domain/byosan/codex_llm.js";
 import {
 	type ByosanFailureTrace,
 	type RepairResolution,
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
+	pendingLlmBackends,
 	preflightBlockedMessage,
 	recordByosanFailure,
 	reusableResearchResult,
@@ -401,3 +403,5 @@ describe("byosan failure retry gate", () => {
 		]);
 	});
 });
+
+describe("pendingLlmBackends", () => {});

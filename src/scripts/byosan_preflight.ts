@@ -3,13 +3,20 @@ import path from "node:path";
 import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import { z } from "zod";
+import {
+	type LlmBackend,
+	byosanLlmConfig,
+	codexLlmLogPath,
+	invokeCodexStructured,
+	llmBackend,
+} from "../domain/byosan/codex_llm.js";
 import { getByosanProductionConfig } from "../domain/byosan/production_config.js";
 import {
 	assertYouTubeChannelMatchesProfile,
 	createYouTubeOAuthClient,
 	loadYouTubeProfileEnv,
 } from "../domain/youtube_profiles.js";
-import { ROOT, invokeStructuredLlm } from "../io/core.js";
+import { ROOT, invokeStructuredLlm, loadConfig } from "../io/core.js";
 
 export type PreflightStatus = "PASS" | "FAIL" | "UNVERIFIED";
 
@@ -26,6 +33,9 @@ export type ByosanPreflightDependencies = {
 	pythonRuntime?: (runDir: string) => PreflightCheck;
 	voicevox?: () => Promise<PreflightCheck>;
 	gemini?: (runDir: string) => Promise<PreflightCheck>;
+	codexLogin?: () => PreflightCheck;
+	codexExec?: (runDir: string) => Promise<PreflightCheck>;
+	llmBackends?: LlmBackend[];
 	youtube?: () => Promise<PreflightCheck>;
 };
 
@@ -202,6 +212,60 @@ async function checkGemini(runDir: string): Promise<PreflightCheck> {
 	}
 }
 
+function codexLoginStatus(): PreflightCheck {
+	const result = spawnSync("codex", ["login", "status"], {
+		cwd: ROOT,
+		encoding: "utf8",
+	});
+	const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim();
+	return result.status === 0
+		? check(
+				"codex_login",
+				"codex login status",
+				"PASS",
+				"codex login is active",
+			)
+		: check(
+				"codex_login",
+				"codex login status",
+				"FAIL",
+				`codex login is unavailable: ${redacted(output)}`,
+			);
+}
+
+async function checkCodexExec(runDir: string): Promise<PreflightCheck> {
+	const evidence = path.join(runDir, "audit", "preflight_codex_attempts.json");
+	try {
+		await invokeCodexStructured({
+			llm: byosanLlmConfig(),
+			logPath: codexLlmLogPath(runDir),
+			schema: ProbeSchema,
+			name: "byosan_production_preflight",
+			maxAttempts: 1,
+			evidencePath: evidence,
+			messages: () => [
+				{ role: "system", content: 'Return exactly {"ok":true}.' },
+				{ role: "user", content: "Confirm the structured-output contract." },
+			],
+		});
+		return check(
+			"codex_exec",
+			"codex exec structured-output probe",
+			"PASS",
+			"codex exec structured-output contract passed",
+			[evidence],
+		);
+	} catch (error) {
+		return check(
+			"codex_exec",
+			"codex exec structured-output probe",
+			"FAIL",
+			`codex exec structured-output probe failed: ${redacted(error instanceof Error ? error.message : String(error))}`,
+			[evidence],
+		);
+	}
+}
+
 async function checkYouTube(): Promise<PreflightCheck> {
 	try {
 		const profile = loadYouTubeProfileEnv("byosan");
@@ -241,15 +305,24 @@ export async function runByosanPreflight(
 	const pythonCheck = dependencies.pythonRuntime ?? runPythonRuntime;
 	const voicevoxCheck = dependencies.voicevox ?? checkVoicevox;
 	const geminiCheck = dependencies.gemini ?? checkGemini;
+	const loginCheck = dependencies.codexLogin ?? codexLoginStatus;
+	const execCheck = dependencies.codexExec ?? checkCodexExec;
 	const youtubeCheck = dependencies.youtube ?? checkYouTube;
+	const backends = new Set<LlmBackend>(
+		dependencies.llmBackends ?? Object.values(byosanLlmConfig().backends),
+	);
 	const checks: Record<string, PreflightCheck> = {
 		ffmpeg: commandCheck("ffmpeg"),
 		ffprobe: commandCheck("ffprobe"),
 		python_runtime: pythonCheck(runDir),
 		voicevox: await voicevoxCheck(),
-		gemini: await geminiCheck(runDir),
 		youtube: await youtubeCheck(),
 	};
+	if (backends.has("gemini")) checks.gemini = await geminiCheck(runDir);
+	if (backends.has("codex")) {
+		checks.codex_login = loginCheck();
+		checks.codex_exec = await execCheck(runDir);
+	}
 	const report: ByosanPreflightReport = {
 		schema_version: "byosan_production_preflight_v1",
 		status: aggregateStatus(checks),

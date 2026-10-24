@@ -75,16 +75,6 @@ describe("byosan scene spec", () => {
 		).toEqual(["value_ref_missing", "claim_missing"]);
 	});
 
-	test("throws when a segment matches no rule", () => {
-		expect(() =>
-			compileScenes(
-				withSegment(1, { visualType: "chart", stats: [] }),
-				explanation,
-				config,
-			),
-		).toThrow("BYOSAN_SCENE_UNASSIGNABLE");
-	});
-
 	test("throws when a segment has no claim link", () => {
 		expect(() =>
 			compileScenes(

@@ -1,9 +1,8 @@
-import { spawnSync } from "node:child_process";
-import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
 import { ROOT } from "../../io/core.js";
+import { codexLlmLogPath, runCodexExec } from "./codex_llm.js";
 import type { ByosanAngleCandidate } from "./news_angle.js";
 
 export type ExplainConfig = {
@@ -162,39 +161,19 @@ export function auditExplanation(
 
 function codexJson<T>(
 	cfg: ExplainConfig,
-	schema: string,
+	call: { stage: string; schema: string; logPath: string },
 	input: string,
 	out: string,
 	parse: (value: unknown) => T,
 ): T {
-	fs.ensureDirSync(path.dirname(out));
-	const workdir = fs.mkdtempSync(path.join(os.tmpdir(), cfg.workdir_prefix));
-	const result = spawnSync(
-		"codex",
-		[
-			"exec",
-			"-C",
-			workdir,
-			"--sandbox",
-			cfg.sandbox,
-			"--ephemeral",
-			"--skip-git-repo-check",
-			"--ignore-user-config",
-			"--output-schema",
-			path.join(ROOT, schema),
-			"-o",
-			out,
-			"-",
-		],
-		{ input, encoding: "utf8" },
-	);
-	fs.removeSync(workdir);
-	if (result.status !== 0) {
-		throw new Error(
-			`CODEX_EXEC_FAILED status=${result.status} ${result.stderr.slice(-400)}`,
-		);
-	}
-	return parse(fs.readJsonSync(out));
+	const text = runCodexExec(cfg, input, {
+		stage: call.stage,
+		attempt: 1,
+		logPath: call.logPath,
+		outputSchemaPath: path.join(ROOT, call.schema),
+	});
+	fs.outputFileSync(out, text);
+	return parse(JSON.parse(text));
 }
 
 export function runCodexExplanation(
@@ -202,9 +181,10 @@ export function runCodexExplanation(
 	evidence: ExplanationEvidence,
 	runDir: string,
 ): Explanation {
+	const logPath = codexLlmLogPath(runDir);
 	const explanation = codexJson(
 		cfg,
-		cfg.schema,
+		{ stage: "explanation", schema: cfg.schema, logPath },
 		`${cfg.prompt}\n\n[CANDIDATE]\n${evidence.candidate}\n\n[EVIDENCE]\n${evidence.articles}`,
 		path.join(runDir, "source", "explanation.raw.json"),
 		(value) => ExplanationSchema.parse(value),
@@ -217,7 +197,7 @@ export function runCodexExplanation(
 	);
 	const { verdicts } = codexJson(
 		cfg,
-		cfg.verify_schema,
+		{ stage: "explanation_verdict", schema: cfg.verify_schema, logPath },
 		`${cfg.verify_prompt}\n\n[EVIDENCE]\n${evidence.articles}\n\n[FIGURES]\n${JSON.stringify(explanation.figures, null, 2)}`,
 		path.join(runDir, "source", "explanation.verdicts.json"),
 		(value) => VerdictsSchema.parse(value),

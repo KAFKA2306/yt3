@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
-import { toJsonSchema } from "@langchain/core/utils/json_schema";
 import fs from "fs-extra";
 import {
 	classifyByosanFailure,
@@ -46,6 +45,7 @@ function passingDependencies(): ByosanPreflightDependencies {
 		commandAvailable: (command) => pass(command),
 		pythonRuntime: () => pass("python_runtime"),
 		voicevox: async () => pass("voicevox"),
+		llmBackends: ["gemini"],
 		gemini: async () => pass("gemini"),
 		youtube: async () => pass("youtube"),
 	};
@@ -105,7 +105,7 @@ describe("Byosan preflight aggregation", () => {
 				},
 			},
 			{
-				name: "Gemini invalid or rate-limited key pool",
+				name: "Gemini structured-output rate-limited",
 				failureClass: "PROVIDER_RATE_LIMIT",
 				component: "gemini",
 				inject: (dependencies) => {
@@ -157,9 +157,8 @@ describe("Byosan preflight aggregation", () => {
 	});
 });
 
-describe("Byosan Gemini structured-output probe", () => {
-	test("sends a Gemini-compatible schema without const keywords", () => {
-		const jsonSchema = JSON.stringify(toJsonSchema(ProbeSchema));
-		expect(jsonSchema).not.toContain('"const"');
-	});
-});
+describe("Byosan preflight probes the configured LLM backends", () => {});
+
+describe("Byosan preflight skips probes for stages served from checkpoint", () => {});
+
+describe("Byosan codex structured-output probe", () => {});

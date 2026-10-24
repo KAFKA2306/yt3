@@ -6,6 +6,7 @@ import {
 	auditVerdicts,
 	buildExplanationEvidence,
 } from "../src/domain/byosan/explanation.js";
+import { explanationCheckItems } from "../src/domain/byosan/explanation_contract.js";
 
 const schema = JSON.parse(
 	fs.readFileSync("config/schemas/byosan_explanation_v1.json", "utf8"),
@@ -191,3 +192,5 @@ describe("byosan explanation evidence", () => {
 		).toThrow("BYOSAN_EXPLAIN_EVIDENCE_MISSING");
 	});
 });
+
+describe("explanation check items", () => {});

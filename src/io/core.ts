@@ -116,7 +116,7 @@ export function createLlm(
 	return llm;
 }
 
-function redactLlmEvidence(value: string): string {
+export function redactLlmEvidence(value: string): string {
 	let redacted = value;
 	for (const name of [
 		"GEMINI_API_KEY",
@@ -228,6 +228,12 @@ export function zodSizeConstraintLines(schema: z.ZodType): string[] {
 			visit(target, nodePath, [...refStack, name]);
 			return;
 		}
+		if (typeof node.description === "string") {
+			record(nodePath, node.description);
+		}
+		if (Array.isArray(node.enum)) {
+			record(nodePath, `次のいずれか: ${node.enum.join("、")}`);
+		}
 		for (const option of [node.anyOf, node.oneOf]) {
 			if (Array.isArray(option)) {
 				for (const branch of option)
@@ -333,6 +339,7 @@ export type StructuredResponseFormat = "provider_schema" | "json_text";
 
 export async function invokeStructuredLlm<T, U = T>(params: {
 	schema: z.ZodSchema<T>;
+	providerSchema?: z.ZodType;
 	name: string;
 	llmOptions?: LlmOptions;
 	responseFormat?: StructuredResponseFormat;
@@ -351,7 +358,9 @@ export async function invokeStructuredLlm<T, U = T>(params: {
 	const attempts: StructuredInvocationAttempt[] = [];
 	const factory = params.llmFactory ?? createLlm;
 	const responseFormat = params.responseFormat ?? "provider_schema";
-	const responseSchema = providerResponseJsonSchema(params.schema);
+	const responseSchema = providerResponseJsonSchema(
+		params.providerSchema ?? params.schema,
+	);
 	const sleep =
 		params.sleep ??
 		((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));

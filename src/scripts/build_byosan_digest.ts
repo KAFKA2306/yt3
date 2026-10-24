@@ -3,6 +3,13 @@ import path from "node:path";
 import fs from "fs-extra";
 import type { z } from "zod";
 import {
+	byosanLlmConfig,
+	codexLlmLogPath,
+	invokeCodexStructured,
+	llmBackend,
+	structuredRequest,
+} from "../domain/byosan/codex_llm.js";
+import {
 	type ByosanDigestContext,
 	ByosanDigestContextSchema,
 	auditByosanDigestContext,
@@ -295,15 +302,11 @@ async function generateDigestContext(
 		}
 		draft = DigestContextDraftSchema.parse(supplied);
 	} else {
-		draft = await invokeStructuredLlm({
+		const llm = byosanLlmConfig();
+		const request = structuredRequest({
+			maxAttempts: llm.max_attempts,
 			schema: DigestContextDraftSchema,
 			name: "byosan_digest_context",
-			llmOptions: {
-				temperature: 0.15,
-				sessionId: runDir,
-				extra: { tools: [{ googleSearchRetrieval: {} }] },
-			},
-			maxAttempts: 3,
 			evidencePath: path.join(
 				runDir,
 				"audit",
@@ -325,6 +328,22 @@ async function generateDigestContext(
 				},
 			],
 		});
+		draft =
+			llmBackend(llm, "digest") === "codex"
+				? await invokeCodexStructured({
+						llm,
+						logPath: codexLlmLogPath(runDir),
+						search: true,
+						...request,
+					})
+				: await invokeStructuredLlm({
+						...request,
+						llmOptions: {
+							temperature: 0.15,
+							sessionId: runDir,
+							extra: { tools: [{ googleSearchRetrieval: {} }] },
+						},
+					});
 	}
 
 	const context = ByosanDigestContextSchema.parse({

@@ -24,7 +24,15 @@ async function makeRoot(): Promise<string> {
 		path.join(os.tmpdir(), "byosan-publish-daily-test-"),
 	);
 	tempRoots.push(root);
+	writeByosanConfig(root);
 	return root;
+}
+
+function writeByosanConfig(root: string): void {
+	fs.outputFileSync(
+		path.join(root, "config/domains/byosan_money.yaml"),
+		"prompts:\n  research: {}\ndiscovery: {}\nexplain: {}\nrepair: {}\nllm: {}\n",
+	);
 }
 
 function publishDir(root: string): string {
@@ -105,6 +113,7 @@ describe("byosan daily publish gate", () => {
 			path.join(os.tmpdir(), "byosan-publish-daily-test-"),
 		);
 		tempRoots.push(root);
+		writeByosanConfig(root);
 		const runner = recordingRunner((args, dir) => {
 			if (args[0] === "byosan:auto") return { status: 0, output: gateOutput() };
 			writeReceipt(dir);
