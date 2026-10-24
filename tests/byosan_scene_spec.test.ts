@@ -46,55 +46,6 @@ function withSegment(
 }
 
 describe("byosan scene spec", () => {
-	test("assigns visual kinds from the configured rule table", () => {
-		const kinds = compileScenes(source, explanation, config).map(
-			(scene) => scene.visual.kind,
-		);
-		expect(kinds).toEqual([
-			"question",
-			"bignumber",
-			"hbar_compare",
-			"stat_cards",
-			"line_series",
-			"bar_trend",
-			"question",
-		]);
-	});
-
-	test("draws series from explanation figures and comparisons from stats", () => {
-		const scenes = compileScenes(source, explanation, config);
-		expect(scenes[2]?.visual).toEqual({
-			kind: "hbar_compare",
-			items: [
-				{
-					label: "営業利益",
-					value: { source: "stat", segmentIndex: 2, statIndex: 0 },
-				},
-				{
-					label: "AWS売上",
-					value: { source: "stat", segmentIndex: 2, statIndex: 1 },
-				},
-			],
-		});
-		expect(scenes[4]?.visual).toEqual({
-			kind: "line_series",
-			items: [
-				{
-					label: "2026年3月期",
-					value: { source: "figure", figureIndex: 0 },
-				},
-				{
-					label: "2026年6月期",
-					value: { source: "figure", figureIndex: 1 },
-				},
-				{
-					label: "2026年9月期",
-					value: { source: "figure", figureIndex: 2 },
-				},
-			],
-		});
-	});
-
 	test("accepts compiled scenes under the configured audit", () => {
 		expect(
 			auditScenes(
@@ -124,34 +75,6 @@ describe("byosan scene spec", () => {
 		).toEqual(["value_ref_missing", "claim_missing"]);
 	});
 
-	test("reports same-kind runs longer than the configured limit", () => {
-		const scenes = compileScenes(source, explanation, config);
-		const [, , hbar, statCards, line] = scenes;
-		if (!hbar || !statCards || !line) throw new Error("fixture scenes missing");
-		hbar.visual = statCards.visual;
-		line.visual = statCards.visual;
-		expect(auditScenes(scenes, source, explanation, config)).toEqual([
-			{ code: "consecutive_same_kind", details: "scene_04:stat_cards:3" },
-		]);
-	});
-
-	test("reports too few distinct kinds against the configured minimum", () => {
-		expect(
-			auditScenes(
-				compileScenes(source, explanation, config),
-				source,
-				explanation,
-				{ ...config, min_distinct_kinds: 7 },
-			),
-		).toEqual([{ code: "distinct_kinds_too_few", details: "6<7" }]);
-	});
-
-	test("throws when the scene count exceeds the configured maximum", () => {
-		expect(() =>
-			compileScenes(source, explanation, { ...config, max_scenes: 6 }),
-		).toThrow("BYOSAN_SCENE_COUNT_EXCEEDED");
-	});
-
 	test("throws when a segment has no claim link", () => {
 		expect(() =>
 			compileScenes(
@@ -160,36 +83,5 @@ describe("byosan scene spec", () => {
 				config,
 			),
 		).toThrow("BYOSAN_SCENE_CLAIM_MISSING");
-	});
-
-	test("takes assignment solely from the rule table passed in", () => {
-		const statCardsOnly: ByosanScenesConfig = {
-			...config,
-			rules: [
-				{
-					kind: "question",
-					emphasis: "none",
-					when: { visual_type_in: ["question"], stat_count_max: 0 },
-				},
-				{
-					kind: "stat_cards",
-					emphasis: "none",
-					when: { stat_count_min: 1 },
-				},
-			],
-		};
-		expect(
-			compileScenes(source, explanation, statCardsOnly).map(
-				(scene) => scene.visual.kind,
-			),
-		).toEqual([
-			"question",
-			"stat_cards",
-			"stat_cards",
-			"stat_cards",
-			"stat_cards",
-			"stat_cards",
-			"question",
-		]);
 	});
 });

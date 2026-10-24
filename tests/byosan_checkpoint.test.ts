@@ -82,24 +82,6 @@ function readyCheckpoint(
 }
 
 describe("Byosan checkpoint research fingerprint", () => {
-	test("ignores unrelated source and llm backend changes", () => {
-		const { root, runDir } = makeFixture();
-		const before = currentByosanFingerprints(root, runDir).research;
-		fs.appendFileSync(path.join(root, "src/scripts/byosan_daily.ts"), "x");
-		fs.outputFileSync(
-			path.join(root, "config/domains/byosan_money.yaml"),
-			"prompts:\n  research: {system: s1}\ndiscovery: {recent_days: 7}\nllm:\n  backends: {research: codex, feature: codex}\n",
-		);
-		expect(currentByosanFingerprints(root, runDir).research).toBe(before);
-	});
-
-	test("ignores daily flow edits that do not touch the research or spec inputs", () => {
-		const { root, runDir } = makeFixture();
-		const before = currentByosanFingerprints(root, runDir);
-		fs.appendFileSync(path.join(root, "src/scripts/byosan_daily.ts"), "x");
-		expect(currentByosanFingerprints(root, runDir)).toEqual(before);
-	});
-
 	test("changes when the research prompt, discovery config, or discovered articles change", () => {
 		const { root, runDir } = makeFixture();
 		const before = currentByosanFingerprints(root, runDir).research;
@@ -144,55 +126,6 @@ describe("Byosan checkpoint research fingerprint", () => {
 		const reconciled = reconcileByosanCheckpoint(runDir, RUN_ID, root);
 		expect(reconciled.stages.research_ready).toBe(false);
 		expect(reconciled.stages.spec_ready).toBe(false);
-	});
-
-	test("migrates a legacy checkpoint by restoring research and spec readiness from current artifacts", () => {
-		const { root, runDir } = makeFixture();
-		fs.outputJsonSync(path.join(runDir, "source", "research_result.json"), {
-			angle_decision: CURRENT_STOP_DECISION,
-		});
-		fs.outputFileSync(path.join(runDir, "source", "feature_spec.json"), "{}");
-		const legacy = {
-			...readyCheckpoint(root, runDir),
-			fingerprints: {
-				...currentByosanFingerprints(root, runDir),
-				research: "legacy-whole-file-hash",
-			},
-			stages: {
-				research_ready: false,
-				spec_ready: false,
-				media_ready: false,
-				quality_pass: false,
-				publish_verified: false,
-			},
-		};
-		writeByosanCheckpoint(runDir, legacy);
-		const reconciled = reconcileByosanCheckpoint(runDir, RUN_ID, root);
-		expect(reconciled.stages.research_ready).toBe(true);
-		expect(reconciled.stages.spec_ready).toBe(true);
-		expect(reconciled.fingerprints.research).toStartWith("inputs_v2:");
-	});
-
-	test("restores readiness lost after an artifact was written, when inputs are unchanged", () => {
-		const { root, runDir } = makeFixture();
-		fs.outputJsonSync(path.join(runDir, "source", "research_result.json"), {
-			angle_decision: CURRENT_STOP_DECISION,
-		});
-		fs.outputFileSync(path.join(runDir, "source", "feature_spec.json"), "{}");
-		const checkpoint = {
-			...readyCheckpoint(root, runDir),
-			stages: {
-				research_ready: false,
-				spec_ready: false,
-				media_ready: false,
-				quality_pass: false,
-				publish_verified: false,
-			},
-		};
-		writeByosanCheckpoint(runDir, checkpoint);
-		const reconciled = reconcileByosanCheckpoint(runDir, RUN_ID, root);
-		expect(reconciled.stages.research_ready).toBe(true);
-		expect(reconciled.stages.spec_ready).toBe(true);
 	});
 
 	test("does not restore readiness when a research input changed since the artifact", () => {

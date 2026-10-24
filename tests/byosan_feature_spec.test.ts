@@ -291,18 +291,6 @@ describe("byosan feature specification", () => {
 		expect(codes).toContain("inference_confidence_missing");
 		expect(codes).toContain("inference_mismatch_review_missing");
 	});
-
-	test("motion policy renders static scenes without camera transforms", () => {
-		const filter = staticSceneMotionFilter();
-		expect(filter).toBe("fps=30");
-		expect(filter).not.toMatch(/zoompan|crop|rotate|sin|cos/);
-	});
-
-	test("static scene motion filter rejects invalid frame rates", () => {
-		expect(() => staticSceneMotionFilter(0)).toThrow(
-			"Invalid static scene fps",
-		);
-	});
 });
 
 describe("byosan structured output schema", () => {

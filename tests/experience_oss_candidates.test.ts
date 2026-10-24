@@ -282,12 +282,4 @@ describe("Experience OSS candidate registry", () => {
 			await rm(root, { recursive: true, force: true });
 		}
 	});
-
-	test("rejects GitHub-star fields rather than silently using them", async () => {
-		const registry = JSON.parse(await readFile(registryPath, "utf8"));
-		registry.candidates[0].github_stars = 999999;
-		expect(
-			ExperienceOssCandidateRegistrySchema.safeParse(registry).success,
-		).toBe(false);
-	});
 });

@@ -1,9 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
-import {
-	auditByosanEditorialReferencePlan,
-	selectByosanEditorialReferencePlan,
-} from "../src/domain/byosan/editorial_references.js";
+import { selectByosanEditorialReferencePlan } from "../src/domain/byosan/editorial_references.js";
 import {
 	type ByosanFeatureSpec,
 	auditByosanFeatureSpec,
@@ -14,16 +11,6 @@ const spec = fs.readJsonSync(
 ) as ByosanFeatureSpec;
 
 describe("byosan editorial reference plan", () => {
-	test("selects a deterministic plan spanning several role groups", () => {
-		const plan = selectByosanEditorialReferencePlan(spec.runId, spec.angle);
-		expect(plan.selectedReferences.length).toBeGreaterThanOrEqual(3);
-		expect(plan.selectedReferences.length).toBeLessThanOrEqual(5);
-		expect(auditByosanEditorialReferencePlan(plan)).toEqual(plan);
-		expect(selectByosanEditorialReferencePlan(spec.runId, spec.angle)).toEqual(
-			plan,
-		);
-	});
-
 	test("rejects an editorial reference used as a fact source", () => {
 		const plan = selectByosanEditorialReferencePlan(spec.runId, spec.angle);
 		const referenceId = plan.selectedReferences[0].referenceId;

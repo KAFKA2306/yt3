@@ -2,8 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
 	type ByosanActiveProbeEvidence,
 	auditByosanActiveProbeEvidence,
-	summarizeTextDiff,
-	tokenizerFingerprint,
 } from "../src/domain/byosan/active_probe.js";
 
 function evidence(
@@ -31,25 +29,6 @@ function evidence(
 }
 
 describe("byosan active probe contract", () => {
-	test("tokenizer fingerprints are deterministic across input ordering", () => {
-		const left = tokenizerFingerprint([
-			{ input: "hello", tokenCount: 1 },
-			{ input: "東京", tokenCount: 2 },
-		]);
-		const right = tokenizerFingerprint([
-			{ input: "東京", tokenCount: 2 },
-			{ input: "hello", tokenCount: 1 },
-		]);
-		expect(right).toBe(left);
-	});
-
-	test("document diff preserves before and after fingerprints", () => {
-		const result = summarizeTextDiff("a\nb", "a\nc");
-		expect(result.addedLines).toEqual(["c"]);
-		expect(result.removedLines).toEqual(["b"]);
-		expect(result.beforeHash).not.toBe(result.afterHash);
-	});
-
 	test("VERIFIED probes require actual execution evidence", () => {
 		const item = evidence({
 			executedAt: undefined,

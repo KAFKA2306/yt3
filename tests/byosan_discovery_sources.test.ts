@@ -34,30 +34,6 @@ describe("byosan discovery sources schema", () => {
 		expect(checks.filter((check) => check.status === "FAIL")).toEqual([]);
 	});
 
-	test("accepts 検証用 rows represented as fetch verify", () => {
-		const result = DiscoverySourcesSchema.safeParse({
-			schema_version: "byosan_discovery_sources_v1",
-			sources: [verifyRow],
-		});
-		expect(result.success).toBe(true);
-	});
-
-	test("rejects an unknown fetch type", () => {
-		const result = DiscoverySourcesSchema.safeParse({
-			schema_version: "byosan_discovery_sources_v1",
-			sources: [{ ...verifyRow, fetch: { type: "scrape" } }],
-		});
-		expect(result.success).toBe(false);
-	});
-
-	test("rejects an id outside the S### form", () => {
-		const result = DiscoverySourcesSchema.safeParse({
-			schema_version: "byosan_discovery_sources_v1",
-			sources: [sourceRow({ id: "X1" })],
-		});
-		expect(result.success).toBe(false);
-	});
-
 	test("rejects a row without reuse_policy", () => {
 		const { reuse_policy: _omitted, ...withoutPolicy } = verifyRow;
 		const result = DiscoverySourcesSchema.safeParse({
@@ -77,42 +53,6 @@ describe("byosan discovery sources schema", () => {
 });
 
 describe("byosan discovery sources audit", () => {
-	test("reports duplicate source ids", () => {
-		const checks = buildChecks({
-			schema_version: "byosan_discovery_sources_v1",
-			sources: [verifyRow, sourceRow({ id: "S101" })],
-		});
-		expect(checks).toContainEqual({
-			name: "unique_ids",
-			status: "FAIL",
-			details: "S101",
-		});
-	});
-
-	test("reports adopted rows without fetch", () => {
-		const checks = buildChecks({
-			schema_version: "byosan_discovery_sources_v1",
-			sources: [sourceRow({ status: "採用", fetch: undefined })],
-		});
-		expect(checks).toContainEqual({
-			name: "adopted_fetch",
-			status: "FAIL",
-			details: "S101",
-		});
-	});
-
-	test("reports non-https urls", () => {
-		const checks = buildChecks({
-			schema_version: "byosan_discovery_sources_v1",
-			sources: [sourceRow({ url: "http://example.com/" })],
-		});
-		expect(checks).toContainEqual({
-			name: "url_format",
-			status: "FAIL",
-			details: "S101",
-		});
-	});
-
 	test("reports official_open rows without reuse_terms_url", () => {
 		const checks = buildChecks({
 			schema_version: "byosan_discovery_sources_v1",

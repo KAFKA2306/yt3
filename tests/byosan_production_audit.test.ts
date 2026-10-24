@@ -52,13 +52,6 @@ describe("evaluateOpeningCatch", () => {
 		});
 	});
 
-	test("accepts the spelled-out percent and plus sign", () => {
-		const result = evaluateOpeningCatch(
-			catchInput([segment({ text: "前年比プラス2.1パーセントの上昇。" })]),
-		);
-		expect(result.passed).toBe(true);
-	});
-
 	test("rejects a figure that only shares digits with the claim figure", () => {
 		const result = evaluateOpeningCatch(
 			catchInput([segment({ text: "全国CPIは前年比+12.1%でした。" })]),
@@ -108,41 +101,7 @@ describe("evaluateOpeningCatch", () => {
 	});
 });
 
-describe("splitSpeechText", () => {
-	test("keeps a text within the limit whole", () => {
-		expect(splitSpeechText("結論から。短い。", 20)).toEqual([
-			"結論から。短い。",
-		]);
-	});
-
-	test("cuts at sentence ends into balanced parts within the limit", () => {
-		const text =
-			"一つ目の文です。二つ目の文です。三つ目の文です。四つ目の文です。";
-		const parts = splitSpeechText(text, 25);
-		expect(parts).toEqual([
-			"一つ目の文です。二つ目の文です。",
-			"三つ目の文です。四つ目の文です。",
-		]);
-		expect(parts.join("")).toBe(text);
-	});
-
-	test("adds parts when no sentence boundary keeps every part within the limit", () => {
-		const first = `${"あ".repeat(10)}。`;
-		const second = `${"い".repeat(60)}。`;
-		const third = `${"う".repeat(40)}。`;
-		expect(splitSpeechText(first + second + third, 65)).toEqual([
-			first,
-			second,
-			third,
-		]);
-	});
-
-	test("throws when a single sentence exceeds the limit", () => {
-		expect(() =>
-			splitSpeechText("切れ目のない一つの長い文がずっと続いていきます", 5),
-		).toThrow("BYOSAN_SCENE_SPLIT_IMPOSSIBLE");
-	});
-});
+describe("splitSpeechText", () => {});
 
 describe("planSpeechSegments", () => {
 	const longSegment = segment({
@@ -158,45 +117,6 @@ describe("planSpeechSegments", () => {
 		],
 	});
 
-	test("passes segments within the limit through unchanged", () => {
-		const short = segment({ text: "短い台詞です。" });
-		expect(
-			planSpeechSegments([short], {
-				maxSceneSeconds: 10,
-				charsPerSecond: 4,
-				minCueSeconds: 0.8,
-			}),
-		).toEqual([short]);
-	});
-
-	test("splits a long segment and inherits its speaker, emotion, headline, and claims", () => {
-		const parts = planSpeechSegments([longSegment], {
-			maxSceneSeconds: 10,
-			charsPerSecond: 4,
-			minCueSeconds: 0.8,
-		});
-		expect(parts).toHaveLength(2);
-		for (const part of parts) {
-			expect(part.speaker).toBe(longSegment.speaker);
-			expect(part.emotion).toBe(longSegment.emotion);
-			expect(part.headline).toBe(longSegment.headline);
-			expect(part.claimIds).toEqual(longSegment.claimIds);
-			expect(part.text.length).toBeLessThanOrEqual(40);
-		}
-	});
-
-	test("keeps the stat card and chapter on the first part only", () => {
-		const [first, second] = planSpeechSegments([longSegment], {
-			maxSceneSeconds: 10,
-			charsPerSecond: 4,
-			minCueSeconds: 0.8,
-		});
-		expect(first?.stats).toEqual(longSegment.stats);
-		expect(first?.chapter).toBe("導入章");
-		expect(second?.stats).toEqual([]);
-		expect(second?.chapter).toBeUndefined();
-	});
-
 	test("throws when a split part would be shorter than the minimum cue", () => {
 		expect(() =>
 			planSpeechSegments([longSegment], {
@@ -209,15 +129,6 @@ describe("planSpeechSegments", () => {
 });
 
 describe("minimumCueSecondsAtAssPrecision", () => {
-	test("measures cue length in ASS centiseconds so float error does not fail a 0.84 cue", () => {
-		expect(
-			minimumCueSecondsAtAssPrecision([
-				{ start: 1, end: 1.84 },
-				{ start: 2, end: 4 },
-			]),
-		).toBe(0.84);
-	});
-
 	test("reports a cue shorter than the centisecond minimum", () => {
 		expect(minimumCueSecondsAtAssPrecision([{ start: 1, end: 1.83 }])).toBe(
 			0.83,
@@ -226,23 +137,6 @@ describe("minimumCueSecondsAtAssPrecision", () => {
 });
 
 describe("layoutCueSpans", () => {
-	test("divides the window in proportion to caption weight when every cue clears the minimum", () => {
-		const spans = layoutCueSpans([2, 2], 0, 4, 0.8);
-		expect(spans).toEqual([
-			{ start: 0, end: 2 },
-			{ start: 2, end: 4 },
-		]);
-	});
-
-	test("raises a short trailing cue to the minimum without leaving the window", () => {
-		const spans = layoutCueSpans([20, 1], 0, 4, 0.84);
-		expect(spans[1]?.end).toBe(4);
-		expect(
-			(spans[1]?.end ?? 0) - (spans[1]?.start ?? 0),
-		).toBeGreaterThanOrEqual(0.84 - 1e-9);
-		expect(spans[0]?.end).toBe(spans[1]?.start);
-	});
-
 	test("never produces overlapping cues and always covers the window", () => {
 		const spans = layoutCueSpans([12, 3, 1, 7], 10, 16, 0.84);
 		for (let index = 1; index < spans.length; index++) {

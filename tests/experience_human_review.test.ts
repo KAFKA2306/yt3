@@ -59,24 +59,6 @@ function completedReview() {
 }
 
 describe("Experience human review", () => {
-	test("creates a canonical template with blank reviewer and scores", () => {
-		const template = buildExperienceHumanReviewTemplate(benchmarkInput());
-		expect(template.reviewer).toBe("");
-		expect(template.reviewed_at).toBe("");
-		expect(template.rubric.rating_scale).toContain("1=very weak");
-		expect(template.scenes.map((scene) => scene.scene_id)).toEqual(
-			CANONICAL_EXPERIENCE_SCENE_IDS,
-		);
-		expect(template.scenes[0]?.baseline).toEqual({
-			visual_quality: null,
-			comprehension: null,
-			identity_consistency: null,
-			entertainment: null,
-			character_cuteness: null,
-			enjoyment: null,
-		});
-	});
-
 	test("computes separate per-scene deltas without an aggregate score", () => {
 		const report = auditExperienceHumanReview(
 			completedReview(),

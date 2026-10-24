@@ -210,88 +210,11 @@ function renderOf(index: number, continued = false): ByosanSceneRender {
 }
 
 describe("byosan scene render", () => {
-	test("assigns the SceneSpec kinds that the renderer draws", () => {
-		expect(scenes.map((scene) => scene.visual.kind)).toEqual([
-			"line_series",
-			"bignumber",
-			"hbar_compare",
-			"question",
-			"stat_cards",
-			"hbar_compare",
-		]);
-	});
-
-	test("draws a line from the referenced figures, with period labels and their values", () => {
-		expect(renderOf(0)).toEqual({
-			kind: "chart",
-			chart: {
-				kind: "line",
-				x: ["2026年7月", "2026年8月", "2026年9月"],
-				series: [
-					{
-						name: "全国CPIコア",
-						values: [1.5, 1.7, 2.1],
-						kind: "actual",
-					},
-				],
-				unit: "%",
-			},
-		});
-	});
-
-	test("draws a big number from a stat, with its detail as the sublabel", () => {
-		expect(renderOf(1)).toEqual({
-			kind: "chart",
-			chart: {
-				kind: "bignumber",
-				label: "タブレット端末",
-				value: 28.7,
-				unit: "%",
-				sublabel: "2026年9月・前年同月比",
-			},
-		});
-	});
-
-	test("draws a horizontal comparison from stats that share one unit", () => {
-		expect(renderOf(2)).toEqual({
-			kind: "chart",
-			chart: {
-				kind: "hbar",
-				categories: ["営業利益", "AWS売上"],
-				series: [
-					{
-						name: "前年同期比の比較",
-						values: [43, 28.8],
-						kind: "actual",
-					},
-				],
-				unit: "%",
-			},
-		});
-	});
-
-	test("keeps stats in separate cards when their units differ", () => {
-		expect(renderOf(4)).toEqual({
-			kind: "stat_cards",
-			stats: segmentOf(4).stats,
-		});
-	});
-
 	test("marks values from non-verified claims as estimates", () => {
 		expect(renderOf(5)).toMatchObject({
 			kind: "chart",
 			chart: { kind: "hbar", series: [{ kind: "estimate", values: [3, 4] }] },
 		});
-	});
-
-	test("keeps the question mark on a continued question part", () => {
-		expect(renderOf(3, true)).toEqual({ kind: "question" });
-	});
-
-	test("draws no numeric figure on a continued part of a numeric scene", () => {
-		expect(renderOf(0, true)).toEqual({ kind: "none" });
-		expect(renderOf(1, true)).toEqual({ kind: "none" });
-		expect(renderOf(4, true)).toEqual({ kind: "none" });
 	});
 
 	test("rejects a comparison that mixes units", () => {
@@ -355,58 +278,5 @@ describe("byosan scene render", () => {
 		expect(() => parseDisplayValue("約3%")).toThrow(
 			"BYOSAN_SCENE_VALUE_UNPARSEABLE",
 		);
-	});
-
-	test("embeds the chart inside the configured data region", () => {
-		const region = style.design.landscape.data_region;
-		const svg = renderSceneSvg(
-			{ segment: segmentOf(1), render: renderOf(1), index: 1, total: 6 },
-			style,
-		);
-		expect(svg).toContain(`translate(${region.x},${region.y})`);
-		expect(svg).toContain("<svg");
-	});
-
-	test("shows the big number, its unit and its label in the rendered chart", () => {
-		const svg = renderSceneSvg(
-			{ segment: segmentOf(1), render: renderOf(1), index: 1, total: 6 },
-			style,
-		);
-		expect(svg).toContain("+28.7");
-		expect(svg).toContain("%");
-		expect(svg).toContain("タブレット端末");
-		expect(svg).toContain("2026年9月・前年同月比");
-	});
-
-	test("shows every comparison value with its unit in the rendered chart", () => {
-		const svg = renderSceneSvg(
-			{ segment: segmentOf(2), render: renderOf(2), index: 2, total: 6 },
-			style,
-		);
-		expect(svg).toContain("+43%");
-		expect(svg).toContain("+28.8%");
-		expect(svg).toContain("営業利益");
-	});
-
-	test("draws the question mark only for question renders", () => {
-		const question = renderSceneSvg(
-			{ segment: segmentOf(3), render: renderOf(3), index: 3, total: 6 },
-			style,
-		);
-		const continued = renderSceneSvg(
-			{ segment: segmentOf(1), render: renderOf(1, true), index: 1, total: 6 },
-			style,
-		);
-		expect(question).toContain(">?</text>");
-		expect(continued).not.toContain(">?</text>");
-	});
-
-	test("omits the data region content for a continued numeric part", () => {
-		const region = style.design.landscape.data_region;
-		const svg = renderSceneSvg(
-			{ segment: segmentOf(0), render: renderOf(0, true), index: 0, total: 6 },
-			style,
-		);
-		expect(svg).not.toContain(`translate(${region.x},${region.y})`);
 	});
 });

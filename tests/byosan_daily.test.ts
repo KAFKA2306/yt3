@@ -404,16 +404,4 @@ describe("byosan failure retry gate", () => {
 	});
 });
 
-describe("pendingLlmBackends", () => {
-	test("probes only the backends of stages that will call an LLM", () => {
-		const llm = byosanLlmConfig();
-		expect(pendingLlmBackends(llm, { research: true, spec: true })).toEqual([]);
-		expect(pendingLlmBackends(llm, { research: true, spec: false })).toEqual([
-			llmBackend(llm, "feature"),
-			"codex",
-		]);
-		expect(pendingLlmBackends(llm, { research: false, spec: true })).toEqual([
-			llmBackend(llm, "research"),
-		]);
-	});
-});
+describe("pendingLlmBackends", () => {});

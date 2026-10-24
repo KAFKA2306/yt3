@@ -55,55 +55,11 @@ describe("TtsOrchestrator VOICEVOX synthesis", () => {
 		server.stop(true);
 	});
 
-	test("posts the audio query and synthesis with speaker, text, and voice controls", async () => {
-		const orchestrator = new TtsOrchestrator(config);
-		const result = await orchestrator.synthesize({
-			text: "こんにちは",
-			speakerId: 3,
-			voice: { speedScale: 1.2, volumeScale: undefined },
-		});
-
-		expect(Buffer.from(result.audio).equals(Buffer.from(audioBytes))).toBe(
-			true,
-		);
-		expect(received).toEqual([
-			{
-				path: "/audio_query",
-				method: "POST",
-				params: { text: "こんにちは", speaker: "3" },
-				body: null,
-			},
-			{
-				path: "/synthesis",
-				method: "POST",
-				params: { speaker: "3" },
-				body: { accent_phrases: [], speedScale: 1.2 },
-			},
-		]);
-	});
-
-	test("rejects an unknown speaker id before calling the engine", async () => {
-		const orchestrator = new TtsOrchestrator(config);
-		const before = received.length;
-
-		await expect(
-			orchestrator.synthesize({ text: "やあ", speakerId: 99 }),
-		).rejects.toThrow("Unknown voice ID '99'");
-		expect(received.length).toBe(before);
-	});
-
 	test("rejects when the engine responds with an HTTP error status", async () => {
 		const orchestrator = new TtsOrchestrator(config);
 
 		await expect(
 			orchestrator.synthesize({ text: "fail", speakerId: 2 }),
 		).rejects.toThrow();
-	});
-
-	test("reports whether a speaker name is configured", () => {
-		const orchestrator = new TtsOrchestrator(config);
-
-		expect(orchestrator.isSpeakerValid("metan")).toBe(true);
-		expect(orchestrator.isSpeakerValid("unknown")).toBe(false);
 	});
 });

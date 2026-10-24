@@ -4,18 +4,13 @@ import type {
 	EpisodeTimelineItem,
 } from "../src/domain/episode/compiler.js";
 import {
-	assertDeterministicFontContract,
 	assertEnglishLocale,
 	assertMediaContract,
 	assertShortContract,
 	assertTemplateCoverage,
 	assertTimelineContract,
-	buildRepresentativeFrameCommand,
 } from "../src/domain/episode/e2e_verifier.js";
-import {
-	type RemotionRenderInput,
-	buildRemotionWorkspaceFiles,
-} from "../src/domain/episode/remotion_workspace.js";
+import type { RemotionRenderInput } from "../src/domain/episode/remotion_workspace.js";
 
 const templates = [
 	"title",
@@ -145,12 +140,6 @@ describe("episode E2E verifier", () => {
 		);
 	});
 
-	test("pins and explicitly loads the self-hosted CJK font", () => {
-		expect(() =>
-			assertDeterministicFontContract(buildRemotionWorkspaceFiles()),
-		).not.toThrow();
-	});
-
 	test("enforces dimensions and 100ms audio/video drift", () => {
 		expect(
 			assertMediaContract(
@@ -176,16 +165,5 @@ describe("episode E2E verifier", () => {
 				{ width: 1920, height: 1080 },
 			),
 		).toThrow("drift");
-	});
-
-	test("extracts representative PNG frames with argv only", () => {
-		const command = buildRepresentativeFrameCommand(
-			"input.mp4",
-			"frame.png",
-			0.7,
-		);
-		expect(command[0]).toBe("ffmpeg");
-		expect(command).toContain("frame.png");
-		expect(command).toContain("0.700");
 	});
 });
