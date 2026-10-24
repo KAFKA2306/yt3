@@ -1,9 +1,8 @@
-import os from "node:os";
 import path from "node:path";
-import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
 import { getKafkaVisualSystem } from "../design/kafka_visual_system.js";
 import type { RenderPlan } from "../types.js";
+import { runFfmpeg } from "./ffmpeg.js";
 
 export interface VideoCompositionConfig {
 	resolution: string;
@@ -41,53 +40,47 @@ export class VideoComposer {
 			subtitlePath,
 			videoPlan,
 		);
+		const bgColor = getKafkaVisualSystem().colors.background;
+		const codec = this.config.codec ?? "libx264";
+		const inputs: string[] = [
+			"-f",
+			"lavfi",
+			"-i",
+			`color=c=${bgColor}:s=${width}x${height}:r=${this.config.fps}`,
+			"-i",
+			audioPath,
+			...videoPlan.overlays.flatMap((overlay) => ["-i", overlay.resolvedPath]),
+		];
+		if (
+			this.config.thumbnail_overlay?.enabled &&
+			thumbnailPath &&
+			fs.existsSync(thumbnailPath)
+		) {
+			inputs.push("-i", thumbnailPath);
+		}
 
-		return new Promise((resolve, reject) => {
-			const bgColor = getKafkaVisualSystem().colors.background;
-			const codec = this.config.codec ?? "libx264";
-			const cmd = ffmpeg()
-				.input(`color=c=${bgColor}:s=${width}x${height}:r=${this.config.fps}`)
-				.inputFormat("lavfi")
-				.input(audioPath);
+		console.log("Complex Filter:", filters.join(";"));
 
-			for (const overlay of videoPlan.overlays) {
-				cmd.input(overlay.resolvedPath);
-			}
-
-			if (
-				this.config.thumbnail_overlay?.enabled &&
-				thumbnailPath &&
-				fs.existsSync(thumbnailPath)
-			) {
-				cmd.input(thumbnailPath);
-			}
-
-			console.log("Complex Filter:", filters.join(";"));
-
-			cmd
-				.complexFilter(filters)
-				.outputOptions([
-					"-map",
-					"[outv]",
-					"-map",
-					"1:a",
-					"-shortest",
-					"-c:v",
-					codec,
-					"-pix_fmt",
-					"yuv420p",
-					"-c:a",
-					"aac",
-					"-b:a",
-					"192k",
-				])
-				.save(outputPath)
-				.on("end", () => resolve())
-				.on("error", (err) => {
-					console.error("FFmpeg Error:", err.message);
-					reject(err);
-				});
-		});
+		await runFfmpeg([
+			...inputs,
+			"-y",
+			"-filter_complex",
+			filters.join(";"),
+			"-map",
+			"[outv]",
+			"-map",
+			"1:a",
+			"-shortest",
+			"-c:v",
+			codec,
+			"-pix_fmt",
+			"yuv420p",
+			"-c:a",
+			"aac",
+			"-b:a",
+			"192k",
+			outputPath,
+		]);
 	}
 
 	private parseResolution(): [string, string] {
