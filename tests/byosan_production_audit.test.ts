@@ -126,9 +126,9 @@ describe("splitSpeechText", () => {
 	});
 
 	test("adds parts when no sentence boundary keeps every part within the limit", () => {
-		const first = "あ".repeat(10) + "。";
-		const second = "い".repeat(60) + "。";
-		const third = "う".repeat(40) + "。";
+		const first = `${"あ".repeat(10)}。`;
+		const second = `${"い".repeat(60)}。`;
+		const third = `${"う".repeat(40)}。`;
 		expect(splitSpeechText(first + second + third, 65)).toEqual([
 			first,
 			second,
