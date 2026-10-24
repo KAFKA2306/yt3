@@ -45,6 +45,7 @@ function passingDependencies(): ByosanPreflightDependencies {
 		commandAvailable: (command) => pass(command),
 		pythonRuntime: () => pass("python_runtime"),
 		voicevox: async () => pass("voicevox"),
+		llmBackends: ["gemini"],
 		gemini: async () => pass("gemini"),
 		youtube: async () => pass("youtube"),
 	};

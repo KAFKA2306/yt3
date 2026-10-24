@@ -211,10 +211,10 @@ discovery:
 llm:
   sandbox: "read-only"
   workdir_prefix: "byosan-llm-"
-  max_attempts: 8
+  max_attempts: 5
   backends:
     research: "gemini"
-    feature: "gemini"
+    feature: "codex"
     digest: "gemini"
     preflight: "gemini"
   json_only_instruction: "最終応答は JSON 値だけにしてください。説明文、Markdown、コードフェンスは付けず、入力に書かれた証拠だけを根拠にしてください。"
