@@ -2,12 +2,12 @@ import path from "node:path";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { toJsonSchema } from "@langchain/core/utils/json_schema";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import { z } from "zod";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 import { getYouTubeProfile } from "../domain/youtube_profiles.js";
+import { loadEnvFile } from "./utils/env.js";
 export const ROOT = process.cwd();
 
 export function loadConfig(
@@ -53,7 +53,7 @@ const selectedEnvFile =
 const envFilePath = path.isAbsolute(selectedEnvFile)
 	? selectedEnvFile
 	: path.join(ROOT, selectedEnvFile);
-dotenv.config({ path: envFilePath, override: true });
+loadEnvFile(envFilePath);
 
 export { Logger as AgentLogger };
 export type { AgentState };

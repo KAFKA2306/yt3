@@ -1,7 +1,7 @@
 import path from "node:path";
-import dotenv from "dotenv";
 import fs from "fs-extra";
 import { google } from "googleapis";
+import { loadEnvFile } from "../io/utils/env.js";
 
 export type YouTubeProfileName = "byosan" | "yawa" | "humanity";
 
@@ -103,10 +103,7 @@ export function loadYouTubeProfileEnv(
 	profileName = process.env.YOUTUBE_CHANNEL_PROFILE,
 ): YouTubeProfile {
 	const profile = getYouTubeProfile(profileName);
-	dotenv.config({
-		path: path.resolve(process.cwd(), profile.envFile),
-		override: true,
-	});
+	loadEnvFile(path.resolve(process.cwd(), profile.envFile));
 	process.env.ENV_FILE = profile.envFile;
 	process.env.YOUTUBE_CHANNEL_PROFILE = profile.profileName;
 	return profile;
