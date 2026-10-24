@@ -262,7 +262,7 @@ export function classifyByosanFailure(message: string): {
 		!/429|rate limit|quota exhausted|resource exhausted/i.test(message)
 	) {
 		if (
-			/\b(python_runtime|ffmpeg|ffprobe|voicevox) (FAIL|UNVERIFIED)/.test(
+			/\b(node_dependencies|python_runtime|ffmpeg|ffprobe|voicevox) (FAIL|UNVERIFIED)/.test(
 				message,
 			)
 		) {

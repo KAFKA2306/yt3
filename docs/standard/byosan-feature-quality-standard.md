@@ -70,6 +70,7 @@
 
 - 日次の入口は `task byosan:publish-daily`。内部で `task byosan:auto DATE=<Asia/Tokyoの当日>` を実行し、準備ゲートのPASSと3証跡（`[product-release-gate] PASS`、`PUBLISH_READY_RUN`、`PUBLISH_COMMAND`）が同一runで揃い、`publish_approved` が true の場合にだけ `PUBLISH_COMMAND` を実行する。`resume_date` より前の日付は準備・公開しない。公開前の失敗に限り同日に再準備する。`task byosan:auto DATE=<日付>` は準備が失敗すると `task byosan:repair`（codex exec による保守）を挟んで再準備し、準備の総試行回数は `config/domains/byosan_money.yaml` の `auto.max_prepare_attempts` で上限を決めて、上限到達時に停止する。`byosan:publish-daily` は GATE_FAILED の記録がある同日に `task byosan:auto` で再準備する。公開済み・receipt検出時は再準備も再アップロードもしない。`GATE_FAILED` と `PUBLISH_ATTEMPTED` は別状態として扱い、後者や公開の成否が不明な状態からは新規アップロードせず遠隔照合する。
 - systemd user timer `yt3-byosan-daily.timer` が毎日 09:00 JST（Asia/Tokyo）に `yt3-byosan-daily.service` を起動し、service は `task byosan:publish-daily` を実行する（失敗時は Discord に audit_fail を通知し、systemd による自動再起動はしない）。
+- `task byosan:publish-daily`・`task byosan:auto`・`task byosan:prepare` は最初に `task sync:deps`（`bun install --frozen-lockfile`）で node_modules を bun.lock に同期する。bun.lock が古い場合は停止する。準備の事前検査（preflight）は、秒算マネーの import 元（`src/domain/byosan` と `src/scripts/produce_byosan_feature.ts`）が使う package.json の dependencies が node_modules に実在することを確認し、欠けていれば `node_dependencies FAIL` で止まる。
 - `task byosan:daily` は公開せず、研究・制作・監査のみを行う。
 - `--dry-run` はスキーマ、基準spec、公開抑止を検証する。
 - ニュース候補は5件以上、発行主体3つ以上、直近30日との最大類似度0.42以下を要求する。
