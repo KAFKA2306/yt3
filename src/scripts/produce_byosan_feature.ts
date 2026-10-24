@@ -19,6 +19,12 @@ import {
 	staticSceneMotionFilter,
 } from "../domain/byosan/feature_spec.js";
 import {
+	byosanFontDir,
+	fontMatchProblem,
+	matchFontFamily,
+	requiredFontFamilies,
+} from "../domain/byosan/fonts.js";
+import {
 	evaluateOpeningCatch,
 	layoutCueSpans,
 	minimumCueSecondsAtAssPrecision,
@@ -72,6 +78,7 @@ const HEIGHT = DESIGN.canvas.landscape.height;
 const FPS = DESIGN.canvas.landscape.fps;
 const FONT = DESIGN.typography.japanese;
 const PROJECT_ROOT = process.cwd();
+const FONT_DIR = byosanFontDir();
 const DEFAULT_SPEC = path.join(PROJECT_ROOT, F.default_spec);
 const VISUAL_IDENTITY = resolveByosanVisualIdentity(
 	yaml.load(fs.readFileSync(BYOSAN_CONFIG_PATH, "utf8")),
@@ -428,8 +435,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Tsumugi,${FONT},${style.font_size},${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.landscape.subtitle.outline_color)},${assColor(DESIGN.landscape.subtitle.outline_color)},${styleTail}
-Style: Zundamon,${FONT},${style.font_size},${assColor(DESIGN.colors.success)},&H000000FF,${assColor(DESIGN.landscape.subtitle.outline_color)},${assColor(DESIGN.landscape.subtitle.outline_color)},${styleTail}
+Style: Tsumugi,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.landscape.subtitle.outline_color)},${assColor(DESIGN.landscape.subtitle.outline_color)},${styleTail}
+Style: Zundamon,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.colors.success)},&H000000FF,${assColor(DESIGN.landscape.subtitle.outline_color)},${assColor(DESIGN.landscape.subtitle.outline_color)},${styleTail}
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -647,7 +654,7 @@ function composeFinal(
 	outputPath: string,
 ): void {
 	const A = F.audio;
-	const subtitleFilter = `subtitles=${subtitlePath}:fontsdir=${path.join(PROJECT_ROOT, path.dirname(CONFIG.global_style.font_path))}`;
+	const subtitleFilter = `subtitles=${subtitlePath}:fontsdir=${FONT_DIR}`;
 	const filter = [
 		`[0:v]${subtitleFilter}[v]`,
 		`[1:a]aresample=${A.sample_rate},${A.narration_filter}[narr]`,
@@ -981,7 +988,26 @@ async function auditProduction(
 	const voiceEmotions = timed.every((segment) =>
 		Object.hasOwn(F.tts.voice_presets, segment.emotion),
 	);
+	const fontMatches = requiredFontFamilies([
+		FONT,
+		DESIGN.typography.numeric,
+		CONFIG.global_style.font_name,
+		SCENE_STYLE.chart.font_family,
+		SCENE_STYLE.chart.numeric_font_family,
+	]).map((family) => ({ family, match: matchFontFamily(family) }));
+	const fontProblems = fontMatches.flatMap(({ family, match }) => {
+		const problem = fontMatchProblem(family, match, FONT_DIR);
+		return problem ? [problem] : [];
+	});
 	const requirements = {
+		fonts: {
+			status: fontProblems.length === 0 ? "PASS" : "FAIL",
+			evidence: {
+				font_dir: FONT_DIR,
+				matches: fontMatches,
+				problems: fontProblems,
+			},
+		},
 		audio_quality: {
 			status: audioQA.status === "PASS" ? "PASS" : "FAIL",
 			evidence: audioQA.report,

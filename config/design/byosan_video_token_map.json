@@ -97,6 +97,10 @@
 		}
 	},
 	"overrides": {
+		"typography.japanese": "IBM Plex Sans JP",
+		"typography.display": "IBM Plex Sans JP",
+		"typography.body": "IBM Plex Sans JP",
+		"typography.numeric": "Geist",
 		"landscape.caption_band.opacity": 0.92,
 		"landscape.character_region.y": 216,
 		"landscape.character_region.height": 640,

@@ -59,9 +59,9 @@
 		"success": "#15803D"
 	},
 	"typography": {
-		"japanese": "Noto Sans JP Variable",
-		"display": "Noto Sans JP Variable",
-		"body": "Noto Sans JP Variable",
+		"japanese": "IBM Plex Sans JP",
+		"display": "IBM Plex Sans JP",
+		"body": "IBM Plex Sans JP",
 		"numeric": "Geist",
 		"weights": {
 			"detail": 500,
