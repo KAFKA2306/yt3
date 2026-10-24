@@ -11,6 +11,7 @@ import {
 	xml,
 } from "../domain/byosan/display_text.js";
 import { ExplanationSchema } from "../domain/byosan/explanation.js";
+import { explanationCheckItems } from "../domain/byosan/explanation_contract.js";
 import {
 	type ByosanFeatureSegment,
 	type ByosanFeatureSpec,
@@ -786,6 +787,9 @@ async function writeOutputs(
 	thumbnailPath: string,
 ): Promise<void> {
 	const description = buildDescription(spec, timed);
+	const explanation = ExplanationSchema.parse(
+		await fs.readJson(path.join(runDir, RUN.source_dir, RUN.explanation)),
+	);
 	const metadata = {
 		title: spec.title,
 		thumbnail_title: spec.thumbnailTitle,
@@ -841,6 +845,7 @@ async function writeOutputs(
 			angle: spec.angle,
 			title_hook: spec.title,
 			search_query: spec.searchQuery,
+			key_questions: explanationCheckItems(explanation),
 		},
 		script,
 		metadata,

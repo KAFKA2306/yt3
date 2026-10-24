@@ -209,3 +209,9 @@ export function auditHookPromises(
 			path: "hookPromises",
 		}));
 }
+
+export function explanationCheckItems(
+	explanation: Pick<Explanation, "check">,
+): string[] {
+	return explanation.check.split("\n").filter((line) => line.length > 0);
+}

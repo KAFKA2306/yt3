@@ -10,10 +10,13 @@ import {
 	ByosanThumbnailSchema,
 	archetypeSlotPromptPolicy,
 	auditByosanFeatureSpec,
+	buildByosanSceneRule,
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
 } from "../src/domain/byosan/feature_spec.js";
+import type { ByosanScenesConfig } from "../src/domain/byosan/scene_spec.js";
 import {
+	loadConfig,
 	providerResponseJsonSchema,
 	zodSizeConstraintLines,
 } from "../src/io/core.js";
@@ -382,5 +385,15 @@ describe("byosan feature draft hard limits", () => {
 		expect(lines).toContain("segments: 20〜36件");
 		expect(lines).toContain("segments[].stats: 0〜3件");
 		expect(lines).toContain("segments[].text: 18〜180文字");
+	});
+
+	test("scene rule caps non-stat scenes and requires claim source names to be shown", () => {
+		const scenes = (
+			loadConfig("byosan_money") as unknown as { scenes: ByosanScenesConfig }
+		).scenes;
+		const rule = buildByosanSceneRule(scenes, 0.4);
+		expect(rule).toContain(`${scenes.min_distinct_kinds}種類以上`);
+		expect(rule).toContain("全場面に対する割合を40%以下");
+		expect(rule).toContain("sourcesのnameを略さず");
 	});
 });
