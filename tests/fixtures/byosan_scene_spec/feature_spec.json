@@ -1,0 +1,173 @@
+{
+	"claims": [
+		{
+			"id": "c_growth",
+			"claim": "S&P500の2026年Q2利益成長率は47.4%である",
+			"sourceIds": ["factset"],
+			"status": "verified"
+		},
+		{
+			"id": "c_profit",
+			"claim": "Amazonの2026年Q2純利益は626.47億ドルだった",
+			"sourceIds": ["amazon"],
+			"status": "verified"
+		},
+		{
+			"id": "c_stake",
+			"claim": "Anthropic優先株の上方調整は約505億ドルだった",
+			"sourceIds": ["amazon"],
+			"status": "verified"
+		}
+	],
+	"segments": [
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "curious",
+			"section": "導入",
+			"headline": "利益は本物？",
+			"subheadline": "47.4%は全社の好調？",
+			"visualType": "question",
+			"stats": [],
+			"claimIds": ["c_growth"],
+			"source": "FactSet",
+			"text": "S&P500の利益成長率は47.4%でした。本当に全社が好調なのかを見ていきます。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "reveal",
+			"section": "純利益",
+			"headline": "純利益は626億ドル",
+			"subheadline": "Amazonの決算で確認できる",
+			"visualType": "statement",
+			"stats": [
+				{
+					"label": "Amazon純利益",
+					"value": "$62.6B",
+					"detail": "626億ドル",
+					"color": "cyan"
+				}
+			],
+			"claimIds": ["c_profit"],
+			"source": "Amazon 10-Q",
+			"text": "Amazonの2026年Q2純利益は626.47億ドルで、前年から大きく増えました。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "営業利益",
+			"headline": "本業は二桁成長",
+			"subheadline": "営業利益とAWSの伸び",
+			"visualType": "bars",
+			"stats": [
+				{
+					"label": "営業利益",
+					"value": "+43%",
+					"detail": "前年比",
+					"color": "cyan"
+				},
+				{
+					"label": "AWS売上",
+					"value": "+37%",
+					"detail": "前年比",
+					"color": "white"
+				}
+			],
+			"claimIds": ["c_profit"],
+			"source": "Amazon 10-Q",
+			"text": "営業利益は前年比43%増、AWSの売上も37%増えており、本業も伸びています。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "caution",
+			"section": "比較",
+			"headline": "利益と成長率は別物",
+			"subheadline": "単位の違う数字を並べて見る",
+			"visualType": "compare",
+			"stats": [
+				{
+					"label": "純利益",
+					"value": "$62.6B",
+					"detail": "626億ドル",
+					"color": "amber"
+				},
+				{
+					"label": "成長率",
+					"value": "+28.8%",
+					"detail": "2社除外後",
+					"color": "white"
+				}
+			],
+			"claimIds": ["c_growth"],
+			"source": "FactSet",
+			"text": "純利益の金額と成長率の%は同じ物差しではないため、並べて読む必要があります。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "shock",
+			"section": "推移",
+			"headline": "四半期で加速",
+			"subheadline": "利益成長率の推移",
+			"visualType": "timeline",
+			"stats": [
+				{
+					"label": "3月期",
+					"value": "23.2%",
+					"detail": "第1四半期",
+					"color": "muted"
+				},
+				{
+					"label": "6月期",
+					"value": "37.9%",
+					"detail": "第2四半期",
+					"color": "white"
+				},
+				{
+					"label": "9月期",
+					"value": "47.4%",
+					"detail": "第3四半期",
+					"color": "cyan"
+				}
+			],
+			"claimIds": ["c_growth"],
+			"source": "FactSet",
+			"text": "利益成長率は3月期の23.2%から6月期の37.9%、9月期の47.4%へ加速しました。"
+		},
+		{
+			"speaker": "ずんだもん",
+			"emotion": "confident",
+			"section": "変化",
+			"headline": "一期で9.5ポイント",
+			"subheadline": "直近2期の差",
+			"visualType": "delta",
+			"stats": [
+				{
+					"label": "6月期",
+					"value": "37.9%",
+					"detail": "前期",
+					"color": "muted"
+				},
+				{
+					"label": "9月期",
+					"value": "47.4%",
+					"detail": "今期",
+					"color": "cyan"
+				}
+			],
+			"claimIds": ["c_growth"],
+			"source": "FactSet",
+			"text": "6月期から9月期にかけて、成長率はさらに9.5ポイント上がりました。"
+		},
+		{
+			"speaker": "春日部つむぎ",
+			"emotion": "serious",
+			"section": "結論",
+			"headline": "優先株の評価益に注意",
+			"subheadline": "投資家が見るべき問い",
+			"visualType": "question",
+			"stats": [],
+			"claimIds": ["c_stake"],
+			"source": "Amazon 10-Q",
+			"text": "Anthropic優先株の約505億ドルは評価益なので、次の市場価格で反転する可能性もあります。"
+		}
+	]
+}

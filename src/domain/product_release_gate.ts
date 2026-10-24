@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "fs-extra";
+import { z } from "zod";
 import {
 	assertFactualIntegrityGate,
 	loadPublicationState,
@@ -45,6 +46,33 @@ function assertNoFallbackMetadata(state: AgentState): void {
 	) {
 		throw new Error(
 			"Product release blocked: fallback metadata is prohibited and must be deleted, not published.",
+		);
+	}
+}
+
+function assertAuthenticityGate(runDir: string): void {
+	const auditPath = path.join(runDir, "audit", "authenticity.json");
+	if (!fs.existsSync(auditPath)) {
+		throw new Error(
+			`Product release blocked: authenticity audit is missing: ${auditPath}`,
+		);
+	}
+	const audit = z
+		.object({
+			status: z.enum(["PASS", "FAIL"]),
+			feature_spec_sha256: z.string(),
+		})
+		.passthrough()
+		.parse(fs.readJsonSync(auditPath));
+	if (audit.status !== "PASS") {
+		throw new Error(
+			`Product release blocked: authenticity audit FAILED: ${auditPath}`,
+		);
+	}
+	const specPath = path.join(runDir, "source", "feature_spec.json");
+	if (audit.feature_spec_sha256 !== sha256File(specPath)) {
+		throw new Error(
+			"Product release blocked: authenticity audit belongs to a different feature spec",
 		);
 	}
 }
@@ -96,6 +124,10 @@ export function assertProductReleaseGate(
 		throw new Error(
 			`Product release blocked: canonical publish state is ${stored.phase} without a verified video id`,
 		);
+	}
+
+	if (profile.bucket === "byosan_money") {
+		assertAuthenticityGate(runDir);
 	}
 
 	let factualIntegrityAttestation: string | undefined;

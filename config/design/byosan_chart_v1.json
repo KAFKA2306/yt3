@@ -1,0 +1,43 @@
+{
+	"version": "byosan_chart_v1",
+	"width": 1296,
+	"height": 224,
+	"palette": {
+		"canvas": "#F7F5EF",
+		"primary": "#2563EB",
+		"text": "#17233F",
+		"text_muted": "#667085",
+		"border": "#D9D6CE",
+		"success": "#15803D",
+		"warning": "#A16207",
+		"danger": "#B91C1C"
+	},
+	"font_family": "Noto Sans JP, Noto Sans CJK JP, sans-serif",
+	"numeric_font_family": "Geist, Noto Sans JP, Noto Sans CJK JP, sans-serif",
+	"radius": 2,
+	"stroke_width": 2,
+	"hairline_width": 1,
+	"hatch": { "gap": 8, "width": 2, "angle_degrees": 45 },
+	"font_size": {
+		"label": 22,
+		"axis": 20,
+		"legend": 20,
+		"bignumber_value": 120,
+		"bignumber_unit": 56,
+		"bignumber_label": 36,
+		"bignumber_sublabel": 24
+	},
+	"font_weight": { "regular": 500, "bold": 700 },
+	"grid": {
+		"left": 40,
+		"right": 40,
+		"top": 72,
+		"bottom": 44,
+		"hbar_label_room": 180,
+		"bar_category_gap": "30%"
+	},
+	"legend": { "top": 12, "right": 40 },
+	"symbol_size": 10,
+	"bignumber": { "label_top": 12, "value_top": 52, "sublabel_top": 186 },
+	"kind_labels": { "actual": "実績", "estimate": "推計", "forecast": "予想" }
+}
