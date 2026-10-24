@@ -21,6 +21,7 @@ function normalizeFigureText(text: string): string {
 		.replace(/パーセント/g, "%")
 		.replace(/プラス|マイナス/g, "")
 		.replace(/(?<=\d),(?=\d{3}\b)/g, "")
+		.replace(/(?<=\d)\s*[-–—〜~]\s*(?=\d)/g, "~")
 		.replace(/[+\-−\s]/g, "");
 }
 
@@ -40,14 +41,14 @@ export function figureValueAppears(
 	texts: string[],
 ): boolean {
 	const normalizedTexts = texts.map(normalizeFigureText);
-	const core = normalizeFigureText(figure.value).match(/\d+(?:\.\d+)?/)?.[0];
-	if (core === undefined) {
-		return normalizedTexts.some((text) =>
-			text.includes(normalizeFigureText(figure.value)),
-		);
+	const value = normalizeFigureText(figure.value);
+	const unit = normalizeFigureText(figure.unit);
+	if (!/\d/.test(value)) {
+		return normalizedTexts.some((text) => text.includes(value));
 	}
+	const quantity = value.endsWith(unit) ? value : `${value}${unit}`;
 	const pattern = new RegExp(
-		`(?<![\\d.])${escapeRegExp(core)}${escapeRegExp(normalizeFigureText(figure.unit))}(?!\\d|\\.\\d)`,
+		`(?<![\\d.])${escapeRegExp(quantity)}(?!\\d|\\.\\d${/[a-z]$/i.test(quantity) ? "|[a-zA-Z]" : ""})`,
 	);
 	return normalizedTexts.some((text) => pattern.test(text));
 }
