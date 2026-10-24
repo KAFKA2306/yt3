@@ -755,6 +755,17 @@ hardcode_audit:
   forbidden_string_patterns: ["^https?://", "localhost", "^assets/", "^config/", "^runs/"]
   forbidden_identifiers: ["process.env"]
 
+chapters:
+  max_title_chars: 34
+  min_chapter_seconds: 10
+  min_chapters: 3
+  max_chapters: 15
+  headings:
+    key_points: "この動画の要点"
+    chapters: "チャプター"
+    primary_sources: "一次資料"
+    reference_sources: "参考（数値の根拠ではない）"
+
 scenes:
   max_scenes: 36
   max_numbers_per_scene: 4

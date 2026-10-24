@@ -106,7 +106,6 @@ describe("splitSpeechText", () => {});
 describe("planSpeechSegments", () => {
 	const longSegment = segment({
 		text: "一つ目の文は長さをそろえてあります。二つ目の文も同じくらいの長さにそろえています。",
-		chapter: "導入章",
 		stats: [
 			{
 				label: "全国CPIコア",

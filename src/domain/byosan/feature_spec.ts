@@ -66,7 +66,6 @@ export function archetypeSlotPromptPolicy(
 export const SEGMENT_CLAIM_IDS_MAX = 6;
 
 export const ByosanFeatureSegmentSchema = z.object({
-	chapter: z.string().min(1).max(40).optional(),
 	narrativeRole: ByosanNarrativeRoleSchema.optional(),
 	verificationRole: ByosanVerificationRoleSchema.optional(),
 	archetypeSlot: z

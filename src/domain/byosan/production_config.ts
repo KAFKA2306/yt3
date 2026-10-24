@@ -2,7 +2,9 @@ import path from "node:path";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import { z } from "zod";
+import { ByosanChaptersConfigSchema } from "./description.js";
 import { ByosanFeatureSegmentSchema } from "./feature_spec.js";
+import type { SpeechPlan } from "./production_audit.js";
 import { ByosanScenesConfigSchema } from "./scene_spec.js";
 
 export const BYOSAN_CONFIG_PATH = path.join(
@@ -271,6 +273,7 @@ const ByosanProductionConfigSchema = z.object({
 	}),
 	feature_production: FeatureProductionSchema,
 	scenes: ByosanScenesConfigSchema,
+	chapters: ByosanChaptersConfigSchema,
 });
 
 export type ByosanProductionConfig = z.infer<
@@ -285,4 +288,13 @@ export function getByosanProductionConfig(): ByosanProductionConfig {
 		yaml.load(fs.readFileSync(BYOSAN_CONFIG_PATH, "utf8")),
 	);
 	return loaded;
+}
+
+export function getByosanSpeechPlan(): SpeechPlan {
+	const config = getByosanProductionConfig();
+	return {
+		maxSceneSeconds: config.feature_production.audit.max_scene_seconds,
+		charsPerSecond: config.scenes.chars_per_second,
+		minCueSeconds: config.feature_production.captions.min_cue_seconds,
+	};
 }
