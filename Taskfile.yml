@@ -432,6 +432,7 @@ tasks:
       - bun src/scripts/audit_byosan_source_registry.ts
       - bun src/scripts/audit_byosan_discovery_sources.ts
       - bun src/scripts/audit_no_fallback_policy.ts --scope=source
+      - bun src/scripts/audit_byosan_hardcode.ts
 
   audit:no-fallback:
     desc: "Audit no-fallback policy (SCOPE=source|runtime|all; default all)"
