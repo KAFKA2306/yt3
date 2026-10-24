@@ -24,6 +24,17 @@ function normalizeFigureText(text: string): string {
 		.replace(/[+\-−\s]/g, "");
 }
 
+const FIGURE_PATTERN = /([+\-−]?\d+(?:[.,]\d+)*)(%|円|ドル|倍|兆円|億円)/g;
+
+export function figuresIn(
+	text: string,
+): Array<{ value: string; unit: string }> {
+	return Array.from(nfkc(text).matchAll(FIGURE_PATTERN), (match) => ({
+		value: match[1] ?? "",
+		unit: match[2] ?? "",
+	}));
+}
+
 export function figureValueAppears(
 	figure: { value: string; unit: string },
 	texts: string[],

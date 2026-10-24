@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import yaml from "js-yaml";
@@ -10,6 +11,10 @@ import {
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
 } from "../domain/byosan/feature_spec.js";
+import {
+	evaluateOpeningCatch,
+	planSpeechSegments,
+} from "../domain/byosan/production_audit.js";
 import {
 	BYOSAN_CONFIG_PATH,
 	getByosanProductionConfig,
@@ -266,9 +271,9 @@ function statCard(
 }
 
 function sceneSvg(
-	spec: FeatureSpec,
 	segment: FeatureSegment,
 	index: number,
+	total: number,
 ): Buffer {
 	const headlineLines = wrapDisplay(
 		segment.headline,
@@ -340,9 +345,9 @@ function sceneSvg(
 			<rect width="${LANDSCAPE.brand_chip.width}" height="${LANDSCAPE.brand_chip.height}" rx="${LANDSCAPE.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${LANDSCAPE.outer_frame.color}" stroke-width="${DESIGN.stroke.default}"/>
 			<text x="${LANDSCAPE.brand_chip.text_x - LANDSCAPE.brand_chip.x}" y="${LANDSCAPE.brand_chip.baseline_y - LANDSCAPE.brand_chip.y}" class="brand">${xml(F.brand_label)}</text>
 		</g>
-		<text x="${LANDSCAPE.section_counter.x}" y="${LANDSCAPE.section_counter.baseline_y}" class="section">${String(index + 1).padStart(2, "0")} / ${String(spec.segments.length).padStart(2, "0")}</text>
+		<text x="${LANDSCAPE.section_counter.x}" y="${LANDSCAPE.section_counter.baseline_y}" class="section">${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}</text>
 		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${LANDSCAPE.progress.width}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${LANDSCAPE.progress.track}"/>
-		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${Math.round(LANDSCAPE.progress.width * ((index + 1) / spec.segments.length))}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${accent}"/>
+		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${Math.round(LANDSCAPE.progress.width * ((index + 1) / total))}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${accent}"/>
 		<text x="${LANDSCAPE.section_label.x}" y="${LANDSCAPE.section_label.baseline_y}" class="section">${xml(segment.section)}</text>
 		<text x="${LANDSCAPE.headline.x}" y="${LANDSCAPE.headline.baseline_y}" class="headline" font-size="${headlineSize}">${tspans(headlineLines, LANDSCAPE.headline.x, LANDSCAPE.headline.baseline_y, headlineLineHeight)}</text>
 		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline">${xml(segment.subheadline)}</text>
@@ -387,12 +392,12 @@ async function characterBuffer(
 }
 
 async function renderScene(
-	spec: FeatureSpec,
 	segment: FeatureSegment,
 	index: number,
+	total: number,
 	outputPath: string,
 ): Promise<void> {
-	const base = sceneSvg(spec, segment, index);
+	const base = sceneSvg(segment, index, total);
 	const character = await characterBuffer(segment.speaker);
 	const metadata = await sharp(character).metadata();
 	const left =
@@ -1102,19 +1107,19 @@ async function auditProduction(
 			),
 	);
 	const openingSegments = timed.slice(0, openingCount);
-	const openingText = openingSegments.map((segment) => segment.text).join(" ");
-	const openingPromisesPaid = spec.hookPromises.every((promise) =>
-		openingText.includes(promise),
-	);
+	if (!spec.packaging) throw new Error("BYOSAN_PACKAGING_MISSING");
+	const opening = evaluateOpeningCatch({
+		primaryClaimId: spec.packaging.primaryClaimId,
+		claims: spec.claims,
+		openingSegments,
+	});
 	const motionFilter = staticSceneMotionFilter(FPS);
 	const forbiddenMotion = new RegExp(D.forbidden_motion_terms.join("|"));
 	const motionPolicyPass =
 		motionFilter === `fps=${FPS}` && !forbiddenMotion.test(motionFilter);
-	const distinctEmotions = Array.from(
-		new Set(timed.map((segment) => segment.emotion)),
+	const voiceEmotions = timed.every((segment) =>
+		Object.hasOwn(F.tts.voice_presets, segment.emotion),
 	);
-	const distinctEmotionsPass =
-		distinctEmotions.length >= D.min_distinct_emotions;
 	const requirements = {
 		audio_quality: {
 			status: audioQA.status === "PASS" ? "PASS" : "FAIL",
@@ -1135,8 +1140,7 @@ async function auditProduction(
 		},
 		catch: {
 			status:
-				titleLength <= CONFIG.steps.youtube.max_title_length &&
-				openingPromisesPaid
+				titleLength <= CONFIG.steps.youtube.max_title_length && opening.passed
 					? "PASS"
 					: "FAIL",
 			evidence: {
@@ -1145,8 +1149,7 @@ async function auditProduction(
 					(sum, segment) => sum + segment.duration,
 					0,
 				),
-				promise: spec.hookPromises,
-				opening_text: openingText,
+				opening: opening.evidence,
 			},
 		},
 		content: {
@@ -1159,9 +1162,9 @@ async function auditProduction(
 			},
 		},
 		intonation: {
-			status: distinctEmotionsPass ? "PASS" : "FAIL",
+			status: voiceEmotions ? "PASS" : "FAIL",
 			evidence: {
-				emotion_presets: distinctEmotions,
+				emotion_presets: timed.map((segment) => segment.emotion),
 				manifest: path.join(runDir, RUN.audio_dir, RUN.audio_manifest),
 			},
 		},
@@ -1171,7 +1174,7 @@ async function auditProduction(
 				tooManyLines.length === 0 &&
 				badLineBreaks.length === 0 &&
 				overlappingCues.length === 0 &&
-				minimumCueSeconds >= D.min_cue_seconds &&
+				minimumCueSeconds >= F.captions.min_cue_seconds &&
 				maximumCaptionLineUnits <= maximumAllowedCaptionUnits
 					? "PASS"
 					: "FAIL",
@@ -1202,12 +1205,6 @@ async function auditProduction(
 				freeze_segments_diagnostic: defects.freezeSegments,
 			},
 		},
-		emotion: {
-			status: distinctEmotionsPass ? "PASS" : "FAIL",
-			evidence: {
-				arc: timed.map((segment) => segment.emotion),
-			},
-		},
 		gesture: {
 			status: timed.some((segment) => segment.speaker === "春日部つむぎ")
 				? "PASS"
@@ -1228,8 +1225,7 @@ async function auditProduction(
 				path: thumbnailPath,
 				continuity: {
 					thumbnail_title: spec.thumbnailTitle,
-					hook_promises: spec.hookPromises,
-					opening_promises_paid: openingPromisesPaid,
+					opening: opening.evidence,
 				},
 			},
 		},
@@ -1299,28 +1295,28 @@ async function main(): Promise<void> {
 		speakers: VOICEVOX.speakers,
 		timeout: VOICEVOX.timeout_ms,
 	});
+	const speechSegments = planSpeechSegments(spec.segments, {
+		maxSceneSeconds: F.audit.max_scene_seconds,
+		charsPerSecond: CONFIG.scenes.chars_per_second,
+		minCueSeconds: F.captions.min_cue_seconds,
+	});
 	const timed: TimedSegment[] = [];
 	let cursor = 0;
-	for (let index = 0; index < spec.segments.length; index++) {
-		const segment = spec.segments[index];
+	for (let index = 0; index < speechSegments.length; index++) {
+		const segment = speechSegments[index];
 		if (!segment) continue;
-		const audioPath = path.join(
-			audioDir,
-			`${String(index).padStart(3, "0")}.wav`,
-		);
-		const scenePath = path.join(
-			sceneDir,
-			`${String(index).padStart(3, "0")}.png`,
-		);
-		const segmentVideoPath = path.join(
-			segmentVideoDir,
-			`${String(index).padStart(3, "0")}.mp4`,
-		);
+		const key = createHash("sha256")
+			.update(JSON.stringify({ index, segment }))
+			.digest("hex");
+		const stem = `${String(index).padStart(3, "0")}-${key}`;
+		const audioPath = path.join(audioDir, `${stem}.wav`);
+		const scenePath = path.join(sceneDir, `${stem}.png`);
+		const segmentVideoPath = path.join(segmentVideoDir, `${stem}.mp4`);
 		const speakerId = VOICEVOX.speakers[segment.speaker];
 		const voice = F.tts.voice_presets[segment.emotion];
 		if (!(await fs.pathExists(audioPath))) {
 			console.log(
-				`[TTS ${index + 1}/${spec.segments.length}] ${segment.speaker} ${segment.emotion}`,
+				`[TTS ${index + 1}/${speechSegments.length}] ${segment.speaker} ${segment.emotion}`,
 			);
 			const result = await tts.synthesize({
 				text: narrationText(segment.text),
@@ -1332,9 +1328,9 @@ async function main(): Promise<void> {
 		const duration = audioDuration(audioPath);
 		if (!(await fs.pathExists(scenePath))) {
 			console.log(
-				`[SCENE ${index + 1}/${spec.segments.length}] ${segment.headline}`,
+				`[SCENE ${index + 1}/${speechSegments.length}] ${segment.headline}`,
 			);
-			await renderScene(spec, segment, index, scenePath);
+			await renderScene(segment, index, speechSegments.length, scenePath);
 		}
 		timed.push({
 			...segment,
