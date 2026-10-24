@@ -12,7 +12,7 @@ YT3 contains three distinct products:
 - `yawa`: 夜話アーカイブ ASMR
 - `humanity`: 雨晴はうの人類観測所
 
-Keep their config, media, credentials, receipts, and publication state separate. Read volatile values from current config/runtime instead of copying them into agent instructions.
+Keep their config, media, credentials, receipts, and publication state separate. Read volatile values from current config/runtime instead of copying them into agent instructions. Work on `byosan` must not change `humanity` or `yawa` files, configuration, timers, or GPU assumptions; check other products' impact before changing shared code.
 
 ## Product execution
 
@@ -20,9 +20,18 @@ Fix the owning source rather than generated output or stale prose. Do not hide m
 
 An explicit request to run or start a production path means executing its canonical Taskfile command on the target runtime when that capability is available. CI, mocks, simulations, and dry runs do not satisfy that request.
 
-### Standing authorization (yawa)
+### Standing authorization (yawa, byosan, humanity)
 
-The owner has authorized autonomous daily publication for 夜話アーカイブ ASMR (`yawa`) through `task yawa:daily`, without a per-episode approval, once the product release gate passes. This is a standing instruction for `yawa` only. It does not extend to `byosan` or `humanity`, and it does not cover manual publication of a run outside the daily path. Metadata rewrites of published `yawa` videos go only through `task yawa:metadata RUN=<run-id>`, which reads back and records the result.
+The owner has authorized autonomous daily publication for 夜話アーカイブ ASMR (`yawa`) through `task yawa:daily`, without a per-episode approval, once the product release gate passes. The same authorization extends to daily publication of `byosan` and `humanity` through their canonical Taskfile entries once the product release gate passes. It does not cover manual publication of a `yawa` run outside the daily path. Metadata rewrites of published `yawa` videos go only through `task yawa:metadata RUN=<run-id>`, which reads back and records the result.
+
+### Editorial policy (byosan)
+
+- The editorial north star is `docs/byosan/MISSION.md` (on `origin/main`). Topic selection and editorial judgment follow it; commands, configuration, and publication procedure are owned by `Taskfile.yml` and `config/`.
+- Topics are discovered from new items in the adopted source registry; facts are verified independently against primary sources. The registry's source of truth is `config/sources/byosan_discovery_sources.json`. The Google Sheets copy is one-way synced and is not edited directly.
+- `byosan` produces one video per day as its publication target. Designs that select among several candidates or allow zero-video days are not used. On failure, the same run recomposes the question, development, and production rules until it succeeds that day. Factual and numerical accuracy and the publication gate are never relaxed; failures caused by a production rule are fixed by correcting the rule, not by inflating figures or discarding candidates. The daily target does not waive publication authorization or the release gate.
+- Conclusions are stated plainly. A run that ends with only "not yet determinable" is not produced. The conclusion is limited to verified facts, and its limits are stated as part of it.
+- Numbers are handled as cards with metric, population, period, unit, actual/estimate/forecast distinction, and verbatim source quote. A number appearing in a source is not verified by itself; the meaning match is confirmed by independent verification.
+- Video visual rules follow `tokens/foundation.tokens.json` in `KAFKA2306/design` (imported at a pinned commit and derived mechanically). Adoption is in progress; the pinned commit and sha256 are owned by the import configuration under `config/design/`.
 
 ## Evidence boundary
 
@@ -30,7 +39,7 @@ Repository checks prove only the exact revision they executed. Product/runtime/p
 
 ## Publication
 
-Publication is an irreversible external side effect. Use only the canonical Taskfile publish path and require explicit publication authorization.
+Publication is an irreversible external side effect. Use only the canonical Taskfile publish path, under the conditions in Autonomous operations.
 
 For 秒算マネー preparation:
 
@@ -38,7 +47,7 @@ For 秒算マネー preparation:
 task byosan:prepare DATE=YYYY-MM-DD
 ```
 
-Preparation must not publish. Publish only after separate authorization using the exact command emitted by the successful preparation flow.
+Preparation must not publish. Publication is a separate step that runs the exact command emitted by the successful preparation flow, under the conditions in Autonomous operations.
 
 1. `DATE` must be explicitly supplied in `YYYY-MM-DD` form. Do not infer “today” or substitute another date.
 2. `task byosan:prepare` is the canonical preparation path. It performs research, production, audit, and the product release gate, but must not perform the external YouTube publication side effect.
@@ -47,10 +56,21 @@ Preparation must not publish. Publish only after separate authorization using th
    - `[product-release-gate] PASS ... artifact_sha256=<sha256>`
    - `PUBLISH_READY_RUN=<run-id>`
    - `PUBLISH_COMMAND=task publish PROFILE=byosan -- <run-id>`
-5. Record the exact run id, artifact SHA-256, and printed publish command in the governing Issue or requested handoff surface, then stop. The local agent must not execute `PUBLISH_COMMAND` unless the user separately and explicitly authorizes publication.
-6. After explicit publication authorization, use only the exact canonical `task publish PROFILE=byosan -- <run-id>` path. Publication becomes VERIFIED only after remote receipt/read-back/visibility evidence is obtained.
+5. Record the exact run id, artifact SHA-256, and printed publish command in the governing Issue or requested handoff surface. The local agent then executes `PUBLISH_COMMAND` when the conditions in Autonomous operations hold; otherwise it stops at this record.
+6. Use only the exact canonical `task publish PROFILE=byosan -- <run-id>` path. Publication becomes VERIFIED only after remote receipt/read-back/visibility evidence is obtained.
 
-The stop condition for a preparation-only handoff is therefore: exact artifact generated, product release gate PASS, exact publish command recorded, and no remote publication performed.
+The stop condition for a run whose publish conditions do not hold is therefore: exact artifact generated, product release gate status and publication approval recorded, exact publish command recorded, and no remote publication performed.
+
+## Autonomous operations
+
+The owner has given standing authorization for the operations below. The agent carries them out itself as soon as their conditions hold, without asking for each instance. Where a product section above narrows this rule, that section governs.
+
+- **Publication and posting.** Run only through the canonical Taskfile publish path (`task publish PROFILE=<profile> -- <run-id>`) or that product's daily entry, and only when the product release gate reports PASS for that run and the publication approval setting in the product's config (`publish_approved` in `config/domains/`) is enabled. Posting and Discord announcements produced by that path follow the same conditions.
+- **Commit.** After the checks that cover the change pass (type check, tests, and the domain audit named in §6), stage only the paths the agent owns and commit.
+- **Push.** Push each commit to `origin` immediately after committing.
+- **Merge.** Merge a PR when its exact-head CI has passed.
+
+Force push, branch deletion, deletion of run data or published videos, handling of secrets and personal contact details, and billing are not covered. Each requires the owner's explicit instruction.
 
 ## 6. Change source, then validate
 
@@ -92,10 +112,12 @@ For repository changes:
 3. update the canonical PR rather than creating a competing one;
 4. diagnose CI failures instead of retrying blindly;
 5. inspect CI for the exact PR head SHA;
-6. merge when repository acceptance passes;
+6. merge when exact-head CI passes (see Autonomous operations);
 7. verify the intended base state afterward.
 
 Every commit must be pushed to `origin` before reporting completion. Do not leave commits local-only.
+
+Publication, repair, and configuration-change facts are recorded append-only in `docs/standard/ledger-standard.md`; each entry points to the run record and does not copy it.
 
 Before final reporting, remove temporary workflows, scripts, debug output, abandoned intermediates, superseded paths, and stale task/document references. Branch deletion is not part of the agent responsibility when the connection lacks that capability.
 
@@ -109,7 +131,7 @@ Documentation must describe current executable behavior. Maintained boundaries a
 
 Repository layout, root allowlist, ADR indexing, branch/worktree, and uncommitted-state rules: [docs/standard/repository-layout-standard.md](docs/standard/repository-layout-standard.md).
 
-Never expose secrets, OAuth credentials, private tokens, or private local metadata in public artifacts.
+Never expose secrets, OAuth credentials, private tokens, or private local metadata in public artifacts. Personal contact details (such as the owner's email address) are never placed in external service User-Agent or requests, repositories, videos, descriptions, PRs, Issues, logs, or subagent prompts; an external terms requirement for a contact address is met only with a purpose-specific address the owner designates, configured outside the repository.
 
 Links are written as bare URLs on their own line, with a blank line before and after and no other character on that line. Never put text, punctuation, brackets, or markdown link syntax next to a URL, because the terminal cannot open it otherwise. This rule is invariant for every report, handoff, Issue, PR description, and document.
 
@@ -119,13 +141,14 @@ Final reporting should state only verified facts relevant to the task: repositor
 
 - Delegate each independent next task to an agent team member. The lead agent integrates results, runs the final verification, and reports.
 - Give each agent an explicit file or directory ownership set. Do not let two agents edit the same file.
-- Agents do not commit. The lead stages only the files it owns, so uncommitted changes from other sessions stay untouched.
+- Agents commit and push as in Autonomous operations. The lead stages only the files it owns, so uncommitted changes from other sessions stay untouched.
 - Proceed without asking when the next step is reversible and inside the requested scope. Record the choices made in the final report.
-- Autonomy never authorizes publication, merge, deletion, billing, external posting, or secret handling. Those still follow §3, §5, and §7.
+- Autonomy covers publication, posting, commit, push, and merge only under Autonomous operations. It never authorizes deletion, billing, force push, or secret and contact handling.
 - When another session's changes appear in the working tree, do not revert or overwrite them. Report them.
 - Work that cannot be completed in this session, and blockers, are handed to an external agent CLI instead of being left as a note: `codex exec -p <profile> "<prompt>"` or `agy -p "<prompt>"`. Hand off the exact remaining task, owned files, acceptance command, and stop condition. The receiving CLI must not publish, merge, delete, bill, post externally, or read secrets (§3, §5, §7 still apply).
 - Profiles are chosen explicitly. Do not use a profile with `danger-full-access` or `approval_policy = "never"` unless the user names it for that task. Record the profile name and the handoff result in the final report.
-- Official docs (checked): `codex exec` defaults to a read-only sandbox, so pass `--sandbox workspace-write` for edits. Codex profiles are documented as `$CODEX_HOME/<name>.config.toml` selected with `--profile`; the `[profiles.*]` tables in `~/.codex/config.toml` are UNVERIFIED for `codex exec`. `agy -p` needs a prior interactive `agy` login (an unauthenticated run fails with `authentication required`), and it uses `--print-timeout` (default 5m) and `--output-format json` when the result must be parsed. Piped `agy -p` hangs were reported in GitHub issues #76 and #318; test before depending on it.
+- 秒算マネーの失敗修復は codex exec に委託する。日次の入口は `task byosan:auto`（準備、失敗時の修復、再準備を同日の同じ run で行い、公開の前で止まる）、単発の修復は `task byosan:repair DATE=YYYY-MM-DD`。書き込み可能パス、sandbox、受け入れコマンド、停止条件は `config/domains/byosan_money.yaml` の `repair`、試行上限は `auto` が正本で、公開・秘密情報・force push・課金の権限は含めない。
+- Every `codex exec` call names its sandbox explicitly (`--sandbox read-only` for read-only work, `--sandbox workspace-write` for edits) and passes `--ignore-user-config`; do not rely on the `danger-full-access` or `approval_policy = "never"` defaults. Official docs (checked): codex profiles are documented as `$CODEX_HOME/<name>.config.toml` selected with `--profile`; the `[profiles.*]` tables in `~/.codex/config.toml` are UNVERIFIED for `codex exec`. `agy -p` needs a prior interactive `agy` login (an unauthenticated run fails with `authentication required`), and it uses `--print-timeout` (default 5m) and `--output-format json` when the result must be parsed. Piped `agy -p` hangs were reported in GitHub issues #76 and #318; test before depending on it.
 - Rule maintenance (this section and its CLI commands) is delegated to a subagent and is done when the commands above are confirmed to exist and the rule text passes that check.
 
 ## Outcome-first task interpretation (Altitude / Depth / Range / Speed)

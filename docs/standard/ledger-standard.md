@@ -44,6 +44,10 @@ Each event is recorded in the run it belongs to. The entry here points to that r
 - **E-2026-10-24-01 (metadata rewrite, four yawa episodes).** Titles, descriptions and tags were rewritten to the current rules with `task yawa:metadata`, then read back from YouTube. Each run has `publish/metadata_updates.jsonl`. Result: verified for `7pRW25gkZlg`, `9JYWuZXABhQ`, `KRWpvyY45iI`, `qWUjjJv_LdQ`.
   - The first attempt reported a mismatch for all four. The cause was the tag order returned by YouTube, not the content. The check was changed to compare tags as a set (PR #328; see C-2). The failed attempt stays in the same file as a separate line.
 - **E-2026-10-24-02 (SEO metadata rule).** The title and description standard changed to include the search prefix and the content sentence, per `docs/standard/asmr-workflow.md` step 10 and 16 (PR #326, #327).
+- **E-2026-10-24-03 (byosan daily timer).** `yt3-automation.timer` is disabled; its last automatic run was 2026-10-12. The user unit `yt3-byosan-daily.timer` (`systemd/yt3-byosan-daily.timer`, 09:00 JST daily) is enabled. State: enabled. First scheduled run 2026-10-25 09:00 JST; run result UNVERIFIED.
+- **E-2026-10-24-04 (source registry).** The canonical registry is `config/sources/byosan_discovery_sources.json` (12 entries). The original Google Sheets could not be imported (Drive connector authentication error, anonymous fetch returned 401). Any rows that exist only in the sheet are UNVERIFIED.
+- **E-2026-10-24-05 (contact sent to an external service).** During a source-fetch survey of SEC, the owner's contact address was sent once as the User-Agent. It was not published. From this point, contact details are not sent to external services. The address itself is not recorded in this ledger.
+- **E-2026-10-24-06 (experiment data deleted).** `sandbox/oss-bakeoff/` (`ace-step`, `hf-home`, `flux-venv`) and `scratch/` (about 38 GB in total) were deleted after confirming nothing references them. They are git-ignored and not tracked, so they cannot be restored.
 
 ## Retention
 
