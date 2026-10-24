@@ -388,6 +388,7 @@ export function featureRepairMessages(input: {
 	draft: Json;
 	context: FeatureDraftContext;
 	constraintLines: string;
+	dialogueStyle: string;
 }): Array<{ role: "system" | "user"; content: string }> {
 	const { unit, issues, draft, context } = input;
 	const indexed = parseIndexedUnit(unit);
@@ -403,7 +404,7 @@ export function featureRepairMessages(input: {
 		{
 			role: "system",
 			content:
-				'あなたは秒算マネーの台本の局所修復者です。指定された欄（unit）だけを、指摘（issues）を解消する形で直し、{"value": ...} の JSON だけを返します。他の欄や場面は変更されません。evidence にない数字・断定・出典を新しく作らず、推計・推論は区別語を残します。claims の id は変更しません。',
+				'あなたは秒算マネーの台本の局所修復者です。指定された欄（unit）だけを、指摘（issues）を解消する形で直し、{"value": ...} の JSON だけを返します。他の欄や場面は変更されません。evidence にない数字・断定・出典を新しく作らず、推計・推論は区別語を残します。claims の id は変更しません。台詞は dialogue_style（会話の指針の要約）に沿って、短く自然に直します。',
 		},
 		{
 			role: "user",
@@ -425,6 +426,7 @@ export function featureRepairMessages(input: {
 					},
 					neighbors,
 					constraints: input.constraintLines,
+					dialogue_style: input.dialogueStyle,
 				},
 				null,
 				2,
