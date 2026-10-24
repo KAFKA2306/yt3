@@ -4,11 +4,6 @@ import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
 import {
-	ResearchPayloadSchema,
-	type ResearchStructuredRequest,
-	geminiResearchParams,
-} from "../src/domain/agents/research.js";
-import {
 	type CodexLlmConfig,
 	type CodexLogRecord,
 	invokeCodexStructured,
@@ -81,6 +76,29 @@ describe("codex structured invocation", () => {
 				"FAIL",
 			]);
 		}));
-});
 
-describe("research structured request keeps the Gemini contract", () => {});
+	test("keeps each attempt's output beside its validation verdict", () =>
+		withLogPath(async (logPath) => {
+			const outputs = [
+				'{"hookPromises":[]}',
+				'{"hookPromises":["開幕の問い","結論の数字"]}',
+			];
+			const { exec } = scriptedExec(outputs);
+			await invokeCodexStructured({
+				llm,
+				logPath,
+				schema,
+				name: "recorded",
+				messages,
+				exec,
+			});
+			expect(
+				readLog(logPath)
+					.filter((record) => record.event === "validation")
+					.map((record) => [record.status, record.output]),
+			).toEqual([
+				["FAIL", outputs[0]],
+				["PASS", outputs[1]],
+			]);
+		}));
+});

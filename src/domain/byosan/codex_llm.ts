@@ -91,6 +91,7 @@ export type CodexLogRecord = {
 	stderrBytes?: number;
 	stderrTail?: string;
 	validationErrors?: string[];
+	output?: string;
 };
 
 export function codexLlmLogPath(runDir: string): string {
@@ -254,6 +255,7 @@ export async function invokeCodexStructured<T, U = T>(
 		attempt: number,
 		status: "PASS" | "FAIL",
 		validationErrors: string[],
+		output: string,
 	): void =>
 		appendCodexLog(request.logPath, {
 			event: "validation",
@@ -262,6 +264,7 @@ export async function invokeCodexStructured<T, U = T>(
 			status,
 			endedAt: new Date().toISOString(),
 			validationErrors,
+			output: redactLlmEvidence(output),
 		});
 
 	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -304,12 +307,12 @@ export async function invokeCodexStructured<T, U = T>(
 				details: redactLlmEvidence(message).slice(0, 500),
 			});
 			persist();
-			logValidation(attempt, "FAIL", validationErrors);
+			logValidation(attempt, "FAIL", validationErrors, text);
 			continue;
 		}
 		attempts.push({ attempt, status: "PASS" });
 		persist();
-		logValidation(attempt, "PASS", []);
+		logValidation(attempt, "PASS", [], text);
 		return validated;
 	}
 
