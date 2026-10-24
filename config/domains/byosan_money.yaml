@@ -212,6 +212,7 @@ llm:
   sandbox: "read-only"
   workdir_prefix: "byosan-llm-"
   max_attempts: 8
+  max_local_repairs: 3
   backends:
     research: "gemini"
     feature: "gemini"

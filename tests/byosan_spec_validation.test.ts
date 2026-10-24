@@ -6,7 +6,13 @@ import {
 	figureValueAppears,
 	normalizeHookPromise,
 } from "../src/domain/byosan/explanation_contract.js";
-import type { ByosanFeatureSpec } from "../src/domain/byosan/feature_spec.js";
+import type {
+	ByosanFeatureSpec,
+	FeatureSpecIssue,
+} from "../src/domain/byosan/feature_spec.js";
+
+const formatted = (issues: FeatureSpecIssue[]): string[] =>
+	issues.map((issue) => `${issue.code}: ${issue.details}`);
 
 const conclusion = "物価上昇は品物中心に強まった。";
 const explanation: Explanation = {
@@ -109,7 +115,9 @@ describe("feature spec contract against the explanation", () => {
 			candidate,
 			bannedPhrases,
 		);
-		expect(issues).toContain("explanation_figure_value_missing: +2.1%");
+		expect(formatted(issues)).toContain(
+			"explanation_figure_value_missing: +2.1%",
+		);
 	});
 
 	test("reports a number with no source in the explanation, candidate or claim confidence", () => {
@@ -124,7 +132,8 @@ describe("feature spec contract against the explanation", () => {
 			candidate,
 			bannedPhrases,
 		);
-		expect(issues).toEqual(["unsourced_number: 47"]);
+		expect(formatted(issues)).toEqual(["unsourced_number: 47"]);
+		expect(issues[0]?.path).toBe("segments[0]");
 	});
 
 	test("accepts a claim confidence stated as an integer percentage", () => {
@@ -159,7 +168,8 @@ describe("feature spec contract against the explanation", () => {
 			candidate,
 			bannedPhrases,
 		);
-		expect(issues).toEqual(["unsourced_number: 3"]);
+		expect(formatted(issues)).toEqual(["unsourced_number: 3"]);
+		expect(issues[0]?.path).toBe("thumbnail");
 	});
 
 	test("ignores ISO dates in the spec text", () => {
@@ -198,9 +208,10 @@ describe("feature spec contract against the explanation", () => {
 			candidate,
 			bannedPhrases,
 		);
-		expect(landing).toEqual([
+		expect(formatted(landing)).toEqual([
 			"banned_phrase_in_resolution_or_landing: まだ言えない",
 		]);
+		expect(landing[0]?.path).toBe("segments[2]");
 	});
 });
 
@@ -273,8 +284,8 @@ describe("hook promises are fragments of the candidate numbers", () => {
 	});
 
 	test("reports a hook promise that does not come from the candidate numbers", () => {
-		expect(auditHookPromises(["9%の増加"], candidate.numbers)).toEqual([
-			"hook_promise_not_in_candidate_numbers: 9%の増加",
-		]);
+		expect(
+			formatted(auditHookPromises(["9%の増加"], candidate.numbers)),
+		).toEqual(["hook_promise_not_in_candidate_numbers: 9%の増加"]);
 	});
 });

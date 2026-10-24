@@ -11,6 +11,7 @@ import {
 	writeByosanCheckpoint,
 } from "../domain/byosan/checkpoint.js";
 import {
+	type StructuredCall,
 	byosanLlmConfig,
 	codexLlmLogPath,
 	invokeCodexStructured,
@@ -26,17 +27,24 @@ import {
 	runCodexExplanation,
 } from "../domain/byosan/explanation.js";
 import {
-	auditFeatureSpecAgainstExplanation,
-	auditHookPromises,
-	normalizeHookPromise,
-} from "../domain/byosan/explanation_contract.js";
+	type FeatureDraftContext,
+	type Json,
+	buildFeatureSpecInput,
+	featureDraftIssues,
+	featureRepairMessages,
+	featureUnitSchema,
+	isJson,
+	isLocallyRepairable,
+	normalizeFeatureDraft,
+	repairFeatureDraftLocally,
+	summarizeFeatureIssues,
+} from "../domain/byosan/feature_repair.js";
 import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
 	type ByosanFeatureSpec,
-	HOOK_PROMISE_MAX_CHARS,
+	type FeatureSpecIssue,
 	archetypeSlotPromptPolicy,
-	ensureByosanBrandTag,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import {
@@ -157,7 +165,7 @@ function safeSourceId(raw: string, index: number): string {
 	return normalized || `source_${index + 1}`;
 }
 
-function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
+export function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
 	sources: FeatureSource[];
 	adversarialEvidence: ByosanAdversarialEvidence[];
 	activeProbes: ByosanActiveProbeEvidence[];
@@ -610,7 +618,9 @@ export function findPublishedByosanRunForDate(
 	return null;
 }
 
-function selectedCandidate(research: ResearchResult): ByosanAngleCandidate {
+export function selectedCandidate(
+	research: ResearchResult,
+): ByosanAngleCandidate {
 	const decision = research.angle_decision;
 	if (
 		!decision ||
@@ -628,7 +638,7 @@ function selectedCandidate(research: ResearchResult): ByosanAngleCandidate {
 	return candidate;
 }
 
-async function generateFeatureSpec(
+export async function generateFeatureSpec(
 	research: ResearchResult,
 	candidate: ByosanAngleCandidate,
 	productionPlan: ByosanProductionPlan,
@@ -664,9 +674,40 @@ async function generateFeatureSpec(
 		{ spaces: 2 },
 	);
 	const llm = byosanLlmConfig();
+	const context: FeatureDraftContext = {
+		runId,
+		asOf: date,
+		angle: candidate.angle,
+		searchQuery: research.director_data.search_query,
+		production: productionPlan,
+		editorialReferencePlan,
+		narrative: {
+			hiddenMechanism: candidate.hiddenMechanism,
+			counterfactual: candidate.counterfactual,
+			audiencePayoff: candidate.audiencePayoff,
+		},
+		adversarialEvidence,
+		activeProbes,
+		sources,
+		explanation,
+		candidateNumbers: candidate.numbers,
+		bannedPhrases,
+	};
+	const invokeFeature = <T, U>(request: StructuredCall<T, U>): Promise<U> =>
+		llmBackend(llm, "feature") === "codex"
+			? invokeCodexStructured({
+					llm,
+					logPath: codexLlmLogPath(runDir),
+					...request,
+				})
+			: invokeStructuredLlm({
+					...request,
+					llmOptions: { temperature: 0.28, sessionId: runDir },
+				});
 	const request = structuredRequest({
 		maxAttempts: llm.max_attempts,
-		schema: ByosanFeatureDraftSchema,
+		schema: z.unknown(),
+		providerSchema: ByosanFeatureDraftSchema,
 		name: "byosan_feature_draft",
 		evidencePath: path.join(
 			runDir,
@@ -698,85 +739,73 @@ async function generateFeatureSpec(
 			},
 		],
 		validate: (rawDraft) => {
-			const draft = {
-				...rawDraft,
-				hookPromises: rawDraft.hookPromises.map((hook) =>
-					normalizeHookPromise(hook, HOOK_PROMISE_MAX_CHARS),
-				),
-			};
-			const audited = parseAndAuditByosanFeatureSpec({
-				...draft,
-				tags: ensureByosanBrandTag(draft.tags),
-				schemaVersion: "byosan_feature_v1",
-				runId,
-				asOf: date,
-				angle: candidate.angle,
-				searchQuery: research.director_data.search_query,
-				production: productionPlan,
-				editorialReferencePlan,
-				narrative: {
-					hiddenMechanism: candidate.hiddenMechanism,
-					counterfactual: candidate.counterfactual,
-					audiencePayoff: candidate.audiencePayoff,
-				},
-				adversarialEvidence,
-				activeProbes,
-				sources,
-			});
-			const contractIssues = auditFeatureSpecAgainstExplanation(
-				audited,
-				explanation,
-				candidate,
-				bannedPhrases,
-			);
-			if (contractIssues.length > 0) {
+			if (!isJson(rawDraft)) {
 				throw new Error(
-					`BYOSAN_EXPLANATION_CONTRACT_INVALID: ${contractIssues.join("; ")}`,
+					"BYOSAN_FEATURE_DRAFT_INVALID: draft must be a JSON object",
 				);
 			}
-			const hookIssues = auditHookPromises(
-				audited.hookPromises,
-				candidate.numbers,
+			const normalized = normalizeFeatureDraft(rawDraft, sources);
+			const globalIssues = featureDraftIssues(normalized.draft, context).filter(
+				(issue) => !isLocallyRepairable(issue.path),
 			);
-			if (hookIssues.length > 0) {
+			if (globalIssues.length > 0) {
 				throw new Error(
-					`opening_hook_contract_mismatch: ${hookIssues.join("; ")}`,
+					`BYOSAN_FEATURE_DRAFT_INVALID: ${summarizeFeatureIssues(globalIssues)}`,
 				);
 			}
-			const rawHash = createHash("sha256")
-				.update(JSON.stringify(draft.segments.map((segment) => segment.text)))
-				.digest("hex");
-			const auditedHash = createHash("sha256")
-				.update(JSON.stringify(audited.segments.map((segment) => segment.text)))
-				.digest("hex");
-			fs.outputJsonSync(
-				path.join(runDir, "audit", "narrative_integrity.json"),
-				{
-					schema_version: "byosan_narrative_integrity_v1",
-					raw_draft_narrative_sha256: rawHash,
-					audited_narrative_sha256: auditedHash,
-					narrative_unchanged: rawHash === auditedHash,
-				},
-				{ spaces: 2 },
-			);
-			if (rawHash !== auditedHash) {
-				throw new Error(
-					"narrative_mutation_detected_between_generation_and_audit",
-				);
-			}
-			return audited;
+			return normalized;
 		},
 	});
-	return llmBackend(llm, "feature") === "codex"
-		? invokeCodexStructured({
-				llm,
-				logPath: codexLlmLogPath(runDir),
-				...request,
-			})
-		: invokeStructuredLlm({
-				...request,
-				llmOptions: { temperature: 0.28, sessionId: runDir },
-			});
+	const first = await invokeFeature(request);
+	const repairUnit = async (
+		unit: string,
+		issues: FeatureSpecIssue[],
+		draft: Json,
+	): Promise<unknown> => {
+		const unitSchema = featureUnitSchema(unit);
+		if (unitSchema === undefined) {
+			throw new Error(`BYOSAN_FEATURE_UNIT_NOT_REPAIRABLE: ${unit}`);
+		}
+		const result = await invokeFeature(
+			structuredRequest({
+				maxAttempts: llm.max_attempts,
+				schema: z.object({ value: z.unknown() }),
+				providerSchema: z.object({ value: unitSchema }),
+				name: "byosan_feature_repair",
+				messages: () =>
+					featureRepairMessages({
+						unit,
+						issues,
+						draft,
+						context,
+						constraintLines: FEATURE_DRAFT_SIZE_LIMITS,
+					}),
+			}),
+		);
+		return result.value;
+	};
+	const repaired = await repairFeatureDraftLocally({
+		draft: first.draft,
+		sources,
+		maxRepairs: llm.max_local_repairs,
+		check: (draft) => featureDraftIssues(draft, context),
+		repairUnit,
+	});
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "feature_repair.json"),
+		{
+			schemaVersion: "byosan_feature_repair_v1",
+			corrections: [...first.corrections, ...repaired.corrections],
+			rounds: repaired.rounds,
+		},
+		{ spaces: 2 },
+	);
+	return parseAndAuditByosanFeatureSpec(
+		buildFeatureSpecInput(
+			ByosanFeatureDraftSchema.parse(repaired.draft),
+			context,
+		),
+	);
 }
 
 function runCommand(

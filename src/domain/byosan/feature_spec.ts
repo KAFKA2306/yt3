@@ -61,6 +61,8 @@ export function archetypeSlotPromptPolicy(
 	return `segments[].archetypeSlot は次の値だけを使い、この順番で各1回以上、segments の順序を保って出してください: ${slots.join(", ")}。それ以外の値は検証で却下されます。`;
 }
 
+export const SEGMENT_CLAIM_IDS_MAX = 6;
+
 export const ByosanFeatureSegmentSchema = z.object({
 	chapter: z.string().min(1).max(40).optional(),
 	narrativeRole: ByosanNarrativeRoleSchema.optional(),
@@ -69,7 +71,7 @@ export const ByosanFeatureSegmentSchema = z.object({
 		.string()
 		.regex(/^[a-z0-9_]+$/)
 		.optional(),
-	claimIds: z.array(z.string().min(1)).max(6).optional(),
+	claimIds: z.array(z.string().min(1)).max(SEGMENT_CLAIM_IDS_MAX).optional(),
 	evidenceIds: z.array(z.string().min(1)).max(6).optional(),
 	speaker: z.enum(["春日部つむぎ", "ずんだもん"]),
 	emotion: z.enum([
@@ -242,7 +244,18 @@ export type ByosanVerificationRole = z.infer<
 export type FeatureSpecIssue = {
 	code: string;
 	details: string;
+	path: string;
 };
+
+export const GLOBAL_ISSUE_PATH = "";
+
+export function segmentIssuePath(index: number): string {
+	return `segments[${index}]`;
+}
+
+export function claimIssuePath(index: number): string {
+	return `claims[${index}]`;
+}
 
 function numericTokens(value: string): string[] {
 	return Array.from(
@@ -282,6 +295,7 @@ export function auditByosanFeatureSpec(
 			issues.push({
 				code: "editorial_reference_source_namespace_overlap",
 				details: overlapping.join(","),
+				path: GLOBAL_ISSUE_PATH,
 			});
 		}
 	}
@@ -289,9 +303,11 @@ export function auditByosanFeatureSpec(
 		issues.push({
 			code: "duplicate_source_id",
 			details: "Source IDs must be unique",
+			path: GLOBAL_ISSUE_PATH,
 		});
 	}
-	for (const claim of spec.claims) {
+	for (const [claimIndex, claim] of spec.claims.entries()) {
+		const path = claimIssuePath(claimIndex);
 		const editorialSourceIds = claim.sourceIds.filter(
 			isByosanEditorialReferenceId,
 		);
@@ -299,6 +315,7 @@ export function auditByosanFeatureSpec(
 			issues.push({
 				code: "editorial_reference_used_as_fact_source",
 				details: `${claim.claim}: ${editorialSourceIds.join(",")}`,
+				path,
 			});
 		}
 		const missing = claim.sourceIds.filter(
@@ -308,6 +325,7 @@ export function auditByosanFeatureSpec(
 			issues.push({
 				code: "claim_source_missing",
 				details: `${claim.claim}: ${missing.join(",")}`,
+				path,
 			});
 		}
 		if (spec.production && claim.status !== "verified") {
@@ -315,18 +333,21 @@ export function auditByosanFeatureSpec(
 				issues.push({
 					code: "derived_claim_caveat_missing",
 					details: claim.id || claim.claim,
+					path,
 				});
 			}
 			if (claim.confidence === undefined) {
 				issues.push({
 					code: "inference_confidence_missing",
 					details: claim.id || claim.claim,
+					path,
 				});
 			}
 			if (claim.unresolvedMismatches === undefined) {
 				issues.push({
 					code: "inference_mismatch_review_missing",
 					details: claim.id || claim.claim,
+					path,
 				});
 			}
 		}
@@ -337,18 +358,21 @@ export function auditByosanFeatureSpec(
 			issues.push({
 				code: "packaging_contract_missing",
 				details: "production-aware specs require packaging evidence",
+				path: "packaging",
 			});
 		}
 		if (!spec.narrative) {
 			issues.push({
 				code: "narrative_contract_missing",
 				details: "production-aware specs require narrative grounding",
+				path: GLOBAL_ISSUE_PATH,
 			});
 		}
 		if (!spec.adversarialEvidence) {
 			issues.push({
 				code: "adversarial_evidence_contract_missing",
 				details: "production-aware specs require research adversarial evidence",
+				path: GLOBAL_ISSUE_PATH,
 			});
 		}
 	}
@@ -370,6 +394,7 @@ export function auditByosanFeatureSpec(
 			issues.push({
 				code: "packaging_claim_missing",
 				details: missingPackagingClaims.join(","),
+				path: "packaging",
 			});
 		}
 
@@ -386,6 +411,7 @@ export function auditByosanFeatureSpec(
 				issues.push({
 					code: "packaging_number_ungrounded",
 					details: number,
+					path: titleNumbers.includes(number) ? "title" : "thumbnailTitle",
 				});
 			}
 		}
@@ -397,6 +423,7 @@ export function auditByosanFeatureSpec(
 				issues.push({
 					code: "freshness_marker_ungrounded",
 					details: "【速報】 requires an event date within two days of asOf",
+					path: "title",
 				});
 			}
 		}
@@ -409,6 +436,7 @@ export function auditByosanFeatureSpec(
 			issues.push({
 				code: "relative_claim_ungrounded",
 				details: "comparative/extreme wording requires comparator and period",
+				path: "title",
 			});
 		}
 	}
@@ -419,6 +447,7 @@ export function auditByosanFeatureSpec(
 				issues.push({
 					code: `active_probe_${issue.code}`,
 					details: issue.details,
+					path: "activeProbes",
 				});
 			}
 			const missing = probe.sourceIds.filter(
@@ -428,6 +457,7 @@ export function auditByosanFeatureSpec(
 				issues.push({
 					code: "active_probe_source_missing",
 					details: `${probe.id}: ${missing.join(",")}`,
+					path: "activeProbes",
 				});
 			}
 		}
@@ -446,10 +476,11 @@ export function auditByosanFeatureSpec(
 				issues.push({
 					code: "adversarial_evidence_source_missing",
 					details: `${evidence.id}: ${[...new Set(missing)].join(",")}`,
+					path: GLOBAL_ISSUE_PATH,
 				});
 			}
 		}
-		for (const segment of spec.segments) {
+		for (const [segmentIndex, segment] of spec.segments.entries()) {
 			const missingEvidenceIds = (segment.evidenceIds ?? []).filter(
 				(evidenceId) => !evidenceIds.has(evidenceId),
 			);
@@ -457,6 +488,7 @@ export function auditByosanFeatureSpec(
 				issues.push({
 					code: "segment_adversarial_evidence_missing",
 					details: `${segment.headline}: ${missingEvidenceIds.join(",")}`,
+					path: segmentIssuePath(segmentIndex),
 				});
 			}
 		}
@@ -466,14 +498,13 @@ export function auditByosanFeatureSpec(
 		const sourceById = new Map(
 			spec.sources.map((source) => [source.id, source]),
 		);
-		const spokenClaimIds = new Set(
-			spec.segments.flatMap((segment) => segment.claimIds ?? []),
+		const unverifiedIds = new Set(
+			spec.claims.flatMap((claim) =>
+				claim.id !== undefined && claim.status !== "verified" ? [claim.id] : [],
+			),
 		);
-		const unverifiedSpoken = spec.claims.some(
-			(claim) =>
-				claim.id !== undefined &&
-				claim.status !== "verified" &&
-				spokenClaimIds.has(claim.id),
+		const unverifiedSpoken = spec.segments.some((segment) =>
+			(segment.claimIds ?? []).some((claimId) => unverifiedIds.has(claimId)),
 		);
 		if (
 			unverifiedSpoken &&
@@ -483,9 +514,17 @@ export function auditByosanFeatureSpec(
 				code: "inference_distinction_not_spoken",
 				details:
 					"unverified claims need an inference, estimate or analysis label",
+				path: segmentIssuePath(
+					spec.segments.findIndex((segment) =>
+						(segment.claimIds ?? []).some((claimId) =>
+							unverifiedIds.has(claimId),
+						),
+					),
+				),
 			});
 		}
-		for (const claim of spec.claims.filter((claim) => claim.id)) {
+		for (const [claimIndex, claim] of spec.claims.entries()) {
+			if (!claim.id) continue;
 			const claimSources = claim.sourceIds
 				.map((sourceId) => sourceById.get(sourceId))
 				.filter((source): source is NonNullable<typeof source> =>
@@ -498,7 +537,8 @@ export function auditByosanFeatureSpec(
 			if (!claim.epistemicBoundary) {
 				issues.push({
 					code: "vendor_claim_boundary_missing",
-					details: claim.id ?? claim.claim,
+					details: claim.id,
+					path: claimIssuePath(claimIndex),
 				});
 				continue;
 			}
@@ -510,9 +550,19 @@ export function auditByosanFeatureSpec(
 					segment.text.includes(claim.epistemicBoundary ?? ""),
 			);
 			if (!boundaryRecovered) {
+				const payoffIndex = spec.segments.findIndex(
+					(segment) =>
+						(segment.verificationRole === "resolution" ||
+							segment.verificationRole === "landing") &&
+						segment.claimIds?.includes(claim.id ?? ""),
+				);
 				issues.push({
 					code: "vendor_claim_boundary_not_spoken",
-					details: claim.id ?? claim.claim,
+					details: claim.id,
+					path:
+						payoffIndex < 0
+							? claimIssuePath(claimIndex)
+							: segmentIssuePath(payoffIndex),
 				});
 			}
 		}
@@ -528,18 +578,21 @@ export function auditByosanFeatureSpec(
 		issues.push({
 			code: "packaging_claim_not_in_opening",
 			details: spec.packaging.claimIds.join(","),
+			path: segmentIssuePath(0),
 		});
 	}
 	if (!spec.tags.includes(BYOSAN_BRAND_TAG)) {
 		issues.push({
 			code: "brand_tag_missing",
 			details: `tags must include ${BYOSAN_BRAND_TAG}`,
+			path: "tags",
 		});
 	}
 	if (!spec.segments.some((segment) => segment.speaker === "ずんだもん")) {
 		issues.push({
 			code: "dialogue_missing",
 			details: "ずんだもん must ask or react",
+			path: GLOBAL_ISSUE_PATH,
 		});
 	}
 	return issues;
