@@ -8,17 +8,27 @@ import { CANONICAL_EXPERIENCE_SCENE_IDS } from "./schema.js";
 const CandidateIdSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 const RunIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/);
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/);
-const LicenseEvidenceSchema = z
+
+const LicenseSchema = z
 	.object({
-		version: z.string().trim().min(1),
+		spdx: z.string().trim().min(1),
+		ref: z.string().trim().min(1),
 		source_url: z.url(),
 	})
 	.strict();
 
-const CommercialUseReviewSchema = z
+const ComponentSchema = z
 	.object({
-		status: z.enum(["PERMITTED", "RESTRICTED", "UNKNOWN", "NOT_USED"]),
-		evidence: LicenseEvidenceSchema.nullable(),
+		name: z.string().trim().min(1),
+		kind: z.enum(["code", "model_weights"]),
+		license: LicenseSchema.nullable(),
+	})
+	.strict();
+
+const CommercialUsePolicySchema = z
+	.object({
+		permitted_spdx: z.array(z.string().trim().min(1)).min(1),
+		restricted_spdx: z.array(z.string().trim().min(1)).min(1),
 	})
 	.strict();
 
@@ -34,12 +44,11 @@ const BenchmarkEvidenceSchema = z
 	})
 	.strict();
 
-const AdoptionStatusSchema = z.enum([
+const AdoptionDecisionSchema = z.enum([
 	"ADOPT_CORE",
 	"ADOPT_OPTIONAL",
 	"BENCHMARK_ONLY",
 	"REJECT",
-	"BLOCKED_LICENSE",
 	"BLOCKED_RUNTIME",
 	"BLOCKED_QUALITY",
 ]);
@@ -50,226 +59,60 @@ export const ExperienceOssCandidateSchema = z
 		display_name: z.string().trim().min(1),
 		quality_target: z.string().trim().min(1),
 		benchmark_priority: z.enum(["CORE", "BENCHMARK", "SIDECAR", "OPTIONAL"]),
-		evaluation_status: z.enum([
-			"READY_FOR_BENCHMARK",
-			"BLOCKED_LICENSE",
-			"AWAITING_BENCHMARK",
-			"BENCHMARKED",
-		]),
-		adoption_decision: AdoptionStatusSchema,
-		code_license_status: z.enum(["VERIFIED", "UNVERIFIED"]),
-		code_license_evidence: LicenseEvidenceSchema.nullable(),
-		model_weight_license_status: z.enum(["VERIFIED", "UNVERIFIED", "NOT_USED"]),
-		model_weight_license_evidence: LicenseEvidenceSchema.nullable(),
-		commercial_use: z
-			.object({
-				code: CommercialUseReviewSchema,
-				model_weights: CommercialUseReviewSchema,
-			})
-			.strict(),
-		state_reason: z.string().trim().min(1),
+		components: z.array(ComponentSchema).min(1),
+		adoption_decision: AdoptionDecisionSchema.nullable(),
 		benchmark_evidence: BenchmarkEvidenceSchema.nullable(),
 	})
-	.strict()
-	.superRefine((candidate, context) => {
-		const unresolvedLicenseTerms =
-			candidate.code_license_status !== "VERIFIED" ||
-			(candidate.model_weight_license_status !== "VERIFIED" &&
-				candidate.model_weight_license_status !== "NOT_USED") ||
-			candidate.commercial_use.code.status !== "PERMITTED" ||
-			(candidate.commercial_use.model_weights.status !== "PERMITTED" &&
-				candidate.commercial_use.model_weights.status !== "NOT_USED");
-		if (
-			(candidate.code_license_status === "VERIFIED") !==
-			(candidate.code_license_evidence !== null)
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["code_license_evidence"],
-				message:
-					"verified code-license status requires a versioned source reference",
-			});
-		}
-		if (
-			(candidate.model_weight_license_status === "VERIFIED") !==
-			(candidate.model_weight_license_evidence !== null)
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["model_weight_license_evidence"],
-				message:
-					"verified model-weight status requires a versioned source reference",
-			});
-		}
-		if (
-			candidate.model_weight_license_status === "NOT_USED" &&
-			candidate.model_weight_license_evidence !== null
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["model_weight_license_evidence"],
-				message: "NOT_USED model weights cannot have license evidence",
-			});
-		}
-		for (const [scope, review] of Object.entries(candidate.commercial_use)) {
-			if (scope === "code" && review.status === "NOT_USED") {
-				context.addIssue({
-					code: "custom",
-					path: ["commercial_use", scope],
-					message: "code commercial-use status cannot be NOT_USED",
-				});
-			}
-			if (
-				(review.status === "PERMITTED" || review.status === "RESTRICTED") &&
-				review.evidence === null
-			) {
-				context.addIssue({
-					code: "custom",
-					path: ["commercial_use", scope],
-					message:
-						"commercial-use conclusions require versioned source evidence",
-				});
-			}
-			if (review.status === "NOT_USED" && review.evidence !== null) {
-				context.addIssue({
-					code: "custom",
-					path: ["commercial_use", scope],
-					message: "NOT_USED scope cannot include commercial-use evidence",
-				});
-			}
-		}
-		if (
-			(candidate.model_weight_license_status === "NOT_USED") !==
-			(candidate.commercial_use.model_weights.status === "NOT_USED")
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["commercial_use", "model_weights"],
-				message:
-					"commercial-use review must match whether model weights are used",
-			});
-		}
-		if (
-			candidate.commercial_use.code.status !== "UNKNOWN" &&
-			candidate.code_license_status !== "VERIFIED"
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["commercial_use", "code"],
-				message:
-					"commercial-use review requires verified code-license evidence",
-			});
-		}
-		if (
-			candidate.commercial_use.model_weights.status !== "UNKNOWN" &&
-			candidate.commercial_use.model_weights.status !== "NOT_USED" &&
-			candidate.model_weight_license_status !== "VERIFIED"
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["commercial_use", "model_weights"],
-				message:
-					"commercial-use review requires verified model-weight license evidence",
-			});
-		}
-		if (
-			candidate.adoption_decision === "BLOCKED_LICENSE" &&
-			!unresolvedLicenseTerms
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["adoption_decision"],
-				message:
-					"BLOCKED_LICENSE requires unresolved or restricted license terms",
-			});
-		}
-		if (
-			candidate.adoption_decision !== "BLOCKED_LICENSE" &&
-			candidate.benchmark_evidence === null
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["benchmark_evidence"],
-				message: "every adoption decision requires linked benchmark evidence",
-			});
-		}
-		if (
-			candidate.adoption_decision.startsWith("ADOPT_") &&
-			(candidate.code_license_status !== "VERIFIED" ||
-				(candidate.model_weight_license_status !== "VERIFIED" &&
-					candidate.model_weight_license_status !== "NOT_USED") ||
-				candidate.commercial_use.code.status !== "PERMITTED" ||
-				(candidate.commercial_use.model_weights.status !== "PERMITTED" &&
-					candidate.commercial_use.model_weights.status !== "NOT_USED"))
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["commercial_use"],
-				message: "adoption requires confirmed commercial-use permissions",
-			});
-		}
-		if (
-			candidate.adoption_decision === "ADOPT_CORE" &&
-			candidate.benchmark_priority !== "CORE"
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["benchmark_priority"],
-				message: "ADOPT_CORE candidates must have CORE benchmark priority",
-			});
-		}
-		if (
-			candidate.adoption_decision === "ADOPT_OPTIONAL" &&
-			candidate.benchmark_priority === "CORE"
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["benchmark_priority"],
-				message: "CORE candidates cannot be classified as ADOPT_OPTIONAL",
-			});
-		}
-		if (
-			candidate.evaluation_status === "BLOCKED_LICENSE" &&
-			!unresolvedLicenseTerms
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["evaluation_status"],
-				message:
-					"BLOCKED_LICENSE evaluation requires unresolved or restricted license terms",
-			});
-		}
-		if (
-			candidate.evaluation_status === "BENCHMARKED" &&
-			candidate.benchmark_evidence === null
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["benchmark_evidence"],
-				message: "BENCHMARKED candidates require linked benchmark evidence",
-			});
-		}
-		if (
-			candidate.adoption_decision !== "BLOCKED_LICENSE" &&
-			candidate.evaluation_status !== "BENCHMARKED"
-		) {
-			context.addIssue({
-				code: "custom",
-				path: ["evaluation_status"],
-				message: "final decisions require BENCHMARKED evaluation status",
-			});
-		}
-	});
+	.strict();
+
+type ExperienceOssCandidate = z.infer<typeof ExperienceOssCandidateSchema>;
+type Component = z.infer<typeof ComponentSchema>;
+type CommercialUsePolicy = z.infer<typeof CommercialUsePolicySchema>;
+type BenchmarkEvidence = z.infer<typeof BenchmarkEvidenceSchema>;
+
+function commercialUse(
+	component: Component,
+	policy: CommercialUsePolicy,
+): "PERMITTED" | "RESTRICTED" | "UNKNOWN" | "UNVERIFIED" {
+	if (component.license === null) return "UNVERIFIED";
+	if (policy.permitted_spdx.includes(component.license.spdx))
+		return "PERMITTED";
+	if (policy.restricted_spdx.includes(component.license.spdx))
+		return "RESTRICTED";
+	return "UNKNOWN";
+}
+
+function licenseGate(
+	components: readonly Component[],
+	policy: CommercialUsePolicy,
+): "CLEARED" | "BLOCKED_LICENSE" {
+	return components.every(
+		(component) => commercialUse(component, policy) === "PERMITTED",
+	)
+		? "CLEARED"
+		: "BLOCKED_LICENSE";
+}
 
 export const ExperienceOssCandidateRegistrySchema = z
 	.object({
-		schema_version: z.literal(2),
+		schema_version: z.literal(3),
 		channel: z.literal("byosan_money"),
 		selection_policy: z.literal("measured_evidence_only"),
+		commercial_use_policy: CommercialUsePolicySchema,
 		candidates: z.array(ExperienceOssCandidateSchema).min(1),
 	})
 	.strict()
 	.superRefine((registry, context) => {
+		const policy = registry.commercial_use_policy;
+		for (const spdx of policy.restricted_spdx) {
+			if (policy.permitted_spdx.includes(spdx)) {
+				context.addIssue({
+					code: "custom",
+					path: ["commercial_use_policy", "restricted_spdx"],
+					message: `${spdx} cannot be both permitted and restricted`,
+				});
+			}
+		}
 		const seen = new Set<string>();
 		for (const [index, candidate] of registry.candidates.entries()) {
 			if (seen.has(candidate.candidate_id)) {
@@ -280,6 +123,55 @@ export const ExperienceOssCandidateRegistrySchema = z
 				});
 			}
 			seen.add(candidate.candidate_id);
+			if (
+				!candidate.components.some((component) => component.kind === "code")
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["candidates", index, "components"],
+					message: "every candidate requires a code component",
+				});
+			}
+			if (
+				candidate.adoption_decision !== null &&
+				licenseGate(candidate.components, policy) !== "CLEARED"
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["candidates", index, "adoption_decision"],
+					message: "adoption decisions require a CLEARED license gate",
+				});
+			}
+			if (
+				candidate.adoption_decision !== null &&
+				candidate.benchmark_evidence === null
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["candidates", index, "benchmark_evidence"],
+					message: "adoption decisions require linked benchmark evidence",
+				});
+			}
+			if (
+				candidate.adoption_decision === "ADOPT_CORE" &&
+				candidate.benchmark_priority !== "CORE"
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["candidates", index, "benchmark_priority"],
+					message: "ADOPT_CORE candidates must have CORE benchmark priority",
+				});
+			}
+			if (
+				candidate.adoption_decision === "ADOPT_OPTIONAL" &&
+				candidate.benchmark_priority === "CORE"
+			) {
+				context.addIssue({
+					code: "custom",
+					path: ["candidates", index, "benchmark_priority"],
+					message: "CORE candidates cannot be classified as ADOPT_OPTIONAL",
+				});
+			}
 			const evidence = candidate.benchmark_evidence;
 			if (!evidence) continue;
 			const prefix = `artifacts/benchmarks/experience-os/${evidence.run_id}`;
@@ -299,9 +191,6 @@ export const ExperienceOssCandidateRegistrySchema = z
 			}
 		}
 	});
-
-type ExperienceOssCandidate = z.infer<typeof ExperienceOssCandidateSchema>;
-type BenchmarkEvidence = z.infer<typeof BenchmarkEvidenceSchema>;
 
 const BenchmarkManifestSchema = z
 	.object({
@@ -452,7 +341,7 @@ async function auditCandidateEvidence(
 	if (
 		(candidate.candidate_id === "real-esrgan" ||
 			candidate.candidate_id === "video-depth-anything") &&
-		candidate.adoption_decision.startsWith("ADOPT_")
+		candidate.adoption_decision?.startsWith("ADOPT_")
 	) {
 		const meanVisualQualityDelta =
 			review.scenes.reduce(
@@ -475,33 +364,42 @@ export async function auditExperienceOssCandidateRegistry(
 	for (const candidate of registry.candidates) {
 		await auditCandidateEvidence(candidate, root);
 	}
+	const candidates = registry.candidates.map((candidate) => {
+		const gate = licenseGate(
+			candidate.components,
+			registry.commercial_use_policy,
+		);
+		return {
+			candidate_id: candidate.candidate_id,
+			benchmark_priority: candidate.benchmark_priority,
+			license_gate: gate,
+			components: candidate.components.map((component) => ({
+				name: component.name,
+				kind: component.kind,
+				commercial_use: commercialUse(
+					component,
+					registry.commercial_use_policy,
+				),
+			})),
+			decision:
+				candidate.adoption_decision ??
+				(gate === "BLOCKED_LICENSE" ? "BLOCKED_LICENSE" : "PENDING_BENCHMARK"),
+			benchmark_run_id: candidate.benchmark_evidence?.run_id ?? null,
+		};
+	});
 	return {
 		status: "PASS" as const,
 		channel: registry.channel,
 		selection_policy: registry.selection_policy,
-		candidate_count: registry.candidates.length,
-		classified_candidate_count: registry.candidates.length,
-		adopted_candidate_count: registry.candidates.filter((candidate) =>
-			candidate.adoption_decision.startsWith("ADOPT_"),
+		candidate_count: candidates.length,
+		cleared_candidate_count: candidates.filter(
+			(candidate) => candidate.license_gate === "CLEARED",
 		).length,
-		blocked_candidate_count: registry.candidates.filter(
-			(candidate) => candidate.adoption_decision === "BLOCKED_LICENSE",
+		adopted_candidate_count: candidates.filter((candidate) =>
+			candidate.decision.startsWith("ADOPT_"),
 		).length,
-		blocked_evaluation_candidate_count: registry.candidates.filter(
-			(candidate) => candidate.evaluation_status.startsWith("BLOCKED_"),
-		).length,
-		candidates: registry.candidates.map((candidate) => ({
-			candidate_id: candidate.candidate_id,
-			benchmark_priority: candidate.benchmark_priority,
-			evaluation_status: candidate.evaluation_status,
-			adoption_decision: candidate.adoption_decision,
-			commercial_use: {
-				code: candidate.commercial_use.code.status,
-				model_weights: candidate.commercial_use.model_weights.status,
-			},
-			benchmark_run_id: candidate.benchmark_evidence?.run_id ?? null,
-		})),
+		candidates,
 		decision_boundary:
-			"PASS verifies registry rules and linked artifact integrity; commercial-use statuses are reviewed declarations, not independent legal advice or proof of production suitability.",
+			"PASS verifies registry rules, linked artifact integrity, and license gates derived from declared components; license declarations cite pinned primary sources and are not legal advice or proof of production suitability.",
 	};
 }
