@@ -38,10 +38,10 @@ https://abseil.io/resources/swe-book/html/toc.html
 | Metric | `ci-workflow-p95-latency` | PR の CI 実行の作成から完了までの経過時間の p95（秒） |
 | Metric | `ci-first-attempt-pass-rate` | `run_attempt = 1` の完了実行のうち success の割合（%） |
 
-現在の計測値（観測窓 2026-09-08〜2026-10-08 UTC、GitHub Actions run API 由来）:
+現在の計測値（観測窓 2026-09-18T17:54:24Z〜2026-10-18T17:54:24Z UTC、GitHub Actions workflow 226201883 の run API 由来）:
 
-- `ci-workflow-p95-latency`: 238 秒（n=102、中央値 125.5 秒、最大 2892 秒）
-- `ci-first-attempt-pass-rate`: 75.5%（77 / 102 実行）
+- `ci-workflow-p95-latency`: 238 秒（n=110、中央値 133 秒、最大 2892 秒）
+- `ci-first-attempt-pass-rate`: 94.5%（104 success / 6 failure、110 completed first-attempt workflow run）
 
 各 Metric の `limitations` に、次を明記している。
 - 実行時刻は代理指標であり、キュー待ちやサービス側の遅延を含む。
@@ -81,13 +81,44 @@ https://abseil.io/resources/swe-book/html/toc.html
 | Goal / Signal / Metric を最低1セット実装例化 | 達成 | `config/metrics/issue_202_goals_signals_metrics.json`、main 統合済み（merge commit `fee5019609884a92dbd0665f62a102f2fad40b34`、Issue 本文の記載） |
 | 指標だけ増やすアンチパターンの説明 | 達成 | 本書 §5 |
 | 一次ソース根拠の保存 | 達成 | 本書 §2 と上記 JSON の `sources`（原典 URL、取得日） |
-| publish gate 通過 | 未達 | Issue 本文どおり。canonical compile が `docs/series/audio/pending-channel-and-voice/hook.wav` の不在で失敗、チャンネル profile・声・素材の権利確認も未解決 |
+| publish gate 通過 | 未達 | 2026-10-19 JST の最新 canonical compile は `docs/series/audio/pending-channel-and-voice/hook-scene.wav` 不在で失敗。チャンネル profile・声・素材の権利確認も未解決 |
 
 ## 7. 残件
 
-- 動画の compile 失敗の解消（`hook.wav` の用意、または正本の修正）。ソースの修正は別作業で行う。
+- 動画の compile 失敗の解消（`hook-scene.wav` の用意、または正本の修正）。ソースの修正は別作業で行う。
 - チャンネル profile、声、素材の権利確認。
 - 本番レンダーと動画 QA。
-- publish gate の通過確認後に、Issue #202 の最後のチェックを更新する。公開そのものは別途の明示的な承認が必要。
+- publish gate の通過確認後に Issue #202 の最後のチェックを更新する。既に与えられた包括承認の範囲で、profile・権利・事実・品質・canonical gate がすべて通った場合に限り、追加の動画ごとの確認なしで既存の認証済み経路を使う。
 
 本書は publish を行っていない。Issue のクローズ、コメント投稿、外部公開は行わない。
+
+
+## 8. 新作カードと制作チェック — 2026-10-16 JST
+
+- 中心視点: 架空の月面基地の備品係。舞台は船外活動直前の返却窓口。
+- 状況・笑い: 手袋を同僚間で回し、返却スキャン回数だけ増やす。返却数は記録更新なのに、正しい持ち主には届かない。
+- オチ: 「目標は隊員が月へ出ること。グラフを外に出すな」。
+- 比較範囲: #202既存草案と #201〜#208の企画書。完成脚本・動画の全件比較はできていないため、新規性は暫定。
+- コント品質: setup→escalation→reversal/payoff の草稿あり。読み上げテンポと独立QAは未完了。
+- 2026-10-16時点のCIスナップショット: 129件、104件成功、p95 221秒。これは当時の値で、最新値は下記2026-10-19更新に保存。
+- canonical compile: 2026-10-16 JSTに実行したが、docs/series/audio/pending-channel-and-voice/hook-scene.wav 不在で失敗。compiled outputなし。profile・voice・権利クリア音声が未確定のため、render/release gate/公開は未実施。YouTube実公開状態はUNVERIFIED。
+- 初回の `task check:merge` は328 tests中327 pass / 1 fail。30日snapshot固定値を現行観測値（129件、p95 221秒、pass-rate 80.6%）に合わせた後、PR #317 のCI run 38759302105 も旧claim ID/scene fieldsのassertionで327/328となった。assertionを現行episode/source構造に合わせて更新。修正後のexact-head CI run 38759585928（run 668）の `PR merge gate` はPASSし、Secret Guard run 38759585951（run 107）もsuccess。CI内の汎用render smokeは#202本編のrender証拠ではない。
+
+## 9. CI snapshot refresh and production checkpoint — 2026-10-19 JST
+
+- GitHub Actions workflow 226201883 の REST API を再取得。観測窓は 2026-09-18T17:54:24Z〜2026-10-18T17:54:24Z、completed first-attempt workflow run は110件（success 104、failure 6）。初回成功率は94.5%、経過時間の中央値は133秒（偶数件の中央2値の算術平均）、nearest-rank p95は238秒、最大は2892秒。新しいスナップショットは `config/metrics/snapshots/issue_202_ci_30d_20261019_025424.json`。
+- `task productivity:gsm:audit` は PASS（Goal 1、Signal 2、Metric 2）。指標数値・episode claim・表示用metric card・脚本を新スナップショットへ同期し、字幕長の回帰assertionも追加。
+- `task test` は329 tests / 903 assertionsでPASS。対象ファイルのBiome、`bun run typecheck`、`task audit:publish-routing` もPASS。`task check:merge:fast` はBiomeがGit-ignoredの `CLAUDE-SECURITY-20261017-005711/CLAUDE-SECURITY-REVISION-240029f438d8.json` を整形差分として検出し、lint段階で停止。この無関係なスキャナー成果物は変更せず残した。
+- 直近の前日分である2026-10-18 JSTについては、前回checkpointが「この制作workflowからの公開試行なし」と記録。read-back手段がないため、実際の公開有無はUNVERIFIEDであり、レシート不在から未公開とは断定しない。
+- 2026-10-19 JST の canonical `task episode:compile` は最初に `action-metric` 字幕が84文字上限を超過。文言を短縮して再実行したところ、`docs/series/audio/pending-channel-and-voice/hook-scene.wav` 不在で `ffprobe` が失敗。compiled output は作成されていない。
+- よって本編render、独立した読み上げ/コントQA、canonical release gate、YouTube公開は未実施。シリーズprofileと権利クリア音声は未確定で、YouTube実公開状態はUNVERIFIED。receipt/read-backの確認先もこの実行では利用できないため、不在receiptから未公開とは推定しない。
+- PR #317 はdraftのまま、Issue #202 はopenのままにする。次は明示された配信profileと権利クリア音声を確認後、compile→render→QA→release gateの順に再開する。
+
+## 10. License evidence and production checkpoint — 2026-10-20 JST
+
+- The official LinkedIn DPH landing page https://linkedin.github.io/dph-framework/ states that the framework is licensed under CC BY 4.0 and carries a 2023 LinkedIn Corporation copyright notice. The official CC BY 4.0 deed https://creativecommons.org/licenses/by/4.0/ confirms that sharing and adaptation are allowed subject to appropriate credit, a license link, an indication of changes, and no implied endorsement. The script now contains a proposed attribution for the video description. This narrows rights evidence for the framework text only; it does not clear narration/voice, audio, visual, trademark, privacy, publicity, or other third-party rights and is not legal advice.
+- The 2026-10-19 JST checkpoint records no upload attempt by this workflow for that run. No YouTube read-back integration or mapped series profile is available here, so actual visibility for 2026-10-19 remains UNVERIFIED; missing local receipts do not prove non-publication. This run likewise made no upload attempt and cannot verify 2026-10-20 visibility.
+- Parent #200 and Issue #202 remain open. PR #317 is the only open PR for this production and remains a draft. Before today's checkpoint changes, its head was 49ee8def6fb859d26ddf7c014c28bb77d620e79d, with successful CI and Secret Guard runs 39152260719 and 39152260665 (completed 2026-10-18 UTC); these do not verify today's commits. The working tree was clean before this checkpoint.
+- Current product configuration has no profile mapped to this educational series. The existing profiles are explicitly assigned to separate products; none is inferred as this series’ destination. docs/series/audio/ is absent, including the required pending-channel-and-voice/hook-scene.wav. Since the required input remains absent, canonical compile was not retried today. No #202 render, independent read-aloud/comedy QA, release gate, or upload was run; no second episode was created under the still-incomplete #202 slot.
+- Resume after the series destination and rights-cleared voice/audio are explicit. Then run canonical compile, render, read-aloud/content/comedy QA, and the product release gate in order; only a successful gate and the configured authorized publish/read-back path can establish release status.
+- Follow-up for checkpoint commit 305363603349ebafbf2317bebe0529216edd2b3b: Secret Guard run 39344798957 passed. CI run 39344798829 was still in progress at the last check; the merge-gate and generic production-quality render smoke steps had passed, while canonical production-path smoke was still pending. The generic render smoke is not a #202 episode render. This follow-up records only that commit's run state, not a release gate result.
