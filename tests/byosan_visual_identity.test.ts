@@ -1,22 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import yaml from "js-yaml";
-import {
-	mixHex,
-	resolveByosanVisualIdentity,
-} from "../src/domain/byosan/visual_identity.js";
+import { resolveByosanVisualIdentity } from "../src/domain/byosan/visual_identity.js";
 
 describe("byosan visual identity", () => {
-	test("derives the production palette from canonical design tokens", () => {
+	test("derives the production palette from the light design tokens", () => {
 		const config = yaml.load(
 			fs.readFileSync("config/domains/byosan_money.yaml", "utf8"),
 		);
 		const palette = resolveByosanVisualIdentity(config);
-		expect(palette.primaryAccent).toBe("#7DC8F7");
-		expect(palette.textPrimary).toBe("#FFFDF8");
-		expect(palette.secondaryAccent).toBe(mixHex("#BFE7FF", "#FF9FB2", 0.35));
-		expect(palette.secondaryAccent).not.toBe("#FFB547");
-		expect(palette.background).not.toBe("#07111F");
+		expect(palette.background).toBe("#F7F5EF");
+		expect(palette.textPrimary).toBe("#17233F");
+		expect(palette.brandAccent).toBe("#2563EB");
+		expect(palette.primaryAccent).toBe("#7DD3FC");
+		expect(palette.secondaryAccent).toBe("#17233F");
 	});
 
 	test("keeps amber-family color reserved for warning semantics", () => {
@@ -24,7 +21,7 @@ describe("byosan visual identity", () => {
 			fs.readFileSync("config/domains/byosan_money.yaml", "utf8"),
 		);
 		const palette = resolveByosanVisualIdentity(config);
-		expect(palette.warning).toBe("#FFB86B");
+		expect(palette.warning).toBe("#A16207");
 		expect(palette.primaryAccent).not.toBe(palette.warning);
 		expect(palette.secondaryAccent).not.toBe(palette.warning);
 	});

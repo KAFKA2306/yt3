@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import { assertProductReleaseGate } from "../src/domain/product_release_gate.js";
+import { sha256File } from "../src/domain/publication_state.js";
 import type { AgentState } from "../src/domain/types.js";
 import { YOUTUBE_PROFILES } from "../src/domain/youtube_profiles.js";
 
@@ -23,6 +24,13 @@ function readyState(runDir: string): AgentState {
 	fs.writeJsonSync(path.join(runDir, "audit", "result.json"), {
 		provenance: { status: "PASS", critical: true },
 		script_integrity: { status: "PASS", critical: true },
+	});
+	fs.ensureDirSync(path.join(runDir, "source"));
+	const specPath = path.join(runDir, "source", "feature_spec.json");
+	fs.writeJsonSync(specPath, { schemaVersion: "byosan_feature_v1" });
+	fs.writeJsonSync(path.join(runDir, "audit", "authenticity.json"), {
+		status: "PASS",
+		feature_spec_sha256: sha256File(specPath),
 	});
 	return {
 		run_id: "byosan_money/test",

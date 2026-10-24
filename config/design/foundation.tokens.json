@@ -1,0 +1,64 @@
+{
+  "color": {
+    "light": {
+      "$type": "color",
+      "canvas": { "$value": { "colorSpace": "srgb", "components": [0.968627, 0.960784, 0.937255], "alpha": 1, "hex": "#F7F5EF" } },
+      "surface": { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 1, "hex": "#FFFFFF" } },
+      "foreground": { "$value": { "colorSpace": "srgb", "components": [0.090196, 0.137255, 0.247059], "alpha": 1, "hex": "#17233F" } },
+      "mutedForeground": { "$value": { "colorSpace": "srgb", "components": [0.4, 0.439216, 0.521569], "alpha": 1, "hex": "#667085" } },
+      "border": { "$value": { "colorSpace": "srgb", "components": [0.85098, 0.839216, 0.807843], "alpha": 1, "hex": "#D9D6CE" } },
+      "primary": { "$value": { "colorSpace": "srgb", "components": [0.145098, 0.388235, 0.921569], "alpha": 1, "hex": "#2563EB" } },
+      "accent": { "$value": { "colorSpace": "srgb", "components": [0.490196, 0.827451, 0.988235], "alpha": 1, "hex": "#7DD3FC" } },
+      "success": { "$value": { "colorSpace": "srgb", "components": [0.082353, 0.501961, 0.239216], "alpha": 1, "hex": "#15803D" } },
+      "warning": { "$value": { "colorSpace": "srgb", "components": [0.631373, 0.384314, 0.027451], "alpha": 1, "hex": "#A16207" } },
+      "danger": { "$value": { "colorSpace": "srgb", "components": [0.72549, 0.109804, 0.109804], "alpha": 1, "hex": "#B91C1C" } },
+      "focus": { "$value": "{color.light.primary}" }
+    },
+    "dark": {
+      "$type": "color",
+      "canvas": { "$value": { "colorSpace": "srgb", "components": [0.043137, 0.058824, 0.090196], "alpha": 1, "hex": "#0B0F17" } },
+      "surface": { "$value": { "colorSpace": "srgb", "components": [0.066667, 0.094118, 0.152941], "alpha": 1, "hex": "#111827" } },
+      "foreground": { "$value": { "colorSpace": "srgb", "components": [0.945098, 0.960784, 0.976471], "alpha": 1, "hex": "#F1F5F9" } },
+      "mutedForeground": { "$value": { "colorSpace": "srgb", "components": [0.580392, 0.639216, 0.721569], "alpha": 1, "hex": "#94A3B8" } },
+      "border": { "$value": { "colorSpace": "srgb", "components": [0.117647, 0.160784, 0.231373], "alpha": 1, "hex": "#1E293B" } },
+      "primary": { "$value": { "colorSpace": "srgb", "components": [0.376471, 0.647059, 0.980392], "alpha": 1, "hex": "#60A5FA" } },
+      "accent": { "$value": { "colorSpace": "srgb", "components": [0.490196, 0.827451, 0.988235], "alpha": 1, "hex": "#7DD3FC" } },
+      "success": { "$value": { "colorSpace": "srgb", "components": [0.290196, 0.870588, 0.501961], "alpha": 1, "hex": "#4ADE80" } },
+      "warning": { "$value": { "colorSpace": "srgb", "components": [0.984314, 0.74902, 0.141176], "alpha": 1, "hex": "#FBBF24" } },
+      "danger": { "$value": { "colorSpace": "srgb", "components": [0.972549, 0.443137, 0.443137], "alpha": 1, "hex": "#F87171" } },
+      "focus": { "$value": "{color.dark.primary}" }
+    }
+  },
+  "dimension": {
+    "$type": "dimension",
+    "space1": { "$value": { "value": 4, "unit": "px" } },
+    "space2": { "$value": { "value": 8, "unit": "px" } },
+    "space3": { "$value": { "value": 12, "unit": "px" } },
+    "space4": { "$value": { "value": 16, "unit": "px" } },
+    "radius": { "$value": { "value": 2, "unit": "px" } },
+    "tableRow": { "$value": { "value": 30, "unit": "px" } },
+    "controlHeight": { "$value": { "value": 32, "unit": "px" } },
+    "touchTarget": { "$value": { "value": 44, "unit": "px" } },
+    "sidebar": { "$value": { "value": 192, "unit": "px" } },
+    "sidebarCollapsed": { "$value": { "value": 48, "unit": "px" } },
+    "appBar": { "$value": { "value": 44, "unit": "px" } }
+  },
+  "number": {
+    "$type": "number",
+    "shadowOpacity": { "$value": 0 },
+    "motionFastMs": { "$value": 120 }
+  },
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "sans": { "$value": ["Inter", "Noto Sans JP", "system-ui", "sans-serif"] },
+      "mono": { "$value": ["Roboto Mono", "SFMono-Regular", "Consolas", "monospace"] }
+    },
+    "size": {
+      "$type": "dimension",
+      "body": { "$value": { "value": 14, "unit": "px" } },
+      "small": { "$value": { "value": 12, "unit": "px" } },
+      "title": { "$value": { "value": 20, "unit": "px" } }
+    }
+  }
+}

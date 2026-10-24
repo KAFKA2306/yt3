@@ -3,11 +3,11 @@ import fs from "fs-extra";
 import sharp from "sharp";
 import {
 	type KafkaVisualSystem,
+	getByosanVisualSystem,
 	getKafkaVisualSystem,
 } from "../domain/design/kafka_visual_system.js";
 
 const root = process.cwd();
-const outputDir = path.join(root, "artifacts/design-system/v1");
 
 function escapeXml(value: string): string {
 	return value
@@ -17,8 +17,14 @@ function escapeXml(value: string): string {
 		.replaceAll('"', "&quot;");
 }
 
-function label(text: string, x: number, y: number, size = 20): string {
-	return `<text x="${x}" y="${y}" fill="#FFFDF8" font-family="Noto Sans JP, sans-serif" font-size="${size}">${escapeXml(text)}</text>`;
+function label(
+	design: KafkaVisualSystem,
+	text: string,
+	x: number,
+	y: number,
+	size = 20,
+): string {
+	return `<text x="${x}" y="${y}" fill="${design.colors.text_primary}" font-family="Noto Sans JP, sans-serif" font-size="${size}">${escapeXml(text)}</text>`;
 }
 
 function rect(
@@ -127,29 +133,29 @@ function surfaceSvg(
 					["character", design.thumbnail.character_zone],
 					["outer frame", design.thumbnail.outer_frame],
 				];
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}"><rect width="100%" height="100%" fill="${colors.background}"/><rect x="0" y="0" width="${canvas.width}" height="${canvas.height}" fill="${colors.background_alt}" opacity="0.32"/>${label(title, 24, 40, 24)}${boxes.map(([name, box], index) => `${rect(box as { x: number; y: number; width: number; height: number }, index === 0 ? colors.accent_primary : index % 2 ? colors.warning : colors.accent_secondary, index === 0 ? 0.85 : 0.7, index === 0 ? "10 8" : "")}${label(`${name} ${box.x},${box.y} ${box.width}×${box.height}`, box.x + 8, box.y + 24, Math.max(14, Math.round(canvas.width / 90)))}`).join("")}</svg>`;
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}"><rect width="100%" height="100%" fill="${colors.background}"/><rect x="0" y="0" width="${canvas.width}" height="${canvas.height}" fill="${colors.background_alt}" opacity="0.32"/>${label(design, title, 24, 40, 24)}${boxes.map(([name, box], index) => `${rect(box as { x: number; y: number; width: number; height: number }, index === 0 ? colors.accent_primary : index % 2 ? colors.warning : colors.accent_secondary, index === 0 ? 0.85 : 0.7, index === 0 ? "10 8" : "")}${label(design, `${name} ${box.x},${box.y} ${box.width}×${box.height}`, box.x + 8, box.y + 24, Math.max(14, Math.round(canvas.width / 90)))}`).join("")}</svg>`;
 }
 
 function componentSheetSvg(design: KafkaVisualSystem): string {
 	const c = design.colors;
 	const t = design.templates;
 	const items = Object.entries(t).slice(0, 8);
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><rect width="1600" height="900" fill="${c.background}"/>${label("COMPONENT SHEET / v1", 48, 56, 32)}${items
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><rect width="1600" height="900" fill="${c.background}"/>${label(design, "COMPONENT SHEET / v1", 48, 56, 32)}${items
 		.map(([name, box], index) => {
 			const x = 48 + (index % 2) * 760;
 			const y = 96 + Math.floor(index / 2) * 190;
-			return `<rect x="${x}" y="${y}" width="704" height="144" rx="${design.radius.card}" fill="${c.surface}" stroke="${c.accent_primary}" stroke-opacity="0.5"/>${label(name, x + 24, y + 38, 24)}${label(JSON.stringify(box), x + 24, y + 80, 16)}`;
+			return `<rect x="${x}" y="${y}" width="704" height="144" rx="${design.radius.card}" fill="${c.surface}" stroke="${c.accent_primary}" stroke-opacity="0.5"/>${label(design, name, x + 24, y + 38, 24)}${label(design, JSON.stringify(box), x + 24, y + 80, 16)}`;
 		})
 		.join("")}</svg>`;
 }
 
 function colorSheetSvg(design: KafkaVisualSystem): string {
 	const entries = Object.entries(design.colors);
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="${design.colors.background}"/>${label("COLOR SHEET / v1", 40, 48, 30)}${entries
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="${design.colors.background}"/>${label(design, "COLOR SHEET / v1", 40, 48, 30)}${entries
 		.map(([name, color], index) => {
-			const x = 40 + (index % 4) * 300;
-			const y = 80 + Math.floor(index / 4) * 105;
-			return `<rect x="${x}" y="${y}" width="260" height="72" rx="${design.radius.small}" fill="${color}"/><text x="${x + 12}" y="${y + 30}" fill="${color === design.colors.text_primary || color === design.colors.text_secondary || color === design.colors.human_cream ? design.colors.text_dark : design.colors.text_primary}" font-family="Noto Sans JP, sans-serif" font-size="18">${escapeXml(name)}</text><text x="${x + 12}" y="${y + 56}" fill="${color === design.colors.text_primary || color === design.colors.text_secondary || color === design.colors.human_cream ? design.colors.text_dark : design.colors.text_primary}" font-family="monospace" font-size="16">${color}</text>`;
+			const x = 40 + (index % 4) * 310;
+			const y = 80 + Math.floor(index / 4) * 124;
+			return `<rect x="${x}" y="${y}" width="270" height="56" rx="${design.radius.small}" fill="${color}" stroke="${design.colors.text_muted}" stroke-width="${design.stroke.default}"/>${label(design, name, x, y + 80, 18)}${label(design, color, x, y + 102, 16)}`;
 		})
 		.join("")}</svg>`;
 }
@@ -196,19 +202,39 @@ function documentation(design: KafkaVisualSystem): string {
 `;
 }
 
-async function writePng(name: string, svg: string): Promise<void> {
+async function writePng(
+	outputDir: string,
+	name: string,
+	svg: string,
+): Promise<void> {
 	await sharp(Buffer.from(svg)).png().toFile(path.join(outputDir, name));
 }
 
-const design = getKafkaVisualSystem();
-await fs.ensureDir(outputDir);
-await writePng("landscape-wireframe.png", surfaceSvg(design, "landscape"));
-await writePng("shorts-wireframe.png", surfaceSvg(design, "shorts"));
-await writePng("thumbnail-wireframe.png", surfaceSvg(design, "thumbnail"));
-await writePng("component-sheet.png", componentSheetSvg(design));
-await writePng("color-sheet.png", colorSheetSvg(design));
-await fs.writeFile(
-	path.join(root, "docs/standard/kafka-visual-design-system-v1.md"),
-	documentation(design),
+const target = process.argv[2] === "byosan" ? "byosan" : "kafka";
+const design =
+	target === "byosan" ? getByosanVisualSystem() : getKafkaVisualSystem();
+const outputDir = path.join(
+	root,
+	"artifacts/design-system",
+	target === "byosan" ? "byosan-v1" : "v1",
 );
+await fs.ensureDir(outputDir);
+await writePng(
+	outputDir,
+	"landscape-wireframe.png",
+	surfaceSvg(design, "landscape"),
+);
+await writePng(outputDir, "shorts-wireframe.png", surfaceSvg(design, "shorts"));
+await writePng(
+	outputDir,
+	"thumbnail-wireframe.png",
+	surfaceSvg(design, "thumbnail"),
+);
+await writePng(outputDir, "component-sheet.png", componentSheetSvg(design));
+await writePng(outputDir, "color-sheet.png", colorSheetSvg(design));
+if (target === "kafka")
+	await fs.writeFile(
+		path.join(root, "docs/standard/kafka-visual-design-system-v1.md"),
+		documentation(design),
+	);
 console.log(`[design-preview] wrote 5 artifacts to ${outputDir}`);
