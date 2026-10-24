@@ -91,7 +91,7 @@ function prepareGate(
 	runId: string,
 	file: string,
 ): ReadyRecord {
-	const prepared = deps.runTask(["byosan:prepare", `DATE=${date}`]);
+	const prepared = deps.runTask(["byosan:auto", `DATE=${date}`]);
 	const evidence =
 		prepared.status === 0 ? parseGateEvidence(prepared.output, runId) : null;
 	const recordedAt = deps.now.toISOString();

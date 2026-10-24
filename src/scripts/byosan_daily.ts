@@ -12,6 +12,11 @@ import {
 } from "../domain/byosan/checkpoint.js";
 import { selectByosanEditorialReferencePlan } from "../domain/byosan/editorial_references.js";
 import {
+	type ExplainConfig,
+	type Explanation,
+	runCodexExplanation,
+} from "../domain/byosan/explanation.js";
+import {
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSource,
 	type ByosanFeatureSpec,
@@ -19,6 +24,10 @@ import {
 	ensureByosanBrandTag,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
+import {
+	type DiscoveryConfig,
+	writeDiscoveryEvidence,
+} from "../domain/byosan/feed_discovery.js";
 import {
 	type ByosanAdversarialEvidence,
 	type ByosanAngleCandidate,
@@ -32,6 +41,7 @@ import {
 	ROOT,
 	getRunIdDateString,
 	invokeStructuredLlm,
+	loadConfig,
 	zodSizeConstraintLines,
 } from "../io/core.js";
 import {
@@ -78,13 +88,15 @@ type RetryPolicy =
 	| "REQUIRES_REPAIR_EVIDENCE"
 	| "REMOTE_READBACK_ONLY";
 
+export const REPAIR_VALIDATION_COMMAND = "task check:merge";
+
 export type RepairResolution = {
 	status: "VERIFIED";
 	root_cause: string;
 	regression_test: string;
 	repair_commit: string;
 	validation: {
-		command: "task check:merge";
+		command: typeof REPAIR_VALIDATION_COMMAND;
 		status: "PASS";
 		checked_at: string;
 	};
@@ -168,7 +180,7 @@ function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
 	};
 }
 
-function failureTracePath(runDir: string): string {
+export function failureTracePath(runDir: string): string {
 	return path.join(runDir, "audit", "failure_trace.json");
 }
 
@@ -385,7 +397,7 @@ export function preflightBlockedMessage(
 	return `BYOSAN_PREFLIGHT_BLOCKED: ${report.status} ${reportPath} ${failed.join("; ")}`;
 }
 
-function repairResolutionIsValid(
+export function repairResolutionIsValid(
 	resolution: RepairResolution | undefined,
 	currentHead: string,
 ): boolean {
@@ -395,7 +407,7 @@ function repairResolutionIsValid(
 			resolution.regression_test.trim() &&
 			resolution.regression_test !== "pending" &&
 			resolution.repair_commit === currentHead &&
-			resolution.validation.command === "task check:merge" &&
+			resolution.validation.command === REPAIR_VALIDATION_COMMAND &&
 			resolution.validation.status === "PASS" &&
 			resolution.validation.checked_at,
 	);
@@ -605,6 +617,7 @@ async function generateFeatureSpec(
 	research: ResearchResult,
 	candidate: ByosanAngleCandidate,
 	productionPlan: ByosanProductionPlan,
+	explanation: Explanation,
 	sources: FeatureSource[],
 	adversarialEvidence: ByosanAdversarialEvidence[],
 	activeProbes: ByosanActiveProbeEvidence[],
@@ -612,6 +625,11 @@ async function generateFeatureSpec(
 	runId: string,
 	date: string,
 ): Promise<ByosanFeatureSpec> {
+	const titleRule = (
+		loadConfig("byosan_money") as unknown as {
+			discovery: DiscoveryConfig;
+		}
+	).discovery.title_rule;
 	const hookPromises = candidate.numbers.slice(0, 4);
 	if (hookPromises.length < 2) {
 		throw new Error(
@@ -643,7 +661,7 @@ async function generateFeatureSpec(
 		messages: (attempt, lastValidationError) => [
 			{
 				role: "system",
-				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimはresolutionまたはlandingで「推論/推定/分析/確度」のいずれかとconfidenceを整数%で発話し、矛盾が残る場合はunresolvedMismatchesの少なくとも1つを原文一致で発話します。confidenceは事実の確率や公式確率ではなく、現在の証拠集合に対する分析確度です。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、各シーン1〜3個の短いstatsを使います。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。`,
+				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。非verified claimはresolutionまたはlandingで「推論/推定/分析/確度」のいずれかとconfidenceを整数%で発話し、矛盾が残る場合はunresolvedMismatchesの少なくとも1つを原文一致で発話します。confidenceは事実の確率や公式確率ではなく、現在の証拠集合に対する分析確度です。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimは、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付け、その文をresolutionまたはlanding segmentのtextに完全一致で含めます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesをすべて文字列一致で回収します。各segmentにはnarrativeRoleとverificationRoleを付けます。主要な流れとしてfact→context→impactまたはactionを維持しつつ、packaging.claimIdsの各material claimについて presenter→auditor→resolution→landing の順序を必ず作ります。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照して、測定条件・負け筋・比較基準・出所境界のいずれかを具体的に問いただします。単なる相槌は禁止です。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。adversarial_evidenceにmeasurement_condition/counter_metric/third_party_disagreement/source_limitationがある場合、それぞれ最低1回resolutionで回収してください。7種類以上のemotion、春日部つむぎとずんだもんの対話、statsの件数は後述のスキーマ由来の制約に従い、発話で提示する根拠のある数値カードだけを入れます。数値カードを示さない問い・つなぎ・結論のシーンではstatsを空配列にし、件数を埋めるための数字やカードを作らないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。explanationの結論・原理・数字を台本の骨格にし、順序は conclusion→数字→principle→check→出典の順にします。${titleRule}`,
 			},
 			{
 				role: "user",
@@ -652,6 +670,7 @@ async function generateFeatureSpec(
 						candidate,
 						hook_promises: hookPromises,
 						production_plan: productionPlan,
+						explanation,
 						editorial_reference_plan: editorialReferencePlan,
 						allowed_sources: sources,
 						adversarial_evidence: adversarialEvidence,
@@ -812,7 +831,15 @@ export async function runByosanDaily(): Promise<void> {
 		research = reusedResearch;
 	} else {
 		const scout = new TrendScout(store);
-		research = await scout.run("byosan_money", 5);
+		const discovery = loadConfig("byosan_money") as unknown as {
+			discovery: DiscoveryConfig;
+		};
+		const evidence = await writeDiscoveryEvidence(
+			discovery.discovery,
+			store.runDir,
+			new Date(),
+		);
+		research = await scout.run("byosan_money", 5, evidence);
 		await fs.outputJson(researchPath, research, { spaces: 2 });
 		checkpoint.stages.research_ready = true;
 		writeByosanCheckpoint(store.runDir, checkpoint);
@@ -838,10 +865,28 @@ export async function runByosanDaily(): Promise<void> {
 	if (checkpoint.stages.spec_ready && (await fs.pathExists(specPath))) {
 		spec = parseAndAuditByosanFeatureSpec(await fs.readJson(specPath));
 	} else {
+		const explainConfig = (
+			loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
+		).explain;
+		const discoveryEvidence = await fs.readFile(
+			path.join(store.runDir, "research", "discovery_evidence.md"),
+			"utf8",
+		);
+		const explanation = runCodexExplanation(
+			explainConfig,
+			discoveryEvidence,
+			store.runDir,
+		);
+		await fs.outputJson(
+			path.join(store.runDir, "source", "explanation.json"),
+			explanation,
+			{ spaces: 2 },
+		);
 		spec = await generateFeatureSpec(
 			research,
 			candidate,
 			productionPlan,
+			explanation,
 			normalized.sources,
 			normalized.adversarialEvidence,
 			normalized.activeProbes,

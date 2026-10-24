@@ -88,7 +88,7 @@ export const ByosanFeatureSegmentSchema = z.object({
 	headline: z.string().min(2).max(34),
 	subheadline: z.string().min(2).max(52),
 	visualType: z.string().min(2).max(30),
-	stats: z.array(ByosanFeatureStatSchema).min(1).max(3),
+	stats: z.array(ByosanFeatureStatSchema).min(0).max(3),
 	source: z.string().min(2).max(80),
 	text: z.string().min(18).max(180),
 });

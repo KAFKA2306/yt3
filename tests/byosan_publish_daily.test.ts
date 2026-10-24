@@ -106,8 +106,7 @@ describe("byosan daily publish gate", () => {
 		);
 		tempRoots.push(root);
 		const runner = recordingRunner((args, dir) => {
-			if (args[0] === "byosan:prepare")
-				return { status: 0, output: gateOutput() };
+			if (args[0] === "byosan:auto") return { status: 0, output: gateOutput() };
 			writeReceipt(dir);
 			return { status: 0, output: "" };
 		}, root);
@@ -115,7 +114,7 @@ describe("byosan daily publish gate", () => {
 		runByosanPublishDaily(deps(root, runner.runTask));
 
 		expect(runner.calls).toEqual([
-			["byosan:prepare", "DATE=2026-10-13"],
+			["byosan:auto", "DATE=2026-10-13"],
 			["publish", "PROFILE=byosan", "--", RUN_ID],
 		]);
 		expect(readyRecord(root).status).toBe("PUBLISHED");
@@ -134,7 +133,7 @@ describe("byosan daily publish gate", () => {
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
 			"PREPARE_GATE_FAILED",
 		);
-		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
+		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
 		expect(readyRecord(root).status).toBe("GATE_FAILED");
 	});
 
@@ -145,7 +144,7 @@ describe("byosan daily publish gate", () => {
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
 			"PREPARE_GATE_FAILED",
 		);
-		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
+		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
 	});
 
 	test("does not publish again when a verified receipt already exists for the date", async () => {
@@ -167,8 +166,7 @@ describe("byosan daily publish gate", () => {
 			recorded_at: NOW_JST_NEXT_DAY.toISOString(),
 		});
 		const runner = recordingRunner((args, dir) => {
-			if (args[0] === "byosan:prepare")
-				return { status: 0, output: gateOutput() };
+			if (args[0] === "byosan:auto") return { status: 0, output: gateOutput() };
 			writeReceipt(dir);
 			return { status: 0, output: "" };
 		}, root);
@@ -176,7 +174,7 @@ describe("byosan daily publish gate", () => {
 		runByosanPublishDaily(deps(root, runner.runTask));
 
 		expect(runner.calls).toEqual([
-			["byosan:prepare", "DATE=2026-10-13"],
+			["byosan:auto", "DATE=2026-10-13"],
 			["publish", "PROFILE=byosan", "--", RUN_ID],
 		]);
 		expect(readyRecord(root).status).toBe("PUBLISHED");
@@ -195,7 +193,7 @@ describe("byosan daily publish gate", () => {
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
 			"PREPARE_GATE_FAILED",
 		);
-		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
+		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
 		expect(readyRecord(root).status).toBe("GATE_FAILED");
 	});
 
@@ -231,7 +229,7 @@ describe("byosan daily publish gate", () => {
 			deps(root, runner.runTask, { publishApproved: false }),
 		);
 
-		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
+		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
 		expect(readyRecord(root).status).toBe("READY");
 	});
 
@@ -239,7 +237,7 @@ describe("byosan daily publish gate", () => {
 		const root = await makeRoot();
 		const runner = recordingRunner(
 			(args) =>
-				args[0] === "byosan:prepare"
+				args[0] === "byosan:auto"
 					? { status: 0, output: gateOutput() }
 					: { status: 0, output: "" },
 			root,

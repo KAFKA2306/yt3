@@ -108,6 +108,26 @@ tasks:
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
 
+  byosan:repair:
+    desc: "Repair one failed 秒算マネー daily run from its failure_trace with codex (DATE=YYYY-MM-DD required)"
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "DATE=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+      - BYOSAN_DATE={{.DATE}} bun src/scripts/byosan_repair.ts
+
+  byosan:auto:
+    desc: "Prepare one 秒算マネー run; on failure repair with codex and re-prepare up to auto.max_prepare_attempts, stopping before publish (DATE=YYYY-MM-DD required)"
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "DATE=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+      - BYOSAN_DATE={{.DATE}} bun src/scripts/byosan_auto.ts
+
   byosan:publish-daily:
     desc: "Prepare today's 秒算マネー run through the release gate and publish it only when publish_approved (no backfill before resume_date)"
     cmds: ["bun src/scripts/byosan_publish_daily.ts"]
@@ -401,6 +421,7 @@ tasks:
     cmds:
       - bun scripts/audit_byosan_money_zero_trust.ts
       - bun src/scripts/audit_byosan_source_registry.ts
+      - bun src/scripts/audit_byosan_discovery_sources.ts
       - bun src/scripts/audit_no_fallback_policy.ts --scope=source
 
   audit:no-fallback:

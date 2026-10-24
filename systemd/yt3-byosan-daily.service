@@ -1,0 +1,13 @@
+[Unit]
+Description=YT3 Byosan Money Daily Video Publication
+After=network-online.target
+StartLimitIntervalSec=7200
+StartLimitBurst=3
+
+[Service]
+Type=oneshot
+TimeoutStartSec=5400
+WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
+Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/snap/bin:/usr/lib/wsl/lib:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/kafka
+ExecStart=/usr/bin/bash -c 'exec >> logs/byosan_publish_daily.log 2>&1; task byosan:publish-daily || { DISCORD_ALERT_TYPE=audit_fail DISCORD_ALERT_MESSAGE="Byosan daily publish failed" bun src/scripts/send_discord_alert.ts; exit 1; }'

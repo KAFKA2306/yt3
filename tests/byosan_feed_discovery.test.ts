@@ -14,16 +14,18 @@ const config = yaml.load(
 	fs.readFileSync("config/domains/byosan_money.yaml", "utf8"),
 ) as DomainConfig;
 
-describe("byosan blind discovery prompt contract", () => {
+describe("byosan feed discovery prompt contract", () => {
 	test("the research prompt injects no historical theme list", () => {
 		expect(
 			config.prompts.research.consolidated_research.user_template,
 		).not.toContain("{recent_themes}");
 	});
 
-	test("the research user prompt states the blind discovery rule", () => {
-		expect(
-			config.prompts.research.consolidated_research.user_template,
-		).toContain("BLIND DISCOVERY");
+	test("candidates come only from the supplied new articles", () => {
+		const { system, user_template } =
+			config.prompts.research.consolidated_research;
+		expect(user_template).toContain("[MISSION EVIDENCE]");
+		expect(system).toContain("[MISSION EVIDENCE]");
+		expect(system).not.toContain("最新の市場ニュース");
 	});
 });

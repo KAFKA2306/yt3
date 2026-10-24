@@ -69,7 +69,6 @@ export interface AppConfig {
 		default_run_dir: string;
 		default_bucket: string;
 		checkpoint_enabled: boolean;
-		trend_settings: { enabled: boolean; regions: string[]; sources: string[] };
 		paths: {
 			lock_file: string;
 			runs_dir: string;
@@ -89,13 +88,8 @@ export interface AppConfig {
 	};
 	steps: {
 		research: {
-			recent_days: number;
-			essence_limit: number;
 			regions: { lang: string; code: string }[];
-			angles: { name: string; lang: string; suffix: string }[];
 			temperature?: number;
-			selection_temperature?: number;
-			relevance_temperature?: number;
 			default_limit?: number;
 		};
 		script: {
@@ -200,8 +194,6 @@ export interface AppConfig {
 			media?: { temperature: number };
 			research?: {
 				temperature: number;
-				selection_temperature: number;
-				relevance_temperature: number;
 			};
 		};
 		tts: {

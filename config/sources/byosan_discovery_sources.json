@@ -1,0 +1,227 @@
+{
+	"schema_version": "byosan_discovery_sources_v1",
+	"sources": [
+		{
+			"id": "S001",
+			"issuer": "FactSet Earnings",
+			"domain": "insight.factset.com",
+			"url": "https://insight.factset.com/topic/earnings",
+			"category": "決算・業績予想",
+			"cadence": "日次",
+			"material_class": "独自集計/分析",
+			"collect": "S&P 500 EPS、売上、予想修正、サプライズ",
+			"caution": "対象期・実績比率を記録",
+			"verification": "公開記事確認",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "rss",
+				"url": "https://insight.factset.com/topic/earnings/rss.xml"
+			}
+		},
+		{
+			"id": "S002",
+			"issuer": "FactSet Insight",
+			"domain": "insight.factset.com",
+			"url": "https://insight.factset.com/",
+			"category": "投資研究",
+			"cadence": "日次",
+			"material_class": "独自分析",
+			"collect": "PER、企業財務、ポートフォリオ最適化",
+			"caution": "予想と実績を区別",
+			"verification": "公開記事確認",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "rss",
+				"url": "https://insight.factset.com/rss.xml"
+			}
+		},
+		{
+			"id": "S003",
+			"issuer": "MSCI Research",
+			"domain": "msci.com",
+			"url": "https://www.msci.com/research-and-insights",
+			"category": "投資研究",
+			"cadence": "日次",
+			"material_class": "実証研究",
+			"collect": "ファクター、レジーム、資産配分",
+			"caution": "試算前提の記録",
+			"verification": "個別記事確認",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "sitemap",
+				"url": "https://www.msci.com/sitemap.xml",
+				"include": "/research-and-insights/(blog-post|paper|quick-take)/"
+			}
+		},
+		{
+			"id": "S004",
+			"issuer": "Yardeni QuickTakes",
+			"domain": "yardeniquicktakes.com",
+			"url": "https://www.yardeniquicktakes.com/",
+			"category": "市場・利益",
+			"cadence": "日次",
+			"material_class": "専門家分析",
+			"collect": "EPS・PER・マクロ・金利",
+			"caution": "有料記事を推測で補わない",
+			"verification": "公開ページ確認/一部有料",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "rss",
+				"url": "https://www.yardeniquicktakes.com/feed/"
+			}
+		},
+		{
+			"id": "S005",
+			"issuer": "S&P Global Market Intelligence",
+			"domain": "spglobal.com",
+			"url": "https://www.spglobal.com/market-intelligence/en/news-insights/research",
+			"category": "産業・市場",
+			"cadence": "週次",
+			"material_class": "産業調査",
+			"collect": "PMI、セクター、産業構造",
+			"caution": "データの公開条件を確認",
+			"verification": "公開ページ確認/一部有料",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "unreachable",
+				"reason": "spglobal.com returns 403 to every non-browser client"
+			}
+		},
+		{
+			"id": "S006",
+			"issuer": "TrendForce Press Center",
+			"domain": "trendforce.com",
+			"url": "https://www.trendforce.com/presscenter/",
+			"category": "半導体需給",
+			"cadence": "日次",
+			"material_class": "業界調査",
+			"collect": "DRAM、NAND、HBM、供給能力",
+			"caution": "予測と実績・価格対象を分離",
+			"verification": "個別記事確認",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "html_list",
+				"url": "https://www.trendforce.com/presscenter/",
+				"link": "/presscenter/news/\\d{8}-\\d+\\.html"
+			}
+		},
+		{
+			"id": "S007",
+			"issuer": "SEC EDGAR",
+			"domain": "sec.gov",
+			"url": "https://www.sec.gov/edgar/search/",
+			"category": "企業財務検証",
+			"cadence": "日次",
+			"material_class": "企業一次開示",
+			"collect": "米国企業10-K・10-Q・8-K",
+			"caution": "提出日時・会計期間を保持",
+			"verification": "公式ポータル",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "verify"
+			}
+		},
+		{
+			"id": "S008",
+			"issuer": "Micron IR",
+			"domain": "investors.micron.com",
+			"url": "https://investors.micron.com/",
+			"category": "企業財務",
+			"cadence": "決算時",
+			"material_class": "企業一次開示",
+			"collect": "メモリ・売上・粗利・CapEx・在庫",
+			"caution": "GAAP/Non-GAAPの区別",
+			"verification": "企業公式",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "sec",
+				"cik": "0000723125",
+				"forms": ["10-K", "10-Q", "8-K"]
+			}
+		},
+		{
+			"id": "S009",
+			"issuer": "NVIDIA IR",
+			"domain": "investor.nvidia.com",
+			"url": "https://investor.nvidia.com/",
+			"category": "企業財務",
+			"cadence": "決算時",
+			"material_class": "企業一次開示",
+			"collect": "AI半導体・売上・利益率",
+			"caution": "受注見込と確定売上の区別",
+			"verification": "企業公式",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "sec",
+				"cik": "0001045810",
+				"forms": ["10-K", "10-Q", "8-K"]
+			}
+		},
+		{
+			"id": "S010",
+			"issuer": "TSMC IR",
+			"domain": "investor.tsmc.com",
+			"url": "https://investor.tsmc.com/english",
+			"category": "企業財務",
+			"cadence": "月次・決算時",
+			"material_class": "企業一次開示",
+			"collect": "先端半導体・設備投資・売上",
+			"caution": "月次と四半期を分離",
+			"verification": "企業公式",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "sec",
+				"cik": "0001046179",
+				"forms": ["6-K", "20-F"]
+			}
+		},
+		{
+			"id": "S029",
+			"issuer": "大和総研",
+			"domain": "dir.co.jp",
+			"url": "https://www.dir.co.jp/report/new.html",
+			"category": "日本・米国経済/金融資本市場",
+			"cadence": "日次",
+			"material_class": "独立系調査レポート",
+			"collect": "財務・DOE・累進配当・市場構造・企業価値",
+			"caution": "短期相場予想/選挙情勢は除外。数字は開示/統計と照合",
+			"verification": "2026-10-24公式記事一覧確認／添付80件",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "html_list",
+				"url": "https://www.dir.co.jp/report/new.html",
+				"link": "/report/[a-z]+/\\d{8}_\\d+\\.html"
+			}
+		},
+		{
+			"id": "S030",
+			"issuer": "第一ライフ資産運用経済研究所",
+			"domain": "dlri.co.jp",
+			"url": "https://www.dlri.co.jp/report_index.html",
+			"category": "金利/市場/資産運用",
+			"cadence": "日次",
+			"material_class": "経済・運用分析レポート",
+			"collect": "半導体サイクル・資金循環・資産配分・株式評価",
+			"caution": "従来の第一生命経済研究所を統合。短期予想は不採用",
+			"verification": "2026-10-24公式検索ページ確認／添付66件",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "post_api",
+				"url": "https://www.dlri.co.jp/api/search_report.jsp?dispflg=1&pageNo=1",
+				"base": "https://www.dlri.co.jp"
+			}
+		}
+	]
+}
