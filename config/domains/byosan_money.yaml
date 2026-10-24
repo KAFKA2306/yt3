@@ -208,6 +208,17 @@ discovery:
   user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
   registry: "config/sources/byosan_discovery_sources.json"
 
+llm:
+  sandbox: "read-only"
+  workdir_prefix: "byosan-llm-"
+  max_attempts: 8
+  backends:
+    research: "gemini"
+    feature: "gemini"
+    digest: "gemini"
+    preflight: "gemini"
+  json_only_instruction: "最終応答は JSON 値だけにしてください。説明文、Markdown、コードフェンスは付けず、入力に書かれた証拠だけを根拠にしてください。"
+
 explain:
   schema: "config/schemas/byosan_explanation_v1.json"
   verify_schema: "config/schemas/byosan_figure_verdict_v1.json"
