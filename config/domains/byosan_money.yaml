@@ -220,6 +220,14 @@ llm:
     preflight: "gemini"
   json_only_instruction: "最終応答は JSON 値だけにしてください。説明文、Markdown、コードフェンスは付けず、入力に書かれた証拠だけを根拠にしてください。"
 
+sec:
+  user_agent: "yt3-byosan research"
+  min_interval_ms: 150
+  companies:
+    - { name: "Micron", cik: "0000723125" }
+    - { name: "NVIDIA", cik: "0001045810" }
+    - { name: "TSMC", cik: "0001046179" }
+
 explain:
   schema: "config/schemas/byosan_explanation_v1.json"
   verify_schema: "config/schemas/byosan_figure_verdict_v1.json"
