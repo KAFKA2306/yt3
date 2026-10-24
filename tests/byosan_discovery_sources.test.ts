@@ -1,0 +1,97 @@
+import { describe, expect, test } from "bun:test";
+import {
+	type DiscoverySourceRow,
+	DiscoverySourcesSchema,
+	buildChecks,
+	registryPath,
+	runAudit,
+} from "../src/scripts/audit_byosan_discovery_sources.js";
+
+const verifyRow: DiscoverySourceRow = {
+	id: "S101",
+	status: "検証用",
+	priority: "A",
+	issuer: "Example Issuer",
+	domain: "example.com",
+	url: "https://example.com/",
+	category: "企業財務検証",
+	cadence: "日次",
+	material_class: "企業一次開示",
+	collect: "売上・利益",
+	caution: "提出日時を保持",
+	verification: "公式ポータル",
+	fetch: { type: "verify" },
+};
+
+function sourceRow(overrides: Partial<DiscoverySourceRow>): DiscoverySourceRow {
+	return { ...verifyRow, ...overrides };
+}
+
+describe("byosan discovery sources schema", () => {
+	test("accepts the current registry", () => {
+		const checks = runAudit(registryPath());
+		expect(checks.filter((check) => check.status === "FAIL")).toEqual([]);
+	});
+
+	test("accepts 検証用 rows represented as fetch verify", () => {
+		const result = DiscoverySourcesSchema.safeParse({
+			schema_version: "byosan_discovery_sources_v1",
+			sources: [verifyRow],
+		});
+		expect(result.success).toBe(true);
+	});
+
+	test("rejects an unknown fetch type", () => {
+		const result = DiscoverySourcesSchema.safeParse({
+			schema_version: "byosan_discovery_sources_v1",
+			sources: [{ ...verifyRow, fetch: { type: "scrape" } }],
+		});
+		expect(result.success).toBe(false);
+	});
+
+	test("rejects an id outside the S### form", () => {
+		const result = DiscoverySourcesSchema.safeParse({
+			schema_version: "byosan_discovery_sources_v1",
+			sources: [sourceRow({ id: "X1" })],
+		});
+		expect(result.success).toBe(false);
+	});
+});
+
+describe("byosan discovery sources audit", () => {
+	test("reports duplicate source ids", () => {
+		const checks = buildChecks({
+			schema_version: "byosan_discovery_sources_v1",
+			sources: [verifyRow, sourceRow({ id: "S101" })],
+		});
+		expect(checks).toContainEqual({
+			name: "unique_ids",
+			status: "FAIL",
+			details: "S101",
+		});
+	});
+
+	test("reports adopted rows without fetch", () => {
+		const checks = buildChecks({
+			schema_version: "byosan_discovery_sources_v1",
+			sources: [sourceRow({ status: "採用", fetch: undefined })],
+		});
+		expect(checks).toContainEqual({
+			name: "adopted_fetch",
+			status: "FAIL",
+			details: "S101",
+		});
+	});
+
+	test("reports non-https urls", () => {
+		const checks = buildChecks({
+			schema_version: "byosan_discovery_sources_v1",
+			sources: [sourceRow({ url: "http://example.com/" })],
+		});
+		expect(checks).toContainEqual({
+			name: "url_format",
+			status: "FAIL",
+			details: "S101",
+		});
+	});
+});

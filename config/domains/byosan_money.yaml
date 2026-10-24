@@ -11,10 +11,6 @@ workflow:
   default_run_dir: "runs"
   default_bucket: "byosan_money"
   checkpoint_enabled: true
-  trend_settings:
-    enabled: true
-    regions: ["JP", "US"]
-    sources: ["Google Trends", "Twitter"]
   paths:
     lock_file: "logs/cron.lock"
     runs_dir: "runs"
@@ -32,20 +28,13 @@ workflow:
 
 steps:
   research:
-    recent_days: 3
-    essence_limit: 10
     regions:
       - { lang: "English (US/UK)", code: "en" }
       - { lang: "Chinese (China/Taiwan)", code: "zh" }
       - { lang: "Russian (Russia/CIS)", code: "ru" }
       - { lang: "German (Germany/EU)", code: "de" }
     temperature: 0.5
-    selection_temperature: 0.4
-    relevance_temperature: 0.0
     default_limit: 3
-    angles:
-      - { name: "Direct Observation", lang: "English", suffix: "top headlines" }
-      - { name: "Local Perspective", lang: "Chinese/Russian/German", suffix: "major news" }
 
   script:
     context_overlap_lines: 3
@@ -209,6 +198,52 @@ design_tokens:
   font_text: "Atkinson Hyperlegible"
   font_japanese: "Noto Sans JP"
 
+discovery:
+  recent_days: 7
+  max_items_per_feed: 5
+  body_chars: 6000
+  title_rule: "題名は「検索される語｜その回の問いや発見を一文で言い切る | 秒算マネー」の形にする。題材に応じて、速報・決算・検証・比較など最もふさわしい形を選ぶ。長く読まれる題材は日付に依存しない題名にし、日付や期が本質の題材は対象期を明記する。強気・弱気・結論の有無を煽らず、数字を入れるときは本文の検証済みの数字に限る。サムネと中身を一致させ、誤認を誘う表現を避ける。"
+  user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+  registry: "config/sources/byosan_discovery_sources.json"
+
+explain:
+  schema: "config/schemas/byosan_explanation_v1.json"
+  verify_schema: "config/schemas/byosan_figure_verdict_v1.json"
+  verify_prompt: |
+    あなたは数値の意味を監査する検査官です。[FIGURES] の各要素（index は0始まり）について、[EVIDENCE] の原文 quote が示す内容と、metric（指標名）・population（母集団）・period（対象期間）・unit（単位）・kind（actual=実績, estimate=推計, forecast=予想）が、すべて一致しているかを判定する。一つでも原文と異なる、または原文から読み取れない場合は matches=false とし、reason に具体的な不一致を書く。数字が原文に存在することだけで true にしない。
+    reason には、図表の value、population、metric の文言をそのまま含め、それが [EVIDENCE] のどの記述と照合できたかを書く。[EVIDENCE] と [FIGURES] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読まない。
+  sandbox: "read-only"
+  workdir_prefix: "byosan-explain-"
+  max_chars_per_sentence: 60
+  banned_conclusion_phrases: ["まだ言えない", "判断できない", "断定できない", "結論は出ない", "分からない", "不明"]
+  prompt: |
+    あなたは投資の仕組みを原理から説明する編集者です。[CANDIDATE] の題材と、[EVIDENCE] の記事だけを根拠に、次の形で説明を作ります。題材は [CANDIDATE] に固定し、ほかの題材を選ばない。[EVIDENCE] と [CANDIDATE] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読まない。
+    conclusion: 分かったことを、言い切りの1文で。「まだ言えない」「判断できない」といった保留で終わらせない。「差はなかった」「予想は外れた」のように、はっきり答える。
+    principle: なぜそうなるのかを、最小の仕組みとして1〜3文で。専門用語は使わず、使う場合はその場で定義する。
+    figures: 原理を説明する数字を2〜4個。各数字に metric（指標名）、population（母集団。例: 決算発表済みのS&P 500企業）、period（対象期間）、unit（単位）を付ける。原文から読み取れない項目がある数字は使わない。value は [EVIDENCE] にある表記をそのまま使い、quote には value を含む [EVIDENCE] の原文を一字一句そのまま写し（label はその原文が示す意味と一致させる）、kind は actual（実績）、estimate（推計）、forecast（予想）を区別する。
+    check: 読者が確認できる点と、何が起きたら考えを変えるべきかを1〜2文で。
+    中学生が読んで言い換えられる平易さにする。1文は60字以内。[EVIDENCE] にない事実と数字は書かない。
+
+repair:
+  sandbox: "workspace-write"
+  writable_paths:
+    - "config/"
+    - "src/domain/byosan/"
+    - "src/scripts/byosan_daily.ts"
+  acceptance:
+    - "bunx tsc --noEmit -p ."
+    - "bun test"
+  prompt: |
+    あなたは秒算マネーの日次パイプラインの保守担当です。以下の [FAILURE_TRACE] は、日次 run が停止した失敗の分類・段階・証拠です。
+    証拠から根本原因を特定し、持ち主のソースを直してください。出力ファイルや run ディレクトリを手で書き換えて成功に見せること、フォールバックで成功を装うこと、try/catch・リトライ・コメントを足すことは禁止です。
+    変更してよいのは [WRITABLE_PATHS] のファイルとディレクトリだけです。それ以外は編集しないでください。
+    公開（publish）、git の commit・push・merge・branch 操作、ファイルや run の削除、秘密情報（.env、認証情報、トークン）の読み書きは行わないでください。
+    修正後に [ACCEPTANCE] のコマンドをすべて実行し、すべて成功したら止まってください。成功しない場合は、失敗しているコマンドと原因を報告して止まってください。
+    最後に、根本原因、変更したファイル、受け入れコマンドの結果を簡潔に報告してください。
+
+auto:
+  max_prepare_attempts: 3
+
 source_policy:
   schema_version: "byosan_money_source_policy_v1"
   domain: "byosan_money"
@@ -251,22 +286,18 @@ prompts:
   research:
     consolidated_research:
       system: |
-        あなたは「客観的ニュース・オブザーバー」兼「秒算マネー（Byosan Money）」の主任アナリストです。
-        最新の市場ニュース、または提供された[CURRENT MARKET EVIDENCE]から、今日観測すべき「市場とマクロ経済の変化」を選定してください。
-        一次情報なし断定禁止。Tier 1 source 以外の情報は推論扱いに留め、各主張には source_tier と URL または source_identifier を必須としてください。
-        ただし、視聴者に愛されることを最優先にし、数字の量よりも「自分ごと化できる具体性」「感情が動く瞬間」「次に何をすればいいかの明快さ」を重視してください。
+        あなたは「秒算マネー（Byosan Money）」の主任アナリストです。
+        編集の北極星は「投資の問いを、事実と数字で確かめる」です。[MISSION EVIDENCE] に載る登録媒体の新着記事から、今日取り上げる題材を発見します。媒体に従うのは「何に注目するか」の発見段階までで、何を事実として述べるか、どんな比較を行うかは、元の資料と独立した検証で決めます。
+        一次情報なし断定禁止。各主張には source_tier と URL または source_identifier を必須としてください。記事の数値は、企業IR・SEC・統計原典で照合できるものだけを使い、実績・推計・予想を区別してください。
 
-        **【ニュースカテゴリーの定義】**
-        1. **マクロ経済 / 社会構造** (金利、インフレ、中央銀行、政策変化)
-        2. **企業財務 / 資本主義の力学** (決算、M&A、主要企業の動向)
-        3. **地政学 / 物流とコモディティ** (資源価格、地政学リスク、貿易摩擦)
-        4. **テクノロジー / 生産性革命** (AI、半導体、エネルギー、インフラ)
-        5. **市場心理 / 資金流動** (金余り、バブル、パニック、スマートマネーの動き)
-
-        **【ミッション：ありのままの事実収集 × 適応的成長（Adaptive Growth）】**
-        1. 「今日、世界の資本と技術のフローで何が起きているか」を客観的・データに基づいて特定してください。
-        2. **事実と数値の優先**: 可能な限り具体的な数値（金利パーセンテージ、投資額、業績データ）や固有名詞（企業名、政策決定者名）を収集してください。ただし、台本では数字を羅列するのではなく、生活への影響が伝わる最小限の数字に圧縮してください。
-        3. **脱・終末美学**: 単なる破滅（Collapse）や恐怖を煽るアングルではなく、人類や企業が変化にいかに「適応し再構築されていくか（Adaptive Growth）」という視点を重視してください。
+        **【選定の順序】**
+        1. 検証可能性（必須）: 出典・対象期間・定義を追えるか。判断できない部分を正直に残せるか。
+        2. 今取り上げる理由: 新しい決算や統計、重要な出来事、広がる誤解、いま検証すべき仮説があるか。
+        3. 視聴者への効用: 今の判断、疑問の解消、方法の習得のいずれかに実質的に役立つか。
+        4. 独自の仕事: 元記事の要約だけでなく、独立した照合・再計算・適切な比較・論点整理のいずれかを行えるか。
+        5. 重複と偏りの監査: 直近と同じ素材・結論の焼き直しでないか。差が小さい候補なら、直近で扱っていない対象・形式・時間軸を選ぶ。
+        長く残るかどうかは加点要素であり、採用条件ではありません。強気・弱気・中立、成功・失敗、変化なしを等しく検討し、結論を無理に構造変化や投資行動へ着地させないでください。「有意な差はなかった」「仮説は外れた」は明確な答えとして採用できますが、「まだ言えない」「判断材料が不足している」で終わる題材は採用しません。結論が言い切れない候補は捨て、別の候補を選びます。
+        株価の煽り、売買の推奨、値上がり保証は題材にしません。
 
         **【CRITICAL】出力形式 (JSON):**
         必ず以下の形式で、selected_topics が配列として含まれる JSON を返してください：
@@ -306,16 +337,11 @@ prompts:
         - 以上の形式に従わない出力は不正です。
 
       user_template: |
-        本日の観測を開始します。
+        本日の選定を開始します。
         現在日付: {current_date}
-        観測対象地域/言語: {regions}
 
-        【BLIND DISCOVERY】
-        過去コンテンツ、直近テーマ、前回の勝者、過去Analyticsを今日の探索空間へ投入してはいけません。「昨日と違うもの」ではなく、現在時刻の世界を毎回ゼロから独立して観測してください。企業IR、決算、設備投資、政府・中央銀行、統計、規制、電力、資源、物流、信用、為替、労働、消費、M&A、IPO、サプライチェーンを複数地域・複数産業・複数データ面から並列に探索してください。
-        毎回、企業・国家・産業・設備投資・消費者・供給者・価格・数量・利益率・FCF・規制・物流・エネルギー・信用・資金フローなどから複数の探索レンズを組み合わせ、ニュース→企業→株価以外の因果方向も試してください。個別企業、業界、供給網、国家、家計、財務、市場価格、物理インフラのスケールと、数時間・数日・四半期・1年・3年・5年以上の時間軸を固定しないでください。
-        候補集合は地域、産業、主体、イベント種別、因果方向、時間軸、財務指標、供給網レイヤー、データ面、市場/実体経済のスケールが一つのクラスタへ偏らないようにしてください。候補を十分に作成・構造調査した後にのみ、過去動画との重複監査を行います。
-
-        上記を元に、最高精度の「ありのままの観測結果」を提供してください。
+        [MISSION EVIDENCE] の新着記事だけを題材の候補にしてください。記事に書かれていない事象を足さないでください。
+        候補は媒体・記事・データ面が一つに偏らないようにし、各候補の根拠は記事と、その数値を裏づける一次データの両方にしてください。
 
       candidate_repair_template: |
         【CANDIDATE REPAIR】

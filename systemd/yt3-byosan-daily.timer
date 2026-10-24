@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for YT3 Byosan Money Daily Video Publication
+
+[Timer]
+OnCalendar=*-*-* 09:00:00 Asia/Tokyo
+Persistent=true
+Unit=yt3-byosan-daily.service
+
+[Install]
+WantedBy=timers.target

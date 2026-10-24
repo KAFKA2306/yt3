@@ -1,0 +1,125 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "byosan_discovery_sources_v1",
+	"title": "秒算マネー 情報源台帳",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["schema_version", "sources"],
+	"properties": {
+		"schema_version": { "const": "byosan_discovery_sources_v1" },
+		"sources": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "$ref": "#/$defs/source" }
+		}
+	},
+	"$defs": {
+		"source": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"id",
+				"status",
+				"priority",
+				"issuer",
+				"domain",
+				"url",
+				"category",
+				"cadence",
+				"material_class",
+				"collect",
+				"caution",
+				"verification"
+			],
+			"properties": {
+				"id": { "type": "string", "pattern": "^S\\d{3}$" },
+				"status": { "enum": ["採用", "検証用"] },
+				"priority": { "type": "string", "minLength": 1 },
+				"issuer": { "type": "string", "minLength": 1 },
+				"domain": { "type": "string", "minLength": 1 },
+				"url": { "type": "string", "minLength": 1 },
+				"category": { "type": "string", "minLength": 1 },
+				"cadence": { "type": "string", "minLength": 1 },
+				"material_class": { "type": "string", "minLength": 1 },
+				"collect": { "type": "string", "minLength": 1 },
+				"caution": { "type": "string", "minLength": 1 },
+				"verification": { "type": "string", "minLength": 1 },
+				"fetch": { "$ref": "#/$defs/fetch" }
+			}
+		},
+		"fetch": {
+			"oneOf": [
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["type", "url"],
+					"properties": {
+						"type": { "const": "rss" },
+						"url": { "type": "string", "minLength": 1 }
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["type", "url", "include"],
+					"properties": {
+						"type": { "const": "sitemap" },
+						"url": { "type": "string", "minLength": 1 },
+						"include": { "type": "string", "minLength": 1 }
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["type", "url", "link"],
+					"properties": {
+						"type": { "const": "html_list" },
+						"url": { "type": "string", "minLength": 1 },
+						"link": { "type": "string", "minLength": 1 }
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["type", "url", "base"],
+					"properties": {
+						"type": { "const": "post_api" },
+						"url": { "type": "string", "minLength": 1 },
+						"base": { "type": "string", "minLength": 1 }
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["type", "cik", "forms"],
+					"properties": {
+						"type": { "const": "sec" },
+						"cik": { "type": "string", "pattern": "^\\d{10}$" },
+						"forms": {
+							"type": "array",
+							"minItems": 1,
+							"items": { "type": "string", "minLength": 1 }
+						}
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["type"],
+					"properties": {
+						"type": { "const": "verify" }
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["type", "reason"],
+					"properties": {
+						"type": { "const": "unreachable" },
+						"reason": { "type": "string", "minLength": 1 }
+					}
+				}
+			]
+		}
+	}
+}

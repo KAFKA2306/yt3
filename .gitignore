@@ -64,6 +64,7 @@ temp/
 # Tool Specific
 .serena/
 !.serena/project.yml
+.claude/worktrees/
 config/.cache/
 artifacts/
 !artifacts/generated/

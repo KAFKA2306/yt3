@@ -394,7 +394,7 @@ describe("byosan feature draft hard limits", () => {
 		).toBe(true);
 	});
 
-	test("segment stats reject an empty list", () => {
+	test("segment stats accept an empty list and reject more than three", () => {
 		const stat = {
 			label: "利益",
 			value: "28.8%",
@@ -402,8 +402,12 @@ describe("byosan feature draft hard limits", () => {
 			color: "cyan",
 		};
 		expect(ByosanFeatureSegmentSchema.shape.stats.safeParse([]).success).toBe(
-			false,
+			true,
 		);
+		expect(
+			ByosanFeatureSegmentSchema.shape.stats.safeParse([stat, stat, stat, stat])
+				.success,
+		).toBe(false);
 		expect(
 			ByosanFeatureSegmentSchema.shape.stats.safeParse([stat]).success,
 		).toBe(true);
@@ -427,7 +431,7 @@ describe("byosan feature draft hard limits", () => {
 		expect(lines).toContain("thumbnail.secondLine: 2〜12文字");
 		expect(lines).toContain("hookPromises[]: 1〜24文字");
 		expect(lines).toContain("segments: 20〜36件");
-		expect(lines).toContain("segments[].stats: 1〜3件");
+		expect(lines).toContain("segments[].stats: 0〜3件");
 		expect(lines).toContain("segments[].text: 18〜180文字");
 	});
 });
