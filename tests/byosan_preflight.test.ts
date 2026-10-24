@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
-import { toJsonSchema } from "@langchain/core/utils/json_schema";
 import fs from "fs-extra";
 import {
 	classifyByosanFailure,
@@ -46,6 +45,7 @@ function passingDependencies(): ByosanPreflightDependencies {
 		commandAvailable: (command) => pass(command),
 		pythonRuntime: () => pass("python_runtime"),
 		voicevox: async () => pass("voicevox"),
+		llmBackends: ["gemini"],
 		gemini: async () => pass("gemini"),
 		youtube: async () => pass("youtube"),
 	};
@@ -105,7 +105,7 @@ describe("Byosan preflight aggregation", () => {
 				},
 			},
 			{
-				name: "Gemini invalid or rate-limited key pool",
+				name: "Gemini structured-output rate-limited",
 				failureClass: "PROVIDER_RATE_LIMIT",
 				component: "gemini",
 				inject: (dependencies) => {
@@ -157,12 +157,43 @@ describe("Byosan preflight aggregation", () => {
 	});
 });
 
-describe("Byosan Gemini structured-output probe", () => {
-	test("sends a Gemini-compatible schema without const keywords", () => {
-		const jsonSchema = JSON.stringify(toJsonSchema(ProbeSchema));
-		expect(jsonSchema).not.toContain('"const"');
-	});
+describe("Byosan preflight probes the configured LLM backends", () => {
+	test("runs the codex probe only when codex is a configured backend", async () => {
+		const withoutCodex = await runByosanPreflight(await temporaryRunDir(), {
+			...passingDependencies(),
+			llmBackends: ["gemini"],
+		});
+		expect(withoutCodex.checks.codex_login).toBeUndefined();
+		expect(withoutCodex.checks.codex_exec).toBeUndefined();
 
+		const withCodex = await runByosanPreflight(await temporaryRunDir(), {
+			...passingDependencies(),
+			llmBackends: ["gemini", "codex"],
+			codexLogin: () => pass("codex_login"),
+			codexExec: async () => pass("codex_exec"),
+		});
+		expect(withCodex.checks.codex_login?.status).toBe("PASS");
+		expect(withCodex.checks.codex_exec?.status).toBe("PASS");
+	});
+});
+
+describe("Byosan preflight skips probes for stages served from checkpoint", () => {
+	test("does not probe gemini when only codex stages will run", async () => {
+		const report = await runByosanPreflight(await temporaryRunDir(), {
+			...passingDependencies(),
+			llmBackends: ["codex"],
+			gemini: async () => {
+				throw new Error("gemini must not be probed");
+			},
+			codexLogin: () => pass("codex_login"),
+			codexExec: async () => pass("codex_exec"),
+		});
+		expect(report.checks.gemini).toBeUndefined();
+		expect(report.status).toBe("PASS");
+	});
+});
+
+describe("Byosan codex structured-output probe", () => {
 	test("accepts only the ok=true contract", () => {
 		expect(ProbeSchema.safeParse({ ok: true }).success).toBe(true);
 		expect(ProbeSchema.safeParse({ ok: false }).success).toBe(false);

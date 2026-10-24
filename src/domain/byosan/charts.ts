@@ -13,9 +13,9 @@ const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 const SizeSchema = z.number().positive();
 const OffsetSchema = z.number().nonnegative();
 
+export type ChartSize = { width: number; height: number };
+
 export const ChartThemeSchema = z.object({
-	width: z.number().int().positive(),
-	height: z.number().int().positive(),
 	palette: z.object({
 		canvas: HexColorSchema,
 		primary: HexColorSchema,
@@ -450,13 +450,17 @@ function buildOption(spec: ChartSpec, theme: ChartTheme): EChartsOption {
 	}
 }
 
-export function renderChartSvg(spec: unknown, theme: ChartTheme): string {
+export function renderChartSvg(
+	spec: unknown,
+	theme: ChartTheme,
+	size: ChartSize,
+): string {
 	const parsed = ChartSpecSchema.parse(spec);
 	const chart = echarts.init(null, null, {
 		renderer: "svg",
 		ssr: true,
-		width: theme.width,
-		height: theme.height,
+		width: size.width,
+		height: size.height,
 	});
 	chart.setOption(buildOption(parsed, theme));
 	const svg = chart.renderToSVGString();

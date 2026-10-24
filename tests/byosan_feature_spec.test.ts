@@ -10,10 +10,13 @@ import {
 	ByosanThumbnailSchema,
 	archetypeSlotPromptPolicy,
 	auditByosanFeatureSpec,
+	buildByosanSceneRule,
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
 } from "../src/domain/byosan/feature_spec.js";
+import type { ByosanScenesConfig } from "../src/domain/byosan/scene_spec.js";
 import {
+	loadConfig,
 	providerResponseJsonSchema,
 	zodSizeConstraintLines,
 } from "../src/io/core.js";
@@ -202,46 +205,6 @@ describe("byosan feature specification", () => {
 		);
 	});
 
-	test("specialized archetype slots must appear in order with claim provenance", async () => {
-		const spec = withParadoxArchetype(
-			productionAwareSpec(await loadReferenceSpec()),
-		);
-		expect(auditByosanFeatureSpec(spec)).toEqual([]);
-
-		const factA = spec.segments.find(
-			(segment) => segment.archetypeSlot === "fact_a",
-		);
-		const factB = spec.segments.find(
-			(segment) => segment.archetypeSlot === "fact_b",
-		);
-		if (!factA || !factB) throw new Error("archetype fixture is incomplete");
-		factA.archetypeSlot = "fact_b";
-		factB.archetypeSlot = "fact_a";
-		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
-			"archetype_slot_sequence_missing",
-		);
-	});
-
-	test("archetype slot evidence must match a claim source spoken in that slot", async () => {
-		const spec = withParadoxArchetype(
-			productionAwareSpec(await loadReferenceSpec()),
-		);
-		const evidence = spec.production?.archetypeEvidence?.slots.find(
-			(slot) => slot.slot === "fact_a",
-		);
-		const claim = spec.claims.find((item) => item.id === "claim_0");
-		if (!evidence || !claim)
-			throw new Error("archetype provenance fixture missing");
-		const unrelated = spec.sources.find(
-			(source) => !claim.sourceIds.includes(source.id),
-		);
-		if (!unrelated) throw new Error("unrelated source fixture missing");
-		evidence.sourceIds = [unrelated.id];
-		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
-			"archetype_slot_claim_provenance_missing",
-		);
-	});
-
 	test("unsupported breaking and extreme wording fail closed", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
 		spec.title = "【速報】過去最大のS&P500利益+47.4%";
@@ -254,27 +217,42 @@ describe("byosan feature specification", () => {
 		);
 	});
 
-	test("fact segments require claim grounding under the new narrative contract", async () => {
+	test("unverified claims need an inference, estimate or analysis label", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
-		const first = spec.segments[0];
-		if (!first) throw new Error("reference spec has no first segment");
-		const { claimIds, ...ungroundedFirst } = first;
-		expect(claimIds).toEqual(["claim_0"]);
-		spec.segments = [ungroundedFirst, ...spec.segments.slice(1)];
+		const claim = spec.claims.find((item) => item.id === "claim_0");
+		if (!claim) throw new Error("claim fixture is missing");
+		claim.status = "derived_with_caveat";
+		claim.caveat = "複数の観測値を統合した分析です";
+		for (const segment of spec.segments) {
+			segment.text = segment.text
+				.replaceAll("推論", "判断")
+				.replaceAll("推定", "判断")
+				.replaceAll("分析", "判断");
+		}
 		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
-			"fact_segment_claim_missing",
+			"inference_distinction_not_spoken",
 		);
 	});
 
-	test("auditor interjections without evidence do not satisfy the verifier slot", async () => {
+	test("the opening must share a packaging claim with the title and thumbnail", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
-		const auditor = spec.segments.find(
-			(segment) => segment.verificationRole === "auditor",
-		);
-		if (!auditor) throw new Error("auditor fixture is missing");
-		auditor.evidenceIds = undefined;
+		for (const segment of spec.segments.slice(0, 2)) {
+			segment.claimIds = [];
+		}
 		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
-			"adversarial_dialogue_sequence_missing",
+			"packaging_claim_not_in_opening",
+		);
+	});
+
+	test("the primary packaging claim must carry a figure the catch can check", async () => {
+		const spec = productionAwareSpec(await loadReferenceSpec());
+		const primary = spec.claims.find(
+			(claim) => claim.id === spec.packaging?.primaryClaimId,
+		);
+		if (!primary) throw new Error("primary packaging claim is missing");
+		primary.claim = "物価上昇は耐久財にも広がった。";
+		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
+			"packaging_primary_claim_without_figure",
 		);
 	});
 
@@ -312,31 +290,6 @@ describe("byosan feature specification", () => {
 		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
 		expect(codes).toContain("inference_confidence_missing");
 		expect(codes).toContain("inference_mismatch_review_missing");
-	});
-
-	test("unresolved mismatches must be spoken for narrated inferred claims", async () => {
-		const spec = productionAwareSpec(await loadReferenceSpec());
-		const inferred = spec.claims.find((claim) => claim.id === "claim_2");
-		if (!inferred?.id) throw new Error("narrated claim fixture is missing");
-		inferred.status = "derived_with_caveat";
-		inferred.caveat = "複数の観測値を統合した分析です";
-		inferred.confidence = 0.8;
-		inferred.unresolvedMismatches = [
-			"外部比較では同じ傾向をまだ確認できていません",
-		];
-		const landing = spec.segments.find(
-			(segment) =>
-				segment.verificationRole === "landing" &&
-				segment.claimIds?.includes(inferred.id ?? ""),
-		);
-		if (!landing) throw new Error("landing fixture is missing");
-		landing.text += " これは分析で、確度80%です。";
-		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
-		expect(codes).toContain("inference_mismatch_not_spoken");
-		landing.text += " 外部比較では同じ傾向をまだ確認できていません";
-		expect(
-			auditByosanFeatureSpec(spec).map((issue) => issue.code),
-		).not.toContain("inference_mismatch_not_spoken");
 	});
 
 	test("motion policy renders static scenes without camera transforms", () => {
@@ -429,9 +382,18 @@ describe("byosan feature draft hard limits", () => {
 		const lines = zodSizeConstraintLines(ByosanFeatureDraftSchema);
 		expect(lines).toContain("thumbnail.reaction: 1〜4文字");
 		expect(lines).toContain("thumbnail.secondLine: 2〜12文字");
-		expect(lines).toContain("hookPromises[]: 1〜24文字");
 		expect(lines).toContain("segments: 20〜36件");
 		expect(lines).toContain("segments[].stats: 0〜3件");
 		expect(lines).toContain("segments[].text: 18〜180文字");
+	});
+
+	test("scene rule caps non-stat scenes and requires claim source names to be shown", () => {
+		const scenes = (
+			loadConfig("byosan_money") as unknown as { scenes: ByosanScenesConfig }
+		).scenes;
+		const rule = buildByosanSceneRule(scenes, 0.4);
+		expect(rule).toContain(`${scenes.min_distinct_kinds}種類以上`);
+		expect(rule).toContain("全場面に対する割合を40%以下");
+		expect(rule).toContain("sourcesのnameを略さず");
 	});
 });

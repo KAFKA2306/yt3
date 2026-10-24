@@ -1,7 +1,5 @@
 {
 	"version": "byosan_chart_v1",
-	"width": 1296,
-	"height": 224,
 	"palette": {
 		"canvas": "#F7F5EF",
 		"primary": "#2563EB",
