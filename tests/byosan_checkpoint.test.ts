@@ -173,6 +173,53 @@ describe("Byosan checkpoint research fingerprint", () => {
 		expect(reconciled.fingerprints.research).toStartWith("inputs_v2:");
 	});
 
+	test("restores readiness lost after an artifact was written, when inputs are unchanged", () => {
+		const { root, runDir } = makeFixture();
+		fs.outputJsonSync(path.join(runDir, "source", "research_result.json"), {
+			angle_decision: CURRENT_STOP_DECISION,
+		});
+		fs.outputFileSync(path.join(runDir, "source", "feature_spec.json"), "{}");
+		const checkpoint = {
+			...readyCheckpoint(root, runDir),
+			stages: {
+				research_ready: false,
+				spec_ready: false,
+				media_ready: false,
+				quality_pass: false,
+				publish_verified: false,
+			},
+		};
+		writeByosanCheckpoint(runDir, checkpoint);
+		const reconciled = reconcileByosanCheckpoint(runDir, RUN_ID, root);
+		expect(reconciled.stages.research_ready).toBe(true);
+		expect(reconciled.stages.spec_ready).toBe(true);
+	});
+
+	test("does not restore readiness when a research input changed since the artifact", () => {
+		const { root, runDir } = makeFixture();
+		fs.outputJsonSync(path.join(runDir, "source", "research_result.json"), {
+			angle_decision: CURRENT_STOP_DECISION,
+		});
+		fs.outputFileSync(path.join(runDir, "source", "feature_spec.json"), "{}");
+		writeByosanCheckpoint(runDir, {
+			...readyCheckpoint(root, runDir),
+			fingerprints: {
+				...currentByosanFingerprints(root, runDir),
+				research: "inputs_v2:stale",
+			},
+			stages: {
+				research_ready: false,
+				spec_ready: false,
+				media_ready: false,
+				quality_pass: false,
+				publish_verified: false,
+			},
+		});
+		const reconciled = reconcileByosanCheckpoint(runDir, RUN_ID, root);
+		expect(reconciled.stages.research_ready).toBe(false);
+		expect(reconciled.stages.spec_ready).toBe(false);
+	});
+
 	test("does not restore a legacy research result whose angle decision is outdated", () => {
 		const { root, runDir } = makeFixture();
 		fs.outputJsonSync(path.join(runDir, "source", "research_result.json"), {

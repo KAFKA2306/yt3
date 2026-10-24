@@ -150,20 +150,26 @@ export function readByosanCheckpoint(runDir: string): ByosanCheckpoint | null {
 	}
 }
 
+function researchArtifactCurrent(runDir: string): boolean {
+	return isCurrentByosanAngleDecision(
+		readJsonIfExists(path.join(runDir, "source", "research_result.json"))
+			?.angle_decision,
+	);
+}
+
+function specArtifactExists(runDir: string): boolean {
+	return fs.existsSync(path.join(runDir, "source", "feature_spec.json"));
+}
+
 function legacyStages(
 	runDir: string,
 	stages: ByosanCheckpointStages,
 ): ByosanCheckpointStages {
-	const researchReady = isCurrentByosanAngleDecision(
-		readJsonIfExists(path.join(runDir, "source", "research_result.json"))
-			?.angle_decision,
-	);
+	const researchReady = researchArtifactCurrent(runDir);
 	return {
 		...stages,
 		research_ready: researchReady,
-		spec_ready:
-			researchReady &&
-			fs.existsSync(path.join(runDir, "source", "feature_spec.json")),
+		spec_ready: researchReady && specArtifactExists(runDir),
 	};
 }
 
@@ -209,6 +215,15 @@ export function reconcileByosanCheckpoint(
 		stages.publish_verified = false;
 	} else if (previous.fingerprints.publish !== fingerprints.publish) {
 		stages.publish_verified = false;
+	}
+	if (!legacy && previous.fingerprints.research === fingerprints.research) {
+		stages.research_ready =
+			stages.research_ready || researchArtifactCurrent(runDir);
+		stages.spec_ready =
+			stages.spec_ready ||
+			(stages.research_ready &&
+				previous.fingerprints.spec === fingerprints.spec &&
+				specArtifactExists(runDir));
 	}
 	return {
 		...previous,
