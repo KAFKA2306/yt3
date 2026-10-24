@@ -4,6 +4,11 @@ import yaml from "js-yaml";
 import { fromJSONSchema } from "zod";
 import type { SourceFetch } from "../domain/byosan/feed_discovery.js";
 
+export type ReusePolicy =
+	| "recreate_only"
+	| "quote_with_attribution"
+	| "official_open";
+
 export type DiscoverySourceRow = {
 	id: string;
 	status: "採用" | "検証用";
@@ -17,6 +22,8 @@ export type DiscoverySourceRow = {
 	collect: string;
 	caution: string;
 	verification: string;
+	reuse_policy: ReusePolicy;
+	reuse_terms_url?: string;
 	fetch?: SourceFetch;
 };
 
@@ -94,6 +101,14 @@ export function buildChecks(doc: DiscoverySourcesDocument): Check[] {
 	const adoptedWithoutFetch = doc.sources
 		.filter((source) => source.status === "採用" && source.fetch === undefined)
 		.map((source) => source.id);
+	const reuseTermsIds = doc.sources
+		.filter((source) =>
+			source.reuse_policy === "official_open"
+				? !isHttpsUrl(source.reuse_terms_url ?? "")
+				: source.reuse_terms_url !== undefined &&
+					!isHttpsUrl(source.reuse_terms_url),
+		)
+		.map((source) => source.id);
 
 	return [
 		duplicateIds.length === 0
@@ -105,6 +120,9 @@ export function buildChecks(doc: DiscoverySourcesDocument): Check[] {
 		adoptedWithoutFetch.length === 0
 			? pass("adopted_fetch", "all 採用 sources define fetch")
 			: fail("adopted_fetch", adoptedWithoutFetch.join(", ")),
+		reuseTermsIds.length === 0
+			? pass("reuse_terms", "official_open rows cite an https reuse_terms_url")
+			: fail("reuse_terms", reuseTermsIds.join(", ")),
 	];
 }
 

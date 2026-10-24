@@ -19,6 +19,8 @@ const COLUMNS = [
 	"collect",
 	"caution",
 	"verification",
+	"reuse_policy",
+	"reuse_terms_url",
 	"fetch_type",
 	"fetch_json",
 ] as const;
@@ -39,6 +41,8 @@ function toRecord(source: DiscoverySourceRow): Record<Column, string> {
 		collect: source.collect,
 		caution: source.caution,
 		verification: source.verification,
+		reuse_policy: source.reuse_policy,
+		reuse_terms_url: source.reuse_terms_url ?? "",
 		fetch_type: source.fetch?.type ?? "",
 		fetch_json: source.fetch ? JSON.stringify(source.fetch) : "",
 	};

@@ -29,7 +29,8 @@
 				"material_class",
 				"collect",
 				"caution",
-				"verification"
+				"verification",
+				"reuse_policy"
 			],
 			"properties": {
 				"id": { "type": "string", "pattern": "^S\\d{3}$" },
@@ -44,6 +45,10 @@
 				"collect": { "type": "string", "minLength": 1 },
 				"caution": { "type": "string", "minLength": 1 },
 				"verification": { "type": "string", "minLength": 1 },
+				"reuse_policy": {
+					"enum": ["recreate_only", "quote_with_attribution", "official_open"]
+				},
+				"reuse_terms_url": { "type": "string", "minLength": 1 },
 				"fetch": { "$ref": "#/$defs/fetch" }
 			}
 		},
