@@ -68,7 +68,8 @@ The owner has given standing authorization for the operations below. The agent c
 - **Publication and posting.** Run only through the canonical Taskfile publish path (`task publish PROFILE=<profile> -- <run-id>`) or that product's daily entry, and only when the product release gate reports PASS for that run and the publication approval setting in the product's config (`publish_approved` in `config/domains/`) is enabled. Posting and Discord announcements produced by that path follow the same conditions.
 - **Commit.** After the checks that cover the change pass (type check, tests, and the domain audit named in §6), stage only the paths the agent owns and commit.
 - **Push.** Push each commit to `origin` immediately after committing.
-- **Merge.** Merge a PR when its exact-head CI has passed.
+- **Merge.** Merge a PR when the repository acceptance ladder in §6 has passed and exact-head CI has passed for that head. Use a merge commit (`gh pr merge --merge`), the method the history already uses (`Merge pull request #NNN`); do not squash or rebase onto `main`.
+- **Issues.** Close an Issue only after the change that resolves it is merged to `main` and the acceptance evidence (the command run and its result, or the production receipt and read-back) is recorded in that Issue. Layers that remain `UNVERIFIED` keep the Issue open. Record results on an existing related Issue rather than opening a duplicate. When work remains unfinished, record the remaining task, owned files, acceptance command, and stop condition in the Issue.
 
 Force push, branch deletion, deletion of run data or published videos, handling of secrets and personal contact details, and billing are not covered. Each requires the owner's explicit instruction.
 
@@ -113,7 +114,8 @@ For repository changes:
 4. diagnose CI failures instead of retrying blindly;
 5. inspect CI for the exact PR head SHA;
 6. merge when exact-head CI passes (see Autonomous operations);
-7. verify the intended base state afterward.
+7. verify the intended base state afterward (`git fetch origin`, then check `origin/main`);
+8. leave no unmerged branch, PR, or worktree from this session. If a PR cannot merge, hand the remaining work to the Issue or to a handoff under §8. After a merge, report the merged branch and any worktree this agent created for it, and do not delete them.
 
 Every commit must be pushed to `origin` before reporting completion. Do not leave commits local-only.
 
