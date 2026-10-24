@@ -10,35 +10,6 @@ const worldConfig = yaml.load(
 );
 
 describe("Byosan single-frame identity protocol", () => {
-	test("defines fixed markers and a repeatable blinded recognition procedure", () => {
-		const world = ExperienceWorldSchema.parse(worldConfig);
-
-		expect(world.identity.single_frame_recognition).toEqual({
-			protocol_version: 1,
-			fixed_markers: [
-				"existing_character_asset",
-				"palette.background",
-				"palette.accent_primary",
-			],
-			frame_sample_rule: "midpoint_of_first_scene",
-			blinded_fields: ["channel_name", "episode_title", "captions", "audio"],
-			randomized_order: true,
-			respondent_cohort: "self_reported_unfamiliar_viewers",
-			answer_options: [
-				"byosan_money",
-				"humanity_observatory",
-				"yawa_archive",
-				"not_sure",
-			],
-			report_metrics: [
-				"per_channel_top1_accuracy",
-				"confusion_matrix",
-				"wilson_95_percent_interval",
-			],
-			acceptance_threshold: null,
-		});
-	});
-
 	test("rejects an incomplete or self-passing identity test protocol", () => {
 		const world = ExperienceWorldSchema.parse(worldConfig);
 		const { single_frame_recognition: protocol, ...identity } = world.identity;

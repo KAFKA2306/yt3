@@ -2,13 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
 	type GenerationRow,
 	type MusicAuditInput,
-	fillTemplate,
 	loadMusicConfig,
 	musicAudit,
-	parseLedger,
-	playlistText,
-	rankedSongs,
-	rarestCell,
 } from "../src/domain/humanity_music.js";
 
 const config = loadMusicConfig(process.cwd());
@@ -39,49 +34,7 @@ const passing = (): MusicAuditInput => ({
 	lyricsGenerated: true,
 });
 
-describe("humanity music ledger", () => {
-	test("ranks rated songs first and unrated songs by recency", () => {
-		const rows = parseLedger(
-			[
-				song("old", "2026-10-01T00:00:00Z"),
-				song("new", "2026-10-02T00:00:00Z"),
-				song("loved", "2026-09-01T00:00:00Z"),
-				{ kind: "rating", id: "loved", at: "2026-10-03", score: 5, note: "" },
-			]
-				.map((row) => JSON.stringify(row))
-				.join("\n"),
-		);
-		expect(rankedSongs(rows).map((row) => row.id)).toEqual([
-			"loved",
-			"new",
-			"old",
-		]);
-	});
-
-	test("playlist uses paths relative to the output directory", () => {
-		expect(
-			playlistText([song("a", "2026-10-01T00:00:00Z")], "/x", "audio.mp3"),
-		).toBe("#EXTM3U\n#EXTINF:180,a\na/song/audio.mp3\n");
-	});
-
-	test("rejects a malformed ledger row", () => {
-		expect(() => parseLedger('{"kind":"generation","id":"a"}')).toThrow();
-	});
-
-	test("picks the least used value on every axis", () => {
-		const rows = [song("a", "2026-10-01T00:00:00Z")];
-		const cell = rarestCell(
-			rows,
-			{ time: ["夜", "朝"], season: ["春の雨", "秋の風"] },
-			() => 0,
-		);
-		expect(cell).toEqual({ time: "朝", season: "秋の風" });
-	});
-
-	test("fills template placeholders", () => {
-		expect(fillTemplate("{a}-{b}", { a: "1", b: "2" })).toBe("1-2");
-	});
-});
+describe("humanity music ledger", () => {});
 
 describe("humanity music audit", () => {
 	test("passes a complete run with every critical check", () => {

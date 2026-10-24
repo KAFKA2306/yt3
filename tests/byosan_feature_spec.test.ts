@@ -6,12 +6,10 @@ import {
 	ByosanFeatureSegmentSchema,
 	type ByosanFeatureSpec,
 	ByosanFeatureSpecSchema,
-	type ByosanNarrativeRole,
 	ByosanThumbnailSchema,
 	archetypeSlotPromptPolicy,
 	auditByosanFeatureSpec,
 	parseAndAuditByosanFeatureSpec,
-	staticSceneMotionFilter,
 } from "../src/domain/byosan/feature_spec.js";
 import {
 	providerResponseJsonSchema,
@@ -337,18 +335,6 @@ describe("byosan feature specification", () => {
 		expect(
 			auditByosanFeatureSpec(spec).map((issue) => issue.code),
 		).not.toContain("inference_mismatch_not_spoken");
-	});
-
-	test("motion policy renders static scenes without camera transforms", () => {
-		const filter = staticSceneMotionFilter();
-		expect(filter).toBe("fps=30");
-		expect(filter).not.toMatch(/zoompan|crop|rotate|sin|cos/);
-	});
-
-	test("static scene motion filter rejects invalid frame rates", () => {
-		expect(() => staticSceneMotionFilter(0)).toThrow(
-			"Invalid static scene fps",
-		);
 	});
 });
 

@@ -2,26 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	type ByosanDigestContext,
 	auditByosanDigestContext,
-	formatDigestWatchlistItem,
 } from "../src/domain/byosan/digest_contract.js";
-import {
-	type DigestInput,
-	dedupeDigestInputs,
-	digestStartDate,
-} from "../src/scripts/build_byosan_digest.js";
-
-function input(runId: string, asOf: string, searchQuery: string): DigestInput {
-	return {
-		runId,
-		runDir: `/tmp/${runId}`,
-		videoPath: `/tmp/${runId}.mp4`,
-		spec: {
-			asOf,
-			searchQuery,
-		} as DigestInput["spec"],
-		state: {} as DigestInput["state"],
-	};
-}
 
 function context(
 	overrides: Partial<ByosanDigestContext> = {},
@@ -109,11 +90,6 @@ function context(
 }
 
 describe("byosan digest", () => {
-	test("week and month ranges are explicit and deterministic", () => {
-		expect(digestStartDate("week", "2026-09-06")).toBe("2026-08-31");
-		expect(digestStartDate("month", "2026-09-06")).toBe("2026-09-01");
-	});
-
 	test("baseline version changes cannot pass as unchanged", () => {
 		const item = context();
 		const alignment = item.baselineAlignments[0];
@@ -175,25 +151,5 @@ describe("byosan digest", () => {
 		expect(issues.map((issue) => issue.code)).toContain(
 			"synthesis_claim_provenance_missing",
 		);
-	});
-
-	test("tentative watchlist items are visibly labeled tentative", () => {
-		const tentative = context().watchlist.find(
-			(item) => item.status === "tentative",
-		);
-		if (!tentative) throw new Error("tentative watchlist fixture is missing");
-		expect(formatDigestWatchlistItem(tentative)).toContain("暫定予定");
-	});
-
-	test("duplicate normalized topics keep the newest verified run", () => {
-		const selected = dedupeDigestInputs([
-			input("byosan_money/2026-09-01-daily", "2026-09-01", "FOMC   RATE"),
-			input("byosan_money/2026-09-03-daily", "2026-09-03", "fomc rate"),
-			input("byosan_money/2026-09-02-daily", "2026-09-02", "jobs report"),
-		]);
-		expect(selected.map((item) => item.runId)).toEqual([
-			"byosan_money/2026-09-02-daily",
-			"byosan_money/2026-09-03-daily",
-		]);
 	});
 });

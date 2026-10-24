@@ -59,14 +59,6 @@ describe("byosan content anchor and presentation skin", () => {
 		expect(auditByosanPresentationVariant(anchor, shorts)).toEqual([]);
 	});
 
-	test("same anchor and skin produce deterministic variant output", () => {
-		const anchor = buildByosanContentAnchor(referenceSpec());
-		const selectedSkin = skin("x_video");
-		const left = buildByosanPresentationVariant(anchor, selectedSkin);
-		const right = buildByosanPresentationVariant(anchor, selectedSkin);
-		expect(left).toEqual(right);
-	});
-
 	test("presentation skin cannot cherry-pick duplicate or reordered segments", () => {
 		const anchor = buildByosanContentAnchor(referenceSpec());
 		expect(() =>

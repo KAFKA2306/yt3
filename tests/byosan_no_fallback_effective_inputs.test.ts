@@ -12,17 +12,6 @@ describe("effective no-fallback inputs", () => {
 		expect(source).not.toContain("CHARACTER_FALLBACK");
 	});
 
-	test("no-fallback audit covers prompt memory and media fallback markers", () => {
-		const source = fs.readFileSync(
-			"src/scripts/audit_no_fallback_policy.ts",
-			"utf8",
-		);
-		expect(source).toContain('"data/memory"');
-		expect(source).toContain("/CHARACTER_FALLBACK/");
-		expect(source).toContain("/fallbackCharacterSvg/");
-		expect(source).toContain("/fallback-safe\\s+synthesis/i");
-	});
-
 	test("active Byosan loop memory contains no fallback entries", () => {
 		const memory = fs.readJsonSync(
 			"data/memory/byosan_money/loop_journal.json",

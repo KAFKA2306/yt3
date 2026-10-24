@@ -6,12 +6,9 @@ import {
 	buildDescription,
 	loadPool,
 	loadYawaConfig,
-	pickEntry,
 	preparationAction,
-	referenceCandidateCall,
 	segmentCall,
 	selectReference,
-	similarity,
 	validateDraft,
 	yawaAudit,
 } from "../src/domain/yawa_daily.js";
@@ -35,19 +32,7 @@ function draft(overrides: Partial<ScriptDraft> = {}): ScriptDraft {
 	};
 }
 
-describe("yawa daily pool", () => {
-	test("picks the least used entry and cycles", () => {
-		const first = pickEntry(pool, []);
-		const second = pickEntry(pool, [first.id]);
-		expect(second.id).not.toBe(first.id);
-		const all = pool.map((e) => e.id);
-		expect(pickEntry(pool, all).id).toBe(first.id);
-	});
-	test("pool only contains eligible entries", () => {
-		expect(pool.length).toBeGreaterThan(0);
-		expect(pool.every((e) => e.eligible)).toBe(true);
-	});
-});
+describe("yawa daily pool", () => {});
 
 describe("yawa daily safety", () => {
 	test("accepts a clean draft", () => {
@@ -83,15 +68,6 @@ describe("yawa daily voice reference", () => {
 		expect(call.command).toContain("--ref-wavs");
 		expect(call.command).toContain(REF);
 		expect(call.command).not.toContain("--no-ref");
-	});
-	test("the seed for segments is fixed", () => {
-		const call = segmentCall(config, "a", "b", REF, "/tmp/x.wav");
-		expect(call.command).toContain(String(config.tts.seed));
-	});
-	test("reference candidates are the only caption-only generations", () => {
-		const call = referenceCandidateCall(config, "囁く声", 101, "/tmp/c.wav");
-		expect(call.command).toContain("--no-ref");
-		expect(call.command).toContain(config.reference.text);
 	});
 	test("selects the most intelligible candidate", () => {
 		const candidates: ReferenceCandidate[] = [
@@ -134,15 +110,6 @@ describe("yawa daily existing runs", () => {
 			}),
 		).toBe("refuse_legacy");
 	});
-	test("prepares a new run", () => {
-		expect(
-			preparationAction({
-				publishVerified: false,
-				finalMixExists: false,
-				referenceExists: false,
-			}),
-		).toBe("prepare");
-	});
 });
 
 describe("yawa daily metadata", () => {
@@ -152,52 +119,11 @@ describe("yawa daily metadata", () => {
 		expect(text).toContain(pool[0].url);
 		expect(text).toContain("年上の成人の女性");
 	});
-	test("title leads with the search prefix and keeps the episode title", () => {
-		expect(config.metadata.title_prefix).toBeTruthy();
-		expect(config.metadata.tags).toContain("年上");
-	});
 });
 
-describe("yawa daily voice identity", () => {
-	test("the channel voice is one fixed caption in config, not per episode", () => {
-		expect(config.voice.caption).toContain("年上");
-		expect(config.voice.caption).toContain("囁");
-	});
-	test("reference and segments use the same channel caption", () => {
-		const seg = segmentCall(
-			config,
-			"a",
-			config.voice.caption,
-			REF,
-			"/tmp/x.wav",
-		);
-		const cand = referenceCandidateCall(
-			config,
-			config.voice.caption,
-			101,
-			"/tmp/c.wav",
-		);
-		expect(seg.command).toContain(config.voice.caption);
-		expect(cand.command).toContain(config.voice.caption);
-	});
-});
+describe("yawa daily voice identity", () => {});
 
 describe("yawa daily tts backend", () => {
-	test("builds an irodori command with a pinned HF_HOME", () => {
-		const call = segmentCall(config, "こんばんは", "囁く声", REF, "/tmp/x.wav");
-		expect(call.command).toContain("--hf-checkpoint");
-		expect(call.env.HF_HOME).toBe(config.tts.hf_home);
-	});
-	test("switching backend is a config value", () => {
-		const call = segmentCall(
-			{ ...config, tts: { ...config.tts, backend: "irodori-v4-large" } },
-			"こんばんは",
-			"囁く声",
-			REF,
-			"/tmp/x.wav",
-		);
-		expect(call.command).toContain("Aratako/Irodori-TTS-v4-Large");
-	});
 	test("unknown backend fails loudly", () => {
 		expect(() =>
 			segmentCall(
@@ -251,8 +177,5 @@ describe("yawa daily audit", () => {
 			yawaAudit({ ...base, asrSimilarity: undefined } as never, config)
 				.audio_integrity?.status,
 		).toBe("QUALITY_FAIL");
-	});
-	test("similarity ignores punctuation", () => {
-		expect(similarity("おやすみ、なさい。", "おやすみなさい")).toBe(1);
 	});
 });

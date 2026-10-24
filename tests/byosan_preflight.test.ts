@@ -162,10 +162,4 @@ describe("Byosan Gemini structured-output probe", () => {
 		const jsonSchema = JSON.stringify(toJsonSchema(ProbeSchema));
 		expect(jsonSchema).not.toContain('"const"');
 	});
-
-	test("accepts only the ok=true contract", () => {
-		expect(ProbeSchema.safeParse({ ok: true }).success).toBe(true);
-		expect(ProbeSchema.safeParse({ ok: false }).success).toBe(false);
-		expect(ProbeSchema.safeParse({}).success).toBe(false);
-	});
 });

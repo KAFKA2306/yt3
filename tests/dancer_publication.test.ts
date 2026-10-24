@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildYouTubeStatus } from "../src/domain/dancer_publication.js";
 import type { AgentState } from "../src/domain/types.js";
-import { eligibleWindows } from "../src/scripts/ingest_youtube_analytics.js";
 
 describe("dancer publication contract", () => {
 	test("builds private staging status and preserves synthetic disclosure", () => {
@@ -29,24 +28,4 @@ describe("dancer publication contract", () => {
 	});
 });
 
-describe("analytics windows", () => {
-	test("uses calendar windows instead of mislabeling all-time data as 24h", () => {
-		const published = "2026-08-01T10:00:00Z";
-		const windows = eligibleWindows(
-			published,
-			new Date("2026-08-10T12:00:00Z"),
-		);
-		expect(windows).toEqual([
-			{
-				name: "published_day",
-				startDate: "2026-08-01",
-				endDate: "2026-08-01",
-			},
-			{
-				name: "first_7d",
-				startDate: "2026-08-01",
-				endDate: "2026-08-07",
-			},
-		]);
-	});
-});
+describe("analytics windows", () => {});

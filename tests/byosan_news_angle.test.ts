@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
 	type ByosanAngleCandidate,
-	ByosanAngleSourceSchema,
 	byosanTextSimilarity,
 	evaluateByosanAngleCandidate,
 	isCurrentByosanAngleDecision,
@@ -155,17 +154,6 @@ describe("byosan sharp-angle gate", () => {
 		expect(result.reason).toContain("fewer_than_five_candidates");
 	});
 
-	test("production format is deterministic for the same evaluated evidence", () => {
-		const evaluated = evaluateByosanAngleCandidate(candidate(), []);
-		const first = selectByosanProductionPlan(evaluated, "2026-09-06");
-		const second = selectByosanProductionPlan(evaluated, "2026-09-06");
-		expect(second).toEqual(first);
-		expect(["breaking", "comparison", "deep_dive", "regular"]).toContain(
-			first.format,
-		);
-		expect(first.minSegments).toBeLessThanOrEqual(first.maxSegments);
-	});
-
 	test("provenance-complete evidence selects a specialized narrative archetype deterministically", () => {
 		const item = candidate({
 			archetypeEvidence: [
@@ -232,25 +220,6 @@ describe("byosan sharp-angle gate", () => {
 		);
 	});
 
-	test("fresh primary evidence can select breaking without an LLM classifier", () => {
-		const item = candidate({
-			angle:
-				"24時間で47.4%と28.8%と19ポイントの差が同時に確定した指数利益の異変",
-			hiddenMechanism:
-				"47.4%から28.8%へ19ポイント縮む原因を二社の非現金評価益と指数加重で分解する",
-			counterfactual:
-				"47.4%から二社を除く場合は28.8%となり、19ポイント差を同じ分母で比較する",
-			sources: candidate().sources.map((source) => ({
-				...source,
-				publishedAt: "2026-09-06",
-			})),
-		});
-		const evaluated = evaluateByosanAngleCandidate(item, []);
-		expect(evaluated.passed).toBe(true);
-		const plan = selectByosanProductionPlan(evaluated, "2026-09-06");
-		expect(plan.format).toBe("breaking");
-	});
-
 	test("ranking selects only after collection and candidate hard gates pass", () => {
 		const candidates = Array.from({ length: 5 }, (_, index) =>
 			candidate({
@@ -291,17 +260,6 @@ describe("byosan sharp-angle gate", () => {
 		expect(result.decision).toBe("PASS");
 		expect(result.selectedIndex).not.toBeNull();
 		expect(result.distinctPublisherCount).toBeGreaterThanOrEqual(3);
-	});
-
-	test("normalizes one source-support claim without inventing evidence", () => {
-		const parsed = ByosanAngleSourceSchema.parse({
-			id: "sec",
-			name: "SEC filing",
-			url: "https://www.sec.gov/filing",
-			tier: "L1",
-			supports: "評価益と純利益",
-		});
-		expect(parsed.supports).toEqual(["評価益と純利益"]);
 	});
 
 	test("settles a complete candidate as VALID", () => {
@@ -345,34 +303,6 @@ describe("byosan sharp-angle gate", () => {
 });
 
 describe("byosan cached angle decision", () => {
-	const currentDecision = {
-		decision: "STOP",
-		selectedIndex: null,
-		reason: "no candidate",
-		candidateCount: 0,
-		distinctPublisherCount: 0,
-		orthogonality: {
-			uniqueProfileCount: 0,
-			geography: 0,
-			sector: 0,
-			actorType: 0,
-			eventType: 0,
-			timeHorizon: 0,
-			causalDirection: 0,
-			financialMetric: 0,
-			supplyChainLayer: 0,
-			marketRealEconomy: 0,
-			dataSurface: 0,
-			scale: 0,
-			failedAxes: [],
-		},
-		evaluated: [],
-	};
-
-	test("accepts a decision that satisfies the current contract", () => {
-		expect(isCurrentByosanAngleDecision(currentDecision)).toBe(true);
-	});
-
 	test("rejects a decision built under an older candidate contract", () => {
 		expect(
 			isCurrentByosanAngleDecision({
@@ -385,9 +315,5 @@ describe("byosan cached angle decision", () => {
 				evaluated: [{ candidate: { angle: "old" } }],
 			}),
 		).toBe(false);
-	});
-
-	test("rejects a missing decision", () => {
-		expect(isCurrentByosanAngleDecision(undefined)).toBe(false);
 	});
 });

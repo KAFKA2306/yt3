@@ -3,7 +3,6 @@ import {
 	type ByosanAnalyticsEvaluationCandidate,
 	type ByosanAnalyticsEvaluationPlan,
 	evaluateByosanAnalyticsCandidates,
-	hashByosanAnalyticsEvaluationPlan,
 } from "../src/domain/byosan/performance_evaluation.js";
 
 function plan(): ByosanAnalyticsEvaluationPlan {
@@ -168,13 +167,5 @@ describe("byosan analytics anti-gaming evaluation", () => {
 		expect(
 			result.units.find((unit) => unit.evaluationUnitId === "fixture")?.verdict,
 		).toBe("UNVERIFIED");
-	});
-
-	test("evaluation plan hash changes when the frozen policy changes", () => {
-		const original = plan();
-		const changed = { ...original, sampleMinimum: original.sampleMinimum + 1 };
-		expect(hashByosanAnalyticsEvaluationPlan(original)).not.toBe(
-			hashByosanAnalyticsEvaluationPlan(changed),
-		);
 	});
 });

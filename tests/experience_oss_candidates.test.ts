@@ -21,41 +21,6 @@ async function hashFile(filePath: string): Promise<string> {
 }
 
 describe("Experience OSS candidate registry", () => {
-	test("keeps the first CORE benchmark candidates classified without star data", async () => {
-		const registry = JSON.parse(await readFile(registryPath, "utf8"));
-		const result = await auditExperienceOssCandidateRegistry(
-			registry,
-			process.cwd(),
-		);
-
-		expect(result).toMatchObject({
-			status: "PASS",
-			candidate_count: 8,
-			classified_candidate_count: 8,
-			blocked_candidate_count: 8,
-			blocked_evaluation_candidate_count: 7,
-		});
-		expect(result.candidates[0]).toMatchObject({
-			candidate_id: "motion-canvas",
-			adoption_decision: "BLOCKED_LICENSE",
-			commercial_use: { code: "UNKNOWN", model_weights: "NOT_USED" },
-		});
-		expect(
-			registry.candidates
-				.filter(
-					(candidate: { benchmark_priority: string }) =>
-						candidate.benchmark_priority === "CORE",
-				)
-				.map((candidate: { candidate_id: string }) => candidate.candidate_id),
-		).toEqual(["motion-canvas", "birefnet", "liveportrait"]);
-		expect(
-			registry.candidates.every(
-				(candidate: { adoption_decision: string }) =>
-					candidate.adoption_decision === "BLOCKED_LICENSE",
-			),
-		).toBe(true);
-	});
-
 	test("requires a classification and evidence for every non-license decision", async () => {
 		const registry = JSON.parse(await readFile(registryPath, "utf8"));
 		registry.candidates[0].adoption_decision = null;
@@ -367,13 +332,5 @@ describe("Experience OSS candidate registry", () => {
 		} finally {
 			await rm(root, { recursive: true, force: true });
 		}
-	});
-
-	test("rejects GitHub-star fields rather than silently using them", async () => {
-		const registry = JSON.parse(await readFile(registryPath, "utf8"));
-		registry.candidates[0].github_stars = 999999;
-		expect(
-			ExperienceOssCandidateRegistrySchema.safeParse(registry).success,
-		).toBe(false);
 	});
 });

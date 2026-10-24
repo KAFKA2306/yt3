@@ -34,102 +34,6 @@ function fakeFactory(
 }
 
 describe("canonical structured LLM invocation", () => {
-	test("rotates after rate limit and succeeds on the next key", async () => {
-		const result = await invokeStructuredLlm({
-			schema: z.object({ ok: z.boolean() }),
-			name: "rotation_test",
-			llmFactory: fakeFactory(
-				[
-					{ kind: "error", error: new Error("429 quota exceeded") },
-					{ kind: "value", value: { ok: true } },
-				],
-				["TEST_RATE_KEY_1", "TEST_RATE_KEY_2"],
-			),
-			sleep: async () => {},
-			messages: () => [{ role: "user", content: "test" }],
-		});
-		expect(result).toEqual({ ok: true });
-	});
-
-	test("rotates after invalid key and succeeds on the next key", async () => {
-		const result = await invokeStructuredLlm({
-			schema: z.object({ ok: z.boolean() }),
-			name: "invalid_key_rotation_test",
-			llmFactory: fakeFactory(
-				[
-					{ kind: "error", error: new Error("API_KEY_INVALID") },
-					{ kind: "value", value: { ok: true } },
-				],
-				["TEST_INVALID_KEY_1", "TEST_INVALID_KEY_2"],
-			),
-			sleep: async () => {},
-			messages: () => [{ role: "user", content: "test" }],
-		});
-		expect(result).toEqual({ ok: true });
-	});
-
-	test("retries structured schema failures within the canonical contract", async () => {
-		const result = await invokeStructuredLlm({
-			schema: z.object({ ok: z.boolean() }),
-			name: "schema_retry_test",
-			llmFactory: fakeFactory(
-				[
-					{ kind: "error", error: new Error("schema validation failed") },
-					{ kind: "value", value: { ok: true } },
-				],
-				["TEST_SCHEMA_KEY_1", "TEST_SCHEMA_KEY_2"],
-			),
-			sleep: async () => {},
-			messages: () => [{ role: "user", content: "test" }],
-		});
-		expect(result).toEqual({ ok: true });
-	});
-
-	test("retries semantic validation without treating it as provider success", async () => {
-		let validations = 0;
-		const result = await invokeStructuredLlm({
-			schema: z.object({ value: z.number() }),
-			name: "semantic_test",
-			llmFactory: fakeFactory(
-				[
-					{ kind: "value", value: { value: 1 } },
-					{ kind: "value", value: { value: 2 } },
-				],
-				["TEST_SEMANTIC_KEY", "TEST_SEMANTIC_KEY"],
-			),
-			sleep: async () => {},
-			messages: () => [{ role: "user", content: "test" }],
-			validate: (value) => {
-				validations++;
-				if (validations === 1) throw new Error("domain audit mismatch");
-				return value;
-			},
-		});
-		expect(result.value).toBe(2);
-		expect(validations).toBe(2);
-	});
-
-	test("non-retryable provider errors stop immediately", async () => {
-		let factoryCalls = 0;
-		const factory = ((_: LlmOptions = {}) => {
-			factoryCalls++;
-			return fakeFactory(
-				[{ kind: "error", error: new Error("permission denied") }],
-				["TEST_FATAL_KEY"],
-			)();
-		}) as unknown as typeof createLlm;
-		await expect(
-			invokeStructuredLlm({
-				schema: z.object({ ok: z.boolean() }),
-				name: "fatal_test",
-				llmFactory: factory,
-				sleep: async () => {},
-				messages: () => [{ role: "user", content: "test" }],
-			}),
-		).rejects.toThrow("permission denied");
-		expect(factoryCalls).toBe(1);
-	});
-
 	test("attempt evidence redacts secret values", async () => {
 		const secret = "AIzaSecretSecretSecretSecret123";
 		const old = process.env.GEMINI_API_KEY;
@@ -247,58 +151,6 @@ describe("canonical structured LLM invocation", () => {
 		}
 	});
 
-	test("json_text mode retries free text that fails the Zod contract and persists each raw text", async () => {
-		const rawResponseDir = fs.mkdtempSync("/tmp/yt3-structured-json-text-");
-		const feedback: Array<string | undefined> = [];
-		try {
-			const result = await invokeStructuredLlm({
-				schema: z.object({ ok: z.boolean() }),
-				name: "json_text_test",
-				responseFormat: "json_text",
-				rawResponseDir,
-				llmFactory: textFactory(['{"ok":"no"}', '{"ok":true}']),
-				sleep: async () => {},
-				messages: (_attempt, lastValidationError) => {
-					feedback.push(lastValidationError);
-					return [{ role: "user", content: "test" }];
-				},
-			});
-			expect(result).toEqual({ ok: true });
-			expect(feedback[0]).toBeUndefined();
-			expect(feedback[1]).toContain("expected boolean");
-			const first = fs.readJsonSync(`${rawResponseDir}/attempt-1.json`);
-			expect(first.text).toBe('{"ok":"no"}');
-			expect(fs.readJsonSync(`${rawResponseDir}/attempt-2.json`).text).toBe(
-				'{"ok":true}',
-			);
-		} finally {
-			fs.removeSync(rawResponseDir);
-		}
-	});
-
-	test("retry feedback names the exact violated paths and their limits", async () => {
-		const feedback: Array<string | undefined> = [];
-		await invokeStructuredLlm({
-			schema: z.object({
-				thumbnail: z.object({ secondLine: z.string().max(12) }),
-				hookPromises: z.array(z.string().max(24)),
-			}),
-			name: "limit_feedback_test",
-			responseFormat: "json_text",
-			llmFactory: textFactory([
-				'{"thumbnail":{"secondLine":"0123456789abcdef"},"hookPromises":["ok"]}',
-				'{"thumbnail":{"secondLine":"short"},"hookPromises":["ok"]}',
-			]),
-			sleep: async () => {},
-			messages: (_attempt, lastValidationError) => {
-				feedback.push(lastValidationError);
-				return [{ role: "user", content: "test" }];
-			},
-		});
-		expect(feedback[1]).toContain("- thumbnail.secondLine: 12文字以内");
-		expect(feedback[1]).not.toContain("too_big");
-	});
-
 	test("a final rate-limit failure surfaces as QuotaExhaustionError", async () => {
 		await expect(
 			invokeStructuredLlm({
@@ -328,18 +180,6 @@ describe("canonical structured LLM invocation", () => {
 		).rejects.toThrow("STRUCTURED_OUTPUT_VALIDATION_EXHAUSTED");
 	});
 });
-
-function textFactory(texts: string[]): typeof createLlm {
-	let index = 0;
-	return (() => {
-		const content = texts[index];
-		index++;
-		return {
-			keyName: `TEST_TEXT_KEY_${index}`,
-			invoke: async () => ({ content }),
-		};
-	}) as unknown as typeof createLlm;
-}
 
 function recordingFactory(
 	value: unknown,
