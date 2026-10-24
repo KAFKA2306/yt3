@@ -1,4 +1,4 @@
-# ADR-0045: Irodori-TTS v4.1 のローカル導入（sandbox）
+# ADR-0046: Irodori-TTS v4.1 のローカル導入（sandbox）
 
 ## Status
 

@@ -28,6 +28,7 @@
 - `0040-qd-driven-cognitive-ecology-archive.md`: QD駆動の認知生態アーカイブ
 - `0041-domain-definition-cognitive-cross-section.md`: 第3ドメイン「思考の断面」の定義
 - `0045-humanity-music-video-release-gate.md`: 人類観測所の音楽動画の公開ゲート
+- `0046-irodori-tts-v4-1-checkpoint-setup.md`: Irodori-TTS v4.1 のローカル導入（sandbox）
 
 ## Rule
 
