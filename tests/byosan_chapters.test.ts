@@ -40,6 +40,39 @@ const claims: ByosanDescriptionInput["claims"] = [
 ];
 
 describe("planByosanChapters", () => {
+	test("groups consecutive short turns into chapters of at least the minimum length", () => {
+		const turns = Array.from({ length: 12 }, (_, index) => ({
+			headline: `話題${index}`,
+			duration: 7.5,
+		}));
+		expect(planByosanChapters(turns, config)).toEqual([
+			{ start: 0, title: "話題0" },
+			{ start: 15, title: "話題2" },
+			{ start: 30, title: "話題4" },
+			{ start: 45, title: "話題6" },
+			{ start: 60, title: "話題8" },
+			{ start: 75, title: "話題10" },
+		]);
+	});
+
+	test("folds a short trailing remainder into the previous chapter", () => {
+		expect(
+			planByosanChapters(
+				[
+					{ headline: "結論", duration: 20 },
+					{ headline: "数字", duration: 20 },
+					{ headline: "確認", duration: 20 },
+					{ headline: "出典", duration: 4 },
+				],
+				config,
+			),
+		).toEqual([
+			{ start: 0, title: "結論" },
+			{ start: 20, title: "数字" },
+			{ start: 40, title: "確認" },
+		]);
+	});
+
 	test("uses the headline of the first scene in each interval as the chapter title", () => {
 		expect(
 			planByosanChapters(
@@ -75,7 +108,7 @@ describe("planByosanChapters", () => {
 		]);
 	});
 
-	test("folds a short interval into the chapter before it", () => {
+	test("lets a short interval absorb the following scenes until it reaches the minimum length", () => {
 		expect(
 			planByosanChapters(
 				[
@@ -88,7 +121,7 @@ describe("planByosanChapters", () => {
 			),
 		).toEqual([
 			{ start: 0, title: "A" },
-			{ start: 16, title: "C" },
+			{ start: 12, title: "B" },
 			{ start: 28, title: "D" },
 		]);
 	});
