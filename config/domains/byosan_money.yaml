@@ -538,3 +538,14 @@ scenes:
     - {kind: bignumber, emphasis: reveal, when: {stat_count_min: 1, stat_count_max: 1}}
     - {kind: hbar_compare, emphasis: highlight, when: {stat_count_min: 2, stat_count_max: 3, shared_unit: true}}
     - {kind: stat_cards, emphasis: none, when: {stat_count_min: 1}}
+
+authenticity:
+  history_window: 5
+  max_similarity: 0.8
+  max_generic_ratio: 0.4
+  generic_kinds: ["stat_cards", "question"]
+  scene_claim_statuses: ["verified"]
+  independent_work:
+    verification_roles: ["auditor", "resolution"]
+    comparison_kinds: ["hbar_compare", "bar_trend", "line_series"]
+    scenes_per_figure: 1

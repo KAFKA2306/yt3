@@ -955,6 +955,11 @@ export async function runByosanDaily(): Promise<void> {
 	if (!checkpoint.stages.quality_pass) {
 		throw new Error(`QUALITY_GATE_FAILED: ${qualityReportPath}`);
 	}
+	runCommand(
+		process.execPath,
+		["src/scripts/audit_byosan_authenticity.ts", "--run", runId],
+		process.env,
+	);
 	markFailureRecovered(store.runDir);
 	console.log(`PRODUCTION_PASS=${runId}`);
 }
