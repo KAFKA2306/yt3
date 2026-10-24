@@ -47,6 +47,7 @@ import {
 	type ByosanFeatureSpec,
 	type FeatureSpecIssue,
 	archetypeSlotPromptPolicy,
+	buildByosanSceneRule,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import {
@@ -674,7 +675,15 @@ export async function generateFeatureSpec(
 	const scenesConfig = (
 		loadConfig("byosan_money") as unknown as { scenes: ByosanScenesConfig }
 	).scenes;
-	const sceneRule = `画面の種類は${scenesConfig.min_distinct_kinds}種類以上にし、同じ種類の場面は${scenesConfig.max_consecutive_same_kind}つまでしか続けないでください。statsは場面あたり最大${scenesConfig.max_numbers_per_scene}件です。同じ単位の2〜3個の数値を並べて比べる場面（例: 同じ指標の別の対象、前年同月と今月など期の異なる同一指標）を、動画の中に複数入れてください。その数値は explanation の figures の value と candidateNumbers の範囲に限ります。1つの数字を大きく見せる場面はstatsを1件だけにします。数値カードのない場面はstatsを空にして問いの場面とし、その場面は連続させないでください。`;
+	const authenticityConfig = (
+		loadConfig("byosan_money") as unknown as {
+			authenticity: { max_generic_ratio: number };
+		}
+	).authenticity;
+	const sceneRule = buildByosanSceneRule(
+		scenesConfig,
+		authenticityConfig.max_generic_ratio,
+	);
 	const hookPromises = candidate.numbers.slice(0, 4);
 	if (hookPromises.length < 2) {
 		throw new Error(

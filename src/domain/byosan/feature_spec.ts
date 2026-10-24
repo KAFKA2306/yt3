@@ -19,6 +19,7 @@ import {
 	ByosanProductionPlanSchema,
 	ByosanSourceTierSchema,
 } from "./news_angle.js";
+import type { ByosanScenesConfig } from "./scene_spec.js";
 
 export const ByosanStatColorSchema = z.enum([
 	"cyan",
@@ -627,4 +628,11 @@ export function staticSceneMotionFilter(fps = 30): string {
 		throw new Error(`Invalid static scene fps: ${fps}`);
 	}
 	return `fps=${fps}`;
+}
+
+export function buildByosanSceneRule(
+	scenes: ByosanScenesConfig,
+	maxGenericRatio: number,
+): string {
+	return `画面の種類は${scenes.min_distinct_kinds}種類以上にし、同じ種類の場面は${scenes.max_consecutive_same_kind}つまでしか続けないでください。statsは場面あたり最大${scenes.max_numbers_per_scene}件です。同じ単位の2〜3個の数値を並べて比べる場面（例: 同じ指標の別の対象、前年同月と今月など期の異なる同一指標）を、動画の中に複数入れてください。その数値は explanation の figures の value と candidateNumbers の範囲に限ります。1つの数字を大きく見せる場面はstatsを1件だけにします。数値カードのない場面（問い・つなぎ・結論・出典整理）はstatsを空にし、全場面に対する割合を${Math.round(maxGenericRatio * 100)}%以下に収めてください。その場面は連続させないでください。数値を示せる発話は数値カードの場面にし、数値カードのない場面を増やさないでください。出典を示すclaimは、そのclaimのsourceIdsに対応するsourcesのnameを略さず、そのclaimを参照するsegmentのsourceに含めてください。`;
 }
