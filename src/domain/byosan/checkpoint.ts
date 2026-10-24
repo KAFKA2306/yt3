@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
+import yaml from "js-yaml";
+import { isCurrentByosanAngleDecision } from "./news_angle.js";
 
 export type ByosanCheckpointStages = {
 	research_ready: boolean;
@@ -23,6 +25,8 @@ export type ByosanCheckpoint = {
 	updated_at: string;
 };
 
+const BYOSAN_CONFIG_RELATIVE_PATH = "config/domains/byosan_money.yaml";
+
 const EMPTY_STAGES: ByosanCheckpointStages = {
 	research_ready: false,
 	spec_ready: false,
@@ -31,13 +35,19 @@ const EMPTY_STAGES: ByosanCheckpointStages = {
 	publish_verified: false,
 };
 
+const FINGERPRINT_PREFIX = "inputs_v2:";
+
 const SOURCE_GROUPS = {
 	research: [
 		"src/domain/agents/research.ts",
 		"src/domain/byosan/news_angle.ts",
-		"src/scripts/byosan_daily.ts",
+		"config/sources/byosan_discovery_sources.json",
 	],
-	spec: ["src/domain/byosan/feature_spec.ts", "src/scripts/byosan_daily.ts"],
+	spec: [
+		"src/domain/byosan/feature_spec.ts",
+		"src/domain/byosan/feature_repair.ts",
+		"src/domain/byosan/explanation.ts",
+	],
 	media: ["src/scripts/produce_byosan_feature.ts"],
 	publish: [
 		"src/scripts/publish_youtube.ts",
@@ -45,26 +55,70 @@ const SOURCE_GROUPS = {
 	],
 } as const;
 
+function fileContent(absolutePath: string): Buffer | "MISSING" {
+	return fs.existsSync(absolutePath)
+		? fs.readFileSync(absolutePath)
+		: "MISSING";
+}
+
 function hashFiles(root: string, files: readonly string[]): string {
 	const hash = createHash("sha256");
 	for (const relativePath of files) {
-		const absolutePath = path.join(root, relativePath);
 		hash.update(relativePath);
 		hash.update("\0");
-		hash.update(
-			fs.existsSync(absolutePath) ? fs.readFileSync(absolutePath) : "MISSING",
-		);
+		hash.update(fileContent(path.join(root, relativePath)));
 		hash.update("\0");
 	}
 	return hash.digest("hex");
 }
 
+function readByosanConfigFile(root: string): Record<string, unknown> {
+	return yaml.load(
+		fs.readFileSync(path.join(root, BYOSAN_CONFIG_RELATIVE_PATH), "utf8"),
+	) as Record<string, unknown>;
+}
+
+function inputFingerprint(parts: ReadonlyArray<string | Buffer>): string {
+	const hash = createHash("sha256");
+	for (const part of parts) {
+		hash.update(part);
+		hash.update("\0");
+	}
+	return `${FINGERPRINT_PREFIX}${hash.digest("hex")}`;
+}
+
+function researchFingerprint(root: string, runDir: string): string {
+	const config = readByosanConfigFile(root);
+	return inputFingerprint([
+		hashFiles(root, SOURCE_GROUPS.research),
+		JSON.stringify({
+			prompts: (config.prompts as { research: unknown }).research,
+			discovery: config.discovery,
+		}),
+		fileContent(path.join(runDir, "research", "discovery_articles.json")),
+	]);
+}
+
+function specFingerprint(root: string): string {
+	const config = readByosanConfigFile(root);
+	return inputFingerprint([
+		hashFiles(root, SOURCE_GROUPS.spec),
+		JSON.stringify({
+			prompts: config.prompts,
+			explain: config.explain,
+			repair: config.repair,
+			llm: config.llm,
+		}),
+	]);
+}
+
 export function currentByosanFingerprints(
 	root: string,
+	runDir: string,
 ): ByosanCheckpoint["fingerprints"] {
 	return {
-		research: hashFiles(root, SOURCE_GROUPS.research),
-		spec: hashFiles(root, SOURCE_GROUPS.spec),
+		research: researchFingerprint(root, runDir),
+		spec: specFingerprint(root),
 		media: hashFiles(root, SOURCE_GROUPS.media),
 		publish: hashFiles(root, SOURCE_GROUPS.publish),
 	};
@@ -96,12 +150,37 @@ export function readByosanCheckpoint(runDir: string): ByosanCheckpoint | null {
 	}
 }
 
+function legacyStages(
+	runDir: string,
+	stages: ByosanCheckpointStages,
+): ByosanCheckpointStages {
+	const researchReady = isCurrentByosanAngleDecision(
+		readJsonIfExists(path.join(runDir, "source", "research_result.json"))
+			?.angle_decision,
+	);
+	return {
+		...stages,
+		research_ready: researchReady,
+		spec_ready:
+			researchReady &&
+			fs.existsSync(path.join(runDir, "source", "feature_spec.json")),
+	};
+}
+
+function readJsonIfExists(
+	filePath: string,
+): { angle_decision?: unknown } | undefined {
+	return fs.existsSync(filePath)
+		? (fs.readJsonSync(filePath) as { angle_decision?: unknown })
+		: undefined;
+}
+
 export function reconcileByosanCheckpoint(
 	runDir: string,
 	runId: string,
 	root: string,
 ): ByosanCheckpoint {
-	const fingerprints = currentByosanFingerprints(root);
+	const fingerprints = currentByosanFingerprints(root, runDir);
 	const previous = readByosanCheckpoint(runDir);
 	if (!previous || previous.run_id !== runId) {
 		return {
@@ -113,10 +192,13 @@ export function reconcileByosanCheckpoint(
 		};
 	}
 
-	const stages = { ...previous.stages };
-	if (previous.fingerprints.research !== fingerprints.research) {
+	const legacy = !previous.fingerprints.research.startsWith(FINGERPRINT_PREFIX);
+	const stages = legacy
+		? legacyStages(runDir, previous.stages)
+		: { ...previous.stages };
+	if (!legacy && previous.fingerprints.research !== fingerprints.research) {
 		Object.assign(stages, EMPTY_STAGES);
-	} else if (previous.fingerprints.spec !== fingerprints.spec) {
+	} else if (!legacy && previous.fingerprints.spec !== fingerprints.spec) {
 		stages.spec_ready = false;
 		stages.media_ready = false;
 		stages.quality_pass = false;

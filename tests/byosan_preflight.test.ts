@@ -177,6 +177,22 @@ describe("Byosan preflight probes the configured LLM backends", () => {
 	});
 });
 
+describe("Byosan preflight skips probes for stages served from checkpoint", () => {
+	test("does not probe gemini when only codex stages will run", async () => {
+		const report = await runByosanPreflight(await temporaryRunDir(), {
+			...passingDependencies(),
+			llmBackends: ["codex"],
+			gemini: async () => {
+				throw new Error("gemini must not be probed");
+			},
+			codexLogin: () => pass("codex_login"),
+			codexExec: async () => pass("codex_exec"),
+		});
+		expect(report.checks.gemini).toBeUndefined();
+		expect(report.status).toBe("PASS");
+	});
+});
+
 describe("Byosan codex structured-output probe", () => {
 	test("accepts only the ok=true contract", () => {
 		expect(ProbeSchema.safeParse({ ok: true }).success).toBe(true);

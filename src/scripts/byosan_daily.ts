@@ -11,6 +11,8 @@ import {
 	writeByosanCheckpoint,
 } from "../domain/byosan/checkpoint.js";
 import {
+	type ByosanLlmConfig,
+	type LlmBackend,
 	type StructuredCall,
 	byosanLlmConfig,
 	codexLlmLogPath,
@@ -400,6 +402,16 @@ function readFailureTrace(runDir: string): ByosanFailureTrace | null {
 			`FAILURE_TRACE_UNREADABLE: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
+}
+
+export function pendingLlmBackends(
+	llm: ByosanLlmConfig,
+	reused: { research: boolean; spec: boolean },
+): LlmBackend[] {
+	return [
+		...(reused.research ? [] : [llmBackend(llm, "research")]),
+		...(reused.spec ? [] : [llmBackend(llm, "feature"), "codex" as const]),
+	];
 }
 
 export function reusableResearchResult(
@@ -878,16 +890,6 @@ export async function runByosanDaily(): Promise<void> {
 	const store = new AssetStore(runId);
 	const checkpoint = reconcileByosanCheckpoint(store.runDir, runId, ROOT);
 	writeByosanCheckpoint(store.runDir, checkpoint);
-	const preflight = await runByosanPreflight(store.runDir);
-	if (preflight.status !== "PASS") {
-		throw new Error(
-			preflightBlockedMessage(
-				preflight,
-				path.join(store.runDir, "audit", "preflight.json"),
-			),
-		);
-	}
-	assertByosanRetryAllowed(store.runDir);
 	const researchPath = path.join(
 		store.runDir,
 		"source",
@@ -899,11 +901,29 @@ export async function runByosanDaily(): Promise<void> {
 			: undefined;
 	const reusedResearch =
 		cachedResearch && reusableResearchResult(cachedResearch);
+	const specPath = path.join(store.runDir, "source", "feature_spec.json");
+	const specReused =
+		checkpoint.stages.spec_ready && (await fs.pathExists(specPath));
+	const llm = byosanLlmConfig();
+	const preflight = await runByosanPreflight(store.runDir, {
+		llmBackends: pendingLlmBackends(llm, {
+			research: reusedResearch !== undefined,
+			spec: specReused,
+		}),
+	});
+	if (preflight.status !== "PASS") {
+		throw new Error(
+			preflightBlockedMessage(
+				preflight,
+				path.join(store.runDir, "audit", "preflight.json"),
+			),
+		);
+	}
+	assertByosanRetryAllowed(store.runDir);
 	let research: ResearchResult;
 	if (reusedResearch) {
 		research = reusedResearch;
 	} else {
-		const llm = byosanLlmConfig();
 		const scout =
 			llmBackend(llm, "research") === "codex"
 				? new TrendScout(store, (request) =>
@@ -943,9 +963,8 @@ export async function runByosanDaily(): Promise<void> {
 		preferredFormat,
 	);
 	const normalized = normalizedResearchEvidence(candidate);
-	const specPath = path.join(store.runDir, "source", "feature_spec.json");
 	let spec: ByosanFeatureSpec;
-	if (checkpoint.stages.spec_ready && (await fs.pathExists(specPath))) {
+	if (specReused) {
 		spec = parseAndAuditByosanFeatureSpec(await fs.readJson(specPath));
 	} else {
 		const explainConfig = (
