@@ -87,10 +87,14 @@ async function main() {
 		id: [videoId],
 	});
 	const after = afterRes.data.items?.[0];
+	// YouTube returns tags in its own order, so compare them as a set; trim the description, which YouTube may trim.
+	const sameTags =
+		[...(after?.snippet?.tags ?? [])].sort().join("\n") ===
+		[...tags].sort().join("\n");
 	const verified =
 		after?.snippet?.title === title &&
-		after?.snippet?.description === description &&
-		JSON.stringify(after?.snippet?.tags ?? []) === JSON.stringify(tags);
+		(after?.snippet?.description ?? "").trim() === description.trim() &&
+		sameTags;
 
 	const record = {
 		at: new Date().toISOString(),
