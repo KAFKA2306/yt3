@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { ResearchPayloadSchema } from "../src/domain/agents/research.js";
+import {
+	ResearchPayloadSchema,
+	byosanAngleGate,
+} from "../src/domain/agents/research.js";
 import { type createLlm, invokeStructuredLlm } from "../src/io/core.js";
 
 const selectedTopic = {
@@ -30,6 +33,15 @@ function textFactory(
 		};
 	}) as unknown as typeof createLlm;
 }
+
+describe("byosan angle gate configuration", () => {
+	test("the collection minimums are read from the byosan config", () => {
+		expect(byosanAngleGate()).toEqual({
+			minCandidateCount: 5,
+			minDistinctPublishers: 3,
+		});
+	});
+});
 
 describe("byosan research contract", () => {
 	test("a payload that never includes results fails after the attempt budget", async () => {

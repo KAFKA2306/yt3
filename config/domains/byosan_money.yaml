@@ -214,16 +214,20 @@ discovery:
   user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
   registry: "config/sources/byosan_discovery_sources.json"
 
+angle_gate:
+  min_candidate_count: 5
+  min_distinct_publishers: 3
+
 llm:
   sandbox: "read-only"
   workdir_prefix: "byosan-llm-"
   max_attempts: 5
   max_local_repairs: 3
   backends:
-    research: "gemini"
+    research: "codex"
     feature: "codex"
-    digest: "gemini"
-    preflight: "gemini"
+    digest: "codex"
+    preflight: "codex"
   json_only_instruction: "最終応答は JSON 値だけにしてください。説明文、Markdown、コードフェンスは付けず、入力に書かれた証拠だけを根拠にしてください。"
 
 sec:
@@ -315,8 +319,9 @@ prompts:
     consolidated_research:
       system: |
         あなたは「秒算マネー（Byosan Money）」の主任アナリストです。
-        編集の北極星は「投資の問いを、事実と数字で確かめる」です。[MISSION EVIDENCE] に載る登録媒体の新着記事から、今日取り上げる題材を発見します。媒体に従うのは「何に注目するか」の発見段階までで、何を事実として述べるか、どんな比較を行うかは、元の資料と独立した検証で決めます。
-        一次情報なし断定禁止。各主張には source_tier と URL または source_identifier を必須としてください。記事の数値は、企業IR・SEC・統計原典で照合できるものだけを使い、実績・推計・予想を区別してください。
+        編集の北極星は「投資の問いを、事実と数字で確かめる」です。[MISSION EVIDENCE] に載る登録媒体の新着記事から、今日取り上げる題材を作ります。あなたが確認できるのは記事本文と記事が示す出典だけです。外部の資料は取りに行けないので、記事の数値と出典の対応を根拠に、比較・再計算・論点整理を行って候補を作ってください。
+        一次情報なし断定禁止。各主張には source_tier と URL を付けてください。source_tier は、その主張の出典が本来どの層の資料かで決めます（L1 規制当局・開示書類、L2 政府統計・政策、L3 企業・研究機関の一次発表、L4 専門機関の集計、L5 報道・アナリストの解説）。記事が一次資料を出典として挙げるときは、その資料を sources に入れ、記事がその資料に帰属させている内容だけを supports に書いてください。一次資料の本文を確認したとは書かないでください。数値は記事本文の値を変えずに使い、実績・推計・予想を区別してください。
+        候補を外す理由は、出典の不整合、数値の意味の取り違え、推計と実績の混同、誤解を招く断定、権利上の問題に限ります。記事から作れる候補は、必要な件数に届かなくても必ず selected_topics に入れてください。evidence_gap などの別の形式で返さないでください。
 
         **【選定の順序】**
         1. 検証可能性（必須）: 出典・対象期間・定義を追えるか。判断できない部分を正直に残せるか。
@@ -368,8 +373,8 @@ prompts:
         本日の選定を開始します。
         現在日付: {current_date}
 
-        [MISSION EVIDENCE] の新着記事だけを題材の候補にしてください。記事に書かれていない事象を足さないでください。
-        候補は媒体・記事・データ面が一つに偏らないようにし、各候補の根拠は記事と、その数値を裏づける一次データの両方にしてください。
+        [MISSION EVIDENCE] の新着記事だけを題材の候補にしてください。記事に書かれていない事象や数値を足さないでください。
+        候補は媒体・記事が一つに偏らないようにし、各候補の根拠は記事本文の数値と、記事が挙げる出典にしてください。
 
       candidate_repair_template: |
         【CANDIDATE REPAIR】

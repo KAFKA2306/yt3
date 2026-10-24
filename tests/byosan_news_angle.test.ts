@@ -4,10 +4,13 @@ import {
 	byosanTextSimilarity,
 	evaluateByosanAngleCandidate,
 	isCurrentByosanAngleDecision,
+	normalizeByosanAngleCandidateForm,
 	selectByosanAngle,
 	selectByosanProductionPlan,
 	settleByosanAngleCandidate,
 } from "../src/domain/byosan/news_angle.js";
+
+const gate = { minCandidateCount: 5, minDistinctPublishers: 3 };
 
 function candidate(
 	overrides: Partial<ByosanAngleCandidate> = {},
@@ -148,10 +151,51 @@ describe("byosan sharp-angle gate", () => {
 		);
 	});
 
-	test("the collection gate requires five candidates and three publishers", () => {
-		const result = selectByosanAngle([candidate()], []);
+	test("the collection gate requires the configured candidate count", () => {
+		const result = selectByosanAngle([candidate()], [], gate);
 		expect(result.decision).toBe("STOP");
-		expect(result.reason).toContain("fewer_than_five_candidates");
+		expect(result.reason).toContain("fewer_than_5_candidates");
+	});
+
+	test("the collection gate follows the configured minimums", () => {
+		const result = selectByosanAngle([candidate()], [], {
+			minCandidateCount: 1,
+			minDistinctPublishers: 2,
+		});
+		expect(result.decision).toBe("PASS");
+		expect(result.selectedIndex).toBe(0);
+	});
+
+	test("normalizes numeric figures and lower-case source tiers before settlement", () => {
+		const settled = settleByosanAngleCandidate({
+			...candidate(),
+			numbers: [47.4, "28.8%"],
+			sources: candidate().sources.map((source) => ({
+				...source,
+				tier: source.tier.toLowerCase(),
+			})),
+		});
+		expect(settled.status).toBe("VALID");
+		if (settled.status !== "VALID") return;
+		expect(settled.candidate.numbers).toEqual(["47.4", "28.8%"]);
+		expect(settled.candidate.sources.map((source) => source.tier)).toEqual([
+			"L1",
+			"L3",
+		]);
+	});
+
+	test("leaves a tier outside the L1-L5 range for the schema to reject", () => {
+		const invalid = {
+			...candidate(),
+			sources: [
+				{ ...candidate().sources[0], tier: "L9" },
+				candidate().sources[1],
+			],
+		};
+		expect(normalizeByosanAngleCandidateForm(invalid)).toMatchObject({
+			sources: [{ tier: "L9" }, { tier: "L3" }],
+		});
+		expect(settleByosanAngleCandidate(invalid).status).toBe("REJECTED");
 	});
 
 	test("provenance-complete evidence selects a specialized narrative archetype deterministically", () => {
@@ -256,7 +300,7 @@ describe("byosan sharp-angle gate", () => {
 				],
 			}),
 		);
-		const result = selectByosanAngle(candidates, []);
+		const result = selectByosanAngle(candidates, [], gate);
 		expect(result.decision).toBe("PASS");
 		expect(result.selectedIndex).not.toBeNull();
 		expect(result.distinctPublisherCount).toBeGreaterThanOrEqual(3);
@@ -284,7 +328,7 @@ describe("byosan sharp-angle gate", () => {
 		expect(settled.status).toBe("REJECTED");
 	});
 
-	test("the collection gate stops when exploration axes lack diversity", () => {
+	test("exploration axis diversity is reported but does not stop the decision", () => {
 		const candidates = Array.from({ length: 5 }, (_, index) =>
 			candidate({
 				sources: [
@@ -293,8 +337,8 @@ describe("byosan sharp-angle gate", () => {
 				],
 			}),
 		);
-		const result = selectByosanAngle(candidates, []);
-		expect(result.decision).toBe("STOP");
+		const result = selectByosanAngle(candidates, [], gate);
+		expect(result.decision).toBe("PASS");
 		expect(result.orthogonality.failedAxes).toContain(
 			"insufficient_sector_diversity",
 		);
