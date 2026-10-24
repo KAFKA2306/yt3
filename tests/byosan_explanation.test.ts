@@ -6,6 +6,7 @@ import {
 	auditVerdicts,
 	buildExplanationEvidence,
 } from "../src/domain/byosan/explanation.js";
+import { explanationCheckItems } from "../src/domain/byosan/explanation_contract.js";
 
 const schema = JSON.parse(
 	fs.readFileSync("config/schemas/byosan_explanation_v1.json", "utf8"),
@@ -189,5 +190,21 @@ describe("byosan explanation evidence", () => {
 				articles,
 			),
 		).toThrow("BYOSAN_EXPLAIN_EVIDENCE_MISSING");
+	});
+});
+
+describe("explanation check items", () => {
+	test("splits the explanation check into one key question per line", () => {
+		expect(
+			explanationCheckItems({
+				check: "今後の価格を確認する。\n見方を見直す条件を確認する。",
+			}),
+		).toEqual(["今後の価格を確認する。", "見方を見直す条件を確認する。"]);
+	});
+
+	test("drops blank lines so every key question is non-empty", () => {
+		expect(explanationCheckItems({ check: "確認する。\n\n" })).toEqual([
+			"確認する。",
+		]);
 	});
 });
