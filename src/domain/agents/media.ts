@@ -1,6 +1,4 @@
-import os from "node:os";
 import path from "node:path";
-import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
 import type { RenderPlan, Script } from "../../domain/types.js";
 import {
@@ -13,6 +11,12 @@ import { IqaValidator } from "../../io/utils/iqa_validator.js";
 import { AgentLogger } from "../../io/utils/logger.js";
 import { TtsOrchestrator } from "../../io/utils/tts_orchestrator.js";
 import { LayoutEngine } from "../layout/engine.js";
+import {
+	buildConcatArgs,
+	buildLoudnormArgs,
+	probeDurationSeconds,
+	runFfmpeg,
+} from "../media/ffmpeg.js";
 import { ThumbnailGenerator } from "../media/thumbnail_generator.js";
 import { VideoComposer } from "../media/video_composer.js";
 
@@ -215,17 +219,9 @@ export class VisualDirector extends BaseAgent {
 	private async getAudioDurations(audioPaths: string[]): Promise<number[]> {
 		const durations: number[] = [];
 		for (const audioPath of audioPaths) {
-			durations.push(await this.getAudioDuration(audioPath));
+			durations.push(await probeDurationSeconds(audioPath));
 		}
 		return durations;
-	}
-
-	private getAudioDuration(audioPath: string): Promise<number> {
-		return new Promise((resolve, reject) =>
-			ffmpeg.ffprobe(audioPath, (err, metadata) =>
-				err ? reject(err) : resolve(metadata?.format?.duration || 0),
-			),
-		);
 	}
 
 	private async generateSubtitles(
@@ -251,24 +247,9 @@ export class VisualDirector extends BaseAgent {
 			audioDir,
 			this.store.cfg.workflow.filenames.audio_full,
 		);
-		const audioCmd = ffmpeg();
-		for (const audioPath of audioPaths) audioCmd.input(audioPath);
-		await new Promise<void>((resolve, reject) => {
-			audioCmd
-				.on("error", reject)
-				.on("end", () => resolve())
-				.mergeToFile(tempMergedPath, os.tmpdir());
-		});
-		await new Promise<void>((resolve, reject) => {
-			ffmpeg(tempMergedPath)
-				.audioFilters("loudnorm=I=-14:TP=-3.0:LRA=11")
-				.on("error", reject)
-				.on("end", () => {
-					fs.removeSync(tempMergedPath);
-					resolve();
-				})
-				.save(fullAudioPath);
-		});
+		await runFfmpeg(buildConcatArgs(audioPaths, tempMergedPath));
+		await runFfmpeg(buildLoudnormArgs(tempMergedPath, fullAudioPath));
+		fs.removeSync(tempMergedPath);
 		return fullAudioPath;
 	}
 
