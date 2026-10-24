@@ -727,7 +727,7 @@ scenes:
   min_distinct_kinds: 3
   chars_per_second: 4.1
   rules:
-    - {kind: question, emphasis: none, when: {visual_type_in: ["question"], stat_count_max: 0}}
+    - {kind: question, emphasis: none, when: {stat_count_max: 0}}
     - {kind: line_series, emphasis: reveal, when: {figure_count_min: 3, figures_cover_stats: true, distinct_periods_min: 3, distinct_metrics_max: 1}}
     - {kind: bar_trend, emphasis: reveal, when: {figure_count_min: 2, figures_cover_stats: true, distinct_periods_min: 2, distinct_metrics_max: 1}}
     - {kind: bignumber, emphasis: reveal, when: {stat_count_min: 1, stat_count_max: 1}}
