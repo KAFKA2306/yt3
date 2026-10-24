@@ -3,6 +3,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
 import { ByosanActiveProbeEvidenceSchema } from "../domain/byosan/active_probe.js";
+import { getByosanProductionConfig } from "../domain/byosan/production_config.js";
 
 const ROOT = process.cwd();
 
@@ -191,9 +192,9 @@ async function preflightFullRuntime(): Promise<RuntimeStep> {
 	if (!fs.existsSync(envPath)) missing.push("config/.env.byosan");
 	let voicevox = false;
 	try {
-		const url = process.env.VOICEVOX_URL ?? "http://localhost:50121";
-		const response = await fetch(`${url.replace(/\/$/, "")}/version`, {
-			signal: AbortSignal.timeout(5000),
+		const endpoint = getByosanProductionConfig().providers.tts.voicevox;
+		const response = await fetch(`${endpoint.url.replace(/\/$/, "")}/version`, {
+			signal: AbortSignal.timeout(endpoint.health_timeout_ms),
 		});
 		voicevox = response.ok;
 	} catch {

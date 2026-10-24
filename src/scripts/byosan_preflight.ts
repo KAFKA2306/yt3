@@ -3,6 +3,7 @@ import path from "node:path";
 import * as dotenv from "dotenv";
 import fs from "fs-extra";
 import { z } from "zod";
+import { getByosanProductionConfig } from "../domain/byosan/production_config.js";
 import {
 	assertYouTubeChannelMatchesProfile,
 	createYouTubeOAuthClient,
@@ -118,13 +119,11 @@ function runPythonRuntime(runDir: string): PreflightCheck {
 }
 
 async function checkVoicevox(): Promise<PreflightCheck> {
-	const url = (process.env.VOICEVOX_URL ?? "http://localhost:50121").replace(
-		/\/$/,
-		"",
-	);
+	const voicevox = getByosanProductionConfig().providers.tts.voicevox;
+	const url = voicevox.url.replace(/\/$/, "");
 	try {
 		const response = await fetch(`${url}/version`, {
-			signal: AbortSignal.timeout(5000),
+			signal: AbortSignal.timeout(voicevox.health_timeout_ms),
 		});
 		return response.ok
 			? check("voicevox", "GET /version", "PASS", "VOICEVOX responded")

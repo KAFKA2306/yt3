@@ -25,6 +25,8 @@
 - ジェスチャー: キャラクターの指差し、ポインター、数値カードの対象を一致させる。
 - サムネ: 文字を小画面で読め、動画冒頭が約束をすぐ回収する。
 
+出典は画面上に媒体名・資料名・公開日・URLを読める大きさで表示する。他社の図・画像・チャートは転載せず、数値の元データから自作した図で再描画する。
+
 ## 継続改善層: agent improvement loop / harness design
 
 失敗は `audit/production_quality_report.json` に要件別で残す。再制作時は、失敗した要件を台本、音声プリセット、字幕分割、映像レンダリング、公開ゲートの実装変更へ変換する。公開結果と視聴維持率が得られたら、冒頭30秒の離脱、トップモーメント、サムネとタイトルの整合を次の eval に追加する。
@@ -73,3 +75,34 @@
 - `LangChain.withStructuredOutput` とZodで企画・制作specを検証し、決定的ゲートを通らない出力は最大3回まで検証エラー付きで再生成する。
 - 同日のupload receiptを検出した場合は再アップロードしない。公開完了にはreceipt、public visibility、thumbnail attestationを必要とする。企画は複数案検討してよいが、完成・公開対象は当日の1本とする。修復時は契約を緩めて通すのではなく、失敗した数値・スキーマ・制作要件の妥当性を確認する。`stats` の件数のような表現上の都合だけで根拠のない数字を追加しない。
 - **実装監査の留保**：現在の `byosan_publish_daily.ts` は `GATE_FAILED` 後の再準備を許すが、原因修正・テスト完了の機械的証拠をそこで独立確認するとは限らない。自律再試行の安全性は未検証であり、今後の実装確認・テスト対象とする。
+
+## 本物であることの監査
+
+YouTube は収益化の対象として、テンプレートで機械的に量産された内容や、独自の価値が乏しい再利用・反復を制限している。公式の文言は、テンプレートや量産の印象、視聴者が連続視聴で反復と感じる内容、他者の素材の再掲載を、独自の価値の欠如として扱う方向である。本監査は、この趣旨を機械的に検査するための内部基準であり、YouTube の判定を保証するものではない。
+
+根拠ページ（2025-07-15 に "repetitious content" を "inauthentic content" へ改称した経緯、テンプレート生成と反復の定義、再利用の定義）:
+
+https://support.google.com/youtube/answer/1311392?hl=en
+
+根拠ページ（他者の素材の再掲載と、独自の編集・解説を伴わない転載の定義）:
+
+https://support.google.com/youtube/answer/2801973?hl=en
+
+収益化の再利用コンテンツに関する FAQ。本文は未取得で、この基準の根拠としては未検証（UNVERIFIED）:
+
+https://support.google.com/youtube/community-guide/271248162/%F0%9F%94%8E-faq-reused-content-youtube%E2%80%99s-partner-program?hl=en
+
+監査は `src/domain/byosan/authenticity_audit.ts` の純関数 `auditAuthenticity` が行い、`task audit:byosan-authenticity RUN=byosan_money/<run>` が `runs/byosan_money/<run>/audit/authenticity.json` を書く。日次の準備では製作後・リリースゲート前に同じ監査を実行し、リリースゲートは同じ feature_spec の監査 PASS を要求する。
+
+| 指標 | 内容 | 閾値の置き場所 |
+| --- | --- | --- |
+| 場面の種類 | 異なる場面の種類の数が下限以上 | `scenes.min_distinct_kinds` |
+| 同種の連続 | 同じ種類の場面が連続する最大数 | `scenes.max_consecutive_same_kind` |
+| 汎用比率 | `generic_kinds`（stat_cards、question）の割合 | `authenticity.max_generic_ratio` |
+| 検証済みの根拠 | すべての場面が `scene_claim_statuses` の主張だけを参照する | `authenticity.scene_claim_statuses` |
+| 独立した仕事 | `verification_roles` の順序（auditor→resolution）が台本にあり、`comparison_kinds` の場面数が図表の数 × `scenes_per_figure` 以上 | `authenticity.independent_work` |
+| 出典の表示 | すべての主張の出典名が、その主張を扱う台本区間の出典欄に出る | 台本の出典欄（検査は FeatureSpec の sources と segments） |
+| 他社素材 | 場面に URL を含めない（他社の画像・図の取り込みを禁止） | 構造上の検査 |
+| 過去の公開との類似 | 直近 `history_window` 本の公開済み run と、台本の visualType 列の類似度（1 - 編集距離 / 長い方の長さ）が上限以下 | `authenticity.history_window`、`authenticity.max_similarity` |
+
+閾値はすべて `config/domains/byosan_money.yaml` に置き、コードに値を埋め込まない。閾値を通すために緩めることは、監査の趣旨に反するため行わない。
