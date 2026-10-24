@@ -1,18 +1,13 @@
+import { getByosanVisualSystem } from "../design/kafka_visual_system.js";
+
 export type ByosanVisualIdentity = {
 	background: string;
-	backgroundAlt: string;
-	surface: string;
-	surfaceStrong: string;
-	lightSurface: string;
 	textPrimary: string;
-	textSecondary: string;
 	textMuted: string;
-	darkText: string;
+	brandAccent: string;
 	primaryAccent: string;
 	secondaryAccent: string;
 	warning: string;
-	grid: string;
-	shadow: string;
 };
 
 type RequiredDesignTokens = {
@@ -41,41 +36,10 @@ const REQUIRED_KEYS = [
 	"humanity_accent_pink",
 ] as const;
 
-function parseHex(value: string): [number, number, number] {
+function parseHex(value: string): void {
 	if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
 		throw new Error(`BYOSAN_VISUAL_IDENTITY_INVALID_HEX: ${value}`);
 	}
-	return [
-		Number.parseInt(value.slice(1, 3), 16),
-		Number.parseInt(value.slice(3, 5), 16),
-		Number.parseInt(value.slice(5, 7), 16),
-	];
-}
-
-function toHex(value: number): string {
-	return Math.round(Math.max(0, Math.min(255, value)))
-		.toString(16)
-		.padStart(2, "0")
-		.toUpperCase();
-}
-
-export function mixHex(
-	left: string,
-	right: string,
-	rightWeight: number,
-): string {
-	if (rightWeight < 0 || rightWeight > 1) {
-		throw new Error(`BYOSAN_VISUAL_IDENTITY_INVALID_WEIGHT: ${rightWeight}`);
-	}
-	const a = parseHex(left);
-	const b = parseHex(right);
-	const leftWeight = 1 - rightWeight;
-	const mixed = [
-		a[0] * leftWeight + b[0] * rightWeight,
-		a[1] * leftWeight + b[1] * rightWeight,
-		a[2] * leftWeight + b[2] * rightWeight,
-	];
-	return `#${mixed.map(toHex).join("")}`;
 }
 
 function designTokens(input: unknown): RequiredDesignTokens {
@@ -101,22 +65,14 @@ export function resolveByosanVisualIdentity(
 	input: unknown,
 ): ByosanVisualIdentity {
 	designTokens(input);
-	const colors = getKafkaVisualSystem().colors;
+	const colors = getByosanVisualSystem().colors;
 	return {
 		background: colors.background,
-		backgroundAlt: colors.background_alt,
-		surface: colors.surface,
-		surfaceStrong: colors.surface_strong,
-		lightSurface: colors.human_cream,
 		textPrimary: colors.text_primary,
-		textSecondary: colors.text_secondary,
 		textMuted: colors.text_muted,
-		darkText: colors.text_dark,
+		brandAccent: colors.brand_accent,
 		primaryAccent: colors.accent_primary,
 		secondaryAccent: colors.accent_secondary,
 		warning: colors.warning,
-		grid: colors.grid,
-		shadow: colors.shadow,
 	};
 }
-import { getKafkaVisualSystem } from "../design/kafka_visual_system.js";

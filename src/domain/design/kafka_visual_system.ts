@@ -13,6 +13,11 @@ export const KAFKA_VISUAL_SYSTEM_PATH = path.join(
 	"config/design/kafka_visual_system_v1.json",
 );
 
+export const BYOSAN_VISUAL_SYSTEM_PATH = path.join(
+	process.cwd(),
+	"config/design/byosan_video_system_v1.json",
+);
+
 function overlaps(
 	left: { x: number; y: number; width: number; height: number },
 	right: { x: number; y: number; width: number; height: number },
@@ -113,13 +118,22 @@ export function assertDesignSystemGeometry(design: KafkaVisualSystem): void {
 		throw new Error("DESIGN_GEOMETRY_SHORTS_RESERVED_ZONE");
 }
 
-let cached: KafkaVisualSystem | undefined;
+const loaded = new Map<string, KafkaVisualSystem>();
+function loadVisualSystem(filePath: string): KafkaVisualSystem {
+	const cached = loaded.get(filePath);
+	if (cached) return cached;
+	const design = validateDesignSystem(fs.readJsonSync(filePath));
+	assertDesignSystemGeometry(design);
+	loaded.set(filePath, design);
+	return design;
+}
+
 export function getKafkaVisualSystem(): KafkaVisualSystem {
-	if (!cached) {
-		cached = validateDesignSystem(fs.readJsonSync(KAFKA_VISUAL_SYSTEM_PATH));
-		assertDesignSystemGeometry(cached);
-	}
-	return cached;
+	return loadVisualSystem(KAFKA_VISUAL_SYSTEM_PATH);
+}
+
+export function getByosanVisualSystem(): KafkaVisualSystem {
+	return loadVisualSystem(BYOSAN_VISUAL_SYSTEM_PATH);
 }
 
 export function rect(value: unknown): {
