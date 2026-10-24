@@ -3,7 +3,7 @@ job_id: kioxia-nand-2026-08-14
 profile: byosan
 bucket: byosan_money
 run_id: 2026-08-14-kioxia-nand
-mission_file: prompts/kioxia_nand_2026-08-14.md
+mission_file: tests/fixtures/publish-jobs/kioxia_nand_2026-08-14.md
 target_visibility: public
 thumbnail_required: true
 captions:

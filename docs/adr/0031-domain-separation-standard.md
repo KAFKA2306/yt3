@@ -30,7 +30,7 @@ yt3リポジトリは「秒算マネー」「夜話アーカイブ」「人類�
 ### 3. 設定値と環境変数の隔離
 - **.env ファイル**: `config/.env` (Default/Humanity), `config/.env.byosan` (Byousan), `config/.env.yawa` (Yawa) に分離。
 - **実行時の強制**: `Taskfile.yml` にて `ENV_FILE` を明示。`src/io/core.ts` は `dotenv.config({ override: true })` により、指定された環境変数を最優先でロードする。
-- **プロンプト名前空間**: `config/default.yaml` 内で `prompts.content` と `prompts.humanity_observatory` を完全に分離する。
+- **プロンプト名前空間**: `config/domains/` の各ドメイン設定内で `prompts.content` と `prompts.humanity_observatory` を完全に分離する。
 
 ### 4. 決定論的境界監査 (Boundary Verification)
 境界汚染を検知するため、以下のチェックを強制する。
