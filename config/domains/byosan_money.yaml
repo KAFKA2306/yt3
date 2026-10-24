@@ -524,3 +524,28 @@ prompts:
           "description": "視聴者への具体的ベネフィット要約 + 論理的なチャプター構成 + 引用元URL（情報ソース）を含む概要欄",
           "tags": ["関連性の高い検索タグ1", "タグ2"]
         }
+
+scenes:
+  max_scenes: 36
+  max_numbers_per_scene: 4
+  max_consecutive_same_kind: 2
+  min_distinct_kinds: 3
+  chars_per_second: 6
+  rules:
+    - {kind: question, emphasis: none, when: {visual_type_in: ["question"], stat_count_max: 0}}
+    - {kind: line_series, emphasis: reveal, when: {figure_count_min: 3, figures_cover_stats: true, distinct_periods_min: 3, distinct_metrics_max: 1}}
+    - {kind: bar_trend, emphasis: reveal, when: {figure_count_min: 2, figures_cover_stats: true, distinct_periods_min: 2, distinct_metrics_max: 1}}
+    - {kind: bignumber, emphasis: reveal, when: {stat_count_min: 1, stat_count_max: 1}}
+    - {kind: hbar_compare, emphasis: highlight, when: {stat_count_min: 2, stat_count_max: 3, shared_unit: true}}
+    - {kind: stat_cards, emphasis: none, when: {stat_count_min: 1}}
+
+authenticity:
+  history_window: 5
+  max_similarity: 0.8
+  max_generic_ratio: 0.4
+  generic_kinds: ["stat_cards", "question"]
+  scene_claim_statuses: ["verified"]
+  independent_work:
+    verification_roles: ["auditor", "resolution"]
+    comparison_kinds: ["hbar_compare", "bar_trend", "line_series"]
+    scenes_per_figure: 1
