@@ -166,9 +166,3 @@ describe("Byosan preflight aggregation", () => {
 		}
 	});
 });
-
-describe("Byosan preflight probes the configured LLM backends", () => {});
-
-describe("Byosan preflight skips probes for stages served from checkpoint", () => {});
-
-describe("Byosan codex structured-output probe", () => {});
