@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { ByosanFeatureSegment } from "../src/domain/byosan/feature_spec.js";
 import {
 	evaluateOpeningCatch,
+	layoutCueSpans,
 	minimumCueSecondsAtAssPrecision,
 	planSpeechSegments,
 	splitSpeechText,
@@ -220,6 +221,43 @@ describe("minimumCueSecondsAtAssPrecision", () => {
 	test("reports a cue shorter than the centisecond minimum", () => {
 		expect(minimumCueSecondsAtAssPrecision([{ start: 1, end: 1.83 }])).toBe(
 			0.83,
+		);
+	});
+});
+
+describe("layoutCueSpans", () => {
+	test("divides the window in proportion to caption weight when every cue clears the minimum", () => {
+		const spans = layoutCueSpans([2, 2], 0, 4, 0.8);
+		expect(spans).toEqual([
+			{ start: 0, end: 2 },
+			{ start: 2, end: 4 },
+		]);
+	});
+
+	test("raises a short trailing cue to the minimum without leaving the window", () => {
+		const spans = layoutCueSpans([20, 1], 0, 4, 0.84);
+		expect(spans[1]?.end).toBe(4);
+		expect(
+			(spans[1]?.end ?? 0) - (spans[1]?.start ?? 0),
+		).toBeGreaterThanOrEqual(0.84 - 1e-9);
+		expect(spans[0]?.end).toBe(spans[1]?.start);
+	});
+
+	test("never produces overlapping cues and always covers the window", () => {
+		const spans = layoutCueSpans([12, 3, 1, 7], 10, 16, 0.84);
+		for (let index = 1; index < spans.length; index++) {
+			expect(spans[index]?.start).toBe(spans[index - 1]?.end);
+		}
+		expect(spans[0]?.start).toBe(10);
+		expect(spans[spans.length - 1]?.end).toBe(16);
+		for (const span of spans) {
+			expect(span.end - span.start).toBeGreaterThanOrEqual(0.84 - 1e-9);
+		}
+	});
+
+	test("throws when the window cannot hold every cue at the minimum length", () => {
+		expect(() => layoutCueSpans([1, 1, 1], 0, 2, 0.84)).toThrow(
+			"BYOSAN_CUE_WINDOW_TOO_SHORT",
 		);
 	});
 });

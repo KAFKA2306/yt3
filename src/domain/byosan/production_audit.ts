@@ -141,3 +141,42 @@ export function planSpeechSegments(
 		}),
 	);
 }
+
+export function layoutCueSpans(
+	weights: readonly number[],
+	start: number,
+	end: number,
+	minCueSeconds: number,
+): Array<{ start: number; end: number }> {
+	const window = end - start;
+	if (window < weights.length * minCueSeconds) {
+		throw new Error(
+			`BYOSAN_CUE_WINDOW_TOO_SHORT: ${weights.length} cues in ${window.toFixed(2)}s`,
+		);
+	}
+	const totalAt = (rate: number): number =>
+		weights.reduce(
+			(sum, weight) => sum + Math.max(minCueSeconds, rate * weight),
+			0,
+		);
+	let low = 0;
+	let high = window;
+	for (let step = 0; step < 200; step++) {
+		const middle = (low + high) / 2;
+		if (totalAt(middle) < window) {
+			low = middle;
+		} else {
+			high = middle;
+		}
+	}
+	const durations = weights.map((weight) =>
+		Math.max(minCueSeconds, high * weight),
+	);
+	let cursor = start;
+	return durations.map((duration, index) => {
+		const spanEnd = index === durations.length - 1 ? end : cursor + duration;
+		const span = { start: cursor, end: spanEnd };
+		cursor = spanEnd;
+		return span;
+	});
+}

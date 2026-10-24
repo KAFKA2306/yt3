@@ -13,6 +13,7 @@ import {
 } from "../domain/byosan/feature_spec.js";
 import {
 	evaluateOpeningCatch,
+	layoutCueSpans,
 	minimumCueSecondsAtAssPrecision,
 	planSpeechSegments,
 } from "../domain/byosan/production_audit.js";
@@ -578,31 +579,25 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 	for (const segment of timed) {
 		const chunks = captionChunks(segment.text);
 		const weights = chunks.map((chunk) => Math.max(1, displayUnits(chunk)));
-		const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
 		const usableStart = segment.start + F.captions.lead_in_seconds;
 		const usableDuration = Math.max(
 			F.captions.min_usable_seconds,
 			segment.duration - F.captions.tail_seconds,
 		);
-		let cursor = usableStart;
-		for (let i = 0; i < chunks.length; i++) {
-			const chunk = chunks[i] ?? "";
-			const share = (weights[i] ?? 1) / totalWeight;
-			const duration =
-				i === chunks.length - 1
-					? segment.start + segment.duration - cursor
-					: usableDuration * share;
-			const end = Math.max(
-				cursor + F.captions.min_cue_seconds,
-				cursor + duration,
-			);
-			const styleName =
-				segment.speaker === "ずんだもん" ? "Zundamon" : "Tsumugi";
+		const spans = layoutCueSpans(
+			weights,
+			usableStart,
+			usableStart + usableDuration,
+			F.captions.min_cue_seconds,
+		);
+		const styleName = segment.speaker === "ずんだもん" ? "Zundamon" : "Tsumugi";
+		chunks.forEach((chunk, i) => {
+			const span = spans[i];
+			if (!span) throw new Error(`BYOSAN_CUE_MISSING: ${segment.index}`);
 			events.push(
-				`Dialogue: 0,${assTimestamp(cursor)},${assTimestamp(end)},${styleName},${segment.speaker},0,0,0,,{\\fad(${F.captions.fade_in_ms},${F.captions.fade_out_ms})}${captionLines(chunk)}`,
+				`Dialogue: 0,${assTimestamp(span.start)},${assTimestamp(span.end)},${styleName},${segment.speaker},0,0,0,,{\\fad(${F.captions.fade_in_ms},${F.captions.fade_out_ms})}${captionLines(chunk)}`,
 			);
-			cursor = end;
-		}
+		});
 	}
 	return `${header}${events.join("\n")}\n`;
 }
