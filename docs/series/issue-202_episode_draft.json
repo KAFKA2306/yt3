@@ -1,8 +1,8 @@
 {
 	"schema_version": 1,
 	"metadata": {
-		"title": "Goals → Signals → Metrics: yt3のCIで測ってみる",
-		"description": "yt3の2026-09-08〜2026-10-08 UTCのGitHub Actions CI観測値を例に、Goal・Signal・Metricをつなぐ。これは開発者の生産性やコード品質を直接測るものではない。 Attribution: LinkedIn Corporation (2023), LinkedIn Developer Productivity & Happiness Framework, Goals, Signals, and Metrics (CC BY 4.0). Japanese summary and yt3 CI example adaptation; no endorsement implied. Source: https://linkedin.github.io/dph-framework/goals-signals-metrics.html License: https://creativecommons.org/licenses/by/4.0/",
+		"title": "Goalは手袋、Metricは返却回数？月面基地の備品窓口",
+		"description": "架空の月面基地の備品返却所を舞台に、Goal・Signal・Metricの違いをコントで説明し、yt3のGitHub Actions CIを具体例にする。観測窓 2026-09-18T17:54:24Z〜2026-10-18T17:54:24Z UTC: completed first-attempt workflow runs 110件、成功104件・失敗6件、成功率94.5%、p95 238秒。件数はPR数ではなくworkflow run数で、生産性やコード品質そのものではない。LinkedIn Corporation (2023), LinkedIn Developer Productivity & Happiness Framework: Goals, Signals, and Metrics (CC BY 4.0). Japanese summary/adaptation; no endorsement implied. Source: https://linkedin.github.io/dph-framework/goals-signals-metrics.html License: https://creativecommons.org/licenses/by/4.0/. The lunar-base sketch is fictional.",
 		"tags": [
 			"ソフトウェア開発",
 			"メトリクス",
@@ -14,46 +14,6 @@
 	},
 	"fps": 30,
 	"sources": [
-		{
-			"id": "swe-book-ch07",
-			"url": "https://abseil.io/resources/swe-book/html/ch07.html",
-			"title": "Issue #202 original reference; license flagged and not used for production script content"
-		},
-		{
-			"id": "github-actions-run-api",
-			"url": "https://docs.github.com/en/rest/actions/workflow-runs",
-			"title": "GitHub REST API: workflow runs"
-		},
-		{
-			"id": "github-actions-jobs-api",
-			"url": "https://docs.github.com/en/rest/actions/workflow-jobs",
-			"title": "GitHub Actions REST API: workflow jobs and steps"
-		},
-		{
-			"id": "yt3-ci-failure-mode-evidence",
-			"url": "https://github.com/KAFKA2306/yt3/blob/fee5019609884a92dbd0665f62a102f2fad40b34/config/evidence/issue_202_failure_triage_20261008.json",
-			"title": "yt3 CI immediate failure-mode evidence (2026-10-08 JST)"
-		},
-		{
-			"id": "yt3-ci-snapshot",
-			"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-08T06%3A35%3A34Z&event=pull_request",
-			"title": "yt3 GitHub Actions 30-day CI snapshot (2026-10-08 06:35 UTC)"
-		},
-		{
-			"id": "github-main-branch-protection",
-			"url": "https://api.github.com/repos/KAFKA2306/yt3/branches/main/protection",
-			"title": "GitHub REST API: observed main branch protection"
-		},
-		{
-			"id": "github-repository-rulesets",
-			"url": "https://api.github.com/repos/KAFKA2306/yt3/rulesets",
-			"title": "GitHub REST API: observed repository rulesets"
-		},
-		{
-			"id": "swe-book-license",
-			"url": "https://abseil.io/resources/swe-book",
-			"title": "Software Engineering at Google online edition and license notice"
-		},
 		{
 			"id": "linkedin-dph-gsm",
 			"url": "https://linkedin.github.io/dph-framework/goals-signals-metrics.html",
@@ -68,45 +28,42 @@
 			"id": "cc-by-4-license",
 			"url": "https://creativecommons.org/licenses/by/4.0/",
 			"title": "Creative Commons Attribution 4.0 deed"
+		},
+		{
+			"id": "github-actions-run-api",
+			"url": "https://docs.github.com/en/rest/actions/workflow-runs",
+			"title": "GitHub REST API: workflow runs"
+		},
+		{
+			"id": "yt3-ci-snapshot",
+			"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-18T17%3A54%3A24Z&event=pull_request",
+			"title": "yt3 30-day CI snapshot observed 2026-10-19 JST"
 		}
 	],
 	"claims": [
 		{
 			"id": "claim-goal-signal-metric",
-			"text": "Goals、Signals、Metricsを追跡可能につなぎ、指標が判断を変えられるかを確かめる枠組みを紹介する。",
+			"text": "Goalsは望む結果、Signalsは達成の兆候、MetricsはSignalを測る不完全な代理値として、意思決定につながるよう追跡可能にする。",
 			"source_ids": ["linkedin-dph-gsm"]
 		},
 		{
 			"id": "claim-ci-observation",
-			"text": "2026-09-08T06:35:34Zから2026-10-08T06:35:34Zまでに観測した、run_attempt=1の完了済みpull_request CI workflow runは102件で、77件が成功し、p95所要時間は238秒だった。これはPRの件数ではなく、同じPRから複数runが含まれうる。",
+			"text": "2026-09-18T17:54:24Zから2026-10-18T17:54:24ZまでのGitHub Actions workflow 226201883で、event=pull_request、status=completed、run_attempt=1のworkflow runは110件。作成から完了までのp95は238秒だった。",
 			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
-			"id": "claim-immediate-failure-modes",
-			"text": "記録済みのCI失敗25件について、Jobs APIログで直接の失敗箇所を分類した。Biome lint/check 20件、TypeScript typecheck 2件、unit-test timeout 1件、生成TSX syntax error 1件、ffmpeg不在1件。より深い原因は断定しない。",
-			"source_ids": ["github-actions-jobs-api", "yt3-ci-failure-mode-evidence"]
+			"id": "claim-ci-pass-rate",
+			"text": "同じ観測窓のcompleted first-attempt workflow runは104件がsuccess、6件がfailure（104/110=94.5%）。これはworkflow runの率でありPRごとの率ではない。",
+			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
-			"id": "claim-head-branch-clusters",
-			"text": "記録済みの失敗workflow run 25件をhead_branch別にまとめると、agent/issue-119-episode-jsonが14件で最多だった。これはworkflow runと枝名の集計であり、PR数・独立した不具合の数・原因を示さない。",
-			"source_ids": ["github-actions-run-api", "yt3-ci-failure-mode-evidence"]
+			"id": "claim-measurement-limit",
+			"text": "CIの経過時間や成功率はフィードバックに関する代理指標で、開発者の生産性やソフトウェア品質を直接測定せず、因果関係も示さない。",
+			"source_ids": ["github-actions-run-api", "yt3-ci-snapshot"]
 		},
 		{
-			"id": "claim-branch-controls",
-			"text": "2026-10-08T06:36:16Zの確認では、mainブランチ保護は未設定で、リポジトリrulesets一覧は空だった。",
-			"source_ids": [
-				"github-main-branch-protection",
-				"github-repository-rulesets"
-			]
-		},
-		{
-			"id": "claim-rights-boundary",
-			"text": "Issue #202 names Software Engineering at Google, whose online edition displays CC BY-NC-ND 4.0. This production draft uses LinkedIn DPH Framework as its GSM reference instead; channel/profile and other media rights remain pending.",
-			"source_ids": ["swe-book-license", "linkedin-dph-license"]
-		},
-		{
-			"id": "claim-linkedin-license",
-			"text": "LinkedIn DPH Framework README identifies the framework as CC BY 4.0 and Copyright 2023 LinkedIn Corporation. The proposed credit names the work and creator, links the source and license, identifies Japanese summary/adaptation, and does not imply endorsement; this is evidence tracking, not a legal opinion or complete release clearance.",
+			"id": "claim-source-attribution",
+			"text": "LinkedIn DPH Frameworkの該当ページとREADMEはCC BY 4.0とCopyright 2023 LinkedIn Corporationを示す。この脚本では日本語要約・適応として出典とライセンスを表示し、推奨・承認を示唆しない。これは権利の包括的法的判断ではない。",
 			"source_ids": ["linkedin-dph-license", "cc-by-4-license"]
 		}
 	],
@@ -116,23 +73,23 @@
 			"id": "hook-count",
 			"type": "number-highlight",
 			"props": {
-				"number": "102",
-				"label": "完了した初回CI"
+				"number": "5分",
+				"label": "船外活動まで / 右手グローブ迷子"
 			}
 		},
 		{
 			"id": "goal-card",
 			"type": "title",
 			"props": {
-				"title": "安全なフィードバックを、待たせすぎない"
+				"title": "本人が使える道具を、正しい人へ、出発前に"
 			}
 		},
 		{
 			"id": "signal-flow",
 			"type": "two-column",
 			"props": {
-				"left": "PRに結果が返る",
-				"right": "レビューで使える"
+				"left": "本人が品物と状態を確認",
+				"right": "装着してエアロックへ"
 			}
 		},
 		{
@@ -140,16 +97,17 @@
 			"type": "number-highlight",
 			"props": {
 				"p95_seconds": 238,
-				"median_seconds": 125.5,
-				"run_attempt_1_success": "77/102 workflow runs (75.5%)",
-				"unit_of_analysis": "workflow_run; multiple runs from one PR may be counted"
+				"median_seconds": 133,
+				"run_attempt_1_success": "104/110 completed workflow runs (94.5%)",
+				"unit_of_analysis": "workflow_run; multiple runs may come from one PR",
+				"observation_window": "2026-09-18T17:54:24Z to 2026-10-18T17:54:24Z UTC"
 			}
 		},
 		{
 			"id": "boundary-card",
 			"type": "comparison",
 			"props": {
-				"left": "CIの観測値",
+				"left": "観測したCIの代理指標",
 				"right": "生産性・品質そのものではない"
 			}
 		},
@@ -157,16 +115,9 @@
 			"id": "action-card",
 			"type": "source-card",
 			"props": {
-				"action": "ログで直接の失敗箇所を分類し、次の判断につなげる",
-				"categories": [
-					"Biome lint/check: 20",
-					"TypeScript typecheck: 2",
-					"unit-test timeout: 1",
-					"generated TSX syntax: 1",
-					"ffmpeg missing: 1"
-				],
-				"largest_branch_cluster": "14/25 runs: agent/issue-119-episode-json; run count, not defect or PR count",
-				"category_counts": null
+				"action": "測定値が悪いときの次の調査を先に決める",
+				"fictional_anti_pattern": "同じ手袋をA→B→Aと4往復させ、返却スキャンを1→8に増やす（受取人の装着は未達）",
+				"preserve_safety_checks": true
 			}
 		},
 		{
@@ -186,15 +137,42 @@
 	"sections": [
 		{
 			"id": "hook",
-			"title": "Hook",
+			"title": "Lost glove, perfect metric",
 			"dialogue": [
 				{
-					"id": "hook-narration",
+					"id": "hook-scene",
 					"speaker": "Narrator (voice pending)",
-					"text": "このリポジトリのCI、直近30日で初回runが102件。77件は成功、25件は失敗。じゃあ、CIを速くすれば開発は良くなる？……その前に、何を良くしたいかを決めます。",
+					"text": "（架空の月面基地、備品窓口。船外活動まであと5分。）",
 					"visual_ref": "hook-count",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/hook.wav"
+						"path": "audio/pending-channel-and-voice/hook-scene.wav"
+					}
+				},
+				{
+					"id": "hook-captain",
+					"speaker": "Captain (fictional)",
+					"text": "右手の作業グローブがない！",
+					"visual_ref": "hook-count",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/hook-captain.wav"
+					}
+				},
+				{
+					"id": "hook-clerk",
+					"speaker": "Clerk (fictional)",
+					"text": "朗報です。返却スキャン数、今週最高です。",
+					"visual_ref": "hook-count",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/hook-clerk.wav"
+					}
+				},
+				{
+					"id": "hook-captain-punch",
+					"speaker": "Captain (fictional)",
+					"text": "手袋は？",
+					"visual_ref": "hook-count",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/hook-captain-punch.wav"
 					}
 				}
 			]
@@ -206,10 +184,10 @@
 				{
 					"id": "goal-narration",
 					"speaker": "Narrator (voice pending)",
-					"text": "Goalは、変更の結果を安全に、なるべく早く知れること。ここで大事なのは、数字を増やすことじゃなく、数字を見てどんな判断を変えるかです。",
+					"text": "Goalは、出発までに正しい持ち主が使える状態の道具を受け取ること。測り方ではなく、望む結果です。",
 					"visual_ref": "goal-card",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/goal.wav"
+						"path": "audio/pending-channel-and-voice/goal-narration.wav"
 					}
 				}
 			]
@@ -221,97 +199,142 @@
 				{
 					"id": "signal-narration",
 					"speaker": "Narrator (voice pending)",
-					"text": "次にSignal。PRへ、レビューに使えるCI結果が返っているか。速さだけでなく、結果が分かりやすく、失敗を調べられることも見ます。",
+					"text": "Signalは、その結果が近づいた兆候。本人が品物と状態を確かめ、装着してエアロックへ向かったか。",
 					"visual_ref": "signal-flow",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/signal.wav"
+						"path": "audio/pending-channel-and-voice/signal-narration.wav"
+					}
+				},
+				{
+					"id": "signal-clerk",
+					"speaker": "Clerk (fictional)",
+					"text": "Metricは？",
+					"visual_ref": "signal-flow",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/signal-clerk.wav"
+					}
+				},
+				{
+					"id": "signal-answer",
+					"speaker": "Narrator (voice pending)",
+					"text": "Signalを測る不完全な代理値です。たとえば、初回の正しい受け渡し率と待ち時間。",
+					"visual_ref": "metric-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/signal-answer.wav"
 					}
 				}
 			]
 		},
 		{
 			"id": "metrics",
-			"title": "Metrics",
+			"title": "A metric goes into orbit",
 			"dialogue": [
 				{
-					"id": "metrics-latency",
-					"speaker": "Narrator (voice pending)",
-					"text": "この30日では、CIの作成から完了までのp95が238秒、中央値は125.5秒。",
-					"visual_ref": "metric-card",
+					"id": "metric-scan",
+					"speaker": "Clerk (fictional)",
+					"text": "でも一番数えやすいのは返却スキャン！",
+					"visual_ref": "action-card",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/metrics-latency.wav"
+						"path": "audio/pending-channel-and-voice/metric-scan.wav"
 					}
 				},
 				{
-					"id": "metrics-outcome",
+					"id": "metric-loop",
 					"speaker": "Narrator (voice pending)",
-					"text": "run_attempt=1は102件、77件成功で75.5%。同じPRから複数runがあり得るので、PRごとの成功率ではありません。",
-					"visual_ref": "metric-card",
+					"text": "係は同じ手袋を隊員AからBへ、BからAへ4往復。返却スキャンは8回。",
+					"visual_ref": "action-card",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/metrics-outcome.wav"
+						"path": "audio/pending-channel-and-voice/metric-loop.wav"
+					}
+				},
+				{
+					"id": "metric-count",
+					"speaker": "Clerk (fictional)",
+					"text": "八回返却！先週の八倍です。",
+					"visual_ref": "action-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/metric-count.wav"
 					}
 				}
 			]
 		},
 		{
 			"id": "boundary",
-			"title": "Measurement boundary",
+			"title": "What the signal actually says",
 			"dialogue": [
 				{
-					"id": "boundary-not-productivity",
-					"speaker": "Narrator (voice pending)",
-					"text": "ただし、これは開発者の生産性でも、コード品質でもありません。",
+					"id": "boundary-captain",
+					"speaker": "Captain (fictional)",
+					"text": "持ち主に届いた？",
 					"visual_ref": "boundary-card",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/boundary-not-productivity.wav"
+						"path": "audio/pending-channel-and-voice/boundary-captain.wav"
 					}
 				},
 				{
-					"id": "boundary-protection",
-					"speaker": "Narrator (voice pending)",
-					"text": "2026年10月7日12:41 UTCの確認では、mainにブランチ保護の必須チェックがありませんでした。",
+					"id": "boundary-clerk",
+					"speaker": "Clerk (fictional)",
+					"text": "窓口にあります。記録上は、返却完了です。",
 					"visual_ref": "boundary-card",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/boundary-protection.wav"
+						"path": "audio/pending-channel-and-voice/boundary-clerk.wav"
 					}
 				},
 				{
-					"id": "boundary-conclusion",
+					"id": "boundary-explain",
 					"speaker": "Narrator (voice pending)",
-					"text": "CIの数字だけで、安全なマージを証明したことにはならないんです。",
+					"text": "返却回数は増えてもGoalは未達。数えやすい指標をGoalと取り違えると、数字だけが月面を歩きます。",
 					"visual_ref": "boundary-card",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/boundary-conclusion.wav"
+						"path": "audio/pending-channel-and-voice/boundary-explain.wav"
 					}
 				}
 			]
 		},
 		{
 			"id": "action",
-			"title": "Next decision",
+			"title": "Apply it to yt3",
 			"dialogue": [
 				{
-					"id": "action-triage",
+					"id": "action-goal",
 					"speaker": "Narrator (voice pending)",
-					"text": "失敗25 runを枝名でまとめると、Issue #119系列が14件。14回を14個の不具合とは数えず、まとまりとログを見て次の改善を選びます。",
-					"visual_ref": "action-card",
+					"text": "yt3のGoalは、安全チェックを弱めず、解釈できるCI結果を早く受け取ること。",
+					"visual_ref": "goal-card",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/action-triage.wav"
+						"path": "audio/pending-channel-and-voice/action-goal.wav"
 					}
 				},
 				{
-					"id": "action-anti-pattern",
+					"id": "action-metric",
 					"speaker": "Narrator (voice pending)",
-					"text": "カバレッジを削って数字だけ良くするのは逆効果。",
+					"text": "9月18日〜10月18日の30日で初回CIは110件。104件成功、6件失敗。成功率94.5%、p95は238秒です。",
+					"visual_ref": "metric-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/action-metric.wav"
+					}
+				},
+				{
+					"id": "action-limit",
+					"speaker": "Narrator (voice pending)",
+					"text": "これはworkflow runの観測値で、生産性やコード品質そのものではありません。遅い工程や失敗ログを調べるための代理値です。",
+					"visual_ref": "boundary-card",
+					"audio": {
+						"path": "audio/pending-channel-and-voice/action-limit.wav"
+					}
+				},
+				{
+					"id": "action-punch",
+					"speaker": "Captain (fictional)",
+					"text": "目標は隊員が月へ出ること。グラフを外に出すな！",
 					"visual_ref": "action-card",
 					"audio": {
-						"path": "audio/pending-channel-and-voice/action-anti-pattern.wav"
+						"path": "audio/pending-channel-and-voice/action-punch.wav"
 					}
 				},
 				{
 					"id": "action-close",
 					"speaker": "Narrator (voice pending)",
-					"text": "GoalからSignal、Metricへ。数字は、次の判断に結びついて初めて役に立ちます。",
+					"text": "GoalからSignal、Metricへ。数字は次の判断につながって初めて役に立ちます。",
 					"visual_ref": "attribution-card",
 					"audio": {
 						"path": "audio/pending-channel-and-voice/action-close.wav"
@@ -321,7 +344,7 @@
 		}
 	],
 	"thumbnail": {
-		"lines": ["数字を増やすな", "repoのCIを測る"]
+		"lines": ["返却数は最高", "手袋はどこ？"]
 	},
 	"shorts": {
 		"enabled": false

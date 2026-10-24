@@ -1,0 +1,54 @@
+{
+	"schema_version": 1,
+	"snapshot_id": "yt3-ci-30d-20261019T025424Z",
+	"observed_at": "2026-10-18T17:54:24Z",
+	"window": {
+		"from": "2026-09-18T17:54:24Z",
+		"to": "2026-10-18T17:54:24Z",
+		"timezone": "UTC",
+		"duration_days": 30
+	},
+	"source": {
+		"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-18T17%3A54%3A24Z&event=pull_request",
+		"workflow_id": 226201883,
+		"workflow_name": "CI",
+		"request_method": "GET",
+		"pagination": "The API reported total_count=110; pagination returned 100 records on page 1 and 10 on page 2; filtered locally to completed run_attempt=1 records within the recorded UTC window",
+		"filters": [
+			"event == pull_request",
+			"workflow id == 226201883 (CI)",
+			"status == completed",
+			"run_attempt == 1",
+			"created_at within the recorded UTC window"
+		]
+	},
+	"results": {
+		"completed_first_attempts": 110,
+		"attempt_counts": {
+			"1": 110
+		},
+		"conclusions": {
+			"success": 104,
+			"failure": 6
+		},
+		"ci_workflow_elapsed_seconds": {
+			"method": "updated_at - created_at; median is the middle value for odd n and the arithmetic mean of the middle pair for even n; p95 uses nearest-rank",
+			"median": 133,
+			"p95": 238,
+			"maximum": 2892
+		},
+		"ci_first_attempt_pass_rate_percent": {
+			"numerator": 104,
+			"denominator": 110,
+			"value": 94.5
+		}
+	},
+	"limitations": [
+		"Workflow elapsed time is a proxy, not developer waiting time or engineering productivity.",
+		"Failed workflow runs are included in elapsed-time statistics; workflow failure can reflect code, tests, or infrastructure.",
+		"The unit is a workflow run, not a distinct pull request; multiple runs from one PR can be counted.",
+		"The pass rate is descriptive and does not establish that a specific change caused CI outcomes.",
+		"This is one 30-day repository snapshot; compare future windows with identical filters and inspect sample composition before acting.",
+		"Branch-protection policy was not rechecked for this snapshot and is not inferred from these workflow runs."
+	]
+}
