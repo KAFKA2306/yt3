@@ -13,6 +13,7 @@ import {
 import { validateQuerySafe } from "../../domain/validation.js";
 import { loadConfig } from "../../io/core.js";
 import {
+	DISCORD_PERMANENT_FAILURE_EXIT_CODE,
 	discordFailureExitCode,
 	isPermanentDiscordError,
 	sendAlert,
@@ -129,7 +130,7 @@ async function main() {
 	const token = process.env.DISCORD_TOKEN || process.env[settings.token_env];
 	if (!token) {
 		console.error("No DISCORD_TOKEN found in env.");
-		return;
+		process.exit(DISCORD_PERMANENT_FAILURE_EXIT_CODE);
 	}
 
 	const client = new Client({ intents: [GatewayIntentBits.Guilds] });
