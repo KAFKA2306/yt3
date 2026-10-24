@@ -110,7 +110,7 @@ describe("byosan research cache reuse", () => {
 		const cached = {
 			...base,
 			angle_decision: {
-				decision: "STOP",
+				decision: "STOP" as const,
 				selectedIndex: null,
 				reason: "no candidate",
 				candidateCount: 0,
@@ -137,18 +137,20 @@ describe("byosan research cache reuse", () => {
 	});
 
 	test("rejects a cached research result built under an older candidate contract", () => {
-		const cached = {
-			...base,
-			angle_decision: {
-				decision: "PASS",
-				selectedIndex: 0,
-				reason: "stale",
-				candidateCount: 1,
-				distinctPublisherCount: 1,
-				orthogonality: {},
-				evaluated: [{ candidate: { angle: "old" } }],
-			},
-		};
+		const cached = JSON.parse(
+			JSON.stringify({
+				...base,
+				angle_decision: {
+					decision: "PASS",
+					selectedIndex: 0,
+					reason: "stale",
+					candidateCount: 1,
+					distinctPublisherCount: 1,
+					orthogonality: {},
+					evaluated: [{ candidate: { angle: "old" } }],
+				},
+			}),
+		);
 		expect(reusableResearchResult(cached)).toBeUndefined();
 	});
 });

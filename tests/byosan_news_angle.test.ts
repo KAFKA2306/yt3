@@ -8,6 +8,7 @@ import {
 	selectByosanProductionPlan,
 	settleByosanAngleCandidate,
 } from "../src/domain/byosan/news_angle.js";
+import { fixtureAt } from "./fixtures/fixture_at.js";
 
 function candidate(
 	overrides: Partial<ByosanAngleCandidate> = {},
@@ -228,21 +229,26 @@ describe("byosan sharp-angle gate", () => {
 				titleHook: `候補${index}の大数字を一次資料で分解すると何が残るか`,
 				noveltyFingerprint: `固有の反実仮想パターン${index}と比較単位${index}`,
 				explorationProfile: {
-					geography: ["US", "JP"][index % 2],
-					sector: ["technology", "energy", "finance"][index % 3],
-					actorType: ["index provider", "regulator", "utility"][index % 3],
-					eventType: ["earnings", "rule", "outage"][index % 3],
-					timeHorizon: ["quarter", "year"][index % 2],
-					causalDirection: [
-						"market_to_economy",
-						"economy_to_market",
-						"policy_to_market",
-					][index % 3],
-					financialMetric: ["earnings", "fcf", "credit"][index % 3],
-					supplyChainLayer: ["platform", "component", "logistics"][index % 3],
-					marketRealEconomy: ["market", "real_economy"][index % 2],
-					dataSurface: ["filing", "statistic", "tariff"][index % 3],
-					scale: ["index", "company"][index % 2],
+					geography: fixtureAt(["US", "JP"], index % 2),
+					sector: fixtureAt(["technology", "energy", "finance"], index % 3),
+					actorType: fixtureAt(
+						["index provider", "regulator", "utility"],
+						index % 3,
+					),
+					eventType: fixtureAt(["earnings", "rule", "outage"], index % 3),
+					timeHorizon: fixtureAt(["quarter", "year"], index % 2),
+					causalDirection: fixtureAt(
+						["market_to_economy", "economy_to_market", "policy_to_market"],
+						index % 3,
+					),
+					financialMetric: fixtureAt(["earnings", "fcf", "credit"], index % 3),
+					supplyChainLayer: fixtureAt(
+						["platform", "component", "logistics"],
+						index % 3,
+					),
+					marketRealEconomy: fixtureAt(["market", "real_economy"], index % 2),
+					dataSurface: fixtureAt(["filing", "statistic", "tariff"], index % 3),
+					scale: fixtureAt(["index", "company"], index % 2),
 				},
 				sources: [
 					...candidate().sources,
@@ -288,8 +294,14 @@ describe("byosan sharp-angle gate", () => {
 		const candidates = Array.from({ length: 5 }, (_, index) =>
 			candidate({
 				sources: [
-					{ ...candidate().sources[0], url: `https://a${index}.example/x` },
-					{ ...candidate().sources[1], url: `https://b${index}.example/y` },
+					{
+						...fixtureAt(candidate().sources, 0),
+						url: `https://a${index}.example/x`,
+					},
+					{
+						...fixtureAt(candidate().sources, 1),
+						url: `https://b${index}.example/y`,
+					},
 				],
 			}),
 		);

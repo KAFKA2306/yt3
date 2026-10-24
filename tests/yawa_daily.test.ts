@@ -12,6 +12,7 @@ import {
 	validateDraft,
 	yawaAudit,
 } from "../src/domain/yawa_daily.js";
+import { fixtureAt } from "./fixtures/fixture_at.js";
 
 const root = process.cwd();
 const config = loadYawaConfig(root);
@@ -114,9 +115,10 @@ describe("yawa daily existing runs", () => {
 
 describe("yawa daily metadata", () => {
 	test("description keeps the AI disclosure and the inspiration credit", () => {
-		const text = buildDescription(draft(), pool[0], config, 430);
+		const inspiration = fixtureAt(pool, 0);
+		const text = buildDescription(draft(), inspiration, config, 430);
 		expect(text).toContain(config.metadata.ai_disclosure);
-		expect(text).toContain(pool[0].url);
+		expect(text).toContain(inspiration.url);
 		expect(text).toContain("年上の成人の女性");
 	});
 });
