@@ -1,6 +1,8 @@
 [Unit]
 Description=YT3 Aim Dashboard
 After=network.target
+StartLimitIntervalSec=900
+StartLimitBurst=5
 
 [Service]
 Type=simple
