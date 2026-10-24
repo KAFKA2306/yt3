@@ -104,10 +104,32 @@ export type ByosanAngleCandidateSettlement =
 	| { status: "VALID"; candidate: ByosanAngleCandidate }
 	| { status: "REJECTED"; issues: string[] };
 
+export function normalizeByosanAngleCandidateForm(raw: unknown): unknown {
+	if (typeof raw !== "object" || raw === null) return raw;
+	const candidate = raw as Record<string, unknown>;
+	const numbers = Array.isArray(candidate.numbers)
+		? candidate.numbers.map((value) =>
+				typeof value === "number" ? String(value) : value,
+			)
+		: candidate.numbers;
+	const sources = Array.isArray(candidate.sources)
+		? candidate.sources.map((source: unknown) => {
+				if (typeof source !== "object" || source === null) return source;
+				const tier = (source as { tier?: unknown }).tier;
+				return typeof tier === "string" && /^l[1-5]$/i.test(tier)
+					? { ...source, tier: tier.toUpperCase() }
+					: source;
+			})
+		: candidate.sources;
+	return { ...candidate, numbers, sources };
+}
+
 export function settleByosanAngleCandidate(
 	raw: unknown,
 ): ByosanAngleCandidateSettlement {
-	const parsed = ByosanAngleCandidateSchema.safeParse(raw);
+	const parsed = ByosanAngleCandidateSchema.safeParse(
+		normalizeByosanAngleCandidateForm(raw),
+	);
 	if (parsed.success) return { status: "VALID", candidate: parsed.data };
 	return {
 		status: "REJECTED",
@@ -532,7 +554,6 @@ export function evaluateByosanAngleCandidate(
 
 	const hardGateFailures: string[] = [];
 	if (primaryCount < 1) hardGateFailures.push("no_L1_L3_primary_source");
-	if (publisherCount < 2) hardGateFailures.push("fewer_than_two_publishers");
 	if (candidate.numbers.length < 2)
 		hardGateFailures.push("fewer_than_two_numbers");
 	if (maxRecentSimilarity > 0.42)
@@ -586,11 +607,15 @@ export function evaluateByosanAngleCandidate(
 	});
 }
 
-export const BYOSAN_MIN_CANDIDATE_COUNT = 5;
+export type ByosanAngleGate = {
+	minCandidateCount: number;
+	minDistinctPublishers: number;
+};
 
 export function selectByosanAngle(
 	candidateInputs: ByosanAngleCandidate[],
 	recentTitles: string[],
+	gate: ByosanAngleGate,
 ): ByosanAngleDecision {
 	const candidates = candidateInputs.map((candidate) =>
 		ByosanAngleCandidateSchema.parse(candidate),
@@ -603,11 +628,12 @@ export function selectByosanAngle(
 	);
 	const orthogonality = evaluateOrthogonality(candidates);
 	const collectionFailures: string[] = [];
-	if (candidates.length < BYOSAN_MIN_CANDIDATE_COUNT)
-		collectionFailures.push("fewer_than_five_candidates");
-	if (distinctPublishers.size < 3)
-		collectionFailures.push("fewer_than_three_publishers_in_candidate_set");
-	collectionFailures.push(...orthogonality.failedAxes);
+	if (candidates.length < gate.minCandidateCount)
+		collectionFailures.push(`fewer_than_${gate.minCandidateCount}_candidates`);
+	if (distinctPublishers.size < gate.minDistinctPublishers)
+		collectionFailures.push(
+			`fewer_than_${gate.minDistinctPublishers}_publishers_in_candidate_set`,
+		);
 
 	const ranked = evaluated
 		.map((entry, index) => ({ entry, index }))

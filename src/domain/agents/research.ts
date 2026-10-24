@@ -11,12 +11,13 @@ import {
 	fetchRecentThemes,
 	getCurrentDateString,
 	invokeStructuredLlm,
+	loadConfig,
 } from "../../io/core.js";
 import {
 	BYOSAN_COUNTERFACTUAL_TEST_MARKERS,
-	BYOSAN_MIN_CANDIDATE_COUNT,
 	type ByosanAngleCandidate,
 	type ByosanAngleDecision,
+	type ByosanAngleGate,
 	isCurrentByosanAngleDecision,
 	loadRecentByosanTitles,
 	selectByosanAngle,
@@ -217,6 +218,21 @@ export function geminiResearchParams(
 	};
 }
 
+export function byosanAngleGate(): ByosanAngleGate {
+	const gate = (
+		loadConfig("byosan_money") as unknown as {
+			angle_gate: {
+				min_candidate_count: number;
+				min_distinct_publishers: number;
+			};
+		}
+	).angle_gate;
+	return {
+		minCandidateCount: gate.min_candidate_count,
+		minDistinctPublishers: gate.min_distinct_publishers,
+	};
+}
+
 export class TrendScout extends BaseAgent {
 	private readonly invokeStructured: ResearchStructuredInvoker;
 
@@ -269,7 +285,8 @@ export class TrendScout extends BaseAgent {
 			.replace("{recent_themes}", recentThemes)
 			.replace("{current_date}", currentDate);
 		userPrompt += this.buildSourceRegistryPrompt(bucket);
-		if (bucket === "byosan_money") userPrompt += this.buildSharpAnglePrompt();
+		const angleGate = bucket === "byosan_money" ? byosanAngleGate() : undefined;
+		if (angleGate) userPrompt += this.buildSharpAnglePrompt(angleGate);
 
 		if (missionFile) {
 			const sourcePath = path.isAbsolute(missionFile)
@@ -326,8 +343,8 @@ export class TrendScout extends BaseAgent {
 			requireByosanAngle: bucket === "byosan_money",
 		});
 		if (
-			bucket === "byosan_money" &&
-			countSettledByosanCandidates(research) < BYOSAN_MIN_CANDIDATE_COUNT
+			angleGate &&
+			countSettledByosanCandidates(research) < angleGate.minCandidateCount
 		) {
 			const repairPayload = await invokeResearch(
 				"repair",
@@ -335,6 +352,7 @@ export class TrendScout extends BaseAgent {
 					userPrompt,
 					promptCfg.consolidated_research.candidate_repair_template,
 					research,
+					angleGate.minCandidateCount,
 				),
 			);
 			research = mergeSettledResearchPayloads(
@@ -363,7 +381,7 @@ export class TrendScout extends BaseAgent {
 		let selectedTopic = allTopics[0];
 		let selectedResult = selectedTopic?.results?.[0];
 
-		if (bucket === "byosan_money") {
+		if (angleGate) {
 			const recentTitles = loadRecentByosanTitles(
 				ROOT,
 				new Date(`${currentDate}T23:59:59Z`),
@@ -371,6 +389,7 @@ export class TrendScout extends BaseAgent {
 			angleDecision = selectByosanAngle(
 				candidateLocations.map((entry) => entry.candidate),
 				recentTitles,
+				angleGate,
 			);
 			fs.outputJsonSync(
 				path.join(
@@ -430,6 +449,7 @@ export class TrendScout extends BaseAgent {
 		userPrompt: string,
 		template: string,
 		research: SettledResearchPayload,
+		minCandidateCount: number,
 	): string {
 		const rejected = research.rejected_byosan_candidates
 			.map(
@@ -443,8 +463,7 @@ export class TrendScout extends BaseAgent {
 				result.byosan_angle ? [`- ${result.byosan_angle.topic}`] : [],
 			)
 			.join("\n");
-		const needed =
-			BYOSAN_MIN_CANDIDATE_COUNT - countSettledByosanCandidates(research);
+		const needed = minCandidateCount - countSettledByosanCandidates(research);
 		return `${userPrompt}\n\n${template
 			.replace("{rejected_issues}", rejected)
 			.replace("{accepted_topics}", accepted)
@@ -511,18 +530,18 @@ export class TrendScout extends BaseAgent {
 		return [
 			"",
 			"[BYOSAN POWER MACRO SOURCE REGISTRY]",
-			"Use this registry as the approved source universe. Prefer L1-L3 primary sources. If current facts cannot be grounded in this registry or explicit MISSION EVIDENCE, stop with an evidence gap instead of inventing or reusing fallback content.",
+			"Use this registry as the approved source universe. Prefer L1-L3 primary sources. Cite a registry source only for a claim that the registry or the MISSION EVIDENCE article attributes to it; do not invent or reuse fallback content.",
 			...sourceLines,
 		].join("\n");
 	}
 
-	private buildSharpAnglePrompt(): string {
+	private buildSharpAnglePrompt(gate: ByosanAngleGate): string {
 		return `
 
 [BYOSAN SHARP-ANGLE STRUCTURED OUTPUT]
-Return at least ${BYOSAN_MIN_CANDIDATE_COUNT} total results across selected_topics and cover at least three distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
+Return at least ${gate.minCandidateCount} total results across selected_topics and cover at least ${gate.minDistinctPublishers} distinct publishers. Every results item MUST include a byosan_angle object with exactly these camelCase fields:
 topic, angle, titleHook, whyNow, hiddenMechanism, counterfactual, audiencePayoff, numbers, sources, noveltyFingerprint, visualPlan, risks, explorationProfile, adversarialEvidence, archetypeEvidence.
-explorationProfile must contain non-empty strings for geography, sector, actorType, eventType, timeHorizon, causalDirection, financialMetric, supplyChainLayer, marketRealEconomy, dataSurface, scale. Describe where this candidate sits on each axis; the candidate set must vary across every axis, or the deterministic harness stops.
+explorationProfile must contain non-empty strings for geography, sector, actorType, eventType, timeHorizon, causalDirection, financialMetric, supplyChainLayer, marketRealEconomy, dataSurface, scale. Describe where this candidate sits on each axis. The axes are descriptive; the harness does not require the candidate set to cover every value.
 numbers must contain at least two concrete numerical strings. sources must contain at least two objects with id, name, absolute url, optional publishedAt, tier (L1|L2|L3|L4|L5|unknown), and non-empty supports. Use L1 for regulators/filings/central banks, L2 for state policy and official statistics, L3 for company or lab primary releases. source ids must be stable machine-readable identifiers. counterfactual must be testable by exclusion, subtraction, or a changed denominator, and must contain at least one of these markers: ${BYOSAN_COUNTERFACTUAL_TEST_MARKERS.join(" / ")}.
 
 Shape of one byosan_angle object (types only; replace every value with observed facts and never copy example text):
@@ -543,7 +562,7 @@ archetypeEvidence is an array of zero or more evidence bundles. Do not choose a 
 - hardware_capital: headline_multiplier, robust_baseline, physical_bottleneck, supplier_capital, remaining_spof
 The deterministic harness will select among eligible bundles after production format is known. If no bundle is complete, it will use standard Fact -> Context -> Impact. Do not invent missing slots to qualify a bundle.
 
-adversarialEvidence must contain at least one object with id, kind, targetClaim, statement, sourceIds, checkedSourceIds. kind must be measurement_condition | counter_metric | third_party_disagreement | source_limitation | no_counter_evidence. Before returning a candidate, actively inspect footnotes, methodology notes, unfavorable metrics, changed denominators, exclusions, and third-party measurements that could weaken the headline claim. sourceIds must identify sources that directly support the adversarial statement. checkedSourceIds records the sources actually inspected for counter-evidence. sourceIds and checkedSourceIds must only reference ids listed in sources. Use no_counter_evidence only when at least two ids from sources appear in checkedSourceIds and no material counter-evidence was found; never omit the search silently.
+adversarialEvidence must contain at least one object with id, kind, targetClaim, statement, sourceIds, checkedSourceIds. kind must be measurement_condition | counter_metric | third_party_disagreement | source_limitation | no_counter_evidence. Before returning a candidate, check the MISSION EVIDENCE articles for footnotes, methodology notes, unfavorable metrics, changed denominators, exclusions, and third-party measurements that could weaken the headline claim; record what the articles show, and do not claim a source body was read when it was not supplied. sourceIds must identify sources that directly support the adversarial statement. checkedSourceIds records the sources actually inspected for counter-evidence. sourceIds and checkedSourceIds must only reference ids listed in sources. Use no_counter_evidence only when at least two ids from sources appear in checkedSourceIds and no material counter-evidence was found; never omit the search silently.
 
 If explicit active-probe evidence is supplied through MISSION EVIDENCE, activeProbes may be included with the canonical probe fields and archetypeEvidence slots may reference those probe ids through activeProbeIds. Never invent a probe, never mark an unexecuted probe VERIFIED, and never upgrade an identity or causal inference to verified solely because a probe observation exists. Active probes are observation-only evidence. Do not infer a company's motive as fact: record observable document structure as evidence and keep interpretation in hiddenMechanism/risks. Do not award or select a winner yourself; the deterministic harness will score every candidate and stop if no candidate passes.`;
 	}
