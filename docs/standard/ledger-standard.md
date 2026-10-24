@@ -35,13 +35,14 @@ A ledger is the record of what happened: state transitions, failures, decisions,
 ## Corrections (append-only)
 
 - **C-1 (yawa-2026-10-23).** After publication, the 20:30 JST daily run re-prepared `runs/yawa_archive/yawa-2026-10-23`. It added `reference_sha256` to `tts.json` and `voice_reference: PASS` to `audit/result.json`, but the audio had been generated caption-only. The video was not re-uploaded (`IDEMPOTENT_REUSE`). Correction: the field and check were removed, the post-hoc reference files were deleted, and the validation was re-run and passed. Guard: `preparationAction` in PR #322. Status: corrected; the original entries are kept in the git history.
+- **C-2 (E-2026-10-24-01).** The event cites PR #328 for the tag-set check. #328 was closed when its branch was deleted and was not merged. The change was re-opened as PR #329 and merged; `main` contains it. The rewrite itself was run with that change before the merge.
 
 ## Events (append-only)
 
 Each event is recorded in the run it belongs to. The entry here points to that record and does not copy it (rule 1).
 
 - **E-2026-10-24-01 (metadata rewrite, four yawa episodes).** Titles, descriptions and tags were rewritten to the current rules with `task yawa:metadata`, then read back from YouTube. Each run has `publish/metadata_updates.jsonl`. Result: verified for `7pRW25gkZlg`, `9JYWuZXABhQ`, `KRWpvyY45iI`, `qWUjjJv_LdQ`.
-  - The first attempt reported a mismatch for all four. The cause was the tag order returned by YouTube, not the content. The check was changed to compare tags as a set (PR #328). The failed attempt stays in the same file as a separate line.
+  - The first attempt reported a mismatch for all four. The cause was the tag order returned by YouTube, not the content. The check was changed to compare tags as a set (PR #328; see C-2). The failed attempt stays in the same file as a separate line.
 - **E-2026-10-24-02 (SEO metadata rule).** The title and description standard changed to include the search prefix and the content sentence, per `docs/standard/asmr-workflow.md` step 10 and 16 (PR #326, #327).
 
 ## Retention
