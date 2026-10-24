@@ -1,6 +1,6 @@
 import fs from "fs-extra";
 import yaml from "js-yaml";
-import ts from "typescript";
+import ts from "typescript-5";
 import { z } from "zod";
 
 export type ByosanHardcodeViolation = {
