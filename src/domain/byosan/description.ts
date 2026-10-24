@@ -79,12 +79,22 @@ function mergeShortChapters(
 	chapters: ChapterDraft[],
 	minSeconds: number,
 ): ChapterDraft[] {
-	const index = chapters.findIndex((chapter) => chapter.duration < minSeconds);
-	if (index < 0 || chapters.length < 2) return chapters;
-	return mergeShortChapters(
-		mergeAt(chapters, index > 0 ? index - 1 : index),
-		minSeconds,
-	);
+	const merged: ChapterDraft[] = [];
+	for (const chapter of chapters) {
+		const open = merged.at(-1);
+		if (open && open.duration < minSeconds) {
+			open.duration += chapter.duration;
+		} else {
+			merged.push({ ...chapter });
+		}
+	}
+	const last = merged.at(-1);
+	const previous = merged.at(-2);
+	if (last && previous && last.duration < minSeconds) {
+		previous.duration += last.duration;
+		merged.pop();
+	}
+	return merged;
 }
 
 function narrowestPairIndex(chapters: ChapterDraft[]): number {
