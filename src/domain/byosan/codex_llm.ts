@@ -34,6 +34,42 @@ export function byosanLlmConfig(): ByosanLlmConfig {
 		.llm;
 }
 
+export type ByosanFailureClassification = {
+	rate_limit_terms: string[];
+	auth_terms: string[];
+	mcp_noise_terms: string[];
+	transient_max_retries: number;
+};
+
+export function byosanFailureClassification(): ByosanFailureClassification {
+	return (
+		loadConfig("byosan_money") as unknown as {
+			failure_classification: ByosanFailureClassification;
+		}
+	).failure_classification;
+}
+
+export function termsMatch(text: string, terms: string[]): boolean {
+	return terms.some((term) => new RegExp(term, "i").test(text));
+}
+
+export function failureSignalLines(
+	text: string,
+	noiseTerms: string[],
+): string[] {
+	return text.split("\n").filter((line) => !termsMatch(line, noiseTerms));
+}
+
+export function codexErrorDetail(
+	stderr: string,
+	classification: ByosanFailureClassification,
+): string {
+	const lines = failureSignalLines(stderr, classification.mcp_noise_terms);
+	const errorLines = lines.filter((line) => line.includes("ERROR:"));
+	const otherLines = lines.filter((line) => !line.includes("ERROR:"));
+	return [...errorLines, ...otherLines].join("\n").slice(0, 400);
+}
+
 export function llmBackend(cfg: ByosanLlmConfig, stage: LlmStage): LlmBackend {
 	const backend = cfg.backends?.[stage];
 	if (backend === "gemini" || backend === "codex") return backend;
@@ -133,7 +169,7 @@ export function runCodexExec(
 	fs.removeSync(workdir);
 	if (text === undefined) {
 		throw new Error(
-			`CODEX_EXEC_FAILED stage=${options.stage} status=${result.status} ${result.error?.message ?? ""} ${(result.stderr ?? "").slice(-400)}`,
+			`CODEX_EXEC_FAILED stage=${options.stage} status=${result.status} ${result.error?.message ?? ""} ${codexErrorDetail(result.stderr ?? "", byosanFailureClassification())}`,
 		);
 	}
 	return text;

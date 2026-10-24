@@ -138,6 +138,12 @@ daily_publish:
   resume_date: "2026-10-13"
   publish_approved: true
 
+failure_classification:
+  rate_limit_terms: ['\b429\b', 'rate limit', 'usage limit', 'try again at', 'exceeded your current quota', 'quota exhausted', 'resource exhausted']
+  auth_terms: ['oauth', 'credential', 'unauthori[sz]ed', 'forbidden', '\b40[13]\b', 'invalid_grant', 'login required', 'not logged in', 'network', 'ECONN', 'ENOTFOUND']
+  mcp_noise_terms: ['rmcp::', 'oauth-protected-resource', 'AuthRequired']
+  transient_max_retries: 3
+
 dashboard:
   port: 3000
 

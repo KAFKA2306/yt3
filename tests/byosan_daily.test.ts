@@ -2,7 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
-import { byosanLlmConfig, llmBackend } from "../src/domain/byosan/codex_llm.js";
+import {
+	byosanFailureClassification,
+	byosanLlmConfig,
+	llmBackend,
+} from "../src/domain/byosan/codex_llm.js";
 import {
 	type ByosanFailureTrace,
 	type RepairResolution,
@@ -254,18 +258,18 @@ describe("byosan failure retry gate", () => {
 			new Error("429 rate limit quota exhausted"),
 			"head-a",
 		);
-		expect(() => assertByosanRetryAllowed(runDir, "head-a")).not.toThrow();
-		recordByosanFailure(
-			runDir,
-			new Error("429 rate limit quota exhausted"),
-			"head-a",
-		);
-		expect(() => assertByosanRetryAllowed(runDir, "head-a")).not.toThrow();
-		recordByosanFailure(
-			runDir,
-			new Error("429 rate limit quota exhausted"),
-			"head-a",
-		);
+		for (
+			let retry = 0;
+			retry < byosanFailureClassification().transient_max_retries;
+			retry++
+		) {
+			expect(() => assertByosanRetryAllowed(runDir, "head-a")).not.toThrow();
+			recordByosanFailure(
+				runDir,
+				new Error("429 rate limit quota exhausted"),
+				"head-a",
+			);
+		}
 		expect(() => assertByosanRetryAllowed(runDir, "head-a")).toThrow(
 			"RETRY_BLOCKED_TRANSIENT_EXHAUSTED",
 		);

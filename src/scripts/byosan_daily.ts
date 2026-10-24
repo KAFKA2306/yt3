@@ -15,14 +15,18 @@ import {
 	writeByosanCheckpoint,
 } from "../domain/byosan/checkpoint.js";
 import {
+	type ByosanFailureClassification,
 	type ByosanLlmConfig,
 	type LlmBackend,
 	type StructuredCall,
+	byosanFailureClassification,
 	byosanLlmConfig,
 	codexLlmLogPath,
+	failureSignalLines,
 	invokeCodexStructured,
 	llmBackend,
 	structuredRequest,
+	termsMatch,
 } from "../domain/byosan/codex_llm.js";
 import { selectByosanEditorialReferencePlan } from "../domain/byosan/editorial_references.js";
 import {
@@ -242,13 +246,20 @@ function failureStage(message: string): ByosanFailureStage {
 	return "UNKNOWN";
 }
 
-export function classifyByosanFailure(message: string): {
+export function classifyByosanFailure(
+	rawMessage: string,
+	classification: ByosanFailureClassification = byosanFailureClassification(),
+): {
 	failureClass: ByosanFailureClass;
 	stage: ByosanFailureStage;
 	retryPolicy: RetryPolicy;
 	maxRetries: number;
 } {
-	const stage = failureStage(message);
+	const stage = failureStage(rawMessage);
+	const message = failureSignalLines(
+		rawMessage,
+		classification.mcp_noise_terms,
+	).join("\n");
 	if (/BYOSAN_ANGLE_STOP/.test(message)) {
 		return {
 			failureClass: "RESEARCH_ANGLE_STOP",
@@ -258,9 +269,26 @@ export function classifyByosanFailure(message: string): {
 		};
 	}
 	if (
-		/BYOSAN_PREFLIGHT_BLOCKED/.test(message) &&
-		!/429|rate limit|quota exhausted|resource exhausted/i.test(message)
+		/COMMAND_FAILED: .*publish_youtube|DUPLICATE_PUBLISH_BLOCKED|PUBLISH_EVIDENCE_INCOMPLETE/i.test(
+			message,
+		)
 	) {
+		return {
+			failureClass: "UNCERTAIN_REMOTE_COMMIT",
+			stage: "PUBLISH",
+			retryPolicy: "REMOTE_READBACK_ONLY",
+			maxRetries: 0,
+		};
+	}
+	if (termsMatch(message, classification.rate_limit_terms)) {
+		return {
+			failureClass: "PROVIDER_RATE_LIMIT",
+			stage,
+			retryPolicy: "TRANSIENT_BOUNDED",
+			maxRetries: classification.transient_max_retries,
+		};
+	}
+	if (/BYOSAN_PREFLIGHT_BLOCKED/.test(message)) {
 		if (
 			/\b(node_dependencies|python_runtime|ffmpeg|ffprobe|voicevox) (FAIL|UNVERIFIED)/.test(
 				message,
@@ -280,31 +308,7 @@ export function classifyByosanFailure(message: string): {
 			maxRetries: 0,
 		};
 	}
-	if (
-		/COMMAND_FAILED: .*publish_youtube|DUPLICATE_PUBLISH_BLOCKED|PUBLISH_EVIDENCE_INCOMPLETE/i.test(
-			message,
-		)
-	) {
-		return {
-			failureClass: "UNCERTAIN_REMOTE_COMMIT",
-			stage: "PUBLISH",
-			retryPolicy: "REMOTE_READBACK_ONLY",
-			maxRetries: 0,
-		};
-	}
-	if (/429|rate limit|quota exhausted|resource exhausted/i.test(message)) {
-		return {
-			failureClass: "PROVIDER_RATE_LIMIT",
-			stage,
-			retryPolicy: "TRANSIENT_BOUNDED",
-			maxRetries: 2,
-		};
-	}
-	if (
-		/oauth|credential|unauthori[sz]ed|forbidden|network|ECONN|ENOTFOUND/i.test(
-			message,
-		)
-	) {
+	if (termsMatch(message, classification.auth_terms)) {
 		return {
 			failureClass: "NETWORK_AUTH",
 			stage,
