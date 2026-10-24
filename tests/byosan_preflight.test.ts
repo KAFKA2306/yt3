@@ -43,6 +43,7 @@ const runDirs: string[] = [];
 function passingDependencies(): ByosanPreflightDependencies {
 	return {
 		commandAvailable: (command) => pass(command),
+		nodeDependencies: () => pass("node_dependencies"),
 		pythonRuntime: () => pass("python_runtime"),
 		voicevox: async () => pass("voicevox"),
 		llmBackends: ["gemini"],
@@ -77,6 +78,15 @@ describe("Byosan preflight aggregation", () => {
 			failureClass: string;
 			inject: (dependencies: ByosanPreflightDependencies) => void;
 		}> = [
+			{
+				name: "Bun package missing from node_modules",
+				failureClass: "INFRA_DEPENDENCY",
+				component: "node_dependencies",
+				inject: (dependencies) => {
+					dependencies.nodeDependencies = () =>
+						fail("node_dependencies", "missing packages: echarts");
+				},
+			},
 			{
 				name: "Python dependency missing",
 				failureClass: "INFRA_DEPENDENCY",

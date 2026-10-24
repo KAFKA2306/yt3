@@ -30,6 +30,7 @@ export type PreflightCheck = {
 
 export type ByosanPreflightDependencies = {
 	commandAvailable?: (command: string) => PreflightCheck;
+	nodeDependencies?: () => PreflightCheck;
 	pythonRuntime?: (runDir: string) => PreflightCheck;
 	voicevox?: () => Promise<PreflightCheck>;
 	gemini?: (runDir: string) => Promise<PreflightCheck>;
@@ -75,6 +76,87 @@ function commandAvailable(command: string): PreflightCheck {
 				`${command} -version`,
 				"FAIL",
 				"required command is unavailable",
+			);
+}
+
+const PackageJsonSchema = z.object({
+	dependencies: z.record(z.string(), z.string()),
+});
+const BYOSAN_DOMAIN_DIR = path.join(ROOT, "src", "domain", "byosan");
+const BYOSAN_IMPORT_ENTRY = path.join(
+	ROOT,
+	"src",
+	"scripts",
+	"produce_byosan_feature.ts",
+);
+const IMPORT_SPECIFIER = /\b(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
+
+export function packageNameOf(specifier: string): string {
+	const segments = specifier.split("/");
+	return segments.slice(0, specifier.startsWith("@") ? 2 : 1).join("/");
+}
+
+function importSpecifiers(text: string): string[] {
+	return [...text.matchAll(IMPORT_SPECIFIER)]
+		.map((match) => match[1])
+		.filter((specifier): specifier is string => specifier !== undefined);
+}
+
+export function importedPackageNames(
+	sourceTexts: string[],
+	declaredPackages: string[],
+): string[] {
+	const declared = new Set(declaredPackages);
+	const names = sourceTexts.flatMap((text) =>
+		importSpecifiers(text).map(packageNameOf),
+	);
+	return [...new Set(names)].filter((name) => declared.has(name)).sort();
+}
+
+export function missingPackages(
+	packages: string[],
+	isInstalled: (name: string) => boolean,
+): string[] {
+	return packages.filter((name) => !isInstalled(name));
+}
+
+function declaredPackages(): string[] {
+	const manifest = PackageJsonSchema.parse(
+		fs.readJsonSync(path.join(ROOT, "package.json")),
+	);
+	return Object.keys(manifest.dependencies);
+}
+
+function byosanSourceTexts(): string[] {
+	const domainFiles = fs
+		.readdirSync(BYOSAN_DOMAIN_DIR, { recursive: true, encoding: "utf8" })
+		.filter((file) => file.endsWith(".ts"))
+		.map((file) => path.join(BYOSAN_DOMAIN_DIR, file));
+	return [...domainFiles, BYOSAN_IMPORT_ENTRY].map((file) =>
+		fs.readFileSync(file, "utf8"),
+	);
+}
+
+function checkNodeDependencies(): PreflightCheck {
+	const imported = importedPackageNames(
+		byosanSourceTexts(),
+		declaredPackages(),
+	);
+	const missing = missingPackages(imported, (name) =>
+		fs.existsSync(path.join(ROOT, "node_modules", name, "package.json")),
+	);
+	return missing.length === 0
+		? check(
+				"node_dependencies",
+				"package.json dependencies imported by Byosan resolve under node_modules",
+				"PASS",
+				`${imported.length} imported packages are installed`,
+			)
+		: check(
+				"node_dependencies",
+				"package.json dependencies imported by Byosan resolve under node_modules",
+				"FAIL",
+				`missing packages in node_modules: ${missing.join(", ")}; run bun install --frozen-lockfile`,
 			);
 }
 
@@ -302,6 +384,7 @@ export async function runByosanPreflight(
 	dependencies: ByosanPreflightDependencies = {},
 ): Promise<ByosanPreflightReport> {
 	const commandCheck = dependencies.commandAvailable ?? commandAvailable;
+	const nodeCheck = dependencies.nodeDependencies ?? checkNodeDependencies;
 	const pythonCheck = dependencies.pythonRuntime ?? runPythonRuntime;
 	const voicevoxCheck = dependencies.voicevox ?? checkVoicevox;
 	const geminiCheck = dependencies.gemini ?? checkGemini;
@@ -314,6 +397,7 @@ export async function runByosanPreflight(
 	const checks: Record<string, PreflightCheck> = {
 		ffmpeg: commandCheck("ffmpeg"),
 		ffprobe: commandCheck("ffprobe"),
+		node_dependencies: nodeCheck(),
 		python_runtime: pythonCheck(runDir),
 		voicevox: await voicevoxCheck(),
 		youtube: await youtubeCheck(),

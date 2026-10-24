@@ -94,8 +94,13 @@ tasks:
     cmds:
       - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
+  sync:deps:
+    desc: "Install Bun dependencies from the committed lockfile into node_modules (fails when bun.lock is stale)"
+    cmds: ["bun install --frozen-lockfile"]
+
   byosan:prepare:
     desc: "Prepare one 秒算マネー run through the product release gate without publishing (DATE=YYYY-MM-DD required)"
+    deps: [sync:deps]
     cmds:
       - |
         if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
@@ -129,6 +134,7 @@ tasks:
 
   byosan:auto:
     desc: "Prepare one 秒算マネー run; on failure repair with codex and re-prepare up to auto.max_prepare_attempts, stopping before publish (DATE=YYYY-MM-DD required)"
+    deps: [sync:deps]
     cmds:
       - |
         if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
@@ -139,6 +145,7 @@ tasks:
 
   byosan:publish-daily:
     desc: "Prepare today's 秒算マネー run through the release gate and publish it only when publish_approved (no backfill before resume_date)"
+    deps: [sync:deps]
     cmds: ["bun src/scripts/byosan_publish_daily.ts"]
 
   byosan:runtime-verify:
