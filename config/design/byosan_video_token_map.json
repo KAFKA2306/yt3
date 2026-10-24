@@ -1,0 +1,107 @@
+{
+	"theme": "light",
+	"targets": {
+		"colors.background": "color.light.canvas",
+		"colors.surface": "color.light.surface",
+		"colors.brand_accent": "color.light.primary",
+		"colors.text_primary": "color.light.foreground",
+		"colors.text_muted": "color.light.mutedForeground",
+		"colors.accent_primary": "color.light.accent",
+		"colors.warning": "color.light.warning",
+		"colors.alert": "color.light.danger",
+		"colors.success": "color.light.success",
+		"landscape.outer_frame.color": "color.light.border",
+		"landscape.caption_band.color": "color.light.surface",
+		"landscape.section_label.color": "color.light.primary",
+		"landscape.source.color": "color.light.mutedForeground",
+		"landscape.subtitle.color": "color.light.foreground",
+		"landscape.subtitle.outline_color": "color.light.surface",
+		"landscape.stat_cards.fill": "color.light.surface",
+		"landscape.progress.track": "color.light.border",
+		"thumbnail.outer_frame.color": "color.light.border",
+		"thumbnail.title_zone.fill": "color.light.foreground",
+		"thumbnail.title_zone.outer_stroke": "color.light.surface",
+		"thumbnail.title_zone.inner_stroke": "color.light.primary",
+		"thumbnail.subtitle.color": "color.light.primary",
+		"shorts.outer_frame.color": "color.light.border",
+		"radius.small": "dimension.radius",
+		"radius.medium": "dimension.radius",
+		"radius.card": "dimension.radius",
+		"radius.pill": "dimension.radius",
+		"landscape.outer_frame.radius": "dimension.radius",
+		"landscape.brand_chip.radius": "dimension.radius",
+		"landscape.progress.radius": "dimension.radius",
+		"landscape.stat_cards.radius": "dimension.radius",
+		"landscape.stat_cards.accent_radius": "dimension.radius",
+		"landscape.speaker_chip.radius": "dimension.radius",
+		"thumbnail.outer_frame.radius": "dimension.radius",
+		"thumbnail.brand_chip.radius": "dimension.radius",
+		"shorts.outer_frame.radius": "dimension.radius",
+		"shorts.brand_chip.radius": "dimension.radius",
+		"shorts.short_role_chip.radius": "dimension.radius",
+		"templates.comparison.radius": "dimension.radius",
+		"templates.timeline.radius": "dimension.radius",
+		"templates.source_card.radius": "dimension.radius"
+	},
+	"exceptions": {
+		"colors.text_secondary": {
+			"token": "color.light.foreground",
+			"reason": "ライト配色に第2の本文色が無いため、本文色を前景色へ集約する"
+		},
+		"colors.text_dark": {
+			"token": "color.light.foreground",
+			"reason": "暗い文字の役割はライトでは前景色が兼ねる"
+		},
+		"colors.human_cream": {
+			"token": "color.light.surface",
+			"reason": "クリーム面はライトでは白の面（surface）で代替する"
+		},
+		"colors.accent_secondary": {
+			"token": "color.light.foreground",
+			"reason": "ライト配色に第2アクセントが無いため、話者「つむぎ」の識別色を前景色で代替する"
+		},
+		"colors.background_alt": {
+			"token": "color.light.canvas",
+			"reason": "グラデーション背景を廃止したため未使用。スキーマ互換のためキャンバス色を置く"
+		},
+		"colors.surface_strong": {
+			"token": "color.light.surface",
+			"reason": "未使用（強調面の廃止）。スキーマ互換のため surface を置く"
+		},
+		"colors.brand_blue": {
+			"token": "color.light.primary",
+			"reason": "未使用（旧ブランド色）。スキーマ互換のため primary を置く"
+		},
+		"colors.grid": {
+			"token": "color.light.border",
+			"reason": "グリッド装飾を廃止したため未使用。スキーマ互換のため border を置く"
+		},
+		"colors.shadow": {
+			"token": "color.light.canvas",
+			"reason": "影を使わない（shadowOpacity 0）。スキーマ互換のためキャンバス色を置き、描画には使わない"
+		},
+		"colors.accent_pink": {
+			"reason": "byosan 描画では未使用。ライトに対応トークンが無く、スキーマ互換のため旧値のまま残す"
+		},
+		"landscape.background.stops.0": {
+			"token": "color.light.canvas",
+			"reason": "背景はキャンバス単色。グラデーション停止点を廃止し単色化する"
+		},
+		"landscape.background.stops.1": {
+			"token": "color.light.canvas",
+			"reason": "背景はキャンバス単色。グラデーション停止点を廃止し単色化する"
+		},
+		"landscape.background.stops.2": {
+			"token": "color.light.canvas",
+			"reason": "背景はキャンバス単色。グラデーション停止点を廃止し単色化する"
+		}
+	},
+	"overrides": {
+		"landscape.caption_band.opacity": 0.92,
+		"landscape.character_region.y": 216,
+		"landscape.character_region.height": 640,
+		"landscape.background.grid_opacity": 0,
+		"landscape.background.glow_opacity": 0,
+		"landscape.background.max_glows": 0
+	}
+}
