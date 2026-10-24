@@ -64,6 +64,7 @@ import {
 	type DiscoveryConfig,
 	writeDiscoveryEvidence,
 } from "../domain/byosan/feed_discovery.js";
+import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
 import {
 	type ByosanAdversarialEvidence,
 	type ByosanAngleCandidate,
@@ -1148,6 +1149,7 @@ export async function runByosanDaily(): Promise<void> {
 			["src/scripts/produce_byosan_feature.ts", specPath],
 			{
 				...process.env,
+				...byosanFontconfigEnv(),
 				ENV_FILE: "config/.env.byosan",
 				YOUTUBE_CHANNEL_PROFILE: "byosan",
 			},

@@ -213,7 +213,10 @@ const FeatureProductionSchema = z.object({
 });
 
 const ByosanProductionConfigSchema = z.object({
-	global_style: z.object({ font_path: nonEmptyString }),
+	global_style: z.object({
+		font_path: nonEmptyString,
+		font_name: nonEmptyString,
+	}),
 	workflow: z.object({
 		filenames: z.object({
 			state: nonEmptyString,

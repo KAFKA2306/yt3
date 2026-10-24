@@ -21,6 +21,7 @@ import {
 	ByosanFeatureSpecSchema,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
+import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import { invokeStructuredLlm } from "../io/core.js";
 
@@ -748,6 +749,7 @@ async function renderDigestBridge(
 		["src/scripts/produce_byosan_feature.ts", specPath],
 		{
 			...process.env,
+			...byosanFontconfigEnv(),
 			ENV_FILE: "config/.env.byosan",
 			YOUTUBE_CHANNEL_PROFILE: "byosan",
 		},

@@ -10,8 +10,8 @@
 		"warning": "#A16207",
 		"danger": "#B91C1C"
 	},
-	"font_family": "Noto Sans JP, Noto Sans CJK JP, sans-serif",
-	"numeric_font_family": "Geist, Noto Sans JP, Noto Sans CJK JP, sans-serif",
+	"font_family": "IBM Plex Sans JP, Noto Sans CJK JP, sans-serif",
+	"numeric_font_family": "Geist, IBM Plex Sans JP, Noto Sans CJK JP, sans-serif",
 	"radius": 2,
 	"stroke_width": 2,
 	"hairline_width": 1,
