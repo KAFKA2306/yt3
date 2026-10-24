@@ -37,6 +37,11 @@ The owner has authorized autonomous daily publication for 夜話アーカイブ 
 
 Repository checks prove only the exact revision they executed. Product/runtime/publication are separate states and require direct evidence from the target artifact or service. Unchecked layers remain `UNVERIFIED`.
 
+## Execution Account and Credential Safety
+
+- **Execution account.** Agents run as the `kafka` account and do not run commands as root or with `sudo`. A root-owned resource is either migrated to `kafka` by an owner-approved step or recorded as a blocker in the governing Issue; it is not operated on as root.
+- **Credential handling.** Do not read out or display `.env` files, tokens, OAuth credentials, or contact details in terminal output, logs, commits, or requests to external services. Scripts that handle secrets check only whether a value is present. An empty environment variable or empty `.env` entry must not overwrite an existing non-empty value. The public-artifact rules in §7 also apply.
+
 ## Publication
 
 Publication is an irreversible external side effect. Use only the canonical Taskfile publish path, under the conditions in Autonomous operations.
