@@ -8,11 +8,17 @@ import {
 } from "../src/domain/content/comedy_beat.js";
 import { ScriptIntegrityLinter } from "../src/io/utils/qa/script_linter.js";
 
+const escalation: [string, string, string] = [
+	"Samsungも増産",
+	"SK hynixも増産",
+	"Micronも増産",
+];
+
 const beat = {
 	enabled: true as const,
 	normal: "HBMの設備投資が増えている",
 	anomaly: "主要3社が同時に増産している",
-	escalation: ["Samsungも増産", "SK hynixも増産", "Micronも増産"],
+	escalation,
 	tsukkomi: "全員工場建て始めたやないかい",
 	pivot: "ただし供給制約は先端パッケージにもある",
 	roles: {
@@ -140,6 +146,7 @@ describe("Comedy Beat contract", () => {
 			script: {
 				title: "HBM設備投資の検証",
 				description: "検証",
+				total_duration: 3,
 				lines: [
 					{
 						speaker: "ずんだもん",

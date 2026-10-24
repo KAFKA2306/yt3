@@ -5,6 +5,7 @@ import {
 	type ByosanFeatureSpec,
 	auditByosanFeatureSpec,
 } from "../src/domain/byosan/feature_spec.js";
+import { fixtureAt } from "./fixtures/fixture_at.js";
 
 const spec = fs.readJsonSync(
 	"config/productions/issue_131_ai_infrastructure_bottlenecks.json",
@@ -13,7 +14,7 @@ const spec = fs.readJsonSync(
 describe("byosan editorial reference plan", () => {
 	test("rejects an editorial reference used as a fact source", () => {
 		const plan = selectByosanEditorialReferencePlan(spec.runId, spec.angle);
-		const referenceId = plan.selectedReferences[0].referenceId;
+		const referenceId = fixtureAt(plan.selectedReferences, 0).referenceId;
 		const baseline = auditByosanFeatureSpec(spec).map((issue) => issue.code);
 		const tainted = {
 			...spec,

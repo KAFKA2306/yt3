@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 import {
+	type ByosanFailureClass,
 	classifyByosanFailure,
 	preflightBlockedMessage,
 } from "../src/scripts/byosan_daily.js";
@@ -75,7 +76,7 @@ describe("Byosan preflight aggregation", () => {
 		const cases: Array<{
 			name: string;
 			component: string;
-			failureClass: string;
+			failureClass: ByosanFailureClass;
 			inject: (dependencies: ByosanPreflightDependencies) => void;
 		}> = [
 			{

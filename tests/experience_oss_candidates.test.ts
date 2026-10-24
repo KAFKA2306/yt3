@@ -8,6 +8,7 @@ import {
 	auditExperienceOssCandidateRegistry,
 } from "../src/domain/experience/oss_candidate_registry.js";
 import { CANONICAL_EXPERIENCE_SCENE_IDS } from "../src/domain/experience/schema.js";
+import { fixtureAt } from "./fixtures/fixture_at.js";
 
 const registryPath = path.join(
 	process.cwd(),
@@ -21,7 +22,30 @@ const MIT_LICENSE = {
 		"https://raw.githubusercontent.com/motion-canvas/motion-canvas/e735a995aa738ca682feb4204a39ee7db7b5d279/LICENSE",
 };
 
-function fixtureRegistry(candidate: Record<string, unknown>) {
+type FixtureCandidate = {
+	candidate_id: string;
+	display_name: string;
+	quality_target: string;
+	benchmark_priority: string;
+	components: Array<{
+		name: string;
+		kind: string;
+		license: typeof MIT_LICENSE;
+	}>;
+	adoption_decision: string | null;
+	benchmark_evidence: Record<string, string> | null;
+};
+
+function requireBenchmarkEvidence(
+	candidate: FixtureCandidate,
+): Record<string, string> {
+	if (!candidate.benchmark_evidence) {
+		throw new Error("benchmark evidence fixture is missing");
+	}
+	return candidate.benchmark_evidence;
+}
+
+function fixtureRegistry(candidate: Partial<FixtureCandidate>) {
 	return {
 		schema_version: 3,
 		channel: "byosan_money",
@@ -77,12 +101,12 @@ describe("Experience OSS candidate registry", () => {
 			license_gate: "BLOCKED_LICENSE",
 			decision: "BLOCKED_LICENSE",
 		});
-		expect(byId.liveportrait.components).toContainEqual({
+		expect(byId.liveportrait?.components).toContainEqual({
 			name: "InsightFace buffalo_l face analysis models (LivePortrait default)",
 			kind: "model_weights",
 			commercial_use: "RESTRICTED",
 		});
-		expect(byId.whisperx.components).toContainEqual({
+		expect(byId.whisperx?.components).toContainEqual({
 			name: "wav2vec2 alignment models",
 			kind: "model_weights",
 			commercial_use: "UNVERIFIED",
@@ -245,15 +269,15 @@ describe("Experience OSS candidate registry", () => {
 			).toMatchObject({ status: "PASS", adopted_candidate_count: 1 });
 
 			const tampered = structuredClone(registry);
-			tampered.candidates[0].benchmark_evidence.manifest_sha256 = "0".repeat(
-				64,
-			);
+			requireBenchmarkEvidence(
+				fixtureAt(tampered.candidates, 0),
+			).manifest_sha256 = "0".repeat(64);
 			await expect(
 				auditExperienceOssCandidateRegistry(tampered, root),
 			).rejects.toThrow("manifest hash mismatch");
 
 			const esrgan = structuredClone(registry);
-			const esrganCandidate = esrgan.candidates[0];
+			const esrganCandidate = fixtureAt(esrgan.candidates, 0);
 			esrganCandidate.candidate_id = "real-esrgan";
 			esrganCandidate.display_name = "Real-ESRGAN";
 			esrganCandidate.benchmark_priority = "BENCHMARK";
@@ -271,9 +295,9 @@ describe("Experience OSS candidate registry", () => {
 				scene.quality_delta.visual_quality_delta = 0;
 			}
 			await writeFile(reviewPath, JSON.stringify(review));
-			esrganCandidate.benchmark_evidence.manifest_sha256 =
+			requireBenchmarkEvidence(esrganCandidate).manifest_sha256 =
 				await hashFile(manifestPath);
-			esrganCandidate.benchmark_evidence.review_report_sha256 =
+			requireBenchmarkEvidence(esrganCandidate).review_report_sha256 =
 				await hashFile(reviewPath);
 			await expect(
 				auditExperienceOssCandidateRegistry(esrgan, root),

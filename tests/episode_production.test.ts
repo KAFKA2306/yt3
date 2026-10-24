@@ -5,6 +5,7 @@ import {
 	elapsedGenerationSeconds,
 	transcriptSimilarity,
 } from "../src/domain/episode/production.js";
+import { fixtureAt } from "./fixtures/fixture_at.js";
 
 const script = {
 	title: "本編",
@@ -51,7 +52,9 @@ describe("canonical episode production", () => {
 		});
 		expect(episode.sources).toHaveLength(1);
 		expect(episode.claims).toHaveLength(1);
-		expect(episode.claims[0]?.source_ids).toEqual([episode.sources[0]?.id]);
+		expect(episode.claims[0]?.source_ids).toEqual([
+			fixtureAt(episode.sources, 0).id,
+		]);
 		expect(episode.visuals[1]?.source_ref).toBe(episode.sources[0]?.id);
 		expect(episode.locales).toEqual(["en"]);
 		expect(

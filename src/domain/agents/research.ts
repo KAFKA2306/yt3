@@ -188,7 +188,7 @@ export const BYOSAN_ANGLE_SHAPE_EXAMPLE = {
 		},
 	],
 	archetypeEvidence: [],
-};
+} satisfies ByosanAngleCandidate;
 
 export type ResearchStructuredRequest = {
 	schema: z.ZodSchema<ResearchPayload>;

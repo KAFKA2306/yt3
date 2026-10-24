@@ -5,12 +5,15 @@ import {
 	GoalsSignalsMetricsPlanSchema,
 	auditGoalsSignalsMetricsPlan,
 } from "../src/domain/productivity/goals_signals_metrics.js";
+import { fixtureAt } from "./fixtures/fixture_at.js";
 
 const planPath = path.join(
 	process.cwd(),
 	"config/metrics/issue_202_goals_signals_metrics.json",
 );
-const examplePlan = JSON.parse(readFileSync(planPath, "utf8"));
+const examplePlan = GoalsSignalsMetricsPlanSchema.parse(
+	JSON.parse(readFileSync(planPath, "utf8")),
+);
 describe("Issue #202 Goals → Signals → Metrics example", () => {
 	test("rejects a signal that points to an unknown goal", () => {
 		const result = GoalsSignalsMetricsPlanSchema.safeParse({
@@ -156,7 +159,7 @@ describe("Issue #202 Goals → Signals → Metrics example", () => {
 
 	test("requires metric data references to use METRIC_DATA_SOURCE sources", () => {
 		const plan = structuredClone(examplePlan);
-		plan.metrics[0].data_source_ids = ["linkedin-dph-gsm"];
+		fixtureAt(plan.metrics, 0).data_source_ids = ["linkedin-dph-gsm"];
 		const result = GoalsSignalsMetricsPlanSchema.safeParse(plan);
 		expect(result.success).toBe(false);
 		if (!result.success) {
