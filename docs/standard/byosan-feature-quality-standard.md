@@ -65,9 +65,10 @@
 
 ## 日次経路
 
-- 日次の入口は `task byosan:publish-daily`。内部で `task byosan:prepare DATE=<Asia/Tokyoの当日>` を実行し、準備ゲートのPASSと3証跡（`[product-release-gate] PASS`、`PUBLISH_READY_RUN`、`PUBLISH_COMMAND`）が同一runで揃い、`publish_approved` が true の場合にだけ `PUBLISH_COMMAND` を実行する。`resume_date` より前の日付は準備・公開しない。ゲート失敗・同日の再実行は停止し、同日の再試行はしない。
+- 日次の入口は `task byosan:publish-daily`。内部で `task byosan:prepare DATE=<Asia/Tokyoの当日>` を実行する。準備ゲートのPASSと3証跡（`[product-release-gate] PASS`、`PUBLISH_READY_RUN`、`PUBLISH_COMMAND`）が同一runで揃い、`publish_approved` が true であり、かつ適用される公開許可条件を満たす場合のみ正準公開経路へ進む。`resume_date` より前の日付は準備・公開しない。失敗した準備試行は停止するが、原因を特定・修正し検証したうえでの**同日再準備**は許す。品質ゲートの迂回、証拠の捏造、許可のない公開を許さない。`GATE_FAILED` と `PUBLISH_ATTEMPTED` は別状態として扱い、後者や公開の成否が不明な状態からは新規アップロードせず遠隔照合する。
 - `task byosan:daily` は公開せず、研究・制作・監査のみを行う。
 - `--dry-run` はスキーマ、基準spec、公開抑止を検証する。
 - ニュース候補は5件以上、発行主体3つ以上、直近30日との最大類似度0.42以下を要求する。
 - `LangChain.withStructuredOutput` とZodで企画・制作specを検証し、決定的ゲートを通らない出力は最大3回まで検証エラー付きで再生成する。
-- 同日のupload receiptを検出した場合は再アップロードしない。公開完了にはreceipt、public visibility、thumbnail attestationを必要とする。
+- 同日のupload receiptを検出した場合は再アップロードしない。公開完了にはreceipt、public visibility、thumbnail attestationを必要とする。企画は複数案検討してよいが、完成・公開対象は当日の1本とする。修復時は契約を緩めて通すのではなく、失敗した数値・スキーマ・制作要件の妥当性を確認する。`stats` の件数のような表現上の都合だけで根拠のない数字を追加しない。
+- **実装監査の留保**：現在の `byosan_publish_daily.ts` は `GATE_FAILED` 後の再準備を許すが、原因修正・テスト完了の機械的証拠をそこで独立確認するとは限らない。自律再試行の安全性は未検証であり、今後の実装確認・テスト対象とする。
