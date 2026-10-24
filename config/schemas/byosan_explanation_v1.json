@@ -4,10 +4,12 @@
 	"required": ["conclusion", "principle", "figures", "check"],
 	"properties": {
 		"conclusion": {
-			"type": "string"
+			"type": "string",
+			"pattern": "^([^。.]{0,60}[。.])*[^。.]{0,60}$"
 		},
 		"principle": {
-			"type": "string"
+			"type": "string",
+			"pattern": "^([^。.]{0,60}[。.])*[^。.]{0,60}$"
 		},
 		"figures": {
 			"type": "array",
@@ -49,7 +51,8 @@
 			}
 		},
 		"check": {
-			"type": "string"
+			"type": "string",
+			"pattern": "^([^。.]{0,60}[。.])*[^。.]{0,60}$"
 		}
 	}
 }
