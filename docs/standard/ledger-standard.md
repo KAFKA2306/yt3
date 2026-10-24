@@ -36,6 +36,11 @@ A ledger is the record of what happened: state transitions, failures, decisions,
 
 - **C-1 (yawa-2026-10-23).** After publication, the 20:30 JST daily run re-prepared `runs/yawa_archive/yawa-2026-10-23`. It added `reference_sha256` to `tts.json` and `voice_reference: PASS` to `audit/result.json`, but the audio had been generated caption-only. The video was not re-uploaded (`IDEMPOTENT_REUSE`). Correction: the field and check were removed, the post-hoc reference files were deleted, and the validation was re-run and passed. Guard: `preparationAction` in PR #322. Status: corrected; the original entries are kept in the git history.
 - **C-2 (E-2026-10-24-01).** The event cites PR #328 for the tag-set check. #328 was closed when its branch was deleted and was not merged. The change was re-opened as PR #329 and merged; `main` contains it. The rewrite itself was run with that change before the merge.
+- **C-3 (E-2026-10-24-07, two open values resolved).** E-2026-10-24-07 recorded two values as UNVERIFIED. An independent YouTube API read settled both. E-2026-10-24-07 itself is unchanged.
+  - Read method: `videos.list` for video `5grzsyKLesU`, authenticated as the byosan channel (GET only, no write).
+  - Publish time: `snippet.publishedAt` is 2026-10-24T12:01:05Z. The receipt's `published_at` (2026-10-24T11:57:57Z) is the time the video was uploaded as private (`staged_private`). `visibility_attestation.json` holds `private_verified_at` 2026-10-24T12:00:14.629Z and `verified_at` 2026-10-24T12:00:20.904Z, the confirmation of the update to public.
+  - Tags: 13 on YouTube. The run's `metadata.json` and `publish/input.yaml` hold 9 script tags. The publish path adds the 4 `default_tags` from config, giving 13.
+  - Same read, confirmed: `status.privacyStatus` public, `status.uploadStatus` processed, `processingDetails.processingStatus` succeeded, `contentDetails.duration` PT7M42S, description length 779.
 
 ## Events (append-only)
 
