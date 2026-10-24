@@ -71,42 +71,58 @@ export function evaluateOpeningCatch(input: {
 	};
 }
 
+function cutSentences(
+	sentences: string[],
+	ends: number[],
+	total: number,
+	count: number,
+	maxChars: number,
+): string[] | undefined {
+	const parts: string[] = [];
+	let first = 0;
+	let consumed = 0;
+	for (let part = 1; part < count; part++) {
+		const target = (total * part) / count;
+		const candidate = ends
+			.map((end, index) => ({ index, end }))
+			.filter(
+				({ index, end }) =>
+					index >= first &&
+					index < sentences.length - 1 &&
+					end - consumed <= maxChars &&
+					total - end <= maxChars * (count - part),
+			)
+			.sort(
+				(left, right) =>
+					Math.abs(left.end - target) - Math.abs(right.end - target),
+			)[0];
+		if (!candidate) return undefined;
+		parts.push(sentences.slice(first, candidate.index + 1).join(""));
+		consumed = candidate.end;
+		first = candidate.index + 1;
+	}
+	parts.push(sentences.slice(first).join(""));
+	return parts;
+}
+
 export function splitSpeechText(text: string, maxChars: number): string[] {
 	const total = charCount(text);
-	const count = Math.ceil(total / maxChars);
-	if (count <= 1) return [text];
+	if (total <= maxChars) return [text];
 	const sentences = text
 		.split(/(?<=[。！？])/u)
 		.filter((sentence) => sentence.length > 0);
-	const boundaries: number[] = [];
-	let accumulated = 0;
-	for (const sentence of sentences.slice(0, -1)) {
-		accumulated += charCount(sentence);
-		boundaries.push(accumulated);
-	}
-	const cuts: number[] = [];
-	for (let part = 1; part < count; part++) {
-		const target = (total * part) / count;
-		const last = cuts.at(-1);
-		const earliest = last === undefined ? 0 : last + 1;
-		const [best] = boundaries
-			.map((end, index) => ({ index, distance: Math.abs(end - target) }))
-			.filter((candidate) => candidate.index >= earliest)
-			.sort((left, right) => left.distance - right.distance);
-		if (!best) {
-			throw new Error(`BYOSAN_SCENE_SPLIT_IMPOSSIBLE: ${text}`);
-		}
-		cuts.push(best.index);
-	}
-	const starts = [0, ...cuts.map((cut) => cut + 1)];
-	const stops = [...cuts.map((cut) => cut + 1), sentences.length];
-	const parts = starts.map((start, part) =>
-		sentences.slice(start, stops[part]).join(""),
+	const ends = sentences.map((_, index) =>
+		charCount(sentences.slice(0, index + 1).join("")),
 	);
-	if (parts.some((part) => charCount(part) > maxChars)) {
-		throw new Error(`BYOSAN_SCENE_SENTENCE_TOO_LONG: ${text}`);
+	for (
+		let count = Math.ceil(total / maxChars);
+		count <= sentences.length;
+		count++
+	) {
+		const parts = cutSentences(sentences, ends, total, count, maxChars);
+		if (parts) return parts;
 	}
-	return parts;
+	throw new Error(`BYOSAN_SCENE_SPLIT_IMPOSSIBLE: ${text}`);
 }
 
 export function planSpeechSegments(

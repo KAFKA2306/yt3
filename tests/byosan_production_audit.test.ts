@@ -125,6 +125,17 @@ describe("splitSpeechText", () => {
 		expect(parts.join("")).toBe(text);
 	});
 
+	test("adds parts when no sentence boundary keeps every part within the limit", () => {
+		const first = "あ".repeat(10) + "。";
+		const second = "い".repeat(60) + "。";
+		const third = "う".repeat(40) + "。";
+		expect(splitSpeechText(first + second + third, 65)).toEqual([
+			first,
+			second,
+			third,
+		]);
+	});
+
 	test("throws when a single sentence exceeds the limit", () => {
 		expect(() =>
 			splitSpeechText("切れ目のない一つの長い文がずっと続いていきます", 5),

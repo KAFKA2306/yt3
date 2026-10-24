@@ -9,6 +9,7 @@ import {
 	editorialReferenceIds,
 	isByosanEditorialReferenceId,
 } from "./editorial_references.js";
+import { figuresIn } from "./explanation_contract.js";
 import {
 	type ByosanNarrativeArchetype,
 	requiredByosanArchetypeSlots,
@@ -387,6 +388,16 @@ export function auditByosanFeatureSpec(
 				? [spec.packaging.relativeAnchor.claimId]
 				: []),
 		]);
+		const primaryClaim = spec.claims.find(
+			(claim) => claim.id === spec.packaging?.primaryClaimId,
+		);
+		if (primaryClaim && figuresIn(primaryClaim.claim).length === 0) {
+			issues.push({
+				code: "packaging_primary_claim_without_figure",
+				details: primaryClaim.id ?? primaryClaim.claim,
+				path: "packaging.primaryClaimId",
+			});
+		}
 		const missingPackagingClaims = [...packagingIds].filter(
 			(claimId) => !claimIds.has(claimId),
 		);
