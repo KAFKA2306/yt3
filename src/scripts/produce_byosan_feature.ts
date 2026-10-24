@@ -11,7 +11,7 @@ import {
 	staticSceneMotionFilter,
 } from "../domain/byosan/feature_spec.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
-import { getKafkaVisualSystem } from "../domain/design/kafka_visual_system.js";
+import { getByosanVisualSystem } from "../domain/design/kafka_visual_system.js";
 import { runAudioQA } from "../io/utils/audio_qa.js";
 import {
 	TtsOrchestrator,
@@ -33,7 +33,7 @@ type TimedSegment = FeatureSegment & {
 	voice: TtsVoiceControls;
 };
 
-const DESIGN = getKafkaVisualSystem();
+const DESIGN = getByosanVisualSystem();
 const LANDSCAPE = DESIGN.landscape;
 const THUMBNAIL = DESIGN.thumbnail;
 const THUMBNAIL_CANVAS = DESIGN.canvas.thumbnail;
@@ -56,12 +56,9 @@ const VISUAL_IDENTITY = resolveByosanVisualIdentity(
 	),
 );
 
-// Keep the structured-output vocabulary backward compatible while mapping it
-// to semantic visual roles at the renderer boundary. Warm amber is reserved
-// for caution/serious states rather than ordinary emphasis.
 const COLORS: Record<StatColor, string> = {
-	cyan: VISUAL_IDENTITY.primaryAccent,
-	amber: VISUAL_IDENTITY.secondaryAccent,
+	cyan: VISUAL_IDENTITY.brandAccent,
+	amber: VISUAL_IDENTITY.warning,
 	white: VISUAL_IDENTITY.textPrimary,
 	muted: VISUAL_IDENTITY.textMuted,
 };
@@ -339,6 +336,10 @@ function assTimestamp(seconds: number): string {
 	return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(centis).padStart(2, "0")}`;
 }
 
+function assColor(hex: string): string {
+	return `&H00${hex.slice(5, 7)}${hex.slice(3, 5)}${hex.slice(1, 3)}`;
+}
+
 function narrationText(text: string): string {
 	return text
 		.replaceAll("S&P 500", "エスアンドピー・ファイブハンドレッド")
@@ -458,25 +459,10 @@ function sceneSvg(
 	return Buffer.from(`
 	<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
 		<defs>
-			<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-				<stop offset="${LANDSCAPE.background.stop_positions[0]}" stop-color="${LANDSCAPE.background.stops[0]}"/>
-				<stop offset="${LANDSCAPE.background.stop_positions[1]}" stop-color="${LANDSCAPE.background.stops[1]}"/>
-				<stop offset="${LANDSCAPE.background.stop_positions[2]}" stop-color="${LANDSCAPE.background.stops[2]}"/>
-			</linearGradient>
-			<radialGradient id="glow" cx="0.78" cy="0.34" r="0.62">
-				<stop offset="0" stop-color="${accent}" stop-opacity="0.08"/>
-				<stop offset="1" stop-color="${DESIGN.colors.background}" stop-opacity="0"/>
-			</radialGradient>
-			<pattern id="grid" width="${LANDSCAPE.background.grid_cell}" height="${LANDSCAPE.background.grid_cell}" patternUnits="userSpaceOnUse">
-				<path d="M ${LANDSCAPE.background.grid_cell} 0 L 0 0 0 ${LANDSCAPE.background.grid_cell}" fill="none" stroke="${DESIGN.colors.grid}" stroke-opacity="${LANDSCAPE.background.grid_opacity}" stroke-width="${LANDSCAPE.background.grid_stroke}"/>
-			</pattern>
-			<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-				<feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="${VISUAL_IDENTITY.shadow}" flood-opacity="0.42"/>
-			</filter>
 			<style>
 				text { font-family: '${FONT}', sans-serif; }
 				.brand { fill:${DESIGN.colors.text_primary}; font-size:${LANDSCAPE.brand_chip.font_size}px; font-weight:${LANDSCAPE.brand_chip.font_weight}; letter-spacing:${LANDSCAPE.brand_chip.letter_spacing}px; }
-				.section { fill:${DESIGN.colors.accent_primary}; font-size:${LANDSCAPE.section_label.font_size}px; font-weight:${LANDSCAPE.section_label.font_weight}; letter-spacing:${LANDSCAPE.section_label.letter_spacing}px; }
+				.section { fill:${DESIGN.colors.brand_accent}; font-size:${LANDSCAPE.section_label.font_size}px; font-weight:${LANDSCAPE.section_label.font_weight}; letter-spacing:${LANDSCAPE.section_label.letter_spacing}px; }
 				.headline { fill:${DESIGN.colors.text_primary}; font-weight:${LANDSCAPE.headline.font_weight}; letter-spacing:${LANDSCAPE.headline.letter_spacing}px; }
 				.subheadline { fill:${DESIGN.colors.text_secondary}; font-size:${LANDSCAPE.subheadline.font_size}px; font-weight:${LANDSCAPE.subheadline.font_weight}; }
 				.stat-label { fill:${DESIGN.colors.text_secondary}; font-size:${LANDSCAPE.stat_cards.label_font_size}px; font-weight:${LANDSCAPE.stat_cards.label_font_weight}; letter-spacing:${LANDSCAPE.stat_cards.label_letter_spacing}px; }
@@ -485,15 +471,12 @@ function sceneSvg(
 				.source { fill:${DESIGN.colors.text_muted}; font-size:${LANDSCAPE.source.font_size}px; font-weight:${LANDSCAPE.source.font_weight}; }
 			</style>
 		</defs>
-		<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#bg)"/>
-		<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#grid)"/>
-		<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow)"/>
+		<rect width="${WIDTH}" height="${HEIGHT}" fill="${DESIGN.colors.background}"/>
 		<rect x="${LANDSCAPE.outer_frame.x}" y="${LANDSCAPE.outer_frame.y}" width="${LANDSCAPE.outer_frame.width}" height="${LANDSCAPE.outer_frame.height}" rx="${LANDSCAPE.outer_frame.radius}" fill="none" stroke="${LANDSCAPE.outer_frame.color}" stroke-opacity="${LANDSCAPE.outer_frame.opacity}" stroke-width="${LANDSCAPE.outer_frame.stroke_width}"/>
-		<path d="M0 826 C280 774 390 856 650 792 S1050 816 1435 730 S1750 706 1920 650" fill="none" stroke="${VISUAL_IDENTITY.primaryAccent}" stroke-opacity="0.08" stroke-width="3"/>
 		<rect x="${LANDSCAPE.caption_band.x}" y="${LANDSCAPE.caption_band.y}" width="${LANDSCAPE.caption_band.width}" height="${LANDSCAPE.caption_band.height}" fill="${LANDSCAPE.caption_band.color}" fill-opacity="${LANDSCAPE.caption_band.opacity}"/>
 		<rect x="${DESIGN.landscape.accent_rail.x}" y="${DESIGN.landscape.accent_rail.y}" width="${DESIGN.landscape.accent_rail.width}" height="${DESIGN.landscape.accent_rail.height}" fill="${accent}"/>
 		<g transform="translate(${LANDSCAPE.brand_chip.x},${LANDSCAPE.brand_chip.y})">
-			<rect width="${LANDSCAPE.brand_chip.width}" height="${LANDSCAPE.brand_chip.height}" rx="${LANDSCAPE.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${DESIGN.colors.accent_primary}" stroke-opacity="0.26"/>
+			<rect width="${LANDSCAPE.brand_chip.width}" height="${LANDSCAPE.brand_chip.height}" rx="${LANDSCAPE.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${LANDSCAPE.outer_frame.color}" stroke-width="${DESIGN.stroke.default}"/>
 			<text x="${LANDSCAPE.brand_chip.text_x - LANDSCAPE.brand_chip.x}" y="${LANDSCAPE.brand_chip.baseline_y - LANDSCAPE.brand_chip.y}" class="brand">秒算マネー</text>
 		</g>
 		<text x="${LANDSCAPE.section_counter.x}" y="${LANDSCAPE.section_counter.baseline_y}" class="section">${String(index + 1).padStart(2, "0")} / ${String(spec.segments.length).padStart(2, "0")}</text>
@@ -504,13 +487,10 @@ function sceneSvg(
 		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline">${xml(segment.subheadline)}</text>
 		${cards}
 		${questionMark}
-		<g filter="url(#shadow)">
-			<ellipse cx="${LANDSCAPE.character_region.x + LANDSCAPE.character_region.width / 2}" cy="${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height / 2}" rx="${LANDSCAPE.character_region.width / 2 - 8}" ry="${LANDSCAPE.character_region.height / 2 - 24}" fill="${speakerColor}" fill-opacity="0.06" stroke="${speakerColor}" stroke-opacity="0.20" stroke-width="${DESIGN.stroke.default}"/>
 			<path d="M${LANDSCAPE.character_region.x + 38} ${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 159} C${LANDSCAPE.character_region.x + 86} ${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 206} ${LANDSCAPE.character_region.x + 132} ${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 236} ${LANDSCAPE.character_region.x + 190} ${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 246}" fill="none" stroke="${speakerColor}" stroke-opacity="0.30" stroke-width="5" stroke-linecap="round"/>
 			<circle cx="${LANDSCAPE.character_region.x + 38}" cy="${LANDSCAPE.character_region.y + LANDSCAPE.character_region.height - 159}" r="7" fill="${speakerColor}"/>
-		</g>
 		<g transform="translate(${LANDSCAPE.speaker_chip.x},${LANDSCAPE.speaker_chip.y})">
-			<rect width="${LANDSCAPE.speaker_chip.width}" height="${LANDSCAPE.speaker_chip.height}" rx="${LANDSCAPE.speaker_chip.radius}" fill="${DESIGN.colors.background}" stroke="${speakerColor}" stroke-width="${LANDSCAPE.speaker_chip.stroke_width}"/>
+			<rect width="${LANDSCAPE.speaker_chip.width}" height="${LANDSCAPE.speaker_chip.height}" rx="${LANDSCAPE.speaker_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${speakerColor}" stroke-width="${LANDSCAPE.speaker_chip.stroke_width}"/>
 			<text x="${LANDSCAPE.speaker_chip.text_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.baseline_y - LANDSCAPE.speaker_chip.y}" font-size="${LANDSCAPE.speaker_chip.font_size}" font-weight="${LANDSCAPE.speaker_chip.font_weight}" fill="${speakerColor}">${xml(segment.speaker)}</text>
 			<text x="${LANDSCAPE.speaker_chip.emotion_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.emotion_baseline_y - LANDSCAPE.speaker_chip.y}" text-anchor="end" font-size="${LANDSCAPE.speaker_chip.emotion_font_size}" font-weight="${LANDSCAPE.speaker_chip.emotion_font_weight}" fill="${DESIGN.colors.text_secondary}">${xml(emotionLabel)}</text>
 		</g>
@@ -598,28 +578,18 @@ async function renderThumbnail(
 	const overlay = Buffer.from(`
 	<svg width="${THUMBNAIL_CANVAS.width}" height="${THUMBNAIL_CANVAS.height}" xmlns="http://www.w3.org/2000/svg">
 		<defs>
-			<linearGradient id="shade" x1="0" x2="1">
-				<stop offset="0" stop-color="${DESIGN.colors.shadow}" stop-opacity="0.96"/>
-				<stop offset="0.57" stop-color="${DESIGN.colors.shadow}" stop-opacity="0.78"/>
-				<stop offset="0.78" stop-color="${DESIGN.colors.shadow}" stop-opacity="0.12"/>
-				<stop offset="1" stop-color="${DESIGN.colors.shadow}" stop-opacity="0.02"/>
-			</linearGradient>
-			<filter id="textShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="${DESIGN.colors.shadow}" flood-opacity="0.82"/></filter>
 			<style>text{font-family:'${FONT}',sans-serif}</style>
 		</defs>
-		<rect width="${THUMBNAIL_CANVAS.width}" height="${THUMBNAIL_CANVAS.height}" fill="url(#shade)"/>
 		<rect x="${THUMBNAIL.outer_frame.x}" y="${THUMBNAIL.outer_frame.y}" width="${THUMBNAIL.outer_frame.width}" height="${THUMBNAIL.outer_frame.height}" rx="${THUMBNAIL.outer_frame.radius}" fill="none" stroke="${THUMBNAIL.outer_frame.color}" stroke-opacity="${THUMBNAIL.outer_frame.opacity}" stroke-width="${THUMBNAIL.outer_frame.stroke_width}"/>
 		<rect x="${THUMBNAIL.accent_rail.x}" y="${THUMBNAIL.accent_rail.y}" width="${THUMBNAIL.accent_rail.width}" height="${THUMBNAIL.accent_rail.height}" fill="${DESIGN.colors.brand_accent}"/>
-		<rect x="${THUMBNAIL.brand_chip.x}" y="${THUMBNAIL.brand_chip.y}" width="${THUMBNAIL.brand_chip.width}" height="${THUMBNAIL.brand_chip.height}" rx="${THUMBNAIL.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${DESIGN.colors.accent_primary}" stroke-width="${DESIGN.stroke.default}"/>
+		<rect x="${THUMBNAIL.brand_chip.x}" y="${THUMBNAIL.brand_chip.y}" width="${THUMBNAIL.brand_chip.width}" height="${THUMBNAIL.brand_chip.height}" rx="${THUMBNAIL.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${DESIGN.colors.brand_accent}" stroke-width="${DESIGN.stroke.default}"/>
 		<text x="${THUMBNAIL.brand_chip.x + 28}" y="${THUMBNAIL.brand_chip.y + 30}" font-size="${THUMBNAIL.brand_chip.font_size}" font-weight="${THUMBNAIL.brand_chip.font_weight}" fill="${DESIGN.colors.text_primary}" letter-spacing="2">${xml(thumbnail.eyebrow)}</text>
-		<g filter="url(#textShadow)">
-			<text x="${THUMBNAIL.title_zone.x}" y="${THUMBNAIL.title_zone.y + THUMBNAIL.title_zone.font_size}" font-size="${THUMBNAIL.title_zone.font_size}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${THUMBNAIL.title_zone.fill}" stroke="${THUMBNAIL.title_zone.inner_stroke}" stroke-width="${THUMBNAIL.title_zone.inner_stroke_width}">${xml(thumbnail.lead)} ${xml(thumbnail.accent)}</text>
-			<text x="${THUMBNAIL.title_zone.x}" y="${THUMBNAIL.title_zone.y + THUMBNAIL.title_zone.font_size + THUMBNAIL.title_zone.line_height}" font-size="${secondLineSize}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${THUMBNAIL.title_zone.fill}">${xml(thumbnail.secondLine)} ${xml(thumbnail.reaction)}</text>
-		</g>
+		<text x="${THUMBNAIL.title_zone.x}" y="${THUMBNAIL.title_zone.y + THUMBNAIL.title_zone.font_size}" font-size="${THUMBNAIL.title_zone.font_size}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${THUMBNAIL.title_zone.fill}">${xml(thumbnail.lead)} ${xml(thumbnail.accent)}</text>
+		<text x="${THUMBNAIL.title_zone.x}" y="${THUMBNAIL.title_zone.y + THUMBNAIL.title_zone.font_size + THUMBNAIL.title_zone.line_height}" font-size="${secondLineSize}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${THUMBNAIL.title_zone.fill}">${xml(thumbnail.secondLine)} ${xml(thumbnail.reaction)}</text>
 		<rect x="${THUMBNAIL.subtitle.x}" y="${THUMBNAIL.subtitle.baseline_y - THUMBNAIL.subtitle.font_size}" width="${THUMBNAIL.subtitle.width}" height="${THUMBNAIL.subtitle.font_size + 16}" rx="${DESIGN.radius.medium}" fill="${DESIGN.colors.human_cream}"/>
 		<text x="${THUMBNAIL.subtitle.x + 32}" y="${THUMBNAIL.subtitle.baseline_y - 8}" font-size="${calloutTopSize}" font-weight="${THUMBNAIL.subtitle.font_weight}" fill="${DESIGN.colors.text_dark}">${xml(thumbnail.calloutTop)}</text>
 		<g transform="translate(${THUMBNAIL.subtitle.x},${THUMBNAIL.subtitle.baseline_y + 72})">
-			<rect width="${THUMBNAIL.subtitle.width}" height="${THUMBNAIL.subtitle.font_size + 68}" rx="${DESIGN.radius.card}" fill="${DESIGN.colors.background}" fill-opacity="0.9" stroke="${DESIGN.colors.accent_secondary}" stroke-width="${DESIGN.stroke.default}"/>
+			<rect width="${THUMBNAIL.subtitle.width}" height="${THUMBNAIL.subtitle.font_size + 68}" rx="${DESIGN.radius.card}" fill="${DESIGN.colors.surface}" stroke="${LANDSCAPE.outer_frame.color}" stroke-width="${DESIGN.stroke.default}"/>
 			<text x="32" y="${THUMBNAIL.subtitle.font_size + 24}" font-size="${calloutBottomSize}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${DESIGN.colors.text_primary}">${xml(thumbnail.calloutBottom)}</text>
 		</g>
 		<text x="${THUMBNAIL.brand_chip.x}" y="${THUMBNAIL_CANVAS.height - THUMBNAIL.safe_area.bottom}" font-size="${THUMBNAIL.brand_chip.font_size}" font-weight="${THUMBNAIL.brand_chip.font_weight}" fill="${DESIGN.colors.text_primary}" letter-spacing="3">秒算マネー</text>
@@ -645,77 +615,20 @@ async function renderThumbnail(
 	return { png: thumbnailPng, jpg: thumbnailJpg };
 }
 
-function stableHash(text: string): number {
-	let hash = 2166136261;
-	for (const char of text) {
-		hash ^= char.codePointAt(0) ?? 0;
-		hash = Math.imul(hash, 16777619);
-	}
-	return hash >>> 0;
-}
-
-async function ensureHeroSource(
-	spec: FeatureSpec,
-	runDir: string,
-): Promise<string> {
+async function ensureHeroSource(runDir: string): Promise<string> {
 	const heroPath = path.join(runDir, "source", HERO_SOURCE_NAME);
 	if (await fs.pathExists(heroPath)) return heroPath;
 	await fs.ensureDir(path.dirname(heroPath));
-	const palettes = [
-		[
-			VISUAL_IDENTITY.background,
-			VISUAL_IDENTITY.surface,
-			VISUAL_IDENTITY.primaryAccent,
-			VISUAL_IDENTITY.secondaryAccent,
-		],
-		[
-			VISUAL_IDENTITY.background,
-			VISUAL_IDENTITY.backgroundAlt,
-			VISUAL_IDENTITY.secondaryAccent,
-			VISUAL_IDENTITY.primaryAccent,
-		],
-		[
-			VISUAL_IDENTITY.background,
-			VISUAL_IDENTITY.surfaceStrong,
-			VISUAL_IDENTITY.primaryAccent,
-			VISUAL_IDENTITY.textPrimary,
-		],
-	] as const;
-	const palette =
-		palettes[stableHash(spec.angle) % palettes.length] ?? palettes[0];
-	const [dark, mid, accent, contrast] = palette;
-	const seed = stableHash(`${spec.asOf}:${spec.searchQuery}`);
-	const circleX = 1160 + (seed % 360);
-	const circleY = 260 + ((seed >>> 5) % 420);
-	const background = Buffer.from(`
-	<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
-		<defs>
-			<radialGradient id="glow" cx="70%" cy="40%" r="75%">
-				<stop offset="0" stop-color="${accent}" stop-opacity="0.24"/>
-				<stop offset="0.48" stop-color="${mid}" stop-opacity="0.58"/>
-				<stop offset="1" stop-color="${dark}"/>
-			</radialGradient>
-			<linearGradient id="bar" x1="0" y1="1" x2="1" y2="0">
-				<stop offset="0" stop-color="${accent}" stop-opacity="0.16"/>
-				<stop offset="1" stop-color="${contrast}" stop-opacity="0.72"/>
-			</linearGradient>
-		</defs>
-		<rect width="1920" height="1080" fill="url(#glow)"/>
-		<g opacity="0.08" stroke="${VISUAL_IDENTITY.grid}" stroke-width="2">
-			${Array.from({ length: 12 }, (_, index) => `<path d="M0 ${100 + index * 86} H1920"/>`).join("")}
-			${Array.from({ length: 20 }, (_, index) => `<path d="M${index * 104} 0 V1080"/>`).join("")}
-		</g>
-		<circle cx="${circleX}" cy="${circleY}" r="310" fill="none" stroke="${contrast}" stroke-opacity="0.22" stroke-width="44"/>
-		<circle cx="${circleX}" cy="${circleY}" r="195" fill="${dark}" fill-opacity="0.38" stroke="${accent}" stroke-opacity="0.42" stroke-width="8"/>
-		<g fill="url(#bar)" opacity="0.72">
-			<rect x="930" y="790" width="92" height="178" rx="18"/>
-			<rect x="1058" y="690" width="92" height="278" rx="18"/>
-			<rect x="1186" y="560" width="92" height="408" rx="18"/>
-			<rect x="1314" y="402" width="92" height="566" rx="18"/>
-		</g>
-		<path d="M870 840 C1060 770 1190 620 1460 310" fill="none" stroke="${contrast}" stroke-width="18" stroke-linecap="round"/>
-	</svg>`);
-	await sharp(background).png({ compressionLevel: 8 }).toFile(heroPath);
+	await sharp({
+		create: {
+			width: WIDTH,
+			height: HEIGHT,
+			channels: 3,
+			background: VISUAL_IDENTITY.background,
+		},
+	})
+		.png({ compressionLevel: 8 })
+		.toFile(heroPath);
 	return heroPath;
 }
 
@@ -772,8 +685,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Tsumugi,${FONT},68,&H00FFFFFF,&H000000FF,&H00102032,&H98020810,-1,0,0,0,100,100,0,0,1,5,2,2,180,180,52,1
-Style: Zundamon,${FONT},68,&H00E8FFD8,&H000000FF,&H00102032,&H98020810,-1,0,0,0,100,100,0,0,1,5,2,2,180,180,52,1
+Style: Tsumugi,${FONT},68,${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.landscape.subtitle.outline_color)},${assColor(DESIGN.landscape.subtitle.outline_color)},-1,0,0,0,100,100,0,0,1,5,0,2,180,180,52,1
+Style: Zundamon,${FONT},68,${assColor(DESIGN.colors.success)},&H000000FF,${assColor(DESIGN.landscape.subtitle.outline_color)},${assColor(DESIGN.landscape.subtitle.outline_color)},-1,0,0,0,100,100,0,0,1,5,0,2,180,180,52,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -1500,7 +1413,7 @@ async function main(): Promise<void> {
 		fs.ensureDir(path.join(runDir, "audit")),
 		fs.ensureDir(path.join(runDir, "publish")),
 	]);
-	const heroPath = await ensureHeroSource(spec, runDir);
+	const heroPath = await ensureHeroSource(runDir);
 	const tts = new TtsOrchestrator({
 		ttsUrl: process.env.VOICEVOX_URL ?? "http://localhost:50121",
 		speakers: { 春日部つむぎ: 8, ずんだもん: 1 },
