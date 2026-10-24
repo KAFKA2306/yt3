@@ -14,6 +14,37 @@ const registryPath = path.join(
 	"config/channels/byosan/oss-candidates.json",
 );
 
+const MIT_LICENSE = {
+	spdx: "MIT",
+	ref: "e735a995aa738ca682feb4204a39ee7db7b5d279",
+	source_url:
+		"https://raw.githubusercontent.com/motion-canvas/motion-canvas/e735a995aa738ca682feb4204a39ee7db7b5d279/LICENSE",
+};
+
+function fixtureRegistry(candidate: Record<string, unknown>) {
+	return {
+		schema_version: 3,
+		channel: "byosan_money",
+		selection_policy: "measured_evidence_only",
+		commercial_use_policy: {
+			permitted_spdx: ["MIT", "Apache-2.0"],
+			restricted_spdx: ["CC-BY-NC-4.0"],
+		},
+		candidates: [
+			{
+				candidate_id: "motion-canvas",
+				display_name: "Motion Canvas",
+				quality_target: "deterministic scene motion",
+				benchmark_priority: "CORE",
+				components: [{ name: "code", kind: "code", license: MIT_LICENSE }],
+				adoption_decision: null,
+				benchmark_evidence: null,
+				...candidate,
+			},
+		],
+	};
+}
+
 async function hashFile(filePath: string): Promise<string> {
 	return createHash("sha256")
 		.update(await readFile(filePath))
@@ -21,149 +52,94 @@ async function hashFile(filePath: string): Promise<string> {
 }
 
 describe("Experience OSS candidate registry", () => {
-	test("requires a classification and evidence for every non-license decision", async () => {
+	test("derives license gates from pinned primary-source components", async () => {
 		const registry = JSON.parse(await readFile(registryPath, "utf8"));
-		registry.candidates[0].adoption_decision = null;
-		expect(
-			ExperienceOssCandidateRegistrySchema.safeParse(registry).success,
-		).toBe(false);
+		const result = await auditExperienceOssCandidateRegistry(
+			registry,
+			process.cwd(),
+		);
 
-		registry.candidates[0].adoption_decision = "BENCHMARK_ONLY";
+		expect(result).toMatchObject({
+			status: "PASS",
+			candidate_count: 8,
+			cleared_candidate_count: 3,
+			adopted_candidate_count: 0,
+		});
+		const byId = Object.fromEntries(
+			result.candidates.map((candidate) => [candidate.candidate_id, candidate]),
+		);
+		expect(byId["motion-canvas"]).toMatchObject({
+			license_gate: "CLEARED",
+			decision: "PENDING_BENCHMARK",
+			components: [{ commercial_use: "PERMITTED" }],
+		});
+		expect(byId.liveportrait).toMatchObject({
+			license_gate: "BLOCKED_LICENSE",
+			decision: "BLOCKED_LICENSE",
+		});
+		expect(byId.liveportrait.components).toContainEqual({
+			name: "InsightFace buffalo_l face analysis models (LivePortrait default)",
+			kind: "model_weights",
+			commercial_use: "RESTRICTED",
+		});
+		expect(byId.whisperx.components).toContainEqual({
+			name: "wav2vec2 alignment models",
+			kind: "model_weights",
+			commercial_use: "UNVERIFIED",
+		});
 		expect(
-			ExperienceOssCandidateRegistrySchema.safeParse(registry).success,
-		).toBe(false);
+			registry.candidates
+				.filter(
+					(candidate: { benchmark_priority: string }) =>
+						candidate.benchmark_priority === "CORE",
+				)
+				.map((candidate: { candidate_id: string }) => candidate.candidate_id),
+		).toEqual(["motion-canvas", "birefnet", "liveportrait"]);
 	});
 
-	test("does not allow BLOCKED_LICENSE when commercial use is permitted", () => {
-		const result = ExperienceOssCandidateRegistrySchema.safeParse({
-			schema_version: 2,
-			channel: "byosan_money",
-			selection_policy: "measured_evidence_only",
-			candidates: [
-				{
-					candidate_id: "motion-canvas",
-					display_name: "Motion Canvas",
-					quality_target: "deterministic scene motion",
-					benchmark_priority: "CORE",
-					evaluation_status: "READY_FOR_BENCHMARK",
-					adoption_decision: "BLOCKED_LICENSE",
-					code_license_status: "VERIFIED",
-					code_license_evidence: {
-						version: "3.17.2",
-						source_url: "https://example.test/LICENSE",
-					},
-					model_weight_license_status: "NOT_USED",
-					model_weight_license_evidence: null,
-					commercial_use: {
-						code: {
-							status: "PERMITTED",
-							evidence: {
-								version: "3.17.2",
-								source_url: "https://example.test/LICENSE",
-							},
-						},
-						model_weights: { status: "NOT_USED", evidence: null },
-					},
-					state_reason: "test fixture",
-					benchmark_evidence: null,
-				},
-			],
-		});
+	test("rejects stored license-gate decisions that are not backed by cleared components", () => {
+		const registry = JSON.parse(JSON.stringify(fixtureRegistry({})));
+		registry.candidates[0].components[0].license = null;
+		registry.candidates[0].adoption_decision = "ADOPT_CORE";
 
+		const result = ExperienceOssCandidateRegistrySchema.safeParse(registry);
 		expect(result.success).toBe(false);
-		if (result.success)
-			throw new Error("permitted commercial use cannot be blocked");
+		if (result.success) throw new Error("uncleared adoption must be rejected");
 		expect(result.error.issues.map((issue) => issue.message)).toContain(
-			"BLOCKED_LICENSE requires unresolved or restricted license terms",
+			"adoption decisions require a CLEARED license gate",
 		);
 	});
 
-	test("requires linked benchmark artifacts and reviewed licenses before adoption", () => {
-		const result = ExperienceOssCandidateRegistrySchema.safeParse({
-			schema_version: 2,
-			channel: "byosan_money",
-			selection_policy: "measured_evidence_only",
-			candidates: [
-				{
-					candidate_id: "motion-canvas",
-					display_name: "Motion Canvas",
-					quality_target: "deterministic scene motion",
-					benchmark_priority: "CORE",
-					evaluation_status: "BENCHMARKED",
-					adoption_decision: "ADOPT_CORE",
-					code_license_status: "VERIFIED",
-					code_license_evidence: {
-						version: "3.17.2",
-						source_url: "https://example.test/LICENSE",
-					},
-					model_weight_license_status: "NOT_USED",
-					model_weight_license_evidence: null,
-					commercial_use: {
-						code: {
-							status: "PERMITTED",
-							evidence: {
-								version: "3.17.2",
-								source_url: "https://example.test/LICENSE",
-							},
-						},
-						model_weights: { status: "NOT_USED", evidence: null },
-					},
-					state_reason: "benchmark evidence is required",
-					benchmark_evidence: null,
-				},
-			],
-		});
-
-		expect(result.success).toBe(false);
+	test("rejects stored BLOCKED_LICENSE because the gate is derived", () => {
+		const registry = fixtureRegistry({ adoption_decision: "BLOCKED_LICENSE" });
+		expect(
+			ExperienceOssCandidateRegistrySchema.safeParse(registry).success,
+		).toBe(false);
 	});
 
-	test("blocks adoption when commercial-use permissions are unknown", () => {
-		const result = ExperienceOssCandidateRegistrySchema.safeParse({
-			schema_version: 2,
-			channel: "byosan_money",
-			selection_policy: "measured_evidence_only",
-			candidates: [
-				{
-					candidate_id: "motion-canvas",
-					display_name: "Motion Canvas",
-					quality_target: "deterministic scene motion",
-					benchmark_priority: "CORE",
-					evaluation_status: "BENCHMARKED",
-					adoption_decision: "ADOPT_CORE",
-					code_license_status: "VERIFIED",
-					code_license_evidence: {
-						version: "3.17.2",
-						source_url: "https://example.test/LICENSE",
-					},
-					model_weight_license_status: "NOT_USED",
-					model_weight_license_evidence: null,
-					commercial_use: {
-						code: { status: "UNKNOWN", evidence: null },
-						model_weights: { status: "NOT_USED", evidence: null },
-					},
-					state_reason: "commercial-use terms are unresolved",
-					benchmark_evidence: {
-						run_id: "test-run-001",
-						manifest_path:
-							"artifacts/benchmarks/experience-os/test-run-001/manifest.json",
-						summary_path:
-							"artifacts/benchmarks/experience-os/test-run-001/summary.json",
-						review_report_path:
-							"artifacts/benchmarks/experience-os/test-run-001/review.json",
-						manifest_sha256: "a".repeat(64),
-						summary_sha256: "b".repeat(64),
-						review_report_sha256: "c".repeat(64),
-					},
-				},
+	test("requires a code component and a non-overlapping commercial-use policy", () => {
+		const noCode = fixtureRegistry({
+			components: [
+				{ name: "weights", kind: "model_weights", license: MIT_LICENSE },
 			],
 		});
-
-		if (result.success) {
-			throw new Error("unknown commercial-use terms must block adoption");
-		}
-		expect(result.error.issues.map((issue) => issue.message)).toContain(
-			"adoption requires confirmed commercial-use permissions",
+		expect(ExperienceOssCandidateRegistrySchema.safeParse(noCode).success).toBe(
+			false,
 		);
+
+		const overlapping = fixtureRegistry({});
+		overlapping.commercial_use_policy.restricted_spdx = ["MIT"];
+		expect(
+			ExperienceOssCandidateRegistrySchema.safeParse(overlapping).success,
+		).toBe(false);
+	});
+
+	test("requires linked benchmark artifacts before adoption", () => {
+		const result = ExperienceOssCandidateRegistrySchema.safeParse(
+			fixtureRegistry({ adoption_decision: "ADOPT_CORE" }),
+		);
+
+		expect(result.success).toBe(false);
 	});
 
 	test("verifies run identity, canonical artifact scope, and content hashes", async () => {
@@ -247,31 +223,8 @@ describe("Experience OSS candidate registry", () => {
 					scenes: reviewScenes,
 				}),
 			);
-			const candidate = {
-				candidate_id: "motion-canvas",
-				display_name: "Motion Canvas",
-				quality_target: "deterministic scene motion",
-				benchmark_priority: "CORE",
-				evaluation_status: "BENCHMARKED",
+			const registry = fixtureRegistry({
 				adoption_decision: "ADOPT_CORE",
-				code_license_status: "VERIFIED",
-				code_license_evidence: {
-					version: "3.17.2",
-					source_url: "https://example.test/LICENSE",
-				},
-				model_weight_license_status: "NOT_USED",
-				model_weight_license_evidence: null,
-				commercial_use: {
-					code: {
-						status: "PERMITTED",
-						evidence: {
-							version: "3.17.2",
-							source_url: "https://example.test/LICENSE",
-						},
-					},
-					model_weights: { status: "NOT_USED", evidence: null },
-				},
-				state_reason: "measured benchmark and human review passed",
 				benchmark_evidence: {
 					run_id: runId,
 					...evidencePaths,
@@ -285,13 +238,7 @@ describe("Experience OSS candidate registry", () => {
 						path.join(runDirectory, "review.json"),
 					),
 				},
-			};
-			const registry = {
-				schema_version: 2,
-				channel: "byosan_money",
-				selection_policy: "measured_evidence_only",
-				candidates: [candidate],
-			};
+			});
 
 			expect(
 				await auditExperienceOssCandidateRegistry(registry, root),
@@ -311,7 +258,9 @@ describe("Experience OSS candidate registry", () => {
 			esrganCandidate.display_name = "Real-ESRGAN";
 			esrganCandidate.benchmark_priority = "BENCHMARK";
 			esrganCandidate.adoption_decision = "ADOPT_OPTIONAL";
-			esrganCandidate.state_reason = "negative quality control fixture";
+			esrganCandidate.components = [
+				{ name: "code", kind: "code", license: MIT_LICENSE },
+			];
 			const manifestPath = path.join(runDirectory, "manifest.json");
 			const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 			manifest.engines.candidate.id = "real-esrgan";

@@ -124,6 +124,8 @@ providers:
       enabled: true
       url: "http://localhost:50121"
       speakers: {春日部つむぎ: 8, ずんだもん: 1, 玄野: 11, 玄野武宏: 11}
+      timeout_ms: {query: 30000, synthesis: 60000}
+      health_timeout_ms: 5000
 
   manager:
     check_interval_ms: 300000
@@ -524,3 +526,211 @@ prompts:
           "description": "視聴者への具体的ベネフィット要約 + 論理的なチャプター構成 + 引用元URL（情報ソース）を含む概要欄",
           "tags": ["関連性の高い検索タグ1", "タグ2"]
         }
+
+feature_production:
+  default_spec: "config/productions/sp500_anthropic_2026q2.json"
+  hero_source_name: "hero_imagegen_source.png"
+  brand_label: "秒算マネー"
+  yaml_line_width: 110
+  publish_intent:
+    profile: "byosan"
+    visibility: "public"
+    requires_receipt: true
+    requires_visibility_attestation: true
+  run_layout:
+    source_dir: "source"
+    content_dir: "content"
+    content_output: "output.yaml"
+    metadata: "metadata.json"
+    research: "research.json"
+    media_dir: "media"
+    media_output: "output.yaml"
+    audio_dir: "media/audio"
+    audio_manifest: "manifest.json"
+    scene_dir: "media/scenes"
+    video_dir: "media/video"
+    segment_video_dir: "media/video/segments"
+    video_concat_list: "media/video/segments.ffconcat"
+    audio_concat_list: "media/audio/segments.ffconcat"
+    thumbnail_jpg: "thumbnail_youtube.jpg"
+    visual_master: "visual_master.mp4"
+    publish_video: "publish_video.mp4"
+    audit_dir: "audit"
+    production_report: "production_quality_report.json"
+    audit_report: "report.json"
+    publish_dir: "publish"
+    publish_input: "input.yaml"
+  tts:
+    manifest_preview_chars: 60
+    narration_replacements:
+      - {from: "S&P 500", to: "エスアンドピー・ファイブハンドレッド"}
+      - {from: "S&P500", to: "エスアンドピー・ファイブハンドレッド"}
+      - {from: "Alphabet", to: "アルファベット"}
+      - {from: "Amazon", to: "アマゾン"}
+      - {from: "Anthropic", to: "アンソロピック"}
+      - {from: "FactSet", to: "ファクトセット"}
+      - {from: "SpaceX", to: "スペースエックス"}
+      - {from: "AWS", to: "エーダブリューエス"}
+      - {from: "EPS", to: "イーピーエス"}
+      - {from: "IPO", to: "アイピーオー"}
+      - {from: "GAAP", to: "ギャップ"}
+      - {from: "OI&E", to: "その他損益"}
+      - {from: "Level 3", to: "レベルスリー"}
+      - {from: "Q2", to: "第2四半期"}
+      - {from: "%", to: "パーセント"}
+      - {from: "$", to: ""}
+    voice_presets:
+      shock: {speedScale: 1.12, pitchScale: 0.025, intonationScale: 1.32, volumeScale: 1.0, prePhonemeLength: 0.08, postPhonemeLength: 0.24, pauseLengthScale: 1.08, outputSamplingRate: 48000}
+      reveal: {speedScale: 1.04, pitchScale: 0.005, intonationScale: 1.22, volumeScale: 1.0, prePhonemeLength: 0.08, postPhonemeLength: 0.3, pauseLengthScale: 1.15, outputSamplingRate: 48000}
+      curious: {speedScale: 1.1, pitchScale: 0.035, intonationScale: 1.28, volumeScale: 0.98, prePhonemeLength: 0.08, postPhonemeLength: 0.22, pauseLengthScale: 1.05, outputSamplingRate: 48000}
+      analytical: {speedScale: 1.06, pitchScale: -0.005, intonationScale: 1.1, volumeScale: 0.98, prePhonemeLength: 0.08, postPhonemeLength: 0.25, pauseLengthScale: 1.04, outputSamplingRate: 48000}
+      caution: {speedScale: 0.99, pitchScale: -0.02, intonationScale: 1.16, volumeScale: 0.98, prePhonemeLength: 0.09, postPhonemeLength: 0.34, pauseLengthScale: 1.2, outputSamplingRate: 48000}
+      confident: {speedScale: 1.08, pitchScale: 0.0, intonationScale: 1.2, volumeScale: 1.0, prePhonemeLength: 0.08, postPhonemeLength: 0.26, pauseLengthScale: 1.05, outputSamplingRate: 48000}
+      warm: {speedScale: 1.02, pitchScale: 0.015, intonationScale: 1.18, volumeScale: 0.98, prePhonemeLength: 0.09, postPhonemeLength: 0.32, pauseLengthScale: 1.12, outputSamplingRate: 48000}
+      relieved: {speedScale: 1.05, pitchScale: 0.02, intonationScale: 1.2, volumeScale: 0.98, prePhonemeLength: 0.08, postPhonemeLength: 0.28, pauseLengthScale: 1.08, outputSamplingRate: 48000}
+      serious: {speedScale: 0.98, pitchScale: -0.025, intonationScale: 1.12, volumeScale: 0.99, prePhonemeLength: 0.09, postPhonemeLength: 0.36, pauseLengthScale: 1.18, outputSamplingRate: 48000}
+      joy: {speedScale: 1.08, pitchScale: 0.025, intonationScale: 1.26, volumeScale: 0.99, prePhonemeLength: 0.08, postPhonemeLength: 0.38, pauseLengthScale: 1.12, outputSamplingRate: 48000}
+  emotion_labels:
+    shock: "驚き"
+    reveal: "核心"
+    curious: "疑問"
+    analytical: "分析"
+    caution: "注意"
+    confident: "確信"
+    warm: "納得"
+    relieved: "理解"
+    serious: "警戒"
+    joy: "次へ"
+  characters:
+    zundamon_image: "assets/zundamon.webp"
+    tsumugi_image: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v2.0.png"
+  image:
+    png_compression_level: 8
+    hero_channels: 3
+    trim_background: {r: 255, g: 255, b: 255, alpha: 0}
+  audio:
+    sample_rate: 48000
+    narration_codec: "pcm_s24le"
+    narration_channels: 1
+    final_codec: "aac"
+    final_channels: 2
+    final_bitrate: "384k"
+    narration_filter: "highpass=f=70,lowpass=f=16000,acompressor=threshold=-20dB:ratio=2:attack=8:release=110,pan=stereo|c0=c0|c1=c0"
+    bed_filter: "lowpass=f=950,highpass=f=35,pan=stereo|c0=c0|c1=c0"
+    mix_filter: "amix=inputs=2:duration=first:dropout_transition=0:normalize=0,loudnorm=I=-14.5:TP=-1.0:LRA=7"
+    bed_tones:
+      - {frequency_hz: 55, amplitude: 0.006, lfo_hz: 0.10, lfo_offset: 0.72, lfo_depth: 0.28}
+      - {frequency_hz: 82.41, amplitude: 0.0035, lfo_hz: 0.067, lfo_offset: 0.62, lfo_depth: 0.38}
+  video:
+    scale_flags: "lanczos"
+    first_fade_in_seconds: 0.35
+    fade_in_seconds: 0.10
+    gop: 15
+    b_frames: 2
+    h264_profile: "high"
+    pixel_format: "yuv420p"
+    color_standard: "bt709"
+    encoder_probe_source: "color=c=black:s=64x64:d=0.05"
+    nvenc:
+      codec: "h264_nvenc"
+      args: ["-preset", "p5", "-rc", "vbr", "-cq", "15", "-b:v", "16M", "-maxrate", "24M", "-bufsize", "32M"]
+    libx264:
+      codec: "libx264"
+      args: ["-preset", "fast", "-b:v", "10M", "-minrate", "10M", "-maxrate", "10M", "-bufsize", "20M", "-x264-params", "nal-hrd=cbr:force-cfr=1:filler=1"]
+  captions:
+    max_lines: 2
+    max_line_units: 19
+    tolerance_units: 0.5
+    half_width_units: 0.58
+    overflow_penalty: 100
+    min_split_units: 4
+    protected_number_pattern: "[0-9.億万兆]+(?:ドル|パーセント|ポイント|セント)?"
+    no_break_terms: ["S&P 500", "ブレンデッド", "パーセント", "ポイント", "非議決権優先株", "推定公正価値", "経済的エクスポージャー", "利益成長率", "株式評価益", "純利益", "未発表企業", "稼いだ", "ではない", "比較用", "権利差", "来年", "から", "引き上げ", "あります", "なります", "推定します", "構造です", "どう動く", "のだ", "FactSet", "Alphabet", "Amazon", "Anthropic", "SpaceX", "AWS", "EPS", "IPO"]
+    lead_in_seconds: 0.08
+    tail_seconds: 0.18
+    min_usable_seconds: 0.8
+    min_cue_seconds: 0.84
+    fade_in_ms: 80
+    fade_out_ms: 100
+  ass_style:
+    font_size: 68
+    bold: -1
+    outline: 5
+    shadow: 0
+    alignment: 2
+    margin_l: 180
+    margin_r: 180
+    margin_v: 52
+  scene:
+    headline_wrap_units: 21
+    headline_compact_threshold_units: 18
+    stat_value_compact_threshold_units: 12
+    stat_value_medium_threshold_units: 8
+    stat_value_compact_wrap_units: 16
+    stat_value_wrap_units: 20
+    stat_value_max_lines: 2
+    stat_value_letter_spacing_px: -1
+    source_label: "SOURCE"
+    question_mark: {right_inset: 80, baseline_offset: 78, font_size: 310, opacity: 0.10}
+    speaker_pointer: {start_x: 38, start_bottom: 159, control1_x: 86, control1_bottom: 206, control2_x: 132, control2_bottom: 236, end_x: 190, end_bottom: 246, stroke_opacity: 0.30, stroke_width: 5, dot_radius: 7}
+  thumbnail:
+    jpeg_quality: 92
+    jpeg_chroma_subsampling: "4:4:4"
+    brand_text_inset_x: 28
+    brand_text_inset_y: 30
+    brand_letter_spacing: 2
+    footer_letter_spacing: 3
+    callout_text_inset_x: 32
+    top_callout_box_extra_height: 16
+    top_callout_text_baseline_offset: 8
+    bottom_callout_group_offset_y: 72
+    bottom_callout_box_extra_height: 68
+    bottom_callout_text_baseline_offset: 24
+  audit:
+    video_codec: "h264"
+    audio_codec: "aac"
+    min_output_bitrate_bps: 7500000
+    max_scene_seconds: 16
+    min_cue_seconds: 0.83
+    min_distinct_emotions: 7
+    opening_segment_count: 2
+    min_thumbnail_bytes: 100000
+    black_min_seconds: 1.0
+    black_pixel_threshold: 0.03
+    freeze_noise_db: -50
+    freeze_min_seconds: 4.0
+    defect_log_max_lines: 40
+    ffmpeg_max_buffer_bytes: 104857600
+    forbidden_motion_terms: ["zoompan", "crop", "rotate", "sin", "cos"]
+
+hardcode_audit:
+  targets:
+    - "src/scripts/produce_byosan_feature.ts"
+  allowed_numbers: [0, 1, 2, 3, 9, 60, 100, 255, 1000, 3600, 0.001]
+  forbidden_string_patterns: ["^https?://", "localhost", "^assets/", "^config/", "^runs/"]
+  forbidden_identifiers: ["process.env"]
+
+scenes:
+  max_scenes: 36
+  max_numbers_per_scene: 4
+  max_consecutive_same_kind: 2
+  min_distinct_kinds: 3
+  chars_per_second: 6
+  rules:
+    - {kind: question, emphasis: none, when: {visual_type_in: ["question"], stat_count_max: 0}}
+    - {kind: line_series, emphasis: reveal, when: {figure_count_min: 3, figures_cover_stats: true, distinct_periods_min: 3, distinct_metrics_max: 1}}
+    - {kind: bar_trend, emphasis: reveal, when: {figure_count_min: 2, figures_cover_stats: true, distinct_periods_min: 2, distinct_metrics_max: 1}}
+    - {kind: bignumber, emphasis: reveal, when: {stat_count_min: 1, stat_count_max: 1}}
+    - {kind: hbar_compare, emphasis: highlight, when: {stat_count_min: 2, stat_count_max: 3, shared_unit: true}}
+    - {kind: stat_cards, emphasis: none, when: {stat_count_min: 1}}
+
+authenticity:
+  history_window: 5
+  max_similarity: 0.8
+  max_generic_ratio: 0.4
+  generic_kinds: ["stat_cards", "question"]
+  scene_claim_statuses: ["verified"]
+  independent_work:
+    verification_roles: ["auditor", "resolution"]
+    comparison_kinds: ["hbar_compare", "bar_trend", "line_series"]
+    scenes_per_figure: 1

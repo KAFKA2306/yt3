@@ -12,6 +12,7 @@
 			"collect": "S&P 500 EPS、売上、予想修正、サプライズ",
 			"caution": "対象期・実績比率を記録",
 			"verification": "公開記事確認",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -30,6 +31,7 @@
 			"collect": "PER、企業財務、ポートフォリオ最適化",
 			"caution": "予想と実績を区別",
 			"verification": "公開記事確認",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -48,6 +50,7 @@
 			"collect": "ファクター、レジーム、資産配分",
 			"caution": "試算前提の記録",
 			"verification": "個別記事確認",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -67,6 +70,7 @@
 			"collect": "EPS・PER・マクロ・金利",
 			"caution": "有料記事を推測で補わない",
 			"verification": "公開ページ確認/一部有料",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -85,6 +89,7 @@
 			"collect": "PMI、セクター、産業構造",
 			"caution": "データの公開条件を確認",
 			"verification": "公開ページ確認/一部有料",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -103,6 +108,7 @@
 			"collect": "DRAM、NAND、HBM、供給能力",
 			"caution": "予測と実績・価格対象を分離",
 			"verification": "個別記事確認",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -120,8 +126,9 @@
 			"cadence": "日次",
 			"material_class": "企業一次開示",
 			"collect": "米国企業10-K・10-Q・8-K",
-			"caution": "提出日時・会計期間を保持",
+			"caution": "提出日時・会計期間を保持。利用条件は未確認（sec.gov が取得に応じず）",
 			"verification": "公式ポータル",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -137,8 +144,9 @@
 			"cadence": "決算時",
 			"material_class": "企業一次開示",
 			"collect": "メモリ・売上・粗利・CapEx・在庫",
-			"caution": "GAAP/Non-GAAPの区別",
+			"caution": "GAAP/Non-GAAPの区別。利用条件は未確認（sec.gov が取得に応じず）",
 			"verification": "企業公式",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -156,8 +164,9 @@
 			"cadence": "決算時",
 			"material_class": "企業一次開示",
 			"collect": "AI半導体・売上・利益率",
-			"caution": "受注見込と確定売上の区別",
+			"caution": "受注見込と確定売上の区別。利用条件は未確認（sec.gov が取得に応じず）",
 			"verification": "企業公式",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -175,8 +184,9 @@
 			"cadence": "月次・決算時",
 			"material_class": "企業一次開示",
 			"collect": "先端半導体・設備投資・売上",
-			"caution": "月次と四半期を分離",
+			"caution": "月次と四半期を分離。利用条件は未確認（sec.gov が取得に応じず）",
 			"verification": "企業公式",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -196,6 +206,7 @@
 			"collect": "財務・DOE・累進配当・市場構造・企業価値",
 			"caution": "短期相場予想/選挙情勢は除外。数字は開示/統計と照合",
 			"verification": "2026-10-24公式記事一覧確認／添付80件",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {
@@ -215,6 +226,7 @@
 			"collect": "半導体サイクル・資金循環・資産配分・株式評価",
 			"caution": "従来の第一生命経済研究所を統合。短期予想は不採用",
 			"verification": "2026-10-24公式検索ページ確認／添付66件",
+			"reuse_policy": "recreate_only",
 			"priority": "A",
 			"status": "採用",
 			"fetch": {

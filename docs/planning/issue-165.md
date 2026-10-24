@@ -19,7 +19,7 @@
 | Experience 設定 | `src/domain/experience/config.ts`, `config/channels/byosan/` | 存在（byosan のみ） |
 | Motion Canvas 隔離ワークスペース | `src/domain/episode/motion_canvas_workspace.ts` | 存在 |
 | Remotion 基準経路 | `src/domain/episode/remotion_workspace.ts`, `task episode:render` | 基準（変更しない） |
-| OSS 候補レジストリ / ライセンス証跡 | `src/domain/experience/oss_candidate_registry.ts`, `license_evidence.ts` | 存在。全候補 BLOCKED_LICENSE |
+| OSS 候補レジストリ / ライセンス証跡 | `src/domain/experience/oss_candidate_registry.ts`, `license_evidence.ts` | 存在。ライセンス判定は `task experience:oss:audit` の `license_gate` |
 | Analytics 取り込み | `src/scripts/ingest_youtube_analytics.ts`, `src/domain/youtube_analytics_*.ts` | 存在（explicit field のみ） |
 | 生成コスト集計 | 既存 cost report（TTS 合成時間を lane 別集計） | 存在（GPU・人件費は未計測） |
 | 同一5シーン benchmark | 実装済み（Issue 本文の [x]） | 人間評価は未実施 |
@@ -61,7 +61,7 @@
 - [ ] Godot は optional — 未着手
 - [x] code license と model-weight license を別記録 — 実装済み
 - [x] 商用利用条件が不明な候補を production default にしない — 実装済み
-- [ ] 各 OSS を ADOPT_CORE / ADOPT_OPTIONAL / BENCHMARK_ONLY / REJECT / BLOCKED_* に分類 — 分類ラベルは全候補に付与済み（全件 BLOCKED_LICENSE）。ただし項目としては未完とされている
+- [ ] 各 OSS を ADOPT_CORE / ADOPT_OPTIONAL / BENCHMARK_ONLY / REJECT / BLOCKED_* に分類 — ライセンス判定（`license_gate`）は全候補に導出済み。採用分類は benchmark evidence が無いため未付与
 - [ ] 採用判断を Star 数ではなく benchmark evidence に紐付ける — 未完
 
 ### Analytics
@@ -92,8 +92,8 @@
 ## 5. 未確認事項（UNVERIFIED）
 
 - Remotion の商用ライセンス対象条件（組織規模による Company License の要否）: UNVERIFIED。Issue も「project owner/headcount と Remotion Company License eligibility」を未確認としている。
-- Motion Canvas・BiRefNet・LivePortrait・WhisperX 等の code license / model-weight license の最新内容: UNVERIFIED。本書では Web 検索を行っていない。
-- 各 OSS の商用利用可否: UNVERIFIED（レジストリ上は全件 UNKNOWN / BLOCKED_LICENSE）。法務確認ではない。
+- WhisperX の wav2vec2 alignment モデル、Real-ESRGAN の重みの license: UNVERIFIED（レジストリの component が `license: null`）。
+- 各 OSS の商用利用可否: 成分ごとの SPDX と `commercial_use_policy` からの機械的導出であり、法務確認ではない。
 - 既存コードの各ファイルの実装完全性: UNVERIFIED（ファイル存在のみ確認）。
 
 ## 6. 本 Issue の境界（Issue 記載どおり）

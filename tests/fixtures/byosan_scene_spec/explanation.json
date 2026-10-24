@@ -1,0 +1,43 @@
+{
+	"conclusion": "S&P500の利益成長率は四半期ごとに加速している。",
+	"principle": "成長率は前期比で見ると、一時的な評価益の影響を受けやすい。",
+	"figures": [
+		{
+			"metric": "S&P500利益成長率",
+			"population": "S&P500構成企業",
+			"period": "2026年3月期",
+			"unit": "%",
+			"value": "23.2%",
+			"quote": "第1四半期の利益成長率は23.2%だった",
+			"kind": "actual"
+		},
+		{
+			"metric": "S&P500利益成長率",
+			"population": "S&P500構成企業",
+			"period": "2026年6月期",
+			"unit": "%",
+			"value": "37.9%",
+			"quote": "第2四半期の利益成長率は37.9%だった",
+			"kind": "actual"
+		},
+		{
+			"metric": "S&P500利益成長率",
+			"population": "S&P500構成企業",
+			"period": "2026年9月期",
+			"unit": "%",
+			"value": "47.4%",
+			"quote": "第3四半期の利益成長率は47.4%だった",
+			"kind": "actual"
+		},
+		{
+			"metric": "Amazon営業利益",
+			"population": "Amazon",
+			"period": "2026年6月期",
+			"unit": "%",
+			"value": "+43%",
+			"quote": "営業利益は前年比+43%増えた",
+			"kind": "actual"
+		}
+	],
+	"check": "次の決算で成長率が維持されるかを確認する。"
+}
