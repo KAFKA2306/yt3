@@ -37,6 +37,20 @@ The merge gate must not require:
 
 If a criterion can only be tested on the real target, it remains **UNVERIFIED** until product qualification. Missing target access is not a repository merge failure.
 
+### Test scope decisions
+
+Every test file under `tests/` runs in `check:merge`. These areas were reviewed when the suite was pruned (#335, #347):
+
+| Area | Decision | Coverage |
+| --- | --- | --- |
+| Byosan discovery source audit | kept | `tests/byosan_discovery_sources.test.ts` (`runAudit`, `buildChecks`) |
+| Byosan checkpoint invalidation | kept | `tests/byosan_checkpoint.test.ts` |
+| Discord bot failure exit codes | added | `tests/discord_exit_codes.test.ts`: authentication failures exit 78 (systemd does not restart), network failures exit 1 |
+| Overlay layout bounds | added | `tests/layout_bounds.test.ts`: height ratio and anchor placement used by rendered overlays |
+| Publish start/complete Discord notices | not kept | message text only; publish gating is covered by `tests/publish_contract.test.ts` and `tests/publication_state.test.ts` |
+| Discord webhook 429 suppression | not kept | notification delivery only; no publication or data effect |
+| Active run discovery | removed | the module had no callers in the repository, so the module and its test were deleted |
+
 ## Product release gate
 
 ```bash
