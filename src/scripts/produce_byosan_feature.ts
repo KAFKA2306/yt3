@@ -44,6 +44,11 @@ import {
 	renderSceneSvg,
 } from "../domain/byosan/scene_svg.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
+import {
+	capVoiceControls,
+	measureVoiceRegister,
+	voiceRegisterPasses,
+} from "../domain/byosan/voice_register.js";
 import { getByosanVisualSystem } from "../domain/design/kafka_visual_system.js";
 import { runAudioQA } from "../io/utils/audio_qa.js";
 import {
@@ -913,7 +918,13 @@ async function auditProduction(
 		(probe.format as Record<string, unknown> | undefined)?.bit_rate ?? 0,
 	);
 	const defects = defectAudit(videoPath);
-	const audioQA = runAudioQA(videoPath, runDir);
+	const voiceRegister = measureVoiceRegister(
+		timed.map((segment) => segment.audioPath),
+		D.voice_register,
+	);
+	const audioQA = runAudioQA(videoPath, runDir, {
+		voice_register: voiceRegister,
+	});
 	const subtitleText = await fs.readFile(
 		path.join(runDir, FILENAMES.subtitles),
 		"utf8",
@@ -1011,6 +1022,21 @@ async function auditProduction(
 		audio_quality: {
 			status: audioQA.status === "PASS" ? "PASS" : "FAIL",
 			evidence: audioQA.report,
+		},
+		voice_register: {
+			status: voiceRegister.every((segment) =>
+				voiceRegisterPasses(
+					segment,
+					D.voice_register.max_loud_f0_percentile_hz,
+				),
+			)
+				? "PASS"
+				: "FAIL",
+			evidence: {
+				max_loud_f0_percentile_hz: D.voice_register.max_loud_f0_percentile_hz,
+				loud_percentile: D.voice_register.loud_percentile,
+				segments: voiceRegister,
+			},
 		},
 		video_quality: {
 			status:
@@ -1231,7 +1257,10 @@ async function main(): Promise<void> {
 		const scenePath = path.join(sceneDir, `${stem}-${sceneKey}.png`);
 		const segmentVideoPath = path.join(segmentVideoDir, `${stem}.mp4`);
 		const speakerId = VOICEVOX.speakers[segment.speaker];
-		const voice = F.tts.voice_presets[segment.emotion];
+		const voice = capVoiceControls(
+			F.tts.voice_presets[segment.emotion],
+			F.tts.speaker_caps[segment.speaker],
+		);
 		if (!(await fs.pathExists(audioPath))) {
 			console.log(
 				`[TTS ${index + 1}/${speechParts.length}] ${segment.speaker} ${segment.emotion}`,

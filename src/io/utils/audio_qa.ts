@@ -68,7 +68,11 @@ function getSubtitleCharCount(subtitlePath: string): number {
 	}
 }
 
-export function runAudioQA(videoPath: string, runDir: string): AudioQAResult {
+export function runAudioQA(
+	videoPath: string,
+	runDir: string,
+	extraReport: Record<string, unknown> = {},
+): AudioQAResult {
 	try {
 		if (!fs.existsSync(videoPath)) {
 			return {
@@ -179,7 +183,11 @@ export function runAudioQA(videoPath: string, runDir: string): AudioQAResult {
 
 		const reportPath = path.join(runDir, "audit", "audio_quality_report.json");
 		fs.ensureDirSync(path.dirname(reportPath));
-		fs.writeJsonSync(reportPath, result.report, { spaces: 2 });
+		fs.writeJsonSync(
+			reportPath,
+			{ ...result.report, ...extraReport },
+			{ spaces: 2 },
+		);
 
 		return result;
 	} catch (e) {

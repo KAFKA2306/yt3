@@ -5,6 +5,7 @@ PYTHON_FILES = (
     "hooks",
     "sbg-nav-audit/scripts",
     "src/scripts/voice_forensic_audit.py",
+    "src/scripts/byosan_voice_register.py",
 )
 
 

@@ -622,6 +622,9 @@ feature_production:
       relieved: {speedScale: 1.05, pitchScale: 0.02, intonationScale: 1.2, volumeScale: 0.98, prePhonemeLength: 0.08, postPhonemeLength: 0.28, pauseLengthScale: 1.08, outputSamplingRate: 48000}
       serious: {speedScale: 0.98, pitchScale: -0.025, intonationScale: 1.12, volumeScale: 0.99, prePhonemeLength: 0.09, postPhonemeLength: 0.36, pauseLengthScale: 1.18, outputSamplingRate: 48000}
       joy: {speedScale: 1.08, pitchScale: 0.025, intonationScale: 1.26, volumeScale: 0.99, prePhonemeLength: 0.08, postPhonemeLength: 0.38, pauseLengthScale: 1.12, outputSamplingRate: 48000}
+    speaker_caps:
+      春日部つむぎ: {}
+      ずんだもん: {pitchScale: 0.0, intonationScale: 1.1}
   emotion_labels:
     shock: "驚き"
     reveal: "核心"
@@ -732,6 +735,18 @@ feature_production:
     defect_log_max_lines: 40
     ffmpeg_max_buffer_bytes: 104857600
     forbidden_motion_terms: ["zoompan", "crop", "rotate", "sin", "cos"]
+    voice_register:
+      frame_length: 2048
+      hop_length: 256
+      fmin_hz: 60
+      fmax_hz: 1000
+      reference_percentile: 90
+      loud_relative_db: -25
+      loud_percentile: 95
+      max_loud_f0_percentile_hz: 520
+      jump_window_seconds: 0.032
+      jump_ratio: 1.6
+      clip_threshold: 0.99
 
 hardcode_audit:
   targets:

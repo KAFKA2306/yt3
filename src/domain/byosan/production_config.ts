@@ -28,6 +28,27 @@ const VoiceControlsSchema = z.object({
 	outputSamplingRate: positiveInteger,
 });
 
+const VoiceCapSchema = z.object({
+	pitchScale: z.number().optional(),
+	intonationScale: z.number().positive().optional(),
+});
+
+const VoiceRegisterSchema = z.object({
+	frame_length: positiveInteger,
+	hop_length: positiveInteger,
+	fmin_hz: z.number().positive(),
+	fmax_hz: z.number().positive(),
+	reference_percentile: z.number().min(0).max(100),
+	loud_relative_db: z.number().max(0),
+	loud_percentile: z.number().min(0).max(100),
+	max_loud_f0_percentile_hz: z.number().positive(),
+	jump_window_seconds: z.number().positive(),
+	jump_ratio: z.number().gt(1),
+	clip_threshold: z.number().min(0).max(1),
+});
+
+export type ByosanVoiceRegisterConfig = z.infer<typeof VoiceRegisterSchema>;
+
 const ColorSchema = z.object({
 	r: z.number().int().min(0).max(255),
 	g: z.number().int().min(0).max(255),
@@ -106,6 +127,7 @@ const FeatureProductionSchema = z.object({
 			z.object({ from: nonEmptyString, to: z.string() }),
 		),
 		voice_presets: z.record(EmotionSchema, VoiceControlsSchema),
+		speaker_caps: z.record(SpeakerSchema, VoiceCapSchema),
 	}),
 	emotion_labels: z.record(EmotionSchema, nonEmptyString),
 	characters: z.object({
@@ -209,6 +231,7 @@ const FeatureProductionSchema = z.object({
 		defect_log_max_lines: positiveInteger,
 		ffmpeg_max_buffer_bytes: positiveInteger,
 		forbidden_motion_terms: stringList,
+		voice_register: VoiceRegisterSchema,
 	}),
 });
 
