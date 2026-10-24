@@ -1,7 +1,7 @@
 # ADR 0032: ゼロトラスト監査アーキテクチャ憲章
 
 ## 📝 クレーム・プロベナンス (Claim Provenance)
-- **VERIFIED**: `src/domain/agents/audit.ts` および `src/scripts/run_audit.ts` の動作定義と、`Voice Role: Acoustic Separation` および `Deterministic Retention Check` バリデーターによる実機検証ログの挙動に基づきます。
+- **VERIFIED**: `src/domain/agents/audit.ts` の動作定義と、`Voice Role: Acoustic Separation` および `Deterministic Retention Check` バリデーターによる実機検証ログの挙動に基づきます。
 - **OBSERVED**: ユーザーが制定した17項目の「ゼロトラスト監査の中心思想」をインテークしました。
 - **INFERRED**: システム自動化が進展するにつれ、検証の形骸化やヒューマンエラーによる例外見落としが構造的リスクとなるため、全判定ゲートを機械検証可能な証拠（machine-verifiable evidence）で封鎖し、例外時は即座に強制終了させるアーキテクチャへの移行が必要と判断しました。
 

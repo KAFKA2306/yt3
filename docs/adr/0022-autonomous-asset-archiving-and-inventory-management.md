@@ -19,12 +19,12 @@ ASMR プロダクションの最終工程を自動化する **「ASMR Ops エン
 
 ### 2. オーディションルームの自動更新 (Auto-Audition Refresh)
 - **動作**:
-    - アーカイブ移動が完了したプロジェクトの `final_mix.wav` と `final_video.mp4` へのシンボリックリンクを `asmr/audition/` 内に再作成する。
+    - アーカイブ移動が完了したプロジェクトの `final_mix.wav` と `final_video.mp4` へのシンボリックリンクを asmr/audition/ 内に再作成する（現行の追跡対象には存在しない）。
     - ファイル名は常にプロジェクト名（例: `tsukari-ryokan.wav`）に正規化し、マスターが迷わないようにする。
 
 ### 3. インベントリの自動生成 (Auto-Indexing)
 - **動作**:
-    - `asmr/audition/audio/` 内の全ファイルをスキャンし、[asmr/INVENTORY.md](file:///home/kafka/2511youtuber/v3/yt3/asmr/INVENTORY.md) をマークダウン形式で再生成する。
+    - asmr/audition/audio/ 内の全ファイルをスキャンし、[asmr/INVENTORY.md](file:///home/kafka/2511youtuber/v3/yt3/asmr/INVENTORY.md) をマークダウン形式で再生成する。
     - 各項目のパスや、ファイルサイズ、生成日などを自動で付与する。
 
 ## 物理パスのリファレンス
