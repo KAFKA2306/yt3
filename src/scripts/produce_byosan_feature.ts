@@ -5,6 +5,7 @@ import fs from "fs-extra";
 import yaml from "js-yaml";
 import sharp from "sharp";
 import { getByosanChartTheme } from "../domain/byosan/charts.js";
+import { buildByosanDescription } from "../domain/byosan/description.js";
 import {
 	displayUnits,
 	wrapDisplay,
@@ -22,11 +23,12 @@ import {
 	evaluateOpeningCatch,
 	layoutCueSpans,
 	minimumCueSecondsAtAssPrecision,
-	planSpeechSegments,
+	planSpeechParts,
 } from "../domain/byosan/production_audit.js";
 import {
 	BYOSAN_CONFIG_PATH,
 	getByosanProductionConfig,
+	getByosanSpeechPlan,
 } from "../domain/byosan/production_config.js";
 import {
 	type ByosanSceneRender,
@@ -46,7 +48,6 @@ import {
 } from "../io/utils/tts_orchestrator.js";
 
 type FeatureSegment = ByosanFeatureSegment;
-type FeatureSpec = ByosanFeatureSpec;
 
 type TimedSegment = FeatureSegment & {
 	index: number;
@@ -57,6 +58,8 @@ type TimedSegment = FeatureSegment & {
 	segmentVideoPath: string;
 	voice: TtsVoiceControls;
 };
+
+type FeatureSpec = ByosanFeatureSpec;
 
 const CONFIG = getByosanProductionConfig();
 const F = CONFIG.feature_production;
@@ -148,16 +151,6 @@ function wrapCaptionDisplay(value: string, maxUnits: number): string[] {
 			F.captions.max_lines,
 		);
 	return [chars.slice(0, bestIndex).join(""), chars.slice(bestIndex).join("")];
-}
-
-function formatTimestamp(seconds: number): string {
-	const rounded = Math.max(0, Math.floor(seconds));
-	const hours = Math.floor(rounded / 3600);
-	const minutes = Math.floor((rounded % 3600) / 60);
-	const secs = rounded % 60;
-	return hours > 0
-		? `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
-		: `${minutes}:${String(secs).padStart(2, "0")}`;
 }
 
 function assTimestamp(seconds: number): string {
@@ -702,31 +695,6 @@ function composeFinal(
 	);
 }
 
-function buildDescription(spec: FeatureSpec, timed: TimedSegment[]): string {
-	const chapters = timed
-		.filter((segment) => segment.chapter)
-		.map((segment) => `${formatTimestamp(segment.start)} ${segment.chapter}`)
-		.join("\n");
-	const sources = spec.sources
-		.map((source) => `${source.name}\n${source.url}`)
-		.join("\n\n");
-	const bullets = spec.descriptionBullets
-		.map((bullet) => `・${bullet}`)
-		.join("\n");
-	return `${spec.descriptionLead}
-
-この動画の要点
-${bullets}
-
-チャプター
-${chapters}
-
-一次資料
-${sources}
-
-※${spec.disclaimer}`;
-}
-
 function mediaProbe(videoPath: string): Record<string, unknown> {
 	return JSON.parse(
 		execFileSync(
@@ -786,7 +754,7 @@ async function writeOutputs(
 	videoPath: string,
 	thumbnailPath: string,
 ): Promise<void> {
-	const description = buildDescription(spec, timed);
+	const description = buildByosanDescription(spec, timed, CONFIG.chapters);
 	const explanation = ExplanationSchema.parse(
 		await fs.readJson(path.join(runDir, RUN.source_dir, RUN.explanation)),
 	);
@@ -1156,11 +1124,7 @@ async function main(): Promise<void> {
 		speakers: VOICEVOX.speakers,
 		timeout: VOICEVOX.timeout_ms,
 	});
-	const speechPlan = {
-		maxSceneSeconds: F.audit.max_scene_seconds,
-		charsPerSecond: CONFIG.scenes.chars_per_second,
-		minCueSeconds: F.captions.min_cue_seconds,
-	};
+	const speechPlan = getByosanSpeechPlan();
 	const explanation = ExplanationSchema.parse(
 		await fs.readJson(path.join(runDir, RUN.source_dir, RUN.explanation)),
 	);
@@ -1171,13 +1135,7 @@ async function main(): Promise<void> {
 			),
 		),
 	);
-	const speechParts = spec.segments.flatMap((segment, segmentIndex) =>
-		planSpeechSegments([segment], speechPlan).map((part, partIndex) => ({
-			segment: part,
-			segmentIndex,
-			partIndex,
-		})),
-	);
+	const speechParts = planSpeechParts(spec.segments, speechPlan);
 	const timed: TimedSegment[] = [];
 	let cursor = 0;
 	for (let index = 0; index < speechParts.length; index++) {

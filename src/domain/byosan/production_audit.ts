@@ -136,9 +136,25 @@ export function planSpeechSegments(
 				throw new Error(`BYOSAN_SCENE_TOO_SHORT: ${text}`);
 			}
 			if (partIndex === 0) return { ...segment, text };
-			const { chapter, ...shared } = segment;
-			return { ...shared, stats: [], text };
+			return { ...segment, stats: [], text };
 		}),
+	);
+}
+
+export function planSpeechParts(
+	segments: readonly ByosanFeatureSegment[],
+	plan: SpeechPlan,
+): Array<{
+	segment: ByosanFeatureSegment;
+	segmentIndex: number;
+	partIndex: number;
+}> {
+	return segments.flatMap((segment, segmentIndex) =>
+		planSpeechSegments([segment], plan).map((part, partIndex) => ({
+			segment: part,
+			segmentIndex,
+			partIndex,
+		})),
 	);
 }
 
