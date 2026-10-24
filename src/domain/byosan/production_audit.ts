@@ -14,6 +14,15 @@ type CatchSegment = Pick<
 
 const charCount = (text: string): number => Array.from(text).length;
 
+export function minimumCueSecondsAtAssPrecision(
+	cues: ReadonlyArray<{ start: number; end: number }>,
+): number {
+	const centiseconds = cues.map(
+		(cue) => Math.round(cue.end * 100) - Math.round(cue.start * 100),
+	);
+	return Math.min(...centiseconds) / 100;
+}
+
 export function evaluateOpeningCatch(input: {
 	primaryClaimId: string;
 	claims: ReadonlyArray<{ id?: string; claim: string }>;

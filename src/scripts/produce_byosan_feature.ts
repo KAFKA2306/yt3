@@ -13,6 +13,7 @@ import {
 } from "../domain/byosan/feature_spec.js";
 import {
 	evaluateOpeningCatch,
+	minimumCueSecondsAtAssPrecision,
 	planSpeechSegments,
 } from "../domain/byosan/production_audit.js";
 import {
@@ -1095,7 +1096,7 @@ async function auditProduction(
 		(cue, index) =>
 			index > 0 && cue.start < (cues[index - 1]?.end ?? 0) - 0.001,
 	);
-	const minimumCueSeconds = Math.min(...cues.map((cue) => cue.end - cue.start));
+	const minimumCueSeconds = minimumCueSecondsAtAssPrecision(cues);
 	const maxSceneSeconds = Math.max(...timed.map((segment) => segment.duration));
 	const titleLength = Array.from(spec.title).length;
 	const sourceCoverage = spec.claims.every(

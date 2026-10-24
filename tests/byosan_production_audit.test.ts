@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { ByosanFeatureSegment } from "../src/domain/byosan/feature_spec.js";
 import {
 	evaluateOpeningCatch,
+	minimumCueSecondsAtAssPrecision,
 	planSpeechSegments,
 	splitSpeechText,
 } from "../src/domain/byosan/production_audit.js";
@@ -192,5 +193,22 @@ describe("planSpeechSegments", () => {
 				minCueSeconds: 100,
 			}),
 		).toThrow("BYOSAN_SCENE_TOO_SHORT");
+	});
+});
+
+describe("minimumCueSecondsAtAssPrecision", () => {
+	test("measures cue length in ASS centiseconds so float error does not fail a 0.84 cue", () => {
+		expect(
+			minimumCueSecondsAtAssPrecision([
+				{ start: 1, end: 1.84 },
+				{ start: 2, end: 4 },
+			]),
+		).toBe(0.84);
+	});
+
+	test("reports a cue shorter than the centisecond minimum", () => {
+		expect(minimumCueSecondsAtAssPrecision([{ start: 1, end: 1.83 }])).toBe(
+			0.83,
+		);
 	});
 });
