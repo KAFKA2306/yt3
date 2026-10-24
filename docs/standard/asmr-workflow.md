@@ -15,9 +15,10 @@
 8. **Sound Design**: 雨、布、椅子、生活音、空調、遠い道路を足し、「録れてしまった感」を出す。
 9. **Thumbnail**: 不完全な構図、生活感、非対称、自然な実在感を優先する。
 10. **Metadata**: title / description / tags を作る。
-    - **Title**: タイトルは核と補助語を組み合わせる。
-        - 直接的な表現や特殊記号・絵文字は使わない。
-    - **Description**: EDSA の文脈を含める。
+    - **Title**: 検索されやすい語を前半に置き、台本の題名を続ける。形は「甘い囁き・<題名> | 夜話アーカイブ ASMR」。
+        - 直接的な表現や絵文字は使わない。【】などの括弧記号は使わない（区切りは「・」と「|」）。
+        - 語の選び方は `config/yawa/daily.yaml` の `metadata.title_prefix` と `tags` が正本。ここに個別の語を書かない。
+    - **Description**: 1 行目は台本の一言。2 行目は内容の一文（年上の成人、囁き、癒し・安眠）。続けて再生時間、AI 開示、権利表記、着想元の出典。AI 開示と出典は必ず残す。
     - 文脈の補足は最小限にする。
 
 11. **Render**: `ffmpeg` で `final_video.mp4` を組む。
@@ -29,7 +30,8 @@
     - **EDSA文脈の個別化**: テンプレートの使い回し（AIスロップ）を避け、作品ごとに固有の芸術的テーマや心理学的背景を1行以上、個別に記述すること。
     - 文脈が不足している場合は、ここで「作品の解説」として詳細に追記し、単なる性的満足目的ではないことを明確にする。
 15. **Dedup**: 同一タイトル、同一尺、同一サムネ、同一説明の重複は private に戻す。
-16. **Publish (public)**: QA 通過、metadata 正常、duplicate なしのときだけ公開する。
+16. **Publish (public)**: QA 通過、metadata 正常、duplicate なしのときだけ公開する。毎日の公開は、オーナーの常設指示により承認なしで自律実行する（`yt3-yawa-daily.timer`、20:30 JST）。公開の経路は `task yawa:daily` だけ。
+    - 公開後の書き換えは `task yawa:metadata RUN=<run-id>` を使う。書き換えの前後を YouTube から読み直し、結果を run の `publish/metadata_updates.jsonl` に追記する。
 17. **Archive**: run logs、prompt、caption、seed、ASR report、metadata を保存する。
 
 ## 固定ルール
