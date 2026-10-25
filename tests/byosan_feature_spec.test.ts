@@ -261,6 +261,6 @@ describe("byosan feature draft hard limits", () => {
 		expect(lines).toContain("thumbnail.secondLine: 2〜12文字");
 		expect(lines).toContain("segments: 12〜40件");
 		expect(lines).toContain("segments[].stats: 0〜3件");
-		expect(lines).toContain("segments[].text: 18〜180文字");
+		expect(lines).toContain("segments[].text: 18〜320文字");
 	});
 });
