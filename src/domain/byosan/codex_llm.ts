@@ -22,6 +22,7 @@ export type CodexLlmConfig = CodexExecConfig & {
 	claude: {
 		command: string;
 		model: string;
+		stage_models: Record<string, string>;
 		workdir_prefix: string;
 		strip_env: string[];
 	};
@@ -168,7 +169,7 @@ function runExec(
 					[
 						"-p",
 						"--model",
-						cfg.claude.model,
+						cfg.claude.stage_models[options.stage] ?? cfg.claude.model,
 						"--output-format",
 						"json",
 						"--json-schema",

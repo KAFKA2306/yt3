@@ -17,6 +17,7 @@ const llm: CodexLlmConfig = {
 	claude: {
 		command: "claude",
 		model: "claude-haiku-5-5",
+		stage_models: {},
 		workdir_prefix: "byosan-claude-test-",
 		strip_env: ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
 	},
