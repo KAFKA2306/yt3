@@ -151,7 +151,7 @@ async function generate(): Promise<GenerationRow> {
 	fs.ensureDirSync(runDir);
 	fs.writeJsonSync(requestPath, {
 		id,
-		style: `${config.style_base}, ${draft.style_tail}`,
+		style: `${fillTemplate(config.style_template, cell)}, ${draft.style_tail}`,
 		lyrics: config.structure
 			.map((tag, i) => `[${tag}]\n${draft.sections[i]?.join("\n")}`)
 			.join("\n\n"),
