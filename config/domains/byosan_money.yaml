@@ -244,10 +244,10 @@ llm:
   workdir_prefix: "byosan-llm-"
   max_attempts: 5
   claude: {command: "claude", model: "claude-haiku-5-5", workdir_prefix: "byosan-claude-", strip_env: ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"]}
-  fallback_backend: "claude"
+  fallback_backend: "codex"
   backends:
-    feature: "codex"
-    digest: "codex"
+    feature: "claude"
+    digest: "claude"
     panel: "claude"
   panel:
     threshold: 3.5
