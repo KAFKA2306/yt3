@@ -6,7 +6,6 @@ import {
 	claimIssuePath,
 	segmentIssuePath,
 } from "./feature_spec.js";
-import type { ByosanAngleCandidate } from "./news_angle.js";
 
 const DATE_PATTERN = /\d{4}-\d{2}-\d{2}|\d+(?:年|月|日)/g;
 const NUMBER_PATTERN = /\d+(?:[.,]\d+)*/g;
@@ -103,6 +102,12 @@ function specNumberTexts(spec: ByosanFeatureSpec): LocatedText[] {
 	];
 }
 
+function numberAppears(token: string, source: string): boolean {
+	return new RegExp(`(?<![\\d.,])${escapeRegExp(token)}(?![.,]?\\d)`).test(
+		source,
+	);
+}
+
 function unsourcedNumberIssues(
 	texts: LocatedText[],
 	sources: string[],
@@ -114,7 +119,7 @@ function unsourcedNumberIssues(
 			(token) => {
 				if (seen.has(token)) return [];
 				seen.add(token);
-				if (normalizedSources.some((source) => source.includes(token))) {
+				if (normalizedSources.some((source) => numberAppears(token, source))) {
 					return [];
 				}
 				return [{ code: "unsourced_number", details: token, path }];
@@ -140,10 +145,12 @@ function figureIssuePath(
 		: segmentIssuePath(segmentIndex);
 }
 
+export type NumberEvidence = { numbers: string[]; sourceText: string };
+
 export function auditFeatureSpecAgainstExplanation(
 	spec: ByosanFeatureSpec,
 	explanation: Explanation,
-	candidate: Pick<ByosanAngleCandidate, "numbers">,
+	numberEvidence: NumberEvidence,
 	bannedPhrases: string[],
 ): FeatureSpecIssue[] {
 	const issues: FeatureSpecIssue[] = [];
@@ -158,12 +165,8 @@ export function auditFeatureSpecAgainstExplanation(
 	}
 	const sources = [
 		...explanation.figures.map((figure) => figure.value),
-		...candidate.numbers,
-		...spec.claims.flatMap((claim) =>
-			claim.confidence === undefined
-				? []
-				: [String(Math.round(claim.confidence * 100))],
-		),
+		...numberEvidence.numbers,
+		numberEvidence.sourceText,
 	];
 	issues.push(...unsourcedNumberIssues(specNumberTexts(spec), sources));
 	for (const phrase of bannedPhrases) {

@@ -166,7 +166,7 @@ describe("issues map to the unit that can repair them", () => {
 			figures: [],
 			check: "確認です。",
 		},
-		candidateNumbers: ["+2.1%"],
+		numberEvidence: { numbers: ["+2.1%"], sourceText: "" },
 		bannedPhrases: [],
 	} as FeatureDraftContext;
 

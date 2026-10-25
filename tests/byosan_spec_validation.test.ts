@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Explanation } from "../src/domain/byosan/explanation.js";
 import {
+	type NumberEvidence,
 	auditFeatureSpecAgainstExplanation,
 	auditHookPromises,
 	figureValueAppears,
@@ -31,8 +32,9 @@ const explanation: Explanation = {
 	],
 	check: "確認です。",
 };
-const candidate = {
+const numberEvidence: NumberEvidence = {
 	numbers: ["2026年9月の消費者物価指数は前年比+2.1%"],
+	sourceText: "",
 };
 const bannedPhrases = ["まだ言えない", "分からない"];
 
@@ -45,7 +47,6 @@ type SegmentFixture = {
 function specWith(
 	segments: SegmentFixture[],
 	thumbnailLead = "上昇",
-	claims: Array<{ confidence: number }> = [],
 ): ByosanFeatureSpec {
 	return {
 		title: "物価の話です",
@@ -62,7 +63,7 @@ function specWith(
 		descriptionLead: "説明の導入文です。",
 		descriptionBullets: ["限定条件を示します。"],
 		hookPromises: ["2.1%"],
-		claims,
+		claims: [],
 		segments: segments.map((segment) => ({
 			headline: segment.headline ?? "見出し",
 			subheadline: "副題",
@@ -87,7 +88,7 @@ describe("feature spec contract against the explanation", () => {
 			auditFeatureSpecAgainstExplanation(
 				specWith(grounded),
 				explanation,
-				candidate,
+				numberEvidence,
 				bannedPhrases,
 			),
 		).toEqual([]);
@@ -97,7 +98,7 @@ describe("feature spec contract against the explanation", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
 			specWith([{ text: conclusion, verificationRole: "landing" }]),
 			explanation,
-			candidate,
+			numberEvidence,
 			bannedPhrases,
 		);
 		expect(formatted(issues)).toContain(
@@ -105,7 +106,7 @@ describe("feature spec contract against the explanation", () => {
 		);
 	});
 
-	test("reports a number with no source in the explanation, candidate or claim confidence", () => {
+	test("reports a number with no source in the explanation, candidate or evidence source text", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
 			specWith([
 				{
@@ -114,18 +115,47 @@ describe("feature spec contract against the explanation", () => {
 				},
 			]),
 			explanation,
-			candidate,
+			numberEvidence,
 			bannedPhrases,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 47"]);
 		expect(issues[0]?.path).toBe("segments[0]");
 	});
 
+	test("accepts a bare number that the evidence article states", () => {
+		const issues = auditFeatureSpecAgainstExplanation(
+			specWith([
+				...grounded,
+				{
+					text: `${conclusion}1982と1990の回を除くのだ。`,
+					verificationRole: "landing",
+				},
+			]),
+			explanation,
+			{ ...numberEvidence, sourceText: "1982年と1990年の反発を除外した。" },
+			bannedPhrases,
+		);
+		expect(issues).toEqual([]);
+	});
+
+	test("does not match a number that only occurs inside a longer number", () => {
+		const issues = auditFeatureSpecAgainstExplanation(
+			specWith([
+				...grounded,
+				{ text: `${conclusion}4回を除くのだ。`, verificationRole: "landing" },
+			]),
+			explanation,
+			{ ...numberEvidence, sourceText: "14%の上昇" },
+			bannedPhrases,
+		);
+		expect(formatted(issues)).toEqual(["unsourced_number: 4"]);
+	});
+
 	test("checks numbers in thumbnail and description fields too", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
 			specWith(grounded, "3倍"),
 			explanation,
-			candidate,
+			numberEvidence,
 			bannedPhrases,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 3"]);
@@ -139,7 +169,7 @@ describe("feature spec contract against the explanation", () => {
 				{ text: "まだ言えないという声もある。", verificationRole: "presenter" },
 			]),
 			explanation,
-			candidate,
+			numberEvidence,
 			bannedPhrases,
 		);
 		expect(presenterOnly).toEqual([]);
@@ -150,7 +180,7 @@ describe("feature spec contract against the explanation", () => {
 				{ text: "結論はまだ言えないのだ。", verificationRole: "landing" },
 			]),
 			explanation,
-			candidate,
+			numberEvidence,
 			bannedPhrases,
 		);
 		expect(formatted(landing)).toEqual([
@@ -198,12 +228,12 @@ describe("over-long hook promises are normalized to their figure fragment", () =
 
 describe("hook promises are fragments of the candidate numbers", () => {
 	test("accepts a fragment that carries a candidate number", () => {
-		expect(auditHookPromises(["+2.1%"], candidate.numbers)).toEqual([]);
+		expect(auditHookPromises(["+2.1%"], numberEvidence.numbers)).toEqual([]);
 	});
 
 	test("reports a hook promise that does not come from the candidate numbers", () => {
 		expect(
-			formatted(auditHookPromises(["9%の増加"], candidate.numbers)),
+			formatted(auditHookPromises(["9%の増加"], numberEvidence.numbers)),
 		).toEqual(["hook_promise_not_in_candidate_numbers: 9%の増加"]);
 	});
 });

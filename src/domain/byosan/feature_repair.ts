@@ -2,6 +2,7 @@ import type { z } from "zod";
 import type { ByosanActiveProbeEvidence } from "./active_probe.js";
 import type { Explanation } from "./explanation.js";
 import {
+	type NumberEvidence,
 	auditFeatureSpecAgainstExplanation,
 	auditHookPromises,
 	normalizeHookPromise,
@@ -35,7 +36,7 @@ export type FeatureDraftContext = {
 	activeProbes: ByosanActiveProbeEvidence[];
 	sources: ByosanFeatureSource[];
 	explanation: Explanation;
-	candidateNumbers: string[];
+	numberEvidence: NumberEvidence;
 	bannedPhrases: string[];
 };
 
@@ -320,10 +321,13 @@ export function featureDraftIssues(
 		...auditFeatureSpecAgainstExplanation(
 			spec.data,
 			context.explanation,
-			{ numbers: context.candidateNumbers },
+			context.numberEvidence,
 			context.bannedPhrases,
 		),
-		...auditHookPromises(spec.data.hookPromises, context.candidateNumbers),
+		...auditHookPromises(
+			spec.data.hookPromises,
+			context.numberEvidence.numbers,
+		),
 	];
 }
 
@@ -404,7 +408,7 @@ export function featureRepairMessages(input: {
 		{
 			role: "system",
 			content:
-				'あなたは秒算マネーの台本の局所修復者です。指定された欄（unit）だけを、指摘（issues）を解消する形で直し、{"value": ...} の JSON だけを返します。他の欄や場面は変更されません。evidence にない数字・断定・出典を新しく作らず、推計・派生値の区別は claims の status と caveat で保ちます。claims の id は変更しません。台詞は dialogue_style（会話の指針の要約）に沿って、短く自然に直します。',
+				'あなたは秒算マネーの台本の局所修復者です。指定された欄（unit）だけを、指摘（issues）を解消する形で直し、{"value": ...} の JSON だけを返します。他の欄や場面は変更されません。evidence にない数字・断定・出典を新しく作らず、evidence にある年・数・固有名は削りません。推計・派生値の区別は claims の status と caveat で保ちます。claims の id は変更しません。台詞は dialogue_style（会話の指針の要約）に沿って、短く自然に直します。',
 		},
 		{
 			role: "user",
@@ -418,7 +422,8 @@ export function featureRepairMessages(input: {
 					})),
 					evidence: {
 						explanation: context.explanation,
-						candidate_numbers: context.candidateNumbers,
+						candidate_numbers: context.numberEvidence.numbers,
+						source_text: context.numberEvidence.sourceText,
 						claims: draft.claims,
 						allowed_sources: context.sources,
 						hook_promises: draft.hookPromises,
