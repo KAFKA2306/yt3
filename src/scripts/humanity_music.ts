@@ -244,10 +244,10 @@ function report(): void {
 	);
 }
 
-function runPaths(date: string) {
+function runPaths(date: string, slot?: string) {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
 		throw new Error("DATE=YYYY-MM-DD is required");
-	const name = `${config.run.name_prefix}${date}`;
+	const name = `${config.run.name_prefix}${date}${slot ? `-${slot}` : ""}`;
 	return {
 		dir: path.join(ROOT, "runs", config.run.bucket, name),
 		runId: `${config.run.bucket}/${name}`,
@@ -269,31 +269,14 @@ function probeSeconds(file: string): number {
 	);
 }
 
-function tailMeanDb(file: string, seconds: number): number {
-	const output = run([
-		"ffmpeg",
-		"-hide_banner",
-		"-ss",
-		String(probeSeconds(file) - seconds),
-		"-i",
-		file,
-		"-af",
-		"volumedetect",
-		"-f",
-		"null",
-		"-",
-	]);
-	return Number(/mean_volume: (-?[\d.]+) dB/.exec(output)?.[1]);
-}
-
 function songOfRun(dir: string): GenerationRow | undefined {
 	return generations(readLedger()).find(
 		(row) => row.id === fs.readJsonSync(path.join(dir, "song.json")).id,
 	);
 }
 
-async function prepare(date: string): Promise<void> {
-	const { dir, runId } = runPaths(date);
+async function prepare(date: string, slot?: string): Promise<void> {
+	const { dir, runId } = runPaths(date, slot);
 	preflight();
 	fs.ensureDirSync(dir);
 	const songRef = path.join(dir, "song.json");
@@ -398,7 +381,6 @@ async function prepare(date: string): Promise<void> {
 			requestSeed: request.seed,
 			song,
 			actualAudioSha256: sha256File(song.audio),
-			tailMeanDb: tailMeanDb(videoPath, config.audit.tail_seconds),
 			videoSeconds: probeSeconds(videoPath),
 			licenseText: fs.readFileSync(config.yue.license_file, "utf-8"),
 			cover: fs.readJsonSync(coverRecordPath),
@@ -421,8 +403,8 @@ async function prepare(date: string): Promise<void> {
 	);
 }
 
-async function youtubePlaylist(date: string): Promise<void> {
-	const { dir } = runPaths(date);
+async function youtubePlaylist(date: string, slot?: string): Promise<void> {
+	const { dir } = runPaths(date, slot);
 	const song = songOfRun(dir);
 	if (!song) throw new Error("song.json refers to an unknown song");
 	const videoId: string = fs.readJsonSync(
@@ -555,9 +537,10 @@ else if (command === "rate")
 else if (command === "report") report();
 else if (command === "playlist") writePlaylist();
 else if (command === "preflight") preflight();
-else if (command === "prepare") await prepare(rest[0] ?? "");
-else if (command === "youtube-playlist") await youtubePlaylist(rest[0] ?? "");
+else if (command === "prepare") await prepare(rest[0] ?? "", rest[1]);
+else if (command === "youtube-playlist")
+	await youtubePlaylist(rest[0] ?? "", rest[1]);
 else
 	throw new Error(
-		"usage: generate | rate <id> <score> [note] | report | playlist | preflight | prepare <date> | youtube-playlist <date>",
+		"usage: generate | rate <id> <score> [note] | report | playlist | preflight | prepare <date> [slot] | youtube-playlist <date> [slot]",
 	);

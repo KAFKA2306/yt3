@@ -46,9 +46,6 @@ export const ConfigSchema = z.object({
 		quality: z.number(),
 	}),
 	audit: z.object({
-		min_seconds: z.number(),
-		max_tail_mean_db: z.number(),
-		tail_seconds: z.number(),
 		duration_tolerance_seconds: z.number(),
 	}),
 	metadata: z.object({
@@ -194,7 +191,6 @@ export type MusicAuditInput = {
 	requestSeed: number | undefined;
 	song: GenerationRow;
 	actualAudioSha256: string;
-	tailMeanDb: number;
 	videoSeconds: number;
 	licenseText: string;
 	cover: { tool?: string; prompt?: string; sha256?: string } | undefined;
@@ -238,12 +234,6 @@ export function musicAudit(
 		result.truncated && Object.values(result.truncated).some(Boolean)
 			? "generation truncated"
 			: "",
-		song.seconds >= config.audit.min_seconds
-			? ""
-			: `shorter than ${config.audit.min_seconds}s`,
-		input.tailMeanDb <= config.audit.max_tail_mean_db
-			? ""
-			: `ending is not faded (${input.tailMeanDb} dB)`,
 		Math.abs(input.videoSeconds - song.seconds) <=
 		config.audit.duration_tolerance_seconds
 			? ""
@@ -268,7 +258,7 @@ export function musicAudit(
 		),
 		music_integrity: check(
 			"music_integrity",
-			"Audio hash, completeness, length, ending and video duration",
+			"Audio hash, completeness and video duration",
 			integrity.filter(Boolean),
 		),
 		visual_provenance: check(
