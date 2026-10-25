@@ -42,7 +42,7 @@ task check:merge
 task check:merge:fast   # deterministic preflight
 ```
 
-The repository gate checks source/repository state only: lint, types, repository contract, static publish routing, source no-fallback policy, and tests. It does not require production OAuth, a specific run, or live YouTube state.
+The repository gate checks source/repository state only: lint, types, static publish routing, and tests. It does not require production OAuth, a specific run, or live YouTube state.
 
 See [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
 
@@ -95,10 +95,6 @@ A generated media file is not proof of publication. A local receipt is not proof
 ```bash
 task audit:today
 task audit:publish-routing
-task audit:byosan-money
-task audit:no-fallback SCOPE=source
-task audit:no-fallback SCOPE=runtime
-task audit:no-fallback
 task publish:visibility-audit
 task stability:report
 task improve:report

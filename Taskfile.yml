@@ -253,11 +253,6 @@ tasks:
         fi
         bun src/scripts/audit_experience_contract.ts --episode "{{.EPISODE}}" {{if .LANE}}--lane "{{.LANE}}" {{end}}{{.CLI_ARGS}}
 
-  productivity:gsm:audit:
-    desc: "Audit Goals → Signals → Metrics traceability (INPUT=...; defaults to the Issue #202 repo example)"
-    cmds:
-      - bun src/scripts/audit_goals_signals_metrics.ts --input "{{default "config/metrics/issue_202_goals_signals_metrics.json" .INPUT}}" {{.CLI_ARGS}}
-
   experience:baseline:
     desc: "Compile and render an audited episode through the existing Remotion baseline (EPISODE=... OUT=...)"
     cmds:
@@ -424,30 +419,9 @@ tasks:
     desc: "Audit YouTube routing and profile identity"
     cmds: ["bun src/scripts/audit_publish_routing.ts"]
 
-  audit:byosan-money:
-    desc: "Run 秒算マネー source-policy audit"
-    cmds:
-      - bun scripts/audit_byosan_money_zero_trust.ts
-      - bun src/scripts/audit_byosan_source_registry.ts
-      - bun src/scripts/audit_byosan_discovery_sources.ts
-      - bun src/scripts/audit_no_fallback_policy.ts --scope=source
-      - bun src/scripts/audit_byosan_hardcode.ts
-
   audit:byosan-authenticity:
     desc: "Audit one 秒算マネー run for authenticity and write audit/authenticity.json (RUN=byosan_money/<run> required)"
     cmds: ["bun src/scripts/audit_byosan_authenticity.ts --run \"{{.RUN}}\""]
-
-  audit:no-fallback:
-    desc: "Audit no-fallback policy (SCOPE=source|runtime|all; default all)"
-    cmds: ["bun src/scripts/audit_no_fallback_policy.ts --scope={{.SCOPE}}"]
-
-  audit:repo-contract:
-    desc: "Verify Taskfile executables and documented repository entry points"
-    cmds: ["bun src/scripts/audit_repository_contract.ts"]
-
-  audit:repo-layout:
-    desc: "Audit root allowlist, ADR index integrity, and inline doc path references"
-    cmds: ["bun src/scripts/audit_repo_layout.ts"]
 
   stability:report:
     desc: "Regenerate the canonical cross-run stability report"

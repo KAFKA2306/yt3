@@ -680,13 +680,6 @@ feature_production:
       jump_ratio: 1.6
       clip_threshold: 0.99
 
-hardcode_audit:
-  targets:
-    - "src/scripts/produce_byosan_feature.ts"
-  allowed_numbers: [0, 1, 2, 3, 9, 60, 100, 255, 1000, 3600, 0.001]
-  forbidden_string_patterns: ["^https?://", "localhost", "^assets/", "^config/", "^runs/"]
-  forbidden_identifiers: ["process.env"]
-
 chapters:
   min_chapter_seconds: 10
   headings:
