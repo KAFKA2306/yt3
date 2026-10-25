@@ -5,6 +5,12 @@ import { z } from "zod";
 
 const CONFIG_PATH = "config/domains/byosan_money.yaml";
 const SEC_API_ORIGIN = "https://data.sec.gov";
+const DAY_MS = 86_400_000;
+
+const DayRangeSchema = z.object({
+	min: z.number().int().positive(),
+	max: z.number().int().positive(),
+});
 
 const SecConfigSchema = z.object({
 	sec: z.object({
@@ -15,6 +21,18 @@ const SecConfigSchema = z.object({
 				z.object({
 					name: z.string().min(1),
 					cik: z.string().regex(/^\d{10}$/),
+				}),
+			)
+			.min(1),
+		period_days: z.object({
+			annual: DayRangeSchema,
+			quarter: DayRangeSchema,
+		}),
+		metrics: z
+			.array(
+				z.object({
+					label: z.string().min(1),
+					tags: z.array(z.string().min(1)).min(1),
 				}),
 			)
 			.min(1),
@@ -38,6 +56,12 @@ const CompanyConceptSchema = z.object({
 	units: z.record(z.string(), z.array(CompanyConceptFactSchema)),
 });
 
+const CompanyFactsSchema = z.object({
+	facts: z.object({
+		"us-gaap": z.record(z.string(), CompanyConceptSchema).optional(),
+	}),
+});
+
 export type SecFact = {
 	fy: number | null;
 	fp: string | null;
@@ -49,6 +73,10 @@ export type SecFact = {
 	unit: string;
 	accn: string;
 };
+
+export type ConceptFact = SecFact & { tag: string };
+
+export type Figure = { label: string; tag: string; fact: SecFact };
 
 export type FactSelector = {
 	period: { start?: string; end: string };
@@ -74,9 +102,10 @@ export function loadSecConfig(): SecConfig {
 	return SecConfigSchema.parse(raw).sec;
 }
 
-export function parseCompanyConcept(json: unknown): SecFact[] {
-	const parsed = CompanyConceptSchema.parse(json);
-	return Object.entries(parsed.units).flatMap(([unit, records]) =>
+function flattenConcept(
+	concept: z.infer<typeof CompanyConceptSchema>,
+): SecFact[] {
+	return Object.entries(concept.units).flatMap(([unit, records]) =>
 		records.map((record) => ({
 			fy: record.fy,
 			fp: record.fp,
@@ -88,6 +117,18 @@ export function parseCompanyConcept(json: unknown): SecFact[] {
 			unit,
 			accn: record.accn,
 		})),
+	);
+}
+
+export function parseCompanyConcept(json: unknown): SecFact[] {
+	return flattenConcept(CompanyConceptSchema.parse(json));
+}
+
+export function parseCompanyFacts(json: unknown): ConceptFact[] {
+	const parsed = CompanyFactsSchema.parse(json);
+	return Object.entries(parsed.facts["us-gaap"] ?? {}).flatMap(
+		([tag, concept]) =>
+			flattenConcept(concept).map((fact) => ({ ...fact, tag })),
 	);
 }
 
@@ -138,6 +179,61 @@ export function findFact(
 	return candidates.reduce((original, fact) =>
 		fact.filed < original.filed ? fact : original,
 	);
+}
+
+function inPeriodRange(
+	fact: SecFact,
+	range: z.infer<typeof DayRangeSchema>,
+): boolean {
+	if (fact.start === undefined) return true;
+	const days =
+		(new Date(fact.end).getTime() - new Date(fact.start).getTime()) / DAY_MS;
+	return days >= range.min && days <= range.max;
+}
+
+function figureFor(
+	own: readonly ConceptFact[],
+	metric: SecConfig["metrics"][number],
+	range: z.infer<typeof DayRangeSchema>,
+): Figure | undefined {
+	for (const tag of metric.tags) {
+		const candidates = own.filter((fact) => fact.tag === tag);
+		if (candidates.length === 0) continue;
+		const latest = candidates.reduce(
+			(max, fact) => (fact.end > max ? fact.end : max),
+			"",
+		);
+		const current = candidates.filter(
+			(fact) => fact.end === latest && inPeriodRange(fact, range),
+		);
+		const selected = current[0];
+		if (selected === undefined) return undefined;
+		const fact = findFact(current, {
+			period: { start: selected.start, end: selected.end },
+			unit: selected.unit,
+		});
+		return { label: metric.label, tag, fact };
+	}
+	return undefined;
+}
+
+export function accessionFigures(
+	facts: readonly ConceptFact[],
+	accession: string,
+	sec: Pick<SecConfig, "metrics" | "period_days">,
+): Figure[] {
+	const own = facts.filter((fact) => fact.accn === accession);
+	if (own.length === 0) throw new Error(`XBRL_FACTS_NOT_FOUND ${accession}`);
+	const range =
+		own[0]?.fp === "FY" ? sec.period_days.annual : sec.period_days.quarter;
+	const figures = sec.metrics.flatMap((metric) => {
+		const figure = figureFor(own, metric, range);
+		return figure === undefined ? [] : [figure];
+	});
+	if (figures.length === 0) {
+		throw new Error(`XBRL_METRICS_NOT_FOUND ${accession}`);
+	}
+	return figures;
 }
 
 export function verifyFigure({

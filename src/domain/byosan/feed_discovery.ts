@@ -1,13 +1,31 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { ROOT } from "../../io/core.js";
-import { type SecConfig, loadSecConfig } from "./sec_xbrl.js";
+import {
+	type ConceptFact,
+	type Figure,
+	type SecConfig,
+	accessionFigures,
+	loadSecConfig,
+	parseCompanyFacts,
+} from "./sec_xbrl.js";
+
+type Body = "article" | "paragraphs";
 
 export type SourceFetch =
 	| { type: "rss"; url: string; body: "feed" | "paragraphs" }
-	| { type: "sitemap"; url: string; include: string }
-	| { type: "html_list"; url: string; link: string }
-	| { type: "post_api"; url: string; base: string }
+	| { type: "sitemap"; url: string; include: string; body: Body }
+	| { type: "html_list"; url: string; link: string; body: Body }
+	| {
+			type: "html_items";
+			url: string;
+			page_url: string;
+			pages: number;
+			item: string;
+			link: string;
+			body: Body;
+	  }
+	| { type: "post_api"; url: string; base: string; body: Body }
 	| { type: "sec"; cik: string; forms: string[] }
 	| { type: "verify" }
 	| { type: "unreachable"; reason: string };
@@ -21,19 +39,26 @@ type DiscoverySource = {
 	fetch: SourceFetch;
 };
 
+type BaselineSource = {
+	id: string;
+	days: number;
+	max_items: number | null;
+	fetch: Extract<SourceFetch, { type: "sitemap" | "html_items" }>;
+};
+
 export type DiscoveryConfig = {
 	recent_days: number;
 	max_items_per_feed: number;
 	body_chars: number;
 	min_paragraph_chars: number;
-	earnings_item: string;
-	press_release_exhibit: string;
+	concurrency: number;
 	title_rule: string;
 	registry: string;
 	user_agent: string;
+	baseline: { path: string; sources: BaselineSource[] };
 };
 
-type DiscoveredArticle = {
+export type DiscoveredArticle = {
 	feed: string;
 	issuer: string;
 	caution: string;
@@ -47,15 +72,15 @@ type Entry = Pick<DiscoveredArticle, "title" | "url" | "published" | "body">;
 
 type Known = { url: string; title?: string; published?: string };
 
+type Listed = { url: string; published?: string };
+
 type FeedItem = { url: string; title: string; published: string };
 
 type Filing = {
 	form: string;
 	date: string;
-	items: string;
 	accession: string;
 	url: string;
-	index: string;
 };
 
 type Exclusion = { feed: string; url: string; reason: string };
@@ -132,8 +157,12 @@ function iso(value: string): string {
 	return new Date(value).toISOString();
 }
 
+function listedDate(text: string): string {
+	return new Date(`${text} UTC`).toISOString();
+}
+
 function ymdDate(url: string): string | undefined {
-	const ymd = url.match(/(\d{4})(\d{2})(\d{2})/);
+	const ymd = url.match(/(\d{4})-?(\d{2})-?(\d{2})/);
 	return ymd ? `${ymd[1]}-${ymd[2]}-${ymd[3]}T00:00:00+09:00` : undefined;
 }
 
@@ -165,19 +194,39 @@ function paragraphBody(html: string, cfg: DiscoveryConfig): string {
 	return longest.join("\n").slice(0, cfg.body_chars);
 }
 
+function bodyOf(html: string, cfg: DiscoveryConfig, body: Body): string {
+	return body === "article" ? articleBody(html, cfg) : paragraphBody(html, cfg);
+}
+
+async function mapLimit<T, R>(
+	items: T[],
+	limit: number,
+	fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+	const out: R[] = new Array(items.length);
+	let next = 0;
+	const worker = async () => {
+		while (next < items.length) {
+			const i = next++;
+			out[i] = await fn(items[i] as T);
+		}
+	};
+	await Promise.all(Array.from({ length: limit }, worker));
+	return out;
+}
+
 async function settle<T extends { url: string }>(
 	feed: string,
 	items: T[],
 	read: (item: T) => Promise<Entry>,
+	concurrency: number,
 ): Promise<Crawl> {
-	const outcomes = await Promise.all(
-		items.map((item) =>
-			read(item).then(
-				(entry) => ({ entry }),
-				(error: unknown) => ({
-					exclusion: { feed, url: item.url, reason: String(error) },
-				}),
-			),
+	const outcomes = await mapLimit(items, concurrency, (item) =>
+		read(item).then(
+			(entry) => ({ entry }),
+			(error: unknown) => ({
+				exclusion: { feed, url: item.url, reason: String(error) },
+			}),
 		),
 	);
 	return {
@@ -186,7 +235,25 @@ async function settle<T extends { url: string }>(
 	};
 }
 
-async function fromPage(item: Known, cfg: DiscoveryConfig): Promise<Entry> {
+function readListed(
+	feed: string,
+	listed: Listed[],
+	body: Body,
+	cfg: DiscoveryConfig,
+): Promise<Crawl> {
+	return settle(
+		feed,
+		listed,
+		(item) => fromPage(item, cfg, body),
+		cfg.concurrency,
+	);
+}
+
+async function fromPage(
+	item: Known,
+	cfg: DiscoveryConfig,
+	body: Body,
+): Promise<Entry> {
 	const html = await get(item.url, cfg.user_agent);
 	const date =
 		item.published ??
@@ -196,7 +263,7 @@ async function fromPage(item: Known, cfg: DiscoveryConfig): Promise<Entry> {
 		title: item.title || meta(html, "og:title") || plain(tag(html, "title")),
 		url: item.url,
 		published: iso(date),
-		body: articleBody(html, cfg),
+		body: bodyOf(html, cfg, body),
 	};
 }
 
@@ -240,38 +307,42 @@ async function fromRss(
 			excluded: [],
 		};
 	}
-	return settle(feed, items, (item) => fromFeedArticle(item, cfg));
+	return settle(
+		feed,
+		items,
+		(item) => fromFeedArticle(item, cfg),
+		cfg.concurrency,
+	);
 }
 
-async function fromSitemap(
+async function listSitemap(
 	f: Extract<SourceFetch, { type: "sitemap" }>,
 	cfg: DiscoveryConfig,
-	feed: string,
 	cutoff: number,
-): Promise<Crawl> {
+	limit: number | null,
+): Promise<Listed[]> {
 	const xml = await get(f.url, cfg.user_agent);
 	const include = new RegExp(f.include);
-	const urls = [
-		...xml.matchAll(/<loc>([^<]+)<\/loc>\s*<lastmod>([^<]+)<\/lastmod>/g),
-	]
-		.map((m) => ({ url: m[1] as string, lastmod: m[2] as string }))
+	const urls = (xml.match(/<url>[\s\S]*?<\/url>/g) ?? [])
+		.map((block) => ({
+			url: tag(block, "loc"),
+			lastmod: tag(block, "lastmod"),
+		}))
 		.filter(
 			(u) => include.test(u.url) && new Date(u.lastmod).getTime() >= cutoff,
 		)
 		.sort((a, b) => b.lastmod.localeCompare(a.lastmod))
-		.slice(0, cfg.max_items_per_feed)
 		.map((u) => ({ url: u.url, published: u.lastmod }));
-	return settle(feed, urls, (item) => fromPage(item, cfg));
+	return limit === null ? urls : urls.slice(0, limit);
 }
 
-async function fromHtmlList(
+async function listHtmlLinks(
 	f: Extract<SourceFetch, { type: "html_list" }>,
 	cfg: DiscoveryConfig,
-	feed: string,
-): Promise<Crawl> {
+): Promise<Listed[]> {
 	const html = await get(f.url, cfg.user_agent);
 	const origin = new URL(f.url).origin;
-	const links = [
+	return [
 		...new Set(
 			[
 				...html.matchAll(
@@ -283,7 +354,48 @@ async function fromHtmlList(
 		.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
 		.slice(0, cfg.max_items_per_feed)
 		.map((url) => ({ url, published: ymdDate(url) }));
-	return settle(feed, links, (item) => fromPage(item, cfg));
+}
+
+async function listHtmlItems(
+	feed: string,
+	f: Extract<SourceFetch, { type: "html_items" }>,
+	cfg: DiscoveryConfig,
+	cutoff: number,
+	limit: number | null,
+): Promise<{ listed: Listed[]; excluded: Exclusion[] }> {
+	const item = new RegExp(f.item, "g");
+	const link = new RegExp(f.link);
+	const found = new Map<string, Listed>();
+	let reachedEnd = false;
+	for (let page = 1; page <= f.pages; page++) {
+		const html = await get(
+			page === 1 ? f.url : f.page_url.replace("{n}", String(page)),
+			cfg.user_agent,
+		);
+		const items = [...html.matchAll(item)].map((m) => ({
+			url: new URL(m.groups?.url ?? "", f.url).href,
+			published: listedDate(m.groups?.date ?? ""),
+		}));
+		if (items.length === 0)
+			throw new Error(`ITEM_NOT_FOUND ${feed} page=${page}`);
+		const inWindow = items.filter(
+			(x) => new Date(x.published).getTime() >= cutoff,
+		);
+		if (inWindow.length === 0) {
+			reachedEnd = true;
+			break;
+		}
+		for (const x of inWindow) {
+			if (link.test(x.url)) found.set(x.url, x);
+		}
+	}
+	const listed = [...found.values()];
+	return {
+		listed: limit === null ? listed : listed.slice(0, limit),
+		excluded: reachedEnd
+			? []
+			: [{ feed, url: f.url, reason: `PAGE_LIMIT_REACHED pages=${f.pages}` }],
+	};
 }
 
 async function fromPostApi(
@@ -306,35 +418,27 @@ async function fromPostApi(
 				published: iso(`${date}T00:00:00+09:00`),
 			};
 		});
-	return settle(feed, items, (item) => fromPage(item, cfg));
+	return readListed(feed, items, f.body, cfg);
 }
 
-async function fromFiling(
+function figureLine({ label, tag: concept, fact }: Figure): string {
+	const period =
+		fact.start === undefined ? `${fact.end}時点` : `${fact.start}〜${fact.end}`;
+	return `- ${label}: ${fact.val} ${fact.unit}（実績（提出書類）、${fact.form} ${period}、提出日 ${fact.filed}、${concept}）`;
+}
+
+function fromFiling(
 	x: Filing,
 	name: string,
-	cfg: DiscoveryConfig,
-	feed: string,
+	facts: readonly ConceptFact[],
 	sec: SecConfig,
-): Promise<Entry> {
-	const index = await secGet(x.index, sec);
-	const exhibits = index
-		.split("<tr")
-		.filter((row) => row.includes(`>${cfg.press_release_exhibit}<`))
-		.flatMap((row) => {
-			const href = row.match(/href="([^"]+)"/)?.[1];
-			return href ? [new URL(href, "https://www.sec.gov").href] : [];
-		});
-	if (x.items.split(",").includes(cfg.earnings_item) && exhibits.length === 0) {
-		throw new Error(`EXHIBIT_NOT_FOUND ${cfg.press_release_exhibit} ${x.url}`);
-	}
-	const texts = await Promise.all(
-		[...exhibits, x.url].map(async (url) => plain(await secGet(url, sec))),
-	);
+	feed: string,
+): Entry {
 	return {
 		title: `${name} ${x.form} ${x.date} (${feed})`,
 		url: x.url,
 		published: iso(`${x.date}T00:00:00Z`),
-		body: texts.join("\n").slice(0, cfg.body_chars),
+		body: accessionFigures(facts, x.accession, sec).map(figureLine).join("\n"),
 	};
 }
 
@@ -355,7 +459,6 @@ async function fromSec(
 				filingDate: string[];
 				accessionNumber: string[];
 				primaryDocument: string[];
-				items: string[];
 			};
 		};
 	};
@@ -367,10 +470,8 @@ async function fromSec(
 			return {
 				form,
 				date: r.filingDate[i] as string,
-				items: r.items[i] as string,
 				accession,
 				url: `${dir}${r.primaryDocument[i] as string}`,
-				index: `${dir}${accession}-index.htm`,
 			};
 		})
 		.filter(
@@ -379,7 +480,21 @@ async function fromSec(
 				new Date(`${x.date}T00:00:00Z`).getTime() >= cutoff,
 		)
 		.slice(0, cfg.max_items_per_feed);
-	return settle(feed, filings, (x) => fromFiling(x, json.name, cfg, feed, sec));
+	if (filings.length === 0) return { entries: [], excluded: [] };
+	const facts = parseCompanyFacts(
+		JSON.parse(
+			await secGet(
+				`https://data.sec.gov/api/xbrl/companyfacts/CIK${f.cik}.json`,
+				sec,
+			),
+		),
+	);
+	return settle(
+		feed,
+		filings,
+		async (x) => fromFiling(x, json.name, facts, sec, feed),
+		cfg.concurrency,
+	);
 }
 
 async function crawl(
@@ -392,9 +507,28 @@ async function crawl(
 		case "rss":
 			return fromRss(f, cfg, source.id, cutoff);
 		case "sitemap":
-			return fromSitemap(f, cfg, source.id, cutoff);
+			return readListed(
+				source.id,
+				await listSitemap(f, cfg, cutoff, cfg.max_items_per_feed),
+				f.body,
+				cfg,
+			);
 		case "html_list":
-			return fromHtmlList(f, cfg, source.id);
+			return readListed(source.id, await listHtmlLinks(f, cfg), f.body, cfg);
+		case "html_items": {
+			const { listed, excluded } = await listHtmlItems(
+				source.id,
+				f,
+				cfg,
+				cutoff,
+				cfg.max_items_per_feed,
+			);
+			const read = await readListed(source.id, listed, f.body, cfg);
+			return {
+				entries: read.entries,
+				excluded: [...excluded, ...read.excluded],
+			};
+		}
 		case "post_api":
 			return fromPostApi(f, cfg, source.id);
 		case "sec":
@@ -442,6 +576,90 @@ async function discoverArticles(
 	return { articles, excluded: perSource.flatMap((s) => s.excluded) };
 }
 
+function windowed(
+	articles: DiscoveredArticle[],
+	cfg: DiscoveryConfig,
+	now: Date,
+): DiscoveredArticle[] {
+	const days = new Map(cfg.baseline.sources.map((b) => [b.id, b.days]));
+	const seen = new Set<string>();
+	return articles
+		.filter((a) => {
+			const d = days.get(a.feed);
+			if (
+				d === undefined ||
+				seen.has(a.url) ||
+				new Date(a.published).getTime() < now.getTime() - d * 86_400_000
+			) {
+				return false;
+			}
+			seen.add(a.url);
+			return true;
+		})
+		.sort((a, b) => b.published.localeCompare(a.published));
+}
+
+function readBaselineStore(cfg: DiscoveryConfig): DiscoveredArticle[] {
+	const file = path.join(ROOT, cfg.baseline.path);
+	return fs.existsSync(file)
+		? (fs.readJsonSync(file) as DiscoveredArticle[])
+		: [];
+}
+
+export function loadDiscoveryBaseline(
+	cfg: DiscoveryConfig,
+	now: Date,
+): DiscoveredArticle[] {
+	return windowed(readBaselineStore(cfg), cfg, now);
+}
+
+async function updateDiscoveryBaseline(
+	cfg: DiscoveryConfig,
+	now: Date,
+	daily: DiscoveredArticle[],
+): Promise<Exclusion[]> {
+	const stored = readBaselineStore(cfg);
+	const sources = loadDiscoverySources(cfg);
+	const known = new Set([...stored, ...daily].map((a) => a.url));
+	const fetched: DiscoveredArticle[] = [];
+	const excluded: Exclusion[] = [];
+	for (const b of cfg.baseline.sources) {
+		const source = sources.find((s) => s.id === b.id);
+		if (source === undefined)
+			throw new Error(`BASELINE_SOURCE_NOT_ADOPTED ${b.id}`);
+		const cutoff = now.getTime() - b.days * 86_400_000;
+		const listing =
+			b.fetch.type === "sitemap"
+				? {
+						listed: await listSitemap(b.fetch, cfg, cutoff, b.max_items),
+						excluded: [] as Exclusion[],
+					}
+				: await listHtmlItems(b.id, b.fetch, cfg, cutoff, b.max_items);
+		const read = await readListed(
+			b.id,
+			listing.listed.filter((x) => !known.has(x.url)),
+			b.fetch.body,
+			cfg,
+		);
+		excluded.push(...listing.excluded, ...read.excluded);
+		for (const entry of read.entries) known.add(entry.url);
+		fetched.push(
+			...read.entries.map((entry) => ({
+				...entry,
+				feed: b.id,
+				issuer: source.issuer,
+				caution: source.caution,
+			})),
+		);
+	}
+	await fs.outputJson(
+		path.join(ROOT, cfg.baseline.path),
+		windowed([...stored, ...daily, ...fetched], cfg, now),
+		{ spaces: 2 },
+	);
+	return excluded;
+}
+
 function renderDiscoveryEvidence(
 	articles: DiscoveredArticle[],
 	notCrawled: DiscoverySource[],
@@ -464,6 +682,7 @@ export async function writeDiscoveryEvidence(
 	now: Date,
 ): Promise<string> {
 	const { articles, excluded } = await discoverArticles(cfg, now);
+	const baselineExcluded = await updateDiscoveryBaseline(cfg, now, articles);
 	if (articles.length === 0) {
 		throw new Error(
 			"BYOSAN_ANGLE_STOP: no recent articles in registered sources",
@@ -487,7 +706,7 @@ export async function writeDiscoveryEvidence(
 	);
 	await fs.outputJson(
 		path.join(runDir, "research", "discovery_excluded.json"),
-		excluded,
+		[...excluded, ...baselineExcluded],
 		{ spaces: 2 },
 	);
 	return file;

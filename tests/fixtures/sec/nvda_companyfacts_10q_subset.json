@@ -1,0 +1,231 @@
+{
+	"cik": 1045810,
+	"entityName": "NVIDIA CORP",
+	"facts": {
+		"us-gaap": {
+			"Revenues": {
+				"label": "Revenues",
+				"description": "Amount of revenue recognized from goods sold, services rendered, insurance premiums, or other activities that constitute an earning process. Includes, but is not limited to, investment and interest income before deduction of interest expense when recognized as a component of revenue, and sales and trading gain (loss).",
+				"units": {
+					"USD": [
+						{
+							"start": "2025-01-27",
+							"end": "2025-07-27",
+							"val": 90805000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2025-04-28",
+							"end": "2025-07-27",
+							"val": 46743000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2026-01-26",
+							"end": "2026-07-26",
+							"val": 177837000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2026-04-27",
+							"end": "2026-07-26",
+							"val": 96221000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						}
+					]
+				}
+			},
+			"OperatingIncomeLoss": {
+				"label": "Operating Income (Loss)",
+				"description": "The net result for the period of deducting operating expenses from operating revenues.",
+				"units": {
+					"USD": [
+						{
+							"start": "2025-01-27",
+							"end": "2025-07-27",
+							"val": 50078000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2025-04-28",
+							"end": "2025-07-27",
+							"val": 28440000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2026-01-26",
+							"end": "2026-07-26",
+							"val": 117270000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2026-04-27",
+							"end": "2026-07-26",
+							"val": 63734000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						}
+					]
+				}
+			},
+			"NetIncomeLoss": {
+				"label": "Net Income (Loss) Attributable to Parent",
+				"description": "The portion of profit or loss for the period, net of income taxes, which is attributable to the parent.",
+				"units": {
+					"USD": [
+						{
+							"start": "2025-01-27",
+							"end": "2025-07-27",
+							"val": 45197000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2025-04-28",
+							"end": "2025-07-27",
+							"val": 26422000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2026-01-26",
+							"end": "2026-07-26",
+							"val": 118010000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2026-04-27",
+							"end": "2026-07-26",
+							"val": 59688000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						}
+					]
+				}
+			},
+			"EarningsPerShareDiluted": {
+				"label": "Earnings Per Share, Diluted",
+				"description": "The amount of net income (loss) for the period available to each share of common stock or common unit outstanding during the reporting period and to each share or unit that would have been outstanding assuming the issuance of common shares or units for all dilutive potential common shares or units outstanding during the reporting period.",
+				"units": {
+					"USD/shares": [
+						{
+							"start": "2025-01-27",
+							"end": "2025-07-27",
+							"val": 1.84,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2025-04-28",
+							"end": "2025-07-27",
+							"val": 1.08,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2026-01-26",
+							"end": "2026-07-26",
+							"val": 4.85,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"start": "2026-04-27",
+							"end": "2026-07-26",
+							"val": 2.46,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						}
+					]
+				}
+			},
+			"PaymentsToAcquirePropertyPlantAndEquipment": {
+				"label": "Payments to Acquire Property, Plant, and Equipment",
+				"description": "The cash outflow associated with the acquisition of long-lived, physical assets that are used in the normal conduct of business to produce goods and services and not intended for resale; includes cash outflows to pay for construction of self-constructed assets.",
+				"units": {}
+			},
+			"CashAndCashEquivalentsAtCarryingValue": {
+				"label": "Cash and Cash Equivalents, at Carrying Value",
+				"description": "Amount of currency on hand as well as demand deposits with banks or financial institutions. Includes other kinds of accounts that have the general characteristics of demand deposits. Also includes short-term, highly liquid investments that are both readily convertible to known amounts of cash and so near their maturity that they present insignificant risk of changes in value because of changes in interest rates. Excludes cash and cash equivalents within disposal group and discontinued operation.",
+				"units": {
+					"USD": [
+						{
+							"end": "2026-01-25",
+							"val": 10605000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						},
+						{
+							"end": "2026-07-26",
+							"val": 22443000000,
+							"accn": "0001045810-26-000075",
+							"fy": 2027,
+							"fp": "Q2",
+							"form": "10-Q",
+							"filed": "2026-08-26"
+						}
+					]
+				}
+			}
+		}
+	}
+}

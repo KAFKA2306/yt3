@@ -52,6 +52,7 @@
 				"fetch": { "$ref": "#/$defs/fetch" }
 			}
 		},
+		"body": { "enum": ["article", "paragraphs"] },
 		"fetch": {
 			"oneOf": [
 				{
@@ -67,31 +68,56 @@
 				{
 					"type": "object",
 					"additionalProperties": false,
-					"required": ["type", "url", "include"],
+					"required": ["type", "url", "include", "body"],
 					"properties": {
 						"type": { "const": "sitemap" },
 						"url": { "type": "string", "minLength": 1 },
-						"include": { "type": "string", "minLength": 1 }
+						"include": { "type": "string", "minLength": 1 },
+						"body": { "$ref": "#/$defs/body" }
 					}
 				},
 				{
 					"type": "object",
 					"additionalProperties": false,
-					"required": ["type", "url", "link"],
+					"required": ["type", "url", "link", "body"],
 					"properties": {
 						"type": { "const": "html_list" },
 						"url": { "type": "string", "minLength": 1 },
-						"link": { "type": "string", "minLength": 1 }
+						"link": { "type": "string", "minLength": 1 },
+						"body": { "$ref": "#/$defs/body" }
 					}
 				},
 				{
 					"type": "object",
 					"additionalProperties": false,
-					"required": ["type", "url", "base"],
+					"required": [
+						"type",
+						"url",
+						"page_url",
+						"pages",
+						"item",
+						"link",
+						"body"
+					],
+					"properties": {
+						"type": { "const": "html_items" },
+						"url": { "type": "string", "minLength": 1 },
+						"page_url": { "type": "string", "minLength": 1 },
+						"pages": { "type": "integer", "minimum": 1 },
+						"item": { "type": "string", "minLength": 1 },
+						"link": { "type": "string", "minLength": 1 },
+						"body": { "$ref": "#/$defs/body" }
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["type", "url", "base", "body"],
 					"properties": {
 						"type": { "const": "post_api" },
 						"url": { "type": "string", "minLength": 1 },
-						"base": { "type": "string", "minLength": 1 }
+						"base": { "type": "string", "minLength": 1 },
+						"body": { "$ref": "#/$defs/body" }
 					}
 				},
 				{
