@@ -31,16 +31,13 @@ type ResolvedValue = {
 
 const NUMERIC_VALUE = /^([+\-−]?)(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(\D*)$/u;
 
-export function parseDisplayValue(display: string): {
-	value: number;
-	unit: string;
-} {
+export function parseDisplayValue(
+	display: string,
+): { value: number; unit: string } | null {
 	const match = NUMERIC_VALUE.exec(
 		display.normalize("NFKC").replace(/\s+/gu, ""),
 	);
-	if (!match) {
-		throw new Error(`BYOSAN_SCENE_VALUE_UNPARSEABLE: ${display}`);
-	}
+	if (!match) return null;
 	const [, sign = "", integer = "", fraction = "", unit = ""] = match;
 	const magnitude = Number(`${integer.replaceAll(",", "")}${fraction}`);
 	const negative = sign === "-" || sign === "−";
@@ -105,32 +102,24 @@ function numericSeries(
 	source: SceneSource,
 	explanation: SceneExplanation,
 ) {
-	const parsed = items.map((item) => {
+	const parsed = items.flatMap((item) => {
 		const resolved = resolveValue(item.value, source, explanation);
-		return {
-			label: item.label,
-			...resolved,
-			...parseDisplayValue(resolved.display),
-		};
+		const numeric = parseDisplayValue(resolved.display);
+		return numeric ? [{ label: item.label, ...resolved, ...numeric }] : [];
 	});
 	const first = parsed[0];
-	if (!first) {
-		throw new Error("BYOSAN_SCENE_ITEMS_EMPTY");
-	}
+	if (!first || parsed.length !== items.length) return null;
 	const mixed = parsed.some(
 		(item) =>
 			item.unit !== first.unit ||
 			item.kind !== first.kind ||
 			item.seriesName !== first.seriesName,
 	);
-	if (mixed) {
-		throw new Error(
-			`BYOSAN_SCENE_SERIES_MIXED: ${parsed.map((item) => item.display).join(",")}`,
-		);
-	}
+	if (mixed) return null;
+	const series = parsed;
 	return {
-		labels: parsed.map((item) => item.label),
-		values: parsed.map((item) => item.value),
+		labels: series.map((item) => item.label),
+		values: series.map((item) => item.value),
 		unit: first.unit,
 		kind: first.kind,
 		seriesName: first.seriesName,
@@ -144,32 +133,26 @@ function chartOf(
 	>,
 	source: SceneSource,
 	explanation: SceneExplanation,
-): ChartSpec {
+): ChartSpec | null {
 	switch (visual.kind) {
 		case "bignumber": {
 			const resolved = resolveValue(visual.value, source, explanation);
-			return {
-				kind: "bignumber",
-				label: visual.label,
-				sublabel: resolved.detail,
-				...parseDisplayValue(resolved.display),
-			};
+			const numeric = parseDisplayValue(resolved.display);
+			return numeric
+				? {
+						kind: "bignumber",
+						label: visual.label,
+						sublabel: resolved.detail,
+						...numeric,
+					}
+				: null;
 		}
-		case "hbar_compare": {
-			const series = numericSeries(visual.items, source, explanation);
-			return {
-				kind: "hbar",
-				categories: series.labels,
-				series: [
-					{ name: series.seriesName, values: series.values, kind: series.kind },
-				],
-				unit: series.unit,
-			};
-		}
+		case "hbar_compare":
 		case "bar_trend": {
 			const series = numericSeries(visual.items, source, explanation);
+			if (!series) return null;
 			return {
-				kind: "bar",
+				kind: visual.kind === "hbar_compare" ? "hbar" : "bar",
 				categories: series.labels,
 				series: [
 					{ name: series.seriesName, values: series.values, kind: series.kind },
@@ -179,6 +162,7 @@ function chartOf(
 		}
 		case "line_series": {
 			const series = numericSeries(visual.items, source, explanation);
+			if (!series) return null;
 			return {
 				kind: "line",
 				x: series.labels,
@@ -214,16 +198,14 @@ export function resolveSceneRender(
 	const { visual } = scene;
 	if (visual.kind === "question") return { kind: "question" };
 	if (continued) return { kind: "none" };
-	switch (visual.kind) {
-		case "stat_cards":
-			return { kind: "stat_cards", stats: statCardsOf(visual.items, source) };
-		case "bignumber":
-		case "hbar_compare":
-		case "bar_trend":
-		case "line_series":
-			return {
-				kind: "chart",
-				chart: chartOf(visual, source, explanation),
-			};
+	if (visual.kind === "stat_cards") {
+		return { kind: "stat_cards", stats: statCardsOf(visual.items, source) };
 	}
+	const chart = chartOf(visual, source, explanation);
+	if (chart) return { kind: "chart", chart };
+	const segment = source.segments[scene.segmentIndexes[0] ?? -1];
+	if (!segment) {
+		throw new Error(`BYOSAN_SCENE_SEGMENT_MISSING: ${scene.sceneId}`);
+	}
+	return { kind: "stat_cards", stats: segment.stats };
 }

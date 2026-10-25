@@ -39,9 +39,9 @@ describe("Byosan failure classification", () => {
 		);
 	});
 
-	test("classifies an MCP-noise-only message as UNCLASSIFIED", () => {
+	test("classifies an MCP-noise-only message as PIPELINE_FAILURE", () => {
 		expect(classifyByosanFailure(mcpNoiseOnly).failureClass).toBe(
-			"UNCLASSIFIED",
+			"PIPELINE_FAILURE",
 		);
 	});
 

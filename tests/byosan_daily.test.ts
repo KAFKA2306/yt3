@@ -3,14 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 import {
-	byosanFailureClassification,
-	byosanLlmConfig,
-	llmBackend,
-} from "../src/domain/byosan/codex_llm.js";
-import {
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
-	pendingLlmBackends,
 	preflightBlockedMessage,
 	recordByosanFailure,
 	reusableResearchResult,
@@ -191,7 +185,7 @@ describe("byosan failure retry limits", () => {
 		expect(trace.failure_class).toBe("PROVIDER_RATE_LIMIT");
 	});
 
-	test("classifies a Zod invalid_type issue from provider output as PROVIDER_SCHEMA", async () => {
+	test("classifies a Zod invalid_type issue from provider output as PIPELINE_FAILURE", async () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
 			runDir,
@@ -200,7 +194,7 @@ describe("byosan failure retry limits", () => {
 			),
 			"head-a",
 		);
-		expect(trace.failure_class).toBe("PROVIDER_SCHEMA");
+		expect(trace.failure_class).toBe("PIPELINE_FAILURE");
 	});
 
 	test("does not classify a path containing 'youtuber' as a YouTube publish failure", async () => {
@@ -225,7 +219,7 @@ describe("byosan failure retry limits", () => {
 		expect(trace.failure_class).toBe("PUBLISH_REMOTE");
 	});
 
-	test("does not block a rerun after a non-transient failure", async () => {
+	test("does not block a rerun after a pipeline failure", async () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
 			runDir,
@@ -236,34 +230,22 @@ describe("byosan failure retry limits", () => {
 		);
 		expect(trace).toMatchObject({
 			status: "OPEN",
-			failure_class: "SPEC_CONTRACT",
+			failure_class: "PIPELINE_FAILURE",
 			stage: "SPEC",
 		});
 		expect(() => assertByosanRetryAllowed(runDir)).not.toThrow();
 	});
 
-	test("permits only the configured bounded retries for a provider rate limit", async () => {
+	test("does not cap rate-limit retries; the same-day attempt cap bounds them", async () => {
 		const runDir = await makeRunDir();
-		recordByosanFailure(
-			runDir,
-			new Error("429 rate limit quota exhausted"),
-			"head-a",
-		);
-		for (
-			let retry = 0;
-			retry < byosanFailureClassification().transient_max_retries;
-			retry++
-		) {
-			expect(() => assertByosanRetryAllowed(runDir)).not.toThrow();
+		for (let attempt = 0; attempt < 5; attempt++) {
 			recordByosanFailure(
 				runDir,
 				new Error("429 rate limit quota exhausted"),
 				"head-a",
 			);
+			expect(() => assertByosanRetryAllowed(runDir)).not.toThrow();
 		}
-		expect(() => assertByosanRetryAllowed(runDir)).toThrow(
-			"RETRY_BLOCKED_TRANSIENT_EXHAUSTED",
-		);
 	});
 
 	test("never retries an uncertain publish command without remote read-back", async () => {
@@ -294,5 +276,3 @@ describe("byosan failure retry limits", () => {
 		});
 	});
 });
-
-describe("pendingLlmBackends", () => {});

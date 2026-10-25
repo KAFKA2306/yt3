@@ -38,7 +38,6 @@ export type ByosanFailureClassification = {
 	rate_limit_terms: string[];
 	auth_terms: string[];
 	mcp_noise_terms: string[];
-	transient_max_retries: number;
 };
 
 export function byosanFailureClassification(): ByosanFailureClassification {

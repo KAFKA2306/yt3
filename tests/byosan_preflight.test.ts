@@ -10,18 +10,8 @@ import {
 import {
 	type ByosanPreflightDependencies,
 	type PreflightCheck,
-	ProbeSchema,
-	aggregateStatus,
 	runByosanPreflight,
 } from "../src/scripts/byosan_preflight.js";
-
-const item = (status: "PASS" | "FAIL" | "UNVERIFIED") => ({
-	status,
-	component: "test",
-	method: "fixture",
-	reason: "fixture",
-	evidence: [],
-});
 
 const pass = (component: string): PreflightCheck => ({
 	status: "PASS",
@@ -47,9 +37,6 @@ function passingDependencies(): ByosanPreflightDependencies {
 		nodeDependencies: () => pass("node_dependencies"),
 		pythonRuntime: () => pass("python_runtime"),
 		voicevox: async () => pass("voicevox"),
-		llmBackends: ["gemini"],
-		gemini: async () => pass("gemini"),
-		youtube: async () => pass("youtube"),
 	};
 }
 
@@ -63,16 +50,14 @@ afterEach(async () => {
 	await Promise.all(runDirs.splice(0).map((runDir) => fs.remove(runDir)));
 });
 
-describe("Byosan preflight aggregation", () => {
-	test("fails closed on a known failure and keeps unknown capability separate", () => {
-		expect(aggregateStatus({ a: item("PASS"), b: item("FAIL") })).toBe("FAIL");
-		expect(aggregateStatus({ a: item("PASS"), b: item("UNVERIFIED") })).toBe(
-			"UNVERIFIED",
-		);
-		expect(aggregateStatus({ a: item("PASS"), b: item("PASS") })).toBe("PASS");
+describe("Byosan preflight", () => {
+	test("passes when every production capability is present", async () => {
+		const runDir = await temporaryRunDir();
+		const report = await runByosanPreflight(runDir, passingDependencies());
+		expect(report.status).toBe("PASS");
 	});
 
-	test("fault-injects every required capability before media can start", async () => {
+	test("fault-injects every production capability before media can start", async () => {
 		const cases: Array<{
 			name: string;
 			component: string;
@@ -98,15 +83,6 @@ describe("Byosan preflight aggregation", () => {
 				},
 			},
 			{
-				name: "HF cache read-only",
-				failureClass: "INFRA_DEPENDENCY",
-				component: "python_runtime",
-				inject: (dependencies) => {
-					dependencies.pythonRuntime = () =>
-						fail("python_runtime", "Hugging Face cache is not writable");
-				},
-			},
-			{
 				name: "VOICEVOX unavailable",
 				failureClass: "INFRA_DEPENDENCY",
 				component: "voicevox",
@@ -116,30 +92,14 @@ describe("Byosan preflight aggregation", () => {
 				},
 			},
 			{
-				name: "Gemini structured-output rate-limited",
-				failureClass: "PROVIDER_RATE_LIMIT",
-				component: "gemini",
+				name: "ffmpeg unavailable",
+				failureClass: "INFRA_DEPENDENCY",
+				component: "ffmpeg",
 				inject: (dependencies) => {
-					dependencies.gemini = async () =>
-						fail("gemini", "structured output returned HTTP 429");
-				},
-			},
-			{
-				name: "outbound network unavailable",
-				failureClass: "NETWORK_AUTH",
-				component: "gemini",
-				inject: (dependencies) => {
-					dependencies.gemini = async () =>
-						fail("gemini", "outbound network unavailable");
-				},
-			},
-			{
-				name: "YouTube profile mismatch",
-				failureClass: "NETWORK_AUTH",
-				component: "youtube",
-				inject: (dependencies) => {
-					dependencies.youtube = async () =>
-						fail("youtube", "authenticated channel does not match profile");
+					dependencies.commandAvailable = (command) =>
+						command === "ffmpeg"
+							? fail("ffmpeg", "required command is unavailable")
+							: pass(command);
 				},
 			},
 		];

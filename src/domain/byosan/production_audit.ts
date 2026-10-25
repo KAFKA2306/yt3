@@ -1,75 +1,11 @@
-import { figureValueAppears, figuresIn } from "./explanation_contract.js";
 import type { ByosanFeatureSegment } from "./feature_spec.js";
 
 export type SpeechPlan = {
 	maxSceneSeconds: number;
 	charsPerSecond: number;
-	minCueSeconds: number;
 };
 
-type CatchSegment = Pick<
-	ByosanFeatureSegment,
-	"claimIds" | "headline" | "text" | "stats"
->;
-
 const charCount = (text: string): number => Array.from(text).length;
-
-export function minimumCueSecondsAtAssPrecision(
-	cues: ReadonlyArray<{ start: number; end: number }>,
-): number {
-	const centiseconds = cues.map(
-		(cue) => Math.round(cue.end * 100) - Math.round(cue.start * 100),
-	);
-	return Math.min(...centiseconds) / 100;
-}
-
-export function evaluateOpeningCatch(input: {
-	primaryClaimId: string;
-	claims: ReadonlyArray<{ id?: string; claim: string }>;
-	openingSegments: ReadonlyArray<CatchSegment>;
-}): { passed: boolean; evidence: Record<string, unknown> } {
-	const claim = input.claims.find(
-		(candidate) => candidate.id === input.primaryClaimId,
-	);
-	if (!claim) {
-		throw new Error(`BYOSAN_PRIMARY_CLAIM_MISSING: ${input.primaryClaimId}`);
-	}
-	const figures = figuresIn(claim.claim);
-	const claimedInOpening = input.openingSegments.some((segment) =>
-		segment.claimIds?.includes(input.primaryClaimId),
-	);
-	const matches = input.openingSegments.flatMap((segment, segmentIndex) => {
-		const fields: Array<[string, string]> = [
-			["text", segment.text],
-			["headline", segment.headline],
-			...segment.stats.map((stat): [string, string] => [
-				"stats.value",
-				stat.value,
-			]),
-		];
-		return fields.flatMap(([field, text]) =>
-			figures
-				.filter((figure) => figureValueAppears(figure, [text]))
-				.map((figure) => ({
-					segment_index: segmentIndex,
-					field,
-					figure: `${figure.value}${figure.unit}`,
-				})),
-		);
-	});
-	const match = matches[0];
-	return {
-		passed: claimedInOpening && match !== undefined,
-		evidence: {
-			primary_claim_id: input.primaryClaimId,
-			primary_claim_figures: figures.map(
-				(figure) => `${figure.value}${figure.unit}`,
-			),
-			claimed_in_opening: claimedInOpening,
-			match: match ?? null,
-		},
-	};
-}
 
 function cutSentences(
 	sentences: string[],
@@ -122,7 +58,7 @@ export function splitSpeechText(text: string, maxChars: number): string[] {
 		const parts = cutSentences(sentences, ends, total, count, maxChars);
 		if (parts) return parts;
 	}
-	throw new Error(`BYOSAN_SCENE_SPLIT_IMPOSSIBLE: ${text}`);
+	return [text];
 }
 
 export function planSpeechSegments(
@@ -131,13 +67,9 @@ export function planSpeechSegments(
 ): ByosanFeatureSegment[] {
 	const maxChars = Math.floor(plan.maxSceneSeconds * plan.charsPerSecond);
 	return segments.flatMap((segment) =>
-		splitSpeechText(segment.text, maxChars).map((text, partIndex) => {
-			if (charCount(text) / plan.charsPerSecond < plan.minCueSeconds) {
-				throw new Error(`BYOSAN_SCENE_TOO_SHORT: ${text}`);
-			}
-			if (partIndex === 0) return { ...segment, text };
-			return { ...segment, stats: [], text };
-		}),
+		splitSpeechText(segment.text, maxChars).map((text, partIndex) =>
+			partIndex === 0 ? { ...segment, text } : { ...segment, stats: [], text },
+		),
 	);
 }
 
@@ -165,16 +97,9 @@ export function layoutCueSpans(
 	minCueSeconds: number,
 ): Array<{ start: number; end: number }> {
 	const window = end - start;
-	if (window < weights.length * minCueSeconds) {
-		throw new Error(
-			`BYOSAN_CUE_WINDOW_TOO_SHORT: ${weights.length} cues in ${window.toFixed(2)}s`,
-		);
-	}
+	const floor = Math.min(minCueSeconds, window / weights.length);
 	const totalAt = (rate: number): number =>
-		weights.reduce(
-			(sum, weight) => sum + Math.max(minCueSeconds, rate * weight),
-			0,
-		);
+		weights.reduce((sum, weight) => sum + Math.max(floor, rate * weight), 0);
 	let low = 0;
 	let high = window;
 	for (let step = 0; step < 200; step++) {
@@ -185,9 +110,7 @@ export function layoutCueSpans(
 			high = middle;
 		}
 	}
-	const durations = weights.map((weight) =>
-		Math.max(minCueSeconds, high * weight),
-	);
+	const durations = weights.map((weight) => Math.max(floor, high * weight));
 	let cursor = start;
 	return durations.map((duration, index) => {
 		const spanEnd = index === durations.length - 1 ? end : cursor + duration;

@@ -224,15 +224,13 @@ const FeatureProductionSchema = z.object({
 		audio_codec: nonEmptyString,
 		min_output_bitrate_bps: positiveInteger,
 		max_scene_seconds: positiveInteger,
-		opening_segment_count: positiveInteger,
-		min_thumbnail_bytes: positiveInteger,
+		duration_tolerance_seconds: nonNegativeNumber,
 		black_min_seconds: nonNegativeNumber,
 		black_pixel_threshold: nonNegativeNumber,
 		freeze_noise_db: z.number(),
 		freeze_min_seconds: nonNegativeNumber,
 		defect_log_max_lines: positiveInteger,
 		ffmpeg_max_buffer_bytes: positiveInteger,
-		forbidden_motion_terms: stringList,
 		voice_register: VoiceRegisterSchema,
 	}),
 });
@@ -295,6 +293,5 @@ export function getByosanSpeechPlan(): SpeechPlan {
 	return {
 		maxSceneSeconds: config.feature_production.audit.max_scene_seconds,
 		charsPerSecond: config.scenes.chars_per_second,
-		minCueSeconds: config.feature_production.captions.min_cue_seconds,
 	};
 }
