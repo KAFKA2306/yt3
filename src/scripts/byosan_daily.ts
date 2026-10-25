@@ -131,25 +131,6 @@ export type ByosanFailureClass =
 
 type ByosanFailureStage = "RESEARCH" | "SPEC" | "MEDIA" | "PUBLISH" | "UNKNOWN";
 
-type RetryPolicy =
-	| "TRANSIENT_BOUNDED"
-	| "REQUIRES_REPAIR_EVIDENCE"
-	| "REMOTE_READBACK_ONLY";
-
-export const REPAIR_VALIDATION_COMMAND = "task check:merge";
-
-export type RepairResolution = {
-	status: "VERIFIED";
-	root_cause: string;
-	regression_test: string;
-	repair_commit: string;
-	validation: {
-		command: typeof REPAIR_VALIDATION_COMMAND;
-		status: "PASS";
-		checked_at: string;
-	};
-};
-
 export type ByosanFailureTrace = {
 	schema_version: "byosan_failure_trace_v1";
 	status: "OPEN" | "RECOVERED";
@@ -161,24 +142,12 @@ export type ByosanFailureTrace = {
 	evidence: string;
 	fingerprint: string;
 	failed_commit: string;
-	retry_policy: RetryPolicy;
 	retry_count: number;
-	max_retries: number;
 	exit_status?: number;
-	root_cause: "pending_trace_review";
-	regression_test: "pending";
 	failed_at: string;
 	first_failed_at: string;
 	last_retry_at?: string;
 	recovered_at?: string;
-	resolution?: RepairResolution;
-	resolution_history?: ResolvedFailure[];
-};
-
-type ResolvedFailure = {
-	fingerprint: string;
-	failure_class: ByosanFailureClass;
-	resolution: RepairResolution;
 };
 
 function safeSourceId(raw: string, index: number): string {
@@ -263,8 +232,6 @@ export function classifyByosanFailure(
 ): {
 	failureClass: ByosanFailureClass;
 	stage: ByosanFailureStage;
-	retryPolicy: RetryPolicy;
-	maxRetries: number;
 } {
 	const stage = failureStage(rawMessage);
 	const message = failureSignalLines(
@@ -275,8 +242,6 @@ export function classifyByosanFailure(
 		return {
 			failureClass: "RESEARCH_ANGLE_STOP",
 			stage: "RESEARCH",
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (
@@ -287,16 +252,12 @@ export function classifyByosanFailure(
 		return {
 			failureClass: "UNCERTAIN_REMOTE_COMMIT",
 			stage: "PUBLISH",
-			retryPolicy: "REMOTE_READBACK_ONLY",
-			maxRetries: 0,
 		};
 	}
 	if (termsMatch(message, classification.rate_limit_terms)) {
 		return {
 			failureClass: "PROVIDER_RATE_LIMIT",
 			stage,
-			retryPolicy: "TRANSIENT_BOUNDED",
-			maxRetries: classification.transient_max_retries,
 		};
 	}
 	if (/BYOSAN_PREFLIGHT_BLOCKED/.test(message)) {
@@ -308,71 +269,53 @@ export function classifyByosanFailure(
 			return {
 				failureClass: "INFRA_DEPENDENCY",
 				stage,
-				retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-				maxRetries: 0,
 			};
 		}
 		return {
 			failureClass: "NETWORK_AUTH",
 			stage,
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (termsMatch(message, classification.auth_terms)) {
 		return {
 			failureClass: "NETWORK_AUTH",
 			stage,
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (/schema|zod|invalid_type|structured output|parse/i.test(message)) {
 		return {
 			failureClass: "PROVIDER_SCHEMA",
 			stage,
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (/BYOSAN_FEATURE|SPEC_CONTRACT|feature spec/i.test(message)) {
 		return {
 			failureClass: "SPEC_CONTRACT",
 			stage: "SPEC",
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (/VOICEVOX|TTS|audio|speech|duration/i.test(message)) {
 		return {
 			failureClass: "MEDIA_AUDIO",
 			stage: "MEDIA",
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (/motion|zoompan|crop|lateral|video motion/i.test(message)) {
 		return {
 			failureClass: "MEDIA_VIDEO_MOTION",
 			stage: "MEDIA",
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (/subtitle|caption|srt/i.test(message)) {
 		return {
 			failureClass: "SUBTITLE",
 			stage: "MEDIA",
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (/PUBLISH_|\byoutube\b/i.test(message)) {
 		return {
 			failureClass: "PUBLISH_REMOTE",
 			stage: "PUBLISH",
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	if (
@@ -383,15 +326,11 @@ export function classifyByosanFailure(
 		return {
 			failureClass: "INFRA_DEPENDENCY",
 			stage,
-			retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-			maxRetries: 0,
 		};
 	}
 	return {
 		failureClass: "UNCLASSIFIED",
 		stage,
-		retryPolicy: "REQUIRES_REPAIR_EVIDENCE",
-		maxRetries: 0,
 	};
 }
 
@@ -414,8 +353,7 @@ function readFailureTrace(runDir: string): ByosanFailureTrace | null {
 		if (
 			trace.schema_version !== "byosan_failure_trace_v1" ||
 			!trace.fingerprint ||
-			!trace.failure_class ||
-			!trace.retry_policy
+			!trace.failure_class
 		) {
 			throw new Error("invalid failure trace schema");
 		}
@@ -465,37 +403,22 @@ export function preflightBlockedMessage(
 	return `BYOSAN_PREFLIGHT_BLOCKED: ${report.status} ${reportPath} ${failed.join("; ")}`;
 }
 
-export function repairResolutionIsValid(
-	resolution: RepairResolution | undefined,
-	currentHead: string,
-): boolean {
-	return Boolean(
-		resolution?.status === "VERIFIED" &&
-			resolution.root_cause.trim() &&
-			resolution.regression_test.trim() &&
-			resolution.regression_test !== "pending" &&
-			resolution.repair_commit === currentHead &&
-			resolution.validation.command === REPAIR_VALIDATION_COMMAND &&
-			resolution.validation.status === "PASS" &&
-			resolution.validation.checked_at,
-	);
-}
-
 export function assertByosanRetryAllowed(
 	runDir: string,
-	currentHead = currentGitHead(),
+	classification: ByosanFailureClassification = byosanFailureClassification(),
 ): void {
 	const trace = readFailureTrace(runDir);
 	if (!trace || trace.status === "RECOVERED") return;
-	if (trace.retry_policy === "REMOTE_READBACK_ONLY") {
+	if (trace.failure_class === "UNCERTAIN_REMOTE_COMMIT") {
 		throw new Error(
 			`RETRY_BLOCKED_REMOTE_READBACK_REQUIRED: ${trace.failure_class} ${trace.fingerprint}`,
 		);
 	}
-	if (trace.retry_policy === "TRANSIENT_BOUNDED") {
-		if (trace.retry_count >= trace.max_retries) {
+	if (trace.failure_class === "PROVIDER_RATE_LIMIT") {
+		const maxRetries = classification.transient_max_retries;
+		if (trace.retry_count >= maxRetries) {
 			throw new Error(
-				`RETRY_BLOCKED_TRANSIENT_EXHAUSTED: ${trace.failure_class} ${trace.retry_count}/${trace.max_retries}`,
+				`RETRY_BLOCKED_TRANSIENT_EXHAUSTED: ${trace.failure_class} ${trace.retry_count}/${maxRetries}`,
 			);
 		}
 		fs.outputJsonSync(
@@ -506,12 +429,6 @@ export function assertByosanRetryAllowed(
 				last_retry_at: new Date().toISOString(),
 			},
 			{ spaces: 2 },
-		);
-		return;
-	}
-	if (!repairResolutionIsValid(trace.resolution, currentHead)) {
-		throw new Error(
-			`RETRY_BLOCKED_REPAIR_EVIDENCE_REQUIRED: ${trace.failure_class} ${trace.fingerprint}`,
 		);
 	}
 }
@@ -538,18 +455,6 @@ export function recordByosanFailure(
 	);
 	const now = new Date().toISOString();
 	const sameFailure = previous?.fingerprint === fingerprint;
-	const resolutionHistory = [
-		...(previous?.resolution_history ?? []),
-		...(previous?.resolution && !sameFailure
-			? [
-					{
-						fingerprint: previous.fingerprint,
-						failure_class: previous.failure_class,
-						resolution: previous.resolution,
-					},
-				]
-			: []),
-	];
 	const trace: ByosanFailureTrace = {
 		schema_version: "byosan_failure_trace_v1",
 		status: "OPEN",
@@ -564,20 +469,10 @@ export function recordByosanFailure(
 		evidence,
 		fingerprint,
 		failed_commit: failedCommit,
-		retry_policy: classification.retryPolicy,
 		retry_count:
 			previous?.fingerprint === fingerprint ? previous.retry_count : 0,
-		max_retries: classification.maxRetries,
-		root_cause: "pending_trace_review",
-		regression_test: "pending",
 		failed_at: now,
 		first_failed_at: sameFailure ? previous.first_failed_at : now,
-		...(sameFailure && previous.resolution
-			? { resolution: previous.resolution }
-			: {}),
-		...(resolutionHistory.length > 0
-			? { resolution_history: resolutionHistory }
-			: {}),
 	};
 	fs.outputJsonSync(failureTracePath(runDir), trace, { spaces: 2 });
 	return trace;

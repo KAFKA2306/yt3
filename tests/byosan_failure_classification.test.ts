@@ -19,11 +19,9 @@ const geminiQuotaMessage =
 
 describe("Byosan failure classification", () => {
 	test("classifies today's codex usage-limit message as PROVIDER_RATE_LIMIT", () => {
-		expect(classifyByosanFailure(codexUsageLimitMessage)).toMatchObject({
-			failureClass: "PROVIDER_RATE_LIMIT",
-			retryPolicy: "TRANSIENT_BOUNDED",
-			maxRetries: byosanFailureClassification().transient_max_retries,
-		});
+		expect(classifyByosanFailure(codexUsageLimitMessage).failureClass).toBe(
+			"PROVIDER_RATE_LIMIT",
+		);
 	});
 
 	test.each([
