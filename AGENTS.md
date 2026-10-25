@@ -33,6 +33,10 @@ The owner has authorized autonomous daily publication for 夜話アーカイブ 
 - Numbers are handled as cards with metric, population, period, unit, actual/estimate/forecast distinction, and verbatim source quote. A number appearing in a source is not verified by itself; the meaning match is confirmed by independent verification.
 - Video visual rules follow `tokens/foundation.tokens.json` in `KAFKA2306/design` (imported at a pinned commit and derived mechanically). Adoption is in progress; the pinned commit and sha256 are owned by the import configuration under `config/design/`.
 
+### Prompt and constraint policy (byosan)
+
+Current Claude models follow prompts closely, so over-specified prompts and stacked checks degrade output instead of protecting it. Prompts state the goal and the facts that must hold, not the method. Rules that no code or audit enforces, numeric ceilings written for style, prohibition lists without a stated reason, repeated or incident-specific patches, and step-by-step scripts for judgment work are removed. A check that stops a daily run is limited to number and source integrity, the actual/estimate/forecast distinction, rights, a playable artifact, and the publication gates; every other quality heuristic is recorded as a warning in the run's `audit/` and does not stop the run. Quality is judged by persona panels on the produced script, not by adding checks.
+
 ## Evidence boundary
 
 Repository checks prove only the exact revision they executed. Product/runtime/publication are separate states and require direct evidence from the target artifact or service. Unchecked layers remain `UNVERIFIED`.
