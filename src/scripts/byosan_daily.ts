@@ -459,42 +459,49 @@ export async function generateFeatureSpec(
 		spec: ByosanFeatureSpec;
 	}[] = [];
 	let extra = "";
+	let skipped: string | null = null;
 	for (let round = 1; ; round++) {
-		const { parsed, spec } = await write(round, extra);
-		const script = spec.segments
-			.map((segment) => `${segment.speaker}: ${segment.text}`)
-			.join("\n");
-		const scored = await invokeCodexStructured({
-			llm,
-			logPath: codexLlmLogPath(runDir),
-			schema: PanelReviewSchema,
-			name: "byosan_panel_review",
-			exec,
-			maxAttempts: llm.max_attempts,
-			evidencePath: path.join(
-				runDir,
-				"audit",
-				`structured_panel_attempts_${round}.json`,
-			),
-			messages: (attempt, lastValidationError) => [
-				{
-					role: "user",
-					content: `${renderPanelReviewPrompt(panel, script)}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
-				},
-			],
-			validate: (value) => validatePanelReview(value, panel),
-		});
-		rounds.push({
-			round,
-			mean: meanScore(scored),
-			review: scored,
-			parsed,
-			spec,
-		});
-		if (meanScore(scored) >= panel.threshold || round >= panel.max_rounds) {
+		try {
+			const { parsed, spec } = await write(round, extra);
+			const script = spec.segments
+				.map((segment) => `${segment.speaker}: ${segment.text}`)
+				.join("\n");
+			const scored = await invokeCodexStructured({
+				llm,
+				logPath: codexLlmLogPath(runDir),
+				schema: PanelReviewSchema,
+				name: "byosan_panel_review",
+				exec,
+				maxAttempts: llm.max_attempts,
+				evidencePath: path.join(
+					runDir,
+					"audit",
+					`structured_panel_attempts_${round}.json`,
+				),
+				messages: (attempt, lastValidationError) => [
+					{
+						role: "user",
+						content: `${renderPanelReviewPrompt(panel, script)}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+					},
+				],
+				validate: (value) => validatePanelReview(value, panel),
+			});
+			rounds.push({
+				round,
+				mean: meanScore(scored),
+				review: scored,
+				parsed,
+				spec,
+			});
+			if (meanScore(scored) >= panel.threshold || round >= panel.max_rounds) {
+				break;
+			}
+			extra = `\n\n[前回の台本]\n${JSON.stringify(parsed)}\n\n[視聴者の評価（平均${meanScore(scored).toFixed(2)}点）]\n${renderPanelFeedback(scored)}\n\n${panel.rewrite_instruction}`;
+		} catch (error) {
+			if (rounds.length === 0) throw error;
+			skipped = `round ${round}: ${error instanceof Error ? error.message : String(error)}`;
 			break;
 		}
-		extra = `\n\n[前回の台本]\n${JSON.stringify(parsed)}\n\n[視聴者の評価（平均${meanScore(scored).toFixed(2)}点）]\n${renderPanelFeedback(scored)}\n\n${panel.rewrite_instruction}`;
 	}
 	const best = bestRound(rounds);
 	fs.outputJsonSync(
@@ -502,6 +509,7 @@ export async function generateFeatureSpec(
 		{
 			threshold: panel.threshold,
 			adopted_round: best.round,
+			skipped_round: skipped,
 			rounds: rounds.map(({ round, mean, review: reviews, parsed }) => ({
 				round,
 				mean,
