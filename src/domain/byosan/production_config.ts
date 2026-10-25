@@ -251,7 +251,11 @@ const ByosanProductionConfigSchema = z.object({
 		default_bucket: nonEmptyString,
 	}),
 	steps: z.object({
-		youtube: z.object({ max_title_length: positiveInteger }),
+		youtube: z.object({
+			max_title_length: positiveInteger,
+			max_description_length: positiveInteger,
+			max_tags_total_length: positiveInteger,
+		}),
 	}),
 	providers: z.object({
 		tts: z.object({

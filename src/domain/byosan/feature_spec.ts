@@ -24,8 +24,8 @@ const ByosanAdversarialEvidenceSchema = z.object({
 		"source_limitation",
 		"no_counter_evidence",
 	]),
-	targetClaim: z.string().min(8),
-	statement: z.string().min(8),
+	targetClaim: z.string().min(1),
+	statement: z.string().min(1),
 	sourceIds: z.array(z.string().min(1)).min(1),
 	checkedSourceIds: z.array(z.string().min(1)).min(1),
 });
@@ -39,18 +39,18 @@ export const ByosanProductionFormatSchema = z.enum([
 
 const ByosanProductionPlanSchema = z.object({
 	format: ByosanProductionFormatSchema,
-	targetMinutes: z.number().min(3).max(15),
-	minSegments: z.number().int().min(12).max(40),
-	maxSegments: z.number().int().min(12).max(40),
+	targetMinutes: z.number(),
+	minSegments: z.number().int(),
+	maxSegments: z.number().int(),
 	reasons: z.array(z.string().min(1)).min(1),
 });
 
 const ByosanStatColorSchema = z.enum(["cyan", "amber", "white", "muted"]);
 
 const ByosanFeatureStatSchema = z.object({
-	label: z.string().min(1).max(30),
+	label: z.string().min(1),
 	value: z.string().min(1).max(24),
-	detail: z.string().min(1).max(40),
+	detail: z.string().min(1),
 	color: ByosanStatColorSchema,
 });
 
@@ -68,8 +68,6 @@ const ByosanVerificationRoleSchema = z.enum([
 	"landing",
 ]);
 
-export const SEGMENT_CLAIM_IDS_MAX = 6;
-
 export const ByosanFeatureSegmentSchema = z.object({
 	narrativeRole: ByosanNarrativeRoleSchema.optional(),
 	verificationRole: ByosanVerificationRoleSchema.optional(),
@@ -77,8 +75,8 @@ export const ByosanFeatureSegmentSchema = z.object({
 		.string()
 		.regex(/^[a-z0-9_]+$/)
 		.optional(),
-	claimIds: z.array(z.string().min(1)).max(SEGMENT_CLAIM_IDS_MAX).optional(),
-	evidenceIds: z.array(z.string().min(1)).max(6).optional(),
+	claimIds: z.array(z.string().min(1)).optional(),
+	evidenceIds: z.array(z.string().min(1)).optional(),
 	speaker: z.enum(["春日部つむぎ", "ずんだもん"]),
 	emotion: z.enum([
 		"shock",
@@ -92,18 +90,18 @@ export const ByosanFeatureSegmentSchema = z.object({
 		"serious",
 		"joy",
 	]),
-	section: z.string().min(2).max(44),
-	headline: z.string().min(2).max(34),
-	subheadline: z.string().min(2).max(52),
-	visualType: z.string().min(2).max(30),
-	stats: z.array(ByosanFeatureStatSchema).min(0).max(3),
-	source: z.string().min(2).max(80),
-	text: z.string().min(18).max(320),
+	section: z.string().min(1),
+	headline: z.string().min(1).max(34),
+	subheadline: z.string().min(1),
+	visualType: z.string().min(1),
+	stats: z.array(ByosanFeatureStatSchema).max(3),
+	source: z.string().min(2),
+	text: z.string().min(1),
 });
 
 export const ByosanFeatureSourceSchema = z.object({
 	id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
-	name: z.string().min(2),
+	name: z.string().min(1),
 	url: z.string().url(),
 	tier: ByosanSourceTierSchema.optional(),
 });
@@ -113,23 +111,23 @@ export const ByosanFeatureClaimSchema = z.object({
 		.string()
 		.regex(/^[a-zA-Z0-9_-]+$/)
 		.optional(),
-	claim: z.string().min(8),
+	claim: z.string().min(1),
 	sourceIds: z.array(z.string().min(1)).min(1),
 	status: z.enum([
 		"verified",
 		"derived_with_caveat",
 		"analyst_estimate_not_company_non_gaap",
 	]),
-	assumptions: z.array(z.string().min(3)).max(6).optional(),
-	caveat: z.string().min(3).max(240).optional(),
+	assumptions: z.array(z.string().min(1)).optional(),
+	caveat: z.string().min(1).optional(),
 	confidence: z.number().min(0).max(1).optional(),
-	unresolvedMismatches: z.array(z.string().min(5).max(180)).max(6).optional(),
-	epistemicBoundary: z.string().min(8).max(180).optional(),
+	unresolvedMismatches: z.array(z.string().min(1)).optional(),
+	epistemicBoundary: z.string().min(1).optional(),
 });
 
 const ByosanPackagingSchema = z.object({
 	primaryClaimId: z.string().min(1),
-	claimIds: z.array(z.string().min(1)).min(1).max(6),
+	claimIds: z.array(z.string().min(1)).min(1),
 	freshness: z
 		.object({
 			claimId: z.string().min(1),
@@ -142,17 +140,17 @@ const ByosanPackagingSchema = z.object({
 	relativeAnchor: z
 		.object({
 			claimId: z.string().min(1),
-			comparator: z.string().min(2).max(80),
-			period: z.string().min(2).max(80),
+			comparator: z.string().min(1),
+			period: z.string().min(1),
 		})
 		.optional(),
 	impactClaimId: z.string().min(1).optional(),
 });
 
 const ByosanNarrativeSchema = z.object({
-	hiddenMechanism: z.string().min(12),
-	counterfactual: z.string().min(12),
-	audiencePayoff: z.string().min(8),
+	hiddenMechanism: z.string().min(1),
+	counterfactual: z.string().min(1),
+	audiencePayoff: z.string().min(1),
 });
 
 export const ByosanThumbnailSchema = z.object({
@@ -169,28 +167,25 @@ export const ByosanFeatureSpecSchema = z.object({
 	schemaVersion: z.literal("byosan_feature_v1"),
 	runId: z.string().regex(/^byosan_money\/\d{4}-\d{2}-\d{2}[a-zA-Z0-9_-]*$/),
 	asOf: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-	angle: z.string().min(12),
-	searchQuery: z.string().min(5),
-	title: z.string().min(10).max(100),
-	thumbnailTitle: z.string().min(4).max(42),
+	angle: z.string().min(1),
+	searchQuery: z.string().min(1),
+	title: z.string().min(1).max(100),
+	thumbnailTitle: z.string().min(1),
 	thumbnail: ByosanThumbnailSchema,
-	descriptionLead: z.string().min(30).max(500),
-	descriptionBullets: z.array(z.string().min(8).max(180)).min(3).max(8),
-	disclaimer: z.string().min(20).max(400),
-	hookPromises: z.array(z.string().min(1)).max(4).optional(),
+	descriptionLead: z.string().min(1),
+	descriptionBullets: z.array(z.string().min(1)).min(1),
+	disclaimer: z.string().min(1),
+	hookPromises: z.array(z.string().min(1)).optional(),
 	production: ByosanProductionPlanSchema.optional(),
 	packaging: ByosanPackagingSchema.optional(),
 	narrative: ByosanNarrativeSchema.optional(),
-	adversarialEvidence: z
-		.array(ByosanAdversarialEvidenceSchema)
-		.max(10)
-		.optional(),
-	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).max(8).optional(),
-	noveltyQueries: z.array(z.string().min(8).max(180)).min(2).max(5),
-	tags: z.array(z.string().min(1).max(30)).min(5).max(15),
-	sources: z.array(ByosanFeatureSourceSchema).min(2).max(12),
-	claims: z.array(ByosanFeatureClaimSchema).min(3).max(18),
-	segments: z.array(ByosanFeatureSegmentSchema).min(12).max(40),
+	adversarialEvidence: z.array(ByosanAdversarialEvidenceSchema).optional(),
+	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).optional(),
+	noveltyQueries: z.array(z.string().min(1)).min(1),
+	tags: z.array(z.string().min(1).max(30)),
+	sources: z.array(ByosanFeatureSourceSchema).min(2),
+	claims: z.array(ByosanFeatureClaimSchema).min(1),
+	segments: z.array(ByosanFeatureSegmentSchema).min(1),
 });
 
 const BYOSAN_BRAND_TAG = "秒算マネー";
@@ -201,7 +196,7 @@ export function ensureByosanBrandTag(
 	return [
 		BYOSAN_BRAND_TAG,
 		...(tags ?? []).filter((tag) => tag !== BYOSAN_BRAND_TAG),
-	].slice(0, 15);
+	];
 }
 
 export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
@@ -215,21 +210,14 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	activeProbes: true,
 	tags: true,
 }).extend({
-	hookPromises: z.array(z.string().min(1)).max(4).optional(),
-	tags: z.array(z.string().min(1).max(30)).min(4).max(14).optional(),
-	claims: z
-		.array(
-			ByosanFeatureClaimSchema.extend({
-				id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
-			}),
-		)
-		.min(3)
-		.max(18),
+	tags: z.array(z.string().min(1).max(30)).optional(),
+	claims: z.array(
+		ByosanFeatureClaimSchema.extend({
+			id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
+		}),
+	),
 	packaging: ByosanPackagingSchema,
-	sources: z
-		.array(ByosanFeatureSourceSchema.omit({ tier: true }))
-		.min(2)
-		.max(12),
+	sources: z.array(ByosanFeatureSourceSchema.omit({ tier: true })).min(2),
 	explanation: ExplanationSchema,
 });
 

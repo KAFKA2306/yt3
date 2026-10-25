@@ -44,14 +44,16 @@ describe("planSpeechSegments", () => {
 		expect(parts[1]?.stats).toEqual([]);
 	});
 
-	test("keeps a segment whole when no sentence boundary fits the limit", () => {
+	test("splits a segment without sentence boundaries into parts within the limit", () => {
 		const text = "句点のない長い台詞がそのまま続く".repeat(6);
-		expect(
-			planSpeechSegments([segment({ text })], {
-				maxSceneSeconds: 5,
-				charsPerSecond: 4,
-			}),
-		).toEqual([segment({ text })]);
+		const parts = planSpeechSegments([segment({ text })], {
+			maxSceneSeconds: 5,
+			charsPerSecond: 4,
+		});
+		expect(parts.map((part) => part.text).join("")).toBe(text);
+		expect(parts.every((part) => Array.from(part.text).length <= 20)).toBe(
+			true,
+		);
 	});
 });
 
