@@ -11,4 +11,4 @@ RestartSec=300
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
 Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/snap/bin:/usr/lib/wsl/lib:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
-ExecStart=/usr/bin/bash -c 'exec >> logs/humanity_music_daily.log 2>&1; bun src/scripts/humanity_music.ts full || task humanity:music-daily DATE=$(date +%%F) SLOT=$(date +%%H%%M) || { DISCORD_ALERT_TYPE=audit_fail DISCORD_ALERT_MESSAGE="Humanity music daily failed" bun src/scripts/send_discord_alert.ts; exit 1; }'
+ExecStart=/usr/bin/flock -w 3600 %h/.cache/yt3-humanity-music.lock /usr/bin/bash -c 'exec >> logs/humanity_music_daily.log 2>&1; bun src/scripts/humanity_music.ts full || task humanity:music-daily DATE=$(date +%%F) SLOT=$(date +%%H%%M) || { DISCORD_ALERT_TYPE=audit_fail DISCORD_ALERT_MESSAGE="Humanity music daily failed" bun src/scripts/send_discord_alert.ts; exit 1; }'
