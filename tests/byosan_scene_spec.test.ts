@@ -57,6 +57,22 @@ describe("byosan scene spec", () => {
 		).toEqual([]);
 	});
 
+	test("falls back to stat cards when a stat carries a qualifier instead of a plain number", () => {
+		const index = source.segments.findIndex(
+			(segment) => segment.stats.length === 1,
+		);
+		const qualified = withSegment(index, {
+			stats: (source.segments[index]?.stats ?? []).map((stat) => ({
+				...stat,
+				value: "more than 40%",
+			})),
+		});
+		const kinds = compileScenes(qualified, explanation, config).map(
+			(scene) => scene.visual.kind,
+		);
+		expect(kinds).not.toContain("bignumber");
+	});
+
 	test("reports value references and claim ids that do not resolve", () => {
 		const scenes = compileScenes(source, explanation, config);
 		const bignumber = scenes[1];

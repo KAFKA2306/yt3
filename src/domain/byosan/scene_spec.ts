@@ -82,6 +82,7 @@ const ByosanSceneConditionSchema = z
 		shared_unit: z.boolean().optional(),
 		figure_count_min: z.number().int().min(0).optional(),
 		figures_cover_stats: z.boolean().optional(),
+		numeric_values: z.boolean().optional(),
 		distinct_periods_min: z.number().int().min(0).optional(),
 		distinct_metrics_max: z.number().int().min(0).optional(),
 	})
@@ -131,6 +132,7 @@ type SegmentFeatures = {
 	sharedUnit: boolean;
 	figureCount: number;
 	figuresCoverStats: boolean;
+	numericValues: boolean;
 	distinctPeriods: number;
 	distinctMetrics: number;
 };
@@ -166,6 +168,9 @@ function segmentFeatures(
 		figuresCoverStats: segment.stats.every(
 			(stat) => figureIndexOf(figures, stat.value) >= 0,
 		),
+		numericValues: segment.stats.every((stat) =>
+			/^[+\-−]?\d/u.test(normalizeValue(stat.value)),
+		),
 		distinctPeriods: new Set(matched.map((figure) => figure.period)).size,
 		distinctMetrics: new Set(matched.map((figure) => figure.metric)).size,
 	};
@@ -187,6 +192,8 @@ function matchesCondition(
 			features.figureCount >= when.figure_count_min,
 		when.figures_cover_stats === undefined ||
 			features.figuresCoverStats === when.figures_cover_stats,
+		when.numeric_values === undefined ||
+			features.numericValues === when.numeric_values,
 		when.distinct_periods_min === undefined ||
 			features.distinctPeriods >= when.distinct_periods_min,
 		when.distinct_metrics_max === undefined ||
