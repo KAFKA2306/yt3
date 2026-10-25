@@ -8,6 +8,8 @@
 - `yawa`: 夜話アーカイブ ASMR
 - `humanity`: 雨晴はうの人類観測所
 
+`humanity` has `docs/humanity/MISSION.md` (editorial direction) and `docs/humanity/SOUL.md` (character); `byosan` has `docs/byosan/MISSION.md`.
+
 Keep each product's config, media, credentials, receipts, and publication state separate. Work on one product must not change another product's files, configuration, timers, or GPU assumptions.
 
 ## Canonical commands
@@ -45,6 +47,7 @@ The byosan topic and script come from one LLM call over the full bodies of the d
 ## Evidence and credentials
 
 - Repository checks prove only the revision they executed. Product, runtime, and publication states need direct evidence; unchecked layers stay UNVERIFIED.
+- Every factual claim the user makes is checked each time by web search against official sources before it is used in a decision, document, or config. Unverified claims are labeled UNVERIFIED, never adopted as fact.
 - Do not fill in missing inputs or failures with fallback output that looks like success.
 - Execution runs as the `kafka` account, never as root or with `sudo`.
 - Do not read out or display `.env` files, tokens, OAuth credentials, or contact details. Scripts check only whether a value is present. An empty value must not overwrite a non-empty one.
