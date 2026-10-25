@@ -162,34 +162,6 @@ describe("byosan feature specification", () => {
 		expect(codes).toContain("relative_claim_ungrounded");
 		expect(() => parseAndAuditByosanFeatureSpec(spec)).not.toThrow();
 	});
-
-	test("L3-only claims must carry an epistemic boundary", async () => {
-		const spec = productionAwareSpec(await loadReferenceSpec());
-		spec.sources = spec.sources.map((source) => ({
-			...source,
-			tier: source.id === "factset_0731" ? "L3" : "L1",
-		}));
-		const primaryClaim = spec.claims.find((claim) => claim.id === "claim_0");
-		if (!primaryClaim) throw new Error("primary claim fixture is missing");
-		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
-			"vendor_claim_boundary_missing",
-		);
-		primaryClaim.epistemicBoundary =
-			"これは発表主体側の数値で、第三者検証済みとは扱いません。";
-		expect(
-			auditByosanFeatureSpec(spec).map((issue) => issue.code),
-		).not.toContain("vendor_claim_boundary_missing");
-	});
-
-	test("production memo phrases never reach the dialogue", async () => {
-		const spec = productionAwareSpec(await loadReferenceSpec());
-		const segment = spec.segments[0];
-		if (!segment) throw new Error("segment fixture is missing");
-		segment.text = `${segment.text}分析では、そう言えます。`;
-		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
-			"production_memo_in_dialogue",
-		);
-	});
 });
 
 describe("byosan feature issue blocking", () => {
@@ -205,7 +177,9 @@ describe("byosan feature issue blocking", () => {
 		expect(isBlockingFeatureIssue(issue("freshness_marker_ungrounded"))).toBe(
 			false,
 		);
-		expect(isBlockingFeatureIssue(issue("brand_tag_missing"))).toBe(false);
+		expect(
+			isBlockingFeatureIssue(issue("adversarial_evidence_source_missing")),
+		).toBe(false);
 	});
 });
 

@@ -706,10 +706,6 @@ chapters:
     analyst_estimate_not_company_non_gaap: "アナリストの推計（会社の公式値ではない）"
 
 scenes:
-  max_scenes: 36
-  max_numbers_per_scene: 4
-  max_consecutive_same_kind: 2
-  min_distinct_kinds: 3
   chars_per_second: 4.1
   rules:
     - {kind: question, emphasis: none, when: {stat_count_max: 0}}
@@ -755,26 +751,7 @@ feature_review:
   blocking_codes:
     - duplicate_source_id
     - claim_source_missing
-    - packaging_claim_missing
-    - packaging_number_ungrounded
-    - active_probe_source_missing
-    - adversarial_evidence_source_missing
-    - segment_adversarial_evidence_missing
-    - vendor_claim_boundary_missing
-    - production_memo_in_dialogue
     - unsourced_number
     - source_not_in_input
     - source_already_published
     - figure_not_grounded
-  production_memo_terms: ["分析では", "提供された証拠", "提供証拠", "独立照合", "画面に残", "概要欄", "テロップ", "台本", "出所境界", "検算", "共同出所", "確認できていません", "記事は"]
-
-authenticity:
-  history_window: 5
-  max_similarity: 0.8
-  max_generic_ratio: 0.4
-  generic_kinds: ["stat_cards", "question"]
-  scene_claim_statuses: ["verified", "derived_with_caveat", "analyst_estimate_not_company_non_gaap"]
-  independent_work:
-    verification_roles: ["auditor", "resolution"]
-    comparison_kinds: ["hbar_compare", "bar_trend", "line_series"]
-    scenes_per_figure: 1

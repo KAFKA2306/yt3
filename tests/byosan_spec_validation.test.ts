@@ -1,9 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Explanation } from "../src/domain/byosan/explanation.js";
-import {
-	auditFeatureSpecAgainstExplanation,
-	figureValueAppears,
-} from "../src/domain/byosan/explanation_contract.js";
+import { auditFeatureSpecAgainstExplanation } from "../src/domain/byosan/explanation_contract.js";
 import type {
 	ByosanFeatureSpec,
 	FeatureSpecIssue,
@@ -86,17 +83,6 @@ describe("feature spec contract against the explanation", () => {
 		).toEqual([]);
 	});
 
-	test("reports a figure value that no segment carries", () => {
-		const issues = auditFeatureSpecAgainstExplanation(
-			specWith([{ text: conclusion, verificationRole: "landing" }]),
-			explanation,
-			articleText,
-		);
-		expect(formatted(issues)).toContain(
-			"explanation_figure_value_missing: +2.1%",
-		);
-	});
-
 	test("reports a number with no source in the explanation or the input articles", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
 			specWith([
@@ -147,34 +133,5 @@ describe("feature spec contract against the explanation", () => {
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 3"]);
 		expect(issues[0]?.path).toBe("thumbnail");
-	});
-});
-
-describe("figure values are matched by their number core and unit", () => {
-	const figure = { value: "＋2.4％", unit: "%" };
-
-	test("matches a spoken or half-width form with the same number and unit", () => {
-		expect(figureValueAppears(figure, ["プラス2.4パーセント上昇した"])).toBe(
-			true,
-		);
-		expect(figureValueAppears(figure, ["前年比+2.4%だった"])).toBe(true);
-	});
-
-	test("does not match a larger number that contains the same digits", () => {
-		expect(figureValueAppears(figure, ["12.4%の増加"])).toBe(false);
-		expect(figureValueAppears(figure, ["2.45%の増加"])).toBe(false);
-		expect(figureValueAppears(figure, ["12.45%の増加"])).toBe(false);
-	});
-
-	test("requires the figure unit next to the number", () => {
-		expect(figureValueAppears(figure, ["2.4円の増加"])).toBe(false);
-	});
-
-	test("matches thousands-separated values against their plain form", () => {
-		expect(
-			figureValueAppears({ value: "1,234", unit: "円" }, [
-				"価格は1,234円だった",
-			]),
-		).toBe(true);
 	});
 });

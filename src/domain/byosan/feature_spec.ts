@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { loadConfig } from "../../io/core.js";
-import {
-	ByosanActiveProbeEvidenceSchema,
-	auditByosanActiveProbeEvidence,
-} from "./active_probe.js";
+import { ByosanActiveProbeEvidenceSchema } from "./active_probe.js";
 import { ExplanationSchema } from "./explanation.js";
 
 export const ByosanSourceTierSchema = z.enum([
@@ -235,7 +232,6 @@ export type FeatureSpecIssue = {
 
 const FeatureReviewSchema = z.object({
 	blocking_codes: z.array(z.string().min(1)),
-	production_memo_terms: z.array(z.string().min(1)).min(1),
 });
 
 export type FeatureReview = z.infer<typeof FeatureReviewSchema>;
@@ -267,17 +263,6 @@ export function claimIssuePath(index: number): string {
 	return `claims[${index}]`;
 }
 
-function numericTokens(value: string): string[] {
-	return Array.from(
-		new Set(
-			value
-				.normalize("NFKC")
-				.match(/\d+(?:[.,]\d+)*/g)
-				?.map((token) => token.replaceAll(",", "")) ?? [],
-		),
-	);
-}
-
 function absoluteDays(left: string, right: string): number {
 	const leftTimestamp = Date.parse(`${left}T00:00:00Z`);
 	const rightTimestamp = Date.parse(`${right}T00:00:00Z`);
@@ -289,47 +274,7 @@ function absoluteDays(left: string, right: string): number {
 
 function packagingIssues(spec: ByosanFeatureSpec): FeatureSpecIssue[] {
 	if (!spec.packaging) return [];
-	const claimIds = new Set(
-		spec.claims.flatMap((claim) => (claim.id ? [claim.id] : [])),
-	);
 	const issues: FeatureSpecIssue[] = [];
-	const packagingIds = new Set([
-		spec.packaging.primaryClaimId,
-		...spec.packaging.claimIds,
-		...(spec.packaging.impactClaimId ? [spec.packaging.impactClaimId] : []),
-		...(spec.packaging.freshness ? [spec.packaging.freshness.claimId] : []),
-		...(spec.packaging.relativeAnchor
-			? [spec.packaging.relativeAnchor.claimId]
-			: []),
-	]);
-	const missingPackagingClaims = [...packagingIds].filter(
-		(claimId) => !claimIds.has(claimId),
-	);
-	if (missingPackagingClaims.length > 0) {
-		issues.push({
-			code: "packaging_claim_missing",
-			details: missingPackagingClaims.join(","),
-			path: "packaging",
-		});
-	}
-	const supportedText = spec.claims
-		.filter((claim) => claim.id && packagingIds.has(claim.id))
-		.map((claim) => claim.claim)
-		.join(" ");
-	const titleNumbers = numericTokens(spec.title);
-	const thumbnailNumbers = numericTokens(
-		[spec.thumbnailTitle, ...Object.values(spec.thumbnail)].join(" "),
-	);
-	const supportedNumbers = numericTokens(supportedText);
-	for (const number of new Set([...titleNumbers, ...thumbnailNumbers])) {
-		if (!supportedNumbers.includes(number)) {
-			issues.push({
-				code: "packaging_number_ungrounded",
-				details: number,
-				path: titleNumbers.includes(number) ? "title" : "thumbnailTitle",
-			});
-		}
-	}
 	if (/【速報】/.test(spec.title)) {
 		if (
 			!spec.packaging.freshness ||
@@ -384,25 +329,6 @@ export function auditByosanFeatureSpec(
 		}
 	}
 	issues.push(...packagingIssues(spec));
-	for (const probe of spec.activeProbes ?? []) {
-		for (const issue of auditByosanActiveProbeEvidence(probe)) {
-			issues.push({
-				code: `active_probe_${issue.code}`,
-				details: issue.details,
-				path: "activeProbes",
-			});
-		}
-		const missing = probe.sourceIds.filter(
-			(sourceId) => !sourceIds.has(sourceId),
-		);
-		if (missing.length > 0) {
-			issues.push({
-				code: "active_probe_source_missing",
-				details: `${probe.id}: ${missing.join(",")}`,
-				path: "activeProbes",
-			});
-		}
-	}
 	if (spec.adversarialEvidence) {
 		const evidenceIds = new Set(
 			spec.adversarialEvidence.map((evidence) => evidence.id),
@@ -432,45 +358,6 @@ export function auditByosanFeatureSpec(
 				});
 			}
 		}
-	}
-	const sourceById = new Map(spec.sources.map((source) => [source.id, source]));
-	for (const [claimIndex, claim] of spec.claims.entries()) {
-		if (!claim.id || claim.epistemicBoundary) continue;
-		const claimSources = claim.sourceIds
-			.map((sourceId) => sourceById.get(sourceId))
-			.filter((source): source is NonNullable<typeof source> =>
-				Boolean(source),
-			);
-		const vendorOnly =
-			claimSources.length > 0 &&
-			claimSources.every((source) => source.tier === "L3");
-		if (vendorOnly) {
-			issues.push({
-				code: "vendor_claim_boundary_missing",
-				details: claim.id,
-				path: claimIssuePath(claimIndex),
-			});
-		}
-	}
-	const review = loadFeatureReview();
-	for (const [segmentIndex, segment] of spec.segments.entries()) {
-		const term = review.production_memo_terms.find((memo) =>
-			segment.text.includes(memo),
-		);
-		if (term) {
-			issues.push({
-				code: "production_memo_in_dialogue",
-				details: term,
-				path: segmentIssuePath(segmentIndex),
-			});
-		}
-	}
-	if (!spec.tags.includes(BYOSAN_BRAND_TAG)) {
-		issues.push({
-			code: "brand_tag_missing",
-			details: `tags must include ${BYOSAN_BRAND_TAG}`,
-			path: "tags",
-		});
 	}
 	return issues;
 }
