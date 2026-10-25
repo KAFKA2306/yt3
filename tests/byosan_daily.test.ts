@@ -8,8 +8,6 @@ import {
 	llmBackend,
 } from "../src/domain/byosan/codex_llm.js";
 import {
-	type ByosanFailureTrace,
-	type RepairResolution,
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
 	pendingLlmBackends,
@@ -155,7 +153,7 @@ describe("byosan research cache reuse", () => {
 	});
 });
 
-describe("byosan failure retry gate", () => {
+describe("byosan failure retry limits", () => {
 	test("carries the failing preflight check reason so the failure is classifiable", async () => {
 		const runDir = await makeRunDir();
 		const message = preflightBlockedMessage(
@@ -191,7 +189,6 @@ describe("byosan failure retry gate", () => {
 		expect(message).not.toContain("ffmpeg FAIL");
 		const trace = recordByosanFailure(runDir, new Error(message), "head-a");
 		expect(trace.failure_class).toBe("PROVIDER_RATE_LIMIT");
-		expect(trace.retry_policy).toBe("TRANSIENT_BOUNDED");
 	});
 
 	test("classifies a Zod invalid_type issue from provider output as PROVIDER_SCHEMA", async () => {
@@ -203,10 +200,7 @@ describe("byosan failure retry gate", () => {
 			),
 			"head-a",
 		);
-		expect(trace).toMatchObject({
-			failure_class: "PROVIDER_SCHEMA",
-			retry_policy: "REQUIRES_REPAIR_EVIDENCE",
-		});
+		expect(trace.failure_class).toBe("PROVIDER_SCHEMA");
 	});
 
 	test("does not classify a path containing 'youtuber' as a YouTube publish failure", async () => {
@@ -231,7 +225,7 @@ describe("byosan failure retry gate", () => {
 		expect(trace.failure_class).toBe("PUBLISH_REMOTE");
 	});
 
-	test("records a typed non-transient failure and blocks blind retry", async () => {
+	test("does not block a rerun after a non-transient failure", async () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
 			runDir,
@@ -244,13 +238,8 @@ describe("byosan failure retry gate", () => {
 			status: "OPEN",
 			failure_class: "SPEC_CONTRACT",
 			stage: "SPEC",
-			retry_policy: "REQUIRES_REPAIR_EVIDENCE",
-			root_cause: "pending_trace_review",
-			regression_test: "pending",
 		});
-		expect(() => assertByosanRetryAllowed(runDir, "failed-head")).toThrow(
-			"RETRY_BLOCKED_REPAIR_EVIDENCE_REQUIRED",
-		);
+		expect(() => assertByosanRetryAllowed(runDir)).not.toThrow();
 	});
 
 	test("permits only the configured bounded retries for a provider rate limit", async () => {
@@ -265,14 +254,14 @@ describe("byosan failure retry gate", () => {
 			retry < byosanFailureClassification().transient_max_retries;
 			retry++
 		) {
-			expect(() => assertByosanRetryAllowed(runDir, "head-a")).not.toThrow();
+			expect(() => assertByosanRetryAllowed(runDir)).not.toThrow();
 			recordByosanFailure(
 				runDir,
 				new Error("429 rate limit quota exhausted"),
 				"head-a",
 			);
 		}
-		expect(() => assertByosanRetryAllowed(runDir, "head-a")).toThrow(
+		expect(() => assertByosanRetryAllowed(runDir)).toThrow(
 			"RETRY_BLOCKED_TRANSIENT_EXHAUSTED",
 		);
 	});
@@ -287,45 +276,8 @@ describe("byosan failure retry gate", () => {
 			"head-a",
 		);
 		expect(trace.failure_class).toBe("UNCERTAIN_REMOTE_COMMIT");
-		expect(() => assertByosanRetryAllowed(runDir, "head-a")).toThrow(
+		expect(() => assertByosanRetryAllowed(runDir)).toThrow(
 			"RETRY_BLOCKED_REMOTE_READBACK_REQUIRED",
-		);
-	});
-
-	test("allows a source failure only after explicit repair and canonical validation evidence", async () => {
-		const runDir = await makeRunDir();
-		const trace = recordByosanFailure(
-			runDir,
-			new Error(
-				"BYOSAN_FEATURE_GENERATION_FAILED: deterministic contract mismatch",
-			),
-			"failed-head",
-		);
-		const resolved: ByosanFailureTrace = {
-			...trace,
-			resolution: {
-				status: "VERIFIED",
-				root_cause: "generator violated the deterministic feature contract",
-				regression_test:
-					"tests/byosan_daily.test.ts::source failure retry gate",
-				repair_commit: "repair-head",
-				validation: {
-					command: "task check:merge",
-					status: "PASS",
-					checked_at: "2026-08-30T06:30:00.000Z",
-				},
-			},
-		};
-		await fs.outputJson(
-			path.join(runDir, "audit/failure_trace.json"),
-			resolved,
-			{
-				spaces: 2,
-			},
-		);
-		expect(() => assertByosanRetryAllowed(runDir, "repair-head")).not.toThrow();
-		expect(() => assertByosanRetryAllowed(runDir, "different-head")).toThrow(
-			"RETRY_BLOCKED_REPAIR_EVIDENCE_REQUIRED",
 		);
 	});
 
@@ -339,74 +291,7 @@ describe("byosan failure retry gate", () => {
 		expect(trace).toMatchObject({
 			failure_class: "RESEARCH_ANGLE_STOP",
 			stage: "RESEARCH",
-			retry_policy: "REQUIRES_REPAIR_EVIDENCE",
 		});
-	});
-
-	test("keeps the repair resolution when the same failure is re-recorded", async () => {
-		const runDir = await makeRunDir();
-		const message = "BYOSAN_ANGLE_STOP: no passing angle decision";
-		const first = recordByosanFailure(runDir, new Error(message), "head-a");
-		const resolution: RepairResolution = {
-			status: "VERIFIED",
-			root_cause: "angle contract missing adversarialEvidence",
-			regression_test: "tests/byosan_daily.test.ts::angle stop",
-			repair_commit: "repair-head",
-			validation: {
-				command: "task check:merge",
-				status: "PASS",
-				checked_at: "2026-10-10T09:00:00.000Z",
-			},
-		};
-		await fs.outputJson(
-			path.join(runDir, "audit/failure_trace.json"),
-			{ ...first, resolution },
-			{ spaces: 2 },
-		);
-		const again = recordByosanFailure(runDir, new Error(message), "head-b");
-		expect(again.resolution).toEqual(resolution);
-		expect(again.first_failed_at).toBe(first.first_failed_at);
-		expect(() => assertByosanRetryAllowed(runDir, "repair-head")).not.toThrow();
-	});
-
-	test("archives the previous resolution when a different failure is recorded", async () => {
-		const runDir = await makeRunDir();
-		const first = recordByosanFailure(
-			runDir,
-			new Error("BYOSAN_ANGLE_STOP: no passing angle decision"),
-			"head-a",
-		);
-		const resolution: RepairResolution = {
-			status: "VERIFIED",
-			root_cause: "angle contract missing adversarialEvidence",
-			regression_test: "tests/byosan_daily.test.ts::angle stop",
-			repair_commit: "repair-head",
-			validation: {
-				command: "task check:merge",
-				status: "PASS",
-				checked_at: "2026-10-10T09:00:00.000Z",
-			},
-		};
-		await fs.outputJson(
-			path.join(runDir, "audit/failure_trace.json"),
-			{ ...first, resolution },
-			{ spaces: 2 },
-		);
-		const next = recordByosanFailure(
-			runDir,
-			new Error(
-				"BYOSAN_FEATURE_GENERATION_FAILED: domain audit rejected draft",
-			),
-			"head-b",
-		);
-		expect(next.resolution).toBeUndefined();
-		expect(next.resolution_history).toEqual([
-			{
-				fingerprint: first.fingerprint,
-				failure_class: "RESEARCH_ANGLE_STOP",
-				resolution,
-			},
-		]);
 	});
 });
 

@@ -127,15 +127,6 @@ tasks:
           exit 2
         fi
       - BYOSAN_DATE={{.DATE}} bun src/scripts/byosan_repair.ts
-  byosan:resolve:
-    desc: "Record a verified repair resolution for one failed 秒算マネー run after task check:merge passes (DATE=YYYY-MM-DD, ROOT_CAUSE and REGRESSION_TEST env required)"
-    cmds:
-      - |
-        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
-          echo "DATE=YYYY-MM-DD is required" >&2
-          exit 2
-        fi
-      - BYOSAN_DATE={{.DATE}} bun src/scripts/byosan_resolve.ts
 
   byosan:auto:
     desc: "Prepare one 秒算マネー run; on failure repair with codex and re-prepare up to auto.max_prepare_attempts, stopping before publish (DATE=YYYY-MM-DD required)"
