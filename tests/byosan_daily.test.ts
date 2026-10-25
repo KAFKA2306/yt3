@@ -5,10 +5,11 @@ import fs from "fs-extra";
 import {
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
+	generateFeatureSpec,
 	preflightBlockedMessage,
 	recordByosanFailure,
-	reusableResearchResult,
 } from "../src/scripts/byosan_daily.js";
+import { fixtureDraft, fixtureInput } from "./fixtures/byosan_draft.js";
 
 const tempRoots: string[] = [];
 
@@ -86,64 +87,54 @@ describe("byosan daily duplicate-publication gate", () => {
 	});
 });
 
-describe("byosan research cache reuse", () => {
-	const base = {
-		director_data: {
-			angle: "a",
-			title_hook: "t",
-			search_query: "q",
-			key_questions: [],
-		},
-		news: [],
-		memory_context: "",
-	};
-
-	test("reuses a cached research result whose angle decision satisfies the current contract", () => {
-		const cached = {
-			...base,
-			angle_decision: {
-				decision: "STOP" as const,
-				selectedIndex: null,
-				reason: "no candidate",
-				candidateCount: 0,
-				distinctPublisherCount: 0,
-				orthogonality: {
-					uniqueProfileCount: 0,
-					geography: 0,
-					sector: 0,
-					actorType: 0,
-					eventType: 0,
-					timeHorizon: 0,
-					causalDirection: 0,
-					financialMetric: 0,
-					supplyChainLayer: 0,
-					marketRealEconomy: 0,
-					dataSurface: 0,
-					scale: 0,
-					failedAxes: [],
-				},
-				evaluated: [],
+describe("byosan single-call script generation", () => {
+	const scripted = (...texts: string[]) => {
+		const prompts: string[] = [];
+		return {
+			prompts,
+			exec: (prompt: string): string => {
+				prompts.push(prompt);
+				return texts[prompts.length - 1] ?? "";
 			},
 		};
-		expect(reusableResearchResult(cached, new Set<string>())).toBe(cached);
+	};
+
+	test("one LLM call returns the spec and the explanation when every check passes", async () => {
+		const runDir = await makeRunDir();
+		const llm = scripted(JSON.stringify(fixtureDraft()));
+		const { spec, explanation } = await generateFeatureSpec(
+			fixtureInput(),
+			runDir,
+			llm.exec,
+		);
+		expect(llm.prompts).toHaveLength(1);
+		expect(llm.prompts[0]).toContain("[今日の新着記事]");
+		expect(spec.runId).toBe("byosan_money/2026-10-25-daily");
+		expect(spec.sources.length).toBeGreaterThanOrEqual(2);
+		expect(explanation.figures).toHaveLength(2);
 	});
 
-	test("rejects a cached research result built under an older candidate contract", () => {
-		const cached = JSON.parse(
-			JSON.stringify({
-				...base,
-				angle_decision: {
-					decision: "PASS",
-					selectedIndex: 0,
-					reason: "stale",
-					candidateCount: 1,
-					distinctPublisherCount: 1,
-					orthogonality: {},
-					evaluated: [{ candidate: { angle: "old" } }],
-				},
-			}),
+	test("a failed check is fed back into the same call and the draft is rewritten", async () => {
+		const runDir = await makeRunDir();
+		const draft = fixtureDraft();
+		const [first, ...rest] = draft.segments as Record<string, unknown>[];
+		const bad = {
+			...draft,
+			segments: [
+				{ ...first, text: "利益が987654%も増えたのだ、という話を始めます。" },
+				...rest,
+			],
+		};
+		const llm = scripted(JSON.stringify(bad), JSON.stringify(draft));
+		const { spec } = await generateFeatureSpec(
+			fixtureInput(),
+			runDir,
+			llm.exec,
 		);
-		expect(reusableResearchResult(cached, new Set<string>())).toBeUndefined();
+		expect(llm.prompts).toHaveLength(2);
+		expect(llm.prompts[0]).toContain("前回の検証エラー: なし");
+		expect(llm.prompts[1]).toContain("unsourced_number=987654");
+		expect(spec.segments[0]?.text).not.toContain("987654");
 	});
 });
 

@@ -40,6 +40,8 @@ Keep each product's config, media, credentials, receipts, and publication state 
 
 Current Claude models follow prompts closely, so over-specified prompts and stacked checks degrade output. Prompts state the goal and the facts that must hold, not the method. A check that stops a daily run is limited to number and source integrity, the actual/estimate/forecast distinction, rights, a playable artifact, and the publication gates. Other quality heuristics are not gates.
 
+The byosan topic and script come from one LLM call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. The number, source, and published-source checks run deterministically against those articles, and a failed check rewrites the same call with the findings attached, up to `llm.max_attempts`.
+
 ## Evidence and credentials
 
 - Repository checks prove only the revision they executed. Product, runtime, and publication states need direct evidence; unchecked layers stay UNVERIFIED.

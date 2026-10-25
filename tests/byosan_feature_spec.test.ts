@@ -135,55 +135,6 @@ function productionAwareSpec(base: ByosanFeatureSpec): ByosanFeatureSpec {
 	};
 }
 
-function withParadoxArchetype(spec: ByosanFeatureSpec): ByosanFeatureSpec {
-	if (!spec.production) throw new Error("production fixture is missing");
-	const slotBindings = [
-		{ slot: "fact_a", segmentIndex: 0, claimId: "claim_0" },
-		{ slot: "fact_b", segmentIndex: 4, claimId: "claim_1" },
-		{ slot: "hidden_mechanism", segmentIndex: 8, claimId: "claim_2" },
-		{ slot: "catalyst_or_incentive", segmentIndex: 12, claimId: "claim_0" },
-	] as const;
-	const evidenceSlots = slotBindings.map((binding) => {
-		const claim = spec.claims.find((item) => item.id === binding.claimId);
-		const sourceId = claim?.sourceIds[0];
-		if (!sourceId) throw new Error(`claim source missing: ${binding.claimId}`);
-		return {
-			slot: binding.slot,
-			statement: `${binding.slot} is grounded in ${sourceId}`,
-			sourceIds: [sourceId],
-			adversarialEvidenceIds: [],
-		};
-	});
-	const segments = spec.segments.map((segment, index) => {
-		const binding = slotBindings.find((item) => item.segmentIndex === index);
-		if (!binding) return segment;
-		return {
-			...segment,
-			archetypeSlot: binding.slot,
-			claimIds: [binding.claimId],
-		};
-	});
-	return {
-		...spec,
-		segments,
-		production: {
-			...spec.production,
-			narrativeArchetype: "paradox_resolution",
-			archetypeRequiredSlots: [
-				"fact_a",
-				"fact_b",
-				"hidden_mechanism",
-				"catalyst_or_incentive",
-			],
-			archetypeReasons: ["eligible_bundle=paradox_resolution"],
-			archetypeEvidence: {
-				archetype: "paradox_resolution",
-				slots: evidenceSlots,
-			},
-		},
-	};
-}
-
 async function loadReferenceSpec(): Promise<ByosanFeatureSpec> {
 	return ByosanFeatureSpecSchema.parse(await fs.readJson(SPEC_PATH));
 }

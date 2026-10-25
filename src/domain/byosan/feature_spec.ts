@@ -4,11 +4,46 @@ import {
 	ByosanActiveProbeEvidenceSchema,
 	auditByosanActiveProbeEvidence,
 } from "./active_probe.js";
-import {
-	ByosanAdversarialEvidenceSchema,
-	ByosanProductionPlanSchema,
-	ByosanSourceTierSchema,
-} from "./news_angle.js";
+import { ExplanationSchema } from "./explanation.js";
+
+export const ByosanSourceTierSchema = z.enum([
+	"L1",
+	"L2",
+	"L3",
+	"L4",
+	"L5",
+	"unknown",
+]);
+
+const ByosanAdversarialEvidenceSchema = z.object({
+	id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
+	kind: z.enum([
+		"measurement_condition",
+		"counter_metric",
+		"third_party_disagreement",
+		"source_limitation",
+		"no_counter_evidence",
+	]),
+	targetClaim: z.string().min(8),
+	statement: z.string().min(8),
+	sourceIds: z.array(z.string().min(1)).min(1),
+	checkedSourceIds: z.array(z.string().min(1)).min(1),
+});
+
+export const ByosanProductionFormatSchema = z.enum([
+	"breaking",
+	"comparison",
+	"deep_dive",
+	"regular",
+]);
+
+const ByosanProductionPlanSchema = z.object({
+	format: ByosanProductionFormatSchema,
+	targetMinutes: z.number().min(3).max(15),
+	minSegments: z.number().int().min(12).max(40),
+	maxSegments: z.number().int().min(12).max(40),
+	reasons: z.array(z.string().min(1)).min(1),
+});
 
 const ByosanStatColorSchema = z.enum(["cyan", "amber", "white", "muted"]);
 
@@ -173,8 +208,6 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	schemaVersion: true,
 	runId: true,
 	asOf: true,
-	angle: true,
-	searchQuery: true,
 	sources: true,
 	production: true,
 	narrative: true,
@@ -193,6 +226,11 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 		.min(3)
 		.max(18),
 	packaging: ByosanPackagingSchema,
+	sources: z
+		.array(ByosanFeatureSourceSchema.omit({ tier: true }))
+		.min(2)
+		.max(12),
+	explanation: ExplanationSchema,
 });
 
 export type ByosanFeatureSpec = z.infer<typeof ByosanFeatureSpecSchema>;

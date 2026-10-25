@@ -5,11 +5,10 @@ import { z } from "zod";
 import {
 	type ByosanFeatureSpec,
 	ByosanFeatureSpecSchema,
-} from "./feature_spec.js";
-import {
-	type ByosanProductionFormat,
 	ByosanProductionFormatSchema,
-} from "./news_angle.js";
+} from "./feature_spec.js";
+
+type ByosanProductionFormat = z.infer<typeof ByosanProductionFormatSchema>;
 
 const AnalyticsRowSchema = z.object({
 	views: z.number(),
@@ -229,20 +228,4 @@ export function writeByosanPerformanceSummary(
 	} finally {
 		db.close();
 	}
-}
-
-export function loadPreferredByosanFormat(
-	root = process.cwd(),
-): ByosanProductionFormat | undefined {
-	const target = path.join(
-		root,
-		"data",
-		"memory",
-		"byosan_money",
-		"performance_summary.json",
-	);
-	if (!fs.existsSync(target)) return undefined;
-	const summary = ByosanPerformanceSummarySchema.parse(fs.readJsonSync(target));
-	if (summary.status !== "READY") return undefined;
-	return summary.preferredFormat;
 }

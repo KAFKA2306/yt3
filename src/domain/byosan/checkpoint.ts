@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import yaml from "js-yaml";
-import { isCurrentByosanAngleDecision } from "./news_angle.js";
 
 type ByosanCheckpointStages = {
 	research_ready: boolean;
@@ -35,17 +34,16 @@ const EMPTY_STAGES: ByosanCheckpointStages = {
 	publish_verified: false,
 };
 
-const FINGERPRINT_PREFIX = "inputs_v2:";
+const FINGERPRINT_PREFIX = "inputs_v3:";
 
 const SOURCE_GROUPS = {
 	research: [
-		"src/domain/agents/research.ts",
-		"src/domain/byosan/news_angle.ts",
+		"src/domain/byosan/feed_discovery.ts",
 		"config/sources/byosan_discovery_sources.json",
 	],
 	spec: [
 		"src/domain/byosan/feature_spec.ts",
-		"src/domain/byosan/feature_repair.ts",
+		"src/domain/byosan/feature_draft.ts",
 		"src/domain/byosan/explanation.ts",
 		"src/domain/byosan/explanation_contract.ts",
 		"src/domain/byosan/dialogue_style.ts",
@@ -101,10 +99,7 @@ function researchFingerprint(root: string, runDir: string): string {
 	const config = readByosanConfigFile(root);
 	return inputFingerprint([
 		hashFiles(root, SOURCE_GROUPS.research),
-		JSON.stringify({
-			prompts: (config.prompts as { research: unknown }).research,
-			discovery: config.discovery,
-		}),
+		JSON.stringify({ discovery: config.discovery }),
 		fileContent(path.join(runDir, "research", "discovery_articles.json")),
 	]);
 }
@@ -114,10 +109,9 @@ function specFingerprint(root: string): string {
 	return inputFingerprint([
 		hashFiles(root, SOURCE_GROUPS.spec),
 		JSON.stringify({
-			prompts: config.prompts,
-			explain: config.explain,
+			feature_draft: config.feature_draft,
+			feature_review: config.feature_review,
 			dialogue_style: config.dialogue_style,
-			repair: config.repair,
 			llm: config.llm,
 		}),
 	]);
@@ -173,9 +167,8 @@ function readByosanCheckpoint(runDir: string): ByosanCheckpoint | null {
 }
 
 function researchArtifactCurrent(runDir: string): boolean {
-	return isCurrentByosanAngleDecision(
-		readJsonIfExists(path.join(runDir, "source", "research_result.json"))
-			?.angle_decision,
+	return fs.existsSync(
+		path.join(runDir, "research", "discovery_articles.json"),
 	);
 }
 
@@ -193,14 +186,6 @@ function legacyStages(
 		research_ready: researchReady,
 		spec_ready: researchReady && specArtifactExists(runDir),
 	};
-}
-
-function readJsonIfExists(
-	filePath: string,
-): { angle_decision?: unknown } | undefined {
-	return fs.existsSync(filePath)
-		? (fs.readJsonSync(filePath) as { angle_decision?: unknown })
-		: undefined;
 }
 
 export function reconcileByosanCheckpoint(

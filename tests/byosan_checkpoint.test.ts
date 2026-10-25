@@ -11,36 +11,11 @@ import {
 
 const RUN_ID = "byosan_money/2026-09-24-daily";
 
-const CURRENT_STOP_DECISION = {
-	decision: "STOP",
-	selectedIndex: null,
-	reason: "no candidate",
-	candidateCount: 0,
-	distinctPublisherCount: 0,
-	orthogonality: {
-		uniqueProfileCount: 0,
-		geography: 0,
-		sector: 0,
-		actorType: 0,
-		eventType: 0,
-		timeHorizon: 0,
-		causalDirection: 0,
-		financialMetric: 0,
-		supplyChainLayer: 0,
-		marketRealEconomy: 0,
-		dataSurface: 0,
-		scale: 0,
-		failedAxes: [],
-	},
-	evaluated: [],
-};
-
 function makeFixture(): { root: string; runDir: string } {
 	const root = fs.mkdtempSync(path.join(os.tmpdir(), "yt3-checkpoint-root-"));
 	const runDir = path.join(root, "runs", "byosan_money", "2026-09-24-daily");
 	for (const file of [
-		"src/domain/agents/research.ts",
-		"src/domain/byosan/news_angle.ts",
+		"src/domain/byosan/feed_discovery.ts",
 		"config/sources/byosan_discovery_sources.json",
 		"src/domain/byosan/feature_spec.ts",
 		"src/scripts/byosan_daily.ts",
@@ -52,7 +27,7 @@ function makeFixture(): { root: string; runDir: string } {
 	}
 	fs.outputFileSync(
 		path.join(root, "config/domains/byosan_money.yaml"),
-		"prompts:\n  research: {system: s1}\ndiscovery: {recent_days: 7}\nllm:\n  backends: {research: gemini}\n",
+		"discovery: {recent_days: 7}\nllm:\n  backends: {feature: gemini}\n",
 	);
 	fs.outputFileSync(
 		path.join(runDir, "research", "discovery_articles.json"),
@@ -82,21 +57,21 @@ function readyCheckpoint(
 }
 
 describe("Byosan checkpoint research fingerprint", () => {
-	test("changes when the research prompt, discovery config, or discovered articles change", () => {
+	test("changes when the discovery config or discovered articles change", () => {
 		const { root, runDir } = makeFixture();
 		const before = currentByosanFingerprints(root, runDir).research;
 		fs.outputFileSync(
 			path.join(root, "config/domains/byosan_money.yaml"),
-			"prompts:\n  research: {system: s2}\ndiscovery: {recent_days: 7}\n",
+			"discovery: {recent_days: 8}\n",
 		);
-		const promptChanged = currentByosanFingerprints(root, runDir).research;
-		expect(promptChanged).not.toBe(before);
+		const configChanged = currentByosanFingerprints(root, runDir).research;
+		expect(configChanged).not.toBe(before);
 		fs.outputFileSync(
 			path.join(runDir, "research", "discovery_articles.json"),
 			'[{"title":"new"}]',
 		);
 		expect(currentByosanFingerprints(root, runDir).research).not.toBe(
-			promptChanged,
+			configChanged,
 		);
 	});
 
@@ -130,15 +105,12 @@ describe("Byosan checkpoint research fingerprint", () => {
 
 	test("does not restore readiness when a research input changed since the artifact", () => {
 		const { root, runDir } = makeFixture();
-		fs.outputJsonSync(path.join(runDir, "source", "research_result.json"), {
-			angle_decision: CURRENT_STOP_DECISION,
-		});
 		fs.outputFileSync(path.join(runDir, "source", "feature_spec.json"), "{}");
 		writeByosanCheckpoint(runDir, {
 			...readyCheckpoint(root, runDir),
 			fingerprints: {
 				...currentByosanFingerprints(root, runDir),
-				research: "inputs_v2:stale",
+				research: "inputs_v3:stale",
 			},
 			stages: {
 				research_ready: false,
@@ -153,11 +125,9 @@ describe("Byosan checkpoint research fingerprint", () => {
 		expect(reconciled.stages.spec_ready).toBe(false);
 	});
 
-	test("does not restore a legacy research result whose angle decision is outdated", () => {
+	test("does not restore a legacy checkpoint that has no discovery articles", () => {
 		const { root, runDir } = makeFixture();
-		fs.outputJsonSync(path.join(runDir, "source", "research_result.json"), {
-			angle_decision: { decision: "PASS", evaluated: [] },
-		});
+		fs.removeSync(path.join(runDir, "research", "discovery_articles.json"));
 		const legacy = {
 			...readyCheckpoint(root, runDir),
 			fingerprints: {
