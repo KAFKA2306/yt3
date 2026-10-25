@@ -72,7 +72,6 @@ Status: original comedy-sketch draft with a refreshed, source-backed yt3 example
 
 ## Evidence and interpretation
 
-- Current metric plan: config/metrics/issue_202_goals_signals_metrics.json.
 - Snapshot: config/metrics/snapshots/issue_202_ci_30d_20261019_025424.json.
 - Source: [GitHub REST API — workflow runs](https://docs.github.com/en/rest/actions/workflow-runs), workflow 226201883, event pull_request, completed first attempts, recorded UTC window.
 - Formula: nearest-rank p95 of updated_at - created_at; success rate is 104 / 110 = 94.5%. The median for this even-sized sample is the mean of the middle pair (133 seconds). The denominator is completed first-attempt workflow runs, not distinct PRs. Queue/service delay can be included. This does not establish causal effects or directly measure productivity or code quality.

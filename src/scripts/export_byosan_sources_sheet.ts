@@ -4,7 +4,7 @@ import {
 	type DiscoverySourcesDocument,
 	loadDiscoverySources,
 	registryPath,
-} from "./audit_byosan_discovery_sources.js";
+} from "../domain/byosan/discovery_sources.js";
 
 const COLUMNS = [
 	"id",

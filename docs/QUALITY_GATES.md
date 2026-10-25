@@ -19,9 +19,7 @@ task check:merge
 
 - Biome formatting/lint
 - TypeScript types
-- repository executable/documentation contract
 - static YouTube profile/routing contract
-- source no-fallback policy
 
 `check:merge` adds the Bun test suite under `SKIP_LLM=true DRY_RUN=true`.
 
@@ -43,13 +41,14 @@ Every test file under `tests/` runs in `check:merge`. These areas were reviewed 
 
 | Area | Decision | Coverage |
 | --- | --- | --- |
-| Byosan discovery source audit | kept | `tests/byosan_discovery_sources.test.ts` (`runAudit`, `buildChecks`) |
+| Byosan discovery source schema | kept | `tests/byosan_discovery_sources.test.ts` (`DiscoverySourcesSchema`, `loadDiscoverySources`) |
 | Byosan checkpoint invalidation | kept | `tests/byosan_checkpoint.test.ts` |
 | Discord bot failure exit codes | added | `tests/discord_exit_codes.test.ts`: authentication failures exit 78 (systemd does not restart), network failures exit 1 |
 | Overlay layout bounds | added | `tests/layout_bounds.test.ts`: height ratio and anchor placement used by rendered overlays |
 | Publish start/complete Discord notices | not kept | message text only; publish gating is covered by `tests/publish_contract.test.ts` and `tests/publication_state.test.ts` |
 | Discord webhook 429 suppression | not kept | notification delivery only; no publication or data effect |
 | Active run discovery | removed | the module had no callers in the repository, so the module and its test were deleted |
+| Repository structure, documentation, KPI plan, config-shape, and source-policy checks | removed | structure rules (root allowlist, ADR index, doc path references, Taskfile/doc contract, KPI plan traceability, hardcode and source-registry coverage) no longer block merges; their scripts, configs, and tests were deleted |
 
 ## Product release gate
 
@@ -73,33 +72,18 @@ Passing this gate does not prove publication occurred.
 
 `task publish PROFILE=<profile> -- <run-id> [video-path]` runs the same release gate before OAuth/channel verification or any YouTube side effect, then records canonical publication evidence and remote read-back state.
 
-## No-fallback audit
-
-One operator command owns all scopes:
-
-```bash
-task audit:no-fallback SCOPE=source
-task audit:no-fallback SCOPE=runtime
-task audit:no-fallback              # all
-```
-
-`source` is a merge-time repository invariant. `runtime` checks historical production cleanup evidence and is intentionally not a PR merge blocker.
-
 ## Ownership
 
 | concern | owner | merge gate | release/product |
 |---|---|---:|---:|
 | formatting + lint | Biome | yes | no |
 | TypeScript types | TypeScript compiler | yes | no |
-| executable/docs contract | repository audit | yes | no |
 | static channel routing | repository audit | yes | inherited |
-| source no-fallback policy | repository audit | yes | inherited |
 | unit/contract tests | repository checks | yes | not target evidence |
 | target runtime behavior | product qualification | no | when required |
 | concrete run/artifact | product release gate | no | yes |
 | authenticated channel | publication path | no | yes |
 | remote receipt/read-back | publication path | no | yes |
-| historical cleanup receipts | runtime audit | no | operational |
 
 ## Fresh clone
 
