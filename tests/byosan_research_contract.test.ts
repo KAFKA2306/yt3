@@ -40,6 +40,7 @@ describe("byosan angle gate configuration", () => {
 			minCandidateCount: 5,
 			minDistinctPublishers: 3,
 			repeatWindowDays: 60,
+			minWeightedScore: 60,
 		});
 	});
 });

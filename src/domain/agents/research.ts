@@ -226,6 +226,7 @@ export function byosanAngleGate(): ByosanAngleGate {
 				min_candidate_count: number;
 				min_distinct_publishers: number;
 				repeat_window_days: number;
+				min_weighted_score: number;
 			};
 		}
 	).angle_gate;
@@ -233,6 +234,7 @@ export function byosanAngleGate(): ByosanAngleGate {
 		minCandidateCount: gate.min_candidate_count,
 		minDistinctPublishers: gate.min_distinct_publishers,
 		repeatWindowDays: gate.repeat_window_days,
+		minWeightedScore: gate.min_weighted_score,
 	};
 }
 

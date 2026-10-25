@@ -19,6 +19,7 @@ const gate = {
 	minCandidateCount: 5,
 	minDistinctPublishers: 3,
 	repeatWindowDays: 60,
+	minWeightedScore: 60,
 };
 
 function candidate(
@@ -108,6 +109,7 @@ describe("byosan sharp-angle gate", () => {
 			candidate(),
 			[],
 			new Set<string>(),
+			60,
 		);
 		expect(result.passed).toBe(true);
 		expect(result.weightedScore).toBeGreaterThanOrEqual(75);
@@ -126,7 +128,12 @@ describe("byosan sharp-angle gate", () => {
 				},
 			],
 		});
-		const result = evaluateByosanAngleCandidate(item, [], new Set<string>());
+		const result = evaluateByosanAngleCandidate(
+			item,
+			[],
+			new Set<string>(),
+			60,
+		);
 		expect(result.passed).toBe(false);
 		expect(result.hardGateFailures).toContain(
 			"adversarial_evidence_source_missing",
@@ -146,7 +153,12 @@ describe("byosan sharp-angle gate", () => {
 				},
 			],
 		});
-		const result = evaluateByosanAngleCandidate(item, [], new Set<string>());
+		const result = evaluateByosanAngleCandidate(
+			item,
+			[],
+			new Set<string>(),
+			60,
+		);
 		expect(result.passed).toBe(false);
 		expect(result.hardGateFailures).toContain(
 			"no_counter_evidence_scope_too_narrow",
@@ -159,6 +171,7 @@ describe("byosan sharp-angle gate", () => {
 			item,
 			[`${item.titleHook} ${item.topic} ${item.noveltyFingerprint}`],
 			new Set<string>(),
+			60,
 		);
 		expect(result.passed).toBe(false);
 		expect(result.hardGateFailures).toContain(
@@ -272,7 +285,12 @@ describe("byosan sharp-angle gate", () => {
 				},
 			],
 		});
-		const evaluated = evaluateByosanAngleCandidate(item, [], new Set<string>());
+		const evaluated = evaluateByosanAngleCandidate(
+			item,
+			[],
+			new Set<string>(),
+			60,
+		);
 		expect(evaluated.passed).toBe(true);
 		const first = selectByosanProductionPlan(evaluated, "2026-09-06");
 		const second = selectByosanProductionPlan(evaluated, "2026-09-06");
@@ -286,7 +304,7 @@ describe("byosan sharp-angle gate", () => {
 		expect(second).toEqual(first);
 	});
 
-	test("archetype evidence cannot reference sources outside the candidate", () => {
+	test("archetype evidence referencing sources outside the candidate is not selected", () => {
 		const item = candidate({
 			archetypeEvidence: [
 				{
@@ -301,11 +319,17 @@ describe("byosan sharp-angle gate", () => {
 				},
 			],
 		});
-		const evaluated = evaluateByosanAngleCandidate(item, [], new Set<string>());
-		expect(evaluated.passed).toBe(false);
-		expect(evaluated.hardGateFailures).toContain(
-			"archetype_evidence_source_missing",
+		const evaluated = evaluateByosanAngleCandidate(
+			item,
+			[],
+			new Set<string>(),
+			60,
 		);
+		expect(evaluated.passed).toBe(true);
+		expect(
+			selectByosanProductionPlan(evaluated, "2026-10-24", undefined)
+				.narrativeArchetype,
+		).toBe("standard");
 	});
 
 	test("ranking selects only after collection and candidate hard gates pass", () => {

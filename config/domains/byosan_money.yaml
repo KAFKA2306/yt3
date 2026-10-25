@@ -210,7 +210,7 @@ discovery:
   recent_days: 7
   max_items_per_feed: 5
   body_chars: 6000
-  title_rule: "題名は「検索される語｜その回の問いや発見を一文で言い切る | 秒算マネー」の形にする。題材に応じて、速報・決算・検証・比較など最もふさわしい形を選ぶ。長く読まれる題材は日付に依存しない題名にし、日付や期が本質の題材は対象期を明記する。強気・弱気・結論の有無を煽らず、数字を入れるときは本文の検証済みの数字に限る。サムネと中身を一致させ、誤認を誘う表現を避ける。"
+  title_rule: "題名は「検索される語｜その回の問いや発見を一文で言い切る | 秒算マネー」の形にする。数字は本文で検証済みのものだけを使い、サムネイルと中身を一致させて誤認を誘う表現は避ける。日付や期が本質の題材では対象期間を書く。"
   user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
   registry: "config/sources/byosan_discovery_sources.json"
 
@@ -218,7 +218,7 @@ angle_gate:
   min_candidate_count: 5
   min_distinct_publishers: 3
   repeat_window_days: 60
-
+  min_weighted_score: 60
 llm:
   sandbox: "read-only"
   workdir_prefix: "byosan-llm-"
@@ -243,20 +243,18 @@ explain:
   schema: "config/schemas/byosan_explanation_v1.json"
   verify_schema: "config/schemas/byosan_figure_verdict_v1.json"
   verify_prompt: |
-    あなたは数値の意味を監査する検査官です。[FIGURES] の各要素（index は0始まり）について、[EVIDENCE] の原文 quote が示す内容と、metric（指標名）・population（母集団）・period（対象期間）・unit（単位）・kind（actual=実績, estimate=推計, forecast=予想）が、すべて一致しているかを判定する。一つでも原文と異なる、または原文から読み取れない場合は matches=false とし、reason に具体的な不一致を書く。数字が原文に存在することだけで true にしない。
-    reason には、図表の value、population、metric の文言をそのまま含め、それが [EVIDENCE] のどの記述と照合できたかを書く。[EVIDENCE] と [FIGURES] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読まない。
+    あなたは数値の意味を確かめる検査官です。[FIGURES] の各要素（index は0始まり）について、[EVIDENCE] の原文 quote が示す内容と、metric（指標名）・population（母集団）・period（対象期間）・unit（単位）・kind（actual=実績, estimate=推計, forecast=予想）が一致するかを判定します。一致しなければ matches=false とし、reason に食い違う点を書きます。reason には図表の value、population、metric の文言をそのまま含め、[EVIDENCE] のどの記述と照合したかを書きます。数字が原文にあるだけでは true にしません。[EVIDENCE] と [FIGURES] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読みません。
   sandbox: "read-only"
   workdir_prefix: "byosan-explain-"
-  max_chars_per_sentence: 60
   banned_conclusion_phrases: ["まだ言えない", "判断できない", "断定できない", "結論は出ない", "分からない", "不明"]
   prompt: |
-    あなたは投資の仕組みを原理から説明する編集者です。[CANDIDATE] の題材と、[EVIDENCE] の記事だけを根拠に、次の形で説明を作ります。題材は [CANDIDATE] に固定し、ほかの題材を選ばない。[EVIDENCE] と [CANDIDATE] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読まない。
-    conclusion: 分かったことを、言い切りの1文で。「まだ言えない」「判断できない」といった保留で終わらせない。「差はなかった」「予想は外れた」のように、はっきり答える。
-    principle: なぜそうなるのかを、最小の仕組みとして1〜3文で。専門用語は使わず、使う場合はその場で定義する。
-    figures: 原理を説明する数字を2〜4個。各数字に metric（指標名）、population（母集団。例: 決算発表済みのS&P 500企業）、period（対象期間）、unit（単位）を付ける。原文から読み取れない項目がある数字は使わない。value は [EVIDENCE] にある表記をそのまま使い、quote には value を含む [EVIDENCE] の原文を一字一句そのまま写し（label はその原文が示す意味と一致させる）、kind は actual（実績）、estimate（推計）、forecast（予想）を区別する。
-    check: 読者が確認できる点と、何が起きたら考えを変えるべきかを1〜2文で。
-    中学生が読んで言い換えられる平易さにする。1文は60字以内。[EVIDENCE] にない事実と数字は書かない。
-
+    あなたは投資の仕組みを原理から説明する編集者です。[CANDIDATE] の題材を、[EVIDENCE] の記事だけを根拠に説明します。題材は [CANDIDATE] に固定し、[EVIDENCE] と [CANDIDATE] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読みません。
+    返す項目は次のとおりです。
+    conclusion: 確かめられたことを言い切る一文。
+    principle: なぜそうなるのかを、1〜3文で。専門用語を使うときは、その場で言い換えます。
+    figures: 原理を説明する数字を2〜4個。metric（指標名）、population（母集団。例: 決算発表済みのS&P 500企業）、period（対象期間）、unit（単位）を付けます。value は [EVIDENCE] の表記のまま使い、quote は value を含む [EVIDENCE] の原文を一字一句写します。kind は actual（実績）、estimate（推計）、forecast（予想）で区別します。
+    check: 読者が確かめられる点と、何が分かれば考えを変えるべきかを1〜2文で。
+    [EVIDENCE] にない事実と数字は書きません。
 repair:
   sandbox: "workspace-write"
   writable_paths:
@@ -319,83 +317,33 @@ prompts:
   research:
     consolidated_research:
       system: |
-        あなたは「秒算マネー（Byosan Money）」の主任アナリストです。
-        編集の北極星は「投資の問いを、事実と数字で確かめる」です。[MISSION EVIDENCE] に載る登録媒体の新着記事から、今日取り上げる題材を作ります。あなたが確認できるのは記事本文と記事が示す出典だけです。外部の資料は取りに行けないので、記事の数値と出典の対応を根拠に、比較・再計算・論点整理を行って候補を作ってください。
-        一次情報なし断定禁止。各主張には source_tier と URL を付けてください。source_tier は、その主張の出典が本来どの層の資料かで決めます（L1 規制当局・開示書類、L2 政府統計・政策、L3 企業・研究機関の一次発表、L4 専門機関の集計、L5 報道・アナリストの解説）。記事が一次資料を出典として挙げるときは、その資料を sources に入れ、記事がその資料に帰属させている内容だけを supports に書いてください。一次資料の本文を確認したとは書かないでください。数値は記事本文の値を変えずに使い、実績・推計・予想を区別してください。
-        候補を外す理由は、出典の不整合、数値の意味の取り違え、推計と実績の混同、誤解を招く断定、権利上の問題に限ります。記事から作れる候補は、必要な件数に届かなくても必ず selected_topics に入れてください。evidence_gap などの別の形式で返さないでください。
+        あなたは「秒算マネー（Byosan Money）」の主任アナリストです。[MISSION EVIDENCE] に載る登録媒体の新着記事から、今日取り上げる題材の候補を作ります。確認できるのは記事本文と記事が示す出典だけなので、記事の数値と出典の対応をもとに、比較・再計算・論点整理を行います。
 
-        **【選定の順序】**
-        1. 検証可能性（必須）: 出典・対象期間・定義を追えるか。判断できない部分を正直に残せるか。
-        2. 今取り上げる理由: 新しい決算や統計、重要な出来事、広がる誤解、いま検証すべき仮説があるか。
-        3. 視聴者への効用: 今の判断、疑問の解消、方法の習得のいずれかに実質的に役立つか。
-        4. 独自の仕事: 元記事の要約だけでなく、独立した照合・再計算・適切な比較・論点整理のいずれかを行えるか。
-        5. 重複と偏りの監査: 直近と同じ素材・結論の焼き直しでないか。差が小さい候補なら、直近で扱っていない対象・形式・時間軸を選ぶ。
-        長く残るかどうかは加点要素であり、採用条件ではありません。強気・弱気・中立、成功・失敗、変化なしを等しく検討し、結論を無理に構造変化や投資行動へ着地させないでください。「有意な差はなかった」「仮説は外れた」は明確な答えとして採用できますが、「まだ言えない」「判断材料が不足している」で終わる題材は採用しません。結論が言い切れない候補は捨て、別の候補を選びます。
-        株価の煽り、売買の推奨、値上がり保証は題材にしません。
+        題材は、出典・対象期間・定義をたどれるもの、今取り上げる理由があるもの、視聴者の判断や理解に役立つものを選びます。強気・弱気・中立、成功・失敗、変化なしを同じ重さで扱い、「差はなかった」「予想は外れた」のように答えを言い切れる候補を選びます。株価の煽り、売買の推奨、値上がりの保証は扱いません。
 
-        **【CRITICAL】出力形式 (JSON):**
-        必ず以下の形式で、selected_topics が配列として含まれる JSON を返してください：
-        {
-          "selected_topics": [
-            {
-              "category": "マクロ経済 | 企業財務 | 地政学 | テクノロジー | 市場心理",
-              "selected_topic": "観測された主要トピックのタイトル",
-              "reason": "事実に基づく選定理由（客観的なインパクトの大きさ）",
-              "angle": "ニュースが示す直接的な変化の方向性",
-              "search_query": "収集に使用した検索クエリ",
-              "results": [
-                {
-                  "angle": "観測の切り口（言語・地域）",
-                  "title_hook": "事実を端的に示す日本語タイトル",
-                  "key_questions": ["観測された事実に関する具体的な問い"],
-                  "news": [
-                    {
-                      "title": "見出し（日本語訳）",
-                      "summary": "客観的要約（数値・事実を含む）",
-                      "url": "URL",
-                      "published_at": "YYYY-MM-DD",
-                      "claim_type": "fact | forecast | opinion",
-                      "confidence": "high",
-                      "original_text": "原文の重要な事実箇所"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
+        各主張には source_tier と URL を付けます。source_tier は、その主張の出典が本来どの層の資料かで決めます（L1 規制当局・開示書類、L2 政府統計・政策、L3 企業・研究機関の一次発表、L4 専門機関の集計、L5 報道・アナリストの解説）。記事が一次資料を挙げるときは、その資料を sources に入れ、記事がその資料に帰属させている内容だけを supports に書きます。一次資料の本文を確認したとは書きません。数値は記事本文の値のまま使い、実績・推計・予想を区別します。
 
-        【重要（MUST FOLLOW）】
-        - selected_topics は必ず配列です。単一オブジェクトではなく、複数のトピックを配列に格納してください。
-        - 各トピックは必ず category フィールドを含みます。
-        - 以上の形式に従わない出力は不正です。
-
+        出力は selected_topics を配列に含む JSON だけにします。各トピックには category、selected_topic、reason、angle、search_query、results（angle・title_hook・key_questions・news を含む）を入れます。
       user_template: |
-        本日の選定を開始します。
+        本日の選定を始めます。
         現在日付: {current_date}
 
-        [MISSION EVIDENCE] の新着記事だけを題材の候補にしてください。記事に書かれていない事象や数値を足さないでください。
-        候補は媒体・記事が一つに偏らないようにし、各候補の根拠は記事本文の数値と、記事が挙げる出典にしてください。
+        [MISSION EVIDENCE] の新着記事だけを題材の候補にします。記事にない事象や数値は足しません。候補の根拠は、記事本文の数値と記事が挙げる出典にします。
 
       repeat_avoidance_template: |
-        【PUBLISHED SOURCE EXCLUSION】
-        次の URL は、直近の公開済み動画が出典に使った一次資料です。これらを出典に含む候補は、同じ題材の再制作になるため選ばないでください。
+        【公開済みの出典】
+        次の URL は、直近の公開済み動画が出典に使った資料です。これらを出典にする候補は同じ題材の再制作になるので選びません。
         {published_urls}
 
       candidate_repair_template: |
-        【CANDIDATE REPAIR】
-        前回の出力のうち、次の byosan_angle 候補は機械検証で却下されました。
+        【候補の修正】
+        前回の出力のうち、次の候補は機械検証で却下されました。
         {rejected_issues}
 
-        既に採用済みの候補（同じ事象を再提出しないこと）:
+        採用済みの候補（同じ事象は再提出しません）:
         {accepted_topics}
 
-        上記と同じ観測条件のもとで、却下理由をすべて解消した新しい観測を {needed} 件以上 results に入れ、selected_topics 形式の JSON のみを返してください。
-        - sources は id・name・absolute url・tier・supports を持つものを 2 件以上にしてください。
-        - archetypeEvidence の各 slot は sourceIds を 1 件以上持つ必要があります。根拠が揃わない bundle は出力しないでください。
-        - adversarialEvidence の sourceIds と checkedSourceIds は 1 件以上にし、sources の id だけを参照してください。
-        - 登録済みソースで 2 件揃わない観測は出力せず、別の観測を選んでください。
-
+        上記と同じ観測条件のもとで、却下の理由を解消した観測を {needed} 件以上 results に入れ、selected_topics 形式の JSON だけを返します。sources は id・name・絶対 URL・tier・supports を持つものを2件以上にし、adversarialEvidence の sourceIds と checkedSourceIds は sources の id だけを使います。登録済みソースで2件そろわない観測は出さず、別の観測を選びます。
   content:
     outline:
       system: |
@@ -792,26 +740,47 @@ scenes:
     - {kind: stat_cards, emphasis: none, when: {stat_count_min: 1}}
 
 dialogue_style:
-  prompt_heading: "会話の指針（台本の書き方。検証で却下される条件ではなく、分かりやすく面白い会話にするための指針）:"
+  prompt_heading: "会話の指針:"
   guidance:
-    - "話者の役割: 春日部つむぎは落ち着いた丁寧語で話し、身近な比喩で分かりやすく解説する。ずんだもんは視聴者が思う素朴な疑問と驚きだけを言う。分析の評価、比喩の解説、検証や出典への言及（「分析では」「記事は…」「負け筋」など）は言わない。台本の方針や構成を確認する査読役にはしない。語尾は「〜のだ」「〜なのだ」を自然に使う。"
-    - "1発言は{max_chars_per_utterance}字以内、{max_sentences_per_utterance}文以内にする。長い説明は複数の発言に分け、間に相手の反応を挟む。3文以上の独白は書かない。数字は1発言に多くても2個までにする。"
-    - "最初の2発言で、何の対象・どの期間の数字かを名指しし、結論を言い切る。題材に合う日常の例がある場合だけ、それを入口に使い、その例に出す数字も検証済みの数字と explanation の figures の範囲内に限る。"
-    - "数字は candidate.numbers・explanation の figures・検証済みの claims にあるものだけを使い、新しい数字を作らない。結論の数字と比較の相手の数字は、何の数字か（対象・期間）を添えて具体的に言う。初めて出す専門語は、その発言の中で身近な言葉に言い換える。"
-    - "限界（推計・派生値の区別、除外した期間、丸めた値、価格リターンとドル建ての違い、出典の範囲）は台詞で読み上げない。概要欄の根拠欄と画面の出典表示に任せる。"
-    - "台詞には制作メモを書かない（{production_memo_terms} などの語を使わない）。"
-    - "意外性、問い、反対の仮説のぶつかり、「だからどうする」を会話の流れの中で出す。会話の最後に、視聴者が次に何を確かめればよいかを一つだけ言う。"
-    - "合いの手は「えっ」「それってつまり」「ほんと？」「なるほど」のような定型を使い回さず、直前の発言の内容に合う具体的な反応にする。"
-    - "避けるもの: 定型の「その通り。」「なるほど。」の連発、箇条書きの読み上げ、定義のない専門語、「〜と言われています」の曖昧な連続、「可能性がある」「かもしれない」の繰り返し、同じ文型の繰り返し。"
-    - "結論は言い切る（「まだ言えない」で終わらせない）。言い切るのは検証済みの事実の範囲に限る。"
-    - "笑いは、根拠のある反復、違和感、規模の差があるときだけ使う。事実や数字を笑いのために作らない。"
-  repair_summary: "会話の指針の要約: 1発言は{max_chars_per_utterance}字以内、{max_sentences_per_utterance}文以内。ずんだもんは素朴な疑問や驚きを言い、つむぎは丁寧語で比喩を使う。台詞に制作メモ（{production_memo_terms} など）を書かず、新しい数字や断定は作らない。"
-  targets:
-    max_chars_per_utterance: 60
-    max_sentences_per_utterance: 2
-    opening_seconds: 30
-    filler_phrases: ["その通り", "なるほど", "えっ", "それってつまり", "ほんと？"]
-    production_memo_terms: ["分析では", "提供された証拠", "提供証拠", "独立照合", "画面に残", "概要欄", "テロップ", "台本", "出所境界", "検算", "共同出所", "確認できていません", "記事は"]
+    - "春日部つむぎは丁寧語で、身近な例えを使って解説します。ずんだもんは見ている人が思う素朴な疑問や驚きを言います。"
+    - "聞き手が一度聞いて分かる長さにします。長い説明は相手の反応を挟んで分けます。"
+    - "最初のやりとりで、何の対象・どの期間の数字かを言い、結論を言い切ります。"
+    - "数字は証拠にあるものだけを使い、結論や比較の数字には対象と期間を添えます。初めて出す専門語はその場で身近な言葉にします。"
+    - "推計や派生値の前提、除外した期間、出典の範囲は台詞で読み上げず、概要欄と画面の出典表示に任せます。"
+    - "台詞に制作の話（台本、概要欄、テロップ、出典確認の作業など）は書きません。"
+    - "意外性、問い、反対の仮説のぶつかり、「だからどうする」を会話の流れで出します。最後に、視聴者が次に確かめることを一つ言います。"
+    - "相槌は直前の発言に合う具体的な反応にします。"
+    - "結論は検証済みの事実の範囲で言い切ります。"
+    - "笑いは根拠のある反復や規模の差があるときだけ使い、事実や数字を笑いのために作りません。"
+
+feature_draft:
+  system: |
+    あなたは秒算マネーの編集長です。与えられた証拠だけを使い、金融の問いを対話型の動画台本にします。見ている人が一度聞いて分かることを目指します。
+
+    守る事実の線は次のとおりです。
+    - 証拠にない数字・事実・断定は書きません。台詞、タイトル、サムネイルの数字は、packaging が参照する claims の claim 本文にも同じ数字と対象・期間・単位で載るものにします。
+    - 実績・推計・予想は区別し、推計や派生値は claims の status で示します。
+    - sourceIds は allowed_sources の id だけを使います。
+    - 第三者の検証を受けていない主張（allowed_sources が L3 だけの主張）には、確認済みと誤認させない epistemicBoundary を短く添えます。
+
+    話の流れは、題材に合う身近な例があればそこから入り、結論、数字、なぜそうなるか、次に確かめることへ進むと分かりやすくなります。春日部つむぎが解説し、ずんだもんが素朴な疑問や驚きを口にします。
+    explanation の figures の value（数字と単位）は、segments の text か stats.value のどちらかに含めます。
+    タイトル、サムネイル、概要欄は、台本と同じ題材を指すようにします。
+
+feature_review:
+  blocking_codes:
+    - duplicate_source_id
+    - claim_source_missing
+    - packaging_claim_missing
+    - packaging_number_ungrounded
+    - active_probe_source_missing
+    - adversarial_evidence_source_missing
+    - segment_adversarial_evidence_missing
+    - vendor_claim_boundary_missing
+    - production_memo_in_dialogue
+    - explanation_figure_value_missing
+    - unsourced_number
+  production_memo_terms: ["分析では", "提供された証拠", "提供証拠", "独立照合", "画面に残", "概要欄", "テロップ", "台本", "出所境界", "検算", "共同出所", "確認できていません", "記事は"]
 
 authenticity:
   history_window: 5

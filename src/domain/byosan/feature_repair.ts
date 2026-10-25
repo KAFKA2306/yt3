@@ -4,8 +4,6 @@ import type { Explanation } from "./explanation.js";
 import {
 	type NumberEvidence,
 	auditFeatureSpecAgainstExplanation,
-	auditHookPromises,
-	normalizeHookPromise,
 } from "./explanation_contract.js";
 import {
 	ByosanFeatureDraftSchema,
@@ -14,7 +12,6 @@ import {
 	ByosanFeatureSpecSchema,
 	type FeatureSpecIssue,
 	GLOBAL_ISSUE_PATH,
-	HOOK_PROMISE_MAX_CHARS,
 	SEGMENT_CLAIM_IDS_MAX,
 	auditByosanFeatureSpec,
 	claimIssuePath,
@@ -30,7 +27,6 @@ export type FeatureDraftContext = {
 	angle: string;
 	searchQuery: string;
 	production: ByosanFeatureSpec["production"];
-	editorialReferencePlan: ByosanFeatureSpec["editorialReferencePlan"];
 	narrative: ByosanFeatureSpec["narrative"];
 	adversarialEvidence: ByosanFeatureSpec["adversarialEvidence"];
 	activeProbes: ByosanActiveProbeEvidence[];
@@ -41,7 +37,6 @@ export type FeatureDraftContext = {
 };
 
 type FeatureCorrectionRule =
-	| "hook_promise"
 	| "stat_value"
 	| "event_date"
 	| "claim_ids"
@@ -217,19 +212,6 @@ export function normalizeFeatureDraft(
 	sources: ByosanFeatureSource[],
 ): NormalizedFeatureDraft {
 	const corrections: FeatureCorrection[] = [];
-	const hookPromises = Array.isArray(raw.hookPromises)
-		? raw.hookPromises.map((hook, index) =>
-				typeof hook === "string"
-					? correct(
-							corrections,
-							`hookPromises[${index}]`,
-							"hook_promise",
-							hook,
-							normalizeHookPromise(hook, HOOK_PROMISE_MAX_CHARS),
-						)
-					: hook,
-			)
-		: raw.hookPromises;
 	const packaging = normalizePackaging(raw.packaging, corrections);
 	const primary = new Set<string>(
 		isJson(packaging) && typeof packaging.primaryClaimId === "string"
@@ -263,7 +245,7 @@ export function normalizeFeatureDraft(
 			)
 		: raw.segments;
 	return {
-		draft: { ...raw, hookPromises, packaging, segments },
+		draft: { ...raw, packaging, segments },
 		corrections,
 	};
 }
@@ -298,7 +280,6 @@ export function buildFeatureSpecInput(
 		angle: context.angle,
 		searchQuery: context.searchQuery,
 		production: context.production,
-		editorialReferencePlan: context.editorialReferencePlan,
 		narrative: context.narrative,
 		adversarialEvidence: context.adversarialEvidence,
 		activeProbes: context.activeProbes,
@@ -323,10 +304,6 @@ export function featureDraftIssues(
 			context.explanation,
 			context.numberEvidence,
 			context.bannedPhrases,
-		),
-		...auditHookPromises(
-			spec.data.hookPromises,
-			context.numberEvidence.numbers,
 		),
 	];
 }
@@ -408,7 +385,7 @@ export function featureRepairMessages(input: {
 		{
 			role: "system",
 			content:
-				'あなたは秒算マネーの台本の局所修復者です。指定された欄（unit）だけを、指摘（issues）を解消する形で直し、{"value": ...} の JSON だけを返します。他の欄や場面は変更されません。evidence にない数字・断定・出典を新しく作らず、evidence にある年・数・固有名は削りません。推計・派生値の区別は claims の status と caveat で保ちます。claims の id は変更しません。台詞は dialogue_style（会話の指針の要約）に沿って、短く自然に直します。',
+				'あなたは秒算マネーの台本の局所修復者です。指定された欄（unit）だけを、指摘（issues）を解消する形で直し、{"value": ...} の JSON で返します。他の欄は変更されません。evidence にない数字・断定・出典は作らず、evidence にある年・数・固有名は残します。推計・派生値の区別は claims の status で保ち、claims の id は変えません。台詞は dialogue_style に沿って自然に直します。',
 		},
 		{
 			role: "user",
@@ -426,7 +403,6 @@ export function featureRepairMessages(input: {
 						source_text: context.numberEvidence.sourceText,
 						claims: draft.claims,
 						allowed_sources: context.sources,
-						hook_promises: draft.hookPromises,
 						packaging: draft.packaging,
 					},
 					neighbors,

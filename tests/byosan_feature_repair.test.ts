@@ -69,37 +69,6 @@ function draftWith(segments: Json[], extra: Json = {}): Json {
 }
 
 describe("normalizeFeatureDraft corrects format-only errors", () => {
-	test("shortens an over-long hook promise to its figure fragment and records it", () => {
-		const result = normalizeFeatureDraft(
-			draftWith([segment(0)], {
-				hookPromises: [
-					"2026年9月の全国消費者物価指数は前年比+2.1%だった",
-					"+0.4%",
-				],
-			}),
-			sources,
-		);
-		expect(result.draft.hookPromises).toEqual(["+2.1%", "+0.4%"]);
-		expect(result.corrections).toEqual([
-			{
-				path: "hookPromises[0]",
-				rule: "hook_promise",
-				from: "2026年9月の全国消費者物価指数は前年比+2.1%だった",
-				to: "+2.1%",
-			},
-		]);
-	});
-
-	test("leaves an over-long hook without a figure untouched so validation still rejects it", () => {
-		const long = "あ".repeat(25);
-		const result = normalizeFeatureDraft(
-			draftWith([segment(0)], { hookPromises: [long, "+0.4%"] }),
-			sources,
-		);
-		expect(result.draft.hookPromises).toEqual([long, "+0.4%"]);
-		expect(result.corrections).toEqual([]);
-	});
-
 	test("does not rewrite an impossible date or an already valid one", () => {
 		const impossible = normalizeFeatureDraft(
 			draftWith([segment(0)], {
@@ -138,14 +107,6 @@ describe("normalizeFeatureDraft corrects format-only errors", () => {
 		expect(first?.source).toBe("");
 		expect(result.corrections).toEqual([]);
 	});
-
-	test("keeps the sign of a figure when normalizing width", () => {
-		const result = normalizeFeatureDraft(
-			draftWith([segment(0)], { hookPromises: ["－2.1％", "+0.4%"] }),
-			sources,
-		);
-		expect(result.draft.hookPromises).toEqual(["-2.1%", "+0.4%"]);
-	});
 });
 
 describe("issues map to the unit that can repair them", () => {
@@ -155,7 +116,6 @@ describe("issues map to the unit that can repair them", () => {
 		angle: "物価",
 		searchQuery: "CPI",
 		production: undefined,
-		editorialReferencePlan: undefined,
 		narrative: undefined,
 		adversarialEvidence: undefined,
 		activeProbes: [],
@@ -183,8 +143,6 @@ describe("issues map to the unit that can repair them", () => {
 		expect(issues.some((issue) => issue.path === "")).toBe(true);
 	});
 });
-
-describe("spliceFeatureUnit replaces only the repaired unit", () => {});
 
 describe("repairFeatureDraftLocally", () => {
 	const issue = (path: string, code = "test_issue"): FeatureSpecIssue => ({

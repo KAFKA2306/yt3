@@ -11,7 +11,6 @@ export type ExplainConfig = {
 	verify_prompt: string;
 	sandbox: string;
 	workdir_prefix: string;
-	max_chars_per_sentence: number;
 	banned_conclusion_phrases: string[];
 	prompt: string;
 };
@@ -138,9 +137,8 @@ export function auditVerdicts(
 export function auditExplanation(
 	explanation: Explanation,
 	evidence: string,
-	maxChars: number,
 	bannedPhrases: string[],
-): string[] {
+): { issues: string[]; warnings: string[] } {
 	const issues = explanation.figures
 		.filter(
 			(figure) =>
@@ -148,22 +146,10 @@ export function auditExplanation(
 				!figure.quote.includes(figure.value),
 		)
 		.map((figure) => `figure_not_grounded: ${figure.value}`);
-	for (const phrase of bannedPhrases) {
-		if (explanation.conclusion.includes(phrase)) {
-			issues.push(`hedged_conclusion: ${phrase}`);
-		}
-	}
-	for (const key of ["conclusion", "principle", "check"] as const) {
-		if (/&(amp|lt|gt);/.test(explanation[key])) {
-			issues.push(`html_entity: ${key}`);
-		}
-		for (const sentence of explanation[key].split(/[。.]/)) {
-			if (sentence.length > maxChars) {
-				issues.push(`sentence_too_long: ${key} ${sentence.length}`);
-			}
-		}
-	}
-	return issues;
+	const warnings = bannedPhrases
+		.filter((phrase) => explanation.conclusion.includes(phrase))
+		.map((phrase) => `hedged_conclusion: ${phrase}`);
+	return { issues, warnings };
 }
 
 function codexJson<T>(
@@ -187,7 +173,7 @@ export function runCodexExplanation(
 	cfg: ExplainConfig,
 	evidence: ExplanationEvidence,
 	runDir: string,
-): Explanation {
+): { explanation: Explanation; warnings: string[] } {
 	const logPath = codexLlmLogPath(runDir);
 	const explanation = codexJson(
 		cfg,
@@ -196,10 +182,9 @@ export function runCodexExplanation(
 		path.join(runDir, "source", "explanation.raw.json"),
 		(value) => ExplanationSchema.parse(value),
 	);
-	const issues = auditExplanation(
+	const { issues, warnings } = auditExplanation(
 		explanation,
 		evidence.articles,
-		cfg.max_chars_per_sentence,
 		cfg.banned_conclusion_phrases,
 	);
 	const { verdicts } = codexJson(
@@ -213,5 +198,5 @@ export function runCodexExplanation(
 	if (issues.length > 0) {
 		throw new Error(`CODEX_EXPLAIN_REJECTED ${issues.join(" | ")}`);
 	}
-	return explanation;
+	return { explanation, warnings };
 }

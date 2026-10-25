@@ -3,9 +3,7 @@ import type { Explanation } from "../src/domain/byosan/explanation.js";
 import {
 	type NumberEvidence,
 	auditFeatureSpecAgainstExplanation,
-	auditHookPromises,
 	figureValueAppears,
-	normalizeHookPromise,
 } from "../src/domain/byosan/explanation_contract.js";
 import type {
 	ByosanFeatureSpec,
@@ -216,24 +214,5 @@ describe("figure values are matched by their number core and unit", () => {
 				"価格は1,234円だった",
 			]),
 		).toBe(true);
-	});
-});
-
-describe("over-long hook promises are normalized to their figure fragment", () => {
-	test("leaves an over-long hook without a figure unchanged so the spec schema rejects it", () => {
-		const long = "あ".repeat(25);
-		expect(normalizeHookPromise(long, 24)).toBe(long);
-	});
-});
-
-describe("hook promises are fragments of the candidate numbers", () => {
-	test("accepts a fragment that carries a candidate number", () => {
-		expect(auditHookPromises(["+2.1%"], numberEvidence.numbers)).toEqual([]);
-	});
-
-	test("reports a hook promise that does not come from the candidate numbers", () => {
-		expect(
-			formatted(auditHookPromises(["9%の増加"], numberEvidence.numbers)),
-		).toEqual(["hook_promise_not_in_candidate_numbers: 9%の増加"]);
 	});
 });

@@ -80,7 +80,10 @@ function specNumberTexts(spec: ByosanFeatureSpec): LocatedText[] {
 			path: "descriptionBullets",
 			text,
 		})),
-		...spec.hookPromises.map((text) => ({ path: "hookPromises", text })),
+		...(spec.hookPromises ?? []).map((text) => ({
+			path: "hookPromises",
+			text,
+		})),
 		...(spec.packaging?.relativeAnchor
 			? [
 					{ path: "packaging", text: spec.packaging.relativeAnchor.comparator },
@@ -187,31 +190,6 @@ export function auditFeatureSpecAgainstExplanation(
 		}
 	}
 	return issues;
-}
-
-const FIGURE_FRAGMENT = /[+\-−]?\d+(?:[.,]\d+)*(?:%|円|ドル|倍|兆円|億円)/;
-
-export function normalizeHookPromise(hook: string, maxChars: number): string {
-	const text = nfkc(hook);
-	if ([...text].length <= maxChars) return text;
-	return text.match(FIGURE_FRAGMENT)?.[0] ?? text;
-}
-
-export function auditHookPromises(
-	hookPromises: string[],
-	numbers: string[],
-): FeatureSpecIssue[] {
-	const normalizedNumbers = numbers.map(nfkc);
-	return hookPromises
-		.filter(
-			(hook) =>
-				!normalizedNumbers.some((number) => number.includes(nfkc(hook))),
-		)
-		.map((hook) => ({
-			code: "hook_promise_not_in_candidate_numbers",
-			details: hook,
-			path: "hookPromises",
-		}));
 }
 
 export function explanationCheckItems(

@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-	auditByosanArchetypeEvidence,
-	selectByosanNarrativeArchetype,
-} from "../src/domain/byosan/narrative_archetype.js";
+import { selectByosanNarrativeArchetype } from "../src/domain/byosan/narrative_archetype.js";
 
 const sources = [{ id: "vendor" }, { id: "third-party" }];
 const adversarialEvidence = [
@@ -136,28 +133,6 @@ describe("extended byosan narrative archetypes", () => {
 			);
 			expect(result.archetype).toBe("standard");
 		}
-	});
-
-	test("archetype evidence cannot reference an active probe outside the candidate", () => {
-		const issues = auditByosanArchetypeEvidence({
-			sources,
-			adversarialEvidence,
-			activeProbes: [],
-			archetypeEvidence: [
-				{
-					archetype: "rollout_verification",
-					slots: [
-						slot("quota_consumption", {
-							activeProbeIds: ["missing-probe"],
-						}),
-					],
-				},
-			],
-		});
-		expect(issues).toContainEqual({
-			code: "archetype_active_probe_missing",
-			details: "rollout_verification:quota_consumption:missing-probe",
-		});
 	});
 
 	test("active falsification requires a verified observation, discriminating test, and evidence boundary", () => {

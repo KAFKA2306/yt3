@@ -32,11 +32,16 @@
 
 失敗は `audit/production_quality_report.json` に要件別で残す。再制作時は、失敗した要件を台本、音声プリセット、字幕分割、映像レンダリング、公開ゲートの実装変更へ変換する。公開結果と視聴維持率が得られたら、冒頭30秒の離脱、トップモーメント、サムネとタイトルの整合を次の eval に追加する。
 
-## 編集参照の分解観察
+## 台本検査の停止条件
 
-`config/references/byosan_money_editorial_references.json` の12件は、内容を真似るためではなく、構成・情報密度・図解・テロップ・サムネ・画面転換を分解して観察するための編集参照である。日次生成では3〜5件をrunごとに選び、少なくとも3つの役割グループを組み合わせる。
+台本の検査は、事実・数字・出典に関するものだけを停止条件にする。停止条件は `config/domains/byosan_money.yaml` の `feature_review.blocking_codes` で指定し、`schema_` で始まるスキーマ違反は常に停止条件とする。
 
-選定計画は `editorial_reference_plan` として台本・メタデータ・監査に保存する。参照要素は実際のシーンの図解や画面更新へ割り当てるが、参照先のサイト名、ロゴ、固有文言、素材、テンプレート、結論は再現しない。編集参照は一次資料ではないため、`claims.sourceIds` と数値根拠へ入れてはならない。
+- 停止（run を止め、局所修復の対象にする）: 出典にない数字（`unsourced_number`、`explanation_figure_value_missing`）、主張と出典の欠落（`claim_source_missing`）、タイトル・サムネイルの数字が主張に無いこと（`packaging_number_ungrounded`）、第三者検証のない L3 のみの主張に境界文が無いこと（`vendor_claim_boundary_missing`）、台詞への制作メモ語の混入（`production_memo_in_dialogue`）、参照の欠落（`duplicate_source_id`、`*_source_missing`、`packaging_claim_missing`）。
+- 警告（run は継続し、結果を `audit/feature_warnings.json` と `audit/explanation_warnings.json` に記録）: 速報・極端表現の裏付け（`freshness_marker_ungrounded`、`relative_claim_ungrounded`）、保留表現（`banned_phrase_in_resolution_or_landing`、`hedged_conclusion`）、probe の観察情報（`active_probe_*`）、ブランドタグ（`brand_tag_missing`）。
+- 題材選定の評価閾値は `angle_gate.min_weighted_score` で与える。演出目的の hard gate（反証の検証可能性、probe、narrative archetype の監査、`counterfactual_is_not_testable`）は削除した。
+- 台詞の文字数、発話数、文数、文型、場面の順番は検査しない。
+- 削除した契約: 編集参照（`editorial_reference_plan`）、narrative archetype の slot 順序の強制、hook promise の検査（`hookPromises` は任意）、claim ごとの caveat・confidence・unresolvedMismatches の必須化、ずんだもんの発話の必須化、packaging の冒頭配置の検査。`packaging` は引き続き必須（produce 側が読むため）。
+- 維持した検査: 数字と出典の整合（証拠本文にない数字の却下、数値カードの意味照合）、実績・推計・予測の区別（`status` の列挙）、権利（編集参照を事実源にしないこと）、公開ゲート。
 
 ## 根拠として使う仕様
 
@@ -74,8 +79,8 @@
 - `task byosan:daily` は公開せず、研究・制作・監査のみを行う。
 - `--dry-run` はスキーマ、基準spec、公開抑止を検証する。
 - ニュース候補は5件以上、発行主体3つ以上、直近30日との最大類似度0.42以下を要求する。
-- `LangChain.withStructuredOutput` とZodで企画・制作specを検証し、決定的ゲートを通らない出力は最大3回まで検証エラー付きで再生成する。
-- 同日のupload receiptを検出した場合は再アップロードしない。公開完了にはreceipt、public visibility、thumbnail attestationを必要とする。企画は複数案検討してよいが、完成・公開対象は当日の1本とする。修復時は契約を緩めて通すのではなく、失敗した数値・スキーマ・制作要件の妥当性を確認する。`stats` の件数のような表現上の都合だけで根拠のない数字を追加しない。
+- Zodで企画・制作specを検証し、停止条件に当たる違反だけを局所修復と検証エラー付きの再生成で直す（回数は `llm` 設定）。それ以外の検査は警告として記録し、run は止めない。
+- 同日のupload receiptを検出した場合は再アップロードしない。公開完了にはreceipt、public visibility、thumbnail attestationを必要とする。企画は複数案検討してよいが、完成・公開対象は当日の1本とする。数字・出典・スキーマの違反は、根拠のない数字を足して通さず、該当する主張や出典を直して修復する。
 - **実装監査の留保**：現在の `byosan_publish_daily.ts` は `GATE_FAILED` 後の再準備を許すが、原因修正・テスト完了の機械的証拠をそこで独立確認するとは限らない。自律再試行の安全性は未検証であり、今後の実装確認・テスト対象とする。
 
 ## 本物であることの監査
