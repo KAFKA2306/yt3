@@ -40,6 +40,7 @@ video:
   fps: 24
   crf: 28
   audio_bitrate: 256k
+  fade_seconds: 5
 thumbnail:
   file: thumbnail.jpg
   width: 1280

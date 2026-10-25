@@ -37,6 +37,7 @@ export const ConfigSchema = z.object({
 		fps: z.number(),
 		crf: z.number(),
 		audio_bitrate: z.string(),
+		fade_seconds: z.number(),
 	}),
 	thumbnail: z.object({
 		file: z.string(),
