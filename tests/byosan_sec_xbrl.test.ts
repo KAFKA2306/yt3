@@ -3,13 +3,18 @@ import fs from "fs-extra";
 import {
 	type FigureClaim,
 	type SecFact,
+	accessionFigures,
 	findFact,
 	loadSecConfig,
 	parseCompanyConcept,
+	parseCompanyFacts,
 	verifyFigure,
 } from "../src/domain/byosan/sec_xbrl.js";
 
 const FIXTURE = "tests/fixtures/sec/nvda_revenues_companyconcept.json";
+const COMPANYFACTS_FIXTURE =
+	"tests/fixtures/sec/nvda_companyfacts_10q_subset.json";
+const Q2_ACCESSION = "0001045810-26-000075";
 
 function fixtureFacts(): SecFact[] {
 	return parseCompanyConcept(JSON.parse(fs.readFileSync(FIXTURE, "utf8")));
@@ -220,5 +225,59 @@ describe("SEC XBRL companyconcept", () => {
 			tolerance: 0,
 		});
 		expect(verdict.status).toBe("UNRESOLVED");
+	});
+});
+
+describe("SEC XBRL companyfacts figures", () => {
+	function companyFacts() {
+		return parseCompanyFacts(
+			JSON.parse(fs.readFileSync(COMPANYFACTS_FIXTURE, "utf8")),
+		);
+	}
+
+	test("takes the quarter of a 10-Q and not the year-to-date value", () => {
+		const revenue = accessionFigures(
+			companyFacts(),
+			Q2_ACCESSION,
+			loadSecConfig(),
+		).find((figure) => figure.label === "売上");
+		expect(revenue?.fact).toMatchObject({
+			val: 96221000000,
+			start: "2026-04-27",
+			end: "2026-07-26",
+			unit: "USD",
+			form: "10-Q",
+		});
+	});
+
+	test("reports a balance sheet item at its instant date", () => {
+		const cash = accessionFigures(
+			companyFacts(),
+			Q2_ACCESSION,
+			loadSecConfig(),
+		).find((figure) => figure.label === "現金及び現金同等物");
+		expect(cash?.fact).toMatchObject({ val: 22443000000, end: "2026-07-26" });
+		expect(cash?.fact.start).toBeUndefined();
+	});
+
+	test("omits a metric the filing does not tag", () => {
+		const labels = accessionFigures(
+			companyFacts(),
+			Q2_ACCESSION,
+			loadSecConfig(),
+		).map((figure) => figure.label);
+		expect(labels).not.toContain("設備投資（有形固定資産の取得支出）");
+	});
+
+	test("throws when no XBRL fact carries the accession", () => {
+		expect(() =>
+			accessionFigures(companyFacts(), "0001045810-26-999999", loadSecConfig()),
+		).toThrow("XBRL_FACTS_NOT_FOUND");
+	});
+
+	test("reads no us-gaap facts from an IFRS filer", () => {
+		expect(
+			parseCompanyFacts({ facts: { "ifrs-full": { Revenue: {} } } }),
+		).toEqual([]);
 	});
 });

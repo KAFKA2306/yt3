@@ -58,7 +58,8 @@
 			"fetch": {
 				"type": "sitemap",
 				"url": "https://www.msci.com/sitemap.xml",
-				"include": "/research-and-insights/(blog-post|paper|quick-take)/"
+				"include": "/research-and-insights/(blog-post|paper|quick-take)/",
+				"body": "article"
 			}
 		},
 		{
@@ -117,7 +118,8 @@
 			"fetch": {
 				"type": "html_list",
 				"url": "https://www.trendforce.com/presscenter/",
-				"link": "/presscenter/news/\\d{8}-\\d+\\.html"
+				"link": "/presscenter/news/\\d{8}-\\d+\\.html",
+				"body": "article"
 			}
 		},
 		{
@@ -147,7 +149,7 @@
 			"cadence": "決算時",
 			"material_class": "企業一次開示",
 			"collect": "メモリ・売上・粗利・CapEx・在庫",
-			"caution": "GAAP/Non-GAAPの区別。利用条件は未確認（sec.gov が取得に応じず）",
+			"caution": "GAAP/Non-GAAPの区別。XBRL（GAAP）の数値のみ。提出書類本文は未取得（www.sec.gov が取得に応じず）",
 			"verification": "企業公式",
 			"reuse_policy": "recreate_only",
 			"priority": "A",
@@ -167,7 +169,7 @@
 			"cadence": "決算時",
 			"material_class": "企業一次開示",
 			"collect": "AI半導体・売上・利益率",
-			"caution": "受注見込と確定売上の区別。利用条件は未確認（sec.gov が取得に応じず）",
+			"caution": "受注見込と確定売上の区別。XBRL（GAAP）の数値のみ。提出書類本文は未取得（www.sec.gov が取得に応じず）",
 			"verification": "企業公式",
 			"reuse_policy": "recreate_only",
 			"priority": "A",
@@ -187,7 +189,7 @@
 			"cadence": "月次・決算時",
 			"material_class": "企業一次開示",
 			"collect": "先端半導体・設備投資・売上",
-			"caution": "月次と四半期を分離。利用条件は未確認（sec.gov が取得に応じず）",
+			"caution": "月次と四半期を分離。IFRS（ifrs-full）報告のため us-gaap XBRL の対象外。提出書類本文は未取得（www.sec.gov が取得に応じず）",
 			"verification": "企業公式",
 			"reuse_policy": "recreate_only",
 			"priority": "A",
@@ -215,7 +217,8 @@
 			"fetch": {
 				"type": "html_list",
 				"url": "https://www.dir.co.jp/report/new.html",
-				"link": "/report/[a-z]+/\\d{8}_\\d+\\.html"
+				"link": "/report/[a-z]+/\\d{8}_\\d+\\.html",
+				"body": "article"
 			}
 		},
 		{
@@ -235,7 +238,53 @@
 			"fetch": {
 				"type": "post_api",
 				"url": "https://www.dlri.co.jp/api/search_report.jsp?dispflg=1&pageNo=1",
-				"base": "https://www.dlri.co.jp"
+				"base": "https://www.dlri.co.jp",
+				"body": "article"
+			}
+		},
+		{
+			"id": "S031",
+			"issuer": "S&P Global Press",
+			"domain": "press.spglobal.com",
+			"url": "https://press.spglobal.com/",
+			"category": "産業・市場",
+			"cadence": "日次",
+			"material_class": "企業プレスリリース",
+			"collect": "指数構成変更・データ製品・格付け・提携の発表",
+			"caution": "発表事実に限る。研究・レーティング本文（S005）は含まない",
+			"verification": "公式プレスサイト確認",
+			"reuse_policy": "recreate_only",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "html_list",
+				"url": "https://press.spglobal.com/",
+				"link": "/\\d{4}-\\d{2}-\\d{2}-[^\"/]+",
+				"body": "paragraphs"
+			}
+		},
+		{
+			"id": "S032",
+			"issuer": "NVIDIA Newsroom",
+			"domain": "nvidianews.nvidia.com",
+			"url": "https://nvidianews.nvidia.com/news",
+			"category": "企業財務",
+			"cadence": "日次",
+			"material_class": "企業プレスリリース",
+			"collect": "提携・製品・設備投資の公式発表",
+			"caution": "発表事実に限る。売上や受注の数値は S009 の XBRL で照合する。ブログ記事は含まない",
+			"verification": "企業公式",
+			"reuse_policy": "recreate_only",
+			"priority": "A",
+			"status": "採用",
+			"fetch": {
+				"type": "html_items",
+				"url": "https://nvidianews.nvidia.com/news",
+				"page_url": "https://nvidianews.nvidia.com/news?page={n}",
+				"pages": 5,
+				"item": "<article class=\"index-item[\\s\\S]*?<span class=\"index-item-text-info-date\">(?<date>[^<]+)</span>[\\s\\S]*?<a href=\"(?<url>[^\"]+)\"",
+				"link": "^https://nvidianews\\.nvidia\\.com/news/[^/\"]+$",
+				"body": "paragraphs"
 			}
 		}
 	]
