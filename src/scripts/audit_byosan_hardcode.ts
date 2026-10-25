@@ -3,7 +3,7 @@ import yaml from "js-yaml";
 import ts from "typescript-5";
 import { z } from "zod";
 
-export type ByosanHardcodeViolation = {
+type ByosanHardcodeViolation = {
 	file: string;
 	line: number;
 	rule: string;
@@ -19,11 +19,11 @@ const HardcodeAuditConfigSchema = z.object({
 	}),
 });
 
-export type ByosanHardcodeAuditConfig = z.infer<
+type ByosanHardcodeAuditConfig = z.infer<
 	typeof HardcodeAuditConfigSchema
 >["hardcode_audit"];
 
-export function readByosanHardcodeAuditConfig(
+function readByosanHardcodeAuditConfig(
 	configPath: string,
 ): ByosanHardcodeAuditConfig {
 	return HardcodeAuditConfigSchema.parse(
@@ -31,7 +31,7 @@ export function readByosanHardcodeAuditConfig(
 	).hardcode_audit;
 }
 
-export function scanByosanHardcode(
+function scanByosanHardcode(
 	contents: string,
 	file: string,
 	config: ByosanHardcodeAuditConfig,
@@ -76,7 +76,7 @@ export function scanByosanHardcode(
 	return violations;
 }
 
-export function auditByosanHardcode(
+function auditByosanHardcode(
 	root = process.cwd(),
 	configPath = `${root}/config/domains/byosan_money.yaml`,
 ): ByosanHardcodeViolation[] {

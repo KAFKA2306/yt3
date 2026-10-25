@@ -118,7 +118,7 @@ providers:
     gemini: {model: "gemini-2.5-flash", primary_llm: "gemini-2.5-flash", temperature: 0.35, max_tokens: 32768}
     content: {temperature: 0.4}
     media: {temperature: 0.1}
-    research: {temperature: 0.5, selection_temperature: 0.4, relevance_temperature: 0.0}
+    research: {temperature: 0.5}
   tts:
     voicevox:
       enabled: true

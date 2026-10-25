@@ -1,4 +1,4 @@
-export type CanonicalAuditCheck = {
+type CanonicalAuditCheck = {
 	name: string;
 	description: string;
 	status: "PASS" | "FAIL";
@@ -7,13 +7,13 @@ export type CanonicalAuditCheck = {
 	type: "DETERMINISTIC";
 };
 
-export type CanonicalAuditClaim = {
+type CanonicalAuditClaim = {
 	id?: string;
 	sourceIds: string[];
 	status: string;
 };
 
-export type CanonicalAuditSource = { id: string; url: string };
+type CanonicalAuditSource = { id: string; url: string };
 
 export type CanonicalAuditInput = {
 	claims: CanonicalAuditClaim[];
@@ -30,7 +30,7 @@ export type CanonicalAuditInput = {
 	explanationPath: string;
 };
 
-export type CanonicalAudit = Record<string, CanonicalAuditCheck>;
+type CanonicalAudit = Record<string, CanonicalAuditCheck>;
 
 function check(
 	name: string,
@@ -52,7 +52,7 @@ export function hostOf(url: string): string {
 	return new URL(url).hostname;
 }
 
-export function isAllowedHost(host: string, allowedHosts: string[]): boolean {
+function isAllowedHost(host: string, allowedHosts: string[]): boolean {
 	return allowedHosts.some(
 		(allowed) => host === allowed || host.endsWith(`.${allowed}`),
 	);

@@ -21,7 +21,7 @@ export type ByosanNarrativeArchetype = z.infer<
 	typeof ByosanNarrativeArchetypeSchema
 >;
 
-export const ByosanArchetypeEvidenceSlotSchema = z.object({
+const ByosanArchetypeEvidenceSlotSchema = z.object({
 	slot: z.string().regex(/^[a-z0-9_]+$/),
 	statement: z.string().min(8).max(500),
 	sourceIds: z.array(z.string().min(1)).min(1).max(8),
@@ -38,7 +38,7 @@ export const ByosanArchetypeEvidenceBundleSchema = z.object({
 	slots: z.array(ByosanArchetypeEvidenceSlotSchema).min(1).max(12),
 });
 
-export type ByosanArchetypeEvidenceBundle = z.infer<
+type ByosanArchetypeEvidenceBundle = z.infer<
 	typeof ByosanArchetypeEvidenceBundleSchema
 >;
 
@@ -153,7 +153,7 @@ type ProductionShape = {
 	format: string;
 };
 
-export type ByosanNarrativeArchetypeSelection = {
+type ByosanNarrativeArchetypeSelection = {
 	archetype: ByosanNarrativeArchetype;
 	requiredSlots: string[];
 	reasons: string[];
@@ -332,7 +332,7 @@ export function selectByosanNarrativeArchetype(
 	};
 }
 
-export type ByosanArchetypeEvidenceIssue = {
+type ByosanArchetypeEvidenceIssue = {
 	code: string;
 	details: string;
 };

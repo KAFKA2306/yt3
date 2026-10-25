@@ -22,28 +22,23 @@ import {
 } from "./news_angle.js";
 import type { ByosanScenesConfig } from "./scene_spec.js";
 
-export const ByosanStatColorSchema = z.enum([
-	"cyan",
-	"amber",
-	"white",
-	"muted",
-]);
+const ByosanStatColorSchema = z.enum(["cyan", "amber", "white", "muted"]);
 
-export const ByosanFeatureStatSchema = z.object({
+const ByosanFeatureStatSchema = z.object({
 	label: z.string().min(1).max(30),
 	value: z.string().min(1).max(24),
 	detail: z.string().min(1).max(40),
 	color: ByosanStatColorSchema,
 });
 
-export const ByosanNarrativeRoleSchema = z.enum([
+const ByosanNarrativeRoleSchema = z.enum([
 	"fact",
 	"context",
 	"impact",
 	"action",
 ]);
 
-export const ByosanVerificationRoleSchema = z.enum([
+const ByosanVerificationRoleSchema = z.enum([
 	"presenter",
 	"auditor",
 	"resolution",
@@ -123,7 +118,7 @@ export const ByosanFeatureClaimSchema = z.object({
 	epistemicBoundary: z.string().min(8).max(180).optional(),
 });
 
-export const ByosanPackagingSchema = z.object({
+const ByosanPackagingSchema = z.object({
 	primaryClaimId: z.string().min(1),
 	claimIds: z.array(z.string().min(1)).min(1).max(6),
 	freshness: z
@@ -145,7 +140,7 @@ export const ByosanPackagingSchema = z.object({
 	impactClaimId: z.string().min(1).optional(),
 });
 
-export const ByosanNarrativeSchema = z.object({
+const ByosanNarrativeSchema = z.object({
 	hiddenMechanism: z.string().min(12),
 	counterfactual: z.string().min(12),
 	audiencePayoff: z.string().min(8),
@@ -196,7 +191,7 @@ export const ByosanFeatureSpecSchema = z.object({
 	segments: z.array(ByosanFeatureSegmentSchema).min(20).max(36),
 });
 
-export const BYOSAN_BRAND_TAG = "秒算マネー";
+const BYOSAN_BRAND_TAG = "秒算マネー";
 
 export function ensureByosanBrandTag(
 	tags: readonly string[] | undefined,
@@ -234,14 +229,10 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 });
 
 export type ByosanFeatureSpec = z.infer<typeof ByosanFeatureSpecSchema>;
-export type ByosanFeatureDraft = z.infer<typeof ByosanFeatureDraftSchema>;
 export type ByosanFeatureSegment = z.infer<typeof ByosanFeatureSegmentSchema>;
 export type ByosanFeatureSource = z.infer<typeof ByosanFeatureSourceSchema>;
 export type ByosanStatColor = z.infer<typeof ByosanStatColorSchema>;
 export type ByosanNarrativeRole = z.infer<typeof ByosanNarrativeRoleSchema>;
-export type ByosanVerificationRole = z.infer<
-	typeof ByosanVerificationRoleSchema
->;
 
 export type FeatureSpecIssue = {
 	code: string;

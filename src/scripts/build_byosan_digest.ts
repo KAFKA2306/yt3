@@ -25,9 +25,9 @@ import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import { invokeStructuredLlm } from "../io/core.js";
 
-export type DigestPeriod = "week" | "month";
+type DigestPeriod = "week" | "month";
 
-export type DigestInput = {
+type DigestInput = {
 	runId: string;
 	runDir: string;
 	spec: ByosanFeatureSpec;
@@ -59,7 +59,7 @@ function parseDate(value: string): Date {
 	return parsed;
 }
 
-export function digestStartDate(period: DigestPeriod, end: string): string {
+function digestStartDate(period: DigestPeriod, end: string): string {
 	const endDate = parseDate(end);
 	if (period === "week") {
 		endDate.setUTCDate(endDate.getUTCDate() - 6);
@@ -77,7 +77,7 @@ function normalizeTopicKey(spec: ByosanFeatureSpec): string {
 		.trim();
 }
 
-export function dedupeDigestInputs(inputs: DigestInput[]): DigestInput[] {
+function dedupeDigestInputs(inputs: DigestInput[]): DigestInput[] {
 	const selected = new Map<string, DigestInput>();
 	for (const input of [...inputs].sort(
 		(left, right) =>
@@ -952,7 +952,7 @@ function rootFromRunDir(runDir: string): string {
 	return path.resolve(runDir, "..", "..", "..");
 }
 
-export async function buildByosanDigest(
+async function buildByosanDigest(
 	root: string,
 	period: DigestPeriod,
 	end: string,

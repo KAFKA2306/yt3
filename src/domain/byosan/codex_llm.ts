@@ -10,7 +10,7 @@ import {
 	redactLlmEvidence,
 } from "../../io/core.js";
 
-export type CodexExecConfig = {
+type CodexExecConfig = {
 	sandbox: string;
 	workdir_prefix: string;
 };
@@ -20,10 +20,10 @@ export type CodexLlmConfig = CodexExecConfig & {
 	json_only_instruction: string;
 };
 
-export type CodexMessage = { role: "system" | "user"; content: string };
+type CodexMessage = { role: "system" | "user"; content: string };
 
 export type LlmBackend = "gemini" | "codex";
-export type LlmStage = "research" | "feature" | "digest" | "preflight";
+type LlmStage = "research" | "feature" | "digest" | "preflight";
 export type ByosanLlmConfig = CodexLlmConfig & {
 	max_local_repairs: number;
 	backends: Record<LlmStage, LlmBackend>;
@@ -98,7 +98,7 @@ export function codexLlmLogPath(runDir: string): string {
 	return path.join(runDir, "audit", "llm_calls.jsonl");
 }
 
-export function appendCodexLog(logPath: string, record: CodexLogRecord): void {
+function appendCodexLog(logPath: string, record: CodexLogRecord): void {
 	fs.ensureDirSync(path.dirname(logPath));
 	fs.appendFileSync(logPath, `${JSON.stringify(record)}\n`);
 	console.log(
@@ -106,7 +106,7 @@ export function appendCodexLog(logPath: string, record: CodexLogRecord): void {
 	);
 }
 
-export type CodexExecOptions = {
+type CodexExecOptions = {
 	stage: string;
 	attempt: number;
 	logPath: string;
@@ -199,7 +199,7 @@ export function structuredRequest<T, U = T>(
 	return request;
 }
 
-export type CodexStructuredRequest<T, U> = {
+type CodexStructuredRequest<T, U> = {
 	llm: CodexLlmConfig;
 	schema: z.ZodSchema<T>;
 	providerSchema?: z.ZodType;

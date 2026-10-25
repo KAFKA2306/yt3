@@ -39,26 +39,26 @@ export type FeatureDraftContext = {
 	bannedPhrases: string[];
 };
 
-export type FeatureCorrectionRule =
+type FeatureCorrectionRule =
 	| "hook_promise"
 	| "stat_value"
 	| "event_date"
 	| "claim_ids"
 	| "segment_source";
 
-export type FeatureCorrection = {
+type FeatureCorrection = {
 	path: string;
 	rule: FeatureCorrectionRule;
 	from: unknown;
 	to: unknown;
 };
 
-export type NormalizedFeatureDraft = {
+type NormalizedFeatureDraft = {
 	draft: Json;
 	corrections: FeatureCorrection[];
 };
 
-export type FeatureRepairRound = {
+type FeatureRepairRound = {
 	round: number;
 	units: string[];
 	issueCodes: string[];
@@ -349,7 +349,7 @@ export function featureUnitSchema(unit: string): z.ZodType | undefined {
 	return DRAFT_SHAPE[unit];
 }
 
-export function featureUnitValue(draft: Json, unit: string): unknown {
+function featureUnitValue(draft: Json, unit: string): unknown {
 	const indexed = parseIndexedUnit(unit);
 	if (!indexed) return draft[unit];
 	const items = draft[indexed.key];

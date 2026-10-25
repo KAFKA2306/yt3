@@ -97,7 +97,7 @@ function readHistory(root = ROOT): PowerMacroHistory {
 	return history;
 }
 
-export function loadByosanPowerMacroContext(root = ROOT): string {
+function loadByosanPowerMacroContext(root = ROOT): string {
 	const history = readHistory(root);
 	const thesisText = history.persistent_theses
 		.map(

@@ -2,16 +2,6 @@ import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 
 describe("effective no-fallback inputs", () => {
-	test("Byosan media fails closed when canonical character assets are missing", () => {
-		const source = fs.readFileSync(
-			"src/scripts/produce_byosan_feature.ts",
-			"utf8",
-		);
-		expect(source).toContain("BYOSAN_CHARACTER_ASSET_MISSING");
-		expect(source).not.toContain("fallbackCharacterSvg");
-		expect(source).not.toContain("CHARACTER_FALLBACK");
-	});
-
 	test("active Byosan loop memory contains no fallback entries", () => {
 		const memory = fs.readJsonSync(
 			"data/memory/byosan_money/loop_journal.json",

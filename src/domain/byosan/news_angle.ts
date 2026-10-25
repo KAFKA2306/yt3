@@ -26,7 +26,7 @@ const ByosanSourceSupportsSchema = z.preprocess(
 	z.array(z.string().min(3)).min(1),
 );
 
-export const ByosanAngleSourceSchema = z.object({
+const ByosanAngleSourceSchema = z.object({
 	id: z.string().min(1),
 	name: z.string().min(2),
 	url: z.string().url(),
@@ -37,7 +37,7 @@ export const ByosanAngleSourceSchema = z.object({
 	supports: ByosanSourceSupportsSchema,
 });
 
-export const ByosanAdversarialEvidenceKindSchema = z.enum([
+const ByosanAdversarialEvidenceKindSchema = z.enum([
 	"measurement_condition",
 	"counter_metric",
 	"third_party_disagreement",
@@ -58,7 +58,7 @@ export type ByosanAdversarialEvidence = z.infer<
 	typeof ByosanAdversarialEvidenceSchema
 >;
 
-export const ByosanExplorationProfileSchema = z.object({
+const ByosanExplorationProfileSchema = z.object({
 	geography: z.string().min(2),
 	sector: z.string().min(2),
 	actorType: z.string().min(2),
@@ -72,9 +72,7 @@ export const ByosanExplorationProfileSchema = z.object({
 	scale: z.string().min(2),
 });
 
-export type ByosanExplorationProfile = z.infer<
-	typeof ByosanExplorationProfileSchema
->;
+type ByosanExplorationProfile = z.infer<typeof ByosanExplorationProfileSchema>;
 
 export const ByosanAngleCandidateSchema = z.object({
 	topic: z.string().min(3),
@@ -100,7 +98,7 @@ export const ByosanAngleCandidateSchema = z.object({
 
 export type ByosanAngleCandidate = z.infer<typeof ByosanAngleCandidateSchema>;
 
-export type ByosanAngleCandidateSettlement =
+type ByosanAngleCandidateSettlement =
 	| { status: "VALID"; candidate: ByosanAngleCandidate }
 	| { status: "REJECTED"; issues: string[] };
 
@@ -139,7 +137,7 @@ export function settleByosanAngleCandidate(
 	};
 }
 
-export const ByosanAngleScoresSchema = z.object({
+const ByosanAngleScoresSchema = z.object({
 	evidence: z.number().min(0).max(100),
 	surprise: z.number().min(0).max(100),
 	mechanism: z.number().min(0).max(100),
@@ -149,7 +147,7 @@ export const ByosanAngleScoresSchema = z.object({
 	visualizability: z.number().min(0).max(100),
 });
 
-export const ByosanEvaluatedAngleSchema = z.object({
+const ByosanEvaluatedAngleSchema = z.object({
 	candidate: ByosanAngleCandidateSchema,
 	scores: ByosanAngleScoresSchema,
 	weightedScore: z.number().min(0).max(100),
@@ -158,7 +156,7 @@ export const ByosanEvaluatedAngleSchema = z.object({
 	passed: z.boolean(),
 });
 
-export const ByosanAngleDecisionSchema = z.object({
+const ByosanAngleDecisionSchema = z.object({
 	decision: z.enum(["PASS", "STOP"]),
 	selectedIndex: z.number().int().min(0).nullable(),
 	reason: z.string().min(1),

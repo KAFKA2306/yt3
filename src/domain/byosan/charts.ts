@@ -4,7 +4,7 @@ import type { EChartsOption } from "echarts";
 import fs from "fs-extra";
 import { z } from "zod";
 
-export const BYOSAN_CHART_THEME_PATH = path.join(
+const BYOSAN_CHART_THEME_PATH = path.join(
 	process.cwd(),
 	"config/design/byosan_chart_v1.json",
 );
@@ -13,9 +13,9 @@ const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 const SizeSchema = z.number().positive();
 const OffsetSchema = z.number().nonnegative();
 
-export type ChartSize = { width: number; height: number };
+type ChartSize = { width: number; height: number };
 
-export const ChartThemeSchema = z.object({
+const ChartThemeSchema = z.object({
 	palette: z.object({
 		canvas: HexColorSchema,
 		primary: HexColorSchema,
@@ -128,7 +128,7 @@ const BignumberSpecSchema = z.object({
 	sublabel: z.string().min(1),
 });
 
-export const ChartSpecSchema = z.discriminatedUnion("kind", [
+const ChartSpecSchema = z.discriminatedUnion("kind", [
 	BarSpecSchema,
 	HbarSpecSchema,
 	LineSpecSchema,

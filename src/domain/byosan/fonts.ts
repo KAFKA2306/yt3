@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { getByosanProductionConfig } from "./production_config.js";
 
-export type FontMatch = { family: string; file: string };
+type FontMatch = { family: string; file: string };
 
 export function byosanFontDir(): string {
 	return path.join(

@@ -18,7 +18,7 @@ import {
 } from "../domain/youtube_profiles.js";
 import { ROOT, invokeStructuredLlm, loadConfig } from "../io/core.js";
 
-export type PreflightStatus = "PASS" | "FAIL" | "UNVERIFIED";
+type PreflightStatus = "PASS" | "FAIL" | "UNVERIFIED";
 
 export type PreflightCheck = {
 	status: PreflightStatus;

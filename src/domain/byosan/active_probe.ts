@@ -1,14 +1,14 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 
-export const ByosanActiveProbeTypeSchema = z.enum([
+const ByosanActiveProbeTypeSchema = z.enum([
 	"git_diff",
 	"document_diff",
 	"authorized_api",
 	"tokenizer_fingerprint",
 ]);
 
-export const ByosanActiveProbeStatusSchema = z.enum(["VERIFIED", "UNVERIFIED"]);
+const ByosanActiveProbeStatusSchema = z.enum(["VERIFIED", "UNVERIFIED"]);
 
 export const ByosanActiveProbeEvidenceSchema = z.object({
 	id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
@@ -33,7 +33,7 @@ export type ByosanActiveProbeEvidence = z.infer<
 	typeof ByosanActiveProbeEvidenceSchema
 >;
 
-export type ActiveProbeIssue = {
+type ActiveProbeIssue = {
 	code: string;
 	details: string;
 };

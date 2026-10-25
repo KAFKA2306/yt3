@@ -48,7 +48,7 @@ function toRecord(source: DiscoverySourceRow): Record<Column, string> {
 	};
 }
 
-export function toTsv(doc: DiscoverySourcesDocument): string {
+function toTsv(doc: DiscoverySourcesDocument): string {
 	const rows = doc.sources.map((source) => {
 		const record = toRecord(source);
 		return COLUMNS.map((column) => {

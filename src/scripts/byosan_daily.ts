@@ -99,7 +99,7 @@ const FEATURE_DRAFT_SIZE_LIMITS = zodSizeConstraintLines(
 	ByosanFeatureDraftSchema,
 ).join("\n");
 
-export type PublishedRunEvidence = {
+type PublishedRunEvidence = {
 	runId: string;
 	verified: boolean;
 	reason: string;
@@ -120,12 +120,7 @@ export type ByosanFailureClass =
 	| "UNCERTAIN_REMOTE_COMMIT"
 	| "UNCLASSIFIED";
 
-export type ByosanFailureStage =
-	| "RESEARCH"
-	| "SPEC"
-	| "MEDIA"
-	| "PUBLISH"
-	| "UNKNOWN";
+type ByosanFailureStage = "RESEARCH" | "SPEC" | "MEDIA" | "PUBLISH" | "UNKNOWN";
 
 type RetryPolicy =
 	| "TRANSIENT_BOUNDED"
@@ -186,7 +181,7 @@ function safeSourceId(raw: string, index: number): string {
 	return normalized || `source_${index + 1}`;
 }
 
-export function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
+function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
 	sources: FeatureSource[];
 	adversarialEvidence: ByosanAdversarialEvidence[];
 	activeProbes: ByosanActiveProbeEvidence[];
@@ -649,9 +644,7 @@ export function findPublishedByosanRunForDate(
 	return null;
 }
 
-export function selectedCandidate(
-	research: ResearchResult,
-): ByosanAngleCandidate {
+function selectedCandidate(research: ResearchResult): ByosanAngleCandidate {
 	const decision = research.angle_decision;
 	if (
 		!decision ||
@@ -669,7 +662,7 @@ export function selectedCandidate(
 	return candidate;
 }
 
-export async function generateFeatureSpec(
+async function generateFeatureSpec(
 	research: ResearchResult,
 	candidate: ByosanAngleCandidate,
 	productionPlan: ByosanProductionPlan,
@@ -987,7 +980,7 @@ function writeByosanCanonicalAudit(
 	});
 }
 
-export async function runByosanDaily(): Promise<void> {
+async function runByosanDaily(): Promise<void> {
 	if (
 		process.argv.includes("--dry-run") ||
 		process.env.BYOSAN_DAILY_DRY_RUN === "true"

@@ -4,7 +4,7 @@ import fs from "fs-extra";
 import yaml from "js-yaml";
 import { isCurrentByosanAngleDecision } from "./news_angle.js";
 
-export type ByosanCheckpointStages = {
+type ByosanCheckpointStages = {
 	research_ready: boolean;
 	spec_ready: boolean;
 	media_ready: boolean;
@@ -128,7 +128,7 @@ function checkpointPath(runDir: string): string {
 	return path.join(runDir, "state.json");
 }
 
-export function readByosanCheckpoint(runDir: string): ByosanCheckpoint | null {
+function readByosanCheckpoint(runDir: string): ByosanCheckpoint | null {
 	const statePath = checkpointPath(runDir);
 	if (!fs.existsSync(statePath)) return null;
 	try {

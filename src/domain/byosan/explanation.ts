@@ -57,9 +57,9 @@ const VerdictsSchema = z.object({
 	),
 });
 
-export type ExplanationEvidence = { candidate: string; articles: string };
+type ExplanationEvidence = { candidate: string; articles: string };
 
-export type ExplanationCandidate = Pick<
+type ExplanationCandidate = Pick<
 	ByosanAngleCandidate,
 	"topic" | "angle" | "hiddenMechanism" | "numbers"
 > & { sources: { url: string }[] };
