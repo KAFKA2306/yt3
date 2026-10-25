@@ -11,6 +11,7 @@ export type ExplainConfig = {
 	verify_prompt: string;
 	sandbox: string;
 	workdir_prefix: string;
+	max_attempts: number;
 	prompt: string;
 };
 
@@ -169,24 +170,28 @@ export function runCodexExplanation(
 	runDir: string,
 ): Explanation {
 	const logPath = codexLlmLogPath(runDir);
-	const explanation = codexJson(
-		cfg,
-		{ stage: "explanation", schema: cfg.schema, logPath },
-		`${cfg.prompt}\n\n[CANDIDATE]\n${evidence.candidate}\n\n[EVIDENCE]\n${evidence.articles}`,
-		path.join(runDir, "source", "explanation.raw.json"),
-		(value) => ExplanationSchema.parse(value),
-	);
-	const issues = auditExplanation(explanation, evidence.articles);
-	const { verdicts } = codexJson(
-		cfg,
-		{ stage: "explanation_verdict", schema: cfg.verify_schema, logPath },
-		`${cfg.verify_prompt}\n\n[EVIDENCE]\n${evidence.articles}\n\n[FIGURES]\n${JSON.stringify(explanation.figures, null, 2)}`,
-		path.join(runDir, "source", "explanation.verdicts.json"),
-		(value) => VerdictsSchema.parse(value),
-	);
-	issues.push(...auditVerdicts(explanation.figures, verdicts));
-	if (issues.length > 0) {
-		throw new Error(`CODEX_EXPLAIN_REJECTED ${issues.join(" | ")}`);
+	let feedback = "";
+	for (let attempt = 1; ; attempt++) {
+		const explanation = codexJson(
+			cfg,
+			{ stage: "explanation", schema: cfg.schema, logPath },
+			`${cfg.prompt}\n\n[CANDIDATE]\n${evidence.candidate}\n\n[EVIDENCE]\n${evidence.articles}${feedback}`,
+			path.join(runDir, "source", "explanation.raw.json"),
+			(value) => ExplanationSchema.parse(value),
+		);
+		const issues = auditExplanation(explanation, evidence.articles);
+		const { verdicts } = codexJson(
+			cfg,
+			{ stage: "explanation_verdict", schema: cfg.verify_schema, logPath },
+			`${cfg.verify_prompt}\n\n[EVIDENCE]\n${evidence.articles}\n\n[FIGURES]\n${JSON.stringify(explanation.figures, null, 2)}`,
+			path.join(runDir, "source", "explanation.verdicts.json"),
+			(value) => VerdictsSchema.parse(value),
+		);
+		issues.push(...auditVerdicts(explanation.figures, verdicts));
+		if (issues.length === 0) return explanation;
+		if (attempt >= cfg.max_attempts) {
+			throw new Error(`CODEX_EXPLAIN_REJECTED ${issues.join(" | ")}`);
+		}
+		feedback = `\n\n[PREVIOUS ISSUES]\n${issues.join("\n")}\n上の指摘を直して、explanation を作り直す。`;
 	}
-	return explanation;
 }
