@@ -772,7 +772,6 @@ feature_review:
     - segment_adversarial_evidence_missing
     - vendor_claim_boundary_missing
     - production_memo_in_dialogue
-    - explanation_figure_value_missing
     - unsourced_number
   production_memo_terms: ["分析では", "提供された証拠", "提供証拠", "独立照合", "画面に残", "概要欄", "テロップ", "台本", "出所境界", "検算", "共同出所", "確認できていません", "記事は"]
 
