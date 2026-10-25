@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { MOTION_CANVAS_VERSION } from "../src/domain/episode/motion_canvas_workspace.js";
 import { REMOTION_VERSION } from "../src/domain/episode/remotion_workspace.js";
 import { EpisodeSchema } from "../src/domain/episode/schema.js";

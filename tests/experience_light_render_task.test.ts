@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 type Taskfile = {
 	tasks: Record<string, { cmds?: string[] }>;

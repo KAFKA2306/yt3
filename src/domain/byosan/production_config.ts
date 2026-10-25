@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "fs-extra";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { z } from "zod";
 import { ByosanChaptersConfigSchema } from "./description.js";
 import { ByosanFeatureSegmentSchema } from "./feature_spec.js";

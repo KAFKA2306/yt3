@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "fs-extra";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { fromJSONSchema } from "zod";
 import type { SourceFetch } from "./feed_discovery.js";
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { ExperienceWorldSchema } from "../src/domain/experience/schema.js";
 
 const root = process.cwd();

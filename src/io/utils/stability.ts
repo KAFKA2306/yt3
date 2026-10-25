@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 export type FailureDisposition =
 	| "success"

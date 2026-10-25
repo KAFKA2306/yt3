@@ -3,7 +3,7 @@ import type { BaseChatModel } from "@langchain/core/language_models/chat_models"
 import { toJsonSchema } from "@langchain/core/utils/json_schema";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import fs from "fs-extra";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { z } from "zod";
 import { type AgentState, type AppConfig, RunStage } from "../domain/types.js";
 import { getYouTubeProfile } from "../domain/youtube_profiles.js";
