@@ -47,6 +47,9 @@ const SOURCE_GROUPS = {
 		"src/domain/byosan/feature_spec.ts",
 		"src/domain/byosan/feature_repair.ts",
 		"src/domain/byosan/explanation.ts",
+		"src/domain/byosan/explanation_contract.ts",
+		"src/domain/byosan/dialogue_style.ts",
+		"src/scripts/byosan_daily.ts",
 	],
 	media: ["src/scripts/produce_byosan_feature.ts"],
 	publish: [
@@ -106,6 +109,7 @@ function specFingerprint(root: string): string {
 		JSON.stringify({
 			prompts: config.prompts,
 			explain: config.explain,
+			dialogue_style: config.dialogue_style,
 			repair: config.repair,
 			llm: config.llm,
 		}),
