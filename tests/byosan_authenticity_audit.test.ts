@@ -294,15 +294,15 @@ describe("byosan authenticity audit", () => {
 		).toContain("claim_source_not_displayed");
 	});
 
-	test("fails when a claim has no id, so no scene can display its source", () => {
+	test("does not require a source line for a claim no scene references", () => {
 		expect(
 			codesOf({
 				claims: (claims) =>
-					claims.map((claim) =>
-						claim.id === "c2" ? { ...claim, id: undefined } : claim,
+					claims.flatMap((claim) =>
+						claim.id === "c1" ? [claim, { ...claim, id: "unused" }] : [claim],
 					),
 			}),
-		).toContain("claim_source_not_displayed");
+		).not.toContain("claim_source_not_displayed");
 	});
 
 	test("warns when the auditor and resolution roles are absent", () => {
