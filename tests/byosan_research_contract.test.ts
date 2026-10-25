@@ -39,6 +39,7 @@ describe("byosan angle gate configuration", () => {
 		expect(byosanAngleGate()).toEqual({
 			minCandidateCount: 5,
 			minDistinctPublishers: 3,
+			repeatWindowDays: 60,
 		});
 	});
 });

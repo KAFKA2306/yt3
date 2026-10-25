@@ -262,6 +262,26 @@ function distinctHosts(sources: ByosanAngleCandidate["sources"]): Set<string> {
 	);
 }
 
+const PublishedRunSpecSchema = z.object({
+	sources: z.array(z.object({ url: z.string().url() })),
+});
+
+function normalizedSourceUrl(url: string): string | null {
+	const parsed = new URL(url);
+	const pathname = parsed.pathname.replace(/\/+$/, "");
+	return pathname === "" ? null : `${parsed.origin}${pathname}`;
+}
+
+export function repeatsPublishedSource(
+	candidate: ByosanAngleCandidate,
+	publishedSourceUrls: ReadonlySet<string>,
+): boolean {
+	return candidate.sources.some((source) => {
+		const key = normalizedSourceUrl(source.url);
+		return key !== null && publishedSourceUrls.has(key);
+	});
+}
+
 const ORTHOGONALITY_MINIMUMS = {
 	geography: 2,
 	sector: 3,
@@ -470,6 +490,7 @@ const BYOSAN_COUNTERFACTUAL_TEST_PATTERN = new RegExp(
 export function evaluateByosanAngleCandidate(
 	candidateInput: ByosanAngleCandidate,
 	recentTitles: string[],
+	publishedSourceUrls: ReadonlySet<string>,
 ): z.infer<typeof ByosanEvaluatedAngleSchema> {
 	const candidate = ByosanAngleCandidateSchema.parse(candidateInput);
 	const primaryCount = candidate.sources.filter((source) =>
@@ -560,6 +581,8 @@ export function evaluateByosanAngleCandidate(
 		hardGateFailures.push("counterfactual_is_not_testable");
 	if (candidate.sources.some((source) => source.supports.length === 0))
 		hardGateFailures.push("claim_source_mapping_missing");
+	if (repeatsPublishedSource(candidate, publishedSourceUrls))
+		hardGateFailures.push("source_already_published");
 	const sourceIds = new Set(candidate.sources.map((source) => source.id));
 	const adversarialIds = new Set<string>();
 	for (const evidenceItem of candidate.adversarialEvidence) {
@@ -608,25 +631,30 @@ export function evaluateByosanAngleCandidate(
 export type ByosanAngleGate = {
 	minCandidateCount: number;
 	minDistinctPublishers: number;
+	repeatWindowDays: number;
 };
 
 export function selectByosanAngle(
 	candidateInputs: ByosanAngleCandidate[],
 	recentTitles: string[],
 	gate: ByosanAngleGate,
+	publishedSourceUrls: ReadonlySet<string>,
 ): ByosanAngleDecision {
 	const candidates = candidateInputs.map((candidate) =>
 		ByosanAngleCandidateSchema.parse(candidate),
 	);
+	const available = candidates.filter(
+		(candidate) => !repeatsPublishedSource(candidate, publishedSourceUrls),
+	);
 	const evaluated = candidates.map((candidate) =>
-		evaluateByosanAngleCandidate(candidate, recentTitles),
+		evaluateByosanAngleCandidate(candidate, recentTitles, publishedSourceUrls),
 	);
 	const distinctPublishers = new Set(
-		candidates.flatMap((candidate) => [...distinctHosts(candidate.sources)]),
+		available.flatMap((candidate) => [...distinctHosts(candidate.sources)]),
 	);
-	const orthogonality = evaluateOrthogonality(candidates);
+	const orthogonality = evaluateOrthogonality(available);
 	const collectionFailures: string[] = [];
-	if (candidates.length < gate.minCandidateCount)
+	if (available.length < gate.minCandidateCount)
 		collectionFailures.push(`fewer_than_${gate.minCandidateCount}_candidates`);
 	if (distinctPublishers.size < gate.minDistinctPublishers)
 		collectionFailures.push(
@@ -654,17 +682,17 @@ export function selectByosanAngle(
 						.filter((reason, index, all) => all.indexOf(reason) === index)
 						.join(",")
 				: `candidate_${selectedIndex}_won_deterministic_ranking`,
-		candidateCount: candidates.length,
+		candidateCount: available.length,
 		distinctPublisherCount: distinctPublishers.size,
 		orthogonality,
 		evaluated,
 	});
 }
 
-export function loadRecentByosanTitles(
+function recentByosanRunDirs(
 	root: string,
 	currentDate: Date,
-	days = 30,
+	days: number,
 ): string[] {
 	const runsDir = path.join(root, "runs", "byosan_money");
 	if (!fs.existsSync(runsDir)) return [];
@@ -679,26 +707,57 @@ export function loadRecentByosanTitles(
 				!Number.isNaN(date.getTime()) && date >= cutoff && date <= currentDate
 			);
 		})
-		.flatMap((runId) => {
-			const statePath = path.join(runsDir, runId, "state.json");
-			if (!fs.existsSync(statePath)) return [];
-			try {
-				const state = fs.readJsonSync(statePath) as {
-					metadata?: { title?: string };
-					script?: { title?: string };
-					director_data?: { angle?: string; search_query?: string };
-				};
-				return [
-					[
-						state.metadata?.title || state.script?.title || "",
-						state.director_data?.angle || "",
-						state.director_data?.search_query || "",
-					]
-						.filter(Boolean)
-						.join(" "),
-				].filter(Boolean);
-			} catch {
-				return [];
-			}
-		});
+		.map((runId) => path.join(runsDir, runId));
+}
+
+export function loadPublishedByosanSourceUrls(
+	root: string,
+	currentDate: Date,
+	days: number,
+): Set<string> {
+	return new Set(
+		recentByosanRunDirs(root, currentDate, days)
+			.filter(
+				(runDir) =>
+					fs.existsSync(path.join(runDir, "publish", "receipt.json")) &&
+					fs.existsSync(path.join(runDir, "source", "feature_spec.json")),
+			)
+			.flatMap((runDir) =>
+				PublishedRunSpecSchema.parse(
+					fs.readJsonSync(path.join(runDir, "source", "feature_spec.json")),
+				).sources.flatMap((source) => {
+					const key = normalizedSourceUrl(source.url);
+					return key === null ? [] : [key];
+				}),
+			),
+	);
+}
+
+export function loadRecentByosanTitles(
+	root: string,
+	currentDate: Date,
+	days = 30,
+): string[] {
+	return recentByosanRunDirs(root, currentDate, days).flatMap((runDir) => {
+		const statePath = path.join(runDir, "state.json");
+		if (!fs.existsSync(statePath)) return [];
+		try {
+			const state = fs.readJsonSync(statePath) as {
+				metadata?: { title?: string };
+				script?: { title?: string };
+				director_data?: { angle?: string; search_query?: string };
+			};
+			return [
+				[
+					state.metadata?.title || state.script?.title || "",
+					state.director_data?.angle || "",
+					state.director_data?.search_query || "",
+				]
+					.filter(Boolean)
+					.join(" "),
+			].filter(Boolean);
+		} catch {
+			return [];
+		}
+	});
 }

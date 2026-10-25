@@ -20,6 +20,7 @@ describe("byosan sharp-angle prompt contract", () => {
 					"もし政策の確信がより強ければ、市場は別の反応を示していた",
 			},
 			[],
+			new Set<string>(),
 		);
 		expect(evaluated.hardGateFailures).toContain(
 			"counterfactual_is_not_testable",

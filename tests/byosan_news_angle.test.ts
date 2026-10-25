@@ -1,9 +1,13 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import os from "node:os";
+import path from "node:path";
+import fs from "fs-extra";
 import {
 	type ByosanAngleCandidate,
 	byosanTextSimilarity,
 	evaluateByosanAngleCandidate,
 	isCurrentByosanAngleDecision,
+	loadPublishedByosanSourceUrls,
 	normalizeByosanAngleCandidateForm,
 	selectByosanAngle,
 	selectByosanProductionPlan,
@@ -11,7 +15,11 @@ import {
 } from "../src/domain/byosan/news_angle.js";
 import { fixtureAt } from "./fixtures/fixture_at.js";
 
-const gate = { minCandidateCount: 5, minDistinctPublishers: 3 };
+const gate = {
+	minCandidateCount: 5,
+	minDistinctPublishers: 3,
+	repeatWindowDays: 60,
+};
 
 function candidate(
 	overrides: Partial<ByosanAngleCandidate> = {},
@@ -96,7 +104,11 @@ describe("byosan sharp-angle gate", () => {
 	});
 
 	test("a grounded numerical counterfactual can pass", () => {
-		const result = evaluateByosanAngleCandidate(candidate(), []);
+		const result = evaluateByosanAngleCandidate(
+			candidate(),
+			[],
+			new Set<string>(),
+		);
 		expect(result.passed).toBe(true);
 		expect(result.weightedScore).toBeGreaterThanOrEqual(75);
 	});
@@ -114,7 +126,7 @@ describe("byosan sharp-angle gate", () => {
 				},
 			],
 		});
-		const result = evaluateByosanAngleCandidate(item, []);
+		const result = evaluateByosanAngleCandidate(item, [], new Set<string>());
 		expect(result.passed).toBe(false);
 		expect(result.hardGateFailures).toContain(
 			"adversarial_evidence_source_missing",
@@ -134,7 +146,7 @@ describe("byosan sharp-angle gate", () => {
 				},
 			],
 		});
-		const result = evaluateByosanAngleCandidate(item, []);
+		const result = evaluateByosanAngleCandidate(item, [], new Set<string>());
 		expect(result.passed).toBe(false);
 		expect(result.hardGateFailures).toContain(
 			"no_counter_evidence_scope_too_narrow",
@@ -143,26 +155,57 @@ describe("byosan sharp-angle gate", () => {
 
 	test("recent-topic duplication blocks the candidate", () => {
 		const item = candidate();
-		const result = evaluateByosanAngleCandidate(item, [
-			`${item.titleHook} ${item.topic} ${item.noveltyFingerprint}`,
-		]);
+		const result = evaluateByosanAngleCandidate(
+			item,
+			[`${item.titleHook} ${item.topic} ${item.noveltyFingerprint}`],
+			new Set<string>(),
+		);
 		expect(result.passed).toBe(false);
 		expect(result.hardGateFailures).toContain(
 			"recent_topic_similarity_above_0_42",
 		);
 	});
 
+	test("a candidate citing a published primary source is excluded before the collection gate", () => {
+		const repeated = candidate();
+		const fresh = candidate({
+			topic: "別の観測",
+			sources: candidate().sources.map((source) => ({
+				...source,
+				url: `https://other.example.com/${source.id}`,
+			})),
+		});
+		const result = selectByosanAngle(
+			[repeated, fresh],
+			[],
+			{ ...gate, minCandidateCount: 1, minDistinctPublishers: 1 },
+			new Set(["https://www.sec.gov/filing"]),
+		);
+		expect(result.decision).toBe("PASS");
+		expect(result.selectedIndex).toBe(1);
+		expect(result.evaluated[0]?.hardGateFailures).toContain(
+			"source_already_published",
+		);
+	});
+
 	test("the collection gate requires the configured candidate count", () => {
-		const result = selectByosanAngle([candidate()], [], gate);
+		const result = selectByosanAngle(
+			[candidate()],
+			[],
+			gate,
+			new Set<string>(),
+		);
 		expect(result.decision).toBe("STOP");
 		expect(result.reason).toContain("fewer_than_5_candidates");
 	});
 
 	test("the collection gate follows the configured minimums", () => {
-		const result = selectByosanAngle([candidate()], [], {
-			minCandidateCount: 1,
-			minDistinctPublishers: 2,
-		});
+		const result = selectByosanAngle(
+			[candidate()],
+			[],
+			{ ...gate, minCandidateCount: 1, minDistinctPublishers: 2 },
+			new Set<string>(),
+		);
 		expect(result.decision).toBe("PASS");
 		expect(result.selectedIndex).toBe(0);
 	});
@@ -229,7 +272,7 @@ describe("byosan sharp-angle gate", () => {
 				},
 			],
 		});
-		const evaluated = evaluateByosanAngleCandidate(item, []);
+		const evaluated = evaluateByosanAngleCandidate(item, [], new Set<string>());
 		expect(evaluated.passed).toBe(true);
 		const first = selectByosanProductionPlan(evaluated, "2026-09-06");
 		const second = selectByosanProductionPlan(evaluated, "2026-09-06");
@@ -258,7 +301,7 @@ describe("byosan sharp-angle gate", () => {
 				},
 			],
 		});
-		const evaluated = evaluateByosanAngleCandidate(item, []);
+		const evaluated = evaluateByosanAngleCandidate(item, [], new Set<string>());
 		expect(evaluated.passed).toBe(false);
 		expect(evaluated.hardGateFailures).toContain(
 			"archetype_evidence_source_missing",
@@ -306,7 +349,7 @@ describe("byosan sharp-angle gate", () => {
 				],
 			}),
 		);
-		const result = selectByosanAngle(candidates, [], gate);
+		const result = selectByosanAngle(candidates, [], gate, new Set<string>());
 		expect(result.decision).toBe("PASS");
 		expect(result.selectedIndex).not.toBeNull();
 		expect(result.distinctPublisherCount).toBeGreaterThanOrEqual(3);
@@ -349,7 +392,7 @@ describe("byosan sharp-angle gate", () => {
 				],
 			}),
 		);
-		const result = selectByosanAngle(candidates, [], gate);
+		const result = selectByosanAngle(candidates, [], gate, new Set<string>());
 		expect(result.decision).toBe("PASS");
 		expect(result.orthogonality.failedAxes).toContain(
 			"insufficient_sector_diversity",
@@ -371,5 +414,44 @@ describe("byosan cached angle decision", () => {
 				evaluated: [{ candidate: { angle: "old" } }],
 			}),
 		).toBe(false);
+	});
+});
+
+describe("published source history", () => {
+	const roots: string[] = [];
+
+	afterEach(async () => {
+		await Promise.all(roots.splice(0).map((root) => fs.remove(root)));
+	});
+
+	test("collects document URLs of published runs inside the window only", async () => {
+		const root = await fs.mkdtemp(path.join(os.tmpdir(), "byosan-history-"));
+		roots.push(root);
+		const writeRun = async (
+			runId: string,
+			published: boolean,
+			urls: string[],
+		) => {
+			const runDir = path.join(root, "runs", "byosan_money", runId);
+			await fs.outputJson(path.join(runDir, "source", "feature_spec.json"), {
+				sources: urls.map((url) => ({ url })),
+			});
+			if (published) {
+				await fs.outputJson(path.join(runDir, "publish", "receipt.json"), {});
+			}
+		};
+		await writeRun("2026-10-24-daily", true, [
+			"https://www.msci.com/a?utm=1",
+			"https://fred.stlouisfed.org/",
+		]);
+		await writeRun("2026-10-22-daily", false, ["https://www.msci.com/b"]);
+		await writeRun("2026-07-01-daily", true, ["https://www.msci.com/c"]);
+		expect([
+			...loadPublishedByosanSourceUrls(
+				root,
+				new Date("2026-10-25T23:59:59Z"),
+				60,
+			),
+		]).toEqual(["https://www.msci.com/a"]);
 	});
 });
