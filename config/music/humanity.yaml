@@ -51,6 +51,7 @@ audit:
   max_tail_mean_db: -35
   tail_seconds: 1
   duration_tolerance_seconds: 1.5
+  max_song_attempts: 3
 metadata:
   title_suffix: " | 人類観測所の音楽"
   tags: [YuE2, AI音楽, テクノポップ, 人類観測所]
