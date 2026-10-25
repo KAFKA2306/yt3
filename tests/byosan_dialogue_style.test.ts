@@ -18,6 +18,7 @@ const style: DialogueStyle = {
 		max_sentences_per_utterance: 2,
 		opening_seconds: 30,
 		filler_phrases: ["その通り", "なるほど"],
+		production_memo_terms: ["分析では"],
 	},
 };
 
