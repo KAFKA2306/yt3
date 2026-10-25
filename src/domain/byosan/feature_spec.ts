@@ -386,7 +386,7 @@ export function auditByosanFeatureSpec(
 		if (primaryClaim && figuresIn(primaryClaim.claim).length === 0) {
 			issues.push({
 				code: "packaging_primary_claim_without_figure",
-				details: primaryClaim.id ?? primaryClaim.claim,
+				details: `${primaryClaim.id ?? primaryClaim.claim} は claim 本文に「数値＋単位(%, 円, ドル, 倍, 兆円, 億円)」を含める。例: 「前年比31%増」。数値のない定性的な claim を primaryClaimId にしない`,
 				path: "packaging.primaryClaimId",
 			});
 		}
