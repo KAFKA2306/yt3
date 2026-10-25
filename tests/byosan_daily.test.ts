@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
+import { loadPanel } from "../src/domain/byosan/panel.js";
 import {
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
@@ -10,6 +11,15 @@ import {
 	recordByosanFailure,
 } from "../src/scripts/byosan_daily.js";
 import { fixtureDraft, fixtureInput } from "./fixtures/byosan_draft.js";
+
+const panelReply = (score: number): string =>
+	JSON.stringify({
+		reviews: loadPanel().personas.map((persona) => ({
+			persona: persona.name,
+			score,
+			fix: `${persona.name}の直してほしい点`,
+		})),
+	});
 
 const tempRoots: string[] = [];
 
@@ -101,14 +111,15 @@ describe("byosan single-call script generation", () => {
 
 	test("one LLM call returns the spec and the explanation when every check passes", async () => {
 		const runDir = await makeRunDir();
-		const llm = scripted(JSON.stringify(fixtureDraft()));
+		const llm = scripted(JSON.stringify(fixtureDraft()), panelReply(4));
 		const { spec, explanation } = await generateFeatureSpec(
 			fixtureInput(),
 			runDir,
 			llm.exec,
 		);
-		expect(llm.prompts).toHaveLength(1);
+		expect(llm.prompts).toHaveLength(2);
 		expect(llm.prompts[0]).toContain("[今日の新着記事]");
+		expect(llm.prompts[1]).toContain("[台本]");
 		expect(spec.runId).toBe("byosan_money/2026-10-25-daily");
 		expect(spec.sources.length).toBeGreaterThanOrEqual(2);
 		expect(explanation.figures).toHaveLength(2);
@@ -125,16 +136,49 @@ describe("byosan single-call script generation", () => {
 				...rest,
 			],
 		};
-		const llm = scripted(JSON.stringify(bad), JSON.stringify(draft));
+		const llm = scripted(
+			JSON.stringify(bad),
+			JSON.stringify(draft),
+			panelReply(4),
+		);
 		const { spec } = await generateFeatureSpec(
 			fixtureInput(),
 			runDir,
 			llm.exec,
 		);
-		expect(llm.prompts).toHaveLength(2);
+		expect(llm.prompts).toHaveLength(3);
 		expect(llm.prompts[0]).toContain("前回の検証エラー: なし");
 		expect(llm.prompts[1]).toContain("unsourced_number=987654");
 		expect(spec.segments[0]?.text).not.toContain("987654");
+	});
+});
+
+describe("byosan panel rewrite loop", () => {
+	const run = async (first: number, second: number) => {
+		const runDir = await makeRunDir();
+		const draft = JSON.stringify(fixtureDraft());
+		const prompts: string[] = [];
+		const replies = [draft, panelReply(first), draft, panelReply(second)];
+		await generateFeatureSpec(fixtureInput(), runDir, (prompt) => {
+			prompts.push(prompt);
+			return replies[prompts.length - 1] ?? "";
+		});
+		const panel = await fs.readJson(path.join(runDir, "audit", "panel.json"));
+		return { prompts, panel };
+	};
+
+	test("a mean below the threshold rewrites once with the feedback and adopts the better round", async () => {
+		const { prompts, panel } = await run(2, 4);
+		expect(prompts).toHaveLength(4);
+		expect(prompts[2]).toContain("[前回の台本]");
+		expect(prompts[2]).toContain("の直してほしい点");
+		expect(panel.adopted_round).toBe(2);
+		expect(panel.rounds.map((r: { mean: number }) => r.mean)).toEqual([2, 4]);
+	});
+
+	test("a rewrite that scores worse keeps the first script", async () => {
+		const { panel } = await run(3, 2);
+		expect(panel.adopted_round).toBe(1);
 	});
 });
 

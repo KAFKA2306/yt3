@@ -59,6 +59,16 @@ import {
 	writeDiscoveryEvidence,
 } from "../domain/byosan/feed_discovery.js";
 import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
+import {
+	type PanelReview,
+	PanelReviewSchema,
+	bestRound,
+	loadPanel,
+	meanScore,
+	renderPanelFeedback,
+	renderPanelReviewPrompt,
+	validatePanelReview,
+} from "../domain/byosan/panel.js";
 import { loadPublishedByosanSourceUrls } from "../domain/byosan/published_sources.js";
 import {
 	AssetStore,
@@ -378,66 +388,140 @@ export async function generateFeatureSpec(
 	const system = `${dailyConfig().feature_draft.system}\n${renderDialogueStylePrompt(loadDialogueStyle())}`;
 	const review = loadFeatureReview();
 	const llm = byosanLlmConfig();
+	const panel = loadPanel();
 	const articles = renderFeatureDraftInput(input);
-	const request = structuredRequest({
-		maxAttempts: llm.max_attempts,
-		schema: z.unknown(),
-		providerSchema: ByosanFeatureDraftSchema,
-		name: "byosan_feature_draft",
-		exec,
-		evidencePath: path.join(
-			runDir,
-			"audit",
-			"structured_feature_attempts.json",
-		),
-		messages: (attempt, lastValidationError) => [
-			{ role: "system", content: system },
-			{
-				role: "user",
-				content: `${articles}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限）:\n${FEATURE_DRAFT_SIZE_LIMITS}\n\n${titleRule}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+	const write = async (round: number, extra: string) => {
+		const request = structuredRequest({
+			maxAttempts: llm.max_attempts,
+			schema: z.unknown(),
+			providerSchema: ByosanFeatureDraftSchema,
+			name: "byosan_feature_draft",
+			exec,
+			evidencePath: path.join(
+				runDir,
+				"audit",
+				`structured_feature_attempts_${round}.json`,
+			),
+			messages: (attempt, lastValidationError) => [
+				{ role: "system", content: system },
+				{
+					role: "user",
+					content: `${articles}${extra}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限）:\n${FEATURE_DRAFT_SIZE_LIMITS}\n\n${titleRule}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+				},
+			],
+			validate: (rawDraft) => {
+				if (!isJson(rawDraft)) {
+					throw new Error(
+						"BYOSAN_FEATURE_DRAFT_INVALID: draft must be a JSON object",
+					);
+				}
+				const normalized = normalizeFeatureDraft(rawDraft);
+				const blocking = featureDraftIssues(normalized.draft, input).filter(
+					(issue) => isBlockingFeatureIssue(issue, review),
+				);
+				if (blocking.length > 0) {
+					throw new Error(
+						`BYOSAN_FEATURE_DRAFT_INVALID: ${summarizeFeatureIssues(blocking)}`,
+					);
+				}
+				return normalized;
 			},
-		],
-		validate: (rawDraft) => {
-			if (!isJson(rawDraft)) {
-				throw new Error(
-					"BYOSAN_FEATURE_DRAFT_INVALID: draft must be a JSON object",
-				);
-			}
-			const normalized = normalizeFeatureDraft(rawDraft);
-			const blocking = featureDraftIssues(normalized.draft, input).filter(
-				(issue) => isBlockingFeatureIssue(issue, review),
-			);
-			if (blocking.length > 0) {
-				throw new Error(
-					`BYOSAN_FEATURE_DRAFT_INVALID: ${summarizeFeatureIssues(blocking)}`,
-				);
-			}
-			return normalized;
-		},
-	});
-	const { draft, corrections } =
-		llmBackend(llm, "feature") === "codex"
-			? await invokeCodexStructured({
-					llm,
-					logPath: codexLlmLogPath(runDir),
-					...request,
-				})
-			: await invokeStructuredLlm({
-					...request,
-					llmOptions: { temperature: 0.28, sessionId: runDir },
-				});
-	fs.outputJsonSync(
-		path.join(runDir, "audit", "feature_corrections.json"),
-		corrections,
-		{
-			spaces: 2,
-		},
-	);
-	const parsed = ByosanFeatureDraftSchema.parse(draft);
-	return {
-		spec: parseAndAuditByosanFeatureSpec(buildFeatureSpecInput(parsed, input)),
-		explanation: parsed.explanation,
+		});
+		const { draft, corrections } =
+			llmBackend(llm, "feature") === "codex"
+				? await invokeCodexStructured({
+						llm,
+						logPath: codexLlmLogPath(runDir),
+						...request,
+					})
+				: await invokeStructuredLlm({
+						...request,
+						llmOptions: { temperature: 0.28, sessionId: runDir },
+					});
+		fs.outputJsonSync(
+			path.join(runDir, "audit", `feature_corrections_${round}.json`),
+			corrections,
+			{ spaces: 2 },
+		);
+		const parsed = ByosanFeatureDraftSchema.parse(draft);
+		return {
+			parsed,
+			spec: parseAndAuditByosanFeatureSpec(
+				buildFeatureSpecInput(parsed, input),
+			),
+		};
 	};
+	const rounds: {
+		round: number;
+		mean: number;
+		review: PanelReview;
+		parsed: z.infer<typeof ByosanFeatureDraftSchema>;
+		spec: ByosanFeatureSpec;
+	}[] = [];
+	let extra = "";
+	let skipped: string | null = null;
+	for (let round = 1; ; round++) {
+		try {
+			const { parsed, spec } = await write(round, extra);
+			const script = spec.segments
+				.map((segment) => `${segment.speaker}: ${segment.text}`)
+				.join("\n");
+			const scored = await invokeCodexStructured({
+				llm,
+				logPath: codexLlmLogPath(runDir),
+				schema: PanelReviewSchema,
+				name: "byosan_panel_review",
+				exec,
+				maxAttempts: llm.max_attempts,
+				evidencePath: path.join(
+					runDir,
+					"audit",
+					`structured_panel_attempts_${round}.json`,
+				),
+				messages: (attempt, lastValidationError) => [
+					{
+						role: "user",
+						content: `${renderPanelReviewPrompt(panel, script)}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+					},
+				],
+				validate: (value) => validatePanelReview(value, panel),
+			});
+			rounds.push({
+				round,
+				mean: meanScore(scored),
+				review: scored,
+				parsed,
+				spec,
+			});
+			if (meanScore(scored) >= panel.threshold || round >= panel.max_rounds) {
+				break;
+			}
+			extra = `\n\n[前回の台本]\n${JSON.stringify(parsed)}\n\n[視聴者の評価（平均${meanScore(scored).toFixed(2)}点）]\n${renderPanelFeedback(scored)}\n\n${panel.rewrite_instruction}`;
+		} catch (error) {
+			if (rounds.length === 0) throw error;
+			skipped = `round ${round}: ${error instanceof Error ? error.message : String(error)}`;
+			break;
+		}
+	}
+	const best = bestRound(rounds);
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "panel.json"),
+		{
+			threshold: panel.threshold,
+			adopted_round: best.round,
+			skipped_round: skipped,
+			rounds: rounds.map(({ round, mean, review: reviews, parsed }) => ({
+				round,
+				mean,
+				reviews: reviews.reviews,
+				script: parsed.segments.map(
+					(segment) => `${segment.speaker}: ${segment.text}`,
+				),
+			})),
+		},
+		{ spaces: 2 },
+	);
+	return { spec: best.spec, explanation: best.parsed.explanation };
 }
 
 function runCommand(
