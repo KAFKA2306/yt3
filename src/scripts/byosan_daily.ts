@@ -4,7 +4,11 @@ import path from "node:path";
 import fs from "fs-extra";
 import yaml from "js-yaml";
 import { z } from "zod";
-import { type ResearchResult, TrendScout } from "../domain/agents/research.js";
+import {
+	type ResearchResult,
+	TrendScout,
+	byosanAngleGate,
+} from "../domain/agents/research.js";
 import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
 import {
 	buildCanonicalAudit,
@@ -76,6 +80,8 @@ import {
 	type ByosanAngleCandidate,
 	type ByosanProductionPlan,
 	isCurrentByosanAngleDecision,
+	loadPublishedByosanSourceUrls,
+	repeatsPublishedSource,
 	selectByosanProductionPlan,
 } from "../domain/byosan/news_angle.js";
 import { loadPreferredByosanFormat } from "../domain/byosan/performance.js";
@@ -430,10 +436,20 @@ export function pendingLlmBackends(
 
 export function reusableResearchResult(
 	cached: ResearchResult,
+	publishedSourceUrls: ReadonlySet<string>,
 ): ResearchResult | undefined {
-	return isCurrentByosanAngleDecision(cached.angle_decision)
-		? cached
-		: undefined;
+	const decision = cached.angle_decision;
+	if (!isCurrentByosanAngleDecision(decision)) return undefined;
+	const selected =
+		decision.selectedIndex === null
+			? undefined
+			: decision.evaluated[decision.selectedIndex];
+	if (
+		selected &&
+		repeatsPublishedSource(selected.candidate, publishedSourceUrls)
+	)
+		return undefined;
+	return cached;
 }
 
 export function preflightBlockedMessage(
@@ -1018,8 +1034,14 @@ async function runByosanDaily(): Promise<void> {
 		checkpoint.stages.research_ready && (await fs.pathExists(researchPath))
 			? ((await fs.readJson(researchPath)) as ResearchResult)
 			: undefined;
+	const publishedSourceUrls = loadPublishedByosanSourceUrls(
+		ROOT,
+		new Date(`${date}T23:59:59Z`),
+		byosanAngleGate().repeatWindowDays,
+	);
 	const reusedResearch =
-		cachedResearch && reusableResearchResult(cachedResearch);
+		cachedResearch &&
+		reusableResearchResult(cachedResearch, publishedSourceUrls);
 	const specPath = path.join(store.runDir, "source", "feature_spec.json");
 	const specReused =
 		checkpoint.stages.spec_ready && (await fs.pathExists(specPath));

@@ -133,7 +133,7 @@ describe("byosan research cache reuse", () => {
 				evaluated: [],
 			},
 		};
-		expect(reusableResearchResult(cached)).toBe(cached);
+		expect(reusableResearchResult(cached, new Set<string>())).toBe(cached);
 	});
 
 	test("rejects a cached research result built under an older candidate contract", () => {
@@ -151,7 +151,7 @@ describe("byosan research cache reuse", () => {
 				},
 			}),
 		);
-		expect(reusableResearchResult(cached)).toBeUndefined();
+		expect(reusableResearchResult(cached, new Set<string>())).toBeUndefined();
 	});
 });
 

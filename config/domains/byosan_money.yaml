@@ -217,6 +217,7 @@ discovery:
 angle_gate:
   min_candidate_count: 5
   min_distinct_publishers: 3
+  repeat_window_days: 60
 
 llm:
   sandbox: "read-only"
@@ -375,6 +376,11 @@ prompts:
 
         [MISSION EVIDENCE] の新着記事だけを題材の候補にしてください。記事に書かれていない事象や数値を足さないでください。
         候補は媒体・記事が一つに偏らないようにし、各候補の根拠は記事本文の数値と、記事が挙げる出典にしてください。
+
+      repeat_avoidance_template: |
+        【PUBLISHED SOURCE EXCLUSION】
+        次の URL は、直近の公開済み動画が出典に使った一次資料です。これらを出典に含む候補は、同じ題材の再制作になるため選ばないでください。
+        {published_urls}
 
       candidate_repair_template: |
         【CANDIDATE REPAIR】

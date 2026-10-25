@@ -19,6 +19,7 @@ import {
 	type ByosanAngleDecision,
 	type ByosanAngleGate,
 	isCurrentByosanAngleDecision,
+	loadPublishedByosanSourceUrls,
 	loadRecentByosanTitles,
 	selectByosanAngle,
 	settleByosanAngleCandidate,
@@ -224,12 +225,14 @@ export function byosanAngleGate(): ByosanAngleGate {
 			angle_gate: {
 				min_candidate_count: number;
 				min_distinct_publishers: number;
+				repeat_window_days: number;
 			};
 		}
 	).angle_gate;
 	return {
 		minCandidateCount: gate.min_candidate_count,
 		minDistinctPublishers: gate.min_distinct_publishers,
+		repeatWindowDays: gate.repeat_window_days,
 	};
 }
 
@@ -272,6 +275,7 @@ export class TrendScout extends BaseAgent {
 				system: string;
 				user_template: string;
 				candidate_repair_template: string;
+				repeat_avoidance_template: string;
 			};
 		}>(this.name);
 		const currentDate = getCurrentDateString();
@@ -286,7 +290,21 @@ export class TrendScout extends BaseAgent {
 			.replace("{current_date}", currentDate);
 		userPrompt += this.buildSourceRegistryPrompt(bucket);
 		const angleGate = bucket === "byosan_money" ? byosanAngleGate() : undefined;
-		if (angleGate) userPrompt += this.buildSharpAnglePrompt(angleGate);
+		const publishedSourceUrls = angleGate
+			? loadPublishedByosanSourceUrls(
+					ROOT,
+					new Date(`${currentDate}T23:59:59Z`),
+					angleGate.repeatWindowDays,
+				)
+			: new Set<string>();
+		if (angleGate) {
+			userPrompt += this.buildSharpAnglePrompt(angleGate);
+			userPrompt +=
+				promptCfg.consolidated_research.repeat_avoidance_template.replace(
+					"{published_urls}",
+					[...publishedSourceUrls].join("\n"),
+				);
+		}
 
 		if (missionFile) {
 			const sourcePath = path.isAbsolute(missionFile)
@@ -390,6 +408,7 @@ export class TrendScout extends BaseAgent {
 				candidateLocations.map((entry) => entry.candidate),
 				recentTitles,
 				angleGate,
+				publishedSourceUrls,
 			);
 			fs.outputJsonSync(
 				path.join(
