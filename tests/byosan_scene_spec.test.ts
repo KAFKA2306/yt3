@@ -62,7 +62,10 @@ describe("byosan scene spec", () => {
 			(segment) => segment.stats.length === 1,
 		);
 		const qualified = withSegment(index, {
-			stats: [{ ...source.segments[index]!.stats[0]!, value: "more than 40%" }],
+			stats: (source.segments[index]?.stats ?? []).map((stat) => ({
+				...stat,
+				value: "more than 40%",
+			})),
 		});
 		const kinds = compileScenes(qualified, explanation, config).map(
 			(scene) => scene.visual.kind,
