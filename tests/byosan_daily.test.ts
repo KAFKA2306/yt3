@@ -7,7 +7,6 @@ import {
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
 	generateFeatureSpec,
-	preflightBlockedMessage,
 	recordByosanFailure,
 } from "../src/scripts/byosan_daily.js";
 import { fixtureDraft, fixtureInput } from "./fixtures/byosan_draft.js";
@@ -183,43 +182,6 @@ describe("byosan panel rewrite loop", () => {
 });
 
 describe("byosan failure retry limits", () => {
-	test("carries the failing preflight check reason so the failure is classifiable", async () => {
-		const runDir = await makeRunDir();
-		const message = preflightBlockedMessage(
-			{
-				schema_version: "byosan_production_preflight_v1",
-				status: "FAIL",
-				profile: "byosan",
-				run_id: "byosan_money/2026-10-10-daily",
-				publication_attempted: false,
-				generated_at: "2026-10-10T06:00:44.331Z",
-				checks: {
-					ffmpeg: {
-						status: "PASS",
-						component: "ffmpeg",
-						method: "ffmpeg -version",
-						reason: "command is available",
-						evidence: [],
-					},
-					gemini: {
-						status: "FAIL",
-						component: "gemini",
-						method: "configuration + structured-output probe",
-						reason: "429 Too Many Requests: quota exhausted",
-						evidence: [],
-					},
-				},
-			},
-			"audit/preflight.json",
-		);
-		expect(message).toContain(
-			"gemini FAIL: 429 Too Many Requests: quota exhausted",
-		);
-		expect(message).not.toContain("ffmpeg FAIL");
-		const trace = recordByosanFailure(runDir, new Error(message), "head-a");
-		expect(trace.failure_class).toBe("PROVIDER_RATE_LIMIT");
-	});
-
 	test("classifies a Zod invalid_type issue from provider output as PIPELINE_FAILURE", async () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
@@ -237,7 +199,7 @@ describe("byosan failure retry limits", () => {
 		const trace = recordByosanFailure(
 			runDir,
 			new Error(
-				"BYOSAN_PREFLIGHT_BLOCKED: FAIL /home/kafka/2511youtuber/v3/yt3/runs/byosan_money/2026-10-10-daily/audit/preflight.json",
+				"BYOSAN_FEATURE_DRAFT_INVALID: /home/kafka/2511youtuber/v3/yt3/runs/byosan_money/2026-10-10-daily/audit/feature.json",
 			),
 			"head-a",
 		);

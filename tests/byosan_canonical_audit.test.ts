@@ -56,7 +56,7 @@ describe("byosan canonical audit", () => {
 		expect(checks.factual_integrity?.details).toContain("c9");
 	});
 
-	test("fails factual integrity when the explanation figures do not match the script", () => {
+	test("fails factual integrity when the explanation contract reports an issue", () => {
 		const checks = buildCanonicalAudit({
 			...passing,
 			explanationIssues: ["explanation_figure_value_missing:＋2.1％"],

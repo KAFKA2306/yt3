@@ -43,6 +43,9 @@ Every test file under `tests/` runs in `check:merge`. These areas were reviewed 
 | --- | --- | --- |
 | Byosan discovery source schema | kept | `tests/byosan_discovery_sources.test.ts` (`DiscoverySourcesSchema`, `loadDiscoverySources`) |
 | Byosan checkpoint invalidation | kept | `tests/byosan_checkpoint.test.ts` |
+| Byosan preflight (ffmpeg, node dependencies, Python runtime, VOICEVOX) | removed | no publication-facing output depends on it; each dependency fails at its point of use. `tests/byosan_preflight.test.ts` and `tests/byosan_deps_preflight.test.ts` deleted |
+| Byosan authenticity heuristics (scene kind runs, generic ratio, history similarity, comparison counts, verification roles) | removed | editorial heuristics, not gates. Only unresolved scene claims and third-party URLs fail the audit (`tests/byosan_authenticity_audit.test.ts`) |
+| Byosan figure values matched against the script | removed | the figures still come from the explanation; only unsourced numbers are checked (`tests/byosan_spec_validation.test.ts`) |
 | Discord bot failure exit codes | added | `tests/discord_exit_codes.test.ts`: authentication failures exit 78 (systemd does not restart), network failures exit 1 |
 | Overlay layout bounds | added | `tests/layout_bounds.test.ts`: height ratio and anchor placement used by rendered overlays |
 | Publish start/complete Discord notices | not kept | message text only; publish gating is covered by `tests/publish_contract.test.ts` and `tests/publication_state.test.ts` |

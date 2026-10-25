@@ -90,10 +90,6 @@ const ByosanSceneConditionSchema = z
 
 export const ByosanScenesConfigSchema = z
 	.object({
-		max_scenes: z.number().int().positive(),
-		max_numbers_per_scene: z.number().int().positive(),
-		max_consecutive_same_kind: z.number().int().positive(),
-		min_distinct_kinds: z.number().int().positive(),
 		chars_per_second: z.number().positive(),
 		rules: z
 			.array(
