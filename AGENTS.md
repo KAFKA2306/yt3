@@ -36,7 +36,8 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - Push each commit to `origin` immediately.
 - Merge a PR with `gh pr merge --merge` when exact-head CI passes. Do not squash or rebase.
 - Close an Issue only after its fix is merged to `main` and the acceptance evidence is recorded in it.
-- Not covered, and requiring the owner's explicit instruction: force push, branch deletion, deletion of run data or published videos, billing, and handling of secrets or contact details.
+- Keep branches and Issues few. Delete a branch, local and remote, once its PR is merged. Fold Issues that overlap into one, and close an Issue that no longer applies with the reason recorded in it. Open a new Issue only for work that no open Issue covers.
+- Not covered, and requiring the owner's explicit instruction: force push, deleting a branch whose work is not merged, deletion of run data or published videos, billing, and handling of secrets or contact details.
 
 ## Byosan prompt and constraint policy
 
