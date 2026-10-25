@@ -47,7 +47,10 @@ import {
 	buildExplanationEvidence,
 	runCodexExplanation,
 } from "../domain/byosan/explanation.js";
-import { auditFeatureSpecAgainstExplanation } from "../domain/byosan/explanation_contract.js";
+import {
+	type NumberEvidence,
+	auditFeatureSpecAgainstExplanation,
+} from "../domain/byosan/explanation_contract.js";
 import {
 	type FeatureDraftContext,
 	type Json,
@@ -683,6 +686,7 @@ async function generateFeatureSpec(
 	candidate: ByosanAngleCandidate,
 	productionPlan: ByosanProductionPlan,
 	explanation: Explanation,
+	numberEvidence: NumberEvidence,
 	sources: FeatureSource[],
 	adversarialEvidence: ByosanAdversarialEvidence[],
 	activeProbes: ByosanActiveProbeEvidence[],
@@ -743,7 +747,7 @@ async function generateFeatureSpec(
 		activeProbes,
 		sources,
 		explanation,
-		candidateNumbers: candidate.numbers,
+		numberEvidence,
 		bannedPhrases,
 	};
 	const invokeFeature = <T, U>(request: StructuredCall<T, U>): Promise<U> =>
@@ -770,7 +774,7 @@ async function generateFeatureSpec(
 		messages: (attempt, lastValidationError) => [
 			{
 				role: "system",
-				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=目安${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。推計・派生値のclaimは status と caveat を構造化フィールドに保持し、概要欄の根拠欄に出します。台詞では、その限界を会話の中で一度だけ自然に触れます。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimには、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付けます。これは概要欄の根拠欄に出ます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesのうち1つ以上に触れます。各segmentにはnarrativeRoleとverificationRoleを付けます。packaging.claimIdsの主張について、別話者のauditorとresolutionをそれぞれ1つ以上置きます。固定の順序は要求しません。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照します。視聴者の代わりに、測定条件・負け筋・比較基準・出所の境界のいずれかを素朴な疑問として具体的に口にします。台本の方針を確認する口調にはせず、相槌だけで終わらせません。resolutionは同じclaimIdと同じevidenceIdを参照してcounter-evidence/condition/caveatを回収します。landingは同じclaimIdを参照し、確認済み・推定・未検証を混同せず影響へ着地します。反証として挙がった論点は、必要な範囲でresolutionに含めてください。春日部つむぎとずんだもんの対話、statsの件数は後述のスキーマ由来の制約に従い、発話で提示する根拠のある数値カードだけを入れます。数値カードを示さない問い・つなぎ・結論のシーンではstatsを空配列にし、件数を埋めるための数字やカードを作らないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。explanationの結論・原理・数字を台本の骨格にし、順序は conclusion→数字→principle→check→出典の順にします。explanationのfiguresの各valueの数値と単位（例: 2.4%）を、segmentsのtextかstats.valueのいずれかに含めます。${sceneRule}${titleRule}\n${renderDialogueStylePrompt(dialogueStyle)}`,
+				content: `あなたは秒算マネーの編集長です。与えられた証拠だけで対話型金融動画を設計します。production_planは固定契約で、format=${productionPlan.format}、target=${productionPlan.targetMinutes}分、segments=目安${productionPlan.minSegments}〜${productionPlan.maxSegments}です。出典にない数字や断定を作らないでください。推計はderived_with_caveatまたはanalyst_estimate_not_company_non_gaapとし、必ずcaveat、confidence(0.0〜1.0)、unresolvedMismatchesを付けます。unresolvedMismatchesは確認済みでmaterialな矛盾がなければ空配列、残る矛盾があれば具体文を入れます。推計・派生値のclaimは status と caveat を構造化フィールドに保持し、概要欄の根拠欄に出します。claimsには一意なidを付け、sourceIdsにはallowed_sourcesのidだけを使います。allowed_sourcesのtier=L3だけで支えるclaimには、第三者検証済みと誤認させないepistemicBoundaryを短い自然文で必ず付けます。これは概要欄の根拠欄に出ます。packaging.primaryClaimId/claimIdsはclaims.idだけを参照し、タイトル・サムネイルの数字と強い比較表現をそのclaimsで根拠付けます。【速報】はproduction_plan.format=breakingかつcandidate.sourcesのevent dateがasOfから2日以内の場合だけ使います。最大・最安・最高・最低・急騰・急落・崩壊・〜級などを使う場合はpackaging.relativeAnchorにclaimId/comparator/periodを必ず入れます。冒頭2シーンでhookPromisesのうち1つ以上に触れます。各segmentにはnarrativeRoleとverificationRoleを付けます。packaging.claimIdsの主張の1つについて、別話者のauditorとresolutionを、この順で1組だけ置きます（claimごとに増やしません）。presenterはsource-backed factを提示しclaimIdsで参照します。auditorは別話者が担当し、同じclaimIdとadversarial_evidence.idをevidenceIdsで参照します。視聴者の代わりに素朴な疑問を一文で口にします。台本の方針を確認する口調にはせず、相槌だけで終わらせません。resolutionは同じclaimIdと同じevidenceIdを参照し、反証への答えを結論の条件として一文で言います。landingは同じclaimIdを参照し、結論の影響へ着地します。春日部つむぎとずんだもんの対話、statsの件数は後述のスキーマ由来の制約に従い、発話で提示する根拠のある数値カードだけを入れます。数値カードを示さない問い・つなぎ・結論のシーンではstatsを空配列にし、件数を埋めるための数字やカードを作らないでください。画面は中心固定で、左右揺れを前提にしたvisualPlanを書かないでください。editorial_reference_planは構成・図解・字幕・画面転換・サムネの分解計画で、事実根拠ではありません。そのためclaims.sourceIdsにはeditorial_reference_planのreferenceIdを使わず、計画を内容へ翻訳し、サイト名の模倣・ロゴ・固有文言・素材転載はしないでください。毎回新しい比較単位、章構成、問いの順番を選びます。explanationの結論・原理・数字を台本の骨格にし、流れは「題材に合う日常の例（ある場合だけ）→結論→数字→なぜそうなるか→次に確かめること」を目安にします。出典は台詞の章にせず、画面の出典表示と概要欄に出します。explanationのfiguresの各valueの数値と単位（例: 2.4%）を、segmentsのtextかstats.valueのいずれかに含めます。${sceneRule}${titleRule}\n${renderDialogueStylePrompt(dialogueStyle)}`,
 			},
 			{
 				role: "user",
@@ -941,7 +945,7 @@ function byosanAllowedSourceHosts(): string[] {
 function writeByosanCanonicalAudit(
 	runDir: string,
 	spec: ByosanFeatureSpec,
-	candidateNumbers: string[],
+	numberEvidence: NumberEvidence,
 ): void {
 	const explanationPath = path.join(runDir, "source", "explanation.json");
 	const explanation = ExplanationSchema.parse(fs.readJsonSync(explanationPath));
@@ -951,7 +955,7 @@ function writeByosanCanonicalAudit(
 	const explanationIssues = auditFeatureSpecAgainstExplanation(
 		spec,
 		explanation,
-		{ numbers: candidateNumbers },
+		numberEvidence,
 		explainConfig.banned_conclusion_phrases,
 	).map((issue) => `${issue.code}:${issue.details}`);
 	const productionReportPath = path.join(
@@ -1104,6 +1108,19 @@ async function runByosanDaily(): Promise<void> {
 		preferredFormat,
 	);
 	const normalized = normalizedResearchEvidence(candidate);
+	const discoveredArticles = ExplanationArticlesSchema.parse(
+		await fs.readJson(
+			path.join(store.runDir, "research", "discovery_articles.json"),
+		),
+	);
+	const explanationEvidence = buildExplanationEvidence(
+		candidate,
+		discoveredArticles,
+	);
+	const numberEvidence: NumberEvidence = {
+		numbers: candidate.numbers,
+		sourceText: explanationEvidence.sourceText,
+	};
 	let spec: ByosanFeatureSpec;
 	if (specReused) {
 		spec = parseAndAuditByosanFeatureSpec(await fs.readJson(specPath));
@@ -1111,14 +1128,9 @@ async function runByosanDaily(): Promise<void> {
 		const explainConfig = (
 			loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
 		).explain;
-		const discoveredArticles = ExplanationArticlesSchema.parse(
-			await fs.readJson(
-				path.join(store.runDir, "research", "discovery_articles.json"),
-			),
-		);
 		const explanation = runCodexExplanation(
 			explainConfig,
-			buildExplanationEvidence(candidate, discoveredArticles),
+			explanationEvidence,
 			store.runDir,
 		);
 		await fs.outputJson(
@@ -1131,6 +1143,7 @@ async function runByosanDaily(): Promise<void> {
 			candidate,
 			productionPlan,
 			explanation,
+			numberEvidence,
 			normalized.sources,
 			normalized.adversarialEvidence,
 			normalized.activeProbes,
@@ -1202,7 +1215,7 @@ async function runByosanDaily(): Promise<void> {
 		["src/scripts/audit_byosan_authenticity.ts", "--run", runId],
 		process.env,
 	);
-	writeByosanCanonicalAudit(store.runDir, spec, candidate.numbers);
+	writeByosanCanonicalAudit(store.runDir, spec, numberEvidence);
 	markFailureRecovered(store.runDir);
 	console.log(`PRODUCTION_PASS=${runId}`);
 }

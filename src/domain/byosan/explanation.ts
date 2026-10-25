@@ -57,7 +57,11 @@ const VerdictsSchema = z.object({
 	),
 });
 
-type ExplanationEvidence = { candidate: string; articles: string };
+type ExplanationEvidence = {
+	candidate: string;
+	articles: string;
+	sourceText: string;
+};
 
 type ExplanationCandidate = Pick<
 	ByosanAngleCandidate,
@@ -88,6 +92,9 @@ export function buildExplanationEvidence(
 				(article) =>
 					`## ${article.title}\n- 媒体: ${article.issuer}\n- 公開: ${article.published}\n- URL: ${article.url}\n\n${article.body}`,
 			)
+			.join("\n\n"),
+		sourceText: matched
+			.map((article) => `${article.title}\n${article.body}`)
 			.join("\n\n"),
 	};
 }
