@@ -4,6 +4,7 @@ import {
 	type MusicAuditInput,
 	loadMusicConfig,
 	musicAudit,
+	publishedSeconds,
 } from "../src/domain/humanity_music.js";
 
 const config = loadMusicConfig(process.cwd());
@@ -33,7 +34,23 @@ const passing = (): MusicAuditInput => ({
 	lyricsGenerated: true,
 });
 
-describe("humanity music ledger", () => {});
+describe("humanity music ledger", () => {
+	test("counts only the seconds of published songs", () => {
+		const rows = [
+			song("a", "2026-10-20T00:00:00Z", 100),
+			song("b", "2026-10-21T00:00:00Z", 200),
+			{
+				kind: "publication" as const,
+				id: "a",
+				at: "2026-10-20T01:00:00Z",
+				video_id: "v",
+				video_url: "u",
+				playlist_url: "p",
+			},
+		];
+		expect(publishedSeconds(rows)).toBe(100);
+	});
+});
 
 describe("humanity music audit", () => {
 	test("passes a complete run with every critical check", () => {

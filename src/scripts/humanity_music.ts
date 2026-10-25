@@ -13,6 +13,7 @@ import {
 	musicAudit,
 	parseLedger,
 	playlistText,
+	publishedSeconds,
 	rankedSongs,
 	rarestCell,
 	scoresOf,
@@ -537,10 +538,17 @@ else if (command === "rate")
 else if (command === "report") report();
 else if (command === "playlist") writePlaylist();
 else if (command === "preflight") preflight();
+else if (command === "full")
+	process.exit(
+		publishedSeconds(readLedger()) >=
+			config.youtube_playlist.target_minutes * 60
+			? 0
+			: 1,
+	);
 else if (command === "prepare") await prepare(rest[0] ?? "", rest[1]);
 else if (command === "youtube-playlist")
 	await youtubePlaylist(rest[0] ?? "", rest[1]);
 else
 	throw new Error(
-		"usage: generate | rate <id> <score> [note] | report | playlist | preflight | prepare <date> [slot] | youtube-playlist <date> [slot]",
+		"usage: generate | rate <id> <score> [note] | report | playlist | preflight | full | prepare <date> [slot] | youtube-playlist <date> [slot]",
 	);

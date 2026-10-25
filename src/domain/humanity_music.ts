@@ -62,6 +62,7 @@ export const ConfigSchema = z.object({
 		privacy: z.enum(["public", "unlisted", "private"]),
 		ready_attempts: z.number(),
 		ready_interval_ms: z.number(),
+		target_minutes: z.number(),
 	}),
 });
 export type MusicConfig = z.infer<typeof ConfigSchema>;
@@ -130,6 +131,15 @@ export function scoresOf(rows: LedgerRow[]): Map<string, number> {
 
 export function generations(rows: LedgerRow[]): GenerationRow[] {
 	return rows.flatMap((row) => (row.kind === "generation" ? [row] : []));
+}
+
+export function publishedSeconds(rows: LedgerRow[]): number {
+	const published = new Set(
+		rows.flatMap((row) => (row.kind === "publication" ? [row.id] : [])),
+	);
+	return generations(rows)
+		.filter((row) => published.has(row.id))
+		.reduce((sum, row) => sum + row.seconds, 0);
 }
 
 export function rankedSongs(rows: LedgerRow[]): GenerationRow[] {
