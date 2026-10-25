@@ -62,3 +62,4 @@ youtube_playlist:
   privacy: public
   ready_attempts: 20
   ready_interval_ms: 6000
+  target_minutes: 120
