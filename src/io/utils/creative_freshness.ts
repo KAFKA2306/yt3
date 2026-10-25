@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "fs-extra";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import type { AgentState } from "../../domain/types.js";
 import { type AssetStore, ROOT } from "../core.js";
 

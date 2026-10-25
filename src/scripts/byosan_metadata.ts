@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { google, type youtube_v3 } from "googleapis";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { z } from "zod";
 import { buildByosanDescription } from "../domain/byosan/description.js";
 import { parseAndAuditByosanFeatureSpec } from "../domain/byosan/feature_spec.js";

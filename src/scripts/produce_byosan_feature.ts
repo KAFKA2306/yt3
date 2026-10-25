@@ -2,7 +2,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import sharp from "sharp";
 import { getByosanChartTheme } from "../domain/byosan/charts.js";
 import { buildByosanDescription } from "../domain/byosan/description.js";

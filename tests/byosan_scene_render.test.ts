@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { z } from "zod";
 import { getByosanChartTheme } from "../src/domain/byosan/charts.js";
 import { ExplanationSchema } from "../src/domain/byosan/explanation.js";
