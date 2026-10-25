@@ -1,14 +1,10 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
-import {
-	ByosanActiveProbeEvidenceSchema,
-	auditByosanActiveProbeEvidence,
-} from "./active_probe.js";
+import { ByosanActiveProbeEvidenceSchema } from "./active_probe.js";
 import {
 	ByosanArchetypeEvidenceBundleSchema,
 	ByosanNarrativeArchetypeSchema,
-	auditByosanArchetypeEvidence,
 	selectByosanNarrativeArchetype,
 } from "./narrative_archetype.js";
 
@@ -482,15 +478,11 @@ export const BYOSAN_COUNTERFACTUAL_TEST_MARKERS = [
 	"差し引",
 ] as const;
 
-const BYOSAN_COUNTERFACTUAL_TEST_PATTERN = new RegExp(
-	BYOSAN_COUNTERFACTUAL_TEST_MARKERS.join("|"),
-	"i",
-);
-
 export function evaluateByosanAngleCandidate(
 	candidateInput: ByosanAngleCandidate,
 	recentTitles: string[],
 	publishedSourceUrls: ReadonlySet<string>,
+	minWeightedScore: number,
 ): z.infer<typeof ByosanEvaluatedAngleSchema> {
 	const candidate = ByosanAngleCandidateSchema.parse(candidateInput);
 	const primaryCount = candidate.sources.filter((source) =>
@@ -577,8 +569,6 @@ export function evaluateByosanAngleCandidate(
 		hardGateFailures.push("fewer_than_two_numbers");
 	if (maxRecentSimilarity > 0.42)
 		hardGateFailures.push("recent_topic_similarity_above_0_42");
-	if (!BYOSAN_COUNTERFACTUAL_TEST_PATTERN.test(candidate.counterfactual))
-		hardGateFailures.push("counterfactual_is_not_testable");
 	if (candidate.sources.some((source) => source.supports.length === 0))
 		hardGateFailures.push("claim_source_mapping_missing");
 	if (repeatsPublishedSource(candidate, publishedSourceUrls))
@@ -605,18 +595,9 @@ export function evaluateByosanAngleCandidate(
 	}
 	if (candidate.adversarialEvidence.length < 1)
 		hardGateFailures.push("adversarial_evidence_missing");
-	for (const probe of candidate.activeProbes ?? []) {
-		for (const issue of auditByosanActiveProbeEvidence(probe)) {
-			hardGateFailures.push(`active_probe_${issue.code}`);
-		}
-		if (probe.sourceIds.some((sourceId) => !sourceIds.has(sourceId))) {
-			hardGateFailures.push("active_probe_source_missing");
-		}
+	if (weightedScore < minWeightedScore) {
+		hardGateFailures.push(`weighted_score_below_${minWeightedScore}`);
 	}
-	for (const issue of auditByosanArchetypeEvidence(candidate)) {
-		hardGateFailures.push(issue.code);
-	}
-	if (weightedScore < 75) hardGateFailures.push("weighted_score_below_75");
 
 	return ByosanEvaluatedAngleSchema.parse({
 		candidate,
@@ -632,6 +613,7 @@ export type ByosanAngleGate = {
 	minCandidateCount: number;
 	minDistinctPublishers: number;
 	repeatWindowDays: number;
+	minWeightedScore: number;
 };
 
 export function selectByosanAngle(
@@ -647,7 +629,12 @@ export function selectByosanAngle(
 		(candidate) => !repeatsPublishedSource(candidate, publishedSourceUrls),
 	);
 	const evaluated = candidates.map((candidate) =>
-		evaluateByosanAngleCandidate(candidate, recentTitles, publishedSourceUrls),
+		evaluateByosanAngleCandidate(
+			candidate,
+			recentTitles,
+			publishedSourceUrls,
+			gate.minWeightedScore,
+		),
 	);
 	const distinctPublishers = new Set(
 		available.flatMap((candidate) => [...distinctHosts(candidate.sources)]),

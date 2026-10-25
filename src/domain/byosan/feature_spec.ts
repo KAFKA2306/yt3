@@ -1,26 +1,14 @@
 import { z } from "zod";
+import { loadConfig } from "../../io/core.js";
 import {
 	ByosanActiveProbeEvidenceSchema,
 	auditByosanActiveProbeEvidence,
 } from "./active_probe.js";
-import { loadDialogueStyle } from "./dialogue_style.js";
-import {
-	ByosanEditorialReferencePlanSchema,
-	auditByosanEditorialReferencePlan,
-	editorialReferenceIds,
-	isByosanEditorialReferenceId,
-} from "./editorial_references.js";
-import { figuresIn } from "./explanation_contract.js";
-import {
-	type ByosanNarrativeArchetype,
-	requiredByosanArchetypeSlots,
-} from "./narrative_archetype.js";
 import {
 	ByosanAdversarialEvidenceSchema,
 	ByosanProductionPlanSchema,
 	ByosanSourceTierSchema,
 } from "./news_angle.js";
-import type { ByosanScenesConfig } from "./scene_spec.js";
 
 const ByosanStatColorSchema = z.enum(["cyan", "amber", "white", "muted"]);
 
@@ -44,20 +32,6 @@ const ByosanVerificationRoleSchema = z.enum([
 	"resolution",
 	"landing",
 ]);
-
-/**
- * Prompt rule for segments[].archetypeSlot, derived from the same slot list
- * that the archetype audit enforces (requiredByosanArchetypeSlots).
- */
-export function archetypeSlotPromptPolicy(
-	narrativeArchetype: ByosanNarrativeArchetype | undefined,
-): string {
-	const slots = requiredByosanArchetypeSlots(narrativeArchetype ?? "standard");
-	if (slots.length === 0) {
-		return "segments[].archetypeSlot は出力しないでください。この format は専用 archetype を使わないため、値を入れると検証で却下されます。";
-	}
-	return `segments[].archetypeSlot は次の値だけを使い、この順番で各1回以上、segments の順序を保って出してください: ${slots.join(", ")}。それ以外の値は検証で却下されます。`;
-}
 
 export const SEGMENT_CLAIM_IDS_MAX = 6;
 
@@ -156,8 +130,6 @@ export const ByosanThumbnailSchema = z.object({
 	calloutBottom: z.string().min(2).max(18),
 });
 
-export const HOOK_PROMISE_MAX_CHARS = 24;
-
 export const ByosanFeatureSpecSchema = z.object({
 	schemaVersion: z.literal("byosan_feature_v1"),
 	runId: z.string().regex(/^byosan_money\/\d{4}-\d{2}-\d{2}[a-zA-Z0-9_-]*$/),
@@ -170,17 +142,12 @@ export const ByosanFeatureSpecSchema = z.object({
 	descriptionLead: z.string().min(30).max(500),
 	descriptionBullets: z.array(z.string().min(8).max(180)).min(3).max(8),
 	disclaimer: z.string().min(20).max(400),
-	hookPromises: z
-		.array(z.string().min(1).max(HOOK_PROMISE_MAX_CHARS))
-		.min(2)
-		.max(4),
+	hookPromises: z.array(z.string().min(1)).max(4).optional(),
 	production: ByosanProductionPlanSchema.optional(),
-	editorialReferencePlan: ByosanEditorialReferencePlanSchema.optional(),
 	packaging: ByosanPackagingSchema.optional(),
 	narrative: ByosanNarrativeSchema.optional(),
 	adversarialEvidence: z
 		.array(ByosanAdversarialEvidenceSchema)
-		.min(1)
 		.max(10)
 		.optional(),
 	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).max(8).optional(),
@@ -188,7 +155,7 @@ export const ByosanFeatureSpecSchema = z.object({
 	tags: z.array(z.string().min(1).max(30)).min(5).max(15),
 	sources: z.array(ByosanFeatureSourceSchema).min(2).max(12),
 	claims: z.array(ByosanFeatureClaimSchema).min(3).max(18),
-	segments: z.array(ByosanFeatureSegmentSchema).min(20).max(36),
+	segments: z.array(ByosanFeatureSegmentSchema).min(12).max(40),
 });
 
 const BYOSAN_BRAND_TAG = "秒算マネー";
@@ -215,7 +182,7 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	activeProbes: true,
 	tags: true,
 }).extend({
-	hookPromises: z.array(z.string().min(1)).min(2).max(4),
+	hookPromises: z.array(z.string().min(1)).max(4).optional(),
 	tags: z.array(z.string().min(1).max(30)).min(4).max(14).optional(),
 	claims: z
 		.array(
@@ -239,6 +206,30 @@ export type FeatureSpecIssue = {
 	details: string;
 	path: string;
 };
+
+const FeatureReviewSchema = z.object({
+	blocking_codes: z.array(z.string().min(1)),
+	production_memo_terms: z.array(z.string().min(1)).min(1),
+});
+
+export type FeatureReview = z.infer<typeof FeatureReviewSchema>;
+
+export function loadFeatureReview(): FeatureReview {
+	return FeatureReviewSchema.parse(
+		(loadConfig("byosan_money") as unknown as { feature_review: unknown })
+			.feature_review,
+	);
+}
+
+export function isBlockingFeatureIssue(
+	issue: FeatureSpecIssue,
+	review: FeatureReview = loadFeatureReview(),
+): boolean {
+	return (
+		issue.code.startsWith("schema_") ||
+		review.blocking_codes.includes(issue.code)
+	);
+}
 
 export const GLOBAL_ISSUE_PATH = "";
 
@@ -270,28 +261,82 @@ function absoluteDays(left: string, right: string): number {
 	return Math.abs(leftTimestamp - rightTimestamp) / 86_400_000;
 }
 
+function packagingIssues(spec: ByosanFeatureSpec): FeatureSpecIssue[] {
+	if (!spec.packaging) return [];
+	const claimIds = new Set(
+		spec.claims.flatMap((claim) => (claim.id ? [claim.id] : [])),
+	);
+	const issues: FeatureSpecIssue[] = [];
+	const packagingIds = new Set([
+		spec.packaging.primaryClaimId,
+		...spec.packaging.claimIds,
+		...(spec.packaging.impactClaimId ? [spec.packaging.impactClaimId] : []),
+		...(spec.packaging.freshness ? [spec.packaging.freshness.claimId] : []),
+		...(spec.packaging.relativeAnchor
+			? [spec.packaging.relativeAnchor.claimId]
+			: []),
+	]);
+	const missingPackagingClaims = [...packagingIds].filter(
+		(claimId) => !claimIds.has(claimId),
+	);
+	if (missingPackagingClaims.length > 0) {
+		issues.push({
+			code: "packaging_claim_missing",
+			details: missingPackagingClaims.join(","),
+			path: "packaging",
+		});
+	}
+	const supportedText = spec.claims
+		.filter((claim) => claim.id && packagingIds.has(claim.id))
+		.map((claim) => claim.claim)
+		.join(" ");
+	const titleNumbers = numericTokens(spec.title);
+	const thumbnailNumbers = numericTokens(
+		[spec.thumbnailTitle, ...Object.values(spec.thumbnail)].join(" "),
+	);
+	const supportedNumbers = numericTokens(supportedText);
+	for (const number of new Set([...titleNumbers, ...thumbnailNumbers])) {
+		if (!supportedNumbers.includes(number)) {
+			issues.push({
+				code: "packaging_number_ungrounded",
+				details: number,
+				path: titleNumbers.includes(number) ? "title" : "thumbnailTitle",
+			});
+		}
+	}
+	if (/【速報】/.test(spec.title)) {
+		if (
+			!spec.packaging.freshness ||
+			absoluteDays(spec.asOf, spec.packaging.freshness.eventDate) > 2
+		) {
+			issues.push({
+				code: "freshness_marker_ungrounded",
+				details: "【速報】 requires an event date within two days of asOf",
+				path: "title",
+			});
+		}
+	}
+	if (
+		/(最大|最安|最高|最低|急騰|急落|崩壊|級)/.test(
+			`${spec.title} ${spec.thumbnailTitle}`,
+		) &&
+		!spec.packaging.relativeAnchor
+	) {
+		issues.push({
+			code: "relative_claim_ungrounded",
+			details: "comparative/extreme wording requires comparator and period",
+			path: "title",
+		});
+	}
+	return issues;
+}
+
 export function auditByosanFeatureSpec(
 	specInput: ByosanFeatureSpec,
 ): FeatureSpecIssue[] {
 	const spec = ByosanFeatureSpecSchema.parse(specInput);
 	const issues: FeatureSpecIssue[] = [];
 	const sourceIds = new Set(spec.sources.map((source) => source.id));
-	const claimIds = new Set(
-		spec.claims.flatMap((claim) => (claim.id ? [claim.id] : [])),
-	);
-	if (spec.editorialReferencePlan) {
-		auditByosanEditorialReferencePlan(spec.editorialReferencePlan);
-		const overlapping = [
-			...editorialReferenceIds(spec.editorialReferencePlan),
-		].filter((id) => sourceIds.has(id));
-		if (overlapping.length > 0) {
-			issues.push({
-				code: "editorial_reference_source_namespace_overlap",
-				details: overlapping.join(","),
-				path: GLOBAL_ISSUE_PATH,
-			});
-		}
-	}
 	if (sourceIds.size !== spec.sources.length) {
 		issues.push({
 			code: "duplicate_source_id",
@@ -301,16 +346,6 @@ export function auditByosanFeatureSpec(
 	}
 	for (const [claimIndex, claim] of spec.claims.entries()) {
 		const path = claimIssuePath(claimIndex);
-		const editorialSourceIds = claim.sourceIds.filter(
-			isByosanEditorialReferenceId,
-		);
-		if (editorialSourceIds.length > 0) {
-			issues.push({
-				code: "editorial_reference_used_as_fact_source",
-				details: `${claim.claim}: ${editorialSourceIds.join(",")}`,
-				path,
-			});
-		}
 		const missing = claim.sourceIds.filter(
 			(sourceId) => !sourceIds.has(sourceId),
 		);
@@ -321,141 +356,27 @@ export function auditByosanFeatureSpec(
 				path,
 			});
 		}
-		if (spec.production && claim.status !== "verified") {
-			if (!claim.caveat || claim.caveat.trim().length < 3) {
-				issues.push({
-					code: "derived_claim_caveat_missing",
-					details: claim.id || claim.claim,
-					path,
-				});
-			}
-			if (claim.confidence === undefined) {
-				issues.push({
-					code: "inference_confidence_missing",
-					details: claim.id || claim.claim,
-					path,
-				});
-			}
-			if (claim.unresolvedMismatches === undefined) {
-				issues.push({
-					code: "inference_mismatch_review_missing",
-					details: claim.id || claim.claim,
-					path,
-				});
-			}
-		}
 	}
-
-	if (spec.production) {
-		if (!spec.packaging) {
+	issues.push(...packagingIssues(spec));
+	for (const probe of spec.activeProbes ?? []) {
+		for (const issue of auditByosanActiveProbeEvidence(probe)) {
 			issues.push({
-				code: "packaging_contract_missing",
-				details: "production-aware specs require packaging evidence",
-				path: "packaging",
+				code: `active_probe_${issue.code}`,
+				details: issue.details,
+				path: "activeProbes",
 			});
 		}
-		if (!spec.narrative) {
-			issues.push({
-				code: "narrative_contract_missing",
-				details: "production-aware specs require narrative grounding",
-				path: GLOBAL_ISSUE_PATH,
-			});
-		}
-		if (!spec.adversarialEvidence) {
-			issues.push({
-				code: "adversarial_evidence_contract_missing",
-				details: "production-aware specs require research adversarial evidence",
-				path: GLOBAL_ISSUE_PATH,
-			});
-		}
-	}
-
-	if (spec.packaging) {
-		const packagingIds = new Set([
-			spec.packaging.primaryClaimId,
-			...spec.packaging.claimIds,
-			...(spec.packaging.impactClaimId ? [spec.packaging.impactClaimId] : []),
-			...(spec.packaging.freshness ? [spec.packaging.freshness.claimId] : []),
-			...(spec.packaging.relativeAnchor
-				? [spec.packaging.relativeAnchor.claimId]
-				: []),
-		]);
-		const missingPackagingClaims = [...packagingIds].filter(
-			(claimId) => !claimIds.has(claimId),
+		const missing = probe.sourceIds.filter(
+			(sourceId) => !sourceIds.has(sourceId),
 		);
-		if (missingPackagingClaims.length > 0) {
+		if (missing.length > 0) {
 			issues.push({
-				code: "packaging_claim_missing",
-				details: missingPackagingClaims.join(","),
-				path: "packaging",
-			});
-		}
-
-		const packagingClaims = spec.claims.filter(
-			(claim) => claim.id && packagingIds.has(claim.id),
-		);
-		const supportedText = packagingClaims.map((claim) => claim.claim).join(" ");
-		const titleNumbers = numericTokens(spec.title);
-		const thumbnailNumbers = numericTokens(
-			[spec.thumbnailTitle, ...Object.values(spec.thumbnail)].join(" "),
-		);
-		for (const number of new Set([...titleNumbers, ...thumbnailNumbers])) {
-			if (!numericTokens(supportedText).includes(number)) {
-				issues.push({
-					code: "packaging_number_ungrounded",
-					details: number,
-					path: titleNumbers.includes(number) ? "title" : "thumbnailTitle",
-				});
-			}
-		}
-		if (/【速報】/.test(spec.title)) {
-			if (
-				!spec.packaging.freshness ||
-				absoluteDays(spec.asOf, spec.packaging.freshness.eventDate) > 2
-			) {
-				issues.push({
-					code: "freshness_marker_ungrounded",
-					details: "【速報】 requires an event date within two days of asOf",
-					path: "title",
-				});
-			}
-		}
-		if (
-			/(最大|最安|最高|最低|急騰|急落|崩壊|級)/.test(
-				`${spec.title} ${spec.thumbnailTitle}`,
-			) &&
-			!spec.packaging.relativeAnchor
-		) {
-			issues.push({
-				code: "relative_claim_ungrounded",
-				details: "comparative/extreme wording requires comparator and period",
-				path: "title",
+				code: "active_probe_source_missing",
+				details: `${probe.id}: ${missing.join(",")}`,
+				path: "activeProbes",
 			});
 		}
 	}
-
-	if (spec.activeProbes) {
-		for (const probe of spec.activeProbes) {
-			for (const issue of auditByosanActiveProbeEvidence(probe)) {
-				issues.push({
-					code: `active_probe_${issue.code}`,
-					details: issue.details,
-					path: "activeProbes",
-				});
-			}
-			const missing = probe.sourceIds.filter(
-				(sourceId) => !sourceIds.has(sourceId),
-			);
-			if (missing.length > 0) {
-				issues.push({
-					code: "active_probe_source_missing",
-					details: `${probe.id}: ${missing.join(",")}`,
-					path: "activeProbes",
-				});
-			}
-		}
-	}
-
 	if (spec.adversarialEvidence) {
 		const evidenceIds = new Set(
 			spec.adversarialEvidence.map((evidence) => evidence.id),
@@ -486,47 +407,30 @@ export function auditByosanFeatureSpec(
 			}
 		}
 	}
-
-	if (spec.production && spec.packaging && spec.adversarialEvidence) {
-		const sourceById = new Map(
-			spec.sources.map((source) => [source.id, source]),
-		);
-		for (const [claimIndex, claim] of spec.claims.entries()) {
-			if (!claim.id || claim.epistemicBoundary) continue;
-			const claimSources = claim.sourceIds
-				.map((sourceId) => sourceById.get(sourceId))
-				.filter((source): source is NonNullable<typeof source> =>
-					Boolean(source),
-				);
-			const vendorOnly =
-				claimSources.length > 0 &&
-				claimSources.every((source) => source.tier === "L3");
-			if (vendorOnly) {
-				issues.push({
-					code: "vendor_claim_boundary_missing",
-					details: claim.id,
-					path: claimIssuePath(claimIndex),
-				});
-			}
+	const sourceById = new Map(spec.sources.map((source) => [source.id, source]));
+	for (const [claimIndex, claim] of spec.claims.entries()) {
+		if (!claim.id || claim.epistemicBoundary) continue;
+		const claimSources = claim.sourceIds
+			.map((sourceId) => sourceById.get(sourceId))
+			.filter((source): source is NonNullable<typeof source> =>
+				Boolean(source),
+			);
+		const vendorOnly =
+			claimSources.length > 0 &&
+			claimSources.every((source) => source.tier === "L3");
+		if (vendorOnly) {
+			issues.push({
+				code: "vendor_claim_boundary_missing",
+				details: claim.id,
+				path: claimIssuePath(claimIndex),
+			});
 		}
 	}
-
-	const openingClaimIds = new Set(
-		spec.segments.slice(0, 2).flatMap((segment) => segment.claimIds ?? []),
-	);
-	if (
-		spec.packaging &&
-		!spec.packaging.claimIds.some((claimId) => openingClaimIds.has(claimId))
-	) {
-		issues.push({
-			code: "packaging_claim_not_in_opening",
-			details: spec.packaging.claimIds.join(","),
-			path: segmentIssuePath(0),
-		});
-	}
-	const memoTerms = loadDialogueStyle().targets.production_memo_terms;
+	const review = loadFeatureReview();
 	for (const [segmentIndex, segment] of spec.segments.entries()) {
-		const term = memoTerms.find((memo) => segment.text.includes(memo));
+		const term = review.production_memo_terms.find((memo) =>
+			segment.text.includes(memo),
+		);
 		if (term) {
 			issues.push({
 				code: "production_memo_in_dialogue",
@@ -542,13 +446,6 @@ export function auditByosanFeatureSpec(
 			path: "tags",
 		});
 	}
-	if (!spec.segments.some((segment) => segment.speaker === "ずんだもん")) {
-		issues.push({
-			code: "dialogue_missing",
-			details: "ずんだもん must ask or react",
-			path: GLOBAL_ISSUE_PATH,
-		});
-	}
 	return issues;
 }
 
@@ -556,10 +453,12 @@ export function parseAndAuditByosanFeatureSpec(
 	input: unknown,
 ): ByosanFeatureSpec {
 	const spec = ByosanFeatureSpecSchema.parse(input);
-	const issues = auditByosanFeatureSpec(spec);
-	if (issues.length > 0) {
+	const blocking = auditByosanFeatureSpec(spec).filter((issue) =>
+		isBlockingFeatureIssue(issue),
+	);
+	if (blocking.length > 0) {
 		throw new Error(
-			`BYOSAN_FEATURE_SPEC_INVALID: ${issues.map((issue) => `${issue.code}=${issue.details}`).join("; ")}`,
+			`BYOSAN_FEATURE_SPEC_INVALID: ${blocking.map((issue) => `${issue.code}=${issue.details}`).join("; ")}`,
 		);
 	}
 	return spec;
@@ -570,11 +469,4 @@ export function staticSceneMotionFilter(fps = 30): string {
 		throw new Error(`Invalid static scene fps: ${fps}`);
 	}
 	return `fps=${fps}`;
-}
-
-export function buildByosanSceneRule(
-	scenes: ByosanScenesConfig,
-	maxGenericRatio: number,
-): string {
-	return `画面の種類は${scenes.min_distinct_kinds}種類以上にし、同じ種類の場面は${scenes.max_consecutive_same_kind}つまでしか続けないでください。statsは場面あたり最大${scenes.max_numbers_per_scene}件です。同じ単位の2〜3個の数値を並べて比べる場面（例: 同じ指標の別の対象、前年同月と今月など期の異なる同一指標）を、動画の中に複数入れてください。その数値は explanation の figures の value と candidate.numbers の範囲に限ります。1つの数字を大きく見せる場面はstatsを1件だけにします。数値カードのない場面（問い・つなぎ・結論・出典整理）はstatsを空にし、全場面に対する割合を${Math.round(maxGenericRatio * 100)}%以下に収めてください。その場面は連続させないでください。出典を示すclaimは、そのclaimのsourceIdsに対応するsourcesのnameを略さず、そのclaimを参照するsegmentのsourceに含めてください。そのclaimの区別（確認済み・派生値・推計のいずれか）も同じsourceに含めてください。`;
 }

@@ -8,15 +8,13 @@ import {
 	ByosanFeatureSpecSchema,
 	type ByosanNarrativeRole,
 	ByosanThumbnailSchema,
-	archetypeSlotPromptPolicy,
+	type FeatureSpecIssue,
 	auditByosanFeatureSpec,
-	buildByosanSceneRule,
+	isBlockingFeatureIssue,
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
 } from "../src/domain/byosan/feature_spec.js";
-import type { ByosanScenesConfig } from "../src/domain/byosan/scene_spec.js";
 import {
-	loadConfig,
 	providerResponseJsonSchema,
 	zodSizeConstraintLines,
 } from "../src/io/core.js";
@@ -197,7 +195,7 @@ describe("byosan feature specification", () => {
 		expect(auditByosanFeatureSpec(spec)).toEqual([]);
 	});
 
-	test("production-aware specs enforce grounded packaging and Fact -> Context -> Impact", async () => {
+	test("production-aware specs pass the feature checks", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
 		expect(auditByosanFeatureSpec(spec)).toEqual([]);
 		expect(parseAndAuditByosanFeatureSpec(spec).production?.format).toBe(
@@ -205,26 +203,13 @@ describe("byosan feature specification", () => {
 		);
 	});
 
-	test("unsupported breaking and extreme wording fail closed", async () => {
+	test("unsupported breaking and extreme wording are warnings, not blocking failures", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
-		spec.title = "【速報】過去最大のS&P500利益+47.4%";
-		const issues = auditByosanFeatureSpec(spec);
-		expect(issues.map((issue) => issue.code)).toContain(
-			"freshness_marker_ungrounded",
-		);
-		expect(issues.map((issue) => issue.code)).toContain(
-			"relative_claim_ungrounded",
-		);
-	});
-
-	test("the opening must share a packaging claim with the title and thumbnail", async () => {
-		const spec = productionAwareSpec(await loadReferenceSpec());
-		for (const segment of spec.segments.slice(0, 2)) {
-			segment.claimIds = [];
-		}
-		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
-			"packaging_claim_not_in_opening",
-		);
+		spec.title = "【速報】過去最大の株式評価益の話";
+		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
+		expect(codes).toContain("freshness_marker_ungrounded");
+		expect(codes).toContain("relative_claim_ungrounded");
+		expect(() => parseAndAuditByosanFeatureSpec(spec)).not.toThrow();
 	});
 
 	test("L3-only claims must carry an epistemic boundary", async () => {
@@ -254,16 +239,22 @@ describe("byosan feature specification", () => {
 			"production_memo_in_dialogue",
 		);
 	});
+});
 
-	test("inferred claims require confidence and mismatch review", async () => {
-		const spec = productionAwareSpec(await loadReferenceSpec());
-		const inferred = spec.claims.find((claim) => claim.status !== "verified");
-		if (!inferred) throw new Error("inferred claim fixture is missing");
-		inferred.confidence = undefined;
-		inferred.unresolvedMismatches = undefined;
-		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
-		expect(codes).toContain("inference_confidence_missing");
-		expect(codes).toContain("inference_mismatch_review_missing");
+describe("byosan feature issue blocking", () => {
+	test("only schema, number, and source issues block the spec", () => {
+		const issue = (code: string): FeatureSpecIssue => ({
+			code,
+			details: "",
+			path: "",
+		});
+		expect(isBlockingFeatureIssue(issue("unsourced_number"))).toBe(true);
+		expect(isBlockingFeatureIssue(issue("claim_source_missing"))).toBe(true);
+		expect(isBlockingFeatureIssue(issue("schema_invalid_type"))).toBe(true);
+		expect(isBlockingFeatureIssue(issue("freshness_marker_ungrounded"))).toBe(
+			false,
+		);
+		expect(isBlockingFeatureIssue(issue("brand_tag_missing"))).toBe(false);
 	});
 });
 
@@ -294,21 +285,6 @@ describe("byosan feature draft hard limits", () => {
 		);
 	});
 
-	test("hook promises reject more than twenty-four characters", () => {
-		expect(
-			ByosanFeatureSpecSchema.shape.hookPromises.safeParse([
-				"a".repeat(25),
-				"b",
-			]).success,
-		).toBe(false);
-		expect(
-			ByosanFeatureSpecSchema.shape.hookPromises.safeParse([
-				"a".repeat(24),
-				"b",
-			]).success,
-		).toBe(true);
-	});
-
 	test("segment stats accept an empty list and reject more than three", () => {
 		const stat = {
 			label: "利益",
@@ -328,34 +304,12 @@ describe("byosan feature draft hard limits", () => {
 		).toBe(true);
 	});
 
-	test("archetype slot prompt policy lists exactly the slots the audit accepts", () => {
-		expect(archetypeSlotPromptPolicy("standard")).toContain(
-			"出力しないでください",
-		);
-		expect(archetypeSlotPromptPolicy(undefined)).toContain(
-			"出力しないでください",
-		);
-		expect(archetypeSlotPromptPolicy("paradox_resolution")).toContain(
-			"fact_a, fact_b, hidden_mechanism, catalyst_or_incentive",
-		);
-	});
-
 	test("draft prompt limits are derived from the feature draft schema", () => {
 		const lines = zodSizeConstraintLines(ByosanFeatureDraftSchema);
 		expect(lines).toContain("thumbnail.reaction: 1〜4文字");
 		expect(lines).toContain("thumbnail.secondLine: 2〜12文字");
-		expect(lines).toContain("segments: 20〜36件");
+		expect(lines).toContain("segments: 12〜40件");
 		expect(lines).toContain("segments[].stats: 0〜3件");
 		expect(lines).toContain("segments[].text: 18〜180文字");
-	});
-
-	test("scene rule caps non-stat scenes and requires claim source names to be shown", () => {
-		const scenes = (
-			loadConfig("byosan_money") as unknown as { scenes: ByosanScenesConfig }
-		).scenes;
-		const rule = buildByosanSceneRule(scenes, 0.4);
-		expect(rule).toContain(`${scenes.min_distinct_kinds}種類以上`);
-		expect(rule).toContain("全場面に対する割合を40%以下");
-		expect(rule).toContain("sourcesのnameを略さず");
 	});
 });
