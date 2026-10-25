@@ -34,6 +34,15 @@ const passing = (): MusicAuditInput => ({
 	lyricsGenerated: true,
 });
 
+describe("humanity music style", () => {
+	test("every style_template placeholder names an axis", () => {
+		const placeholders = [...config.style_template.matchAll(/\{(\w+)\}/g)].map(
+			(match) => match[1] as string,
+		);
+		expect(placeholders.every((key) => key in config.axes)).toBe(true);
+	});
+});
+
 describe("humanity music ledger", () => {
 	test("counts only the seconds of published songs", () => {
 		const rows = [

@@ -8,7 +8,7 @@ yue:
   min_free_vram_mib: 9000
   snapshot_dir: /home/kafka/.cache/hf-kafka/hub/models--m-a-p--YuE2-3B/snapshots
 output_dir: runs/humanity_music
-style_base: Japanese, technopop, electropop, four-on-the-floor kick, sidechained saw synth arpeggios, processed female vocal, bright catchy hook, 128 BPM
+style_template: "{genre}, {tempo}, {key}, {texture}, {vocal}"
 temperature: 0.9
 playlist:
   file: playlist.m3u8
@@ -23,6 +23,11 @@ axes:
   space: [ベランダ, 洗面所, レジ前, 玄関, 駅のホーム, コンビニ]
   object: [イヤホン, レシート, 充電器, スマホ, 傘, 鍵]
   emotion: [ささやかな祝祭, 恥ずかしさ, 安心, えへへ, 放課後の安堵]
+  genre: [Japanese technopop, electropop, chillwave, city pop, dream pop synthpop, future pop]
+  tempo: ["96 BPM", "110 BPM", "124 BPM", "128 BPM", "140 BPM"]
+  key: [C major, A minor, D major, F# minor, E minor, G major]
+  texture: [warm analog pads, crisp FM electric piano, bright saw arpeggios, glassy bell plucks, soft sidechained chords, shimmering detuned supersaw]
+  vocal: [processed female vocal with vocoder, airy breathy female vocal, bright pitch-corrected female vocal, sweet soft female vocal with long reverb, playful female vocal with light doubling]
 structure: [Verse, Chorus, Verse, Chorus, Bridge, Chorus]
 lines_per_section: 4
 lyrics_rule: 人類の不器用さを愛おしむ温度で、専門用語で威張らず、既存曲の歌詞や固有の言い回しを使わない。日本語で書く。Chorusは毎回同じ歌詞、VerseとBridgeは毎回違う歌詞にする。

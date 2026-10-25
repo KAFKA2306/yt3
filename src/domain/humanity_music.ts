@@ -16,7 +16,7 @@ export const ConfigSchema = z.object({
 		snapshot_dir: z.string(),
 	}),
 	output_dir: z.string(),
-	style_base: z.string(),
+	style_template: z.string(),
 	temperature: z.number(),
 	playlist: z.object({
 		file: z.string(),
