@@ -277,4 +277,37 @@ describe("byosan scene render", () => {
 	test("returns null for a display value without a leading number", () => {
 		expect(parseDisplayValue("約3%")).toBeNull();
 	});
+
+	test("shrinks long single-line text to its box", () => {
+		const segment = {
+			...segmentOf(0),
+			subheadline: "あ".repeat(60),
+			stats: [],
+		};
+		const svg = renderSceneSvg(
+			{ segment, render: renderOf(0), index: 0, total: 1 },
+			style,
+		);
+		expect(svg).toContain('class="subheadline" style="font-size:21px"');
+	});
+
+	test("shrinks stat labels to the card width", () => {
+		const stat = {
+			label: "あ".repeat(40),
+			value: "1%",
+			detail: "前年比",
+			color: "cyan" as const,
+		};
+		const segment = { ...segmentOf(0), stats: [stat, stat, stat] };
+		const svg = renderSceneSvg(
+			{
+				segment,
+				render: { kind: "stat_cards", stats: segment.stats },
+				index: 0,
+				total: 1,
+			},
+			style,
+		);
+		expect(svg).toContain('class="stat-label" style="font-size:7px"');
+	});
 });

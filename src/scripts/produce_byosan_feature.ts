@@ -894,6 +894,13 @@ async function auditProduction(
 		voice_register: voiceRegister,
 	});
 	const titleLength = Array.from(spec.title).length;
+	const descriptionLength = Array.from(
+		buildByosanDescription(spec, timed, CONFIG.chapters),
+	).length;
+	const tagsLength = spec.tags.reduce(
+		(total, tag) => total + Array.from(tag).length,
+		0,
+	);
 	const fontMatches = requiredFontFamilies([
 		FONT,
 		DESIGN.typography.numeric,
@@ -936,6 +943,20 @@ async function auditProduction(
 			status:
 				titleLength <= CONFIG.steps.youtube.max_title_length ? "PASS" : "FAIL",
 			evidence: { title_length: titleLength },
+		},
+		description: {
+			status:
+				descriptionLength <= CONFIG.steps.youtube.max_description_length
+					? "PASS"
+					: "FAIL",
+			evidence: { description_length: descriptionLength },
+		},
+		tags: {
+			status:
+				tagsLength <= CONFIG.steps.youtube.max_tags_total_length
+					? "PASS"
+					: "FAIL",
+			evidence: { tags_length: tagsLength },
 		},
 	};
 	const advisories = {

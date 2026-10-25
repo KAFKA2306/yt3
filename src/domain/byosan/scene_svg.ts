@@ -22,6 +22,20 @@ type SceneSvgInput = {
 	total: number;
 };
 
+function fitFontSize(
+	text: string,
+	fontSize: number,
+	maxWidth: number,
+	halfWidthUnits: number,
+	letterSpacing = 0,
+): number {
+	const spacing = Array.from(text).length * letterSpacing;
+	return Math.min(
+		fontSize,
+		Math.floor((maxWidth - spacing) / displayUnits(text, halfWidthUnits)),
+	);
+}
+
 function statColor(
 	identity: ByosanVisualIdentity,
 	color: ByosanStatColor,
@@ -50,7 +64,7 @@ function statCard(
 	const color = statColor(style.identity, stat.color);
 	const valueUnits = displayUnits(stat.value, F.captions.half_width_units);
 	const compactValue = valueUnits > F.scene.stat_value_compact_threshold_units;
-	const valueSize = compactValue
+	const tierSize = compactValue
 		? landscape.stat_cards.value_compact_font_size
 		: valueUnits > F.scene.stat_value_medium_threshold_units
 			? landscape.stat_cards.value_medium_font_size
@@ -63,13 +77,36 @@ function statCard(
 		F.captions.half_width_units,
 	).slice(0, F.scene.stat_value_max_lines);
 	const textX = x + landscape.stat_cards.padding_left;
+	const innerWidth =
+		width -
+		landscape.stat_cards.padding_left -
+		landscape.stat_cards.padding_right;
+	const valueSize = Math.min(
+		tierSize,
+		...valueLines.map((line) =>
+			Math.floor(innerWidth / displayUnits(line, F.captions.half_width_units)),
+		),
+	);
+	const labelSize = fitFontSize(
+		stat.label,
+		landscape.stat_cards.label_font_size,
+		innerWidth,
+		F.captions.half_width_units,
+		landscape.stat_cards.label_letter_spacing,
+	);
+	const detailSize = fitFontSize(
+		stat.detail,
+		landscape.stat_cards.detail_font_size,
+		innerWidth,
+		F.captions.half_width_units,
+	);
 	return `
 			<g>
 				<rect x="${x}" y="${y}" width="${width}" height="${landscape.stat_cards.height}" rx="${landscape.stat_cards.radius}" fill="${landscape.stat_cards.fill}" fill-opacity="${landscape.stat_cards.fill_opacity}" stroke="${color}" stroke-opacity="${landscape.stat_cards.stroke_opacity}" stroke-width="${landscape.stat_cards.stroke_width}"/>
 				<rect x="${x}" y="${y}" width="${landscape.stat_cards.accent_width}" height="${landscape.stat_cards.accent_height}" rx="${landscape.stat_cards.accent_radius}" fill="${color}"/>
-				<text x="${textX}" y="${y + landscape.stat_cards.label_baseline_offset}" class="stat-label">${xml(stat.label)}</text>
+				<text x="${textX}" y="${y + landscape.stat_cards.label_baseline_offset}" class="stat-label" style="font-size:${labelSize}px">${xml(stat.label)}</text>
 				<text x="${textX}" y="${y + landscape.stat_cards.value_baseline_offset}" class="stat-value" font-size="${valueSize}" fill="${color}">${tspans(valueLines, textX, y + landscape.stat_cards.value_baseline_offset, landscape.stat_cards.value_line_height)}</text>
-				<text x="${textX}" y="${y + landscape.stat_cards.detail_baseline_offset}" class="stat-detail">${xml(stat.detail)}</text>
+				<text x="${textX}" y="${y + landscape.stat_cards.detail_baseline_offset}" class="stat-detail" style="font-size:${detailSize}px">${xml(stat.detail)}</text>
 			</g>`;
 }
 
@@ -144,6 +181,26 @@ export function renderSceneSvg(
 		render.kind === "question"
 			? `<text x="${LANDSCAPE.chart_region.x + LANDSCAPE.chart_region.width - Q.right_inset}" y="${LANDSCAPE.chart_region.y + Q.baseline_offset}" font-family="${FONT}" font-size="${Q.font_size}" font-weight="${design.typography.weights.headline}" fill="${identity.primaryAccent}" fill-opacity="${Q.opacity}">?</text>`
 			: "";
+	const sectionSize = fitFontSize(
+		segment.section,
+		LANDSCAPE.section_label.font_size,
+		LANDSCAPE.speaker_chip.x - LANDSCAPE.section_label.x,
+		F.captions.half_width_units,
+		LANDSCAPE.section_label.letter_spacing,
+	);
+	const subheadlineSize = fitFontSize(
+		segment.subheadline,
+		LANDSCAPE.subheadline.font_size,
+		LANDSCAPE.subheadline.max_width,
+		F.captions.half_width_units,
+	);
+	const sourceText = `${F.scene.source_label}  ${segment.source}`;
+	const sourceSize = fitFontSize(
+		sourceText,
+		LANDSCAPE.source.font_size,
+		LANDSCAPE.source.max_width,
+		F.captions.half_width_units,
+	);
 	const P = F.scene.speaker_pointer;
 	const characterX = LANDSCAPE.character_region.x;
 	const characterBottom =
@@ -174,9 +231,9 @@ export function renderSceneSvg(
 		<text x="${LANDSCAPE.section_counter.x}" y="${LANDSCAPE.section_counter.baseline_y}" class="section">${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}</text>
 		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${LANDSCAPE.progress.width}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${LANDSCAPE.progress.track}"/>
 		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${Math.round(LANDSCAPE.progress.width * ((index + 1) / total))}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${accent}"/>
-		<text x="${LANDSCAPE.section_label.x}" y="${LANDSCAPE.section_label.baseline_y}" class="section">${xml(segment.section)}</text>
+		<text x="${LANDSCAPE.section_label.x}" y="${LANDSCAPE.section_label.baseline_y}" class="section" style="font-size:${sectionSize}px">${xml(segment.section)}</text>
 		<text x="${LANDSCAPE.headline.x}" y="${LANDSCAPE.headline.baseline_y}" class="headline" font-size="${headlineSize}">${tspans(headlineLines, LANDSCAPE.headline.x, LANDSCAPE.headline.baseline_y, headlineLineHeight)}</text>
-		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline">${xml(segment.subheadline)}</text>
+		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline" style="font-size:${subheadlineSize}px">${xml(segment.subheadline)}</text>
 		${dataRegionContent(render, style)}
 		${questionMark}
 			<path d="M${characterX + P.start_x} ${characterBottom - P.start_bottom} C${characterX + P.control1_x} ${characterBottom - P.control1_bottom} ${characterX + P.control2_x} ${characterBottom - P.control2_bottom} ${characterX + P.end_x} ${characterBottom - P.end_bottom}" fill="none" stroke="${speakerColor}" stroke-opacity="${P.stroke_opacity}" stroke-width="${P.stroke_width}" stroke-linecap="round"/>
@@ -186,6 +243,6 @@ export function renderSceneSvg(
 			<text x="${LANDSCAPE.speaker_chip.text_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.baseline_y - LANDSCAPE.speaker_chip.y}" font-size="${LANDSCAPE.speaker_chip.font_size}" font-weight="${LANDSCAPE.speaker_chip.font_weight}" fill="${speakerColor}">${xml(segment.speaker)}</text>
 			<text x="${LANDSCAPE.speaker_chip.emotion_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.emotion_baseline_y - LANDSCAPE.speaker_chip.y}" text-anchor="end" font-size="${LANDSCAPE.speaker_chip.emotion_font_size}" font-weight="${LANDSCAPE.speaker_chip.emotion_font_weight}" fill="${design.colors.text_secondary}">${xml(emotionLabel)}</text>
 		</g>
-		<text x="${LANDSCAPE.source.x}" y="${LANDSCAPE.source.baseline_y}" class="source">${F.scene.source_label}  ${xml(segment.source)}</text>
+		<text x="${LANDSCAPE.source.x}" y="${LANDSCAPE.source.baseline_y}" class="source" style="font-size:${sourceSize}px">${F.scene.source_label}  ${xml(segment.source)}</text>
 	</svg>`;
 }

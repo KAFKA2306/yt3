@@ -257,10 +257,28 @@ describe("byosan feature draft hard limits", () => {
 
 	test("draft prompt limits are derived from the feature draft schema", () => {
 		const lines = zodSizeConstraintLines(ByosanFeatureDraftSchema);
-		expect(lines).toContain("thumbnail.reaction: 1〜4文字");
+		expect(lines).toContain("thumbnail.reaction: 4文字以内");
 		expect(lines).toContain("thumbnail.secondLine: 2〜12文字");
-		expect(lines).toContain("segments: 12〜40件");
-		expect(lines).toContain("segments[].stats: 0〜3件");
-		expect(lines).toContain("segments[].text: 18〜320文字");
+		expect(lines).toContain("segments[].stats: 3件以内");
+		expect(lines).toContain("segments[].headline: 34文字以内");
+		expect(lines.some((line) => line.startsWith("segments: "))).toBe(false);
+		expect(lines.some((line) => line.startsWith("segments[].text:"))).toBe(
+			false,
+		);
+	});
+
+	test("segment dialogue of any length is accepted", () => {
+		const segment = {
+			speaker: "春日部つむぎ",
+			emotion: "analytical",
+			section: "結論",
+			headline: "数字は一つだけ",
+			subheadline: "長い台詞でも字幕は分割して収める",
+			visualType: "bignumber",
+			stats: [],
+			source: "出典名",
+			text: "あ".repeat(500),
+		};
+		expect(ByosanFeatureSegmentSchema.safeParse(segment).success).toBe(true);
 	});
 });

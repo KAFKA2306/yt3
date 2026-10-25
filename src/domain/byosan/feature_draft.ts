@@ -6,7 +6,6 @@ import {
 	ByosanFeatureSpecSchema,
 	type FeatureSpecIssue,
 	GLOBAL_ISSUE_PATH,
-	SEGMENT_CLAIM_IDS_MAX,
 	auditByosanFeatureSpec,
 	ensureByosanBrandTag,
 } from "./feature_spec.js";
@@ -36,7 +35,7 @@ export type FeatureDraftInput = {
 
 type FeatureCorrection = {
 	path: string;
-	rule: "stat_value" | "event_date" | "claim_ids" | "segment_source";
+	rule: "stat_value" | "event_date" | "segment_source";
 	from: unknown;
 	to: unknown;
 };
@@ -152,21 +151,10 @@ function normalizePackaging(
 	};
 }
 
-function keepPrimaryClaimIds(ids: unknown[], primary: Set<string>): unknown[] {
-	const ranked = [...ids].sort(
-		(left, right) =>
-			Number(!(typeof left === "string" && primary.has(left))) -
-			Number(!(typeof right === "string" && primary.has(right))),
-	);
-	const kept = new Set(ranked.slice(0, SEGMENT_CLAIM_IDS_MAX));
-	return ids.filter((id) => kept.has(id));
-}
-
 function normalizeSegment(
 	segment: unknown,
 	index: number,
 	context: {
-		primary: Set<string>;
 		sourceNameById: Map<string, string>;
 		sourceIdsByClaimId: Map<string, unknown[]>;
 	},
@@ -192,22 +180,6 @@ function normalizeSegment(
 					: stat,
 			),
 		};
-	}
-	if (Array.isArray(segment.claimIds)) {
-		const claimIds = segment.claimIds;
-		const trimmed =
-			claimIds.length > SEGMENT_CLAIM_IDS_MAX
-				? keepPrimaryClaimIds(claimIds, context.primary)
-				: claimIds;
-		if (trimmed !== claimIds) {
-			corrections.push({
-				path: `segments[${index}].claimIds`,
-				rule: "claim_ids",
-				from: claimIds,
-				to: trimmed,
-			});
-		}
-		next = { ...next, claimIds: trimmed };
 	}
 	if (typeof segment.source === "string" && segment.source.length < 2) {
 		const claimIds = Array.isArray(next.claimIds) ? next.claimIds : [];
@@ -242,16 +214,6 @@ export function normalizeFeatureDraft(raw: Json): {
 } {
 	const corrections: FeatureCorrection[] = [];
 	const packaging = normalizePackaging(raw.packaging, corrections);
-	const primary = new Set<string>(
-		isJson(packaging) && typeof packaging.primaryClaimId === "string"
-			? [packaging.primaryClaimId]
-			: [],
-	);
-	if (isJson(packaging) && Array.isArray(packaging.claimIds)) {
-		for (const id of packaging.claimIds) {
-			if (typeof id === "string") primary.add(id);
-		}
-	}
 	const claims = Array.isArray(raw.claims) ? raw.claims.filter(isJson) : [];
 	const sourceIdsByClaimId = new Map<string, unknown[]>(
 		claims.flatMap((claim) =>
@@ -273,7 +235,7 @@ export function normalizeFeatureDraft(raw: Json): {
 				normalizeSegment(
 					segment,
 					index,
-					{ primary, sourceNameById, sourceIdsByClaimId },
+					{ sourceNameById, sourceIdsByClaimId },
 					corrections,
 				),
 			)

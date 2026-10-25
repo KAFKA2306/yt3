@@ -201,6 +201,8 @@ export function zodSizeConstraintLines(schema: z.ZodType): string[] {
 		...((root.definitions as Record<string, JsonSchemaNode> | undefined) ?? {}),
 	};
 	const lines: string[] = [];
+	const withoutNonEmptyMin = (min: unknown): unknown =>
+		min === 1 ? undefined : min;
 	const range = (
 		min: unknown,
 		max: unknown,
@@ -241,13 +243,19 @@ export function zodSizeConstraintLines(schema: z.ZodType): string[] {
 			}
 		}
 		if (node.type === "string") {
-			record(nodePath, range(node.minLength, node.maxLength, "文字"));
+			record(
+				nodePath,
+				range(withoutNonEmptyMin(node.minLength), node.maxLength, "文字"),
+			);
 		}
 		if (node.type === "number" || node.type === "integer") {
 			record(nodePath, range(node.minimum, node.maximum, ""));
 		}
 		if (node.type === "array") {
-			record(nodePath, range(node.minItems, node.maxItems, "件"));
+			record(
+				nodePath,
+				range(withoutNonEmptyMin(node.minItems), node.maxItems, "件"),
+			);
 			if (node.items && typeof node.items === "object")
 				visit(node.items as JsonSchemaNode, `${nodePath}[]`, refStack);
 		}

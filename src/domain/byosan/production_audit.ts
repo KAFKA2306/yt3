@@ -44,21 +44,26 @@ function cutSentences(
 export function splitSpeechText(text: string, maxChars: number): string[] {
 	const total = charCount(text);
 	if (total <= maxChars) return [text];
-	const sentences = text
-		.split(/(?<=[。！？])/u)
-		.filter((sentence) => sentence.length > 0);
-	const ends = sentences.map((_, index) =>
-		charCount(sentences.slice(0, index + 1).join("")),
-	);
-	for (
-		let count = Math.ceil(total / maxChars);
-		count <= sentences.length;
-		count++
-	) {
-		const parts = cutSentences(sentences, ends, total, count, maxChars);
-		if (parts) return parts;
+	for (const boundary of [/(?<=[。！？])/u, /(?<=[。！？、])/u]) {
+		const sentences = text
+			.split(boundary)
+			.filter((sentence) => sentence.length > 0);
+		const ends = sentences.map((_, index) =>
+			charCount(sentences.slice(0, index + 1).join("")),
+		);
+		for (
+			let count = Math.ceil(total / maxChars);
+			count <= sentences.length;
+			count++
+		) {
+			const parts = cutSentences(sentences, ends, total, count, maxChars);
+			if (parts) return parts;
+		}
 	}
-	return [text];
+	const chars = Array.from(text);
+	return Array.from({ length: Math.ceil(total / maxChars) }, (_, index) =>
+		chars.slice(index * maxChars, (index + 1) * maxChars).join(""),
+	);
 }
 
 export function planSpeechSegments(
