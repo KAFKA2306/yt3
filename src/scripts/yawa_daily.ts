@@ -158,6 +158,8 @@ function generateScript(entry: PoolEntry, outPath: string): ScriptDraft {
 				[
 					"codex",
 					"exec",
+					"-m",
+					config.script.model,
 					"--sandbox",
 					config.script.sandbox,
 					"--skip-git-repo-check",
