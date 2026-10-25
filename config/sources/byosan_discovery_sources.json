@@ -17,7 +17,8 @@
 			"status": "採用",
 			"fetch": {
 				"type": "rss",
-				"url": "https://insight.factset.com/topic/earnings/rss.xml"
+				"url": "https://insight.factset.com/topic/earnings/rss.xml",
+				"body": "paragraphs"
 			}
 		},
 		{
@@ -36,7 +37,8 @@
 			"status": "採用",
 			"fetch": {
 				"type": "rss",
-				"url": "https://insight.factset.com/rss.xml"
+				"url": "https://insight.factset.com/rss.xml",
+				"body": "paragraphs"
 			}
 		},
 		{
@@ -75,7 +77,8 @@
 			"status": "採用",
 			"fetch": {
 				"type": "rss",
-				"url": "https://www.yardeniquicktakes.com/feed/"
+				"url": "https://www.yardeniquicktakes.com/feed/",
+				"body": "feed"
 			}
 		},
 		{
@@ -94,7 +97,7 @@
 			"status": "採用",
 			"fetch": {
 				"type": "unreachable",
-				"reason": "spglobal.com returns 403 to every non-browser client"
+				"reason": "spglobal.com (Akamai) returns 403 to non-browser clients for robots.txt, terms of use, the research page, and RSS candidates (/market-intelligence/en/rss, /news-insights/rss, /news-insights/research/rss.xml); no public RSS, API, or mail archive reachable; robots.txt and terms unverified"
 			}
 		},
 		{

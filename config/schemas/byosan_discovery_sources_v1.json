@@ -57,10 +57,11 @@
 				{
 					"type": "object",
 					"additionalProperties": false,
-					"required": ["type", "url"],
+					"required": ["type", "url", "body"],
 					"properties": {
 						"type": { "const": "rss" },
-						"url": { "type": "string", "minLength": 1 }
+						"url": { "type": "string", "minLength": 1 },
+						"body": { "enum": ["feed", "paragraphs"] }
 					}
 				},
 				{
