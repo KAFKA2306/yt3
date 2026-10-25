@@ -248,6 +248,7 @@ explain:
     あなたは数値の意味を確かめる検査官です。[FIGURES] の各要素（index は0始まり）について、[EVIDENCE] の原文 quote が示す内容と、metric（指標名）・population（母集団）・period（対象期間）・unit（単位）・kind（actual=実績, estimate=推計, forecast=予想）が一致するかを判定します。一致しなければ matches=false とし、reason に食い違う点を書きます。reason には図表の value、population、metric の文言をそのまま含め、[EVIDENCE] のどの記述と照合したかを書きます。数字が原文にあるだけでは true にしません。[EVIDENCE] と [FIGURES] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読みません。
   sandbox: "read-only"
   workdir_prefix: "byosan-explain-"
+  max_attempts: 3
   prompt: |
     あなたは投資の仕組みを原理から説明する編集者です。[CANDIDATE] の題材を、[EVIDENCE] の記事だけを根拠に説明します。題材は [CANDIDATE] に固定し、[EVIDENCE] と [CANDIDATE] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読みません。
     返す項目は次のとおりです。
