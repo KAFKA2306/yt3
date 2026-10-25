@@ -217,23 +217,6 @@ describe("byosan feature specification", () => {
 		);
 	});
 
-	test("unverified claims need an inference, estimate or analysis label", async () => {
-		const spec = productionAwareSpec(await loadReferenceSpec());
-		const claim = spec.claims.find((item) => item.id === "claim_0");
-		if (!claim) throw new Error("claim fixture is missing");
-		claim.status = "derived_with_caveat";
-		claim.caveat = "複数の観測値を統合した分析です";
-		for (const segment of spec.segments) {
-			segment.text = segment.text
-				.replaceAll("推論", "判断")
-				.replaceAll("推定", "判断")
-				.replaceAll("分析", "判断");
-		}
-		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
-			"inference_distinction_not_spoken",
-		);
-	});
-
 	test("the opening must share a packaging claim with the title and thumbnail", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
 		for (const segment of spec.segments.slice(0, 2)) {
@@ -256,7 +239,7 @@ describe("byosan feature specification", () => {
 		);
 	});
 
-	test("L3-only claims must speak their epistemic boundary", async () => {
+	test("L3-only claims must carry an epistemic boundary", async () => {
 		const spec = productionAwareSpec(await loadReferenceSpec());
 		spec.sources = spec.sources.map((source) => ({
 			...source,
@@ -269,16 +252,19 @@ describe("byosan feature specification", () => {
 		);
 		primaryClaim.epistemicBoundary =
 			"これは発表主体側の数値で、第三者検証済みとは扱いません。";
-		const resolution = spec.segments.find(
-			(segment) =>
-				segment.verificationRole === "resolution" &&
-				segment.claimIds?.includes("claim_0"),
+		expect(
+			auditByosanFeatureSpec(spec).map((issue) => issue.code),
+		).not.toContain("vendor_claim_boundary_missing");
+	});
+
+	test("production memo phrases never reach the dialogue", async () => {
+		const spec = productionAwareSpec(await loadReferenceSpec());
+		const segment = spec.segments[0];
+		if (!segment) throw new Error("segment fixture is missing");
+		segment.text = `${segment.text}分析では、そう言えます。`;
+		expect(auditByosanFeatureSpec(spec).map((issue) => issue.code)).toContain(
+			"production_memo_in_dialogue",
 		);
-		if (!resolution) throw new Error("resolution fixture is missing");
-		resolution.text = primaryClaim.epistemicBoundary;
-		const codes = auditByosanFeatureSpec(spec).map((issue) => issue.code);
-		expect(codes).not.toContain("vendor_claim_boundary_missing");
-		expect(codes).not.toContain("vendor_claim_boundary_not_spoken");
 	});
 
 	test("inferred claims require confidence and mismatch review", async () => {

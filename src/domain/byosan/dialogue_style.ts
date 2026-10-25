@@ -13,6 +13,7 @@ export const DialogueStyleSchema = z.object({
 		max_sentences_per_utterance: positiveInteger,
 		opening_seconds: positiveInteger,
 		filler_phrases: z.array(nonEmptyString).min(1),
+		production_memo_terms: z.array(nonEmptyString).min(1),
 	}),
 });
 
@@ -44,10 +45,9 @@ function renderTargets(text: string, targets: DialogueStyleTargets): string {
 	const numeric = targets as Record<string, unknown>;
 	return text.replaceAll(/\{(\w+)\}/g, (_, key: string) => {
 		const value = numeric[key];
-		if (typeof value !== "number") {
-			throw new Error(`DIALOGUE_STYLE_PLACEHOLDER_UNKNOWN: ${key}`);
-		}
-		return String(value);
+		if (typeof value === "number") return String(value);
+		if (Array.isArray(value)) return value.join("、");
+		throw new Error(`DIALOGUE_STYLE_PLACEHOLDER_UNKNOWN: ${key}`);
 	});
 }
 

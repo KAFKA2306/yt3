@@ -11,9 +11,15 @@ export const ByosanChaptersConfigSchema = z.object({
 	max_chapters: positiveInteger,
 	headings: z.object({
 		key_points: nonEmptyString,
+		evidence: nonEmptyString,
 		chapters: nonEmptyString,
 		primary_sources: nonEmptyString,
 		reference_sources: nonEmptyString,
+	}),
+	claim_status_labels: z.object({
+		verified: nonEmptyString,
+		derived_with_caveat: nonEmptyString,
+		analyst_estimate_not_company_non_gaap: nonEmptyString,
 	}),
 });
 
@@ -156,6 +162,24 @@ export function classifyByosanSources(
 	};
 }
 
+function evidenceLines(
+	spec: ByosanDescriptionInput,
+	config: ByosanChaptersConfig,
+): string {
+	const names = new Map(spec.sources.map((source) => [source.id, source.name]));
+	return spec.claims
+		.map((claim) => {
+			const cited = claim.sourceIds
+				.map((sourceId) => names.get(sourceId))
+				.filter((name): name is string => name !== undefined);
+			const limits = [claim.caveat, claim.epistemicBoundary]
+				.filter((part): part is string => part !== undefined)
+				.join(" ");
+			return `・${config.claim_status_labels[claim.status]}: ${claim.claim}（出典: ${cited.join("、")}）${limits ? ` 限界: ${limits}` : ""}`;
+		})
+		.join("\n");
+}
+
 export function buildByosanDescription(
 	spec: ByosanDescriptionInput,
 	timeline: readonly ChapterSpan[],
@@ -178,6 +202,7 @@ export function buildByosanDescription(
 	return [
 		spec.descriptionLead,
 		`${config.headings.key_points}\n${bullets}`,
+		`${config.headings.evidence}\n${evidenceLines(spec, config)}`,
 		`${config.headings.chapters}\n${chapters}`,
 		...(primary.length > 0
 			? [`${config.headings.primary_sources}\n${sourceBlock(primary)}`]

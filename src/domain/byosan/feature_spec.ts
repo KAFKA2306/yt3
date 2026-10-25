@@ -3,6 +3,7 @@ import {
 	ByosanActiveProbeEvidenceSchema,
 	auditByosanActiveProbeEvidence,
 } from "./active_probe.js";
+import { loadDialogueStyle } from "./dialogue_style.js";
 import {
 	ByosanEditorialReferencePlanSchema,
 	auditByosanEditorialReferencePlan,
@@ -509,33 +510,8 @@ export function auditByosanFeatureSpec(
 		const sourceById = new Map(
 			spec.sources.map((source) => [source.id, source]),
 		);
-		const unverifiedIds = new Set(
-			spec.claims.flatMap((claim) =>
-				claim.id !== undefined && claim.status !== "verified" ? [claim.id] : [],
-			),
-		);
-		const unverifiedSpoken = spec.segments.some((segment) =>
-			(segment.claimIds ?? []).some((claimId) => unverifiedIds.has(claimId)),
-		);
-		if (
-			unverifiedSpoken &&
-			!spec.segments.some((segment) => /(推論|推定|分析)/.test(segment.text))
-		) {
-			issues.push({
-				code: "inference_distinction_not_spoken",
-				details:
-					"unverified claims need an inference, estimate or analysis label",
-				path: segmentIssuePath(
-					spec.segments.findIndex((segment) =>
-						(segment.claimIds ?? []).some((claimId) =>
-							unverifiedIds.has(claimId),
-						),
-					),
-				),
-			});
-		}
 		for (const [claimIndex, claim] of spec.claims.entries()) {
-			if (!claim.id) continue;
+			if (!claim.id || claim.epistemicBoundary) continue;
 			const claimSources = claim.sourceIds
 				.map((sourceId) => sourceById.get(sourceId))
 				.filter((source): source is NonNullable<typeof source> =>
@@ -544,36 +520,11 @@ export function auditByosanFeatureSpec(
 			const vendorOnly =
 				claimSources.length > 0 &&
 				claimSources.every((source) => source.tier === "L3");
-			if (!vendorOnly) continue;
-			if (!claim.epistemicBoundary) {
+			if (vendorOnly) {
 				issues.push({
 					code: "vendor_claim_boundary_missing",
 					details: claim.id,
 					path: claimIssuePath(claimIndex),
-				});
-				continue;
-			}
-			const boundaryRecovered = spec.segments.some(
-				(segment) =>
-					(segment.verificationRole === "resolution" ||
-						segment.verificationRole === "landing") &&
-					segment.claimIds?.includes(claim.id ?? "") &&
-					segment.text.includes(claim.epistemicBoundary ?? ""),
-			);
-			if (!boundaryRecovered) {
-				const payoffIndex = spec.segments.findIndex(
-					(segment) =>
-						(segment.verificationRole === "resolution" ||
-							segment.verificationRole === "landing") &&
-						segment.claimIds?.includes(claim.id ?? ""),
-				);
-				issues.push({
-					code: "vendor_claim_boundary_not_spoken",
-					details: claim.id,
-					path:
-						payoffIndex < 0
-							? claimIssuePath(claimIndex)
-							: segmentIssuePath(payoffIndex),
 				});
 			}
 		}
@@ -591,6 +542,17 @@ export function auditByosanFeatureSpec(
 			details: spec.packaging.claimIds.join(","),
 			path: segmentIssuePath(0),
 		});
+	}
+	const memoTerms = loadDialogueStyle().targets.production_memo_terms;
+	for (const [segmentIndex, segment] of spec.segments.entries()) {
+		const term = memoTerms.find((memo) => segment.text.includes(memo));
+		if (term) {
+			issues.push({
+				code: "production_memo_in_dialogue",
+				details: term,
+				path: segmentIssuePath(segmentIndex),
+			});
+		}
 	}
 	if (!spec.tags.includes(BYOSAN_BRAND_TAG)) {
 		issues.push({
@@ -633,5 +595,5 @@ export function buildByosanSceneRule(
 	scenes: ByosanScenesConfig,
 	maxGenericRatio: number,
 ): string {
-	return `画面の種類は${scenes.min_distinct_kinds}種類以上にし、同じ種類の場面は${scenes.max_consecutive_same_kind}つまでしか続けないでください。statsは場面あたり最大${scenes.max_numbers_per_scene}件です。同じ単位の2〜3個の数値を並べて比べる場面（例: 同じ指標の別の対象、前年同月と今月など期の異なる同一指標）を、動画の中に複数入れてください。その数値は explanation の figures の value と candidateNumbers の範囲に限ります。1つの数字を大きく見せる場面はstatsを1件だけにします。数値カードのない場面（問い・つなぎ・結論・出典整理）はstatsを空にし、全場面に対する割合を${Math.round(maxGenericRatio * 100)}%以下に収めてください。その場面は連続させないでください。数値を示せる発話は数値カードの場面にし、数値カードのない場面を増やさないでください。出典を示すclaimは、そのclaimのsourceIdsに対応するsourcesのnameを略さず、そのclaimを参照するsegmentのsourceに含めてください。`;
+	return `画面の種類は${scenes.min_distinct_kinds}種類以上にし、同じ種類の場面は${scenes.max_consecutive_same_kind}つまでしか続けないでください。statsは場面あたり最大${scenes.max_numbers_per_scene}件です。同じ単位の2〜3個の数値を並べて比べる場面（例: 同じ指標の別の対象、前年同月と今月など期の異なる同一指標）を、動画の中に複数入れてください。その数値は explanation の figures の value と candidateNumbers の範囲に限ります。1つの数字を大きく見せる場面はstatsを1件だけにします。数値カードのない場面（問い・つなぎ・結論・出典整理）はstatsを空にし、全場面に対する割合を${Math.round(maxGenericRatio * 100)}%以下に収めてください。その場面は連続させないでください。数値を示せる発話は数値カードの場面にし、数値カードのない場面を増やさないでください。出典を示すclaimは、そのclaimのsourceIdsに対応するsourcesのnameを略さず、そのclaimを参照するsegmentのsourceに含めてください。そのclaimの区別（確認済み・派生値・推計のいずれか）も同じsourceに含めてください。`;
 }

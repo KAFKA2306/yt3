@@ -15,9 +15,16 @@ const config: ByosanChaptersConfig = {
 	max_chapters: 15,
 	headings: {
 		key_points: "この動画の要点",
+		evidence: "根拠と限界",
 		chapters: "チャプター",
 		primary_sources: "一次資料",
 		reference_sources: "参考（数値の根拠ではない）",
+	},
+	claim_status_labels: {
+		verified: "確認済みの数値",
+		derived_with_caveat: "派生値（前提付き）",
+		analyst_estimate_not_company_non_gaap:
+			"アナリストの推計（会社の公式値ではない）",
 	},
 };
 
@@ -223,11 +230,34 @@ describe("buildByosanDescription", () => {
 			[
 				"導入文です。",
 				"この動画の要点\n・要点1です。",
+				"根拠と限界\n・確認済みの数値: 数値を支える主張です。（出典: 第一ライフ）",
 				"チャプター\n0:00 A\n0:20 B\n0:40 C",
 				"一次資料\n第一ライフ\nhttps://example.com/cited",
 				"参考（数値の根拠ではない）\n日本銀行\nhttps://example.com/index",
 				"※免責です。",
 			].join("\n\n"),
+		);
+	});
+
+	test("states each claim's status with its caveat and epistemic boundary in the evidence section", () => {
+		const description = buildByosanDescription(
+			{
+				...input,
+				claims: [
+					{
+						claim: "推計の数値です。",
+						sourceIds: ["cited"],
+						status: "analyst_estimate_not_company_non_gaap",
+						caveat: "前提に依存する",
+						epistemicBoundary: "発表主体側の値です。",
+					},
+				],
+			},
+			[{ headline: "A", duration: 60 }],
+			{ ...config, min_chapters: 1 },
+		);
+		expect(description).toContain(
+			"根拠と限界\n・アナリストの推計（会社の公式値ではない）: 推計の数値です。（出典: 第一ライフ） 限界: 前提に依存する 発表主体側の値です。",
 		);
 	});
 
