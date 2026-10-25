@@ -48,6 +48,7 @@ The byosan topic and script come from one LLM call over the full bodies of the d
 
 - Repository checks prove only the revision they executed. Product, runtime, and publication states need direct evidence; unchecked layers stay UNVERIFIED.
 - Every factual claim the user makes is checked each time by web search against official sources before it is used in a decision, document, or config. Unverified claims are labeled UNVERIFIED, never adopted as fact.
+- Dependencies, runtimes, CLIs, models, and model IDs are kept at their latest released version, confirmed against the official release notes. An upgrade lands only after `task check:merge` passes.
 - Do not fill in missing inputs or failures with fallback output that looks like success.
 - Execution runs as the `kafka` account, never as root or with `sudo`.
 - Do not read out or display `.env` files, tokens, OAuth credentials, or contact details. Scripts check only whether a value is present. An empty value must not overwrite a non-empty one.
