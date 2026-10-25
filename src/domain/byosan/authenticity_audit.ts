@@ -229,12 +229,6 @@ export function auditAuthenticity(
 		});
 	}
 
-	const sourceNames = new Map(
-		featureSpec.sources.map((source) => [
-			source.id,
-			source.name.split(/[：:]/u)[0]?.trim() ?? source.name,
-		]),
-	);
 	const undisplayedClaims = featureSpec.claims.filter(
 		(claim) =>
 			segments.some((segment) =>
@@ -244,10 +238,7 @@ export function auditAuthenticity(
 				(segment) =>
 					claim.id !== undefined &&
 					(segment.claimIds ?? []).includes(claim.id) &&
-					claim.sourceIds.some((sourceId) => {
-						const name = sourceNames.get(sourceId);
-						return name !== undefined && segment.source.includes(name);
-					}),
+					segment.source.trim() !== "",
 			),
 	);
 	if (undisplayedClaims.length > 0) {

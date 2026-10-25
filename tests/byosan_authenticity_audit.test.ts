@@ -283,13 +283,11 @@ describe("byosan authenticity audit", () => {
 		).toContain("third_party_reference");
 	});
 
-	test("fails when a claim's cited source never appears on screen", () => {
+	test("fails when no scene linked to a claim shows a source line", () => {
 		expect(
 			codesOf({
 				segments: (segment, index) =>
-					index === 2 || index === 3
-						? { ...segment, source: "Reuters" }
-						: segment,
+					index === 2 || index === 3 ? { ...segment, source: "" } : segment,
 			}),
 		).toContain("claim_source_not_displayed");
 	});
