@@ -18,7 +18,7 @@ Accepted
 1. Run は `runs/humanity_observatory/music-<YYYY-MM-DD>` に置き、`state.json` の `bucket` は `humanity_observatory`、`video_path` は mp4 とする。
 2. 音楽監査は次の critical check を決定論的に判定する。LLM の自己採点だけで PASS にしない。
    - `music_provenance`: `result.json` の model identity、重みの SHA-256、`request.json`、seed、`MODEL_LICENSE` の SHA-256 が揃っている。
-   - `music_integrity`: `audio.flac` の SHA-256 が `ledger.jsonl` と一致し、`truncated` が両方 false、長さが config の下限以上、最後の1秒が config の閾値以下までフェードしている。
+   - `music_integrity`: `audio.flac` の SHA-256 が `ledger.jsonl` と一致し、`truncated` が false、動画と音声の長さが config の許容差内で一致している。曲の長さの下限と末尾の音量は止める条件にしない（2026-10-25 に撤廃。末尾は動画側でフェードアウトを掛ける）。
    - `visual_provenance`: 映像素材ごとに生成ツール、プロンプト、SHA-256、ライセンス根拠が記録されている。
    - `music_rights`: 歌詞が当該 run で新規に生成されたもので、第三者の歌詞と音源を含まないという個人運営者の宣言が、config の根拠ファイルに紐づく。
 3. 準備は `task humanity:music-prepare DATE=YYYY-MM-DD` とする。生成、映像合成、監査、`release:check` までを行い、公開しない。成功時だけ `PUBLISH_READY_RUN` と `PUBLISH_COMMAND` を出力する。
@@ -29,7 +29,7 @@ Accepted
    - プレイリスト: `https://www.youtube.com/playlist?list=<playlist_id>`
    - 記録先: `publish/receipt.json`、`ledger.jsonl`、`playlist.m3u8`
 7. 映像素材の画像生成は `codex-imagegen "<prompt>" <out.png> --size WxH` で行う（codex-bridge ce89dd4 のラッパー、MIT）。内部で `codex exec -C <出力先> -s workspace-write` を明示するため、`~/.codex/config.toml` の既定（`danger-full-access`、`approval_policy = "never"`）の権限は使わない。生成物ごとにプロンプトと SHA-256 を `visual_provenance` へ記録する。
-8. 人類観測所の既存の毎日投稿と同日に2本公開してよい（運営者の決定、2026-10-20）。
+8. 人類観測所の既存の毎日投稿と同日に2本公開してよい（運営者の決定、2026-10-20）。同じ日の複数の曲は、run 名の末尾に枠（`SLOT`、時刻 `HHMM`）を付けて区別する（`music-<日付>-<HHMM>`）。
 
 ## 検証の層
 

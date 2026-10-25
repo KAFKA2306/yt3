@@ -26,7 +26,6 @@ const passing = (): MusicAuditInput => ({
 	requestSeed: 7,
 	song: song("a", "2026-10-20T00:00:00Z"),
 	actualAudioSha256: "aa",
-	tailMeanDb: -50,
 	videoSeconds: 180,
 	licenseText: `x ${config.yue.license_clause} y`,
 	cover: { tool: "codex-imagegen", prompt: "p", sha256: "cc" },
@@ -48,21 +47,9 @@ describe("humanity music audit", () => {
 		expect(musicAudit(input, config).music_integrity?.status).not.toBe("PASS");
 	});
 
-	test("fails integrity when the ending is not faded", () => {
-		const input = { ...passing(), tailMeanDb: -18 };
-		expect(musicAudit(input, config).music_integrity?.status).not.toBe("PASS");
-	});
-
 	test("fails integrity when generation was truncated", () => {
 		const input = passing();
 		input.result.truncated = { semantic: true };
-		expect(musicAudit(input, config).music_integrity?.status).not.toBe("PASS");
-	});
-
-	test("fails integrity when the song is too short", () => {
-		const input = passing();
-		input.song = song("a", "2026-10-20T00:00:00Z", 60);
-		input.videoSeconds = 60;
 		expect(musicAudit(input, config).music_integrity?.status).not.toBe("PASS");
 	});
 

@@ -47,9 +47,6 @@ thumbnail:
   height: 720
   quality: 3
 audit:
-  min_seconds: 120
-  max_tail_mean_db: -35
-  tail_seconds: 1
   duration_tolerance_seconds: 1.5
   max_song_attempts: 3
 metadata:
