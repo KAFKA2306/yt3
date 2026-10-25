@@ -17,6 +17,7 @@ const YawaConfigSchema = z.object({
 	audience: z.string(),
 	script: z.object({
 		tool: z.literal("codex"),
+		model: z.string(),
 		sandbox: z.literal("read-only"),
 		timeout_seconds: z.number().positive(),
 		min_segments: z.number().int().positive(),

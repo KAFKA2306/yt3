@@ -5,6 +5,7 @@ pool_file: config/yawa/script_pool.json
 audience: 日本人男性
 script:
   tool: codex
+  model: gpt-6-luna
   sandbox: read-only
   timeout_seconds: 600
   min_segments: 36
