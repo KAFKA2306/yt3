@@ -44,7 +44,7 @@ Rules:
 
 ## Object layer
 
-Above the star layer sits the object layer that carries business meaning. Object types and relations are defined in `config/ontology/yt3.yaml`, which is the machine-checked source (`task audit:ontology`).
+Above the star layer sits the object layer that carries business meaning. Object types and relations are defined in stage P0 below; no machine-checked source exists yet.
 
 Actions are the only way to change object state:
 
@@ -59,7 +59,7 @@ Actions are the only way to change object state:
 
 ## Migration (each stage keeps existing behavior)
 
-1. P0: define object types and relations in `config/ontology/yt3.yaml`. Check with `task audit:ontology`.
+1. P0: define object types and relations in a machine-checked source.
 2. P1: build the star layer as read-only views over existing tables (`runs`, `audit_checks`, `youtube_analytics`).
 3. P2: wrap the existing `prepare` and `publish` processing as actions, and add precondition checks.
 4. P3: stop direct writes to legacy tables and route all writes through actions.

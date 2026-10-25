@@ -127,7 +127,6 @@ describe("issues map to the unit that can repair them", () => {
 			check: "確認です。",
 		},
 		numberEvidence: { numbers: ["+2.1%"], sourceText: "" },
-		bannedPhrases: [],
 	} as FeatureDraftContext;
 
 	test("treats collection counts, code-owned contracts and the whole draft as not locally repairable", () => {

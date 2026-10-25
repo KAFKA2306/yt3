@@ -487,9 +487,6 @@ async function generateFeatureSpec(
 			discovery: DiscoveryConfig;
 		}
 	).discovery.title_rule;
-	const bannedPhrases = (
-		loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
-	).explain.banned_conclusion_phrases;
 	const featureDraft = (
 		loadConfig("byosan_money") as unknown as {
 			feature_draft: { system: string };
@@ -514,7 +511,6 @@ async function generateFeatureSpec(
 		sources,
 		explanation,
 		numberEvidence,
-		bannedPhrases,
 	};
 	const blockingDraftIssues = (draft: Json): FeatureSpecIssue[] =>
 		featureDraftIssues(draft, context).filter((issue) =>
@@ -707,15 +703,11 @@ function writeByosanCanonicalAudit(
 ): void {
 	const explanationPath = path.join(runDir, "source", "explanation.json");
 	const explanation = ExplanationSchema.parse(fs.readJsonSync(explanationPath));
-	const explainConfig = (
-		loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
-	).explain;
 	const review = loadFeatureReview();
 	const contractIssues = auditFeatureSpecAgainstExplanation(
 		spec,
 		explanation,
 		numberEvidence,
-		explainConfig.banned_conclusion_phrases,
 	);
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "feature_warnings.json"),
@@ -892,7 +884,7 @@ async function runByosanDaily(): Promise<void> {
 		const explainConfig = (
 			loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
 		).explain;
-		const { explanation, warnings } = runCodexExplanation(
+		const explanation = runCodexExplanation(
 			explainConfig,
 			explanationEvidence,
 			store.runDir,
@@ -900,11 +892,6 @@ async function runByosanDaily(): Promise<void> {
 		await fs.outputJson(
 			path.join(store.runDir, "source", "explanation.json"),
 			explanation,
-			{ spaces: 2 },
-		);
-		await fs.outputJson(
-			path.join(store.runDir, "audit", "explanation_warnings.json"),
-			warnings,
 			{ spaces: 2 },
 		);
 		spec = await generateFeatureSpec(

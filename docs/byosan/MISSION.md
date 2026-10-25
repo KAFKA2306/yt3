@@ -114,7 +114,6 @@ https://docs.google.com/spreadsheets/d/1sW_fWVVnvRsLjknlpD1f54GUu-vfF-Z7S6G1dJpZ
 この文書は**編集上の北極星**であり、現行のコマンド、情報源レジストリ、品質標準、公開承認、安全ゲートを置換しない。
 
 - `AGENTS.md`：リポジトリ共通の操作規約・権限・公開許可。
-- `docs/standard/byosan-feature-quality-standard.md`：映像・台本・出典・公開品質。
 - `config/domains/byosan_money.yaml`：実行時設定。
 - 情報源のGoogle Sheets：収集対象・用途・監査履歴の正本。
 

@@ -26,5 +26,4 @@ ADR-0004 の方針（`sandbox/Irodori-TTS` に導入し、`src/` には入れな
 ## Related
 
 - [ADR-0004](./0004-irodori-tts-evaluation-and-usage.md)（Irodori-TTS の評価と利用の基準）
-- [ADR-0020](./0020-irodori-tts-stability-protocol.md)（安定性の手順）
 - Issue #221（導入）
