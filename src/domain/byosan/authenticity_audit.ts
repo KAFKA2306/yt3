@@ -230,10 +230,16 @@ export function auditAuthenticity(
 	}
 
 	const sourceNames = new Map(
-		featureSpec.sources.map((source) => [source.id, source.name]),
+		featureSpec.sources.map((source) => [
+			source.id,
+			source.name.split(/[：:]/u)[0]?.trim() ?? source.name,
+		]),
 	);
 	const undisplayedClaims = featureSpec.claims.filter(
 		(claim) =>
+			segments.some((segment) =>
+				(segment.claimIds ?? []).includes(claim.id ?? ""),
+			) &&
 			!segments.some(
 				(segment) =>
 					claim.id !== undefined &&
