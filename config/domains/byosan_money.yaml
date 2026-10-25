@@ -243,9 +243,12 @@ llm:
   sandbox: "read-only"
   workdir_prefix: "byosan-llm-"
   max_attempts: 5
+  claude: {command: "claude", model: "claude-haiku-5-5", workdir_prefix: "byosan-claude-", strip_env: ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"]}
+  fallback_backend: "claude"
   backends:
     feature: "codex"
     digest: "codex"
+    panel: "claude"
   panel:
     threshold: 3.5
     max_rounds: 2

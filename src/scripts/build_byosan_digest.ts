@@ -3,6 +3,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import type { z } from "zod";
 import {
+	type ExecBackend,
 	byosanLlmConfig,
 	codexLlmLogPath,
 	invokeCodexStructured,
@@ -330,10 +331,11 @@ async function generateDigestContext(
 			],
 		});
 		draft =
-			llmBackend(llm, "digest") === "codex"
+			llmBackend(llm, "digest") !== "gemini"
 				? await invokeCodexStructured({
 						llm,
 						logPath: codexLlmLogPath(runDir),
+						backend: llmBackend(llm, "digest") as ExecBackend,
 						search: true,
 						...request,
 					})

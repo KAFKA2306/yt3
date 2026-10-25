@@ -13,6 +13,7 @@ import {
 } from "../domain/byosan/checkpoint.js";
 import {
 	type ByosanFailureClassification,
+	type ExecBackend,
 	type StructuredCall,
 	byosanFailureClassification,
 	byosanLlmConfig,
@@ -411,10 +412,11 @@ export async function generateFeatureSpec(
 			},
 		});
 		const { draft, corrections } =
-			llmBackend(llm, "feature") === "codex"
+			llmBackend(llm, "feature") !== "gemini"
 				? await invokeCodexStructured({
 						llm,
 						logPath: codexLlmLogPath(runDir),
+						backend: llmBackend(llm, "feature") as ExecBackend,
 						...request,
 					})
 				: await invokeStructuredLlm({
@@ -453,6 +455,7 @@ export async function generateFeatureSpec(
 				llm,
 				logPath: codexLlmLogPath(runDir),
 				schema: PanelReviewSchema,
+				backend: llmBackend(llm, "panel") as ExecBackend,
 				name: "byosan_panel_review",
 				exec,
 				maxAttempts: llm.max_attempts,

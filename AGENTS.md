@@ -44,6 +44,10 @@ Current Claude models follow prompts closely, so over-specified prompts and stac
 
 The byosan topic and script come from one LLM call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. The number, source, and published-source checks run deterministically against those articles, and a failed check rewrites the same call with the findings attached, up to `llm.max_attempts`.
 
+LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). The persona panel review always runs on `claude` (Haiku via `claude -p`, subscription login only: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed from the child environment, so no metered billing). When `codex` hits a usage or rate limit, the same call is redone on `llm.fallback_backend` within the same run and the switch is recorded as a `fallback` event in `audit/llm_calls.jsonl`; a limit on `claude` fails the run explicitly. The deterministic script checks are identical for every backend.
+
+LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). The persona panel review always runs on `claude` (Haiku via `claude -p`, subscription login only: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed from the child environment, so no metered billing). When `codex` hits a usage or rate limit, the same call is redone on `llm.fallback_backend` within the same run and the switch is recorded as a `fallback` event in `audit/llm_calls.jsonl`; a limit on `claude` fails the run explicitly. The deterministic script checks are identical for every backend.
+
 ## Evidence and credentials
 
 - Repository checks prove only the revision they executed. Product, runtime, and publication states need direct evidence; unchecked layers stay UNVERIFIED.

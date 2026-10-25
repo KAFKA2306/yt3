@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
@@ -18,12 +19,20 @@ type CodexExecConfig = {
 export type CodexLlmConfig = CodexExecConfig & {
 	max_attempts: number;
 	json_only_instruction: string;
+	claude: {
+		command: string;
+		model: string;
+		workdir_prefix: string;
+		strip_env: string[];
+	};
+	fallback_backend: ExecBackend;
 };
 
 type CodexMessage = { role: "system" | "user"; content: string };
 
-export type LlmBackend = "gemini" | "codex";
-type LlmStage = "feature" | "digest";
+export type ExecBackend = "codex" | "claude";
+export type LlmBackend = "gemini" | ExecBackend;
+type LlmStage = "feature" | "digest" | "panel";
 export type ByosanLlmConfig = CodexLlmConfig & {
 	backends: Record<LlmStage, LlmBackend>;
 };
@@ -70,17 +79,28 @@ export function codexErrorDetail(
 
 export function llmBackend(cfg: ByosanLlmConfig, stage: LlmStage): LlmBackend {
 	const backend = cfg.backends?.[stage];
-	if (backend === "gemini" || backend === "codex") return backend;
+	if (backend === "gemini" || backend === "codex" || backend === "claude")
+		return backend;
 	throw new Error(
-		`LLM_BACKEND_INVALID: llm.backends.${stage} must be gemini or codex, got ${String(backend)}`,
+		`LLM_BACKEND_INVALID: llm.backends.${stage} must be gemini, codex or claude, got ${String(backend)}`,
 	);
 }
 
 export type CodexLogRecord = {
-	event: "start" | "exec_end" | "validation";
+	event: "start" | "exec_end" | "validation" | "fallback";
 	stage: string;
+	backend: ExecBackend;
 	attempt: number;
-	status: "STARTED" | "EXEC_OK" | "EXEC_FAILED" | "PASS" | "FAIL";
+	status:
+		| "STARTED"
+		| "EXEC_OK"
+		| "EXEC_FAILED"
+		| "PASS"
+		| "FAIL"
+		| "FALLBACK"
+		| "WARN";
+	fromBackend?: ExecBackend;
+	listCostUsd?: number;
 	startedAt?: string;
 	endedAt?: string;
 	durationMs?: number;
@@ -100,26 +120,40 @@ function appendCodexLog(logPath: string, record: CodexLogRecord): void {
 	fs.ensureDirSync(path.dirname(logPath));
 	fs.appendFileSync(logPath, `${JSON.stringify(record)}\n`);
 	console.log(
-		`[codex] stage=${record.stage} attempt=${record.attempt} event=${record.event} status=${record.status} exit=${record.exitCode ?? "-"} durationMs=${record.durationMs ?? "-"} validationErrors=${record.validationErrors?.length ?? 0}`,
+		`[${record.backend}] stage=${record.stage} attempt=${record.attempt} event=${record.event} status=${record.status} exit=${record.exitCode ?? "-"} durationMs=${record.durationMs ?? "-"} validationErrors=${record.validationErrors?.length ?? 0}`,
 	);
 }
 
-type CodexExecOptions = {
+type ExecOptions = {
 	stage: string;
 	attempt: number;
 	logPath: string;
-	outputSchemaPath?: string;
 	search?: boolean;
+	jsonSchema: string;
 };
 
-function runCodexExec(
-	cfg: CodexExecConfig,
+type ClaudeOutput = {
+	total_cost_usd: number;
+	is_error: boolean;
+	result: string;
+	structured_output?: unknown;
+};
+
+function runExec(
+	backend: ExecBackend,
+	cfg: CodexLlmConfig,
 	input: string,
-	options: CodexExecOptions,
+	options: ExecOptions,
 ): string {
-	const workdir = fs.mkdtempSync(path.join(os.tmpdir(), cfg.workdir_prefix));
+	const prefix =
+		backend === "claude" ? cfg.claude.workdir_prefix : cfg.workdir_prefix;
+	const workdir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 	const outputPath = path.join(workdir, "last_message.txt");
-	const base = { stage: options.stage, attempt: options.attempt };
+	const base = {
+		stage: options.stage,
+		backend,
+		attempt: options.attempt,
+	};
 	const startedAt = new Date();
 	appendCodexLog(options.logPath, {
 		...base,
@@ -127,29 +161,58 @@ function runCodexExec(
 		status: "STARTED",
 		startedAt: startedAt.toISOString(),
 	});
-	const result = spawnSync(
-		"codex",
-		[
-			...(options.search ? ["--search"] : []),
-			"exec",
-			"-C",
-			workdir,
-			"--sandbox",
-			cfg.sandbox,
-			"--ephemeral",
-			"--skip-git-repo-check",
-			"--ignore-user-config",
-			...(options.outputSchemaPath
-				? ["--output-schema", options.outputSchemaPath]
-				: []),
-			"-o",
-			outputPath,
-			"-",
-		],
-		{ input, encoding: "utf8" },
-	);
+	const [command, args] =
+		backend === "claude"
+			? [
+					cfg.claude.command,
+					[
+						"-p",
+						"--model",
+						cfg.claude.model,
+						"--output-format",
+						"json",
+						"--json-schema",
+						options.jsonSchema,
+						"--tools",
+						"",
+						"--no-session-persistence",
+						"--setting-sources",
+						"",
+					],
+				]
+			: [
+					"codex",
+					[
+						...(options.search ? ["--search"] : []),
+						"exec",
+						"-C",
+						workdir,
+						"--sandbox",
+						cfg.sandbox,
+						"--ephemeral",
+						"--skip-git-repo-check",
+						"--ignore-user-config",
+						"-o",
+						outputPath,
+						"-",
+					],
+				];
+	const result = spawnSync(command, args, {
+		input,
+		encoding: "utf8",
+		cwd: workdir,
+		env: Object.fromEntries(
+			Object.entries(process.env).filter(
+				([key]) => backend !== "claude" || !cfg.claude.strip_env.includes(key),
+			),
+		),
+	});
 	const endedAt = new Date();
-	const succeeded = result.status === 0;
+	const output =
+		backend === "claude" && result.status === 0
+			? (JSON.parse(result.stdout) as ClaudeOutput)
+			: undefined;
+	const succeeded = result.status === 0 && (output ? !output.is_error : true);
 	appendCodexLog(options.logPath, {
 		...base,
 		event: "exec_end",
@@ -158,17 +221,23 @@ function runCodexExec(
 		endedAt: endedAt.toISOString(),
 		durationMs: endedAt.getTime() - startedAt.getTime(),
 		exitCode: result.status,
+		listCostUsd: output?.total_cost_usd,
 		stdoutBytes: Buffer.byteLength(result.stdout ?? ""),
 		stderrBytes: Buffer.byteLength(result.stderr ?? ""),
-		stderrTail: `${result.error?.message ?? ""}${result.stderr ?? ""}`.slice(
-			-400,
-		),
+		stderrTail:
+			`${result.error?.message ?? ""}${result.stderr ?? ""}${output?.is_error ? output.result : ""}`.slice(
+				-400,
+			),
 	});
-	const text = succeeded ? fs.readFileSync(outputPath, "utf8") : undefined;
+	const text = succeeded
+		? output
+			? JSON.stringify(output.structured_output)
+			: fs.readFileSync(outputPath, "utf8")
+		: undefined;
 	fs.removeSync(workdir);
 	if (text === undefined) {
 		throw new Error(
-			`CODEX_EXEC_FAILED stage=${options.stage} status=${result.status} ${result.error?.message ?? ""} ${codexErrorDetail(result.stderr ?? "", byosanFailureClassification())}`,
+			`${backend.toUpperCase()}_EXEC_FAILED stage=${options.stage} status=${result.status} ${result.error?.message ?? ""} ${codexErrorDetail(`${result.stderr ?? ""}${output?.is_error ? output.result : (result.stdout ?? "")}`, byosanFailureClassification())}`,
 		);
 	}
 	return text;
@@ -207,7 +276,8 @@ type CodexStructuredRequest<T, U> = {
 	validate?: (value: T) => U;
 	maxAttempts?: number;
 	search?: boolean;
-	exec?: (prompt: string) => string;
+	backend?: ExecBackend;
+	exec?: (prompt: string, backend: ExecBackend) => string;
 	evidencePath?: string;
 	rawResponseDir?: string;
 };
@@ -226,15 +296,47 @@ export async function invokeCodexStructured<T, U = T>(
 	const attempts: CodexStructuredAttempt[] = [];
 	let lastValidationError: string | undefined;
 
-	const runPrompt = (prompt: string, attempt: number): string =>
-		request.exec
-			? request.exec(prompt)
-			: runCodexExec(request.llm, prompt, {
-					stage: request.name,
-					attempt,
-					logPath: request.logPath,
-					search: request.search,
-				});
+	let backend: ExecBackend = request.backend ?? "codex";
+	const { $schema: _, ...schemaBody } = z.toJSONSchema(
+		request.providerSchema ?? request.schema,
+	);
+	const jsonSchema = JSON.stringify(schemaBody);
+	const runPrompt = (prompt: string, attempt: number): string => {
+		const run = (target: ExecBackend): string =>
+			request.exec
+				? request.exec(prompt, target)
+				: runExec(target, request.llm, prompt, {
+						stage: request.name,
+						attempt,
+						logPath: request.logPath,
+						search: request.search,
+						jsonSchema,
+					});
+		try {
+			return run(backend);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			const to = request.llm.fallback_backend;
+			if (
+				backend === to ||
+				!termsMatch(message, byosanFailureClassification().rate_limit_terms)
+			) {
+				throw error;
+			}
+			appendCodexLog(request.logPath, {
+				event: "fallback",
+				stage: request.name,
+				backend: to,
+				fromBackend: backend,
+				attempt,
+				status: "FALLBACK",
+				endedAt: new Date().toISOString(),
+				stderrTail: message.slice(-400),
+			});
+			backend = to;
+			return run(to);
+		}
+	};
 
 	const persist = (): void => {
 		if (!request.evidencePath) return;
@@ -258,6 +360,7 @@ export async function invokeCodexStructured<T, U = T>(
 		appendCodexLog(request.logPath, {
 			event: "validation",
 			stage: request.name,
+			backend,
 			attempt,
 			status,
 			endedAt: new Date().toISOString(),
