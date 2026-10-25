@@ -19,8 +19,8 @@ const ROLE_GROUPS = [
 	"thumbnail",
 ] as const;
 
-export const ByosanEditorialReferenceSurfaceSchema = z.enum(SURFACES);
-export const ByosanEditorialReferenceRoleGroupSchema = z.enum(ROLE_GROUPS);
+const ByosanEditorialReferenceSurfaceSchema = z.enum(SURFACES);
+const ByosanEditorialReferenceRoleGroupSchema = z.enum(ROLE_GROUPS);
 
 const EditorialReferenceConfigSchema = z.object({
 	id: z.string().regex(/^[a-z0-9_]+$/),
@@ -58,13 +58,11 @@ export const ByosanEditorialReferencePlanSchema = z.object({
 	combinationPolicy: z.enum(["vary_per_run_3_to_5_sources_no_fixed_combo"]),
 });
 
-export type ByosanEditorialReference = z.infer<
-	typeof EditorialReferenceConfigSchema
->;
-export type ByosanEditorialReferencePlan = z.infer<
+type ByosanEditorialReference = z.infer<typeof EditorialReferenceConfigSchema>;
+type ByosanEditorialReferencePlan = z.infer<
 	typeof ByosanEditorialReferencePlanSchema
 >;
-export type ByosanEditorialReferencePlanItem =
+type ByosanEditorialReferencePlanItem =
 	ByosanEditorialReferencePlan["selectedReferences"][number];
 
 const registryPath = path.resolve(
@@ -75,7 +73,7 @@ const loadedRegistry = EditorialReferenceRegistrySchema.parse(
 	fs.readJsonSync(registryPath),
 );
 
-export const BYOSAN_EDITORIAL_REFERENCES = loadedRegistry.references;
+const BYOSAN_EDITORIAL_REFERENCES = loadedRegistry.references;
 const REFERENCE_BY_ID = new Map(
 	BYOSAN_EDITORIAL_REFERENCES.map((reference) => [reference.id, reference]),
 );
@@ -229,10 +227,4 @@ export function editorialReferenceIds(
 
 export function isByosanEditorialReferenceId(id: string): boolean {
 	return REFERENCE_BY_ID.has(id);
-}
-
-export function editorialReferenceForId(id: string): ByosanEditorialReference {
-	const reference = REFERENCE_BY_ID.get(id);
-	if (!reference) throw new Error(`BYOSAN_EDITORIAL_REFERENCE_UNKNOWN: ${id}`);
-	return reference;
 }

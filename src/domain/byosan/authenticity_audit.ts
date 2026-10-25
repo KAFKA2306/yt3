@@ -7,7 +7,7 @@ import {
 	ByosanScenesConfigSchema,
 } from "./scene_spec.js";
 
-export const ByosanAuthenticityConfigSchema = z
+const ByosanAuthenticityConfigSchema = z
 	.object({
 		history_window: z.number().int().positive(),
 		max_similarity: z.number().min(0).max(1),
@@ -31,9 +31,6 @@ export const ByosanAuthenticityAuditConfigSchema = z
 	})
 	.strict();
 
-export type ByosanAuthenticityConfig = z.infer<
-	typeof ByosanAuthenticityConfigSchema
->;
 export type ByosanAuthenticityAuditConfig = z.infer<
 	typeof ByosanAuthenticityAuditConfigSchema
 >;
@@ -43,12 +40,12 @@ export type ByosanPreviousRun = {
 	sequence: string[];
 };
 
-export type ByosanAuthenticityIssue = {
+type ByosanAuthenticityIssue = {
 	code: string;
 	details: string;
 };
 
-export type ByosanAuthenticityResult = {
+type ByosanAuthenticityResult = {
 	status: "PASS" | "FAIL";
 	metrics: {
 		distinct_kinds: number;
@@ -104,7 +101,7 @@ function editDistance(
 	return previous[right.length] ?? 0;
 }
 
-export function sequenceSimilarity(
+function sequenceSimilarity(
 	left: readonly string[],
 	right: readonly string[],
 ): number {

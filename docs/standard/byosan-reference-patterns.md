@@ -41,7 +41,6 @@ source/event
 | 敵対的二話者 | `feature_spec.ts` | 相槌だけで監査完了にしない |
 | 多様なナラティブ | `narrative_archetype.ts` | 各型の required slots を evidence で裏付け |
 | 週次・月次再編集 | `digest_contract.ts`, `build_byosan_digest.ts` | 異なる版のスコアを混在させない |
-| 視聴結果による改善 | `performance_evaluation.ts` | first_7d のみ、品質 hard gate は不変 |
 | 能動的検証 | `active_probe.ts`, `run_byosan_probe.ts` | 認可・実測・再現方法を残す |
 
 ## 追加した `active_falsification` ナラティブ

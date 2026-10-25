@@ -4,7 +4,7 @@ import { loadConfig } from "../../io/core.js";
 const nonEmptyString = z.string().min(1);
 const positiveInteger = z.number().int().positive();
 
-export const DialogueStyleSchema = z.object({
+const DialogueStyleSchema = z.object({
 	prompt_heading: nonEmptyString,
 	guidance: z.array(nonEmptyString),
 	repair_summary: nonEmptyString,
@@ -18,11 +18,11 @@ export const DialogueStyleSchema = z.object({
 });
 
 export type DialogueStyle = z.infer<typeof DialogueStyleSchema>;
-export type DialogueStyleTargets = DialogueStyle["targets"];
+type DialogueStyleTargets = DialogueStyle["targets"];
 
-export type DialogueUtterance = { speaker: string; text: string };
+type DialogueUtterance = { speaker: string; text: string };
 
-export type DialogueStyleReport = {
+type DialogueStyleReport = {
 	schemaVersion: "byosan_dialogue_style_report_v1";
 	utterances: number;
 	speaker_utterances: Record<string, number>;

@@ -30,7 +30,7 @@ const ReadyRecordSchema = z.object({
 	publish_command: z.string().optional(),
 	recorded_at: z.string(),
 });
-export type ReadyRecord = z.infer<typeof ReadyRecordSchema>;
+type ReadyRecord = z.infer<typeof ReadyRecordSchema>;
 
 export type PublishDailyDeps = {
 	root: string;

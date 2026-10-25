@@ -15,7 +15,7 @@ export type SceneSvgStyle = {
 	chart: ChartTheme;
 };
 
-export type SceneSvgInput = {
+type SceneSvgInput = {
 	segment: ByosanFeatureSegment;
 	render: ByosanSceneRender;
 	index: number;

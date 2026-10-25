@@ -3,12 +3,12 @@ import { z } from "zod";
 import type { TtsVoiceControls } from "../../io/utils/tts_orchestrator.js";
 import type { ByosanVoiceRegisterConfig } from "./production_config.js";
 
-export interface VoiceCap {
+interface VoiceCap {
 	pitchScale?: number;
 	intonationScale?: number;
 }
 
-export const VoiceRegisterMeasurementSchema = z.object({
+const VoiceRegisterMeasurementSchema = z.object({
 	path: z.string(),
 	loud_frames: z.number().int().nonnegative(),
 	f0_percentile_hz: z.number().nullable(),

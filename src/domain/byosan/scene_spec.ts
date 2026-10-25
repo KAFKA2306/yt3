@@ -14,13 +14,9 @@ export const ByosanSceneKindSchema = z.enum([
 	"question",
 ]);
 
-export const ByosanSceneEmphasisTypeSchema = z.enum([
-	"reveal",
-	"highlight",
-	"none",
-]);
+const ByosanSceneEmphasisTypeSchema = z.enum(["reveal", "highlight", "none"]);
 
-export const ByosanSceneValueRefSchema = z.discriminatedUnion("source", [
+const ByosanSceneValueRefSchema = z.discriminatedUnion("source", [
 	z.object({
 		source: z.literal("stat"),
 		segmentIndex: z.number().int().min(0),
@@ -32,12 +28,12 @@ export const ByosanSceneValueRefSchema = z.discriminatedUnion("source", [
 	}),
 ]);
 
-export const ByosanSceneItemSchema = z.object({
+const ByosanSceneItemSchema = z.object({
 	label: z.string().min(1),
 	value: ByosanSceneValueRefSchema,
 });
 
-export const ByosanSceneVisualSchema = z.discriminatedUnion("kind", [
+const ByosanSceneVisualSchema = z.discriminatedUnion("kind", [
 	z.object({
 		kind: z.literal("bignumber"),
 		label: z.string().min(1),
@@ -65,7 +61,7 @@ export const ByosanSceneVisualSchema = z.discriminatedUnion("kind", [
 	}),
 ]);
 
-export const ByosanSceneSpecSchema = z.object({
+const ByosanSceneSpecSchema = z.object({
 	sceneId: z.string().regex(/^[a-z0-9_]+$/),
 	segmentIndexes: z.array(z.number().int().min(0)).min(1),
 	understandingGoal: z.string().min(1),
@@ -118,9 +114,9 @@ export type ByosanSceneItem = z.infer<typeof ByosanSceneItemSchema>;
 export type ByosanSceneVisual = z.infer<typeof ByosanSceneVisualSchema>;
 export type ByosanSceneSpec = z.infer<typeof ByosanSceneSpecSchema>;
 export type ByosanScenesConfig = z.infer<typeof ByosanScenesConfigSchema>;
-export type ByosanSceneCondition = z.infer<typeof ByosanSceneConditionSchema>;
+type ByosanSceneCondition = z.infer<typeof ByosanSceneConditionSchema>;
 
-export type ByosanSceneIssue = {
+type ByosanSceneIssue = {
 	code: string;
 	details: string;
 };

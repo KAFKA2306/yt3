@@ -15,12 +15,12 @@ const PromptConfirmationPolicySchema = z.enum([
 	"unspecified",
 ]);
 
-export const ByosanPromptPolicySignalsSchema = z.object({
+const ByosanPromptPolicySignalsSchema = z.object({
 	progressUpdates: PromptProgressPolicySchema,
 	confirmation: PromptConfirmationPolicySchema,
 });
 
-export const ByosanPromptSourceRecordSchema = z.object({
+const ByosanPromptSourceRecordSchema = z.object({
 	sourcePath: z.string().min(1),
 	authority: PromptAuthoritySchema,
 	promptHash: z.string().regex(/^[a-f0-9]{64}$/),
@@ -37,27 +37,25 @@ export const ByosanPromptInventorySchema = z.object({
 	records: z.array(ByosanPromptSourceRecordSchema),
 });
 
-export const ByosanPromptMigrationIssueSchema = z.object({
+const ByosanPromptMigrationIssueSchema = z.object({
 	severity: z.enum(["FAIL", "WARN"]),
 	code: z.string().min(1),
 	details: z.string().min(1),
 });
 
-export const ByosanPromptInventoryDiffSchema = z.object({
+const ByosanPromptInventoryDiffSchema = z.object({
 	modelProfileChanged: z.boolean(),
 	added: z.array(z.string()),
 	removed: z.array(z.string()),
 	changed: z.array(z.string()),
 });
 
-export type ByosanPromptSourceRecord = z.infer<
-	typeof ByosanPromptSourceRecordSchema
->;
-export type ByosanPromptInventory = z.infer<typeof ByosanPromptInventorySchema>;
-export type ByosanPromptMigrationIssue = z.infer<
+type ByosanPromptSourceRecord = z.infer<typeof ByosanPromptSourceRecordSchema>;
+type ByosanPromptInventory = z.infer<typeof ByosanPromptInventorySchema>;
+type ByosanPromptMigrationIssue = z.infer<
 	typeof ByosanPromptMigrationIssueSchema
 >;
-export type ByosanPromptInventoryDiff = z.infer<
+type ByosanPromptInventoryDiff = z.infer<
 	typeof ByosanPromptInventoryDiffSchema
 >;
 
@@ -83,7 +81,7 @@ function detectProviderTags(text: string): string[] {
 	);
 }
 
-export function detectByosanPromptPolicySignals(
+function detectByosanPromptPolicySignals(
 	text: string,
 ): z.infer<typeof ByosanPromptPolicySignalsSchema> {
 	const normalized = normalize(text);
@@ -216,7 +214,7 @@ function recordKey(record: ByosanPromptSourceRecord): string {
 	return `${record.sourcePath}:${record.authority}`;
 }
 
-export function diffByosanPromptInventories(
+function diffByosanPromptInventories(
 	previousInput: ByosanPromptInventory,
 	currentInput: ByosanPromptInventory,
 ): ByosanPromptInventoryDiff {
@@ -262,7 +260,7 @@ function modelProfileMatches(
 	return applicability.some((tag) => normalized.includes(tag));
 }
 
-export function auditByosanPromptInventory(
+function auditByosanPromptInventory(
 	inventoryInput: ByosanPromptInventory,
 ): ByosanPromptMigrationIssue[] {
 	const inventory = ByosanPromptInventorySchema.parse(inventoryInput);

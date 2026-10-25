@@ -11,7 +11,7 @@ export type SourceFetch =
 	| { type: "verify" }
 	| { type: "unreachable"; reason: string };
 
-export type DiscoverySource = {
+type DiscoverySource = {
 	id: string;
 	issuer: string;
 	url: string;
@@ -29,7 +29,7 @@ export type DiscoveryConfig = {
 	user_agent: string;
 };
 
-export type DiscoveredArticle = {
+type DiscoveredArticle = {
 	feed: string;
 	issuer: string;
 	caution: string;
@@ -290,7 +290,7 @@ export function loadDiscoverySources(cfg: DiscoveryConfig): DiscoverySource[] {
 	).sources.filter((source) => source.status === "採用");
 }
 
-export async function discoverArticles(
+async function discoverArticles(
 	cfg: DiscoveryConfig,
 	now: Date,
 ): Promise<DiscoveredArticle[]> {
@@ -315,7 +315,7 @@ export async function discoverArticles(
 		.sort((a, b) => b.published.localeCompare(a.published));
 }
 
-export function renderDiscoveryEvidence(
+function renderDiscoveryEvidence(
 	articles: DiscoveredArticle[],
 	notCrawled: DiscoverySource[],
 	fetchedAt: string,

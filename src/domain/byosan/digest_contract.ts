@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-export const DigestBaselineStatusSchema = z.enum([
+const DigestBaselineStatusSchema = z.enum([
 	"UNCHANGED",
 	"REALIGNED",
 	"UNVERIFIED",
 ]);
 
-export const DigestBaselineAlignmentSchema = z.object({
+const DigestBaselineAlignmentSchema = z.object({
 	metric: z.string().min(2).max(120),
 	authorityName: z.string().min(2).max(120),
 	authorityUrl: z.string().url(),
@@ -28,7 +28,7 @@ export const DigestBaselineAlignmentSchema = z.object({
 	limitations: z.array(z.string().min(3).max(300)).max(6),
 });
 
-export const DigestMacroSynthesisSchema = z.object({
+const DigestMacroSynthesisSchema = z.object({
 	axis: z.enum(["structure", "relative_economics", "policy_distribution_risk"]),
 	claim: z.string().min(12).max(500),
 	sourceRunIds: z.array(z.string().min(1)).min(1),
@@ -36,7 +36,7 @@ export const DigestMacroSynthesisSchema = z.object({
 	sourceUrls: z.array(z.string().url()).min(1),
 });
 
-export const DigestWatchlistItemSchema = z.object({
+const DigestWatchlistItemSchema = z.object({
 	event: z.string().min(3).max(180),
 	scheduledAt: z.string().datetime(),
 	status: z.enum(["confirmed", "tentative"]),
@@ -44,7 +44,7 @@ export const DigestWatchlistItemSchema = z.object({
 	whatWouldChange: z.string().min(8).max(300),
 });
 
-export const DigestNavigationSchema = z.object({
+const DigestNavigationSchema = z.object({
 	runId: z.string().min(1),
 	title: z.string().min(3),
 	videoUrl: z.string().url().optional(),
@@ -63,7 +63,7 @@ export const ByosanDigestContextSchema = z.object({
 
 export type ByosanDigestContext = z.infer<typeof ByosanDigestContextSchema>;
 
-export type DigestContextIssue = {
+type DigestContextIssue = {
 	code: string;
 	details: string;
 };

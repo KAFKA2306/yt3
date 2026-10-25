@@ -29,7 +29,7 @@ const PerformanceGroupSchema = z.object({
 	subscribersGainedAverage: z.number(),
 });
 
-export const ByosanPerformanceSummarySchema = z.object({
+const ByosanPerformanceSummarySchema = z.object({
 	schemaVersion: z.literal("byosan_performance_v1"),
 	status: z.enum(["READY", "INSUFFICIENT_DATA"]),
 	window: z.literal("first_7d"),
@@ -40,9 +40,7 @@ export const ByosanPerformanceSummarySchema = z.object({
 	generatedAt: z.string().datetime(),
 });
 
-export type ByosanPerformanceSummary = z.infer<
-	typeof ByosanPerformanceSummarySchema
->;
+type ByosanPerformanceSummary = z.infer<typeof ByosanPerformanceSummarySchema>;
 
 type RunAnalytics = {
 	format: ByosanProductionFormat;
@@ -125,7 +123,7 @@ function average(values: number[]): number {
 	return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-export function buildByosanPerformanceSummary(
+function buildByosanPerformanceSummary(
 	db: Database,
 	root = process.cwd(),
 	minSamplesPerFormat = 3,

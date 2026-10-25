@@ -4,10 +4,7 @@ import yaml from "js-yaml";
 import { fromJSONSchema } from "zod";
 import type { SourceFetch } from "../domain/byosan/feed_discovery.js";
 
-export type ReusePolicy =
-	| "recreate_only"
-	| "quote_with_attribution"
-	| "official_open";
+type ReusePolicy = "recreate_only" | "quote_with_attribution" | "official_open";
 
 export type DiscoverySourceRow = {
 	id: string;

@@ -25,9 +25,9 @@ export const ByosanChaptersConfigSchema = z.object({
 
 export type ByosanChaptersConfig = z.infer<typeof ByosanChaptersConfigSchema>;
 
-export type ChapterSpan = { headline: string; duration: number };
+type ChapterSpan = { headline: string; duration: number };
 
-export type Chapter = { start: number; title: string };
+type Chapter = { start: number; title: string };
 
 export type ByosanDescriptionInput = Pick<
 	ByosanFeatureSpec,
