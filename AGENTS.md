@@ -46,6 +46,8 @@ The byosan topic and script come from one LLM call over the full bodies of the d
 
 LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). The persona panel review always runs on `claude` (Haiku via `claude -p`, subscription login only: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed from the child environment, so no metered billing). When `codex` hits a usage or rate limit, the same call is redone on `llm.fallback_backend` within the same run and the switch is recorded as a `fallback` event in `audit/llm_calls.jsonl`; a limit on `claude` fails the run explicitly. The deterministic script checks are identical for every backend.
 
+LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). The persona panel review always runs on `claude` (Haiku via `claude -p`, subscription login only: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed from the child environment, so no metered billing). When `codex` hits a usage or rate limit, the same call is redone on `llm.fallback_backend` within the same run and the switch is recorded as a `fallback` event in `audit/llm_calls.jsonl`; a limit on `claude` fails the run explicitly. The deterministic script checks are identical for every backend.
+
 ## Evidence and credentials
 
 - Repository checks prove only the revision they executed. Product, runtime, and publication states need direct evidence; unchecked layers stay UNVERIFIED.
