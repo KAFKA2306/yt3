@@ -116,7 +116,7 @@ steps:
 providers:
   llm:
     provider: "gemini"
-    gemini: {model: "gemini-2.5-flash", primary_llm: "gemini-2.5-flash", temperature: 0.35, max_tokens: 32768}
+    gemini: {model: "gemini-3.8-flash", primary_llm: "gemini-3.8-flash", temperature: 0.35, max_tokens: 32768}
     content: {temperature: 0.4}
     media: {temperature: 0.1}
     research: {temperature: 0.5}
