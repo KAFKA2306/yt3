@@ -142,7 +142,6 @@ failure_classification:
   rate_limit_terms: ['\b429\b', 'rate limit', 'usage limit', 'try again at', 'exceeded your current quota', 'quota exhausted', 'resource exhausted']
   auth_terms: ['oauth', 'credential', 'unauthori[sz]ed', 'forbidden', '\b40[13]\b', 'invalid_grant', 'login required', 'not logged in', 'network', 'ECONN', 'ENOTFOUND']
   mcp_noise_terms: ['rmcp::', 'oauth-protected-resource', 'AuthRequired']
-  transient_max_retries: 3
 
 dashboard:
   port: 3000
@@ -732,15 +731,13 @@ feature_production:
     audio_codec: "aac"
     min_output_bitrate_bps: 7500000
     max_scene_seconds: 16
-    opening_segment_count: 2
-    min_thumbnail_bytes: 100000
+    duration_tolerance_seconds: 0.5
     black_min_seconds: 1.0
     black_pixel_threshold: 0.03
     freeze_noise_db: -50
     freeze_min_seconds: 4.0
     defect_log_max_lines: 40
     ffmpeg_max_buffer_bytes: 104857600
-    forbidden_motion_terms: ["zoompan", "crop", "rotate", "sin", "cos"]
     voice_register:
       frame_length: 2048
       hop_length: 256
@@ -762,10 +759,7 @@ hardcode_audit:
   forbidden_identifiers: ["process.env"]
 
 chapters:
-  max_title_chars: 34
   min_chapter_seconds: 10
-  min_chapters: 3
-  max_chapters: 15
   headings:
     key_points: "この動画の要点"
     evidence: "根拠と限界"

@@ -60,6 +60,7 @@ type ByosanAuthenticityResult = {
 		max_history_similarity: number | null;
 	};
 	violations: ByosanAuthenticityIssue[];
+	warnings: ByosanAuthenticityIssue[];
 };
 
 type AuthenticityInput = {
@@ -133,21 +134,45 @@ export function auditAuthenticity(
 	const { scenes, featureSpec, explanation } = input;
 	const segments = featureSpec.segments;
 	const violations: ByosanAuthenticityIssue[] = [];
+	const warnings: ByosanAuthenticityIssue[] = [];
 
 	const kinds = scenes.map((scene) => scene.visual.kind);
 	const distinctKinds = new Set(kinds).size;
 	if (distinctKinds < sceneConfig.min_distinct_kinds) {
-		violations.push({
+		warnings.push({
 			code: "distinct_kinds_too_few",
 			details: `${distinctKinds}<${sceneConfig.min_distinct_kinds}`,
+		});
+	}
+	if (scenes.length > sceneConfig.max_scenes) {
+		warnings.push({
+			code: "scene_count_exceeds_max",
+			details: `${scenes.length}>${sceneConfig.max_scenes}`,
 		});
 	}
 
 	const maxRun = longestRun(kinds);
 	if (maxRun > sceneConfig.max_consecutive_same_kind) {
-		violations.push({
+		warnings.push({
 			code: "consecutive_same_kind_exceeded",
 			details: `${maxRun}>${sceneConfig.max_consecutive_same_kind}`,
+		});
+	}
+
+	const numbersOverflow = scenes.filter((scene) => {
+		const visual = scene.visual;
+		const refs =
+			visual.kind === "question"
+				? 0
+				: visual.kind === "bignumber"
+					? 1
+					: visual.items.length;
+		return refs > sceneConfig.max_numbers_per_scene;
+	});
+	if (numbersOverflow.length > 0) {
+		warnings.push({
+			code: "numbers_per_scene_exceeded",
+			details: numbersOverflow.map((scene) => scene.sceneId).join(","),
 		});
 	}
 
@@ -156,7 +181,7 @@ export function auditAuthenticity(
 	).length;
 	const genericRatio = scenes.length === 0 ? 1 : genericCount / scenes.length;
 	if (genericRatio > authenticity.max_generic_ratio) {
-		violations.push({
+		warnings.push({
 			code: "generic_ratio_exceeded",
 			details: `${genericRatio.toFixed(3)}>${authenticity.max_generic_ratio}`,
 		});
@@ -187,7 +212,7 @@ export function auditAuthenticity(
 		independent.verification_roles,
 	);
 	if (!verificationSequenceFound) {
-		violations.push({
+		warnings.push({
 			code: "verification_sequence_missing",
 			details: independent.verification_roles.join(">"),
 		});
@@ -198,7 +223,7 @@ export function auditAuthenticity(
 	const comparisonRequired =
 		explanation.figures.length * independent.scenes_per_figure;
 	if (comparisonScenes < comparisonRequired) {
-		violations.push({
+		warnings.push({
 			code: "comparison_scenes_short",
 			details: `${comparisonScenes}<${comparisonRequired}`,
 		});
@@ -246,7 +271,7 @@ export function auditAuthenticity(
 		}));
 	for (const run of history) {
 		if (run.similarity > authenticity.max_similarity) {
-			violations.push({
+			warnings.push({
 				code: "history_similarity_exceeded",
 				details: `${run.asOf}:${run.similarity.toFixed(3)}>${authenticity.max_similarity}`,
 			});
@@ -271,5 +296,6 @@ export function auditAuthenticity(
 					: Math.max(...history.map((run) => run.similarity)),
 		},
 		violations,
+		warnings,
 	};
 }

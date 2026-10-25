@@ -217,10 +217,10 @@ describe("byosan scene render", () => {
 		});
 	});
 
-	test("rejects a comparison that mixes units", () => {
+	test("degrades a comparison that mixes units to stat cards", () => {
 		const scene = scenes[2];
 		if (!scene) throw new Error("scene 2 missing");
-		expect(() =>
+		expect(
 			resolveSceneRender(
 				{
 					...scene,
@@ -242,7 +242,7 @@ describe("byosan scene render", () => {
 				explanation,
 				false,
 			),
-		).toThrow("BYOSAN_SCENE_SERIES_MIXED");
+		).toMatchObject({ kind: "stat_cards" });
 	});
 
 	test("rejects a value reference that does not resolve", () => {
@@ -274,9 +274,7 @@ describe("byosan scene render", () => {
 		});
 	});
 
-	test("rejects a display value without a leading number", () => {
-		expect(() => parseDisplayValue("約3%")).toThrow(
-			"BYOSAN_SCENE_VALUE_UNPARSEABLE",
-		);
+	test("returns null for a display value without a leading number", () => {
+		expect(parseDisplayValue("約3%")).toBeNull();
 	});
 });

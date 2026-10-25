@@ -2,13 +2,9 @@ import { z } from "zod";
 import type { ByosanFeatureSource, ByosanFeatureSpec } from "./feature_spec.js";
 
 const nonEmptyString = z.string().min(1);
-const positiveInteger = z.number().int().positive();
 
 export const ByosanChaptersConfigSchema = z.object({
-	max_title_chars: positiveInteger,
 	min_chapter_seconds: z.number().positive(),
-	min_chapters: positiveInteger,
-	max_chapters: positiveInteger,
 	headings: z.object({
 		key_points: nonEmptyString,
 		evidence: nonEmptyString,
@@ -65,22 +61,6 @@ function groupByHeadline(timeline: readonly ChapterSpan[]): ChapterDraft[] {
 	return chapters;
 }
 
-function mergeAt(chapters: ChapterDraft[], index: number): ChapterDraft[] {
-	const [left, right] = chapters.slice(index, index + 2);
-	if (!left || !right) {
-		throw new Error(`BYOSAN_CHAPTER_MERGE_OUT_OF_RANGE: ${index}`);
-	}
-	return [
-		...chapters.slice(0, index),
-		{
-			start: left.start,
-			duration: left.duration + right.duration,
-			title: left.title,
-		},
-		...chapters.slice(index + 2),
-	];
-}
-
 function mergeShortChapters(
 	chapters: ChapterDraft[],
 	minSeconds: number,
@@ -103,52 +83,14 @@ function mergeShortChapters(
 	return merged;
 }
 
-function narrowestPairIndex(chapters: ChapterDraft[]): number {
-	const pairs = chapters.slice(0, -1).map((left, index) => ({
-		index,
-		seconds:
-			left.duration +
-			chapters
-				.slice(index + 1, index + 2)
-				.reduce((sum, next) => sum + next.duration, 0),
-	}));
-	return pairs.reduce((best, pair) =>
-		pair.seconds < best.seconds ? pair : best,
-	).index;
-}
-
-function mergeToMaxChapters(
-	chapters: ChapterDraft[],
-	maxChapters: number,
-): ChapterDraft[] {
-	if (chapters.length <= maxChapters) return chapters;
-	return mergeToMaxChapters(
-		mergeAt(chapters, narrowestPairIndex(chapters)),
-		maxChapters,
-	);
-}
-
 export function planByosanChapters(
 	timeline: readonly ChapterSpan[],
 	config: ByosanChaptersConfig,
 ): Chapter[] {
-	const chapters = mergeToMaxChapters(
-		mergeShortChapters(groupByHeadline(timeline), config.min_chapter_seconds),
-		config.max_chapters,
-	);
-	if (chapters.length < config.min_chapters) {
-		throw new Error(
-			`BYOSAN_CHAPTERS_TOO_FEW: ${chapters.length} < ${config.min_chapters}`,
-		);
-	}
-	return chapters.map(({ start, title }) => {
-		if ([...title].length > config.max_title_chars) {
-			throw new Error(
-				`BYOSAN_CHAPTER_TITLE_TOO_LONG: ${title} (max ${config.max_title_chars})`,
-			);
-		}
-		return { start, title };
-	});
+	return mergeShortChapters(
+		groupByHeadline(timeline),
+		config.min_chapter_seconds,
+	).map(({ start, title }) => ({ start, title }));
 }
 
 export function classifyByosanSources(

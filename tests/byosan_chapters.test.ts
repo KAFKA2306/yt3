@@ -9,10 +9,7 @@ import {
 } from "../src/domain/byosan/description.js";
 
 const config: ByosanChaptersConfig = {
-	max_title_chars: 34,
 	min_chapter_seconds: 10,
-	min_chapters: 3,
-	max_chapters: 15,
 	headings: {
 		key_points: "この動画の要点",
 		evidence: "根拠と限界",
@@ -151,42 +148,10 @@ describe("planByosanChapters", () => {
 		]);
 	});
 
-	test("merges the narrowest adjacent pair until the chapter count is within max_chapters", () => {
+	test("keeps a single chapter instead of failing the run when fewer chapters remain", () => {
 		expect(
-			planByosanChapters(
-				[
-					{ headline: "A", duration: 20 },
-					{ headline: "B", duration: 20 },
-					{ headline: "C", duration: 10 },
-					{ headline: "D", duration: 10 },
-					{ headline: "E", duration: 20 },
-				],
-				{ ...config, max_chapters: 3 },
-			),
-		).toEqual([
-			{ start: 0, title: "A" },
-			{ start: 40, title: "C" },
-			{ start: 60, title: "E" },
-		]);
-	});
-
-	test("throws when fewer chapters than min_chapters remain", () => {
-		expect(() =>
 			planByosanChapters([{ headline: "A", duration: 30 }], config),
-		).toThrow("BYOSAN_CHAPTERS_TOO_FEW");
-	});
-
-	test("throws when a chapter title exceeds max_title_chars", () => {
-		expect(() =>
-			planByosanChapters(
-				[
-					{ headline: "長すぎる題名", duration: 20 },
-					{ headline: "ab", duration: 20 },
-					{ headline: "cd", duration: 20 },
-				],
-				{ ...config, max_title_chars: 3 },
-			),
-		).toThrow("BYOSAN_CHAPTER_TITLE_TOO_LONG");
+		).toEqual([{ start: 0, title: "A" }]);
 	});
 });
 
@@ -254,7 +219,7 @@ describe("buildByosanDescription", () => {
 				],
 			},
 			[{ headline: "A", duration: 60 }],
-			{ ...config, min_chapters: 1 },
+			config,
 		);
 		expect(description).toContain(
 			"根拠と限界\n・アナリストの推計（会社の公式値ではない）: 推計の数値です。（出典: 第一ライフ） 限界: 前提に依存する 発表主体側の値です。",

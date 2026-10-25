@@ -177,6 +177,12 @@ function codesOf(overrides: Overrides): string[] {
 	);
 }
 
+function warningsOf(overrides: Overrides): string[] {
+	return auditAuthenticity(makeInput(overrides)).warnings.map(
+		(issue) => issue.code,
+	);
+}
+
 describe("byosan authenticity audit", () => {
 	test("passes a sourced, multi-kind run with independent verification", () => {
 		const result = auditAuthenticity(makeInput());
@@ -185,9 +191,9 @@ describe("byosan authenticity audit", () => {
 		expect(result.metrics.claims_displayed).toBe(3);
 	});
 
-	test("fails when the run uses fewer distinct scene kinds than configured", () => {
+	test("warns when the run uses fewer distinct scene kinds than configured", () => {
 		expect(
-			codesOf({
+			warningsOf({
 				kinds: [
 					"bignumber",
 					"hbar_compare",
@@ -202,9 +208,9 @@ describe("byosan authenticity audit", () => {
 		).toContain("distinct_kinds_too_few");
 	});
 
-	test("fails when one scene kind repeats beyond the configured run length", () => {
+	test("warns when one scene kind repeats beyond the configured run length", () => {
 		expect(
-			codesOf({
+			warningsOf({
 				kinds: [
 					"bignumber",
 					"hbar_compare",
@@ -219,9 +225,9 @@ describe("byosan authenticity audit", () => {
 		).toContain("consecutive_same_kind_exceeded");
 	});
 
-	test("fails when generic scenes exceed the configured ratio", () => {
-		const result = auditAuthenticity(
-			makeInput({
+	test("warns when generic scenes exceed the configured ratio", () => {
+		expect(
+			warningsOf({
 				kinds: [
 					"question",
 					"stat_cards",
@@ -233,10 +239,7 @@ describe("byosan authenticity audit", () => {
 					"stat_cards",
 				],
 			}),
-		);
-		expect(result.violations.map((issue) => issue.code)).toContain(
-			"generic_ratio_exceeded",
-		);
+		).toContain("generic_ratio_exceeded");
 	});
 
 	test("fails when a scene carries no verified claim", () => {
@@ -302,26 +305,26 @@ describe("byosan authenticity audit", () => {
 		).toContain("claim_source_not_displayed");
 	});
 
-	test("fails when the auditor and resolution roles are absent", () => {
+	test("warns when the auditor and resolution roles are absent", () => {
 		expect(
-			codesOf({
+			warningsOf({
 				segments: (segment) => ({ ...segment, verificationRole: undefined }),
 			}),
 		).toContain("verification_sequence_missing");
 	});
 
-	test("fails when comparison scenes are fewer than the explanation figures", () => {
-		expect(codesOf({ figureCount: 6 })).toContain("comparison_scenes_short");
+	test("warns when comparison scenes are fewer than the explanation figures", () => {
+		expect(warningsOf({ figureCount: 6 })).toContain("comparison_scenes_short");
 	});
 
-	test("fails when the sequence is nearly identical to a recently published run", () => {
+	test("warns, without failing, when the sequence is nearly identical to a recently published run", () => {
 		const result = auditAuthenticity(
 			makeInput({
 				previousRuns: [{ asOf: "2026-10-09", sequence: [...BASE_KINDS] }],
 			}),
 		);
-		expect(result.status).toBe("FAIL");
-		expect(result.violations.map((issue) => issue.code)).toContain(
+		expect(result.status).toBe("PASS");
+		expect(result.warnings.map((issue) => issue.code)).toContain(
 			"history_similarity_exceeded",
 		);
 		expect(result.metrics.max_history_similarity).toBe(1);

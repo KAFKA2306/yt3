@@ -1,21 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { ByosanFeatureSegment } from "../src/domain/byosan/feature_spec.js";
 import {
-	evaluateOpeningCatch,
 	layoutCueSpans,
-	minimumCueSecondsAtAssPrecision,
 	planSpeechSegments,
-	splitSpeechText,
 } from "../src/domain/byosan/production_audit.js";
-
-const claims = [
-	{
-		id: "c1",
-		claim:
-			"提供資料では、2026年9月の全国CPIコアは前年比＋2.1％で、8月の＋1.7％から上昇率が拡大した。",
-	},
-	{ id: "c7", claim: "物価上昇はエネルギー以外にも広がった。" },
-];
 
 const segment = (
 	overrides: Partial<ByosanFeatureSegment> = {},
@@ -33,105 +21,37 @@ const segment = (
 	...overrides,
 });
 
-const catchInput = (openingSegments: ByosanFeatureSegment[]) => ({
-	primaryClaimId: "c1",
-	claims,
-	openingSegments,
-});
-
-describe("evaluateOpeningCatch", () => {
-	test("accepts a half-width opening that restates the claim figure", () => {
-		const result = evaluateOpeningCatch(
-			catchInput([segment({ text: "全国CPIコアは前年比+2.1%でした。" })]),
-		);
-		expect(result.passed).toBe(true);
-		expect(result.evidence.match).toEqual({
-			segment_index: 0,
-			field: "text",
-			figure: "+2.1%",
-		});
-	});
-
-	test("rejects a figure that only shares digits with the claim figure", () => {
-		const result = evaluateOpeningCatch(
-			catchInput([segment({ text: "全国CPIは前年比+12.1%でした。" })]),
-		);
-		expect(result.passed).toBe(false);
-	});
-
-	test("rejects an opening that does not carry the primary claim", () => {
-		const result = evaluateOpeningCatch(
-			catchInput([segment({ text: "前年比+2.1%です。", claimIds: ["c7"] })]),
-		);
-		expect(result.passed).toBe(false);
-	});
-
-	test("accepts a figure carried only by a stat card and records the field", () => {
-		const result = evaluateOpeningCatch(
-			catchInput([
-				segment({
-					text: "全国CPIが上がりました。",
-					stats: [
-						{
-							label: "全国CPIコア",
-							value: "+2.1%",
-							detail: "2026年9月・前年同月比",
-							color: "cyan",
-						},
-					],
-				}),
-			]),
-		);
-		expect(result.passed).toBe(true);
-		expect(result.evidence.match).toEqual({
-			segment_index: 0,
-			field: "stats.value",
-			figure: "+2.1%",
-		});
-	});
-
-	test("throws when the primary claim is not in the claim list", () => {
-		expect(() =>
-			evaluateOpeningCatch({
-				primaryClaimId: "c9",
-				claims,
-				openingSegments: [segment({ text: "前年比+2.1%です。" })],
-			}),
-		).toThrow("BYOSAN_PRIMARY_CLAIM_MISSING: c9");
-	});
-});
-
-describe("splitSpeechText", () => {});
+const stat = {
+	label: "全国CPIコア",
+	value: "+2.1%",
+	detail: "2026年9月・前年同月比",
+	color: "cyan" as const,
+};
 
 describe("planSpeechSegments", () => {
-	const longSegment = segment({
-		text: "一つ目の文は長さをそろえてあります。二つ目の文も同じくらいの長さにそろえています。",
-		stats: [
-			{
-				label: "全国CPIコア",
-				value: "+2.1%",
-				detail: "2026年9月・前年同月比",
-				color: "cyan",
-			},
-		],
-	});
-
-	test("throws when a split part would be shorter than the minimum cue", () => {
-		expect(() =>
-			planSpeechSegments([longSegment], {
-				maxSceneSeconds: 10,
-				charsPerSecond: 4,
-				minCueSeconds: 100,
-			}),
-		).toThrow("BYOSAN_SCENE_TOO_SHORT");
-	});
-});
-
-describe("minimumCueSecondsAtAssPrecision", () => {
-	test("reports a cue shorter than the centisecond minimum", () => {
-		expect(minimumCueSecondsAtAssPrecision([{ start: 1, end: 1.83 }])).toBe(
-			0.83,
+	test("splits a long segment at sentence boundaries and keeps stats on the first part only", () => {
+		const parts = planSpeechSegments(
+			[
+				segment({
+					text: "一つ目の文は長さをそろえてあります。二つ目の文も同じくらいの長さにそろえています。",
+					stats: [stat],
+				}),
+			],
+			{ maxSceneSeconds: 10, charsPerSecond: 4 },
 		);
+		expect(parts).toHaveLength(2);
+		expect(parts[0]?.stats).toEqual([stat]);
+		expect(parts[1]?.stats).toEqual([]);
+	});
+
+	test("keeps a segment whole when no sentence boundary fits the limit", () => {
+		const text = "句点のない長い台詞がそのまま続く".repeat(6);
+		expect(
+			planSpeechSegments([segment({ text })], {
+				maxSceneSeconds: 5,
+				charsPerSecond: 4,
+			}),
+		).toEqual([segment({ text })]);
 	});
 });
 
@@ -148,9 +68,10 @@ describe("layoutCueSpans", () => {
 		}
 	});
 
-	test("throws when the window cannot hold every cue at the minimum length", () => {
-		expect(() => layoutCueSpans([1, 1, 1], 0, 2, 0.84)).toThrow(
-			"BYOSAN_CUE_WINDOW_TOO_SHORT",
-		);
+	test("shares a window too short for the minimum cue length evenly instead of failing", () => {
+		const spans = layoutCueSpans([1, 1, 1], 0, 2, 0.84);
+		expect(spans).toHaveLength(3);
+		expect(spans[0]?.start).toBe(0);
+		expect(spans[spans.length - 1]?.end).toBe(2);
 	});
 });

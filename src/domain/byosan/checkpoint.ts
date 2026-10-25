@@ -51,7 +51,14 @@ const SOURCE_GROUPS = {
 		"src/domain/byosan/dialogue_style.ts",
 		"src/scripts/byosan_daily.ts",
 	],
-	media: ["src/scripts/produce_byosan_feature.ts"],
+	media: [
+		"src/scripts/produce_byosan_feature.ts",
+		"src/domain/byosan/production_audit.ts",
+		"src/domain/byosan/scene_render.ts",
+		"src/domain/byosan/scene_svg.ts",
+		"src/domain/byosan/scene_spec.ts",
+		"src/domain/byosan/charts.ts",
+	],
 	publish: [
 		"src/scripts/publish_youtube.ts",
 		"src/domain/publication_state.ts",
@@ -116,6 +123,17 @@ function specFingerprint(root: string): string {
 	]);
 }
 
+function mediaFingerprint(root: string): string {
+	const config = readByosanConfigFile(root);
+	return inputFingerprint([
+		hashFiles(root, SOURCE_GROUPS.media),
+		JSON.stringify({
+			feature_production: config.feature_production,
+			scenes: config.scenes,
+		}),
+	]);
+}
+
 export function currentByosanFingerprints(
 	root: string,
 	runDir: string,
@@ -123,7 +141,7 @@ export function currentByosanFingerprints(
 	return {
 		research: researchFingerprint(root, runDir),
 		spec: specFingerprint(root),
-		media: hashFiles(root, SOURCE_GROUPS.media),
+		media: mediaFingerprint(root),
 		publish: hashFiles(root, SOURCE_GROUPS.publish),
 	};
 }

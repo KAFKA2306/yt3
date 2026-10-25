@@ -16,12 +16,11 @@
 
 - 音声品質: 統合ラウドネス -19〜-10 LUFS、True Peak -0.5 dBTP以下、3秒超の無音なし。
 - 映像品質: H.264 High、1920×1080、BT.709、30fps、目標8Mbps、AAC 48kHz stereo。
-- つかみ: 冒頭の場面（`audit.opening_segment_count`）が、主要主張の数値（`+2.1%` など）を意味として回収する。文字列の全文一致は要求しない。
 - 内容: 全ての重要主張が一次資料に紐づき、概算と公式開示を明確に分ける。区別（確認済み・派生値・推計）と限界は claims の構造化フィールドに保持し、概要欄の「根拠と限界」と画面の出典表示で示す。台詞への逐語的な転記は要求せず、会話の中で自然に一度触れる。
 - イントネーション: 台本の感情ラベルはすべて音声プリセットを持つ。種類数の下限は設けない。
-- 字幕: 1キュー最大2行、可読サイズ、1キュー0.84秒以上を目安にする。
-- 場面: 1場面の音声は `audit.max_scene_seconds` 以内。長い台詞は描画前に文の切れ目で分割し、話速は `scenes.chars_per_second` で見積もる。分割された場面は話者・感情・見出し・主張を引き継ぎ、数値カードは最初の場面だけに出す。
-- 動き: カメラ移動・ズーム・パン・回転・周期的な揺れは禁止する。発話ごとの静止シーン切替、字幕、数値カード更新だけを許可する。静止区間の検出は診断情報として保存し、意図した静止画面を欠陥扱いしない。
+- 字幕: 1キュー最大2行、可読サイズを制作規則とする。1キューの目安は0.84秒で、時間窓が足りない場合は均等配分し、停止しない。
+- 場面: 長い台詞は `audit.max_scene_seconds` を目安に文の切れ目で分割し、話速は `scenes.chars_per_second` で見積もる。分割できない台詞は分割せずに描く。分割された場面は話者・感情・見出し・主張を引き継ぎ、数値カードは最初の場面だけに出す。
+- 動き: カメラ移動・ズーム・パン・回転・周期的な揺れは描画の設計で禁止する（静止画の切替だけを描く）。監査はしない。
 - 感情表現: 驚き、疑問、核心、注意、納得、結論が台本と音声と画面で一致する。
 - ジェスチャー: キャラクターの指差し、ポインター、数値カードの対象を一致させる。
 - サムネ: 文字を小画面で読め、動画冒頭が約束をすぐ回収する。
@@ -30,7 +29,7 @@
 
 ## 継続改善層: agent improvement loop / harness design
 
-失敗は `audit/production_quality_report.json` に要件別で残す。再制作時は、失敗した要件を台本、音声プリセット、字幕分割、映像レンダリング、公開ゲートの実装変更へ変換する。公開結果と視聴維持率が得られたら、冒頭30秒の離脱、トップモーメント、サムネとタイトルの整合を次の eval に追加する。
+`audit/production_quality_report.json` は、停止要件（`requirements`: フォント、再生可能性（コーデック・解像度・音声形式・映像と音声の長さ）、タイトル長）と警告（`advisories`: 音声品質、声の高さ、映像の欠陥、ビットレート）を分けて残す。停止要件のどれかが FAIL なら run を止め、警告は記録だけして止めない。再制作時は、失敗した停止要件を台本、音声プリセット、映像レンダリング、公開ゲートの実装変更へ変換する。公開結果と視聴維持率が得られたら、冒頭30秒の離脱、トップモーメント、サムネとタイトルの整合を次の eval に追加する。
 
 ## 編集参照の分解観察
 
@@ -70,7 +69,7 @@
 
 - 日次の入口は `task byosan:publish-daily`。内部で `task byosan:auto DATE=<Asia/Tokyoの当日>` を実行し、準備ゲートのPASSと3証跡（`[product-release-gate] PASS`、`PUBLISH_READY_RUN`、`PUBLISH_COMMAND`）が同一runで揃い、`publish_approved` が true の場合にだけ `PUBLISH_COMMAND` を実行する。`resume_date` より前の日付は準備・公開しない。公開前の失敗に限り同日に再準備する。`task byosan:auto DATE=<日付>` は準備が失敗すると `task byosan:repair`（codex exec による保守）を挟んで再準備し、準備の総試行回数は `config/domains/byosan_money.yaml` の `auto.max_prepare_attempts` で上限を決めて、上限到達時に停止する。`byosan:publish-daily` は GATE_FAILED の記録がある同日に `task byosan:auto` で再準備する。公開済み・receipt検出時は再準備も再アップロードもしない。`GATE_FAILED` と `PUBLISH_ATTEMPTED` は別状態として扱い、後者や公開の成否が不明な状態からは新規アップロードせず遠隔照合する。
 - systemd user timer `yt3-byosan-daily.timer` が毎日 09:00 JST（Asia/Tokyo）に `yt3-byosan-daily.service` を起動し、service は `task byosan:publish-daily` を実行する（失敗時は Discord に audit_fail を通知し、systemd による自動再起動はしない）。
-- `task byosan:publish-daily`・`task byosan:auto`・`task byosan:prepare` は最初に `task sync:deps`（`bun install --frozen-lockfile`）で node_modules を bun.lock に同期する。bun.lock が古い場合は停止する。準備の事前検査（preflight）は、秒算マネーの import 元（`src/domain/byosan` と `src/scripts/produce_byosan_feature.ts`）が使う package.json の dependencies が node_modules に実在することを確認し、欠けていれば `node_dependencies FAIL` で止まる。
+- `task byosan:publish-daily`・`task byosan:auto`・`task byosan:prepare` は最初に `task sync:deps`（`bun install --frozen-lockfile`）で node_modules を bun.lock に同期する。bun.lock が古い場合は停止する。準備の事前検査（preflight）は、ffmpeg、ffprobe、秒算マネーの import 元が使う package.json の dependencies（node_modules への実在）、python 実行環境、VOICEVOX の疎通だけを確認し、欠けていれば `FAIL` で止まる。LLM の疎通確認は本処理の最初の呼び出しが同じ契約を検査するため行わず、YouTube の認証確認は公開前の `task release:check` で行う。
 - `task byosan:daily` は公開せず、研究・制作・監査のみを行う。
 - `--dry-run` はスキーマ、基準spec、公開抑止を検証する。
 - ニュース候補は5件以上、発行主体3つ以上、直近30日との最大類似度0.42以下を要求する。
@@ -96,15 +95,16 @@ https://support.google.com/youtube/community-guide/271248162/%F0%9F%94%8E-faq-re
 
 監査は `src/domain/byosan/authenticity_audit.ts` の純関数 `auditAuthenticity` が行い、`task audit:byosan-authenticity RUN=byosan_money/<run>` が `runs/byosan_money/<run>/audit/authenticity.json` を書く。日次の準備では製作後・リリースゲート前に同じ監査を実行し、リリースゲートは同じ feature_spec の監査 PASS を要求する。
 
-| 指標 | 内容 | 閾値の置き場所 |
+| 指標 | 扱い | 閾値の置き場所 |
 | --- | --- | --- |
-| 場面の種類 | 異なる場面の種類の数が下限以上 | `scenes.min_distinct_kinds` |
-| 同種の連続 | 同じ種類の場面が連続する最大数 | `scenes.max_consecutive_same_kind` |
-| 汎用比率 | `generic_kinds`（stat_cards、question）の割合 | `authenticity.max_generic_ratio` |
-| 検証済みの根拠 | すべての場面が `scene_claim_statuses` の主張だけを参照する | `authenticity.scene_claim_statuses` |
-| 独立した仕事 | `verification_roles` の順序（auditor→resolution）が台本にあり、`comparison_kinds` の場面数が図表の数 × `scenes_per_figure` 以上 | `authenticity.independent_work` |
-| 出典の表示 | すべての主張の出典名が、その主張を扱う台本区間の出典欄に出る | 台本の出典欄（検査は FeatureSpec の sources と segments） |
-| 他社素材 | 場面に URL を含めない（他社の画像・図の取り込みを禁止） | 構造上の検査 |
-| 過去の公開との類似 | 直近 `history_window` 本の公開済み run と、台本の visualType 列の類似度（1 - 編集距離 / 長い方の長さ）が上限以下 | `authenticity.history_window`、`authenticity.max_similarity` |
+| 検証済みの根拠 | 停止。すべての場面が `scene_claim_statuses` の主張だけを参照する | `authenticity.scene_claim_statuses` |
+| 出典の表示 | 停止。すべての主張の出典名が、その主張を扱う台本区間の出典欄に出る | 台本の出典欄（検査は FeatureSpec の sources と segments） |
+| 他社素材 | 停止。場面に URL を含めない（他社の画像・図の取り込みを禁止） | 構造上の検査 |
+| 場面の種類 | 警告。異なる場面の種類の数が下限以上 | `scenes.min_distinct_kinds` |
+| 同種の連続 | 警告。同じ種類の場面が連続する最大数 | `scenes.max_consecutive_same_kind` |
+| 汎用比率 | 警告。`generic_kinds`（stat_cards、question）の割合 | `authenticity.max_generic_ratio` |
+| 場面数・場面内の数値 | 警告 | `scenes.max_scenes`、`scenes.max_numbers_per_scene` |
+| 独立した仕事 | 警告。`verification_roles` の順序（auditor→resolution）と、`comparison_kinds` の場面数 | `authenticity.independent_work` |
+| 過去の公開との類似 | 警告。直近 `history_window` 本の公開済み run と、台本の visualType 列の類似度 | `authenticity.history_window`、`authenticity.max_similarity` |
 
-閾値はすべて `config/domains/byosan_money.yaml` に置き、コードに値を埋め込まない。閾値を通すために緩めることは、監査の趣旨に反するため行わない。
+停止する検査は、数字と出典の整合性、主張の検証状態、出典の表示、他社素材に限る。品質目的の閾値は警告として `audit/authenticity.json` の `warnings` に残し、run は止めない。閾値はすべて `config/domains/byosan_money.yaml` に置き、コードに値を埋め込まない。

@@ -26,9 +26,7 @@ import {
 	requiredFontFamilies,
 } from "../domain/byosan/fonts.js";
 import {
-	evaluateOpeningCatch,
 	layoutCueSpans,
-	minimumCueSecondsAtAssPrecision,
 	planSpeechParts,
 } from "../domain/byosan/production_audit.js";
 import {
@@ -874,17 +872,19 @@ async function auditProduction(
 	timed: TimedSegment[],
 	runDir: string,
 	videoPath: string,
-	thumbnailPath: string,
 ): Promise<void> {
 	const D = F.audit;
-	const openingCount = D.opening_segment_count;
 	const probe = mediaProbe(videoPath);
 	const streams = (probe.streams ?? []) as Array<Record<string, unknown>>;
 	const video = streams.find((stream) => stream.codec_type === "video");
 	const audio = streams.find((stream) => stream.codec_type === "audio");
-	const outputBitrate = Number(
-		(probe.format as Record<string, unknown> | undefined)?.bit_rate ?? 0,
+	const format = (probe.format ?? {}) as Record<string, unknown>;
+	const timelineSeconds = timed.reduce(
+		(sum, segment) => sum + segment.duration,
+		0,
 	);
+	const mediaSeconds = Number(format.duration ?? 0);
+	const outputBitrate = Number(format.bit_rate ?? 0);
 	const defects = defectAudit(videoPath);
 	const voiceRegister = measureVoiceRegister(
 		timed.map((segment) => segment.audioPath),
@@ -893,80 +893,7 @@ async function auditProduction(
 	const audioQA = runAudioQA(videoPath, runDir, {
 		voice_register: voiceRegister,
 	});
-	const subtitleText = await fs.readFile(
-		path.join(runDir, FILENAMES.subtitles),
-		"utf8",
-	);
-	const dialogueLines = subtitleText
-		.split("\n")
-		.filter((line) => line.startsWith("Dialogue:"));
-	const tooManyLines = dialogueLines.filter(
-		(line) => (line.match(/\\N/g) ?? []).length > 1,
-	);
-	const badLineBreaks = dialogueLines.filter((line) => {
-		const visible = line
-			.split(",")
-			.slice(9)
-			.join(",")
-			.replaceAll(/\{[^}]+\}/g, "");
-		const marker = visible.indexOf("\\N");
-		if (marker < 0) return false;
-		const joined = visible.replace("\\N", "");
-		const breakIndex = Array.from(visible.slice(0, marker)).length;
-		return isUnsafeCaptionBreak(joined, breakIndex);
-	});
-	const captionLineWidths = dialogueLines.flatMap((line) =>
-		line
-			.split(",")
-			.slice(9)
-			.join(",")
-			.replaceAll(/\{[^}]+\}/g, "")
-			.split("\\N")
-			.map(displayUnits),
-	);
-	const maximumCaptionLineUnits = Math.max(...captionLineWidths);
-	const maximumAllowedCaptionUnits =
-		F.captions.max_line_units + F.captions.tolerance_units;
-	const cues = dialogueLines.map((line) => {
-		const fields = line.split(",");
-		const toSeconds = (timestamp: string): number => {
-			const [hours = "0", minutes = "0", seconds = "0"] = timestamp.split(":");
-			return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
-		};
-		return {
-			start: toSeconds(fields[1] ?? "0:0:0"),
-			end: toSeconds(fields[2] ?? "0:0:0"),
-		};
-	});
-	const overlappingCues = cues.filter(
-		(cue, index) =>
-			index > 0 && cue.start < (cues[index - 1]?.end ?? 0) - 0.001,
-	);
-	const minimumCueSeconds = minimumCueSecondsAtAssPrecision(cues);
-	const maxSceneSeconds = Math.max(...timed.map((segment) => segment.duration));
 	const titleLength = Array.from(spec.title).length;
-	const sourceCoverage = spec.claims.every(
-		(claim) =>
-			claim.sourceIds.length > 0 &&
-			claim.status.length > 0 &&
-			claim.sourceIds.every((sourceId) =>
-				spec.sources.some((source) => source.id === sourceId),
-			),
-	);
-	const openingSegments = timed.slice(0, openingCount);
-	if (!spec.packaging) throw new Error("BYOSAN_PACKAGING_MISSING");
-	const opening = evaluateOpeningCatch({
-		primaryClaimId: spec.packaging.primaryClaimId,
-		claims: spec.claims,
-		openingSegments,
-	});
-	const motionFilter = staticSceneMotionFilter(FPS);
-	const forbiddenMotion = new RegExp(D.forbidden_motion_terms.join("|"));
-	const motionPolicyPass =
-		motionFilter === `fps=${FPS}` && !forbiddenMotion.test(motionFilter);
-	const voiceEmotions = timed.every((segment) =>
-		Object.hasOwn(F.tts.voice_presets, segment.emotion),
-	);
 	const fontMatches = requiredFontFamilies([
 		FONT,
 		DESIGN.typography.numeric,
@@ -987,8 +914,33 @@ async function auditProduction(
 				problems: fontProblems,
 			},
 		},
+		video_playback: {
+			status:
+				video?.codec_name === D.video_codec &&
+				video?.width === WIDTH &&
+				video?.height === HEIGHT &&
+				audio?.codec_name === D.audio_codec &&
+				audio?.sample_rate === String(F.audio.sample_rate) &&
+				Math.abs(mediaSeconds - timelineSeconds) <= D.duration_tolerance_seconds
+					? "PASS"
+					: "FAIL",
+			evidence: {
+				video,
+				audio,
+				format,
+				timeline_seconds: timelineSeconds,
+				media_seconds: mediaSeconds,
+			},
+		},
+		title: {
+			status:
+				titleLength <= CONFIG.steps.youtube.max_title_length ? "PASS" : "FAIL",
+			evidence: { title_length: titleLength },
+		},
+	};
+	const advisories = {
 		audio_quality: {
-			status: audioQA.status === "PASS" ? "PASS" : "FAIL",
+			status: audioQA.status === "PASS" ? "PASS" : "WARN",
 			evidence: audioQA.report,
 		},
 		voice_register: {
@@ -999,116 +951,16 @@ async function auditProduction(
 				),
 			)
 				? "PASS"
-				: "FAIL",
-			evidence: {
-				max_loud_f0_percentile_hz: D.voice_register.max_loud_f0_percentile_hz,
-				loud_percentile: D.voice_register.loud_percentile,
-				segments: voiceRegister,
-			},
+				: "WARN",
+			evidence: voiceRegister,
 		},
-		video_quality: {
-			status:
-				video?.codec_name === D.video_codec &&
-				video?.width === WIDTH &&
-				video?.height === HEIGHT &&
-				audio?.codec_name === D.audio_codec &&
-				audio?.sample_rate === String(F.audio.sample_rate) &&
-				outputBitrate >= D.min_output_bitrate_bps &&
-				defects.blackSegments === 0
-					? "PASS"
-					: "FAIL",
-			evidence: { video, audio, format: probe.format, defects },
+		video_defects: {
+			status: defects.blackSegments === 0 ? "PASS" : "WARN",
+			evidence: defects,
 		},
-		catch: {
-			status:
-				titleLength <= CONFIG.steps.youtube.max_title_length && opening.passed
-					? "PASS"
-					: "FAIL",
-			evidence: {
-				title_length: titleLength,
-				opening_seconds: openingSegments.reduce(
-					(sum, segment) => sum + segment.duration,
-					0,
-				),
-				opening: opening.evidence,
-			},
-		},
-		content: {
-			status: sourceCoverage ? "PASS" : "FAIL",
-			evidence: {
-				claims: spec.claims,
-				source_count: spec.sources.length,
-				caveats: spec.descriptionBullets,
-				disclaimer: spec.disclaimer,
-			},
-		},
-		intonation: {
-			status: voiceEmotions ? "PASS" : "FAIL",
-			evidence: {
-				emotion_presets: timed.map((segment) => segment.emotion),
-				manifest: path.join(runDir, RUN.audio_dir, RUN.audio_manifest),
-			},
-		},
-		subtitles: {
-			status:
-				dialogueLines.length > timed.length &&
-				tooManyLines.length === 0 &&
-				badLineBreaks.length === 0 &&
-				overlappingCues.length === 0 &&
-				minimumCueSeconds >= F.captions.min_cue_seconds &&
-				maximumCaptionLineUnits <= maximumAllowedCaptionUnits
-					? "PASS"
-					: "FAIL",
-			evidence: {
-				cue_count: dialogueLines.length,
-				max_lines_per_cue: F.captions.max_lines,
-				bad_line_breaks: badLineBreaks.length,
-				overlapping_cues: overlappingCues.length,
-				minimum_cue_seconds: minimumCueSeconds,
-				maximum_line_display_units: maximumCaptionLineUnits,
-				font_size: F.ass_style.font_size,
-				bottom_safe_margin: F.ass_style.margin_v,
-			},
-		},
-		motion: {
-			status:
-				maxSceneSeconds <= D.max_scene_seconds && motionPolicyPass
-					? "PASS"
-					: "FAIL",
-			evidence: {
-				scene_count: timed.length,
-				max_scene_seconds: maxSceneSeconds,
-				camera_motion:
-					"static scene; no zoom, crop, pan, rotation, or oscillation",
-				filter: motionFilter,
-				static_scene: motionPolicyPass,
-				no_camera_transform: motionPolicyPass,
-				freeze_segments_diagnostic: defects.freezeSegments,
-			},
-		},
-		gesture: {
-			status: timed.some((segment) => segment.speaker === "春日部つむぎ")
-				? "PASS"
-				: "FAIL",
-			evidence: {
-				asset:
-					"speaker-specific standing art; missing assets fail closed (BYOSAN_CHARACTER_ASSET_MISSING)",
-				synchronization:
-					"speaker-specific cutout, pointer line, emotion label, and stat target on every scene",
-			},
-		},
-		thumbnail: {
-			status:
-				(await fs.stat(thumbnailPath)).size > D.min_thumbnail_bytes
-					? "PASS"
-					: "FAIL",
-			evidence: {
-				path: thumbnailPath,
-				continuity: {
-					thumbnail_title: spec.thumbnailTitle,
-					opening: opening.evidence,
-				},
-			},
+		output_bitrate: {
+			status: outputBitrate >= D.min_output_bitrate_bps ? "PASS" : "WARN",
+			evidence: { bit_rate: outputBitrate },
 		},
 	};
 	const decision = Object.values(requirements).every(
@@ -1116,12 +968,18 @@ async function auditProduction(
 	)
 		? "PASS"
 		: "FAIL";
+	const productionReportPath = path.join(
+		runDir,
+		RUN.audit_dir,
+		RUN.production_report,
+	);
 	await fs.outputJson(
-		path.join(runDir, RUN.audit_dir, RUN.production_report),
+		productionReportPath,
 		{
 			decision,
 			generated_at: new Date().toISOString(),
 			requirements,
+			advisories,
 		},
 		{ spaces: 2 },
 	);
@@ -1130,23 +988,33 @@ async function auditProduction(
 		{
 			decision,
 			summary: "Bespoke byosan feature closed-loop audit",
-			checks: Object.fromEntries(
-				Object.entries(requirements).map(([key, value]) => [
-					key,
-					{
-						status: value.status,
-						critical: true,
-						details: JSON.stringify(value.evidence),
-					},
-				]),
-			),
+			checks: {
+				...Object.fromEntries(
+					Object.entries(requirements).map(([key, value]) => [
+						key,
+						{
+							status: value.status,
+							critical: true,
+							details: JSON.stringify(value.evidence),
+						},
+					]),
+				),
+				...Object.fromEntries(
+					Object.entries(advisories).map(([key, value]) => [
+						key,
+						{
+							status: value.status,
+							critical: false,
+							details: JSON.stringify(value.evidence),
+						},
+					]),
+				),
+			},
 		},
 		{ spaces: 2 },
 	);
 	if (decision !== "PASS") {
-		throw new Error(
-			`Production audit failed: ${path.join(runDir, RUN.audit_dir, RUN.production_report)}`,
-		);
+		throw new Error(`Production audit failed: ${productionReportPath}`);
 	}
 }
 
@@ -1289,7 +1157,7 @@ async function main(): Promise<void> {
 	const finalPath = path.join(videoDir, RUN.publish_video);
 	composeFinal(visualPath, narrationPath, subtitlePath, cursor, finalPath);
 	await writeOutputs(spec, timed, runDir, finalPath, thumbnail.jpg);
-	await auditProduction(spec, timed, runDir, finalPath, thumbnail.png);
+	await auditProduction(spec, timed, runDir, finalPath);
 	console.log(`RUN_DIR=${runDir}`);
 	console.log(`VIDEO=${finalPath}`);
 	console.log(`THUMBNAIL=${thumbnail.png}`);

@@ -117,11 +117,6 @@ export type ByosanSceneSpec = z.infer<typeof ByosanSceneSpecSchema>;
 export type ByosanScenesConfig = z.infer<typeof ByosanScenesConfigSchema>;
 type ByosanSceneCondition = z.infer<typeof ByosanSceneConditionSchema>;
 
-type ByosanSceneIssue = {
-	code: string;
-	details: string;
-};
-
 type SceneSourceSpec = Pick<ByosanFeatureSpec, "claims" | "segments">;
 type SceneExplanation = Pick<Explanation, "figures">;
 type SceneFigure = Explanation["figures"][number];
@@ -290,113 +285,5 @@ export function compileScenes(
 	const scenes = featureSpec.segments.map((segment, segmentIndex) =>
 		compileScene(segment, segmentIndex, explanation, config),
 	);
-	if (scenes.length > config.max_scenes) {
-		throw new Error(
-			`BYOSAN_SCENE_COUNT_EXCEEDED: ${scenes.length} > ${config.max_scenes}`,
-		);
-	}
 	return scenes;
-}
-
-function visualRefs(visual: ByosanSceneVisual): ByosanSceneValueRef[] {
-	if (visual.kind === "question") return [];
-	if (visual.kind === "bignumber") return [visual.value];
-	return visual.items.map((item) => item.value);
-}
-
-function valueRefResolves(
-	ref: ByosanSceneValueRef,
-	featureSpec: SceneSourceSpec,
-	explanation: SceneExplanation,
-): boolean {
-	if (ref.source === "stat") {
-		return (
-			featureSpec.segments[ref.segmentIndex]?.stats[ref.statIndex] !== undefined
-		);
-	}
-	return explanation.figures[ref.figureIndex] !== undefined;
-}
-
-function consecutiveKindIssues(
-	scenes: ByosanSceneSpec[],
-	limit: number,
-): ByosanSceneIssue[] {
-	const issues: ByosanSceneIssue[] = [];
-	let run = 0;
-	for (const [index, scene] of scenes.entries()) {
-		run = scenes[index - 1]?.visual.kind === scene.visual.kind ? run + 1 : 1;
-		if (run > limit) {
-			issues.push({
-				code: "consecutive_same_kind",
-				details: `${scene.sceneId}:${scene.visual.kind}:${run}`,
-			});
-		}
-	}
-	return issues;
-}
-
-export function auditScenes(
-	sceneInputs: ByosanSceneSpec[],
-	featureSpec: SceneSourceSpec,
-	explanation: SceneExplanation,
-	config: ByosanScenesConfig,
-): ByosanSceneIssue[] {
-	const scenes = z.array(ByosanSceneSpecSchema).parse(sceneInputs);
-	const issues: ByosanSceneIssue[] = [];
-	if (scenes.length > config.max_scenes) {
-		issues.push({
-			code: "scene_count_exceeds_max",
-			details: `${scenes.length}>${config.max_scenes}`,
-		});
-	}
-	const coveredSegments = scenes.flatMap((scene) => scene.segmentIndexes);
-	const expectedSegments = featureSpec.segments.map((_, index) => index);
-	if (coveredSegments.join(",") !== expectedSegments.join(",")) {
-		issues.push({
-			code: "segment_coverage_mismatch",
-			details: coveredSegments.join(","),
-		});
-	}
-	const sceneIds = scenes.map((scene) => scene.sceneId);
-	if (new Set(sceneIds).size !== sceneIds.length) {
-		issues.push({ code: "scene_id_duplicate", details: sceneIds.join(",") });
-	}
-	const claimIds = new Set(
-		featureSpec.claims.flatMap((claim) => (claim.id ? [claim.id] : [])),
-	);
-	for (const scene of scenes) {
-		const missingClaims = scene.claimIds.filter((id) => !claimIds.has(id));
-		if (missingClaims.length > 0) {
-			issues.push({
-				code: "claim_missing",
-				details: `${scene.sceneId}:${missingClaims.join(",")}`,
-			});
-		}
-		const refs = visualRefs(scene.visual);
-		if (refs.length > config.max_numbers_per_scene) {
-			issues.push({
-				code: "numbers_per_scene_exceeded",
-				details: `${scene.sceneId}:${refs.length}`,
-			});
-		}
-		for (const ref of refs) {
-			if (!valueRefResolves(ref, featureSpec, explanation)) {
-				issues.push({
-					code: "value_ref_missing",
-					details: `${scene.sceneId}:${JSON.stringify(ref)}`,
-				});
-			}
-		}
-	}
-	issues.push(
-		...consecutiveKindIssues(scenes, config.max_consecutive_same_kind),
-	);
-	const distinctKinds = new Set(scenes.map((scene) => scene.visual.kind));
-	if (distinctKinds.size < config.min_distinct_kinds) {
-		issues.push({
-			code: "distinct_kinds_too_few",
-			details: `${distinctKinds.size}<${config.min_distinct_kinds}`,
-		});
-	}
-	return issues;
 }

@@ -2,7 +2,6 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
-import yaml from "js-yaml";
 import { z } from "zod";
 import {
 	type ResearchResult,
@@ -20,8 +19,6 @@ import {
 } from "../domain/byosan/checkpoint.js";
 import {
 	type ByosanFailureClassification,
-	type ByosanLlmConfig,
-	type LlmBackend,
 	type StructuredCall,
 	byosanFailureClassification,
 	byosanLlmConfig,
@@ -119,15 +116,10 @@ export type ByosanFailureClass =
 	| "INFRA_DEPENDENCY"
 	| "NETWORK_AUTH"
 	| "PROVIDER_RATE_LIMIT"
-	| "PROVIDER_SCHEMA"
-	| "SPEC_CONTRACT"
 	| "RESEARCH_ANGLE_STOP"
-	| "MEDIA_AUDIO"
-	| "MEDIA_VIDEO_MOTION"
-	| "SUBTITLE"
 	| "PUBLISH_REMOTE"
 	| "UNCERTAIN_REMOTE_COMMIT"
-	| "UNCLASSIFIED";
+	| "PIPELINE_FAILURE";
 
 type ByosanFailureStage = "RESEARCH" | "SPEC" | "MEDIA" | "PUBLISH" | "UNKNOWN";
 
@@ -142,11 +134,9 @@ export type ByosanFailureTrace = {
 	evidence: string;
 	fingerprint: string;
 	failed_commit: string;
-	retry_count: number;
 	exit_status?: number;
 	failed_at: string;
 	first_failed_at: string;
-	last_retry_at?: string;
 	recovered_at?: string;
 };
 
@@ -239,99 +229,35 @@ export function classifyByosanFailure(
 		classification.mcp_noise_terms,
 	).join("\n");
 	if (/BYOSAN_ANGLE_STOP/.test(message)) {
-		return {
-			failureClass: "RESEARCH_ANGLE_STOP",
-			stage: "RESEARCH",
-		};
+		return { failureClass: "RESEARCH_ANGLE_STOP", stage: "RESEARCH" };
 	}
 	if (
 		/COMMAND_FAILED: .*publish_youtube|DUPLICATE_PUBLISH_BLOCKED|PUBLISH_EVIDENCE_INCOMPLETE/i.test(
 			message,
 		)
 	) {
-		return {
-			failureClass: "UNCERTAIN_REMOTE_COMMIT",
-			stage: "PUBLISH",
-		};
+		return { failureClass: "UNCERTAIN_REMOTE_COMMIT", stage: "PUBLISH" };
 	}
 	if (termsMatch(message, classification.rate_limit_terms)) {
-		return {
-			failureClass: "PROVIDER_RATE_LIMIT",
-			stage,
-		};
+		return { failureClass: "PROVIDER_RATE_LIMIT", stage };
 	}
 	if (/BYOSAN_PREFLIGHT_BLOCKED/.test(message)) {
-		if (
-			/\b(node_dependencies|python_runtime|ffmpeg|ffprobe|voicevox) (FAIL|UNVERIFIED)/.test(
-				message,
-			)
-		) {
-			return {
-				failureClass: "INFRA_DEPENDENCY",
-				stage,
-			};
-		}
-		return {
-			failureClass: "NETWORK_AUTH",
-			stage,
-		};
+		return { failureClass: "INFRA_DEPENDENCY", stage };
 	}
 	if (termsMatch(message, classification.auth_terms)) {
-		return {
-			failureClass: "NETWORK_AUTH",
-			stage,
-		};
-	}
-	if (/schema|zod|invalid_type|structured output|parse/i.test(message)) {
-		return {
-			failureClass: "PROVIDER_SCHEMA",
-			stage,
-		};
-	}
-	if (/BYOSAN_FEATURE|SPEC_CONTRACT|feature spec/i.test(message)) {
-		return {
-			failureClass: "SPEC_CONTRACT",
-			stage: "SPEC",
-		};
-	}
-	if (/VOICEVOX|TTS|audio|speech|duration/i.test(message)) {
-		return {
-			failureClass: "MEDIA_AUDIO",
-			stage: "MEDIA",
-		};
-	}
-	if (/motion|zoompan|crop|lateral|video motion/i.test(message)) {
-		return {
-			failureClass: "MEDIA_VIDEO_MOTION",
-			stage: "MEDIA",
-		};
-	}
-	if (/subtitle|caption|srt/i.test(message)) {
-		return {
-			failureClass: "SUBTITLE",
-			stage: "MEDIA",
-		};
+		return { failureClass: "NETWORK_AUTH", stage };
 	}
 	if (/PUBLISH_|\byoutube\b/i.test(message)) {
-		return {
-			failureClass: "PUBLISH_REMOTE",
-			stage: "PUBLISH",
-		};
+		return { failureClass: "PUBLISH_REMOTE", stage: "PUBLISH" };
 	}
 	if (
 		/permission|EACCES|EPERM|not found|module|dependency|ffmpeg|ffprobe/i.test(
 			message,
 		)
 	) {
-		return {
-			failureClass: "INFRA_DEPENDENCY",
-			stage,
-		};
+		return { failureClass: "INFRA_DEPENDENCY", stage };
 	}
-	return {
-		failureClass: "UNCLASSIFIED",
-		stage,
-	};
+	return { failureClass: "PIPELINE_FAILURE", stage };
 }
 
 function failureFingerprint(
@@ -365,16 +291,6 @@ function readFailureTrace(runDir: string): ByosanFailureTrace | null {
 	}
 }
 
-export function pendingLlmBackends(
-	llm: ByosanLlmConfig,
-	reused: { research: boolean; spec: boolean },
-): LlmBackend[] {
-	return [
-		...(reused.research ? [] : [llmBackend(llm, "research")]),
-		...(reused.spec ? [] : [llmBackend(llm, "feature"), "codex" as const]),
-	];
-}
-
 export function reusableResearchResult(
 	cached: ResearchResult,
 	publishedSourceUrls: ReadonlySet<string>,
@@ -403,32 +319,14 @@ export function preflightBlockedMessage(
 	return `BYOSAN_PREFLIGHT_BLOCKED: ${report.status} ${reportPath} ${failed.join("; ")}`;
 }
 
-export function assertByosanRetryAllowed(
-	runDir: string,
-	classification: ByosanFailureClassification = byosanFailureClassification(),
-): void {
+export function assertByosanRetryAllowed(runDir: string): void {
 	const trace = readFailureTrace(runDir);
-	if (!trace || trace.status === "RECOVERED") return;
-	if (trace.failure_class === "UNCERTAIN_REMOTE_COMMIT") {
+	if (
+		trace?.status === "OPEN" &&
+		trace.failure_class === "UNCERTAIN_REMOTE_COMMIT"
+	) {
 		throw new Error(
 			`RETRY_BLOCKED_REMOTE_READBACK_REQUIRED: ${trace.failure_class} ${trace.fingerprint}`,
-		);
-	}
-	if (trace.failure_class === "PROVIDER_RATE_LIMIT") {
-		const maxRetries = classification.transient_max_retries;
-		if (trace.retry_count >= maxRetries) {
-			throw new Error(
-				`RETRY_BLOCKED_TRANSIENT_EXHAUSTED: ${trace.failure_class} ${trace.retry_count}/${maxRetries}`,
-			);
-		}
-		fs.outputJsonSync(
-			failureTracePath(runDir),
-			{
-				...trace,
-				retry_count: trace.retry_count + 1,
-				last_retry_at: new Date().toISOString(),
-			},
-			{ spaces: 2 },
 		);
 	}
 }
@@ -469,8 +367,6 @@ export function recordByosanFailure(
 		evidence,
 		fingerprint,
 		failed_commit: failedCommit,
-		retry_count:
-			previous?.fingerprint === fingerprint ? previous.retry_count : 0,
 		failed_at: now,
 		first_failed_at: sameFailure ? previous.first_failed_at : now,
 	};
@@ -945,12 +841,7 @@ async function runByosanDaily(): Promise<void> {
 	const specReused =
 		checkpoint.stages.spec_ready && (await fs.pathExists(specPath));
 	const llm = byosanLlmConfig();
-	const preflight = await runByosanPreflight(store.runDir, {
-		llmBackends: pendingLlmBackends(llm, {
-			research: reusedResearch !== undefined,
-			spec: specReused,
-		}),
-	});
+	const preflight = await runByosanPreflight(store.runDir);
 	if (preflight.status !== "PASS") {
 		throw new Error(
 			preflightBlockedMessage(

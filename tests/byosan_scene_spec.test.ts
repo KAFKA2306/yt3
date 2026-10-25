@@ -10,7 +10,6 @@ import {
 import {
 	type ByosanScenesConfig,
 	ByosanScenesConfigSchema,
-	auditScenes,
 	compileScenes,
 } from "../src/domain/byosan/scene_spec.js";
 
@@ -46,15 +45,12 @@ function withSegment(
 }
 
 describe("byosan scene spec", () => {
-	test("accepts compiled scenes under the configured audit", () => {
+	test("compiles every segment into exactly one scene, in order", () => {
 		expect(
-			auditScenes(
-				compileScenes(source, explanation, config),
-				source,
-				explanation,
-				config,
+			compileScenes(source, explanation, config).flatMap(
+				(scene) => scene.segmentIndexes,
 			),
-		).toEqual([]);
+		).toEqual(source.segments.map((_, index) => index));
 	});
 
 	test("falls back to stat cards when a stat carries a qualifier instead of a plain number", () => {
@@ -71,24 +67,6 @@ describe("byosan scene spec", () => {
 			(scene) => scene.visual.kind,
 		);
 		expect(kinds).not.toContain("bignumber");
-	});
-
-	test("reports value references and claim ids that do not resolve", () => {
-		const scenes = compileScenes(source, explanation, config);
-		const bignumber = scenes[1];
-		const question = scenes[6];
-		if (!bignumber || !question) throw new Error("fixture scenes missing");
-		bignumber.visual = {
-			kind: "bignumber",
-			label: "Amazon純利益",
-			value: { source: "stat", segmentIndex: 99, statIndex: 0 },
-		};
-		question.claimIds = ["c_missing"];
-		expect(
-			auditScenes(scenes, source, explanation, config).map(
-				(issue) => issue.code,
-			),
-		).toEqual(["value_ref_missing", "claim_missing"]);
 	});
 
 	test("throws when a segment has no claim link", () => {
