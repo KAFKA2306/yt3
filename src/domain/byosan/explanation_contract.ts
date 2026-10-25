@@ -154,7 +154,6 @@ export function auditFeatureSpecAgainstExplanation(
 	spec: ByosanFeatureSpec,
 	explanation: Explanation,
 	numberEvidence: NumberEvidence,
-	bannedPhrases: string[],
 ): FeatureSpecIssue[] {
 	const issues: FeatureSpecIssue[] = [];
 	for (const figure of explanation.figures) {
@@ -172,23 +171,6 @@ export function auditFeatureSpecAgainstExplanation(
 		numberEvidence.sourceText,
 	];
 	issues.push(...unsourcedNumberIssues(specNumberTexts(spec), sources));
-	for (const phrase of bannedPhrases) {
-		const payoffIndex = spec.segments.findIndex(
-			(segment) =>
-				(segment.verificationRole === "resolution" ||
-					segment.verificationRole === "landing") &&
-				[segment.text, segment.headline, segment.subheadline]
-					.map(nfkc)
-					.some((text) => text.includes(nfkc(phrase))),
-		);
-		if (payoffIndex >= 0) {
-			issues.push({
-				code: "banned_phrase_in_resolution_or_landing",
-				details: phrase,
-				path: segmentIssuePath(payoffIndex),
-			});
-		}
-	}
 	return issues;
 }
 

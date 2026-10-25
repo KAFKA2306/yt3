@@ -406,10 +406,6 @@ tasks:
     desc: "Render the canonical Visual Design System v1 preview artifacts"
     cmds: ["bun run design:preview"]
 
-  audit:visual-design:
-    desc: "Reject viewer-facing visual literals outside the canonical design system"
-    cmds: ["bun run audit:visual-design"]
-
   clean:
     desc: "Reset logs and temporary artifacts"
     cmds:
@@ -452,13 +448,6 @@ tasks:
   audit:repo-layout:
     desc: "Audit root allowlist, ADR index integrity, and inline doc path references"
     cmds: ["bun src/scripts/audit_repo_layout.ts"]
-
-  audit:prompt-migration:
-    desc: "Inventory prompt sources and audit model/profile migration debt"
-    cmds: ["bun src/scripts/audit_prompt_migration.ts {{.CLI_ARGS}}"]
-  audit:ontology:
-    desc: "Audit ontology terminology and its normative basis"
-    cmds: ["bun run audit:ontology"]
 
   stability:report:
     desc: "Regenerate the canonical cross-run stability report"

@@ -4,26 +4,16 @@ This directory contains maintained operational standards and architecture decisi
 
 ## Operations
 
-- [`daily_guarantee.md`](./daily_guarantee.md): daily guarantee definition and status checks
-- [`content_freshness_metrics.md`](./content_freshness_metrics.md): deterministic freshness metrics and thresholds
 - [`QUALITY_GATES.md`](./QUALITY_GATES.md): ownership of lint, typecheck, tests, hooks, and CI gates
 
 ## Data Model
 
-Three layers describe the data. Each has one role; see [`standard/ontology-standard.md`](./standard/ontology-standard.md#layer-relation).
-
-- [`standard/ontology-standard.md`](./standard/ontology-standard.md): meaning of objects, relations, and actions (`config/ontology/yt3.yaml`)
 - [`standard/star-schema-standard.md`](./standard/star-schema-standard.md): fact and dimension tables by grain, and the migration plan
 - [`standard/ledger-standard.md`](./standard/ledger-standard.md): append-only records of what happened, and where each ledger lives
 
 ## Standards
 
-- [`standard/system-audit-protocol.md`](./standard/system-audit-protocol.md): system audit protocol
-- [`standard/continuous-improvement-loop.md`](./standard/continuous-improvement-loop.md): improvement-loop evidence flow
 - [`standard/humanity-observatory-audit-standard.md`](./standard/humanity-observatory-audit-standard.md): Humanity Observatory audit standard
-- [`standard/kafka-visual-identity.md`](./standard/kafka-visual-identity.md): shared visual identity rules
-- [`standard/viral-retention-engineering.md`](./standard/viral-retention-engineering.md): retention-oriented production standard
-- [`standard/byosan-reference-patterns.md`](./standard/byosan-reference-patterns.md): evidence-first architecture for adapting external video patterns
 - [`standard/asmr-workflow.md`](./standard/asmr-workflow.md): ASMR workflow standard
 
 ## Publication

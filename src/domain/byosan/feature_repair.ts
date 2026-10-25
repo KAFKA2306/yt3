@@ -33,7 +33,6 @@ export type FeatureDraftContext = {
 	sources: ByosanFeatureSource[];
 	explanation: Explanation;
 	numberEvidence: NumberEvidence;
-	bannedPhrases: string[];
 };
 
 type FeatureCorrectionRule =
@@ -303,7 +302,6 @@ export function featureDraftIssues(
 			spec.data,
 			context.explanation,
 			context.numberEvidence,
-			context.bannedPhrases,
 		),
 	];
 }

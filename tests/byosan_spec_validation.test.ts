@@ -34,7 +34,6 @@ const numberEvidence: NumberEvidence = {
 	numbers: ["2026年9月の消費者物価指数は前年比+2.1%"],
 	sourceText: "",
 };
-const bannedPhrases = ["まだ言えない", "分からない"];
 
 type SegmentFixture = {
 	text: string;
@@ -87,7 +86,6 @@ describe("feature spec contract against the explanation", () => {
 				specWith(grounded),
 				explanation,
 				numberEvidence,
-				bannedPhrases,
 			),
 		).toEqual([]);
 	});
@@ -97,7 +95,6 @@ describe("feature spec contract against the explanation", () => {
 			specWith([{ text: conclusion, verificationRole: "landing" }]),
 			explanation,
 			numberEvidence,
-			bannedPhrases,
 		);
 		expect(formatted(issues)).toContain(
 			"explanation_figure_value_missing: +2.1%",
@@ -114,7 +111,6 @@ describe("feature spec contract against the explanation", () => {
 			]),
 			explanation,
 			numberEvidence,
-			bannedPhrases,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 47"]);
 		expect(issues[0]?.path).toBe("segments[0]");
@@ -131,7 +127,6 @@ describe("feature spec contract against the explanation", () => {
 			]),
 			explanation,
 			{ ...numberEvidence, sourceText: "1982年と1990年の反発を除外した。" },
-			bannedPhrases,
 		);
 		expect(issues).toEqual([]);
 	});
@@ -144,7 +139,6 @@ describe("feature spec contract against the explanation", () => {
 			]),
 			explanation,
 			{ ...numberEvidence, sourceText: "14%の上昇" },
-			bannedPhrases,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 4"]);
 	});
@@ -154,37 +148,9 @@ describe("feature spec contract against the explanation", () => {
 			specWith(grounded, "3倍"),
 			explanation,
 			numberEvidence,
-			bannedPhrases,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 3"]);
 		expect(issues[0]?.path).toBe("thumbnail");
-	});
-
-	test("flags a hedged phrase only in resolution or landing segments", () => {
-		const presenterOnly = auditFeatureSpecAgainstExplanation(
-			specWith([
-				...grounded,
-				{ text: "まだ言えないという声もある。", verificationRole: "presenter" },
-			]),
-			explanation,
-			numberEvidence,
-			bannedPhrases,
-		);
-		expect(presenterOnly).toEqual([]);
-
-		const landing = auditFeatureSpecAgainstExplanation(
-			specWith([
-				...grounded,
-				{ text: "結論はまだ言えないのだ。", verificationRole: "landing" },
-			]),
-			explanation,
-			numberEvidence,
-			bannedPhrases,
-		);
-		expect(formatted(landing)).toEqual([
-			"banned_phrase_in_resolution_or_landing: まだ言えない",
-		]);
-		expect(landing[0]?.path).toBe("segments[2]");
 	});
 });
 

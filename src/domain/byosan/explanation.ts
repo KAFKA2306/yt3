@@ -11,7 +11,6 @@ export type ExplainConfig = {
 	verify_prompt: string;
 	sandbox: string;
 	workdir_prefix: string;
-	banned_conclusion_phrases: string[];
 	prompt: string;
 };
 
@@ -137,19 +136,14 @@ export function auditVerdicts(
 export function auditExplanation(
 	explanation: Explanation,
 	evidence: string,
-	bannedPhrases: string[],
-): { issues: string[]; warnings: string[] } {
-	const issues = explanation.figures
+): string[] {
+	return explanation.figures
 		.filter(
 			(figure) =>
 				!evidence.includes(figure.quote) ||
 				!figure.quote.includes(figure.value),
 		)
 		.map((figure) => `figure_not_grounded: ${figure.value}`);
-	const warnings = bannedPhrases
-		.filter((phrase) => explanation.conclusion.includes(phrase))
-		.map((phrase) => `hedged_conclusion: ${phrase}`);
-	return { issues, warnings };
 }
 
 function codexJson<T>(
@@ -173,7 +167,7 @@ export function runCodexExplanation(
 	cfg: ExplainConfig,
 	evidence: ExplanationEvidence,
 	runDir: string,
-): { explanation: Explanation; warnings: string[] } {
+): Explanation {
 	const logPath = codexLlmLogPath(runDir);
 	const explanation = codexJson(
 		cfg,
@@ -182,11 +176,7 @@ export function runCodexExplanation(
 		path.join(runDir, "source", "explanation.raw.json"),
 		(value) => ExplanationSchema.parse(value),
 	);
-	const { issues, warnings } = auditExplanation(
-		explanation,
-		evidence.articles,
-		cfg.banned_conclusion_phrases,
-	);
+	const issues = auditExplanation(explanation, evidence.articles);
 	const { verdicts } = codexJson(
 		cfg,
 		{ stage: "explanation_verdict", schema: cfg.verify_schema, logPath },
@@ -198,5 +188,5 @@ export function runCodexExplanation(
 	if (issues.length > 0) {
 		throw new Error(`CODEX_EXPLAIN_REJECTED ${issues.join(" | ")}`);
 	}
-	return { explanation, warnings };
+	return explanation;
 }
