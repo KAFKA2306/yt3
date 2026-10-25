@@ -4,12 +4,6 @@ import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
 import {
-	type ResearchResult,
-	TrendScout,
-	byosanAngleGate,
-} from "../domain/agents/research.js";
-import type { ByosanActiveProbeEvidence } from "../domain/byosan/active_probe.js";
-import {
 	buildCanonicalAudit,
 	hostOf,
 } from "../domain/byosan/canonical_audit.js";
@@ -34,35 +28,26 @@ import {
 	renderDialogueStylePrompt,
 } from "../domain/byosan/dialogue_style.js";
 import {
-	type ExplainConfig,
 	type Explanation,
-	ExplanationArticlesSchema,
 	ExplanationSchema,
-	buildExplanationEvidence,
-	runCodexExplanation,
 } from "../domain/byosan/explanation.js";
+import { auditFeatureSpecAgainstExplanation } from "../domain/byosan/explanation_contract.js";
 import {
-	type NumberEvidence,
-	auditFeatureSpecAgainstExplanation,
-} from "../domain/byosan/explanation_contract.js";
-import {
-	type FeatureDraftContext,
+	DraftArticlesSchema,
+	type FeatureDraftInput,
 	type Json,
 	buildFeatureSpecInput,
 	featureDraftIssues,
-	featureRepairMessages,
-	featureUnitSchema,
+	inputSourceText,
 	isJson,
-	isLocallyRepairable,
 	normalizeFeatureDraft,
-	repairFeatureDraftLocally,
+	prepareFeatureDraftInput,
+	renderFeatureDraftInput,
 	summarizeFeatureIssues,
-} from "../domain/byosan/feature_repair.js";
+} from "../domain/byosan/feature_draft.js";
 import {
 	ByosanFeatureDraftSchema,
-	type ByosanFeatureSource,
 	type ByosanFeatureSpec,
-	type FeatureSpecIssue,
 	auditByosanFeatureSpec,
 	isBlockingFeatureIssue,
 	loadFeatureReview,
@@ -70,19 +55,11 @@ import {
 } from "../domain/byosan/feature_spec.js";
 import {
 	type DiscoveryConfig,
+	loadDiscoveryBaseline,
 	writeDiscoveryEvidence,
 } from "../domain/byosan/feed_discovery.js";
 import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
-import {
-	type ByosanAdversarialEvidence,
-	type ByosanAngleCandidate,
-	type ByosanProductionPlan,
-	isCurrentByosanAngleDecision,
-	loadPublishedByosanSourceUrls,
-	repeatsPublishedSource,
-	selectByosanProductionPlan,
-} from "../domain/byosan/news_angle.js";
-import { loadPreferredByosanFormat } from "../domain/byosan/performance.js";
+import { loadPublishedByosanSourceUrls } from "../domain/byosan/published_sources.js";
 import {
 	AssetStore,
 	ROOT,
@@ -96,7 +73,13 @@ import {
 	runByosanPreflight,
 } from "./byosan_preflight.js";
 
-type FeatureSource = ByosanFeatureSource;
+type DailyConfig = {
+	discovery: DiscoveryConfig & { repeat_window_days: number };
+	feature_draft: { system: string };
+};
+
+const dailyConfig = (): DailyConfig =>
+	loadConfig("byosan_money") as unknown as DailyConfig;
 
 const FEATURE_DRAFT_SIZE_LIMITS = zodSizeConstraintLines(
 	ByosanFeatureDraftSchema,
@@ -136,53 +119,6 @@ export type ByosanFailureTrace = {
 	first_failed_at: string;
 	recovered_at?: string;
 };
-
-function safeSourceId(raw: string, index: number): string {
-	const normalized = raw
-		.normalize("NFKD")
-		.replaceAll(/[^a-zA-Z0-9_-]+/g, "_")
-		.replaceAll(/^_+|_+$/g, "")
-		.slice(0, 48);
-	return normalized || `source_${index + 1}`;
-}
-
-function normalizedResearchEvidence(candidate: ByosanAngleCandidate): {
-	sources: FeatureSource[];
-	adversarialEvidence: ByosanAdversarialEvidence[];
-	activeProbes: ByosanActiveProbeEvidence[];
-} {
-	const seen = new Set<string>();
-	const sourceIdMap = new Map<string, string>();
-	const sources = candidate.sources.map((source, index) => {
-		let id = safeSourceId(source.id, index);
-		while (seen.has(id)) id = `${id}_${index + 1}`;
-		seen.add(id);
-		sourceIdMap.set(source.id, id);
-		return { id, name: source.name, url: source.url, tier: source.tier };
-	});
-	const remapIds = (sourceIds: string[]): string[] =>
-		sourceIds.map((sourceId) => {
-			const mapped = sourceIdMap.get(sourceId);
-			if (!mapped) {
-				throw new Error(
-					`BYOSAN_ADVERSARIAL_EVIDENCE_SOURCE_MISSING: ${sourceId}`,
-				);
-			}
-			return mapped;
-		});
-	return {
-		sources,
-		adversarialEvidence: candidate.adversarialEvidence.map((evidence) => ({
-			...evidence,
-			sourceIds: remapIds(evidence.sourceIds),
-			checkedSourceIds: remapIds(evidence.checkedSourceIds),
-		})),
-		activeProbes: (candidate.activeProbes ?? []).map((probe) => ({
-			...probe,
-			sourceIds: remapIds(probe.sourceIds),
-		})),
-	};
-}
 
 export function failureTracePath(runDir: string): string {
 	return path.join(runDir, "audit", "failure_trace.json");
@@ -286,24 +222,6 @@ function readFailureTrace(runDir: string): ByosanFailureTrace | null {
 			`FAILURE_TRACE_UNREADABLE: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
-}
-
-export function reusableResearchResult(
-	cached: ResearchResult,
-	publishedSourceUrls: ReadonlySet<string>,
-): ResearchResult | undefined {
-	const decision = cached.angle_decision;
-	if (!isCurrentByosanAngleDecision(decision)) return undefined;
-	const selected =
-		decision.selectedIndex === null
-			? undefined
-			: decision.evaluated[decision.selectedIndex];
-	if (
-		selected &&
-		repeatsPublishedSource(selected.candidate, publishedSourceUrls)
-	)
-		return undefined;
-	return cached;
 }
 
 export function preflightBlockedMessage(
@@ -451,112 +369,32 @@ export function findPublishedByosanRunForDate(
 	return null;
 }
 
-function selectedCandidate(research: ResearchResult): ByosanAngleCandidate {
-	const decision = research.angle_decision;
-	if (
-		!decision ||
-		decision.decision !== "PASS" ||
-		decision.selectedIndex === null
-	) {
-		throw new Error(
-			"BYOSAN_ANGLE_STOP: research has no passing angle decision",
-		);
-	}
-	const candidate = decision.evaluated[decision.selectedIndex]?.candidate;
-	if (!candidate) {
-		throw new Error("BYOSAN_ANGLE_STOP: selected candidate is missing");
-	}
-	return candidate;
-}
-
-async function generateFeatureSpec(
-	research: ResearchResult,
-	candidate: ByosanAngleCandidate,
-	productionPlan: ByosanProductionPlan,
-	explanation: Explanation,
-	numberEvidence: NumberEvidence,
-	sources: FeatureSource[],
-	adversarialEvidence: ByosanAdversarialEvidence[],
-	activeProbes: ByosanActiveProbeEvidence[],
+export async function generateFeatureSpec(
+	input: FeatureDraftInput,
 	runDir: string,
-	runId: string,
-	date: string,
-): Promise<ByosanFeatureSpec> {
-	const titleRule = (
-		loadConfig("byosan_money") as unknown as {
-			discovery: DiscoveryConfig;
-		}
-	).discovery.title_rule;
-	const featureDraft = (
-		loadConfig("byosan_money") as unknown as {
-			feature_draft: { system: string };
-		}
-	).feature_draft;
-	const dialogueStyle = loadDialogueStyle();
+	exec?: (prompt: string) => string,
+): Promise<{ spec: ByosanFeatureSpec; explanation: Explanation }> {
+	const titleRule = dailyConfig().discovery.title_rule;
+	const system = `${dailyConfig().feature_draft.system}\n${renderDialogueStylePrompt(loadDialogueStyle())}`;
 	const review = loadFeatureReview();
 	const llm = byosanLlmConfig();
-	const context: FeatureDraftContext = {
-		runId,
-		asOf: date,
-		angle: candidate.angle,
-		searchQuery: research.director_data.search_query,
-		production: productionPlan,
-		narrative: {
-			hiddenMechanism: candidate.hiddenMechanism,
-			counterfactual: candidate.counterfactual,
-			audiencePayoff: candidate.audiencePayoff,
-		},
-		adversarialEvidence,
-		activeProbes,
-		sources,
-		explanation,
-		numberEvidence,
-	};
-	const blockingDraftIssues = (draft: Json): FeatureSpecIssue[] =>
-		featureDraftIssues(draft, context).filter((issue) =>
-			isBlockingFeatureIssue(issue, review),
-		);
-	const invokeFeature = <T, U>(request: StructuredCall<T, U>): Promise<U> =>
-		llmBackend(llm, "feature") === "codex"
-			? invokeCodexStructured({
-					llm,
-					logPath: codexLlmLogPath(runDir),
-					...request,
-				})
-			: invokeStructuredLlm({
-					...request,
-					llmOptions: { temperature: 0.28, sessionId: runDir },
-				});
+	const articles = renderFeatureDraftInput(input);
 	const request = structuredRequest({
 		maxAttempts: llm.max_attempts,
 		schema: z.unknown(),
 		providerSchema: ByosanFeatureDraftSchema,
 		name: "byosan_feature_draft",
+		exec,
 		evidencePath: path.join(
 			runDir,
 			"audit",
 			"structured_feature_attempts.json",
 		),
 		messages: (attempt, lastValidationError) => [
-			{
-				role: "system",
-				content: `${featureDraft.system}\n${renderDialogueStylePrompt(dialogueStyle)}`,
-			},
+			{ role: "system", content: system },
 			{
 				role: "user",
-				content: `対象証拠:\n${JSON.stringify(
-					{
-						candidate,
-						production_plan: productionPlan,
-						explanation,
-						allowed_sources: sources,
-						adversarial_evidence: adversarialEvidence,
-						active_probes: activeProbes,
-						news: research.news,
-					},
-					null,
-					2,
-				)}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限）:\n${FEATURE_DRAFT_SIZE_LIMITS}\n\n${titleRule}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+				content: `${articles}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限）:\n${FEATURE_DRAFT_SIZE_LIMITS}\n\n${titleRule}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
 			},
 		],
 		validate: (rawDraft) => {
@@ -565,69 +403,41 @@ async function generateFeatureSpec(
 					"BYOSAN_FEATURE_DRAFT_INVALID: draft must be a JSON object",
 				);
 			}
-			const normalized = normalizeFeatureDraft(rawDraft, sources);
-			const globalIssues = blockingDraftIssues(normalized.draft).filter(
-				(issue) => !isLocallyRepairable(issue.path),
+			const normalized = normalizeFeatureDraft(rawDraft);
+			const blocking = featureDraftIssues(normalized.draft, input).filter(
+				(issue) => isBlockingFeatureIssue(issue, review),
 			);
-			if (globalIssues.length > 0) {
+			if (blocking.length > 0) {
 				throw new Error(
-					`BYOSAN_FEATURE_DRAFT_INVALID: ${summarizeFeatureIssues(globalIssues)}`,
+					`BYOSAN_FEATURE_DRAFT_INVALID: ${summarizeFeatureIssues(blocking)}`,
 				);
 			}
 			return normalized;
 		},
 	});
-	const first = await invokeFeature(request);
-	const repairUnit = async (
-		unit: string,
-		issues: FeatureSpecIssue[],
-		draft: Json,
-	): Promise<unknown> => {
-		const unitSchema = featureUnitSchema(unit);
-		if (unitSchema === undefined) {
-			throw new Error(`BYOSAN_FEATURE_UNIT_NOT_REPAIRABLE: ${unit}`);
-		}
-		const result = await invokeFeature(
-			structuredRequest({
-				maxAttempts: llm.max_attempts,
-				schema: z.object({ value: z.unknown() }),
-				providerSchema: z.object({ value: unitSchema }),
-				name: "byosan_feature_repair",
-				messages: () =>
-					featureRepairMessages({
-						unit,
-						issues,
-						draft,
-						context,
-						constraintLines: FEATURE_DRAFT_SIZE_LIMITS,
-						dialogueStyle: renderDialogueStylePrompt(dialogueStyle),
-					}),
-			}),
-		);
-		return result.value;
-	};
-	const repaired = await repairFeatureDraftLocally({
-		draft: first.draft,
-		sources,
-		maxRepairs: llm.max_local_repairs,
-		check: blockingDraftIssues,
-		repairUnit,
-	});
+	const { draft, corrections } =
+		llmBackend(llm, "feature") === "codex"
+			? await invokeCodexStructured({
+					llm,
+					logPath: codexLlmLogPath(runDir),
+					...request,
+				})
+			: await invokeStructuredLlm({
+					...request,
+					llmOptions: { temperature: 0.28, sessionId: runDir },
+				});
 	fs.outputJsonSync(
-		path.join(runDir, "audit", "feature_repair.json"),
+		path.join(runDir, "audit", "feature_corrections.json"),
+		corrections,
 		{
-			schemaVersion: "byosan_feature_repair_v1",
-			corrections: [...first.corrections, ...repaired.corrections],
-			rounds: repaired.rounds,
+			spaces: 2,
 		},
-		{ spaces: 2 },
 	);
-	return parseAndAuditByosanFeatureSpec(
-		buildFeatureSpecInput(
-			ByosanFeatureDraftSchema.parse(repaired.draft),
-			context,
-		),
-	);
+	const parsed = ByosanFeatureDraftSchema.parse(draft);
+	return {
+		spec: parseAndAuditByosanFeatureSpec(buildFeatureSpecInput(parsed, input)),
+		explanation: parsed.explanation,
+	};
 }
 
 function runCommand(
@@ -699,7 +509,7 @@ function byosanAllowedSourceHosts(): string[] {
 function writeByosanCanonicalAudit(
 	runDir: string,
 	spec: ByosanFeatureSpec,
-	numberEvidence: NumberEvidence,
+	sourceText: string,
 ): void {
 	const explanationPath = path.join(runDir, "source", "explanation.json");
 	const explanation = ExplanationSchema.parse(fs.readJsonSync(explanationPath));
@@ -707,7 +517,7 @@ function writeByosanCanonicalAudit(
 	const contractIssues = auditFeatureSpecAgainstExplanation(
 		spec,
 		explanation,
-		numberEvidence,
+		sourceText,
 	);
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "feature_warnings.json"),
@@ -790,27 +600,13 @@ async function runByosanDaily(): Promise<void> {
 	const store = new AssetStore(runId);
 	const checkpoint = reconcileByosanCheckpoint(store.runDir, runId, ROOT);
 	writeByosanCheckpoint(store.runDir, checkpoint);
-	const researchPath = path.join(
+	const articlesPath = path.join(
 		store.runDir,
-		"source",
-		"research_result.json",
+		"research",
+		"discovery_articles.json",
 	);
-	const cachedResearch =
-		checkpoint.stages.research_ready && (await fs.pathExists(researchPath))
-			? ((await fs.readJson(researchPath)) as ResearchResult)
-			: undefined;
-	const publishedSourceUrls = loadPublishedByosanSourceUrls(
-		ROOT,
-		new Date(`${date}T23:59:59Z`),
-		byosanAngleGate().repeatWindowDays,
-	);
-	const reusedResearch =
-		cachedResearch &&
-		reusableResearchResult(cachedResearch, publishedSourceUrls);
 	const specPath = path.join(store.runDir, "source", "feature_spec.json");
-	const specReused =
-		checkpoint.stages.spec_ready && (await fs.pathExists(specPath));
-	const llm = byosanLlmConfig();
+	const explanationPath = path.join(store.runDir, "source", "explanation.json");
 	const preflight = await runByosanPreflight(store.runDir);
 	if (preflight.status !== "PASS") {
 		throw new Error(
@@ -821,111 +617,36 @@ async function runByosanDaily(): Promise<void> {
 		);
 	}
 	assertByosanRetryAllowed(store.runDir);
-	let research: ResearchResult;
-	if (reusedResearch) {
-		research = reusedResearch;
-	} else {
-		const scout =
-			llmBackend(llm, "research") === "codex"
-				? new TrendScout(store, (request) =>
-						invokeCodexStructured({
-							llm,
-							logPath: codexLlmLogPath(store.runDir),
-							...request,
-						}),
-					)
-				: new TrendScout(store);
-		const discovery = loadConfig("byosan_money") as unknown as {
-			discovery: DiscoveryConfig;
-		};
-		const evidence = await writeDiscoveryEvidence(
-			discovery.discovery,
-			store.runDir,
-			new Date(),
-		);
-		research = await scout.run("byosan_money", 5, evidence);
-		await fs.outputJson(researchPath, research, { spaces: 2 });
+	const { discovery } = dailyConfig();
+	if (
+		!(checkpoint.stages.research_ready && (await fs.pathExists(articlesPath)))
+	) {
+		await writeDiscoveryEvidence(discovery, store.runDir, new Date());
 		checkpoint.stages.research_ready = true;
 		writeByosanCheckpoint(store.runDir, checkpoint);
 	}
-	const candidate = selectedCandidate(research);
-	const selectedIndex = research.angle_decision?.selectedIndex;
-	const evaluated =
-		selectedIndex === null || selectedIndex === undefined
-			? undefined
-			: research.angle_decision?.evaluated[selectedIndex];
-	if (!evaluated) {
-		throw new Error("BYOSAN_ANGLE_STOP: selected evaluation is missing");
-	}
-	const preferredFormat = loadPreferredByosanFormat(ROOT);
-	const productionPlan = selectByosanProductionPlan(
-		evaluated,
-		date,
-		preferredFormat,
-	);
-	const normalized = normalizedResearchEvidence(candidate);
-	const discoveredArticles = ExplanationArticlesSchema.parse(
-		await fs.readJson(
-			path.join(store.runDir, "research", "discovery_articles.json"),
+	const input = prepareFeatureDraftInput({
+		runId,
+		asOf: date,
+		today: DraftArticlesSchema.parse(await fs.readJson(articlesPath)),
+		baseline: loadDiscoveryBaseline(discovery, new Date()),
+		publishedUrls: loadPublishedByosanSourceUrls(
+			ROOT,
+			new Date(`${date}T23:59:59Z`),
+			discovery.repeat_window_days,
 		),
-	);
-	const explanationEvidence = buildExplanationEvidence(
-		candidate,
-		discoveredArticles,
-	);
-	const numberEvidence: NumberEvidence = {
-		numbers: candidate.numbers,
-		sourceText: explanationEvidence.sourceText,
-	};
+	});
 	let spec: ByosanFeatureSpec;
-	if (specReused) {
+	if (checkpoint.stages.spec_ready && (await fs.pathExists(specPath))) {
 		spec = parseAndAuditByosanFeatureSpec(await fs.readJson(specPath));
 	} else {
-		const explainConfig = (
-			loadConfig("byosan_money") as unknown as { explain: ExplainConfig }
-		).explain;
-		const explanation = runCodexExplanation(
-			explainConfig,
-			explanationEvidence,
-			store.runDir,
-		);
-		await fs.outputJson(
-			path.join(store.runDir, "source", "explanation.json"),
-			explanation,
-			{ spaces: 2 },
-		);
-		spec = await generateFeatureSpec(
-			research,
-			candidate,
-			productionPlan,
-			explanation,
-			numberEvidence,
-			normalized.sources,
-			normalized.adversarialEvidence,
-			normalized.activeProbes,
-			store.runDir,
-			runId,
-			date,
-		);
+		const generated = await generateFeatureSpec(input, store.runDir);
+		spec = generated.spec;
+		await fs.outputJson(explanationPath, generated.explanation, { spaces: 2 });
 		await fs.outputJson(specPath, spec, { spaces: 2 });
 		checkpoint.stages.spec_ready = true;
 		writeByosanCheckpoint(store.runDir, checkpoint);
 	}
-	await fs.outputJson(
-		path.join(store.runDir, "audit", "loop_manifest.json"),
-		{
-			execution_layer: "agent loop",
-			validation_layer: "closed-loop agent workflow",
-			improvement_layer: "agent improvement loop / harness design",
-			angle_decision: research.angle_decision,
-			production_plan: productionPlan,
-			performance_preference: preferredFormat ?? null,
-			feature_spec: specPath,
-			motion_policy: "static_scenes_no_camera_motion",
-			generated_at: new Date().toISOString(),
-		},
-		{ spaces: 2 },
-	);
 
 	const finalVideoPath = path.join(
 		store.runDir,
@@ -971,7 +692,7 @@ async function runByosanDaily(): Promise<void> {
 		["src/scripts/audit_byosan_authenticity.ts", "--run", runId],
 		process.env,
 	);
-	writeByosanCanonicalAudit(store.runDir, spec, numberEvidence);
+	writeByosanCanonicalAudit(store.runDir, spec, inputSourceText(input));
 	markFailureRecovered(store.runDir);
 	console.log(`PRODUCTION_PASS=${runId}`);
 }

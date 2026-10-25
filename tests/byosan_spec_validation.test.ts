@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Explanation } from "../src/domain/byosan/explanation.js";
 import {
-	type NumberEvidence,
 	auditFeatureSpecAgainstExplanation,
 	figureValueAppears,
 } from "../src/domain/byosan/explanation_contract.js";
@@ -30,10 +29,7 @@ const explanation: Explanation = {
 	],
 	check: "確認です。",
 };
-const numberEvidence: NumberEvidence = {
-	numbers: ["2026年9月の消費者物価指数は前年比+2.1%"],
-	sourceText: "",
-};
+const articleText = "2026年9月の消費者物価指数は前年比+2.1%";
 
 type SegmentFixture = {
 	text: string;
@@ -85,7 +81,7 @@ describe("feature spec contract against the explanation", () => {
 			auditFeatureSpecAgainstExplanation(
 				specWith(grounded),
 				explanation,
-				numberEvidence,
+				articleText,
 			),
 		).toEqual([]);
 	});
@@ -94,14 +90,14 @@ describe("feature spec contract against the explanation", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
 			specWith([{ text: conclusion, verificationRole: "landing" }]),
 			explanation,
-			numberEvidence,
+			articleText,
 		);
 		expect(formatted(issues)).toContain(
 			"explanation_figure_value_missing: +2.1%",
 		);
 	});
 
-	test("reports a number with no source in the explanation, candidate or evidence source text", () => {
+	test("reports a number with no source in the explanation or the input articles", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
 			specWith([
 				{
@@ -110,7 +106,7 @@ describe("feature spec contract against the explanation", () => {
 				},
 			]),
 			explanation,
-			numberEvidence,
+			articleText,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 47"]);
 		expect(issues[0]?.path).toBe("segments[0]");
@@ -126,7 +122,7 @@ describe("feature spec contract against the explanation", () => {
 				},
 			]),
 			explanation,
-			{ ...numberEvidence, sourceText: "1982年と1990年の反発を除外した。" },
+			`${articleText}1982年と1990年の反発を除外した。`,
 		);
 		expect(issues).toEqual([]);
 	});
@@ -138,7 +134,7 @@ describe("feature spec contract against the explanation", () => {
 				{ text: `${conclusion}4回を除くのだ。`, verificationRole: "landing" },
 			]),
 			explanation,
-			{ ...numberEvidence, sourceText: "14%の上昇" },
+			`${articleText}14%の上昇`,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 4"]);
 	});
@@ -147,7 +143,7 @@ describe("feature spec contract against the explanation", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
 			specWith(grounded, "3倍"),
 			explanation,
-			numberEvidence,
+			articleText,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 3"]);
 		expect(issues[0]?.path).toBe("thumbnail");

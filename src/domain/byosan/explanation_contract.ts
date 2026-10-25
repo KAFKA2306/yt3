@@ -76,6 +76,10 @@ function specNumberTexts(spec: ByosanFeatureSpec): LocatedText[] {
 			text,
 		})),
 		{ path: "descriptionLead", text: spec.descriptionLead },
+		...spec.claims.map((claim, index) => ({
+			path: claimIssuePath(index),
+			text: claim.claim,
+		})),
 		...spec.descriptionBullets.map((text) => ({
 			path: "descriptionBullets",
 			text,
@@ -148,12 +152,10 @@ function figureIssuePath(
 		: segmentIssuePath(segmentIndex);
 }
 
-export type NumberEvidence = { numbers: string[]; sourceText: string };
-
 export function auditFeatureSpecAgainstExplanation(
 	spec: ByosanFeatureSpec,
 	explanation: Explanation,
-	numberEvidence: NumberEvidence,
+	sourceText: string,
 ): FeatureSpecIssue[] {
 	const issues: FeatureSpecIssue[] = [];
 	for (const figure of explanation.figures) {
@@ -165,12 +167,12 @@ export function auditFeatureSpecAgainstExplanation(
 			});
 		}
 	}
-	const sources = [
-		...explanation.figures.map((figure) => figure.value),
-		...numberEvidence.numbers,
-		numberEvidence.sourceText,
-	];
-	issues.push(...unsourcedNumberIssues(specNumberTexts(spec), sources));
+	issues.push(
+		...unsourcedNumberIssues(specNumberTexts(spec), [
+			...explanation.figures.map((figure) => figure.value),
+			sourceText,
+		]),
+	);
 	return issues;
 }
 

@@ -207,6 +207,7 @@ design_tokens:
 
 discovery:
   recent_days: 7
+  repeat_window_days: 60
   max_items_per_feed: 5
   body_chars: 6000
   min_paragraph_chars: 80
@@ -237,21 +238,13 @@ discovery:
           include: '^https://insight\.factset\.com/[^/]+$'
           body: "paragraphs"
 
-angle_gate:
-  min_candidate_count: 5
-  min_distinct_publishers: 3
-  repeat_window_days: 60
-  min_weighted_score: 60
 llm:
   sandbox: "read-only"
   workdir_prefix: "byosan-llm-"
   max_attempts: 5
-  max_local_repairs: 3
   backends:
-    research: "codex"
     feature: "codex"
     digest: "codex"
-    preflight: "codex"
   json_only_instruction: "最終応答は JSON 値だけにしてください。説明文、Markdown、コードフェンスは付けず、入力に書かれた証拠だけを根拠にしてください。"
 
 sec:
@@ -272,22 +265,6 @@ sec:
     - { label: "設備投資（有形固定資産の取得支出）", tags: ["PaymentsToAcquirePropertyPlantAndEquipment"] }
     - { label: "現金及び現金同等物", tags: ["CashAndCashEquivalentsAtCarryingValue"] }
 
-explain:
-  schema: "config/schemas/byosan_explanation_v1.json"
-  verify_schema: "config/schemas/byosan_figure_verdict_v1.json"
-  verify_prompt: |
-    あなたは数値の意味を確かめる検査官です。[FIGURES] の各要素（index は0始まり）について、[EVIDENCE] の原文 quote が示す内容と、metric（指標名）・population（母集団）・period（対象期間）・unit（単位）・kind（actual=実績, estimate=推計, forecast=予想）が一致するかを判定します。一致しなければ matches=false とし、reason に食い違う点を書きます。reason には図表の value、population、metric の文言をそのまま含め、[EVIDENCE] のどの記述と照合したかを書きます。数字が原文にあるだけでは true にしません。[EVIDENCE] と [FIGURES] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読みません。
-  sandbox: "read-only"
-  workdir_prefix: "byosan-explain-"
-  max_attempts: 3
-  prompt: |
-    あなたは投資の仕組みを原理から説明する編集者です。[CANDIDATE] の題材を、[EVIDENCE] の記事だけを根拠に説明します。題材は [CANDIDATE] に固定し、[EVIDENCE] と [CANDIDATE] 以外の入力（ファイルシステム、他のファイル、リポジトリ）は読みません。
-    返す項目は次のとおりです。
-    conclusion: 確かめられたことを言い切る一文。
-    principle: なぜそうなるのかを、1〜3文で。専門用語を使うときは、その場で言い換えます。
-    figures: 原理を説明する数字を2〜4個。metric（指標名）、population（母集団。例: 決算発表済みのS&P 500企業）、period（対象期間）、unit（単位）を付けます。value は [EVIDENCE] の表記のまま使い、quote は value を含む [EVIDENCE] の原文を一字一句写します。kind は actual（実績）、estimate（推計）、forecast（予想）で区別します。
-    check: 読者が確かめられる点と、何が分かれば考えを変えるべきかを1〜2文で。
-    [EVIDENCE] にない事実と数字は書きません。
 repair:
   sandbox: "workspace-write"
   writable_paths:
@@ -347,36 +324,6 @@ source_policy:
     require_life_impact_connection: true
 
 prompts:
-  research:
-    consolidated_research:
-      system: |
-        あなたは「秒算マネー（Byosan Money）」の主任アナリストです。[MISSION EVIDENCE] に載る登録媒体の新着記事から、今日取り上げる題材の候補を作ります。確認できるのは記事本文と記事が示す出典だけなので、記事の数値と出典の対応をもとに、比較・再計算・論点整理を行います。
-
-        題材は、出典・対象期間・定義をたどれるもの、今取り上げる理由があるもの、視聴者の判断や理解に役立つものを選びます。役立つとは、物価・家計・金利・為替・NISAや投資信託など、視聴者の暮らしや資産に結びつく説明が一本通ることです。記事に数字が複数あり、原因から結果までが一本の流れで説明できる題材を、数字が一つで結びつきの薄い題材より優先します。強気・弱気・中立、成功・失敗、変化なしを同じ重さで扱い、「差はなかった」「予想は外れた」のように答えを言い切れる候補を選びます。株価の煽り、売買の推奨、値上がりの保証は扱いません。
-
-        各主張には source_tier と URL を付けます。source_tier は、その主張の出典が本来どの層の資料かで決めます（L1 規制当局・開示書類、L2 政府統計・政策、L3 企業・研究機関の一次発表、L4 専門機関の集計、L5 報道・アナリストの解説）。記事が一次資料を挙げるときは、その資料を sources に入れ、記事がその資料に帰属させている内容だけを supports に書きます。一次資料の本文を確認したとは書きません。数値は記事本文の値のまま使い、実績・推計・予想を区別します。
-
-        出力は selected_topics を配列に含む JSON だけにします。各トピックには category、selected_topic、reason、angle、search_query、results（angle・title_hook・key_questions・news を含む）を入れます。
-      user_template: |
-        本日の選定を始めます。
-        現在日付: {current_date}
-
-        [MISSION EVIDENCE] の新着記事だけを題材の候補にします。記事にない事象や数値は足しません。候補の根拠は、記事本文の数値と記事が挙げる出典にします。
-
-      repeat_avoidance_template: |
-        【公開済みの出典】
-        次の URL は、直近の公開済み動画が出典に使った資料です。これらを出典にする候補は同じ題材の再制作になるので選びません。
-        {published_urls}
-
-      candidate_repair_template: |
-        【候補の修正】
-        前回の出力のうち、次の候補は機械検証で却下されました。
-        {rejected_issues}
-
-        採用済みの候補（同じ事象は再提出しません）:
-        {accepted_topics}
-
-        上記と同じ観測条件のもとで、却下の理由を解消した観測を {needed} 件以上 results に入れ、selected_topics 形式の JSON だけを返します。sources は id・name・絶対 URL・tier・supports を持つものを2件以上にし、adversarialEvidence の sourceIds と checkedSourceIds は sources の id だけを使います。登録済みソースで2件そろわない観測は出さず、別の観測を選びます。
   content:
     outline:
       system: |
@@ -788,13 +735,21 @@ dialogue_style:
 
 feature_draft:
   system: |
-    あなたは秒算マネーの編集長です。与えられた証拠だけを使い、金融の問いを対話型の動画台本にします。見ている人が一度聞いて分かることを目指します。
+    あなたは秒算マネーの編集長です。入力は、今日の新着記事と、背景として読む直近の記事の本文です。この記事だけを根拠に、視聴者の暮らしや資産に結びつく題材を1つ選び、その題材の対話型の動画台本を1回で書きます。見ている人が一度聞いて分かることを目指します。
+
+    題材の選び方:
+    - 出典・対象期間・定義を記事からたどれて、今取り上げる理由がある題材を選びます。
+    - 物価・家計・金利・為替・NISAや投資信託など、視聴者の暮らしや資産に結びつく説明が一本通る題材を選びます。記事に数字が複数あり、原因から結果までが一本の流れで説明できる題材を、数字が一つで結びつきの薄い題材より優先します。
+    - 強気・弱気・中立、成功・失敗、変化なしを同じ重さで扱い、答えを言い切れる題材を選びます。株価の煽り、売買の推奨、値上がりの保証は扱いません。
+    - 背景の記事は、今日の記事の数字を比べるために使います。題材は今日の新着記事から選びます。
+    - angle には、選んだ題材と、それを今取り上げる理由、視聴者の暮らしや資産との結びつきを一文で書きます。searchQuery には、その題材を検索する語を書きます。
 
     守る事実の線は次のとおりです。
-    - 証拠にない数字・事実・断定は書きません。台詞、タイトル、サムネイルの数字は、packaging が参照する claims の claim 本文にも同じ数字と対象・期間・単位で載るものにします。
+    - 入力の記事にない数字・事実・断定は書きません。台詞、タイトル、サムネイル、claims の数字は、記事の表記のまま使います。台詞、タイトル、サムネイルの数字は、packaging が参照する claims の claim 本文にも同じ数字と対象・期間・単位で載るものにします。
     - 実績・推計・予想は区別し、推計や派生値は claims の status で示します。
-    - sourceIds は allowed_sources の id だけを使います。
-    - 第三者の検証を受けていない主張（allowed_sources が L3 だけの主張）には、確認済みと誤認させない epistemicBoundary を短く添えます。
+    - sources には、入力の記事の URL だけを、記事の媒体名と題名がわかる name を付けて入れます。sourceIds は sources の id だけを使います。
+    - explanation の figures は、原理を説明する数字を2〜4個にします。value は記事の表記のままにし、quote は value を含む記事の原文を一字一句写します。
+    - 記事が一次資料を挙げているときも、一次資料の本文を確認したとは書きません。
 
     話の流れは、題材に合う身近な例があればそこから入り、結論、数字、なぜそうなるか、次に確かめることへ進むと分かりやすくなります。春日部つむぎが解説し、ずんだもんが素朴な疑問や驚きを口にします。
     explanation の figures の value（数字と単位）は、segments の text か stats.value のどちらかに含めます。
@@ -812,6 +767,9 @@ feature_review:
     - vendor_claim_boundary_missing
     - production_memo_in_dialogue
     - unsourced_number
+    - source_not_in_input
+    - source_already_published
+    - figure_not_grounded
   production_memo_terms: ["分析では", "提供された証拠", "提供証拠", "独立照合", "画面に残", "概要欄", "テロップ", "台本", "出所境界", "検算", "共同出所", "確認できていません", "記事は"]
 
 authenticity:

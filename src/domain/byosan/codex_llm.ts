@@ -23,9 +23,8 @@ export type CodexLlmConfig = CodexExecConfig & {
 type CodexMessage = { role: "system" | "user"; content: string };
 
 export type LlmBackend = "gemini" | "codex";
-type LlmStage = "research" | "feature" | "digest" | "preflight";
+type LlmStage = "feature" | "digest";
 export type ByosanLlmConfig = CodexLlmConfig & {
-	max_local_repairs: number;
 	backends: Record<LlmStage, LlmBackend>;
 };
 
@@ -113,7 +112,7 @@ type CodexExecOptions = {
 	search?: boolean;
 };
 
-export function runCodexExec(
+function runCodexExec(
 	cfg: CodexExecConfig,
 	input: string,
 	options: CodexExecOptions,
