@@ -69,10 +69,25 @@ describe("byosan scene spec", () => {
 		expect(kinds).not.toContain("bignumber");
 	});
 
-	test("throws when a segment has no claim link", () => {
+	test("a segment without a claim link takes the nearest linked segment's claims", () => {
+		const scenes = compileScenes(
+			withSegment(1, { claimIds: undefined }),
+			explanation,
+			config,
+		);
+		expect(scenes[1]?.claimIds.length).toBeGreaterThan(0);
+	});
+
+	test("throws when no segment has a claim link", () => {
 		expect(() =>
 			compileScenes(
-				withSegment(1, { claimIds: undefined }),
+				{
+					...source,
+					segments: source.segments.map((segment) => ({
+						...segment,
+						claimIds: undefined,
+					})),
+				},
 				explanation,
 				config,
 			),
