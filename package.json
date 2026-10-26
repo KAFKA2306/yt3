@@ -50,6 +50,6 @@
 	"overrides": {
 		"qs": "^6.16.0",
 		"brace-expansion": "^2.1.7",
-		"undici": "^6.29.0"
+		"undici": "^6.29.1"
 	}
 }
