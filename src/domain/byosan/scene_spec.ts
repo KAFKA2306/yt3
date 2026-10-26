@@ -249,6 +249,7 @@ function compileScene(
 	segmentIndex: number,
 	explanation: SceneExplanation,
 	config: ByosanScenesConfig,
+	claimIds: string[],
 ): ByosanSceneSpec {
 	const features = segmentFeatures(segment, explanation.figures);
 	const rule = config.rules.find((candidate) =>
@@ -259,14 +260,11 @@ function compileScene(
 			`BYOSAN_SCENE_UNASSIGNABLE: segment ${segmentIndex} ${JSON.stringify(features)}`,
 		);
 	}
-	if (!segment.claimIds || segment.claimIds.length === 0) {
-		throw new Error(`BYOSAN_SCENE_CLAIM_MISSING: segment ${segmentIndex}`);
-	}
 	return ByosanSceneSpecSchema.parse({
 		sceneId: `scene_${String(segmentIndex).padStart(2, "0")}`,
 		segmentIndexes: [segmentIndex],
 		understandingGoal: segment.headline,
-		claimIds: segment.claimIds,
+		claimIds,
 		visual: sceneVisual(rule.kind, segment, segmentIndex, explanation.figures),
 		emphasis: { type: rule.emphasis },
 		durationHint: Math.ceil(segment.text.length / config.chars_per_second),
@@ -278,8 +276,26 @@ export function compileScenes(
 	explanation: SceneExplanation,
 	config: ByosanScenesConfig,
 ): ByosanSceneSpec[] {
-	const scenes = featureSpec.segments.map((segment, segmentIndex) =>
-		compileScene(segment, segmentIndex, explanation, config),
+	const claimed = featureSpec.segments.flatMap((segment, index) =>
+		segment.claimIds?.length ? [index] : [],
 	);
+	const scenes = featureSpec.segments.map((segment, segmentIndex) => {
+		const nearest = claimed.reduce<number | undefined>(
+			(best, index) =>
+				best === undefined ||
+				Math.abs(index - segmentIndex) < Math.abs(best - segmentIndex)
+					? index
+					: best,
+			undefined,
+		);
+		const claimIds =
+			nearest === undefined
+				? undefined
+				: featureSpec.segments[nearest]?.claimIds;
+		if (!claimIds) {
+			throw new Error(`BYOSAN_SCENE_CLAIM_MISSING: segment ${segmentIndex}`);
+		}
+		return compileScene(segment, segmentIndex, explanation, config, claimIds);
+	});
 	return scenes;
 }
