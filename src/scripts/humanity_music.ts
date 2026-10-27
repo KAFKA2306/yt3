@@ -31,6 +31,7 @@ const outputDir = path.join(ROOT, config.output_dir);
 const ledgerPath = path.join(outputDir, "ledger.jsonl");
 const DraftSchema = z.object({
 	title: z.string(),
+	scene: z.string(),
 	style_tail: z.string(),
 	sections: z.array(z.array(z.string())),
 });
@@ -123,7 +124,10 @@ async function generate(): Promise<GenerationRow> {
 	const draft = await invokeStructuredLlm({
 		schema: DraftSchema,
 		name: "humanity_music_draft",
-		llmOptions: { temperature: config.temperature },
+		llmOptions: {
+			temperature: config.temperature,
+			extra: { tools: [{ googleSearchRetrieval: {} }] },
+		},
 		validate: (value) => {
 			if (
 				value.sections.length !== config.structure.length ||
@@ -137,9 +141,16 @@ async function generate(): Promise<GenerationRow> {
 		messages: () => [
 			{
 				role: "system",
-				content: `あなたは人類観測所の作詞家です。${config.lyrics_rule} sectionsは${config.structure.join("、")}の順に${config.structure.length}個、各${config.lines_per_section}行。style_tailには曲調を英語で短く書く。`,
+				content: `あなたは人類観測所の作詞家です。${config.trend_rule} ${config.lyrics_rule} sectionsは${config.structure.join("、")}の順に${config.structure.length}個、各${config.lines_per_section}行。sceneには曲の題材を表す絵の場面を日本語で1文で書く。style_tailには曲調を英語で短く書く。`,
 			},
-			{ role: "user", content: JSON.stringify(cell) },
+			{
+				role: "user",
+				content: JSON.stringify({
+					...cell,
+					today: getCurrentDateString(),
+					past_titles: generations(readLedger()).map((row) => row.title),
+				}),
+			},
 		],
 	});
 	const stamp = new Date().toISOString().replaceAll(/[-:.]/g, "").slice(0, 15);
@@ -185,7 +196,7 @@ async function generate(): Promise<GenerationRow> {
 		kind: "generation",
 		id,
 		at: new Date().toISOString(),
-		cell,
+		cell: { ...cell, scene: draft.scene },
 		title: draft.title,
 		seed,
 		audio: path.join(songDir, "audio.flac"),

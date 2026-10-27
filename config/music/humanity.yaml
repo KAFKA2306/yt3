@@ -18,11 +18,6 @@ rating:
   min: 1
   max: 5
 axes:
-  time: [深夜, 早朝, 朝, 昼, 夕方, 夜]
-  season: [春の雨, 夏の夕方, 秋の風, 冬の冷気]
-  space: [ベランダ, 洗面所, レジ前, 玄関, 駅のホーム, コンビニ]
-  object: [イヤホン, レシート, 充電器, スマホ, 傘, 鍵]
-  emotion: [ささやかな祝祭, 恥ずかしさ, 安心, えへへ, 放課後の安堵]
   genre: [Japanese technopop, electropop, chillwave, city pop, dream pop synthpop, future pop]
   tempo: ["96 BPM", "110 BPM", "124 BPM", "128 BPM", "140 BPM"]
   key: [C major, A minor, D major, F# minor, E minor, G major]
@@ -30,14 +25,15 @@ axes:
   vocal: [processed female vocal with vocoder, airy breathy female vocal, bright pitch-corrected female vocal, sweet soft female vocal with long reverb, playful female vocal with light doubling]
 structure: [Verse, Chorus, Verse, Chorus, Bridge, Chorus]
 lines_per_section: 4
-lyrics_rule: 人類の不器用さを愛おしむ温度で、専門用語で威張らず、既存曲の歌詞や固有の言い回しを使わない。日本語で書く。Chorusは毎回同じ歌詞、VerseとBridgeは毎回違う歌詞にする。
+trend_rule: 作詞の前にウェブ検索で、今日の日本で話題の出来事・流行語・ヒット作・SNSの空気を調べ、その中から1つを題材の核にする。固有名詞や他者の作品の歌詞は使わず、そこに暮らす人の不器用さと愛おしさを書く。
+lyrics_rule: 題材は音楽ジャンル以外すべて自由。過去のタイトルと題材・主要な名詞が重ならない新しい題材を選ぶ。人類の不器用さを愛おしむ温度で、専門用語で威張らず、既存曲の歌詞や固有の言い回しを使わない。日本語で書く。Chorusは毎回同じ歌詞、VerseとBridgeは毎回違う歌詞にする。
 run:
   bucket: humanity_observatory
   name_prefix: music-
 cover:
   file: cover.png
   size: 1536x1024
-  prompt: 人類観測所の曲のカバー絵。やわらかい水彩風。配色は白(#FFFDF8)、空色(#BFE7FF)、夕焼けオレンジ(#FFB86B)。文字は入れない。16:9の構図。場面は{time}、{season}、{space}、{object}。感情は{emotion}。
+  prompt: 人類観測所の曲のカバー絵。やわらかい水彩風。配色は白(#FFFDF8)、空色(#BFE7FF)、夕焼けオレンジ(#FFB86B)。文字は入れない。16:9の構図。場面は{scene}。
 video:
   file: video.mp4
   width: 1920
@@ -57,7 +53,7 @@ audit:
 metadata:
   title_suffix: " | 人類観測所の音楽"
   tags: [YuE2, AI音楽, テクノポップ, 人類観測所]
-  description: "{title}\n\n場面: {time} / {season} / {space} / {object} / {emotion}\n\n{lyrics}\n\n{ai_disclosure}\n{credit}"
+  description: "{title}\n\n場面: {scene}\n\n{lyrics}\n\n{ai_disclosure}\n{credit}"
   credit: "Music: YuE2-3B (m-a-p) #YuE2 / Cover image: gpt-image-2 via Codex CLI"
   ai_disclosure: この曲の音楽、歌詞、映像はAIで生成しています。
 rights_declaration: 個人の立場の運営者として、歌詞は当該 run で新規に生成し、第三者の歌詞と音源を使っていない。
