@@ -19,6 +19,7 @@ type CodexExecConfig = {
 export type CodexLlmConfig = CodexExecConfig & {
 	max_attempts: number;
 	json_only_instruction: string;
+	codex: { model: string; reasoning_effort: string };
 	claude: {
 		command: string;
 		model: string;
@@ -186,6 +187,10 @@ function runExec(
 					[
 						...(options.search ? ["--search"] : []),
 						"exec",
+						"-m",
+						cfg.codex.model,
+						"-c",
+						`model_reasoning_effort="${cfg.codex.reasoning_effort}"`,
 						"-C",
 						workdir,
 						"--sandbox",
