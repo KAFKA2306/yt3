@@ -55,6 +55,7 @@ export type DiscoveryConfig = {
 	title_rule: string;
 	registry: string;
 	user_agent: string;
+	owner_articles: string;
 	baseline: { path: string; sources: BaselineSource[] };
 };
 
@@ -681,8 +682,16 @@ export async function writeDiscoveryEvidence(
 	runDir: string,
 	now: Date,
 ): Promise<string> {
-	const { articles, excluded } = await discoverArticles(cfg, now);
-	const baselineExcluded = await updateDiscoveryBaseline(cfg, now, articles);
+	const ownerFile = path.join(ROOT, cfg.owner_articles);
+	const owned = fs.existsSync(ownerFile)
+		? ((await fs.readJson(ownerFile)) as DiscoveredArticle[])
+		: undefined;
+	const { articles, excluded } = owned
+		? { articles: owned, excluded: [] }
+		: await discoverArticles(cfg, now);
+	const baselineExcluded = owned
+		? []
+		: await updateDiscoveryBaseline(cfg, now, articles);
 	if (articles.length === 0) {
 		throw new Error(
 			"BYOSAN_ANGLE_STOP: no recent articles in registered sources",
