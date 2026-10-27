@@ -1,0 +1,54 @@
+{
+	"schema_version": 1,
+	"snapshot_id": "yt3-ci-30d-20261027T121007Z",
+	"observed_at": "2026-10-27T12:10:07Z",
+	"window": {
+		"from": "2026-09-27T12:10:07Z",
+		"to": "2026-10-27T12:10:07Z",
+		"timezone": "UTC",
+		"duration_days": 30
+	},
+	"source": {
+		"url": "https://api.github.com/repos/KAFKA2306/yt3/actions/workflows/226201883/runs?per_page=100&created=%3E%3D2026-09-27T12%3A10%3A07Z&event=pull_request",
+		"workflow_id": 226201883,
+		"workflow_name": "CI",
+		"request_method": "GET",
+		"pagination": "The API reported total_count=227; pagination returned 100 records on page 1, 100 on page 2, and 27 on page 3; filtered locally to completed run_attempt=1 records within the recorded UTC window",
+		"filters": [
+			"event == pull_request",
+			"workflow id == 226201883 (CI)",
+			"status == completed",
+			"run_attempt == 1",
+			"created_at within the recorded UTC window"
+		]
+	},
+	"results": {
+		"completed_first_attempts": 227,
+		"attempt_counts": {
+			"1": 227
+		},
+		"conclusions": {
+			"success": 217,
+			"failure": 10
+		},
+		"ci_workflow_elapsed_seconds": {
+			"method": "updated_at - created_at; median is the middle value for odd n; p95 uses nearest-rank",
+			"median": 127,
+			"p95": 173,
+			"maximum": 2892
+		},
+		"ci_first_attempt_pass_rate_percent": {
+			"numerator": 217,
+			"denominator": 227,
+			"value": 95.6
+		}
+	},
+	"limitations": [
+		"Workflow elapsed time is a proxy, not developer waiting time or engineering productivity.",
+		"Failed workflow runs are included in elapsed-time statistics; workflow failure can reflect code, tests, or infrastructure.",
+		"The unit is a workflow run, not a distinct pull request; multiple runs from one PR can be counted.",
+		"The pass rate is descriptive and does not establish that a specific change caused CI outcomes.",
+		"This is one 30-day repository snapshot; compare future windows with identical filters and inspect sample composition before acting.",
+		"Branch-protection policy was not rechecked for this snapshot and is not inferred from these workflow runs."
+	]
+}

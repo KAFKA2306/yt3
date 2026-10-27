@@ -58,7 +58,7 @@ Status: original comedy-sketch draft with a refreshed, source-backed yt3 example
 
 **Narration:**
 
-> yt3のGoalは、安全チェックを弱めず、解釈できるCI結果を早く受け取ること。9月18日から10月18日までの30日で、初回CIは110件。104件成功、6件失敗。成功率94.5%、p95は238秒です。
+> yt3のGoalは、安全チェックを弱めず、解釈できるCI結果を早く受け取ること。9月27日から10月27日までの30日で、初回CIは227件。217件成功、10件失敗。成功率95.6%、p95は173秒です。
 >
 > これはPR数ではなくworkflow run数。同じPRから複数runがあり得ます。生産性やコード品質そのものではなく、遅い工程や失敗ログを調べるための代理値です。
 
@@ -72,9 +72,9 @@ Status: original comedy-sketch draft with a refreshed, source-backed yt3 example
 
 ## Evidence and interpretation
 
-- Snapshot: config/metrics/snapshots/issue_202_ci_30d_20261019_025424.json.
+- Snapshot: config/metrics/snapshots/issue_202_ci_30d_20261027_121007.json.
 - Source: [GitHub REST API — workflow runs](https://docs.github.com/en/rest/actions/workflow-runs), workflow 226201883, event pull_request, completed first attempts, recorded UTC window.
-- Formula: nearest-rank p95 of updated_at - created_at; success rate is 104 / 110 = 94.5%. The median for this even-sized sample is the mean of the middle pair (133 seconds). The denominator is completed first-attempt workflow runs, not distinct PRs. Queue/service delay can be included. This does not establish causal effects or directly measure productivity or code quality.
+- Formula: nearest-rank p95 of updated_at - created_at; success rate is 217 / 227 = 95.6%. The median for this odd-sized sample is 127 seconds. The denominator is completed first-attempt workflow runs, not distinct PRs. Queue/service delay can be included. This does not establish causal effects or directly measure productivity or code quality.
 - Framework rights basis (checked 2026-10-20 JST): the official LinkedIn DPH landing page https://linkedin.github.io/dph-framework/ identifies the framework as CC BY 4.0 and © 2023 LinkedIn Corporation. The official CC BY 4.0 deed https://creativecommons.org/licenses/by/4.0/ permits sharing and adaptation subject to appropriate credit, a license link, an indication of changes, and no suggestion of endorsement. Proposed description attribution: “Source: LinkedIn Developer Productivity & Happiness Framework, ‘Goals, Signals, and Metrics’ (LinkedIn Corporation, © 2023); https://linkedin.github.io/dph-framework/goals-signals-metrics.html; licensed under CC BY 4.0 https://creativecommons.org/licenses/by/4.0/. Japanese summary/adaptation by YT3; changes made; not endorsed by LinkedIn.” This documents the framework-text basis only; it does not clear voice, audio, visual, trademark, privacy, publicity, or other third-party rights, and is not a complete legal clearance.
 - The moon-base scene is fiction, not a claim about a real mission. Issue #202 references Software Engineering at Google; its online-edition notice was not used as source text in this script.
 
