@@ -4,6 +4,8 @@ import { loadConfig } from "../../io/core.js";
 const PanelConfigSchema = z.object({
 	threshold: z.number().min(1).max(5),
 	max_rounds: z.number().int().min(1),
+	candidates: z.number().int().min(1),
+	candidate_instruction: z.string().min(1),
 	review_system: z.string().min(1),
 	rewrite_instruction: z.string().min(1),
 	personas: z

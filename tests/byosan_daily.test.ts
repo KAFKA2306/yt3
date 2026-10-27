@@ -96,88 +96,77 @@ describe("byosan daily duplicate-publication gate", () => {
 	});
 });
 
-describe("byosan single-call script generation", () => {
-	const scripted = (...texts: string[]) => {
+const isReview = (prompt: string): boolean => prompt.includes("[台本]");
+const slot = (prompt: string): number =>
+	Number(/(\d)番目に有力/.exec(prompt)?.[1] ?? 0);
+
+describe("byosan parallel candidates", () => {
+	const draft = JSON.stringify(fixtureDraft());
+	const run = async (
+		drafts: (prompt: string) => string,
+		scores: (prompt: string) => number,
+	) => {
+		const runDir = await makeRunDir();
 		const prompts: string[] = [];
-		return {
-			prompts,
-			exec: (prompt: string): string => {
+		const result = await generateFeatureSpec(
+			fixtureInput(),
+			runDir,
+			(prompt) => {
 				prompts.push(prompt);
-				return texts[prompts.length - 1] ?? "";
+				return isReview(prompt) ? panelReply(scores(prompt)) : drafts(prompt);
 			},
-		};
-	};
-
-	test("one LLM call returns the spec and the explanation when every check passes", async () => {
-		const runDir = await makeRunDir();
-		const llm = scripted(JSON.stringify(fixtureDraft()), panelReply(4));
-		const { spec, explanation } = await generateFeatureSpec(
-			fixtureInput(),
-			runDir,
-			llm.exec,
-		);
-		expect(llm.prompts).toHaveLength(2);
-		expect(llm.prompts[0]).toContain("[今日の新着記事]");
-		expect(llm.prompts[1]).toContain("[台本]");
-		expect(spec.runId).toBe("byosan_money/2026-10-25-daily");
-		expect(spec.sources.length).toBeGreaterThanOrEqual(2);
-		expect(explanation.figures).toHaveLength(2);
-	});
-
-	test("a failed check is fed back into the same call and the draft is rewritten", async () => {
-		const runDir = await makeRunDir();
-		const draft = fixtureDraft();
-		const [first, ...rest] = draft.segments as Record<string, unknown>[];
-		const bad = {
-			...draft,
-			segments: [
-				{ ...first, text: "利益が987654%も増えたのだ、という話を始めます。" },
-				...rest,
-			],
-		};
-		const llm = scripted(
-			JSON.stringify(bad),
-			JSON.stringify(draft),
-			panelReply(4),
-		);
-		const { spec } = await generateFeatureSpec(
-			fixtureInput(),
-			runDir,
-			llm.exec,
-		);
-		expect(llm.prompts).toHaveLength(3);
-		expect(llm.prompts[0]).toContain("前回の検証エラー: なし");
-		expect(llm.prompts[1]).toContain("unsourced_number=987654");
-		expect(spec.segments[0]?.text).not.toContain("987654");
-	});
-});
-
-describe("byosan panel rewrite loop", () => {
-	const run = async (first: number, second: number) => {
-		const runDir = await makeRunDir();
-		const draft = JSON.stringify(fixtureDraft());
-		const prompts: string[] = [];
-		const replies = [draft, panelReply(first), draft, panelReply(second)];
-		await generateFeatureSpec(fixtureInput(), runDir, (prompt) => {
-			prompts.push(prompt);
-			return replies[prompts.length - 1] ?? "";
-		});
+		).catch((error: Error) => error);
 		const panel = await fs.readJson(path.join(runDir, "audit", "panel.json"));
-		return { prompts, panel };
+		return { prompts, result, panel };
 	};
 
-	test("a mean below the threshold rewrites once with the feedback and adopts the better round", async () => {
-		const { prompts, panel } = await run(2, 4);
-		expect(prompts).toHaveLength(4);
-		expect(prompts[2]).toContain("[前回の台本]");
-		expect(prompts[2]).toContain("の直してほしい点");
-		expect(panel.adopted_round).toBe(2);
-		expect(panel.rounds.map((r: { mean: number }) => r.mean)).toEqual([2, 4]);
+	test("writes candidates with distinct slots and adopts the highest mean", async () => {
+		const { prompts, panel } = await run(
+			() => draft,
+			() => 4,
+		);
+		const writes = prompts.filter((p) => !isReview(p));
+		expect(writes.map(slot).sort()).toEqual([1, 2, 3]);
+		expect(prompts.filter(isReview)).toHaveLength(3);
+		expect(panel.candidates).toHaveLength(3);
+		expect(panel.adopted.round).toBe(1);
 	});
 
-	test("a rewrite that scores worse keeps the first script", async () => {
-		const { panel } = await run(3, 2);
-		expect(panel.adopted_round).toBe(1);
+	test("continues with the remaining candidates when one fails its checks", async () => {
+		const { result, panel } = await run(
+			(prompt) => (slot(prompt) === 2 ? "{}" : draft),
+			() => 4,
+		);
+		expect(result).not.toBeInstanceOf(Error);
+		expect(panel.candidates).toHaveLength(2);
+		expect(panel.failures).toHaveLength(1);
+		expect(panel.failures[0].candidate).toBe(2);
+	});
+
+	test("fails the day when every candidate fails", async () => {
+		const { result } = await run(
+			() => "{}",
+			() => 4,
+		);
+		expect(result).toBeInstanceOf(Error);
+		expect((result as Error).message).toContain("BYOSAN_ALL_CANDIDATES_FAILED");
+	});
+
+	test("a best mean below the threshold rewrites only the adopted candidate", async () => {
+		const first = new Set<string>();
+		const { prompts, panel } = await run(
+			() => draft,
+			(prompt) => {
+				const seen = first.size;
+				first.add(prompt);
+				return seen < 3 ? 2 : 4;
+			},
+		);
+		const rewrites = prompts.filter((p) => p.includes("[前回の台本]"));
+		expect(rewrites).toHaveLength(1);
+		expect(prompts).toHaveLength(8);
+		expect(panel.adopted.round).toBe(2);
+		expect(panel.candidates).toHaveLength(4);
 	});
 });
 
