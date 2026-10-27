@@ -374,7 +374,7 @@ export async function generateFeatureSpec(
 	const llm = byosanLlmConfig();
 	const panel = loadPanel();
 	const articles = renderFeatureDraftInput(input);
-	const write = async (round: number, extra: string) => {
+	const write = async (label: string, extra: string) => {
 		const request = structuredRequest({
 			maxAttempts: llm.max_attempts,
 			schema: z.unknown(),
@@ -384,7 +384,7 @@ export async function generateFeatureSpec(
 			evidencePath: path.join(
 				runDir,
 				"audit",
-				`structured_feature_attempts_${round}.json`,
+				`structured_feature_attempts_${label}.json`,
 			),
 			messages: (attempt, lastValidationError) => [
 				{ role: "system", content: system },
@@ -424,7 +424,7 @@ export async function generateFeatureSpec(
 						llmOptions: { temperature: 0.28, sessionId: runDir },
 					});
 		fs.outputJsonSync(
-			path.join(runDir, "audit", `feature_corrections_${round}.json`),
+			path.join(runDir, "audit", `feature_corrections_${label}.json`),
 			corrections,
 			{ spaces: 2 },
 		);
@@ -436,71 +436,109 @@ export async function generateFeatureSpec(
 			),
 		};
 	};
-	const rounds: {
-		round: number;
-		mean: number;
-		review: PanelReview;
-		parsed: z.infer<typeof ByosanFeatureDraftSchema>;
-		spec: ByosanFeatureSpec;
-	}[] = [];
-	let extra = "";
-	let skipped: string | null = null;
-	for (let round = 1; ; round++) {
-		try {
-			const { parsed, spec } = await write(round, extra);
-			const script = spec.segments
-				.map((segment) => `${segment.speaker}: ${segment.text}`)
-				.join("\n");
-			const scored = await invokeCodexStructured({
-				llm,
-				logPath: codexLlmLogPath(runDir),
-				schema: PanelReviewSchema,
-				backend: llmBackend(llm, "panel") as ExecBackend,
-				name: "byosan_panel_review",
-				exec,
-				maxAttempts: llm.max_attempts,
-				evidencePath: path.join(
-					runDir,
-					"audit",
-					`structured_panel_attempts_${round}.json`,
-				),
-				messages: (attempt, lastValidationError) => [
+	const scoreScript = async (label: string, spec: ByosanFeatureSpec) => {
+		const script = spec.segments
+			.map((segment) => `${segment.speaker}: ${segment.text}`)
+			.join("\n");
+		return invokeCodexStructured({
+			llm,
+			logPath: codexLlmLogPath(runDir),
+			schema: PanelReviewSchema,
+			backend: llmBackend(llm, "panel") as ExecBackend,
+			name: "byosan_panel_review",
+			exec,
+			maxAttempts: llm.max_attempts,
+			evidencePath: path.join(
+				runDir,
+				"audit",
+				`structured_panel_attempts_${label}.json`,
+			),
+			messages: (attempt, lastValidationError) => [
+				{
+					role: "user",
+					content: `${renderPanelReviewPrompt(panel, script)}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+				},
+			],
+			validate: (value) => validatePanelReview(value, panel),
+		});
+	};
+	const candidate = async (round: number, index: number, extra: string) => {
+		const label = `${round}_${index}`;
+		const { parsed, spec } = await write(label, extra);
+		const scored = await scoreScript(label, spec);
+		return {
+			round,
+			index,
+			mean: meanScore(scored),
+			review: scored,
+			parsed,
+			spec,
+		};
+	};
+	type Scored = Awaited<ReturnType<typeof candidate>>;
+	const settled = await Promise.allSettled(
+		Array.from({ length: panel.candidates }, (_, i) =>
+			candidate(
+				1,
+				i + 1,
+				`\n\n${panel.candidate_instruction.replaceAll("{index}", String(i + 1))}`,
+			),
+		),
+	);
+	const pool: Scored[] = settled.flatMap((r) =>
+		r.status === "fulfilled" ? [r.value] : [],
+	);
+	const failures = settled.flatMap((r, i) =>
+		r.status === "rejected"
+			? [
 					{
-						role: "user",
-						content: `${renderPanelReviewPrompt(panel, script)}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+						round: 1,
+						candidate: i + 1,
+						error:
+							r.reason instanceof Error ? r.reason.message : String(r.reason),
 					},
-				],
-				validate: (value) => validatePanelReview(value, panel),
-			});
-			rounds.push({
-				round,
-				mean: meanScore(scored),
-				review: scored,
-				parsed,
-				spec,
-			});
-			if (meanScore(scored) >= panel.threshold || round >= panel.max_rounds) {
-				break;
-			}
-			extra = `\n\n[前回の台本]\n${JSON.stringify(parsed)}\n\n[視聴者の評価（平均${meanScore(scored).toFixed(2)}点）]\n${renderPanelFeedback(scored)}\n\n${panel.rewrite_instruction}`;
+				]
+			: [],
+	);
+	if (pool.length === 0) {
+		fs.outputJsonSync(
+			path.join(runDir, "audit", "panel.json"),
+			{ threshold: panel.threshold, failures },
+			{ spaces: 2 },
+		);
+		throw new Error(
+			`BYOSAN_ALL_CANDIDATES_FAILED: ${failures.map((f) => f.error).join(" | ")}`,
+		);
+	}
+	for (let round = 2; round <= panel.max_rounds; round++) {
+		const top = bestRound(pool);
+		if (top.mean >= panel.threshold) break;
+		const extra = `\n\n[前回の台本]\n${JSON.stringify(top.parsed)}\n\n[視聴者の評価（平均${top.mean.toFixed(2)}点）]\n${renderPanelFeedback(top.review)}\n\n${panel.rewrite_instruction}`;
+		try {
+			pool.push(await candidate(round, 1, extra));
 		} catch (error) {
-			if (rounds.length === 0) throw error;
-			skipped = `round ${round}: ${error instanceof Error ? error.message : String(error)}`;
+			failures.push({
+				round,
+				candidate: 1,
+				error: error instanceof Error ? error.message : String(error),
+			});
 			break;
 		}
 	}
-	const best = bestRound(rounds);
+	const best = bestRound(pool);
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "panel.json"),
 		{
 			threshold: panel.threshold,
-			adopted_round: best.round,
-			skipped_round: skipped,
-			rounds: rounds.map(({ round, mean, review: reviews, parsed }) => ({
-				round,
-				mean,
-				reviews: reviews.reviews,
-				script: parsed.segments.map(
+			adopted: { round: best.round, candidate: best.index },
+			failures,
+			candidates: pool.map((c) => ({
+				round: c.round,
+				candidate: c.index,
+				topic: c.parsed.angle,
+				mean: c.mean,
+				reviews: c.review.reviews,
+				script: c.parsed.segments.map(
 					(segment) => `${segment.speaker}: ${segment.text}`,
 				),
 			})),
