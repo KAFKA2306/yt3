@@ -24,6 +24,7 @@ export const ConfigSchema = z.object({
 		bitrate: z.string(),
 	}),
 	rating: z.object({ min: z.number(), max: z.number() }),
+	trend_rule: z.string(),
 	axes: z.record(z.string(), z.array(z.string())),
 	structure: z.array(z.string()),
 	lines_per_section: z.number(),
