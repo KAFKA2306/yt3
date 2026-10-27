@@ -14,6 +14,7 @@ const llm: CodexLlmConfig = {
 	workdir_prefix: "byosan-llm-test-",
 	max_attempts: 3,
 	json_only_instruction: "JSON 値だけを返してください。",
+	codex: { model: "gpt-6.1-terra", reasoning_effort: "medium" },
 	claude: {
 		command: "claude",
 		model: "claude-haiku-5-5",

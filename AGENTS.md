@@ -54,7 +54,7 @@ LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). 
 - Repository checks prove only the revision they executed. Product, runtime, and publication states need direct evidence; unchecked layers stay UNVERIFIED.
 - Every factual claim the user makes is checked each time by web search against official sources before it is used in a decision, document, or config. Unverified claims are labeled UNVERIFIED, never adopted as fact.
 - Dependencies, runtimes, CLIs, models, and model IDs are kept at their latest released version, confirmed against the official release notes. An upgrade lands only after `task check:merge` passes.
-- The default Codex model is GPT-6 Luna, the lowest-cost current model (as of 2026-10-25). Replace it whenever a newer or cheaper model is confirmed on the official pricing page. A call moves to a larger model only with recorded evidence that Luna's output fails its checks. Image generation keeps `gpt-image-2`.
+- The default Codex model is GPT-6.1 Terra at `medium` reasoning effort (owner-designated 2026-10-27; official valid efforts: none, low, medium, high, xhigh, max). The byosan setting is `llm.codex` in `config/domains/byosan_money.yaml`, the yawa setting is `script.model` in `config/yawa/daily.yaml`. A call moves to another model only with recorded evidence that Terra's output fails its checks. Image generation keeps `gpt-image-2`.
 - Do not fill in missing inputs or failures with fallback output that looks like success.
 - Execution runs as the `kafka` account, never as root or with `sudo`.
 - Do not read out or display `.env` files, tokens, OAuth credentials, or contact details. Scripts check only whether a value is present. An empty value must not overwrite a non-empty one.
