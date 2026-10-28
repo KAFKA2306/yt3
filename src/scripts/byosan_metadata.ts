@@ -21,6 +21,7 @@ const config = getByosanProductionConfig();
 const RUN = config.feature_production.run_layout;
 const profile = YOUTUBE_PROFILES.byosan;
 const DRY_FLAG = "--dry";
+const TITLE_FLAG = "--title=";
 
 const ReceiptSchema = z.object({
 	youtube: z.object({ video_id: z.string().min(1) }),
@@ -132,6 +133,7 @@ async function rewriteDescription(
 	runId: string,
 	videoId: string,
 	description: string,
+	title?: string,
 ): Promise<void> {
 	const { auth } = await createYouTubeOAuthClient(profile.profileName);
 	await assertYouTubeChannelMatchesProfile(auth, profile);
@@ -147,7 +149,7 @@ async function rewriteDescription(
 			requestBody: {
 				id: videoId,
 				snippet: {
-					title: before.title,
+					title: title ?? before.title,
 					description,
 					tags: before.tags,
 					categoryId: before.categoryId,
@@ -158,7 +160,10 @@ async function rewriteDescription(
 		after = await fetchVideoState(youtube, videoId);
 		const verified =
 			after.description.trim() === description.trim() &&
-			changedFields(before, after).every((field) => field === "description");
+			after.title === (title ?? before.title) &&
+			changedFields(before, after).every(
+				(field) => field === "description" || field === "title",
+			);
 		stage = verified ? "verified" : "mismatch";
 	} finally {
 		fs.appendFileSync(
@@ -193,10 +198,13 @@ async function rewriteDescription(
 async function main(): Promise<void> {
 	const args = process.argv.slice(2);
 	const dry = args.includes(DRY_FLAG);
-	const runId = args.find((arg) => arg !== DRY_FLAG);
+	const title = args
+		.find((arg) => arg.startsWith(TITLE_FLAG))
+		?.slice(TITLE_FLAG.length);
+	const runId = args.find((arg) => !arg.startsWith("--"));
 	if (!runId) {
 		throw new Error(
-			"usage: byosan_metadata.ts byosan_money/YYYY-MM-DD-slot [--dry]",
+			"usage: byosan_metadata.ts byosan_money/YYYY-MM-DD-slot [--dry] [--title=<text>]",
 		);
 	}
 	const runDir = path.join(ROOT, config.workflow.paths.runs_dir, runId);
@@ -241,6 +249,7 @@ async function main(): Promise<void> {
 		runId,
 		receipt.youtube.video_id,
 		description,
+		title,
 	);
 }
 
