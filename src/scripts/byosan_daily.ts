@@ -66,7 +66,6 @@ import {
 	bestRound,
 	loadPanel,
 	meanScore,
-	renderPanelFeedback,
 	renderPanelReviewPrompt,
 	validatePanelReview,
 } from "../domain/byosan/panel.js";
@@ -503,33 +502,17 @@ export async function generateFeatureSpec(
 	if (pool.length === 0) {
 		fs.outputJsonSync(
 			path.join(runDir, "audit", "panel.json"),
-			{ threshold: panel.threshold, failures },
+			{ failures },
 			{ spaces: 2 },
 		);
 		throw new Error(
 			`BYOSAN_ALL_CANDIDATES_FAILED: ${failures.map((f) => f.error).join(" | ")}`,
 		);
 	}
-	for (let round = 2; round <= panel.max_rounds; round++) {
-		const top = bestRound(pool);
-		if (top.mean >= panel.threshold) break;
-		const extra = `\n\n[前回の台本]\n${JSON.stringify(top.parsed)}\n\n[視聴者の評価（平均${top.mean.toFixed(2)}点）]\n${renderPanelFeedback(top.review)}\n\n${panel.rewrite_instruction}`;
-		try {
-			pool.push(await candidate(round, 1, extra));
-		} catch (error) {
-			failures.push({
-				round,
-				candidate: 1,
-				error: error instanceof Error ? error.message : String(error),
-			});
-			break;
-		}
-	}
 	const best = bestRound(pool);
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "panel.json"),
 		{
-			threshold: panel.threshold,
 			adopted: { round: best.round, candidate: best.index },
 			failures,
 			candidates: pool.map((c) => ({
