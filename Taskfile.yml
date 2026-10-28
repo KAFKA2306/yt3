@@ -88,6 +88,11 @@ tasks:
     cmds:
       - bun src/scripts/byosan_metadata.ts {{.RUN}} {{.CLI_ARGS}}
 
+  byosan:thumbnail:
+    desc: "Generate a gpt-image-2 thumbnail with the question text and set it on one published 秒算マネー video, then read back (RUN=byosan_money/YYYY-MM-DD-slot; -- --text=QUESTION; add --dry to only build the files)"
+    cmds:
+      - bun src/scripts/byosan_thumbnail.ts {{.RUN}} {{.CLI_ARGS}}
+
   yawa:daily:
     desc: "Prepare and publish one 夜話アーカイブ ASMR episode (DATE=YYYY-MM-DD required; publishes only after the release gate passes)"
     cmds:
