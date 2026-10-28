@@ -43,6 +43,7 @@ import {
 	type SceneSvgStyle,
 	renderSceneLayers,
 } from "../domain/byosan/scene_svg.js";
+import { buildThumbnailFiles } from "../domain/byosan/thumbnail.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
 import {
 	capVoiceControls,
@@ -287,8 +288,10 @@ async function renderVisualMaster(
 	visualPath: string,
 	publicDir: string,
 	runDir: string,
+	firstSlidePath: string,
 ): Promise<void> {
 	await fs.emptyDir(publicDir);
+	await fs.copyFile(firstSlidePath, path.join(publicDir, "first-slide.png"));
 	const characters = new Map<
 		FeatureSegment["speaker"],
 		{ file: string; left: number; top: number }
@@ -337,6 +340,7 @@ async function renderVisualMaster(
 			);
 			return {
 				...files,
+				full: segment.index === 0 ? "first-slide.png" : undefined,
 				character: character.file,
 				characterLeft: character.left,
 				characterTop: character.top,
@@ -397,89 +401,35 @@ async function renderVisualMaster(
 	);
 }
 
-async function renderThumbnail(
+async function buildThumbnail(
 	spec: FeatureSpec,
 	runDir: string,
-	heroPath: string,
-): Promise<{ png: string; jpg: string }> {
-	const thumbnailPng = path.join(runDir, FILENAMES.thumbnail);
-	const thumbnailJpg = path.join(runDir, RUN.thumbnail_jpg);
-	const T = F.thumbnail;
-	const character = await sharp(await characterSourceBuffer("春日部つむぎ"))
-		.trim({ background: F.image.trim_background })
-		.resize({
-			height: THUMBNAIL.character_zone.height,
-			fit: "inside",
-			withoutEnlargement: false,
-		})
-		.png()
-		.toBuffer();
-	const thumbnail = spec.thumbnail;
-	const accentSize = THUMBNAIL.title_zone.font_size;
-	const secondLineSize = THUMBNAIL.title_zone.font_size;
-	const calloutTopSize = THUMBNAIL.subtitle.font_size;
-	const calloutBottomSize = THUMBNAIL.subtitle.font_size;
-	const overlay = Buffer.from(`
-	<svg width="${THUMBNAIL_CANVAS.width}" height="${THUMBNAIL_CANVAS.height}" xmlns="http://www.w3.org/2000/svg">
-		<defs>
-			<style>text{font-family:'${FONT}',sans-serif}</style>
-		</defs>
-		<rect x="${THUMBNAIL.outer_frame.x}" y="${THUMBNAIL.outer_frame.y}" width="${THUMBNAIL.outer_frame.width}" height="${THUMBNAIL.outer_frame.height}" rx="${THUMBNAIL.outer_frame.radius}" fill="none" stroke="${THUMBNAIL.outer_frame.color}" stroke-opacity="${THUMBNAIL.outer_frame.opacity}" stroke-width="${THUMBNAIL.outer_frame.stroke_width}"/>
-		<rect x="${THUMBNAIL.accent_rail.x}" y="${THUMBNAIL.accent_rail.y}" width="${THUMBNAIL.accent_rail.width}" height="${THUMBNAIL.accent_rail.height}" fill="${DESIGN.colors.brand_accent}"/>
-		<rect x="${THUMBNAIL.brand_chip.x}" y="${THUMBNAIL.brand_chip.y}" width="${THUMBNAIL.brand_chip.width}" height="${THUMBNAIL.brand_chip.height}" rx="${THUMBNAIL.brand_chip.radius}" fill="${DESIGN.colors.surface}" stroke="${DESIGN.colors.brand_accent}" stroke-width="${DESIGN.stroke.default}"/>
-		<text x="${THUMBNAIL.brand_chip.x + T.brand_text_inset_x}" y="${THUMBNAIL.brand_chip.y + T.brand_text_inset_y}" font-size="${THUMBNAIL.brand_chip.font_size}" font-weight="${THUMBNAIL.brand_chip.font_weight}" fill="${DESIGN.colors.text_primary}" letter-spacing="${T.brand_letter_spacing}">${xml(thumbnail.eyebrow)}</text>
-		<text x="${THUMBNAIL.title_zone.x}" y="${THUMBNAIL.title_zone.y + THUMBNAIL.title_zone.font_size}" font-size="${accentSize}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${THUMBNAIL.title_zone.fill}">${xml(thumbnail.lead)} ${xml(thumbnail.accent)}</text>
-		<text x="${THUMBNAIL.title_zone.x}" y="${THUMBNAIL.title_zone.y + THUMBNAIL.title_zone.font_size + THUMBNAIL.title_zone.line_height}" font-size="${secondLineSize}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${THUMBNAIL.title_zone.fill}">${xml(thumbnail.secondLine)} ${xml(thumbnail.reaction)}</text>
-		<rect x="${THUMBNAIL.subtitle.x}" y="${THUMBNAIL.subtitle.baseline_y - THUMBNAIL.subtitle.font_size}" width="${THUMBNAIL.subtitle.width}" height="${THUMBNAIL.subtitle.font_size + T.top_callout_box_extra_height}" rx="${DESIGN.radius.medium}" fill="${DESIGN.colors.human_cream}"/>
-		<text x="${THUMBNAIL.subtitle.x + T.callout_text_inset_x}" y="${THUMBNAIL.subtitle.baseline_y - T.top_callout_text_baseline_offset}" font-size="${calloutTopSize}" font-weight="${THUMBNAIL.subtitle.font_weight}" fill="${DESIGN.colors.text_dark}">${xml(thumbnail.calloutTop)}</text>
-		<g transform="translate(${THUMBNAIL.subtitle.x},${THUMBNAIL.subtitle.baseline_y + T.bottom_callout_group_offset_y})">
-			<rect width="${THUMBNAIL.subtitle.width}" height="${THUMBNAIL.subtitle.font_size + T.bottom_callout_box_extra_height}" rx="${DESIGN.radius.card}" fill="${DESIGN.colors.surface}" stroke="${LANDSCAPE.outer_frame.color}" stroke-width="${DESIGN.stroke.default}"/>
-			<text x="${T.callout_text_inset_x}" y="${THUMBNAIL.subtitle.font_size + T.bottom_callout_text_baseline_offset}" font-size="${calloutBottomSize}" font-weight="${THUMBNAIL.title_zone.font_weight}" fill="${DESIGN.colors.text_primary}">${xml(thumbnail.calloutBottom)}</text>
-		</g>
-		<text x="${THUMBNAIL.brand_chip.x}" y="${THUMBNAIL_CANVAS.height - THUMBNAIL.safe_area.bottom}" font-size="${THUMBNAIL.brand_chip.font_size}" font-weight="${THUMBNAIL.brand_chip.font_weight}" fill="${DESIGN.colors.text_primary}" letter-spacing="${T.footer_letter_spacing}">${xml(F.brand_label)}</text>
-	</svg>`);
-	const composed = sharp(heroPath)
-		.resize(THUMBNAIL_CANVAS.width, THUMBNAIL_CANVAS.height, {
-			fit: "cover",
-			position: "centre",
-		})
-		.composite([
-			{ input: overlay, left: 0, top: 0 },
-			{
-				input: character,
-				left: THUMBNAIL.character_zone.x,
-				top: THUMBNAIL.character_zone.y,
-			},
-		]);
-	await composed
-		.clone()
-		.png({ compressionLevel: F.image.png_compression_level })
-		.toFile(thumbnailPng);
-	await composed
-		.clone()
-		.jpeg({
-			quality: T.jpeg_quality,
-			chromaSubsampling: T.jpeg_chroma_subsampling,
-		})
-		.toFile(thumbnailJpg);
-	return { png: thumbnailPng, jpg: thumbnailJpg };
-}
-
-async function ensureHeroSource(runDir: string): Promise<string> {
-	const heroPath = path.join(runDir, RUN.source_dir, F.hero_source_name);
-	if (await fs.pathExists(heroPath)) return heroPath;
-	await fs.ensureDir(path.dirname(heroPath));
-	await sharp({
-		create: {
-			width: WIDTH,
-			height: HEIGHT,
-			channels: F.image.hero_channels,
-			background: VISUAL_IDENTITY.background,
-		},
-	})
-		.png({ compressionLevel: F.image.png_compression_level })
-		.toFile(heroPath);
-	return heroPath;
+): Promise<{ png: string; jpg: string; full: string }> {
+	const paths = {
+		artPath: path.join(runDir, RUN.source_dir, F.hero_source_name),
+		fullPath: path.join(runDir, RUN.source_dir, "thumbnail_full.png"),
+		pngPath: path.join(runDir, FILENAMES.thumbnail),
+		jpgPath: path.join(runDir, RUN.thumbnail_jpg),
+	};
+	await buildThumbnailFiles({
+		...paths,
+		text: spec.thumbnailTitle,
+		refs: [
+			path.join(PROJECT_ROOT, F.characters.tsumugi_image),
+			path.join(PROJECT_ROOT, F.characters.zundamon_image),
+		],
+		brand: F.brand_label,
+		width: WIDTH,
+		height: HEIGHT,
+		thumbnailWidth: THUMBNAIL_CANVAS.width,
+		thumbnailHeight: THUMBNAIL_CANVAS.height,
+		font: FONT,
+		fontWeight: DESIGN.typography.weights.headline ?? "bold",
+		halfWidthUnits: F.captions.half_width_units,
+		pngCompression: F.image.png_compression_level,
+		config: F.thumbnail,
+	});
+	return { png: paths.pngPath, jpg: paths.jpgPath, full: paths.fullPath };
 }
 
 function captionChunks(text: string): string[] {
@@ -1095,7 +1045,6 @@ async function main(): Promise<void> {
 		fs.ensureDir(path.join(runDir, RUN.audit_dir)),
 		fs.ensureDir(path.join(runDir, RUN.publish_dir)),
 	]);
-	const heroPath = await ensureHeroSource(runDir);
 	const tts = new TtsOrchestrator({
 		ttsUrl: VOICEVOX.url,
 		speakers: VOICEVOX.speakers,
@@ -1186,7 +1135,7 @@ async function main(): Promise<void> {
 	);
 	const subtitlePath = path.join(runDir, FILENAMES.subtitles);
 	await fs.writeFile(subtitlePath, generateAss(timed));
-	const thumbnail = await renderThumbnail(spec, runDir, heroPath);
+	const thumbnail = await buildThumbnail(spec, runDir);
 	const visualPath = path.join(videoDir, RUN.visual_master);
 	const narrationPath = path.join(audioDir, FILENAMES.audio_full);
 	await renderVisualMaster(
@@ -1194,6 +1143,7 @@ async function main(): Promise<void> {
 		visualPath,
 		path.join(videoDir, RUN.remotion_public),
 		runDir,
+		thumbnail.full,
 	);
 	concatNarration(timed, narrationPath, runDir);
 	const finalPath = path.join(videoDir, RUN.publish_video);

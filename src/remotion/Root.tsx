@@ -15,6 +15,7 @@ export type SceneProps = {
 	text: string;
 	data: string;
 	chip: string;
+	full?: string;
 	character: string;
 	characterLeft: number;
 	characterTop: number;
@@ -38,6 +39,7 @@ const layer = (file: string) => (
 function Scene({ scene }: { scene: SceneProps }) {
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
+	if (scene.full) return layer(scene.full);
 	const enter = (delay: number) =>
 		spring({ frame: frame - delay, fps, config: { damping: 200 } });
 	const rise = (delay: number) => ({
