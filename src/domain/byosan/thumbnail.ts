@@ -21,6 +21,7 @@ export type ThumbnailConfig = {
 	};
 	brand: { x: number; y: number; font_ratio: number };
 	scrim: { width: number; opacity: number; color: string };
+	art_scale: number;
 };
 
 export function generateThumbnailArt(
@@ -163,8 +164,18 @@ export async function composeThumbnail(input: {
 		<text font-family="${input.font}, sans-serif" font-weight="${input.fontWeight}" font-size="${fontSize}" fill="${config.text.fill}" stroke="${config.text.stroke}" stroke-width="${Math.round(fontSize * config.text.stroke_ratio)}" stroke-linejoin="round" paint-order="stroke">${tspans}</text>
 		<text x="${Math.round(config.brand.x * width)}" y="${Math.round(config.brand.y * height)}" font-family="${input.font}, sans-serif" font-weight="${input.fontWeight}" font-size="${brandSize}" fill="${config.text.fill}" stroke="${config.text.stroke}" stroke-width="${Math.round(brandSize * config.text.stroke_ratio)}" stroke-linejoin="round" paint-order="stroke">${xml(input.brand)}</text>
 	</svg>`);
-	return sharp(await fs.readFile(input.artPath))
-		.resize(width, height, { fit: "cover", position: "centre" })
+	const artWidth = Math.round(config.art_scale * width);
+	const artHeight = Math.round(config.art_scale * height);
+	const art = await sharp(await fs.readFile(input.artPath))
+		.resize(artWidth, artHeight, { fit: "cover", position: "centre" })
+		.extend({
+			top: height - artHeight,
+			left: width - artWidth,
+			extendWith: "copy",
+		})
+		.png()
+		.toBuffer();
+	return sharp(art)
 		.composite([{ input: overlay, left: 0, top: 0 }])
 		.png()
 		.toBuffer();

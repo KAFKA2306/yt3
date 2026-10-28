@@ -63,22 +63,12 @@ const videoId = receipt.youtube.video_id;
 const { auth } = await createYouTubeOAuthClient(profile.profileName);
 await assertYouTubeChannelMatchesProfile(auth, profile);
 const youtube = google.youtube({ version: "v3", auth });
-const urls = async (): Promise<string> => {
-	const response = await youtube.videos.list({
-		part: ["snippet"],
-		id: [videoId],
-	});
-	return JSON.stringify(response.data.items?.[0]?.snippet?.thumbnails ?? null);
-};
-const before = await urls();
 await youtube.thumbnails.set({
 	videoId,
 	media: { mimeType: "image/jpeg", body: fs.createReadStream(jpgPath) },
 });
-const after = await urls();
-const changed = before !== after;
 fs.appendFileSync(
 	path.join(runDir, RUN.publish_dir, "thumbnail_updates.jsonl"),
-	`${JSON.stringify({ at: new Date().toISOString(), run_id: runId, video_id: videoId, text, changed })}\n`,
+	`${JSON.stringify({ at: new Date().toISOString(), run_id: runId, video_id: videoId, text })}\n`,
 );
-console.log(JSON.stringify({ run_id: runId, video_id: videoId, changed }));
+console.log(JSON.stringify({ run_id: runId, video_id: videoId, set: true }));

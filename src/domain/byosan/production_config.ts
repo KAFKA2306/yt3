@@ -214,6 +214,7 @@ const FeatureProductionSchema = z.object({
 			y: nonNegativeNumber,
 			font_ratio: nonNegativeNumber,
 		}),
+		art_scale: z.number().min(0.3).max(1),
 		scrim: z.object({
 			width: nonNegativeNumber,
 			opacity: nonNegativeNumber,

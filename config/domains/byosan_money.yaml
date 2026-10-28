@@ -660,9 +660,10 @@ feature_production:
     jpeg_chroma_subsampling: "4:4:4"
     imagegen:
       size: "2048x1152"
-      prompt: "YouTube thumbnail art, 16:9, anime illustration in a bright flat style with strong contrast and a simple clean composition. Draw the two reference characters (春日部つむぎ and ずんだもん) in the right 40 percent of the frame only, upper bodies, with exaggerated curious and surprised faces and expressive poses, as if reacting to this question: {topic}. Beside them, draw one bold simple object or scene that stands for the question's topic in everyday life. The left 55 percent of the frame must stay a plain calm area with low detail and no characters or objects, for overlaid text. Vivid saturated colors, white outline separation of the characters from the background. Absolutely no text, letters, numbers, logos, or watermarks anywhere in the image."
-    text: {x: 0.04, y: 0.1, width: 0.56, height: 0.8, max_font_ratio: 0.2, line_height: 1.18, max_lines: 3, fill: "#FFFFFF", stroke: "#0B1220", stroke_ratio: 0.16, break_penalty: 4}
+      prompt: "YouTube thumbnail art, 16:9, anime illustration in a bright flat style with strong contrast and a simple clean composition. Draw the two reference characters (春日部つむぎ and ずんだもん) in the right 40 percent of the frame only, upper bodies, with exaggerated curious and surprised faces and expressive poses, as if reacting to this question: {topic}. Beside them, draw one bold simple object or scene that stands for the question's topic in everyday life. The left 55 percent and the top 15 percent of the frame must stay a plain calm background with no characters, hair, objects or details, because the image edges are extended. Vivid saturated colors, white outline separation of the characters from the background. Absolutely no text, letters, numbers, logos, or watermarks anywhere in the image."
+    text: {x: 0.04, y: 0.1, width: 0.5, height: 0.8, max_font_ratio: 0.2, line_height: 1.18, max_lines: 3, fill: "#FFFFFF", stroke: "#0B1220", stroke_ratio: 0.16, break_penalty: 4}
     brand: {x: 0.04, y: 0.95, font_ratio: 0.06}
+    art_scale: 0.78
     scrim: {width: 0.62, opacity: 0.55, color: "#0B1220"}
   audit:
     video_codec: "h264"
