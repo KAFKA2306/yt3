@@ -84,7 +84,7 @@ tasks:
       - bun src/scripts/yawa_metadata.ts {{.RUN}}
 
   byosan:metadata:
-    desc: "Rewrite the description (chapters and primary sources) of one published 秒算マネー video from its run, then read back and record it (RUN=byosan_money/YYYY-MM-DD-slot; -- --dry prints the description without writing)"
+    desc: "Rewrite the description (chapters and primary sources) of one published 秒算マネー video from its run, then read back and record it (RUN=byosan_money/YYYY-MM-DD-slot; -- --dry prints the description without writing; -- --title=TEXT also sets the title)"
     cmds:
       - bun src/scripts/byosan_metadata.ts {{.RUN}} {{.CLI_ARGS}}
 
