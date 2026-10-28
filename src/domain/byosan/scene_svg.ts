@@ -201,10 +201,6 @@ export function renderSceneSvg(
 		LANDSCAPE.source.max_width,
 		F.captions.half_width_units,
 	);
-	const P = F.scene.speaker_pointer;
-	const characterX = LANDSCAPE.character_region.x;
-	const characterBottom =
-		LANDSCAPE.character_region.y + LANDSCAPE.character_region.height;
 	return `
 	<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
 		<defs>
@@ -236,8 +232,6 @@ export function renderSceneSvg(
 		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline" style="font-size:${subheadlineSize}px">${xml(segment.subheadline)}</text>
 		${dataRegionContent(render, style)}
 		${questionMark}
-			<path d="M${characterX + P.start_x} ${characterBottom - P.start_bottom} C${characterX + P.control1_x} ${characterBottom - P.control1_bottom} ${characterX + P.control2_x} ${characterBottom - P.control2_bottom} ${characterX + P.end_x} ${characterBottom - P.end_bottom}" fill="none" stroke="${speakerColor}" stroke-opacity="${P.stroke_opacity}" stroke-width="${P.stroke_width}" stroke-linecap="round"/>
-			<circle cx="${characterX + P.start_x}" cy="${characterBottom - P.start_bottom}" r="${P.dot_radius}" fill="${speakerColor}"/>
 		<g transform="translate(${LANDSCAPE.speaker_chip.x},${LANDSCAPE.speaker_chip.y})">
 			<rect width="${LANDSCAPE.speaker_chip.width}" height="${LANDSCAPE.speaker_chip.height}" rx="${LANDSCAPE.speaker_chip.radius}" fill="${design.colors.surface}" stroke="${speakerColor}" stroke-width="${LANDSCAPE.speaker_chip.stroke_width}"/>
 			<text x="${LANDSCAPE.speaker_chip.text_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.baseline_y - LANDSCAPE.speaker_chip.y}" font-size="${LANDSCAPE.speaker_chip.font_size}" font-weight="${LANDSCAPE.speaker_chip.font_weight}" fill="${speakerColor}">${xml(segment.speaker)}</text>
