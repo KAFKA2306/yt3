@@ -50,7 +50,7 @@ LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). 
 
 ## Byosan visuals and titles
 
-Slides are built as layers by `src/domain/byosan/scene_svg.ts` and animated by the Remotion composition in `src/remotion`, which renders only the entrance of each scene; FFmpeg holds the last frame and concatenates, and captions and audio are mastered by FFmpeg as before. Scenes without data (question or none) show no headline text, so the slide never repeats the caption. The title is one strong simple question set by `discovery.title_rule`; that questions raise click-through is UNVERIFIED and is measured against real viewer metrics (#416).
+Slides are built as layers by `src/domain/byosan/scene_svg.ts` and animated by the Remotion composition in `src/remotion`, which renders only the entrance of each scene; FFmpeg holds the last frame and concatenates, and captions and audio are mastered by FFmpeg as before. Scenes without data (question or none) show no headline text, so the slide never repeats the caption. The thumbnail and the first slide are one image: `codex-imagegen` (gpt-image-2) draws the two characters from the reference sprites, and the question text (`thumbnailTitle`) is overlaid deterministically with the project font so the wording and numbers are exact (`feature_production.thumbnail` in config). Published thumbnails are replaced only through `task byosan:thumbnail`; a published video's first slide cannot be changed. The title is one strong simple question set by `discovery.title_rule`; that questions raise click-through is UNVERIFIED and is measured against real viewer metrics (#416).
 
 ## Evidence and credentials
 
