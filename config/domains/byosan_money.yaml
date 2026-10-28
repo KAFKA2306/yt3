@@ -213,7 +213,7 @@ discovery:
   body_chars: 6000
   min_paragraph_chars: 80
   concurrency: 4
-  title_rule: "題名は「検索される語｜その回の問いや発見を一文で言い切る | 秒算マネー」の形にする。数字は本文で検証済みのものだけを使い、サムネイルと中身を一致させて誤認を誘う表現は避ける。日付や期が本質の題材では対象期間を書く。"
+  title_rule: "題名は、視聴者が思わず答えを知りたくなる、強くて短い1つの問いにして、末尾に「 | 秒算マネー」を付ける（例: 「ガソリン補助金が減ると、毎月いくら損する？ | 秒算マネー」）。主語は暮らしの物や金額にし、専門語は使わず、検索される語を問いの中に入れる。答えは本文で言い切り、数字は本文で検証済みのものだけを使う。サムネイルの文字も同じ問いの短縮にし、中身と一致させ、誤認を誘う表現は避ける。日付や期が本質の題材では対象期間を問いに入れる。"
   user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
   registry: "config/sources/byosan_discovery_sources.json"
   owner_articles: "data/state/byosan_owner_articles.json"
