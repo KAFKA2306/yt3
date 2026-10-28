@@ -41,7 +41,7 @@ import {
 import { compileScenes } from "../domain/byosan/scene_spec.js";
 import {
 	type SceneSvgStyle,
-	renderSceneSvg,
+	renderSceneLayers,
 } from "../domain/byosan/scene_svg.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
 import {
@@ -63,8 +63,7 @@ type TimedSegment = FeatureSegment & {
 	duration: number;
 	start: number;
 	audioPath: string;
-	scenePath: string;
-	segmentVideoPath: string;
+	render: ByosanSceneRender;
 	voice: TtsVoiceControls;
 };
 
@@ -244,36 +243,158 @@ async function characterBuffer(
 		.toBuffer();
 }
 
-async function renderScene(
-	segment: FeatureSegment,
-	render: ByosanSceneRender,
-	index: number,
-	total: number,
+function renderHeldSegment(
+	segment: TimedSegment,
+	masterPath: string,
 	outputPath: string,
-): Promise<void> {
-	const base = Buffer.from(
-		renderSceneSvg({ segment, render, index, total }, SCENE_STYLE),
+): void {
+	const entrance = F.video.remotion.entrance_frames / FPS;
+	const hold = Math.max(0, segment.duration - entrance);
+	run(
+		"ffmpeg",
+		[
+			"-y",
+			"-hide_banner",
+			"-loglevel",
+			"error",
+			"-ss",
+			(segment.index * entrance).toFixed(3),
+			"-t",
+			entrance.toFixed(3),
+			"-i",
+			masterPath,
+			"-vf",
+			`tpad=stop_mode=clone:stop_duration=${hold.toFixed(3)},trim=duration=${segment.duration.toFixed(3)},fps=${FPS},format=${F.video.pixel_format}`,
+			"-an",
+			...videoEncoderArgs(),
+			"-r",
+			String(FPS),
+			"-g",
+			String(F.video.gop),
+			"-bf",
+			String(F.video.b_frames),
+			"-pix_fmt",
+			F.video.pixel_format,
+			...colorArgs(),
+			outputPath,
+		],
+		`hold visual segment ${segment.index}`,
 	);
-	const character = await characterBuffer(segment.speaker);
-	const metadata = await sharp(character).metadata();
-	const left =
-		LANDSCAPE.character_region.x +
-		(LANDSCAPE.character_region.width -
-			(metadata.width ?? LANDSCAPE.character_region.width)) /
-			2;
-	const top =
-		LANDSCAPE.character_region.y +
-		LANDSCAPE.character_region.height -
-		(metadata.height ?? LANDSCAPE.character_region.height);
-	await sharp(base)
-		.composite([
-			{ input: character, left: Math.round(left), top: Math.round(top) },
-		])
-		.png({
-			compressionLevel: F.image.png_compression_level,
-			adaptiveFiltering: true,
-		})
-		.toFile(outputPath);
+}
+
+async function renderVisualMaster(
+	timed: TimedSegment[],
+	visualPath: string,
+	publicDir: string,
+	runDir: string,
+): Promise<void> {
+	await fs.emptyDir(publicDir);
+	const characters = new Map<
+		FeatureSegment["speaker"],
+		{ file: string; left: number; top: number }
+	>();
+	for (const [speakerIndex, speaker] of [
+		...new Set(timed.map((segment) => segment.speaker)),
+	].entries()) {
+		const buffer = await characterBuffer(speaker);
+		const metadata = await sharp(buffer).metadata();
+		const region = LANDSCAPE.character_region;
+		const file = `character-${speakerIndex}.png`;
+		await fs.writeFile(path.join(publicDir, file), buffer);
+		characters.set(speaker, {
+			file,
+			left: Math.round(
+				region.x + (region.width - (metadata.width ?? region.width)) / 2,
+			),
+			top: Math.round(
+				region.y + region.height - (metadata.height ?? region.height),
+			),
+		});
+	}
+	const scenes = await Promise.all(
+		timed.map(async (segment) => {
+			const character = characters.get(segment.speaker);
+			if (!character) {
+				throw new Error(`BYOSAN_CHARACTER_MISSING: ${segment.speaker}`);
+			}
+			const layers = renderSceneLayers(
+				{
+					segment,
+					render: segment.render,
+					index: segment.index,
+					total: timed.length,
+				},
+				SCENE_STYLE,
+			);
+			const files = Object.fromEntries(
+				await Promise.all(
+					Object.entries(layers).map(async ([name, svg]) => {
+						const file = `scene-${segment.index}-${name}.svg`;
+						await fs.writeFile(path.join(publicDir, file), svg);
+						return [name, file] as const;
+					}),
+				),
+			);
+			return {
+				...files,
+				character: character.file,
+				characterLeft: character.left,
+				characterTop: character.top,
+			};
+		}),
+	);
+	const propsPath = path.join(publicDir, "props.json");
+	await fs.writeJson(propsPath, {
+		width: WIDTH,
+		height: HEIGHT,
+		fps: FPS,
+		entranceFrames: F.video.remotion.entrance_frames,
+		scenes,
+	});
+	const entrancePath = path.join(publicDir, "entrance.mp4");
+	run(
+		"node",
+		[
+			"src/remotion/render.mjs",
+			propsPath,
+			entrancePath,
+			F.video.remotion.browser,
+			String(F.video.remotion.crf),
+			publicDir,
+		],
+		"render entrance clips",
+	);
+	const segmentDir = path.join(path.dirname(visualPath), "segments");
+	await fs.emptyDir(segmentDir);
+	const segments = timed.map((segment) => {
+		const segmentPath = path.join(segmentDir, `${segment.index}.mp4`);
+		renderHeldSegment(segment, entrancePath, segmentPath);
+		return segmentPath;
+	});
+	const listPath = path.join(runDir, RUN.video_concat_list);
+	fs.writeFileSync(
+		listPath,
+		`ffconcat version 1.0\n${segments.map((file) => `file '${file.replaceAll("'", "'\\''")}'`).join("\n")}\n`,
+	);
+	run(
+		"ffmpeg",
+		[
+			"-y",
+			"-hide_banner",
+			"-loglevel",
+			"error",
+			"-f",
+			"concat",
+			"-safe",
+			"0",
+			"-i",
+			listPath,
+			"-c",
+			"copy",
+			visualPath,
+		],
+		"concat visuals",
+	);
 }
 
 async function renderThumbnail(
@@ -512,87 +633,6 @@ function colorArgs(): string[] {
 		"-colorspace",
 		standard,
 	];
-}
-
-function renderVisualSegment(segment: TimedSegment): void {
-	const fadeInSeconds =
-		segment.index === 0
-			? F.video.first_fade_in_seconds
-			: F.video.fade_in_seconds;
-	const filter = [
-		`scale=${WIDTH}:${HEIGHT}:flags=${F.video.scale_flags}`,
-		staticSceneMotionFilter(FPS),
-		`fade=t=in:st=0:d=${fadeInSeconds}`,
-		`format=${F.video.pixel_format}`,
-	].join(",");
-	run(
-		"ffmpeg",
-		[
-			"-y",
-			"-hide_banner",
-			"-loglevel",
-			"error",
-			"-loop",
-			"1",
-			"-framerate",
-			String(FPS),
-			"-i",
-			segment.scenePath,
-			"-t",
-			segment.duration.toFixed(3),
-			"-vf",
-			filter,
-			"-an",
-			...videoEncoderArgs(),
-			"-r",
-			String(FPS),
-			"-g",
-			String(F.video.gop),
-			"-bf",
-			String(F.video.b_frames),
-			"-pix_fmt",
-			F.video.pixel_format,
-			...colorArgs(),
-			segment.segmentVideoPath,
-		],
-		`render visual segment ${segment.index}`,
-	);
-}
-
-function concatVisuals(
-	timed: TimedSegment[],
-	outputPath: string,
-	runDir: string,
-): void {
-	const listPath = path.join(runDir, RUN.video_concat_list);
-	fs.writeFileSync(
-		listPath,
-		`ffconcat version 1.0\n${timed
-			.map(
-				(segment) =>
-					`file '${segment.segmentVideoPath.replaceAll("'", "'\\''")}'`,
-			)
-			.join("\n")}\n`,
-	);
-	run(
-		"ffmpeg",
-		[
-			"-y",
-			"-hide_banner",
-			"-loglevel",
-			"error",
-			"-f",
-			"concat",
-			"-safe",
-			"0",
-			"-i",
-			listPath,
-			"-c",
-			"copy",
-			outputPath,
-		],
-		"concat visuals",
-	);
 }
 
 function concatNarration(
@@ -1048,13 +1088,9 @@ async function main(): Promise<void> {
 		spec.runId,
 	);
 	const audioDir = path.join(runDir, RUN.audio_dir);
-	const sceneDir = path.join(runDir, RUN.scene_dir);
-	const segmentVideoDir = path.join(runDir, RUN.segment_video_dir);
 	const videoDir = path.join(runDir, RUN.video_dir);
 	await Promise.all([
 		fs.ensureDir(audioDir),
-		fs.ensureDir(sceneDir),
-		fs.ensureDir(segmentVideoDir),
 		fs.ensureDir(videoDir),
 		fs.ensureDir(path.join(runDir, RUN.audit_dir)),
 		fs.ensureDir(path.join(runDir, RUN.publish_dir)),
@@ -1096,13 +1132,8 @@ async function main(): Promise<void> {
 		const key = createHash("sha256")
 			.update(JSON.stringify({ index, segment }))
 			.digest("hex");
-		const sceneKey = createHash("sha256")
-			.update(JSON.stringify({ segment, render }))
-			.digest("hex");
 		const stem = `${String(index).padStart(3, "0")}-${key}`;
 		const audioPath = path.join(audioDir, `${stem}.wav`);
-		const scenePath = path.join(sceneDir, `${stem}-${sceneKey}.png`);
-		const segmentVideoPath = path.join(segmentVideoDir, `${stem}.mp4`);
 		const speakerId = VOICEVOX.speakers[segment.speaker];
 		const voice = capVoiceControls(
 			F.tts.voice_presets[segment.emotion],
@@ -1120,20 +1151,13 @@ async function main(): Promise<void> {
 			await fs.writeFile(audioPath, result.audio);
 		}
 		const duration = audioDuration(audioPath);
-		if (!(await fs.pathExists(scenePath))) {
-			console.log(
-				`[SCENE ${index + 1}/${speechParts.length}] ${segment.headline}`,
-			);
-			await renderScene(segment, render, index, speechParts.length, scenePath);
-		}
 		timed.push({
 			...segment,
 			index,
 			duration,
 			start: cursor,
 			audioPath,
-			scenePath,
-			segmentVideoPath,
+			render,
 			voice,
 		});
 		cursor += duration;
@@ -1163,17 +1187,14 @@ async function main(): Promise<void> {
 	const subtitlePath = path.join(runDir, FILENAMES.subtitles);
 	await fs.writeFile(subtitlePath, generateAss(timed));
 	const thumbnail = await renderThumbnail(spec, runDir, heroPath);
-	for (const segment of timed) {
-		if (!(await fs.pathExists(segment.segmentVideoPath))) {
-			console.log(
-				`[VIDEO ${segment.index + 1}/${timed.length}] ${segment.duration.toFixed(2)}s`,
-			);
-			renderVisualSegment(segment);
-		}
-	}
 	const visualPath = path.join(videoDir, RUN.visual_master);
 	const narrationPath = path.join(audioDir, FILENAMES.audio_full);
-	concatVisuals(timed, visualPath, runDir);
+	await renderVisualMaster(
+		timed,
+		visualPath,
+		path.join(videoDir, RUN.remotion_public),
+		runDir,
+	);
 	concatNarration(timed, narrationPath, runDir);
 	const finalPath = path.join(videoDir, RUN.publish_video);
 	composeFinal(visualPath, narrationPath, subtitlePath, cursor, finalPath);

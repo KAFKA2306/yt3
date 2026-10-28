@@ -142,10 +142,10 @@ function dataRegionContent(
 	}
 }
 
-export function renderSceneSvg(
+function sceneParts(
 	{ segment, render, index, total }: SceneSvgInput,
 	style: SceneSvgStyle,
-): string {
+) {
 	const { design, feature: F, identity } = style;
 	const LANDSCAPE = design.landscape;
 	const WIDTH = design.canvas.landscape.width;
@@ -202,7 +202,7 @@ export function renderSceneSvg(
 		LANDSCAPE.source.max_width,
 		F.captions.half_width_units,
 	);
-	return `
+	const wrap = (inner: string): string => `
 	<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
 		<defs>
 			<style>
@@ -217,6 +217,9 @@ export function renderSceneSvg(
 				.source { fill:${design.colors.text_muted}; font-size:${LANDSCAPE.source.font_size}px; font-weight:${LANDSCAPE.source.font_weight}; }
 			</style>
 		</defs>
+		${inner}
+	</svg>`;
+	const frame = `
 		<rect width="${WIDTH}" height="${HEIGHT}" fill="${design.colors.background}"/>
 		<rect x="${LANDSCAPE.outer_frame.x}" y="${LANDSCAPE.outer_frame.y}" width="${LANDSCAPE.outer_frame.width}" height="${LANDSCAPE.outer_frame.height}" rx="${LANDSCAPE.outer_frame.radius}" fill="none" stroke="${LANDSCAPE.outer_frame.color}" stroke-opacity="${LANDSCAPE.outer_frame.opacity}" stroke-width="${LANDSCAPE.outer_frame.stroke_width}"/>
 		<rect x="${LANDSCAPE.caption_band.x}" y="${LANDSCAPE.caption_band.y}" width="${LANDSCAPE.caption_band.width}" height="${LANDSCAPE.caption_band.height}" fill="${LANDSCAPE.caption_band.color}" fill-opacity="${LANDSCAPE.caption_band.opacity}"/>
@@ -229,6 +232,9 @@ export function renderSceneSvg(
 		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${LANDSCAPE.progress.width}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${LANDSCAPE.progress.track}"/>
 		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${Math.round(LANDSCAPE.progress.width * ((index + 1) / total))}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${accent}"/>
 		<text x="${LANDSCAPE.section_label.x}" y="${LANDSCAPE.section_label.baseline_y}" class="section" style="font-size:${sectionSize}px">${xml(segment.section)}</text>
+		<text x="${LANDSCAPE.source.x}" y="${LANDSCAPE.source.baseline_y}" class="source" style="font-size:${sourceSize}px">${F.scene.source_label}  ${xml(segment.source)}</text>
+`;
+	const textLayer = `
 		${
 			hasData
 				? `
@@ -237,13 +243,41 @@ export function renderSceneSvg(
 		`
 				: ""
 		}
+`;
+	const dataLayer = `
 		${dataRegionContent(render, style)}
 		${questionMark}
+`;
+	const chipLayer = `
 		<g transform="translate(${LANDSCAPE.speaker_chip.x},${LANDSCAPE.speaker_chip.y})">
 			<rect width="${LANDSCAPE.speaker_chip.width}" height="${LANDSCAPE.speaker_chip.height}" rx="${LANDSCAPE.speaker_chip.radius}" fill="${design.colors.surface}" stroke="${speakerColor}" stroke-width="${LANDSCAPE.speaker_chip.stroke_width}"/>
 			<text x="${LANDSCAPE.speaker_chip.text_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.baseline_y - LANDSCAPE.speaker_chip.y}" font-size="${LANDSCAPE.speaker_chip.font_size}" font-weight="${LANDSCAPE.speaker_chip.font_weight}" fill="${speakerColor}">${xml(segment.speaker)}</text>
 			<text x="${LANDSCAPE.speaker_chip.emotion_x - LANDSCAPE.speaker_chip.x}" y="${LANDSCAPE.speaker_chip.emotion_baseline_y - LANDSCAPE.speaker_chip.y}" text-anchor="end" font-size="${LANDSCAPE.speaker_chip.emotion_font_size}" font-weight="${LANDSCAPE.speaker_chip.emotion_font_weight}" fill="${design.colors.text_secondary}">${xml(emotionLabel)}</text>
 		</g>
-		<text x="${LANDSCAPE.source.x}" y="${LANDSCAPE.source.baseline_y}" class="source" style="font-size:${sourceSize}px">${F.scene.source_label}  ${xml(segment.source)}</text>
-	</svg>`;
+`;
+	return { wrap, frame, textLayer, dataLayer, chipLayer };
+}
+
+export function renderSceneSvg(
+	input: SceneSvgInput,
+	style: SceneSvgStyle,
+): string {
+	const { wrap, frame, textLayer, dataLayer, chipLayer } = sceneParts(
+		input,
+		style,
+	);
+	return wrap(frame + textLayer + dataLayer + chipLayer);
+}
+
+export function renderSceneLayers(input: SceneSvgInput, style: SceneSvgStyle) {
+	const { wrap, frame, textLayer, dataLayer, chipLayer } = sceneParts(
+		input,
+		style,
+	);
+	return {
+		frame: wrap(frame),
+		text: wrap(textLayer),
+		data: wrap(dataLayer),
+		chip: wrap(chipLayer),
+	};
 }
