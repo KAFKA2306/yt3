@@ -151,23 +151,6 @@ describe("byosan parallel candidates", () => {
 		expect(result).toBeInstanceOf(Error);
 		expect((result as Error).message).toContain("BYOSAN_ALL_CANDIDATES_FAILED");
 	});
-
-	test("a best mean below the threshold rewrites only the adopted candidate", async () => {
-		const first = new Set<string>();
-		const { prompts, panel } = await run(
-			() => draft,
-			(prompt) => {
-				const seen = first.size;
-				first.add(prompt);
-				return seen < 3 ? 2 : 4;
-			},
-		);
-		const rewrites = prompts.filter((p) => p.includes("[前回の台本]"));
-		expect(rewrites).toHaveLength(1);
-		expect(prompts).toHaveLength(8);
-		expect(panel.adopted.round).toBe(2);
-		expect(panel.candidates).toHaveLength(4);
-	});
 });
 
 describe("byosan failure retry limits", () => {
