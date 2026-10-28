@@ -2,12 +2,9 @@ import { z } from "zod";
 import { loadConfig } from "../../io/core.js";
 
 const PanelConfigSchema = z.object({
-	threshold: z.number().min(1).max(5),
-	max_rounds: z.number().int().min(1),
 	candidates: z.number().int().min(1),
 	candidate_instruction: z.string().min(1),
 	review_system: z.string().min(1),
-	rewrite_instruction: z.string().min(1),
 	personas: z
 		.array(
 			z.object({ name: z.string().min(1), description: z.string().min(1) }),
@@ -72,12 +69,6 @@ export function renderPanelReviewPrompt(
 		"[台本]",
 		script,
 	].join("\n");
-}
-
-export function renderPanelFeedback(review: PanelReview): string {
-	return review.reviews
-		.map((entry) => `- ${entry.persona}（${entry.score}点）: ${entry.fix}`)
-		.join("\n");
 }
 
 export function bestRound<T extends { mean: number }>(rounds: T[]): T {
