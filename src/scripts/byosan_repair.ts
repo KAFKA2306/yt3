@@ -33,7 +33,7 @@ function main(): void {
 		.regex(/^\d{4}-\d{2}-\d{2}$/)
 		.parse(process.env.BYOSAN_DATE);
 	const { workflow, repair } = ConfigSchema.parse(loadConfig("byosan_money"));
-	const runId = `${workflow.default_bucket}/${date}-daily`;
+	const runId = `${workflow.default_bucket}/${date}-daily${process.env.BYOSAN_SUFFIX ?? ""}`;
 	const runDir = path.join(ROOT, workflow.paths.runs_dir, runId);
 	if (!fs.existsSync(runDir)) throw new Error(`RUN_NOT_FOUND: ${runDir}`);
 

@@ -41,6 +41,17 @@ export type PublishDailyDeps = {
 	runTask: TaskRunner;
 };
 
+export function tokyoClock(now: Date, timezone: string): string {
+	return new Intl.DateTimeFormat("en-GB", {
+		timeZone: timezone,
+		hour: "2-digit",
+		minute: "2-digit",
+		hourCycle: "h23",
+	})
+		.format(now)
+		.replace(":", "");
+}
+
 export function tokyoDate(now: Date, timezone: string): string {
 	return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(now);
 }
@@ -127,19 +138,9 @@ export function runByosanPublishDaily(deps: PublishDailyDeps): void {
 		);
 		return;
 	}
-	const runId = `${DOMAIN_ID}/${date}-daily`;
-	const existing = findPublishedByosanRunForDate(deps.root, date);
-	if (existing?.verified) {
-		console.log(
-			`ALREADY_PUBLISHED=${existing.runId} VIDEO_ID=${existing.videoId ?? "unknown"}`,
-		);
-		return;
-	}
-	if (existing) {
-		throw new Error(
-			`DUPLICATE_PUBLISH_BLOCKED: ${existing.runId} ${existing.reason}`,
-		);
-	}
+	const suffix = `-${tokyoClock(deps.now, deps.timezone)}`;
+	const runId = `${DOMAIN_ID}/${date}-daily${suffix}`;
+	process.env.BYOSAN_SUFFIX = suffix;
 
 	const file = recordFile(deps.root, runId);
 	const existingRecord = fs.existsSync(file)
@@ -171,7 +172,10 @@ export function runByosanPublishDaily(deps: PublishDailyDeps): void {
 			`PUBLISH_FAILED: ${runId} status=${published.status} record=PUBLISH_ATTEMPTED`,
 		);
 	}
-	const evidence = findPublishedByosanRunForDate(deps.root, date);
+	const evidence = findPublishedByosanRunForDate(
+		deps.root,
+		`${date}-daily${suffix}`,
+	);
 	if (!evidence?.verified || evidence.runId !== runId) {
 		throw new Error(
 			`PUBLISH_EVIDENCE_INCOMPLETE: ${runId} ${evidence?.reason ?? "missing_receipt"}`,

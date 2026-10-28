@@ -114,7 +114,7 @@ function loadDigestInputs(
 	}
 	const discovered = fs
 		.readdirSync(bucketDir)
-		.filter((name) => /^\d{4}-\d{2}-\d{2}-daily$/.test(name))
+		.filter((name) => /^\d{4}-\d{2}-\d{2}-daily(-\d{4})?$/.test(name))
 		.filter((name) => {
 			const date = name.slice(0, 10);
 			return date >= start && date <= end;

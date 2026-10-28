@@ -3,9 +3,7 @@ Description=Timer for YT3 Byosan Money Daily Video Publication
 
 [Timer]
 OnCalendar=*-*-* 04:00:00 Asia/Tokyo
-OnCalendar=*-*-* 07:00:00 Asia/Tokyo
-OnCalendar=*-*-* 10:00:00 Asia/Tokyo
-OnCalendar=*-*-* 13:00:00 Asia/Tokyo
+OnCalendar=*-*-* 12:00:00 Asia/Tokyo
 Persistent=true
 Unit=yt3-byosan-daily.service
 
