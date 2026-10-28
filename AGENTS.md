@@ -27,6 +27,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - Publication is an irreversible external side effect. Use only `task publish PROFILE=<profile> -- <run-id>` or the product's daily entry, and only when the release gate reports PASS for that exact run and artifact and `publish_approved` is enabled in `config/domains/`.
 - A byosan run is publish-ready only when preparation prints `[product-release-gate] PASS ... artifact_sha256=<sha256>`, `PUBLISH_READY_RUN=<run-id>`, and `PUBLISH_COMMAND=...`. Record the run id, SHA-256, and command in the governing Issue. If any condition fails, stop. Do not bypass or retry around a failed gate.
 - `DATE` must be given explicitly in `YYYY-MM-DD`. Never infer today.
+- Byosan publishes one or more videos a day, never zero. Each run is named `<date>-daily-<HHmm>` (`BYOSAN_SUFFIX`); an already-published day does not stop another run, and only a source reused within `discovery.repeat_window_days` is rejected. The timer slots are in `systemd/yt3-byosan-daily.timer`.
 - Standing authorization: daily publication of `yawa`, `byosan`, and `humanity` through their canonical Taskfile entries once the gate passes. Manual `yawa` publication outside the daily path is not covered. `yawa` metadata changes go only through `task yawa:metadata`.
 - Publication is VERIFIED only after remote receipt and read-back.
 
@@ -46,6 +47,10 @@ Current Claude models follow prompts closely, so over-specified prompts and stac
 The byosan topic and script come from one LLM call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. The number, source, and published-source checks run deterministically against those articles, and a failed check rewrites the same call with the findings attached, up to `llm.max_attempts`.
 
 LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). The persona panel review always runs on `claude` (Haiku via `claude -p`, subscription login only: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed from the child environment, so no metered billing). When `codex` hits a usage or rate limit, the same call is redone on `llm.fallback_backend` within the same run and the switch is recorded as a `fallback` event in `audit/llm_calls.jsonl`; a limit on `claude` fails the run explicitly. The deterministic script checks are identical for every backend. Script generation writes `llm.panel.candidates` candidate scripts in parallel, scores each with the persona panel, and adopts the highest mean. The panel score is a reference for quality direction only; no score blocks or reshapes a run, and daily publication is mandatory. The record is `audit/panel.json`.
+
+## Byosan visuals and titles
+
+Slides are built as layers by `src/domain/byosan/scene_svg.ts` and animated by the Remotion composition in `src/remotion`, which renders only the entrance of each scene; FFmpeg holds the last frame and concatenates, and captions and audio are mastered by FFmpeg as before. Scenes without data (question or none) show no headline text, so the slide never repeats the caption. The title is one strong simple question set by `discovery.title_rule`; that questions raise click-through is UNVERIFIED and is measured against real viewer metrics (#416).
 
 ## Evidence and credentials
 
