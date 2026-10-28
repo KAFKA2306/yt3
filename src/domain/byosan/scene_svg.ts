@@ -175,6 +175,7 @@ export function renderSceneSvg(
 		segment.emotion === "caution" || segment.emotion === "serious"
 			? identity.warning
 			: identity.primaryAccent;
+	const hasData = render.kind !== "question" && render.kind !== "none";
 	const emotionLabel = F.emotion_labels[segment.emotion];
 	const Q = F.scene.question_mark;
 	const questionMark =
@@ -228,8 +229,14 @@ export function renderSceneSvg(
 		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${LANDSCAPE.progress.width}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${LANDSCAPE.progress.track}"/>
 		<rect x="${LANDSCAPE.progress.x}" y="${LANDSCAPE.progress.y}" width="${Math.round(LANDSCAPE.progress.width * ((index + 1) / total))}" height="${LANDSCAPE.progress.height}" rx="${LANDSCAPE.progress.radius}" fill="${accent}"/>
 		<text x="${LANDSCAPE.section_label.x}" y="${LANDSCAPE.section_label.baseline_y}" class="section" style="font-size:${sectionSize}px">${xml(segment.section)}</text>
+		${
+			hasData
+				? `
 		<text x="${LANDSCAPE.headline.x}" y="${LANDSCAPE.headline.baseline_y}" class="headline" font-size="${headlineSize}">${tspans(headlineLines, LANDSCAPE.headline.x, LANDSCAPE.headline.baseline_y, headlineLineHeight)}</text>
 		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline" style="font-size:${subheadlineSize}px">${xml(segment.subheadline)}</text>
+		`
+				: ""
+		}
 		${dataRegionContent(render, style)}
 		${questionMark}
 		<g transform="translate(${LANDSCAPE.speaker_chip.x},${LANDSCAPE.speaker_chip.y})">

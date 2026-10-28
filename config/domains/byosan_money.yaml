@@ -656,7 +656,7 @@ feature_production:
     stat_value_max_lines: 2
     stat_value_letter_spacing_px: -1
     source_label: "SOURCE"
-    question_mark: {right_inset: 80, baseline_offset: 78, font_size: 310, opacity: 0.10}
+    question_mark: {right_inset: 80, baseline_offset: 78, font_size: 310, opacity: 0.2}
   thumbnail:
     jpeg_quality: 92
     jpeg_chroma_subsampling: "4:4:4"
