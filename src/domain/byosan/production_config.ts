@@ -65,20 +65,6 @@ const RectOffsetSchema = z.object({
 	opacity: z.number().min(0).max(1),
 });
 
-const SpeakerPointerSchema = z.object({
-	start_x: nonNegativeNumber,
-	start_bottom: nonNegativeNumber,
-	control1_x: nonNegativeNumber,
-	control1_bottom: nonNegativeNumber,
-	control2_x: nonNegativeNumber,
-	control2_bottom: nonNegativeNumber,
-	end_x: nonNegativeNumber,
-	end_bottom: nonNegativeNumber,
-	stroke_opacity: z.number().min(0).max(1),
-	stroke_width: positiveInteger,
-	dot_radius: positiveInteger,
-});
-
 const BedToneSchema = z.object({
 	frequency_hz: z.number().positive(),
 	amplitude: z.number().positive(),
@@ -203,7 +189,6 @@ const FeatureProductionSchema = z.object({
 		stat_value_letter_spacing_px: z.number(),
 		source_label: nonEmptyString,
 		question_mark: RectOffsetSchema,
-		speaker_pointer: SpeakerPointerSchema,
 	}),
 	thumbnail: z.object({
 		jpeg_quality: z.number().int().min(1).max(100),

@@ -657,7 +657,6 @@ feature_production:
     stat_value_letter_spacing_px: -1
     source_label: "SOURCE"
     question_mark: {right_inset: 80, baseline_offset: 78, font_size: 310, opacity: 0.10}
-    speaker_pointer: {start_x: 38, start_bottom: 159, control1_x: 86, control1_bottom: 206, control2_x: 132, control2_bottom: 236, end_x: 190, end_bottom: 246, stroke_opacity: 0.30, stroke_width: 5, dot_radius: 7}
   thumbnail:
     jpeg_quality: 92
     jpeg_chroma_subsampling: "4:4:4"
@@ -754,6 +753,7 @@ feature_draft:
     話の流れは、題材に合う身近な例があればそこから入り、結論、数字、なぜそうなるか、次に確かめることへ進むと分かりやすくなります。春日部つむぎが解説し、ずんだもんが素朴な疑問や驚きを口にします。
     explanation の figures の value（数字と単位）は、segments の text か stats.value のどちらかに含めます。
     タイトル、サムネイル、概要欄は、台本と同じ題材を指すようにします。
+    各場面の画面の文字は、字幕（台詞）と役割を分けます。headline は、その場面で見せたい要点を短い名詞句や結論で書き、台詞の言い換えや写しにしません。subheadline は、headline を補う数字の意味や条件を書き、台詞の一部や話者の役割名（ボケ、ツッコミ）にしません。補うことがない場面は、数字の単位や比べる基準を書きます。
 
 feature_review:
   blocking_codes:
