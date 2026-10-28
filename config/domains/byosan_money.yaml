@@ -529,13 +529,12 @@ feature_production:
     media_output: "output.yaml"
     audio_dir: "media/audio"
     audio_manifest: "manifest.json"
-    scene_dir: "media/scenes"
     video_dir: "media/video"
-    segment_video_dir: "media/video/segments"
-    video_concat_list: "media/video/segments.ffconcat"
     audio_concat_list: "media/audio/segments.ffconcat"
     thumbnail_jpg: "thumbnail_youtube.jpg"
     visual_master: "visual_master.mp4"
+    remotion_public: "remotion_public"
+    video_concat_list: "media/video/segments.ffconcat"
     publish_video: "publish_video.mp4"
     audit_dir: "audit"
     production_report: "production_quality_report.json"
@@ -607,9 +606,8 @@ feature_production:
       - {frequency_hz: 55, amplitude: 0.006, lfo_hz: 0.10, lfo_offset: 0.72, lfo_depth: 0.28}
       - {frequency_hz: 82.41, amplitude: 0.0035, lfo_hz: 0.067, lfo_offset: 0.62, lfo_depth: 0.38}
   video:
+    remotion: {browser: "/usr/bin/google-chrome", crf: 14, entrance_frames: 30}
     scale_flags: "lanczos"
-    first_fade_in_seconds: 0.35
-    fade_in_seconds: 0.10
     gop: 15
     b_frames: 2
     h264_profile: "high"
