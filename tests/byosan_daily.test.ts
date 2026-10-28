@@ -42,7 +42,7 @@ async function makeRunDir(): Promise<string> {
 describe("byosan daily duplicate-publication gate", () => {
 	test("returns null when the date has no upload receipt", async () => {
 		const root = await makeRoot();
-		expect(findPublishedByosanRunForDate(root, "2026-08-02")).toBeNull();
+		expect(findPublishedByosanRunForDate(root, "2026-08-02-daily")).toBeNull();
 	});
 
 	test("blocks duplicate upload when receipt exists but attestations are incomplete", async () => {
@@ -59,7 +59,7 @@ describe("byosan daily duplicate-publication gate", () => {
 				privacy_status: "public",
 			},
 		});
-		const result = findPublishedByosanRunForDate(root, "2026-08-02");
+		const result = findPublishedByosanRunForDate(root, "2026-08-02-daily");
 		expect(result?.verified).toBe(false);
 		expect(result?.reason).toContain("attestation_is_incomplete");
 	});
@@ -87,7 +87,7 @@ describe("byosan daily duplicate-publication gate", () => {
 				api_update_status: "succeeded",
 			}),
 		]);
-		const result = findPublishedByosanRunForDate(root, "2026-08-02");
+		const result = findPublishedByosanRunForDate(root, "2026-08-02-daily");
 		expect(result).toMatchObject({
 			runId: "byosan_money/2026-08-02-daily",
 			verified: true,

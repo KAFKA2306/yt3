@@ -113,10 +113,10 @@ tasks:
           exit 2
         fi
       - BYOSAN_DATE={{.DATE}} task byosan:daily
-      - task release:check PROFILE=byosan -- byosan_money/{{.DATE}}-daily
+      - task release:check PROFILE=byosan -- byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}
       - |
-        echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily"
-        echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily"
+        echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}"
+        echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}"
 
   byosan:repair:
     desc: "Repair one failed 秒算マネー daily run from its failure_trace with codex (DATE=YYYY-MM-DD required)"

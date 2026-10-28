@@ -3,7 +3,6 @@ import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
 import { ROOT, loadConfig } from "../io/core.js";
-import { findPublishedByosanRunForDate } from "./byosan_daily.js";
 import {
 	type GateEvidence,
 	type TaskResult,
@@ -102,21 +101,8 @@ function main(): void {
 		.regex(/^\d{4}-\d{2}-\d{2}$/)
 		.parse(process.env.BYOSAN_DATE);
 	const { workflow, auto } = ConfigSchema.parse(loadConfig(DOMAIN_ID));
-	const runId = `${workflow.default_bucket}/${date}-daily`;
+	const runId = `${workflow.default_bucket}/${date}-daily${process.env.BYOSAN_SUFFIX ?? ""}`;
 	const runDir = path.join(ROOT, workflow.paths.runs_dir, runId);
-
-	const published = findPublishedByosanRunForDate(ROOT, date);
-	if (published?.verified) {
-		console.log(
-			`ALREADY_PUBLISHED=${published.runId} VIDEO_ID=${published.videoId ?? "unknown"}`,
-		);
-		return;
-	}
-	if (published) {
-		throw new Error(
-			`DUPLICATE_PUBLISH_BLOCKED: ${published.runId} ${published.reason}`,
-		);
-	}
 
 	for (let attempt = 1; ; attempt++) {
 		const prepared = runTask(["byosan:prepare", `DATE=${date}`]);

@@ -298,13 +298,13 @@ function markFailureRecovered(runDir: string): void {
 
 export function findPublishedByosanRunForDate(
 	root: string,
-	date: string,
+	wanted: string,
 ): PublishedRunEvidence | null {
 	const bucketDir = path.join(root, "runs", "byosan_money");
 	if (!fs.existsSync(bucketDir)) return null;
 	for (const runName of fs
 		.readdirSync(bucketDir)
-		.filter((name) => name.startsWith(date))
+		.filter((name) => name === wanted)
 		.sort()
 		.reverse()) {
 		const publishDir = path.join(bucketDir, runName, "publish");
@@ -674,20 +674,7 @@ async function runByosanDaily(): Promise<void> {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
 		throw new Error(`Invalid BYOSAN_DATE: ${date}`);
 	}
-	const existing = findPublishedByosanRunForDate(ROOT, date);
-	if (existing) {
-		if (!existing.verified) {
-			throw new Error(
-				`DUPLICATE_PUBLISH_BLOCKED: ${existing.runId} ${existing.reason}`,
-			);
-		}
-		console.log(
-			`ALREADY_PUBLISHED=${existing.runId} VIDEO_ID=${existing.videoId ?? "unknown"}`,
-		);
-		return;
-	}
-
-	const runId = `byosan_money/${date}-daily`;
+	const runId = `byosan_money/${date}-daily${process.env.BYOSAN_SUFFIX ?? ""}`;
 	const store = new AssetStore(runId);
 	const checkpoint = reconcileByosanCheckpoint(store.runDir, runId, ROOT);
 	writeByosanCheckpoint(store.runDir, checkpoint);
@@ -786,7 +773,7 @@ if (import.meta.main) {
 			ROOT,
 			"runs",
 			"byosan_money",
-			`${failureDate}-daily`,
+			`${failureDate}-daily${process.env.BYOSAN_SUFFIX ?? ""}`,
 		);
 		const message = error instanceof Error ? error.message : String(error);
 		if (

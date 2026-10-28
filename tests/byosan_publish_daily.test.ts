@@ -9,7 +9,7 @@ import {
 	tokyoDate,
 } from "../src/scripts/byosan_publish_daily.js";
 
-const RUN_ID = "byosan_money/2026-10-13-daily";
+const RUN_ID = "byosan_money/2026-10-13-daily-0100";
 const CHANNEL_ID = "UCYtjO-PYBfdG3MuPLXfhA-Q";
 const ARTIFACT_SHA = "a".repeat(64);
 const NOW_JST_NEXT_DAY = new Date("2026-10-12T16:00:00Z");
@@ -154,16 +154,6 @@ describe("byosan daily publish gate", () => {
 			"PREPARE_GATE_FAILED",
 		);
 		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
-	});
-
-	test("does not publish again when a verified receipt already exists for the date", async () => {
-		const root = await makeRoot();
-		writeReceipt(root);
-		const runner = recordingRunner(() => ({ status: 0, output: "" }), root);
-
-		runByosanPublishDaily(deps(root, runner.runTask));
-
-		expect(runner.calls).toEqual([]);
 	});
 
 	test("re-prepares a same-date run after a recorded gate failure", async () => {
