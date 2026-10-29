@@ -8,7 +8,7 @@ yue:
   min_free_vram_mib: 9000
   snapshot_dir: /home/kafka/.cache/hf-kafka/hub/models--m-a-p--YuE2-3B/snapshots
 output_dir: runs/humanity_music
-style_template: "{genre}, {tempo}, {key}, {texture}, {vocal}"
+style_template: "{genre}, {tempo}, {key}, {lead}, {rhythm}, {vocal}"
 temperature: 0.9
 playlist:
   file: playlist.m3u8
@@ -18,11 +18,12 @@ rating:
   min: 1
   max: 5
 axes:
-  genre: [Japanese technopop, electropop, chillwave, city pop, dream pop synthpop, future pop]
-  tempo: ["96 BPM", "110 BPM", "124 BPM", "128 BPM", "140 BPM"]
-  key: [C major, A minor, D major, F# minor, E minor, G major]
-  texture: [warm analog pads, crisp FM electric piano, bright saw arpeggios, glassy bell plucks, soft sidechained chords, shimmering detuned supersaw]
-  vocal: [processed female vocal with vocoder, airy breathy female vocal, bright pitch-corrected female vocal, sweet soft female vocal with long reverb, playful female vocal with light doubling]
+  genre: [Japanese technopop, electro house, electropop, future pop, dance pop, eurobeat influenced rave pop, eurobeat]
+  tempo: ["124 BPM", "128 BPM", "130 BPM", "132 BPM", "134 BPM", "140 BPM", "150 BPM"]
+  key: [C major, A minor, D major, F# minor, E minor, G major, Eb major]
+  lead: [detuned supersaw lead, bright saw arpeggios, staccato synth stabs, punchy FM bass lead, glassy digital bell lead, bright saw lead with brass stabs]
+  rhythm: [sidechained pumping bass with four on the floor kick, filter sweeps with crisp digital hi-hats, sidechained chords with tight kick, glitchy percussion with rolling bass, sequenced octave bass with tight drums]
+  vocal: [cute bright synthetic female vocal, robotic autotuned female vocal, vocoder female vocal, bright pitch-corrected female vocal, processed female vocal with unison doubling, stuttered vocal chops female]
 structure: [Verse, Chorus, Verse, Chorus, Bridge, Chorus]
 lines_per_section: 4
 trend_rule: 作詞の前にウェブ検索で、今日の日本で話題の出来事・流行語・ヒット作・SNSの空気を調べ、その中から1つを題材の核にする。固有名詞や他者の作品の歌詞は使わず、そこに暮らす人の不器用さと愛おしさを書く。
