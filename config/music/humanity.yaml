@@ -19,15 +19,15 @@ rating:
   max: 5
 axes:
   genre: [Japanese technopop, electro house, electropop, future pop, dance pop, eurobeat influenced rave pop, eurobeat]
-  tempo: ["124 BPM", "128 BPM", "130 BPM", "132 BPM", "134 BPM", "140 BPM", "150 BPM"]
+  tempo: ["124 BPM", "128 BPM", "130 BPM", "132 BPM", "134 BPM", "140 BPM", "150 BPM", "160 BPM", "164 BPM"]
   key: [C major, A minor, D major, F# minor, E minor, G major, Eb major]
   lead: [detuned supersaw lead, bright saw arpeggios, staccato synth stabs, punchy FM bass lead, glassy digital bell lead, bright saw lead with brass stabs]
-  rhythm: [sidechained pumping bass with four on the floor kick, filter sweeps with crisp digital hi-hats, sidechained chords with tight kick, glitchy percussion with rolling bass, sequenced octave bass with tight drums]
+  rhythm: [sidechained pumping bass with four on the floor kick, filter sweeps with crisp digital hi-hats, sidechained chords with tight kick, glitchy percussion with rolling bass, sequenced octave bass with tight drums, staccato gated synth pluck arpeggios]
   vocal: [cute bright synthetic female vocal, robotic autotuned female vocal, vocoder female vocal, bright pitch-corrected female vocal, processed female vocal with unison doubling, stuttered vocal chops female]
-structure: [Verse, Chorus, Verse, Chorus, Bridge, Chorus]
+structure: [Verse, Pre-Chorus, Chorus, Verse, Pre-Chorus, Chorus, Bridge, Chorus]
 lines_per_section: 4
 trend_rule: 作詞の前にウェブ検索で、今日の日本で話題の出来事・流行語・ヒット作・SNSの空気を調べ、その中から1つを題材の核にする。固有名詞や他者の作品の歌詞は使わず、そこに暮らす人の不器用さと愛おしさを書く。
-lyrics_rule: 題材は音楽ジャンル以外すべて自由。過去のタイトルと題材・主要な名詞が重ならない新しい題材を選ぶ。人類の不器用さを愛おしむ温度で、専門用語で威張らず、既存曲の歌詞や固有の言い回しを使わない。日本語で書く。Chorusは毎回同じ歌詞、VerseとBridgeは毎回違う歌詞にする。
+lyrics_rule: 題材は音楽ジャンル以外すべて自由。過去のタイトルと題材・主要な名詞が重ならない新しい題材を選ぶ。人類の不器用さを愛おしむ温度で、専門用語で威張らず、既存曲の歌詞や固有の言い回しを使わない。日本語で書く。ChorusとPre-Chorusは毎回同じ歌詞、VerseとBridgeは毎回違う歌詞にする。
 run:
   bucket: humanity_observatory
   name_prefix: music-
