@@ -8,7 +8,7 @@ StartLimitBurst=3
 Type=oneshot
 Restart=on-failure
 RestartSec=600
-TimeoutStartSec=5400
+TimeoutStartSec=infinity
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
 Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/snap/bin:/usr/lib/wsl/lib:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
