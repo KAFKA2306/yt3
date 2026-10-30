@@ -27,6 +27,7 @@ const FailureTraceSchema = z.object({
 	failure_class: z.string().min(1),
 	stage: z.string().min(1),
 	fingerprint: z.string().min(1),
+	symptom: z.string().optional(),
 });
 
 const RepairAttemptSchema = z.object({
@@ -46,10 +47,13 @@ export function decideAfterPrepare(
 	runId: string,
 	prepareAttempt: number,
 	maxPrepareAttempts: number,
+	failureSymptom?: string,
 ): AutoAction {
 	const evidence =
 		prepared.status === 0 ? parseGateEvidence(prepared.output, runId) : null;
 	if (evidence) return { kind: "PUBLISH_READY", evidence };
+	if (failureSymptom?.includes("CLAUDE_EXEC_FAILED"))
+		return { kind: "EXHAUSTED" };
 	if (prepareAttempt < maxPrepareAttempts) return { kind: "REPAIR" };
 	return { kind: "EXHAUSTED" };
 }
@@ -105,12 +109,24 @@ function main(): void {
 	const runDir = path.join(ROOT, workflow.paths.runs_dir, runId);
 
 	for (let attempt = 1; ; attempt++) {
+		const tracePath = path.join(runDir, "audit", "failure_trace.json");
+		const previousTrace = fs.existsSync(tracePath)
+			? fs.readFileSync(tracePath, "utf8")
+			: null;
 		const prepared = runTask(["byosan:prepare", `DATE=${date}`]);
+		const currentTrace = fs.existsSync(tracePath)
+			? fs.readFileSync(tracePath, "utf8")
+			: null;
+		const failure =
+			currentTrace && currentTrace !== previousTrace
+				? FailureTraceSchema.parse(JSON.parse(currentTrace))
+				: null;
 		const action = decideAfterPrepare(
 			prepared,
 			runId,
 			attempt,
 			auto.max_prepare_attempts,
+			failure?.status === "OPEN" ? failure.symptom : undefined,
 		);
 		if (action.kind === "PUBLISH_READY") {
 			console.log(
@@ -121,6 +137,9 @@ function main(): void {
 		}
 		if (action.kind === "EXHAUSTED") {
 			reportExhausted(runDir, runId);
+			if (failure?.symptom?.includes("CLAUDE_EXEC_FAILED")) {
+				throw new Error(`BYOSAN_CLAUDE_EXEC_FAILED: ${runId}; repair skipped`);
+			}
 			throw new Error(
 				`BYOSAN_AUTO_EXHAUSTED: ${runId} prepare_attempts=${attempt} max_prepare_attempts=${auto.max_prepare_attempts}`,
 			);

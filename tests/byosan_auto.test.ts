@@ -28,6 +28,18 @@ function planAttempts(
 }
 
 describe("byosan auto decision", () => {
+	test("stops on a Claude execution failure without attempting code repair", () => {
+		expect(
+			decideAfterPrepare(
+				FAILED,
+				RUN_ID,
+				1,
+				3,
+				"CLAUDE_EXEC_FAILED stage=byosan_panel_review",
+			),
+		).toEqual({ kind: "EXHAUSTED" });
+	});
+
 	test("stops as publish-ready when the three evidence lines name the same run", () => {
 		const action = decideAfterPrepare(
 			{ status: 0, output: gateOutput() },
