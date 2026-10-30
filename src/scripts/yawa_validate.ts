@@ -5,10 +5,18 @@ import { YOUTUBE_PROFILES } from "../domain/youtube_profiles.js";
 import { ROOT } from "../io/core.js";
 
 const date = process.argv[2];
+const slot = process.argv[3];
 if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))
-	throw new Error("usage: yawa_validate.ts YYYY-MM-DD");
+	throw new Error("usage: yawa_validate.ts YYYY-MM-DD [slot]");
+if (slot && !/^[a-z0-9]+$/.test(slot))
+	throw new Error("SLOT must be lowercase letters or digits");
 
-const runDir = path.join(ROOT, "runs", "yawa_archive", `yawa-${date}`);
+const runDir = path.join(
+	ROOT,
+	"runs",
+	"yawa_archive",
+	`yawa-${date}${slot ? `-${slot}` : ""}`,
+);
 if (!fs.existsSync(runDir))
 	throw new Error(`yawa run directory is missing: ${runDir}`);
 
