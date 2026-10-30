@@ -248,7 +248,7 @@ llm:
   claude: {command: "claude", model: "claude-haiku-5-5", stage_models: {byosan_feature_draft: "claude-sonnet-5-5"}, workdir_prefix: "byosan-claude-", strip_env: ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"]}
   fallback_backend: "codex"
   backends:
-    feature: "claude"
+    feature: "codex"
     digest: "claude"
     panel: "claude"
   panel:
