@@ -65,7 +65,7 @@ const ByosanSceneSpecSchema = z.object({
 	sceneId: z.string().regex(/^[a-z0-9_]+$/),
 	segmentIndexes: z.array(z.number().int().min(0)).min(1),
 	understandingGoal: z.string().min(1),
-	claimIds: z.array(z.string().min(1)).min(1),
+	claimIds: z.array(z.string().min(1)),
 	visual: ByosanSceneVisualSchema,
 	emphasis: z.object({
 		type: ByosanSceneEmphasisTypeSchema,
@@ -290,11 +290,8 @@ export function compileScenes(
 		);
 		const claimIds =
 			nearest === undefined
-				? undefined
-				: featureSpec.segments[nearest]?.claimIds;
-		if (!claimIds) {
-			throw new Error(`BYOSAN_SCENE_CLAIM_MISSING: segment ${segmentIndex}`);
-		}
+				? []
+				: (featureSpec.segments[nearest]?.claimIds ?? []);
 		return compileScene(segment, segmentIndex, explanation, config, claimIds);
 	});
 	return scenes;

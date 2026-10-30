@@ -78,19 +78,18 @@ describe("byosan scene spec", () => {
 		expect(scenes[1]?.claimIds.length).toBeGreaterThan(0);
 	});
 
-	test("throws when no segment has a claim link", () => {
-		expect(() =>
-			compileScenes(
-				{
-					...source,
-					segments: source.segments.map((segment) => ({
-						...segment,
-						claimIds: undefined,
-					})),
-				},
-				explanation,
-				config,
-			),
-		).toThrow("BYOSAN_SCENE_CLAIM_MISSING");
+	test("keeps claim links empty when no segment has one", () => {
+		const scenes = compileScenes(
+			{
+				...source,
+				segments: source.segments.map((segment) => ({
+					...segment,
+					claimIds: undefined,
+				})),
+			},
+			explanation,
+			config,
+		);
+		expect(scenes.every((scene) => scene.claimIds.length === 0)).toBe(true);
 	});
 });
