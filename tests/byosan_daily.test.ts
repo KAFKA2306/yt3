@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
-import { loadPanel } from "../src/domain/byosan/panel.js";
 import {
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
@@ -10,15 +9,6 @@ import {
 	recordByosanFailure,
 } from "../src/scripts/byosan_daily.js";
 import { fixtureDraft, fixtureInput } from "./fixtures/byosan_draft.js";
-
-const panelReply = (score: number): string =>
-	JSON.stringify({
-		reviews: loadPanel().personas.map((persona) => ({
-			persona: persona.name,
-			score,
-			fix: `${persona.name}の直してほしい点`,
-		})),
-	});
 
 const tempRoots: string[] = [];
 
@@ -96,16 +86,8 @@ describe("byosan daily duplicate-publication gate", () => {
 	});
 });
 
-const isReview = (prompt: string): boolean => prompt.includes("[台本]");
-const slot = (prompt: string): number =>
-	Number(/(\d)番目に有力/.exec(prompt)?.[1] ?? 0);
-
-describe("byosan parallel candidates", () => {
-	const draft = JSON.stringify(fixtureDraft());
-	const run = async (
-		drafts: (prompt: string) => string,
-		scores: (prompt: string) => number,
-	) => {
+describe("byosan feature generation", () => {
+	test("generates one validated draft without a panel review", async () => {
 		const runDir = await makeRunDir();
 		const prompts: string[] = [];
 		const result = await generateFeatureSpec(
@@ -113,43 +95,14 @@ describe("byosan parallel candidates", () => {
 			runDir,
 			(prompt) => {
 				prompts.push(prompt);
-				return isReview(prompt) ? panelReply(scores(prompt)) : drafts(prompt);
+				return JSON.stringify(fixtureDraft());
 			},
-		).catch((error: Error) => error);
-		const panel = await fs.readJson(path.join(runDir, "audit", "panel.json"));
-		return { prompts, result, panel };
-	};
-
-	test("writes candidates with distinct slots and adopts the highest mean", async () => {
-		const { prompts, panel } = await run(
-			() => draft,
-			() => 4,
 		);
-		const writes = prompts.filter((p) => !isReview(p));
-		expect(writes.map(slot).sort()).toEqual([1, 2, 3]);
-		expect(prompts.filter(isReview)).toHaveLength(3);
-		expect(panel.candidates).toHaveLength(3);
-		expect(panel.adopted.round).toBe(1);
-	});
-
-	test("continues with the remaining candidates when one fails its checks", async () => {
-		const { result, panel } = await run(
-			(prompt) => (slot(prompt) === 2 ? "{}" : draft),
-			() => 4,
+		expect(result.spec.segments.length).toBeGreaterThan(0);
+		expect(prompts).toHaveLength(1);
+		expect(await fs.pathExists(path.join(runDir, "audit", "panel.json"))).toBe(
+			false,
 		);
-		expect(result).not.toBeInstanceOf(Error);
-		expect(panel.candidates).toHaveLength(2);
-		expect(panel.failures).toHaveLength(1);
-		expect(panel.failures[0].candidate).toBe(2);
-	});
-
-	test("fails the day when every candidate fails", async () => {
-		const { result } = await run(
-			() => "{}",
-			() => 4,
-		);
-		expect(result).toBeInstanceOf(Error);
-		expect((result as Error).message).toContain("BYOSAN_ALL_CANDIDATES_FAILED");
 	});
 });
 

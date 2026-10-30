@@ -60,15 +60,6 @@ import {
 	writeDiscoveryEvidence,
 } from "../domain/byosan/feed_discovery.js";
 import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
-import {
-	type PanelReview,
-	PanelReviewSchema,
-	bestRound,
-	loadPanel,
-	meanScore,
-	renderPanelReviewPrompt,
-	validatePanelReview,
-} from "../domain/byosan/panel.js";
 import { loadPublishedByosanSourceUrls } from "../domain/byosan/published_sources.js";
 import {
 	AssetStore,
@@ -371,7 +362,6 @@ export async function generateFeatureSpec(
 	const system = `${dailyConfig().feature_draft.system}\n${renderDialogueStylePrompt(loadDialogueStyle())}`;
 	const review = loadFeatureReview();
 	const llm = byosanLlmConfig();
-	const panel = loadPanel();
 	const articles = renderFeatureDraftInput(input);
 	const write = async (label: string, extra: string) => {
 		const request = structuredRequest({
@@ -435,100 +425,8 @@ export async function generateFeatureSpec(
 			),
 		};
 	};
-	const scoreScript = async (label: string, spec: ByosanFeatureSpec) => {
-		const script = spec.segments
-			.map((segment) => `${segment.speaker}: ${segment.text}`)
-			.join("\n");
-		return invokeCodexStructured({
-			llm,
-			logPath: codexLlmLogPath(runDir),
-			schema: PanelReviewSchema,
-			backend: llmBackend(llm, "panel") as ExecBackend,
-			name: "byosan_panel_review",
-			exec,
-			maxAttempts: llm.max_attempts,
-			evidencePath: path.join(
-				runDir,
-				"audit",
-				`structured_panel_attempts_${label}.json`,
-			),
-			messages: (attempt, lastValidationError) => [
-				{
-					role: "user",
-					content: `${renderPanelReviewPrompt(panel, script)}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
-				},
-			],
-			validate: (value) => validatePanelReview(value, panel),
-		});
-	};
-	const candidate = async (round: number, index: number, extra: string) => {
-		const label = `${round}_${index}`;
-		const { parsed, spec } = await write(label, extra);
-		const scored = await scoreScript(label, spec);
-		return {
-			round,
-			index,
-			mean: meanScore(scored),
-			review: scored,
-			parsed,
-			spec,
-		};
-	};
-	type Scored = Awaited<ReturnType<typeof candidate>>;
-	const settled = await Promise.allSettled(
-		Array.from({ length: panel.candidates }, (_, i) =>
-			candidate(
-				1,
-				i + 1,
-				`\n\n${panel.candidate_instruction.replaceAll("{index}", String(i + 1))}`,
-			),
-		),
-	);
-	const pool: Scored[] = settled.flatMap((r) =>
-		r.status === "fulfilled" ? [r.value] : [],
-	);
-	const failures = settled.flatMap((r, i) =>
-		r.status === "rejected"
-			? [
-					{
-						round: 1,
-						candidate: i + 1,
-						error:
-							r.reason instanceof Error ? r.reason.message : String(r.reason),
-					},
-				]
-			: [],
-	);
-	if (pool.length === 0) {
-		fs.outputJsonSync(
-			path.join(runDir, "audit", "panel.json"),
-			{ failures },
-			{ spaces: 2 },
-		);
-		throw new Error(
-			`BYOSAN_ALL_CANDIDATES_FAILED: ${failures.map((f) => f.error).join(" | ")}`,
-		);
-	}
-	const best = bestRound(pool);
-	fs.outputJsonSync(
-		path.join(runDir, "audit", "panel.json"),
-		{
-			adopted: { round: best.round, candidate: best.index },
-			failures,
-			candidates: pool.map((c) => ({
-				round: c.round,
-				candidate: c.index,
-				topic: c.parsed.angle,
-				mean: c.mean,
-				reviews: c.review.reviews,
-				script: c.parsed.segments.map(
-					(segment) => `${segment.speaker}: ${segment.text}`,
-				),
-			})),
-		},
-		{ spaces: 2 },
-	);
-	return { spec: best.spec, explanation: best.parsed.explanation };
+	const { parsed, spec } = await write("1_1", "");
+	return { spec, explanation: parsed.explanation };
 }
 
 function runCommand(
