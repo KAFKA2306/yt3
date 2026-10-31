@@ -558,6 +558,13 @@ async function discoverArticles(
 			try {
 				result = await crawl(source, cfg, cutoff);
 			} catch (error) {
+				if (
+					!(error instanceof Error) ||
+					(!error.message.startsWith("FETCH_FAILED ") &&
+						!(error instanceof TypeError && /fetch/i.test(error.message)))
+				) {
+					throw error;
+				}
 				return {
 					excluded: [
 						{ feed: source.id, url: source.url, reason: String(error) },

@@ -324,6 +324,18 @@ describe("byosan feed discovery", () => {
 		).toBe(true);
 	});
 
+	test("does not hide unexpected discovery errors", async () => {
+		const broken = async () => {
+			throw new Error("unexpected parser defect");
+		};
+		spyOn(globalThis, "fetch").mockImplementation(
+			broken as unknown as typeof fetch,
+		);
+		await expect(
+			discover(testConfig("defect.json", []), "defect-run"),
+		).rejects.toThrow("unexpected parser defect");
+	});
+
 	test("takes the article paragraphs as the body and excludes a page whose title does not match", async () => {
 		const { articles, excluded } = await discover(
 			testConfig("rss.json", []),
