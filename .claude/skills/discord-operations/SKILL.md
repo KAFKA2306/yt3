@@ -36,5 +36,5 @@ The bot runs at `src/agents/standalone/discord_bot.ts` under service unit `yt3-d
 ## System Audits
 
 Execute the following checks when running `task audit` or `AuditAgent`:
-1. **systemd Verification**: Run `systemctl --user is-active <unit>` for critical units (`yt3-automation.timer`, `yt3-aim.service`, `yt3-discord.service`, `yt3-asmr-autonomous.timer`).
+1. **systemd Verification**: Run `systemctl --user is-active <unit>` for current critical units (`yt3-automation.timer`, `yt3-aim.service`, `yt3-discord.service`). Do not include the retired `yt3-asmr-autonomous.timer`; its referenced script was removed and its user unit was disabled.
 2. **Connectivity Validation**: Confirm `DISCORD_WEBHOOK_URL` is a valid Discord API webhook URL.
