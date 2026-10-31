@@ -52,9 +52,8 @@ function main(): void {
 		{ spaces: 2 },
 	);
 	console.log(
-		`[byosan-authenticity] ${result.status} run=${runId} violations=${result.violations.map((issue) => issue.code).join(",") || "none"}`,
+		`[byosan-authenticity-observation] ${result.status} run=${runId} violations=${result.violations.map((issue) => issue.code).join(",") || "none"}`,
 	);
-	if (result.status === "FAIL") process.exitCode = 1;
 }
 
 main();

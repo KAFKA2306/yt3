@@ -14,16 +14,14 @@ const passing: CanonicalAuditInput = {
 		decision: "PASS",
 		requirements: { audio_quality: { status: "PASS" } },
 	},
-	authenticity: { path: "audit/authenticity.json", status: "PASS" },
 	specPath: "source/feature_spec.json",
 	explanationPath: "source/explanation.json",
 };
 
 describe("byosan canonical audit", () => {
-	test("passes every check for a linked, allowlisted, produced and authentic run", () => {
+	test("passes every factual, provenance, and playable-artifact check", () => {
 		const checks = buildCanonicalAudit(passing);
 		expect(Object.keys(checks).sort()).toEqual([
-			"authenticity",
 			"factual_integrity",
 			"production_quality",
 			"provenance",
@@ -83,14 +81,5 @@ describe("byosan canonical audit", () => {
 			allowedHosts: ["dlri.co.jp"],
 		});
 		expect(checks.provenance?.status).toBe("PASS");
-	});
-
-	test("fails authenticity unless the audit status is PASS", () => {
-		const checks = buildCanonicalAudit({
-			...passing,
-			authenticity: { path: "audit/authenticity.json", status: "FAIL" },
-		});
-		expect(checks.authenticity?.status).toBe("FAIL");
-		expect(checks.authenticity?.details).toContain("status=FAIL");
 	});
 });

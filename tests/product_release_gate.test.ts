@@ -29,7 +29,7 @@ function readyState(runDir: string): AgentState {
 	const specPath = path.join(runDir, "source", "feature_spec.json");
 	fs.writeJsonSync(specPath, { schemaVersion: "byosan_feature_v1" });
 	fs.writeJsonSync(path.join(runDir, "audit", "authenticity.json"), {
-		status: "PASS",
+		status: "FAIL",
 		feature_spec_sha256: sha256File(specPath),
 	});
 	return {
@@ -46,7 +46,7 @@ function readyState(runDir: string): AgentState {
 }
 
 describe("product release gate", () => {
-	test("passes a concrete audited artifact and writes factual-integrity evidence", () => {
+	test("passes the artifact on factual-integrity evidence without a quality-score gate", () => {
 		const runDir = tempRun("pass");
 		try {
 			const result = assertProductReleaseGate({

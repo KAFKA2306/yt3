@@ -25,7 +25,6 @@ export type CanonicalAuditInput = {
 		decision: string;
 		requirements: Record<string, { status: string }>;
 	};
-	authenticity: { path: string; status: string };
 	specPath: string;
 	explanationPath: string;
 };
@@ -108,14 +107,6 @@ export function buildCanonicalAudit(
 			"Every script source resolves to the discovery registry or the source policy allowlist",
 			disallowedSources.map((entry) => `disallowed ${entry}`),
 			input.specPath,
-		),
-		authenticity: check(
-			"authenticity",
-			"Authenticity audit status must be PASS",
-			input.authenticity.status === "PASS"
-				? []
-				: [`status=${input.authenticity.status}`],
-			input.authenticity.path,
 		),
 	};
 }

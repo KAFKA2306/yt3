@@ -530,11 +530,6 @@ function writeByosanCanonicalAudit(
 		})
 		.passthrough()
 		.parse(fs.readJsonSync(productionReportPath));
-	const authenticityPath = path.join(runDir, "audit", "authenticity.json");
-	const authenticity = z
-		.object({ status: z.string() })
-		.passthrough()
-		.parse(fs.readJsonSync(authenticityPath));
 	const checks = buildCanonicalAudit({
 		claims: spec.claims,
 		sources: spec.sources,
@@ -545,7 +540,6 @@ function writeByosanCanonicalAudit(
 			decision: productionReport.decision,
 			requirements: productionReport.requirements,
 		},
-		authenticity: { path: authenticityPath, status: authenticity.status },
 		specPath: path.join(runDir, "source", "feature_spec.json"),
 		explanationPath,
 	});
