@@ -25,12 +25,28 @@ const PerformanceGroupSchema = z.object({
 	viewsAverage: z.number(),
 	watchTimeMinutesAverage: z.number().nullable(),
 	averageViewPercentage: z.number().nullable(),
+	thumbnailImpressionsCtr: z.number().nullable(),
 	subscribersGainedAverage: z.number().nullable(),
 	metricSampleCounts: z.object({
 		watchTimeMinutes: z.number(),
 		averageViewPercentage: z.number(),
+		thumbnailImpressionsCtr: z.number(),
 		subscribersGained: z.number(),
 	}),
+});
+
+const PerformanceObservationSchema = z.object({
+	runId: z.string().min(1),
+	videoId: z.string().min(1),
+	publishedAt: z.string().nullable(),
+	format: ByosanProductionFormatSchema,
+	packagingPattern: z.string().min(1),
+	durationBucket: z.string().min(1),
+	views: z.number(),
+	watchTimeMinutes: z.number().nullable(),
+	averageViewPercentage: z.number().nullable(),
+	thumbnailImpressionsCtr: z.number().nullable(),
+	subscribersGained: z.number().nullable(),
 });
 
 const ByosanPerformanceSummarySchema = z.object({
@@ -40,6 +56,7 @@ const ByosanPerformanceSummarySchema = z.object({
 	sampleCount: z.number().int().min(0),
 	minSamplesPerFormat: z.number().int().min(1),
 	preferredFormat: ByosanProductionFormatSchema.optional(),
+	observations: z.array(PerformanceObservationSchema),
 	groups: z.array(PerformanceGroupSchema),
 	generatedAt: z.string().datetime(),
 });
@@ -47,12 +64,16 @@ const ByosanPerformanceSummarySchema = z.object({
 type ByosanPerformanceSummary = z.infer<typeof ByosanPerformanceSummarySchema>;
 
 type RunAnalytics = {
+	runId: string;
+	videoId: string;
+	publishedAt: string | null;
 	format: ByosanProductionFormat;
 	packagingPattern: string;
 	durationBucket: string;
 	views: number;
 	watchTimeMinutes: number | null;
 	averageViewPercentage: number | null;
+	thumbnailImpressionsCtr: number | null;
 	subscribersGained: number | null;
 };
 
@@ -74,6 +95,13 @@ function packagingPattern(spec: ByosanFeatureSpec): string {
 function discoverByosanAnalytics(db: Database, root: string): RunAnalytics[] {
 	const bucketDir = path.join(root, "runs", "byosan_money");
 	if (!fs.existsSync(bucketDir)) return [];
+	const reachTableExists = Boolean(
+		db
+			.query(
+				"SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'youtube_analytics_reach_daily'",
+			)
+			.get(),
+	);
 	const rows: RunAnalytics[] = [];
 	for (const runName of fs.readdirSync(bucketDir).sort()) {
 		const runDir = path.join(bucketDir, runName);
@@ -89,10 +117,27 @@ function discoverByosanAnalytics(db: Database, root: string): RunAnalytics[] {
 			continue;
 		}
 		const receipt = fs.readJsonSync(receiptPath) as {
-			youtube?: { video_id?: string };
+			youtube?: { video_id?: string; published_at?: string };
 		};
 		const videoId = receipt.youtube?.video_id;
+		const publishedAt = receipt.youtube?.published_at;
 		if (!videoId) continue;
+		let thumbnailImpressionsCtr: number | null = null;
+		if (publishedAt && reachTableExists) {
+			const reach = db
+				.query(
+					`SELECT SUM(thumbnail_impressions * thumbnail_impressions_ctr) /
+						NULLIF(SUM(thumbnail_impressions), 0) AS ctr
+					 FROM youtube_analytics_reach_daily
+					 WHERE video_id = ?
+					   AND report_date >= date(?)
+					   AND report_date < date(?, '+7 days')`,
+				)
+				.get(videoId, publishedAt, publishedAt) as
+				| { ctr: number | null }
+				| undefined;
+			thumbnailImpressionsCtr = reach?.ctr ?? null;
+		}
 		const analytics = db
 			.query(
 				`SELECT views, watch_time_minutes, average_view_percentage, subscribers_gained
@@ -108,12 +153,16 @@ function discoverByosanAnalytics(db: Database, root: string): RunAnalytics[] {
 		};
 		const totalDuration = Number(state.script?.total_duration ?? 0);
 		rows.push({
+			runId: path.basename(runDir),
+			videoId,
+			publishedAt: publishedAt ?? null,
 			format: spec.production?.format ?? "regular",
 			packagingPattern: packagingPattern(spec),
 			durationBucket: durationBucket(totalDuration),
 			views: parsedAnalytics.views,
 			watchTimeMinutes: parsedAnalytics.watch_time_minutes ?? null,
 			averageViewPercentage: parsedAnalytics.average_view_percentage ?? null,
+			thumbnailImpressionsCtr,
 			subscribersGained: parsedAnalytics.subscribers_gained ?? null,
 		});
 	}
@@ -157,6 +206,9 @@ function buildByosanPerformanceSummary(
 			const retention = observedAverage(
 				items.map((item) => item.averageViewPercentage),
 			);
+			const ctr = observedAverage(
+				items.map((item) => item.thumbnailImpressionsCtr),
+			);
 			const subscribers = observedAverage(
 				items.map((item) => item.subscribersGained),
 			);
@@ -170,10 +222,12 @@ function buildByosanPerformanceSummary(
 				),
 				watchTimeMinutesAverage: watch.average,
 				averageViewPercentage: retention.average,
+				thumbnailImpressionsCtr: ctr.average,
 				subscribersGainedAverage: subscribers.average,
 				metricSampleCounts: {
 					watchTimeMinutes: watch.count,
 					averageViewPercentage: retention.count,
+					thumbnailImpressionsCtr: ctr.count,
 					subscribersGained: subscribers.count,
 				},
 			});
@@ -227,6 +281,7 @@ function buildByosanPerformanceSummary(
 		...(eligibleFormats[0]?.format
 			? { preferredFormat: eligibleFormats[0].format }
 			: {}),
+		observations: rows,
 		groups,
 		generatedAt: now.toISOString(),
 	});
