@@ -8,7 +8,7 @@ import {
 	compileScenes,
 } from "../domain/byosan/scene_spec.js";
 import { sha256File } from "../domain/publication_state.js";
-import { ROOT, loadConfig } from "../io/core.js";
+import { loadConfig, ROOT } from "../io/core.js";
 
 const BUCKET = "byosan_money";
 

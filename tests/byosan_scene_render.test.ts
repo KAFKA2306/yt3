@@ -24,8 +24,8 @@ import {
 	compileScenes,
 } from "../src/domain/byosan/scene_spec.js";
 import {
-	type SceneSvgStyle,
 	renderSceneSvg,
+	type SceneSvgStyle,
 } from "../src/domain/byosan/scene_svg.js";
 import { resolveByosanVisualIdentity } from "../src/domain/byosan/visual_identity.js";
 import { getByosanVisualSystem } from "../src/domain/design/kafka_visual_system.js";

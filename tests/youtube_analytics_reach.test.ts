@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import {
-	type ReachReportMetadata,
 	parseReachReportCsv,
+	type ReachReportMetadata,
 } from "../src/domain/youtube_analytics_reach.js";
 import {
 	ensureReachAnalyticsTables,

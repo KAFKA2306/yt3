@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import { z } from "zod";
 import {
-	type LlmOptions,
 	type createLlm,
 	invokeStructuredLlm,
+	type LlmOptions,
 } from "../src/io/core.js";
 
 type FakeOutcome =

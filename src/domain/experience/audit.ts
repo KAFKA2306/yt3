@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { EpisodeTimelineItem } from "../episode/compiler.js";
 import type { Episode } from "../episode/schema.js";
-import { ExperienceLaneSchema } from "./schema.js";
 import type { ExperienceProfile } from "./schema.js";
+import { ExperienceLaneSchema } from "./schema.js";
 
 export interface ExperienceAuditIssue {
 	code: string;

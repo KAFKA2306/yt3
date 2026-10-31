@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
-	PanelReviewSchema,
 	bestRound,
 	loadPanel,
 	meanScore,
+	PanelReviewSchema,
 	validatePanelReview,
 } from "../src/domain/byosan/panel.js";
 

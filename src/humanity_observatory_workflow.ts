@@ -6,7 +6,7 @@ import { type MediaResult, VisualDirector } from "./domain/agents/media.js";
 import { PublishAgent } from "./domain/agents/publish.js";
 import { TrendScout } from "./domain/agents/research.js";
 import type { AgentState } from "./domain/types.js";
-import { type AssetStore, ROOT, loadConfig } from "./io/core.js";
+import { type AssetStore, loadConfig, ROOT } from "./io/core.js";
 import { probeDurationSeconds } from "./io/utils/audio_qa.js";
 import { sendAlert } from "./io/utils/discord.js";
 import { AgentLogger } from "./io/utils/logger.js";

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-	type VoiceRegisterMeasurement,
 	capVoiceControls,
+	type VoiceRegisterMeasurement,
 	voiceRegisterPasses,
 } from "../src/domain/byosan/voice_register.js";
 

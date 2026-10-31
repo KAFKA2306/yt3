@@ -3,21 +3,21 @@ import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
-	type CardMetrics,
 	buildCardMetricsQuery,
+	type CardMetrics,
 	parseCardMetricsRow,
 } from "../domain/youtube_analytics_cards.js";
 import {
-	type First3sAudienceWatchRatio,
 	buildAudienceRetentionQuery,
 	deriveAudienceWatchRatioAtThreeSeconds,
+	type First3sAudienceWatchRatio,
 	parseAudienceRetentionRows,
 	parseYouTubeDurationSeconds,
 } from "../domain/youtube_analytics_retention.js";
 import {
-	type TrafficSourceMetrics,
 	buildTrafficSourceQuery,
 	parseTrafficSourceRows,
+	type TrafficSourceMetrics,
 } from "../domain/youtube_analytics_traffic_sources.js";
 import {
 	createYouTubeOAuthClient,

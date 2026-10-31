@@ -13,14 +13,14 @@ import {
 } from "../domain/byosan/checkpoint.js";
 import {
 	type ByosanFailureClassification,
-	type ExecBackend,
-	type StructuredCall,
 	byosanFailureClassification,
 	byosanLlmConfig,
 	codexLlmLogPath,
+	type ExecBackend,
 	failureSignalLines,
 	invokeCodexStructured,
 	llmBackend,
+	type StructuredCall,
 	structuredRequest,
 	termsMatch,
 } from "../domain/byosan/codex_llm.js";
@@ -34,22 +34,22 @@ import {
 } from "../domain/byosan/explanation.js";
 import { auditFeatureSpecAgainstExplanation } from "../domain/byosan/explanation_contract.js";
 import {
+	buildFeatureSpecInput,
 	DraftArticlesSchema,
 	type FeatureDraftInput,
-	type Json,
-	buildFeatureSpecInput,
 	featureDraftIssues,
 	inputSourceText,
 	isJson,
+	type Json,
 	normalizeFeatureDraft,
 	prepareFeatureDraftInput,
 	renderFeatureDraftInput,
 	summarizeFeatureIssues,
 } from "../domain/byosan/feature_draft.js";
 import {
+	auditByosanFeatureSpec,
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSpec,
-	auditByosanFeatureSpec,
 	isBlockingFeatureIssue,
 	loadFeatureReview,
 	parseAndAuditByosanFeatureSpec,
@@ -63,10 +63,10 @@ import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
 import { loadPublishedByosanSourceUrls } from "../domain/byosan/published_sources.js";
 import {
 	AssetStore,
-	ROOT,
 	getRunIdDateString,
 	invokeStructuredLlm,
 	loadConfig,
+	ROOT,
 	zodSizeConstraintLines,
 } from "../io/core.js";
 

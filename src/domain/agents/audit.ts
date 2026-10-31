@@ -4,13 +4,12 @@ import { z } from "zod";
 import {
 	type AssetStore,
 	BaseAgent,
+	parseLlmJson,
 	ROOT,
 	RunStage,
-	parseLlmJson,
 } from "../../io/core.js";
 import { evaluateCreativeFreshness } from "../../io/utils/creative_freshness.js";
 import { ScriptIntegrityLinter } from "../../io/utils/qa/script_linter.js";
-import { AuditReportSchema } from "../types.js";
 import type {
 	AgentState,
 	AuditCheck,
@@ -20,6 +19,7 @@ import type {
 	AuditStatus,
 	ScriptLine,
 } from "../types.js";
+import { AuditReportSchema } from "../types.js";
 import { compareVoiceMaps, getCanonicalVoiceMap } from "../voice_registry.js";
 
 type CommandOutput = "stdout" | "merged" | "silent";
@@ -904,7 +904,7 @@ export class AuditAgent extends BaseAgent {
 				],
 				{ output: "merged" },
 			);
-			const cutMatches = [...sceneLog.matchAll(/pts_time:\s*([\d\.]+)/g)].map(
+			const cutMatches = [...sceneLog.matchAll(/pts_time:\s*([\d.]+)/g)].map(
 				(m) => Number.parseFloat(m[1] || "0"),
 			);
 			cutMatches.push(0); // start of video
@@ -951,7 +951,7 @@ export class AuditAgent extends BaseAgent {
 				{ output: "merged" },
 			);
 			const silenceStarts = [
-				...silenceLog.matchAll(/silence_start:\s*([\d\.]+)/g),
+				...silenceLog.matchAll(/silence_start:\s*([\d.]+)/g),
 			].map((m) => Number.parseFloat(m[1] || "0"));
 			silenceStarts.push(0);
 			silenceStarts.push(videoDuration);

@@ -12,6 +12,7 @@ export enum RunStage {
 	WATCHER = "watcher",
 	AUDIT = "audit",
 }
+
 import type { OverlayConfig, Rect, Size } from "./config/base.js";
 
 export interface RenderPlan {

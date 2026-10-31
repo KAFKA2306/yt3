@@ -178,11 +178,11 @@ function printSummary(results: BatchResult[]): void {
 
 	const top5 = [...results].sort((a, b) => b.score - a.score).slice(0, 5);
 	console.log(`\n${COLORS.bold}スコア上位 5:${COLORS.reset}`);
-	top5.forEach((r, i) =>
+	top5.forEach((r, i) => {
 		console.log(
 			`  ${i + 1}. ${(r.score * 100).toFixed(1)}%  ${r.runId}  (sharp: ${r.sharpness.toFixed(0)}, mobile: ${r.mobileEdgeStrength.toFixed(1)})`,
-		),
-	);
+		);
+	});
 }
 
 function auditPalettes(): void {

@@ -1,29 +1,31 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-	"organizeImports": {
-		"enabled": true
-	},
+	"$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
+			"preset": "recommended",
 			"suspicious": {
 				"noExplicitAny": "error"
 			}
 		}
 	},
 	"files": {
-		"ignore": [
-			"**/*.log",
-			"logs/**",
-			"node_modules/**",
-			".venv/**",
-			".artifacts/**",
-			"artifacts/**",
-			"config/design/foundation.tokens.json",
-			"config/design/byosan_video_system_v1.json",
-			"data/**",
-			"sbg-nav-audit/snapshots/**"
+		"includes": [
+			"**",
+			"!**/*.md",
+			"!**/*.yaml",
+			"!**/*.yml",
+			"!**/*.log",
+			"!**/logs",
+			"!**/node_modules",
+			"!**/.venv",
+			"!**/.artifacts",
+			"!**/artifacts",
+			"!**/config/design/foundation.tokens.json",
+			"!**/config/design/byosan_video_system_v1.json",
+			"!**/data",
+			"!**/sbg-nav-audit/snapshots"
 		]
 	},
 	"vcs": {

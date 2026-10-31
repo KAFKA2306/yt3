@@ -2,12 +2,12 @@ import { z } from "zod";
 import { ungroundedFigureValues } from "./explanation.js";
 import { auditFeatureSpecAgainstExplanation } from "./explanation_contract.js";
 import {
+	auditByosanFeatureSpec,
 	ByosanFeatureDraftSchema,
 	ByosanFeatureSpecSchema,
+	ensureByosanBrandTag,
 	type FeatureSpecIssue,
 	GLOBAL_ISSUE_PATH,
-	auditByosanFeatureSpec,
-	ensureByosanBrandTag,
 } from "./feature_spec.js";
 import { normalizedSourceUrl } from "./published_sources.js";
 

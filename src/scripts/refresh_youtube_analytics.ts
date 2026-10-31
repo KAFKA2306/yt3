@@ -3,8 +3,8 @@ import path from "node:path";
 import fs from "fs-extra";
 import { writeByosanPerformanceSummary } from "../domain/byosan/performance.js";
 import {
-	MAX_AUTHORIZATION_AGE_DAYS,
 	analyticsAuthorizationCutoff,
+	MAX_AUTHORIZATION_AGE_DAYS,
 } from "../domain/youtube_analytics_policy.js";
 import {
 	discoverVideos,

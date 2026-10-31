@@ -2,12 +2,12 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
-import { ROOT, loadConfig } from "../io/core.js";
+import { loadConfig, ROOT } from "../io/core.js";
 import {
 	type GateEvidence,
+	parseGateEvidence,
 	type TaskResult,
 	type TaskRunner,
-	parseGateEvidence,
 } from "./byosan_publish_daily.js";
 
 const DOMAIN_ID = "byosan_money";

@@ -2,12 +2,12 @@ import path from "node:path";
 import fs from "fs-extra";
 import { ROOT } from "../../io/core.js";
 import {
+	accessionFigures,
 	type ConceptFact,
 	type Figure,
-	type SecConfig,
-	accessionFigures,
 	loadSecConfig,
 	parseCompanyFacts,
+	type SecConfig,
 } from "./sec_xbrl.js";
 
 type Body = "article" | "paragraphs";
@@ -410,9 +410,9 @@ async function fromPostApi(
 		.slice(0, cfg.max_items_per_feed)
 		.map((item) => {
 			const href = item.match(/<a href="([^"]+)"/)?.[1] as string;
-			const date = (
-				item.match(/class="date">([\d.]+)</)?.[1] as string
-			).replaceAll(".", "-");
+			const rawDate = item.match(/class="date">([\d.]+)</)?.[1];
+			if (!rawDate) throw new Error(`POST_API_DATE_MISSING ${feed}`);
+			const date = rawDate.replaceAll(".", "-");
 			return {
 				url: `${f.base}${href}`,
 				title: plain(item.match(/<a href="[^"]+">([\s\S]*?)<a>/)?.[1] ?? ""),

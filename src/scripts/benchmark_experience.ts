@@ -3,9 +3,9 @@ import path from "node:path";
 import fs from "fs-extra";
 import { MOTION_CANVAS_VERSION } from "../domain/episode/motion_canvas_workspace.js";
 import {
-	REMOTION_VERSION,
 	buildRemotionRenderCommand,
 	buildRemotionWorkspaceFiles,
+	REMOTION_VERSION,
 } from "../domain/episode/remotion_workspace.js";
 import {
 	buildExperienceBenchmarkSummary,

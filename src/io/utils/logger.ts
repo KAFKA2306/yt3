@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "fs-extra";
-import { ROOT, loadConfig } from "../../io/core.js";
+import { loadConfig, ROOT } from "../../io/core.js";
 export type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
 export interface AgentLogEntry {
 	timestamp: string;

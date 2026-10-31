@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-	type ByosanActiveProbeEvidence,
 	auditByosanActiveProbeEvidence,
+	type ByosanActiveProbeEvidence,
 } from "../src/domain/byosan/active_probe.js";
 
 function evidence(

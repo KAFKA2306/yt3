@@ -1,6 +1,6 @@
 import path from "node:path";
-import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
+import * as echarts from "echarts";
 import fs from "fs-extra";
 import { z } from "zod";
 

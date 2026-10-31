@@ -1,8 +1,8 @@
 import type { Explanation } from "./explanation.js";
 import {
 	type ByosanFeatureSpec,
-	type FeatureSpecIssue,
 	claimIssuePath,
+	type FeatureSpecIssue,
 	segmentIssuePath,
 } from "./feature_spec.js";
 

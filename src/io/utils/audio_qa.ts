@@ -102,10 +102,10 @@ export function runAudioQA(
 		]);
 		const summaryPart = audioLog.split("Summary:")[1] || audioLog;
 		const integratedLUFS = Number.parseFloat(
-			summaryPart.match(/I:\s+([\-\d\.]+) LUFS/)?.[1] || "0",
+			summaryPart.match(/I:\s+([-\d.]+) LUFS/)?.[1] || "0",
 		);
 		const truePeak = Number.parseFloat(
-			summaryPart.match(/Peak:\s+([\-\d\.]+) (dBTP|dBFS)/)?.[1] || "0",
+			summaryPart.match(/Peak:\s+([-\d.]+) (dBTP|dBFS)/)?.[1] || "0",
 		);
 
 		const { stderr: silenceLog } = runTool("ffmpeg", [
@@ -119,7 +119,7 @@ export function runAudioQA(
 			"/dev/null",
 		]);
 		const silenceMatches = Array.from(
-			silenceLog.matchAll(/silence_duration:\s+([\d\.]+)/g),
+			silenceLog.matchAll(/silence_duration:\s+([\d.]+)/g),
 		);
 		let maxSilence = 0;
 		let totalSilence = 0;
