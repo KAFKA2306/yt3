@@ -554,7 +554,18 @@ async function discoverArticles(
 	const cutoff = now.getTime() - cfg.recent_days * 86_400_000;
 	const perSource = await Promise.all(
 		loadDiscoverySources(cfg).map(async (source) => {
-			const { entries, excluded } = await crawl(source, cfg, cutoff);
+			let result: Crawl;
+			try {
+				result = await crawl(source, cfg, cutoff);
+			} catch (error) {
+				return {
+					excluded: [
+						{ feed: source.id, url: source.url, reason: String(error) },
+					],
+					articles: [],
+				};
+			}
+			const { entries, excluded } = result;
 			return {
 				excluded,
 				articles: entries
@@ -689,14 +700,23 @@ export async function writeDiscoveryEvidence(
 	const { articles, excluded } = owned
 		? { articles: owned, excluded: [] }
 		: await discoverArticles(cfg, now);
+	await fs.outputJson(
+		path.join(runDir, "research", "discovery_excluded.json"),
+		excluded,
+		{ spaces: 2 },
+	);
 	const baselineExcluded = owned
 		? []
 		: await updateDiscoveryBaseline(cfg, now, articles);
-	if (articles.length === 0) {
+	await fs.outputJson(
+		path.join(runDir, "research", "discovery_excluded.json"),
+		[...excluded, ...baselineExcluded],
+		{ spaces: 2 },
+	);
+	if (articles.length === 0)
 		throw new Error(
 			"BYOSAN_ANGLE_STOP: no recent articles in registered sources",
 		);
-	}
 	const file = path.join(runDir, "research", "discovery_evidence.md");
 	await fs.outputFile(
 		file,
@@ -711,11 +731,6 @@ export async function writeDiscoveryEvidence(
 	await fs.outputJson(
 		path.join(runDir, "research", "discovery_articles.json"),
 		articles,
-		{ spaces: 2 },
-	);
-	await fs.outputJson(
-		path.join(runDir, "research", "discovery_excluded.json"),
-		[...excluded, ...baselineExcluded],
 		{ spaces: 2 },
 	);
 	return file;

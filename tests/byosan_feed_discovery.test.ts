@@ -301,6 +301,29 @@ describe("byosan feed discovery", () => {
 		mock.restore();
 	});
 
+	test("records one failed feed and continues with other sources", async () => {
+		const failedUrl = REGISTRY_SOURCES[0]?.fetch;
+		if (!failedUrl || !("url" in failedUrl))
+			throw new Error("missing feed URL");
+		const routed = async (input: string | Request | URL) =>
+			String(input) === failedUrl.url
+				? new Response("unavailable", { status: 503 })
+				: new Response(ROUTES[String(input)] ?? "", { status: 200 });
+		spyOn(globalThis, "fetch").mockImplementation(routed as typeof fetch);
+		const { articles, excluded } = await discover(
+			testConfig("failed.json", []),
+			"failed-run",
+		);
+		expect(articles.length).toBeGreaterThan(0);
+		expect(
+			excluded.some(
+				(item) =>
+					item.feed === REGISTRY_SOURCES[0]?.id &&
+					item.reason.includes("FETCH_FAILED 503"),
+			),
+		).toBe(true);
+	});
+
 	test("takes the article paragraphs as the body and excludes a page whose title does not match", async () => {
 		const { articles, excluded } = await discover(
 			testConfig("rss.json", []),
