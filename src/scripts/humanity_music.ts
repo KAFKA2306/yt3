@@ -118,7 +118,7 @@ function preflight(): void {
 		throw new Error(`preflight failed: ${failures.join("; ")}`);
 }
 
-async function generate(): Promise<GenerationRow> {
+async function generate(brief?: string): Promise<GenerationRow> {
 	preflight();
 	const cell = rarestCell(readLedger(), config.axes, Math.random);
 	const draft = await invokeStructuredLlm({
@@ -141,12 +141,13 @@ async function generate(): Promise<GenerationRow> {
 		messages: () => [
 			{
 				role: "system",
-				content: `あなたは人類観測所の作詞家です。${config.trend_rule} ${config.lyrics_rule} sectionsは${config.structure.join("、")}の順に${config.structure.length}個、各${config.lines_per_section}行。sceneには曲の題材を表す絵の場面を日本語で1文で書く。style_tailには曲調を英語で短く書く。`,
+				content: `あなたは人類観測所の作詞家です。${brief ? "指定された企画を題材にしてください。" : config.trend_rule} ${config.lyrics_rule} sectionsは${config.structure.join("、")}の順に${config.structure.length}個、各${config.lines_per_section}行。sceneには曲の題材を表す絵の場面を日本語で1文で書く。style_tailには曲調を英語で短く書く。`,
 			},
 			{
 				role: "user",
 				content: JSON.stringify({
 					...cell,
+					...(brief ? { brief } : {}),
 					today: getCurrentDateString(),
 					past_titles: generations(readLedger()).map((row) => row.title),
 				}),
@@ -160,6 +161,7 @@ async function generate(): Promise<GenerationRow> {
 	const songDir = path.join(runDir, "song");
 	const requestPath = path.join(runDir, "request.json");
 	fs.ensureDirSync(runDir);
+	if (brief) fs.writeJsonSync(path.join(runDir, "brief.json"), { brief });
 	fs.writeJsonSync(requestPath, {
 		id,
 		style: `${fillTemplate(config.style_template, cell)}, ${draft.style_tail}`,
@@ -292,13 +294,19 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	preflight();
 	fs.ensureDirSync(dir);
 	const songRef = path.join(dir, "song.json");
-	const song = fs.existsSync(songRef) ? songOfRun(dir) : await generate();
+	const brief = process.env.HUMANITY_BRIEF?.trim() || undefined;
+	const song = fs.existsSync(songRef) ? songOfRun(dir) : await generate(brief);
 	if (!song) throw new Error("song.json refers to an unknown song");
 	fs.writeJsonSync(songRef, { id: song.id });
 	const songDir = path.dirname(song.audio);
 	const request = fs.readJsonSync(
 		path.join(path.dirname(songDir), "request.json"),
 	);
+	if (brief) {
+		const briefPath = path.join(path.dirname(songDir), "brief.json");
+		if (!fs.existsSync(briefPath) || fs.readJsonSync(briefPath).brief !== brief)
+			throw new Error("HUMANITY_BRIEF does not match the existing song");
+	}
 	const coverPath = path.join(dir, config.cover.file);
 	const coverRecordPath = path.join(dir, "cover.json");
 	if (!fs.existsSync(coverRecordPath)) {
