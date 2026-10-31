@@ -74,11 +74,19 @@ const SeriesKindSchema = z.enum(["actual", "estimate", "forecast"]);
 
 export type SeriesKind = z.infer<typeof SeriesKindSchema>;
 
-const SeriesSchema = z.object({
-	name: z.string().min(1),
-	values: z.array(z.number().finite()).min(1),
-	kind: SeriesKindSchema,
-});
+const SeriesSchema = z
+	.object({
+		name: z.string().min(1),
+		values: z.array(z.number().finite()).min(1),
+		displayValues: z.array(z.string().min(1)).optional(),
+		kind: SeriesKindSchema,
+	})
+	.refine(
+		(series) =>
+			!series.displayValues ||
+			series.displayValues.length === series.values.length,
+		"display values must match values",
+	);
 
 const AxisLabelsSchema = z.array(z.string().min(1)).min(1);
 
@@ -123,6 +131,7 @@ const LineSpecSchema = z
 const BignumberSpecSchema = z.object({
 	kind: z.literal("bignumber"),
 	value: z.number().finite(),
+	displayNumber: z.string().min(1).optional(),
 	label: z.string().min(1),
 	unit: z.string(),
 	sublabel: z.string().min(1),
@@ -144,8 +153,7 @@ export function getByosanChartTheme(): ChartTheme {
 }
 
 const numberFormat = new Intl.NumberFormat("ja-JP", {
-	maximumFractionDigits: 2,
-	signDisplay: "exceptZero",
+	maximumFractionDigits: 20,
 });
 
 function formatValue(value: number, unit: string): string {
@@ -274,9 +282,12 @@ function barOption(
 			name: seriesLabel(series, theme),
 			type: "bar",
 			barCategoryGap: theme.grid.bar_category_gap,
-			data: series.values.map((value) => ({
+			data: series.values.map((value, index) => ({
 				value,
-				label: { formatter: formatValue(value, spec.unit) },
+				label: {
+					formatter:
+						series.displayValues?.[index] ?? formatValue(value, spec.unit),
+				},
 			})),
 			itemStyle: kindItemStyle(series.kind, theme, [r, r, 0, 0]),
 			label: valueLabel(theme, "top"),
@@ -316,9 +327,12 @@ function hbarOption(
 			name: seriesLabel(series, theme),
 			type: "bar",
 			barCategoryGap: theme.grid.bar_category_gap,
-			data: series.values.map((value) => ({
+			data: series.values.map((value, index) => ({
 				value,
-				label: { formatter: formatValue(value, spec.unit) },
+				label: {
+					formatter:
+						series.displayValues?.[index] ?? formatValue(value, spec.unit),
+				},
 			})),
 			itemStyle: kindItemStyle(series.kind, theme, [0, r, r, 0]),
 			label: valueLabel(theme, "right"),
@@ -366,9 +380,12 @@ function lineOption(
 				borderColor: theme.palette.primary,
 				borderWidth: theme.stroke_width,
 			},
-			data: series.values.map((value) => ({
+			data: series.values.map((value, index) => ({
 				value,
-				label: { formatter: formatValue(value, spec.unit) },
+				label: {
+					formatter:
+						series.displayValues?.[index] ?? formatValue(value, spec.unit),
+				},
 			})),
 			label: valueLabel(theme, "top"),
 		})),
@@ -403,7 +420,7 @@ function bignumberOption(
 					left: "center",
 					top: layout.value_top,
 					style: {
-						text: `{value|${numberFormat.format(spec.value)}}{unit|${spec.unit}}`,
+						text: `{value|${spec.displayNumber ?? numberFormat.format(spec.value)}}{unit|${spec.unit}}`,
 						rich: {
 							value: {
 								fontSize: size.bignumber_value,

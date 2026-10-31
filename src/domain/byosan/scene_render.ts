@@ -120,6 +120,7 @@ function numericSeries(
 	return {
 		labels: series.map((item) => item.label),
 		values: series.map((item) => item.value),
+		displayValues: series.map((item) => item.display),
 		unit: first.unit,
 		kind: first.kind,
 		seriesName: first.seriesName,
@@ -143,6 +144,10 @@ function chartOf(
 						kind: "bignumber",
 						label: visual.label,
 						sublabel: resolved.detail,
+						displayNumber: resolved.display
+							.normalize("NFKC")
+							.replace(/\s+/gu, "")
+							.slice(0, numeric.unit ? -numeric.unit.length : undefined),
 						...numeric,
 					}
 				: null;
@@ -155,7 +160,12 @@ function chartOf(
 				kind: visual.kind === "hbar_compare" ? "hbar" : "bar",
 				categories: series.labels,
 				series: [
-					{ name: series.seriesName, values: series.values, kind: series.kind },
+					{
+						name: series.seriesName,
+						values: series.values,
+						displayValues: series.displayValues,
+						kind: series.kind,
+					},
 				],
 				unit: series.unit,
 			};
@@ -167,7 +177,12 @@ function chartOf(
 				kind: "line",
 				x: series.labels,
 				series: [
-					{ name: series.seriesName, values: series.values, kind: series.kind },
+					{
+						name: series.seriesName,
+						values: series.values,
+						displayValues: series.displayValues,
+						kind: series.kind,
+					},
 				],
 				unit: series.unit,
 			};

@@ -210,6 +210,12 @@ function renderOf(index: number, continued = false): ByosanSceneRender {
 }
 
 describe("byosan scene render", () => {
+	test("passes the original number sign to the chart", () => {
+		expect(renderOf(1)).toMatchObject({
+			kind: "chart",
+			chart: { kind: "bignumber", displayNumber: "+28.7" },
+		});
+	});
 	test("marks values from non-verified claims as estimates", () => {
 		expect(renderOf(5)).toMatchObject({
 			kind: "chart",

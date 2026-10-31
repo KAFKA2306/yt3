@@ -39,6 +39,38 @@ const line: ChartSpec = {
 };
 
 describe("byosan chart rendering", () => {
+	test("preserves the supplied sign and precision in chart labels", () => {
+		const unsigned = renderChartSvg(
+			{ ...bignumber, value: 82, displayNumber: "82" },
+			theme,
+			size,
+		);
+		const signed = renderChartSvg(
+			{ ...bignumber, value: 1.234, displayNumber: "+1.234" },
+			theme,
+			size,
+		);
+		expect(unsigned).toContain(">82</text>");
+		expect(unsigned).not.toContain(">+82</text>");
+		expect(signed).toContain(">+1.234</text>");
+		const series = renderChartSvg(
+			{
+				...bar,
+				series: [
+					{
+						name: "総額",
+						values: [10, 14, 18],
+						displayValues: ["10億円", "+14億円", "18.000億円"],
+						kind: "actual",
+					},
+				],
+			},
+			theme,
+			size,
+		);
+		expect(series).toContain("+14億円");
+		expect(series).toContain("18.000億円");
+	});
 	test("rejects a series without values", () => {
 		expect(() => renderChartSvg({ ...bar, series: [] }, theme, size)).toThrow();
 	});
