@@ -23,9 +23,14 @@ const PerformanceGroupSchema = z.object({
 	durationBucket: z.string().min(1),
 	sampleCount: z.number().int().min(1),
 	viewsAverage: z.number(),
-	watchTimeMinutesAverage: z.number(),
-	averageViewPercentage: z.number(),
-	subscribersGainedAverage: z.number(),
+	watchTimeMinutesAverage: z.number().nullable(),
+	averageViewPercentage: z.number().nullable(),
+	subscribersGainedAverage: z.number().nullable(),
+	metricSampleCounts: z.object({
+		watchTimeMinutes: z.number(),
+		averageViewPercentage: z.number(),
+		subscribersGained: z.number(),
+	}),
 });
 
 const ByosanPerformanceSummarySchema = z.object({
@@ -46,9 +51,9 @@ type RunAnalytics = {
 	packagingPattern: string;
 	durationBucket: string;
 	views: number;
-	watchTimeMinutes: number;
-	averageViewPercentage: number;
-	subscribersGained: number;
+	watchTimeMinutes: number | null;
+	averageViewPercentage: number | null;
+	subscribersGained: number | null;
 };
 
 function durationBucket(totalDurationSeconds: number): string {
@@ -107,11 +112,9 @@ function discoverByosanAnalytics(db: Database, root: string): RunAnalytics[] {
 			packagingPattern: packagingPattern(spec),
 			durationBucket: durationBucket(totalDuration),
 			views: parsedAnalytics.views,
-			watchTimeMinutes: Number(parsedAnalytics.watch_time_minutes ?? 0),
-			averageViewPercentage: Number(
-				parsedAnalytics.average_view_percentage ?? 0,
-			),
-			subscribersGained: Number(parsedAnalytics.subscribers_gained ?? 0),
+			watchTimeMinutes: parsedAnalytics.watch_time_minutes ?? null,
+			averageViewPercentage: parsedAnalytics.average_view_percentage ?? null,
+			subscribersGained: parsedAnalytics.subscribers_gained ?? null,
 		});
 	}
 	return rows;
@@ -120,6 +123,17 @@ function discoverByosanAnalytics(db: Database, root: string): RunAnalytics[] {
 function average(values: number[]): number {
 	if (values.length === 0) return 0;
 	return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function observedAverage(values: (number | null)[]): {
+	average: number | null;
+	count: number;
+} {
+	const observed = values.filter((value): value is number => value !== null);
+	return {
+		average: observed.length ? Number(average(observed).toFixed(2)) : null,
+		count: observed.length,
+	};
 }
 
 function buildByosanPerformanceSummary(
@@ -139,6 +153,13 @@ function buildByosanPerformanceSummary(
 	const groups = [...grouped.entries()]
 		.map(([key, items]) => {
 			const [format, pattern, duration] = key.split("|");
+			const watch = observedAverage(items.map((item) => item.watchTimeMinutes));
+			const retention = observedAverage(
+				items.map((item) => item.averageViewPercentage),
+			);
+			const subscribers = observedAverage(
+				items.map((item) => item.subscribersGained),
+			);
 			return PerformanceGroupSchema.parse({
 				format,
 				packagingPattern: pattern,
@@ -147,21 +168,22 @@ function buildByosanPerformanceSummary(
 				viewsAverage: Number(
 					average(items.map((item) => item.views)).toFixed(2),
 				),
-				watchTimeMinutesAverage: Number(
-					average(items.map((item) => item.watchTimeMinutes)).toFixed(2),
-				),
-				averageViewPercentage: Number(
-					average(items.map((item) => item.averageViewPercentage)).toFixed(2),
-				),
-				subscribersGainedAverage: Number(
-					average(items.map((item) => item.subscribersGained)).toFixed(2),
-				),
+				watchTimeMinutesAverage: watch.average,
+				averageViewPercentage: retention.average,
+				subscribersGainedAverage: subscribers.average,
+				metricSampleCounts: {
+					watchTimeMinutes: watch.count,
+					averageViewPercentage: retention.count,
+					subscribersGained: subscribers.count,
+				},
 			});
 		})
 		.sort(
 			(left, right) =>
-				right.averageViewPercentage - left.averageViewPercentage ||
-				right.watchTimeMinutesAverage - left.watchTimeMinutesAverage ||
+				(right.averageViewPercentage ?? -Infinity) -
+					(left.averageViewPercentage ?? -Infinity) ||
+				(right.watchTimeMinutesAverage ?? -Infinity) -
+					(left.watchTimeMinutesAverage ?? -Infinity) ||
 				left.format.localeCompare(right.format),
 		);
 
@@ -172,21 +194,27 @@ function buildByosanPerformanceSummary(
 		formatRows.set(row.format, bucket);
 	}
 	const eligibleFormats = [...formatRows.entries()]
-		.filter(([, items]) => items.length >= minSamplesPerFormat)
+		.filter(
+			([, items]) =>
+				items.filter((item) => item.averageViewPercentage !== null).length >=
+				minSamplesPerFormat,
+		)
 		.map(([format, items]) => ({
 			format,
 			sampleCount: items.length,
-			averageViewPercentage: average(
+			averageViewPercentage: observedAverage(
 				items.map((item) => item.averageViewPercentage),
-			),
-			watchTimeMinutesAverage: average(
+			).average,
+			watchTimeMinutesAverage: observedAverage(
 				items.map((item) => item.watchTimeMinutes),
-			),
+			).average,
 		}))
 		.sort(
 			(left, right) =>
-				right.averageViewPercentage - left.averageViewPercentage ||
-				right.watchTimeMinutesAverage - left.watchTimeMinutesAverage ||
+				(right.averageViewPercentage ?? -Infinity) -
+					(left.averageViewPercentage ?? -Infinity) ||
+				(right.watchTimeMinutesAverage ?? -Infinity) -
+					(left.watchTimeMinutesAverage ?? -Infinity) ||
 				left.format.localeCompare(right.format),
 		);
 
