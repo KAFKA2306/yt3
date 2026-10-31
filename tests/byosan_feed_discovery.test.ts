@@ -358,6 +358,12 @@ describe("byosan feed discovery", () => {
 			url: `https://www.sec.gov/Archives/edgar/data/1046179/${TSMC_6K.replaceAll("-", "")}/tsm-monthend6k.htm`,
 			reason: `Error: XBRL_FACTS_NOT_FOUND ${TSMC_6K}`,
 		});
+		expect(
+			excluded.some(
+				(item) =>
+					item.feed === "S010" && item.reason.startsWith("NO_ITEMS_RETURNED"),
+			),
+		).toBe(true);
 	});
 
 	test("keeps one copy of each baseline article, drops articles outside the window, and fetches nothing twice", async () => {

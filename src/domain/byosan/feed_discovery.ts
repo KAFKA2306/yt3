@@ -566,6 +566,17 @@ async function discoverArticles(
 				};
 			}
 			const { entries, excluded } = result;
+			if (
+				entries.length === 0 &&
+				source.fetch.type !== "verify" &&
+				source.fetch.type !== "unreachable"
+			) {
+				excluded.push({
+					feed: source.id,
+					url: source.url,
+					reason: "NO_ITEMS_RETURNED (may be no new publications)",
+				});
+			}
 			return {
 				excluded,
 				articles: entries
