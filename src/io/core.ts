@@ -33,16 +33,16 @@ export function loadConfig(
 
 import { AgentLogger as Logger } from "./utils/logger.js";
 import {
-	QuotaExhaustionError,
 	acquireKey,
 	getQuotaContext,
 	markKeyRateLimited,
+	QuotaExhaustionError,
 	updateFromHeaders,
 	waitIfRateLimited,
 } from "./utils/quota/manager.js";
 import {
-	type FailureClassification,
 	classifyFailureMessage,
+	type FailureClassification,
 } from "./utils/stability.js";
 
 const selectedEnvFile =
@@ -55,10 +55,8 @@ const envFilePath = path.isAbsolute(selectedEnvFile)
 	: path.join(ROOT, selectedEnvFile);
 loadEnvFile(envFilePath);
 
-export { Logger as AgentLogger };
 export type { AgentState };
-export { RunStage };
-export { QuotaExhaustionError };
+export { Logger as AgentLogger, QuotaExhaustionError, RunStage };
 export interface LoopMemoryEntry {
 	run_id: string;
 	bucket: string;

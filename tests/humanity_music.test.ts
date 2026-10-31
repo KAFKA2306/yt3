@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
 	type GenerationRow,
-	type MusicAuditInput,
 	loadMusicConfig,
+	type MusicAuditInput,
 	musicAudit,
 	publishedSeconds,
 } from "../src/domain/humanity_music.js";

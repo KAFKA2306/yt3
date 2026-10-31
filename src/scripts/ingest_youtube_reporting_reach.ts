@@ -2,22 +2,22 @@ import { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { google, type youtubereporting_v1 } from "googleapis";
 import {
-	MAX_AUTHORIZATION_AGE_DAYS,
 	analyticsAuthorizationCutoff,
+	MAX_AUTHORIZATION_AGE_DAYS,
 } from "../domain/youtube_analytics_policy.js";
 import {
-	type ReachReportMetadata,
-	type ReachReportRow,
 	getReachReportDate,
 	parseReachReportCsv,
+	type ReachReportMetadata,
+	type ReachReportRow,
 	selectLatestReachReports,
 } from "../domain/youtube_analytics_reach.js";
 import {
-	YOUTUBE_PROFILES,
-	type YouTubeProfileName,
 	assertYouTubeChannelMatchesProfile,
 	createYouTubeOAuthClient,
 	getYouTubeProfile,
+	YOUTUBE_PROFILES,
+	type YouTubeProfileName,
 } from "../domain/youtube_profiles.js";
 import { discoverVideos } from "./ingest_youtube_analytics.js";
 

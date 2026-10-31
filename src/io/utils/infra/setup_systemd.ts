@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
+
 const SYSTEMD_USER_DIR = path.join(os.homedir(), ".config/systemd/user");
 const UNITS = [
 	{ file: "yt3-automation.service", enable: false },

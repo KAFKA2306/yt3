@@ -3,12 +3,10 @@ import fs from "fs-extra";
 import { google } from "googleapis";
 import { z } from "zod";
 import {
-	type GenerationRow,
-	type LedgerRow,
-	YOUTUBE_PLAYLIST_URL,
-	YOUTUBE_WATCH_URL,
 	fillTemplate,
+	type GenerationRow,
 	generations,
+	type LedgerRow,
 	loadMusicConfig,
 	musicAudit,
 	parseLedger,
@@ -17,14 +15,16 @@ import {
 	rankedSongs,
 	rarestCell,
 	scoresOf,
+	YOUTUBE_PLAYLIST_URL,
+	YOUTUBE_WATCH_URL,
 } from "../domain/humanity_music.js";
 import { sha256File } from "../domain/publication_state.js";
 import {
-	YOUTUBE_PROFILES,
 	assertYouTubeChannelMatchesProfile,
 	createYouTubeOAuthClient,
+	YOUTUBE_PROFILES,
 } from "../domain/youtube_profiles.js";
-import { ROOT, getCurrentDateString, invokeStructuredLlm } from "../io/core.js";
+import { getCurrentDateString, invokeStructuredLlm, ROOT } from "../io/core.js";
 
 const config = loadMusicConfig(ROOT);
 const outputDir = path.join(ROOT, config.output_dir);

@@ -3,15 +3,16 @@ import sharp from "sharp";
 import type { IqaResult } from "../../domain/types.js";
 import { AgentLogger } from "../../io/core.js";
 import {
-	type BackgroundRisk,
-	type IqaThresholds,
 	analyzeTextLayout,
+	type BackgroundRisk,
 	calculateContrastRatio,
 	calculateMobileEdgeStrength,
 	calculateSharpness,
 	getLuminance,
 	hexToRgb,
+	type IqaThresholds,
 } from "./iqa_metrics.js";
+
 export type { BackgroundRisk, IqaResult };
 export class IqaValidator {
 	private thresholds: IqaThresholds;

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import { z } from "zod";
 import {
+	auditByosanFeatureSpec,
 	ByosanFeatureDraftSchema,
 	ByosanFeatureSegmentSchema,
 	type ByosanFeatureSpec,
@@ -9,7 +10,6 @@ import {
 	type ByosanNarrativeRole,
 	ByosanThumbnailSchema,
 	type FeatureSpecIssue,
-	auditByosanFeatureSpec,
 	isBlockingFeatureIssue,
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,

@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import {
-	type FigureClaim,
-	type SecFact,
 	accessionFigures,
+	type FigureClaim,
 	findFact,
 	loadSecConfig,
 	parseCompanyConcept,
 	parseCompanyFacts,
+	type SecFact,
 	verifyFigure,
 } from "../src/domain/byosan/sec_xbrl.js";
 

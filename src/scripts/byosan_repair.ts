@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
-import { ROOT, loadConfig } from "../io/core.js";
+import { loadConfig, ROOT } from "../io/core.js";
 
 const RepairSchema = z.object({
 	sandbox: z.enum(["read-only", "workspace-write"]),

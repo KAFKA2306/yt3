@@ -4,8 +4,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
-	ExperienceOssCandidateRegistrySchema,
 	auditExperienceOssCandidateRegistry,
+	ExperienceOssCandidateRegistrySchema,
 } from "../src/domain/experience/oss_candidate_registry.js";
 import { CANONICAL_EXPERIENCE_SCENE_IDS } from "../src/domain/experience/schema.js";
 import { fixtureAt } from "./fixtures/fixture_at.js";

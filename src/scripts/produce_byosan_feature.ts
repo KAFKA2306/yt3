@@ -40,8 +40,8 @@ import {
 } from "../domain/byosan/scene_render.js";
 import { compileScenes } from "../domain/byosan/scene_spec.js";
 import {
-	type SceneSvgStyle,
 	renderSceneLayers,
+	type SceneSvgStyle,
 } from "../domain/byosan/scene_svg.js";
 import { buildThumbnailFiles } from "../domain/byosan/thumbnail.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";

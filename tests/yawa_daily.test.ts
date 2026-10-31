@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
-	type ReferenceCandidate,
-	type ScriptDraft,
 	assertUnprivileged,
 	buildDescription,
 	loadPool,
 	loadYawaConfig,
 	preparationAction,
+	type ReferenceCandidate,
+	type ScriptDraft,
 	segmentCall,
 	selectReference,
 	validateDraft,

@@ -8,11 +8,11 @@ import { MOTION_CANVAS_VERSION } from "../src/domain/episode/motion_canvas_works
 import { REMOTION_VERSION } from "../src/domain/episode/remotion_workspace.js";
 import { EpisodeSchema } from "../src/domain/episode/schema.js";
 import {
-	ExperienceRendererMetricsSchema,
 	auditExperienceEpisode,
 	auditExperienceViewerQuestionTiming,
 	buildExperienceBenchmarkSummary,
 	buildRendererMetrics,
+	ExperienceRendererMetricsSchema,
 } from "../src/domain/experience/audit.js";
 import { buildExperienceLicenseEvidence } from "../src/domain/experience/license_evidence.js";
 import {

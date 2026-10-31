@@ -4,8 +4,8 @@ import path from "node:path";
 import fs from "fs-extra";
 import {
 	type PublishDailyDeps,
-	type TaskResult,
 	runByosanPublishDaily,
+	type TaskResult,
 	tokyoDate,
 } from "../src/scripts/byosan_publish_daily.js";
 

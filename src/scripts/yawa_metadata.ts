@@ -2,16 +2,16 @@ import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
-	ScriptDraftSchema,
 	buildDescription,
 	buildTitle,
 	loadPool,
 	loadYawaConfig,
+	ScriptDraftSchema,
 } from "../domain/yawa_daily.js";
 import {
-	YOUTUBE_PROFILES,
 	assertYouTubeChannelMatchesProfile,
 	createYouTubeOAuthClient,
+	YOUTUBE_PROFILES,
 } from "../domain/youtube_profiles.js";
 import { ROOT } from "../io/core.js";
 

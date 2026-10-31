@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-	type ByosanDigestContext,
 	auditByosanDigestContext,
+	type ByosanDigestContext,
 } from "../src/domain/byosan/digest_contract.js";
 
 function context(

@@ -15,7 +15,7 @@ import {
 	loadDiscoveryBaseline,
 	writeDiscoveryEvidence,
 } from "../src/domain/byosan/feed_discovery.js";
-import { ROOT, loadConfig } from "../src/io/core.js";
+import { loadConfig, ROOT } from "../src/io/core.js";
 
 const NOW = new Date("2026-10-25T00:00:00Z");
 const CONFIG = (

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-	type Json,
 	featureDraftIssues,
+	type Json,
 	normalizeFeatureDraft,
 	prepareFeatureDraftInput,
 } from "../src/domain/byosan/feature_draft.js";

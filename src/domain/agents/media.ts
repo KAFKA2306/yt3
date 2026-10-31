@@ -3,9 +3,9 @@ import fs from "fs-extra";
 import type { RenderPlan, Script } from "../../domain/types.js";
 import {
 	type AssetStore,
+	appendLoopMemory,
 	BaseAgent,
 	RunStage,
-	appendLoopMemory,
 } from "../../io/core.js";
 import { IqaValidator } from "../../io/utils/iqa_validator.js";
 import { AgentLogger } from "../../io/utils/logger.js";

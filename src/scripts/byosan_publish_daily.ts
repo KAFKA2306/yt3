@@ -6,7 +6,7 @@ import {
 	reconcileByosanCheckpoint,
 	writeByosanCheckpoint,
 } from "../domain/byosan/checkpoint.js";
-import { ROOT, loadConfig } from "../io/core.js";
+import { loadConfig, ROOT } from "../io/core.js";
 import { findPublishedByosanRunForDate } from "./byosan_daily.js";
 
 const DOMAIN_ID = "byosan_money";

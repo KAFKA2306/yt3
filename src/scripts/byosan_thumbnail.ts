@@ -5,9 +5,9 @@ import { getByosanProductionConfig } from "../domain/byosan/production_config.js
 import { buildThumbnailFiles } from "../domain/byosan/thumbnail.js";
 import { getByosanVisualSystem } from "../domain/design/kafka_visual_system.js";
 import {
-	YOUTUBE_PROFILES,
 	assertYouTubeChannelMatchesProfile,
 	createYouTubeOAuthClient,
+	YOUTUBE_PROFILES,
 } from "../domain/youtube_profiles.js";
 import { ROOT } from "../io/core.js";
 

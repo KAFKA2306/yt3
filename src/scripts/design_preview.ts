@@ -2,9 +2,9 @@ import path from "node:path";
 import fs from "fs-extra";
 import sharp from "sharp";
 import {
-	type KafkaVisualSystem,
 	getByosanVisualSystem,
 	getKafkaVisualSystem,
+	type KafkaVisualSystem,
 } from "../domain/design/kafka_visual_system.js";
 
 const root = process.cwd();

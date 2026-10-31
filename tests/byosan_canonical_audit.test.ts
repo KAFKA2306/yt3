@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-	type CanonicalAuditInput,
 	buildCanonicalAudit,
+	type CanonicalAuditInput,
 } from "../src/domain/byosan/canonical_audit.js";
 
 const passing: CanonicalAuditInput = {
