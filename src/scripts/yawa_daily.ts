@@ -81,6 +81,105 @@ function tailMeanDb(file: string, seconds: number): number {
 	return Number(/mean_volume: (-?[\d.]+) dB/.exec(output)?.[1]);
 }
 
+function measureLoudness(file: string): { lufs: number; truePeakDb: number } {
+	const output = run([
+		"ffmpeg",
+		"-hide_banner",
+		"-nostats",
+		"-i",
+		file,
+		"-af",
+		"ebur128=peak=true",
+		"-f",
+		"null",
+		"-",
+	]).split("Summary:")[1];
+	return {
+		lufs: Number(/I:\s+(-?[\d.]+) LUFS/.exec(output ?? "")?.[1]),
+		truePeakDb: Number(/Peak:\s+(-?[\d.]+) dBFS/.exec(output ?? "")?.[1]),
+	};
+}
+
+function meanVolumeDb(file: string, start: number, seconds: number): number {
+	const output = run([
+		"ffmpeg",
+		"-hide_banner",
+		"-ss",
+		String(start),
+		"-t",
+		String(seconds),
+		"-i",
+		file,
+		"-af",
+		"volumedetect",
+		"-f",
+		"null",
+		"-",
+	]);
+	return Number(/mean_volume: (-?[\d.]+) dB/.exec(output)?.[1]);
+}
+
+function observeArc(
+	draft: ScriptDraft,
+	name: string,
+	dir: string,
+	audioPath: string,
+	recent: Recent,
+): void {
+	const segments = draftSegments(draft, config, name);
+	const raw = segments.map((_, i) =>
+		probeSeconds(
+			path.join(dir, "tts", `seg_${String(i + 1).padStart(3, "0")}.wav`),
+		),
+	);
+	const total = segments.reduce(
+		(sum, segment, i) => sum + (raw[i] ?? 0) + segment.chapter.gap_seconds,
+		0,
+	);
+	const scale = probeSeconds(audioPath) / total;
+	let cursor = 0;
+	let index = 0;
+	const chapters = draft.chapters.map((chapter) => {
+		const start = cursor;
+		let chars = 0;
+		let speech = 0;
+		for (const text of chapter.segments) {
+			chars += text.length;
+			speech += raw[index] ?? 0;
+			cursor += (raw[index] ?? 0) + (segments[index]?.chapter.gap_seconds ?? 0);
+			index += 1;
+		}
+		const from = start * scale;
+		const length = cursor * scale - from;
+		return {
+			name: chapter.name,
+			segments: chapter.segments.length,
+			chars,
+			chars_per_second: Number((chars / speech).toFixed(2)),
+			start_seconds: Number(from.toFixed(1)),
+			seconds: Number(length.toFixed(1)),
+			mean_volume_db: meanVolumeDb(audioPath, from, length),
+		};
+	});
+	const first = segments[0]?.text ?? "";
+	const last = segments[segments.length - 1]?.text ?? "";
+	const worst = (current: string, past: string[]): number =>
+		Number(Math.max(0, ...past.map((x) => similarity(current, x))).toFixed(3));
+	fs.outputJsonSync(
+		path.join(dir, "audit", "arc_observation.json"),
+		{
+			shape: draft.shape,
+			chapters,
+			overlap_with_recent: {
+				title: worst(draft.title, recent.titles),
+				opening: worst(first, recent.openings),
+				closing: worst(last, recent.closings),
+			},
+		},
+		{ spaces: 2 },
+	);
+}
+
 function preflight(): void {
 	assertUnprivileged(process.getuid?.(), [
 		config.tts.hf_home,
@@ -594,6 +693,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		},
 		{ spaces: 2 },
 	);
+	const loudness = measureLoudness(audioPath);
 	const audit = yawaAudit(
 		{
 			draft,
@@ -605,11 +705,16 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			videoSeconds: probeSeconds(videoPath),
 			tailMeanDb: tailMeanDb(audioPath, config.audit.tail_seconds),
 			asrSimilarity: fs.readJsonSync(asrPath).similarity,
+			selection,
+			metadata: { title, tags: buildTags(config, selection) },
+			integratedLufs: loudness.lufs,
+			truePeakDb: loudness.truePeakDb,
 			cover: fs.readJsonSync(coverRecordPath),
 			coverSha256: sha256File(coverPath),
 		},
 		config,
 	);
+	observeArc(draft, name, dir, audioPath, recentScripts(name));
 	fs.outputJsonSync(path.join(dir, "audit", "result.json"), audit, {
 		spaces: 2,
 	});

@@ -93,6 +93,8 @@ const YawaConfigSchema = z.object({
 		max_tail_mean_db: z.number(),
 		tail_seconds: z.number(),
 		duration_tolerance_seconds: z.number(),
+		loudness_tolerance_lu: z.number().positive(),
+		max_true_peak_db: z.number(),
 	}),
 	safety: z.object({ banned_terms: z.array(z.string()) }),
 	metadata: z.object({
@@ -519,6 +521,10 @@ export type YawaAuditInput = {
 	videoSeconds: number;
 	tailMeanDb: number;
 	asrSimilarity: number | undefined;
+	selection: Selection;
+	metadata: { title: string; tags: string[] };
+	integratedLufs: number;
+	truePeakDb: number;
 	cover: { tool?: string; prompt?: string; sha256?: string } | undefined;
 	coverSha256: string;
 };
@@ -559,6 +565,29 @@ export function yawaAudit(
 		input.asrSimilarity >= config.asr.min_similarity
 			? ""
 			: `ASR similarity ${input.asrSimilarity ?? "missing"} < ${config.asr.min_similarity}`,
+		Math.abs(input.integratedLufs - config.mix.target_lufs) <=
+		audit.loudness_tolerance_lu
+			? ""
+			: `loudness ${input.integratedLufs} LUFS is not within ${audit.loudness_tolerance_lu} LU of ${config.mix.target_lufs}`,
+		input.truePeakDb <= audit.max_true_peak_db
+			? ""
+			: `true peak ${input.truePeakDb} dB > ${audit.max_true_peak_db} dB`,
+	];
+	const arc = [
+		input.draft.shape === input.selection.shape
+			? ""
+			: "script shape differs from the recorded selection",
+		...validateDraft(input.draft, config).filter(
+			(failure) =>
+				failure.startsWith("chapters") || failure.startsWith("unknown shape"),
+		),
+		input.metadata.title === buildTitle(input.draft, config, input.selection)
+			? ""
+			: "title does not match the selection",
+		input.metadata.tags.join("\n") ===
+		buildTags(config, input.selection).join("\n")
+			? ""
+			: "tags do not match the selection",
 	];
 	const visual = [
 		input.cover?.tool ? "" : "cover tool missing",
@@ -583,8 +612,13 @@ export function yawaAudit(
 		),
 		audio_integrity: check(
 			"audio_integrity",
-			"Length, ending, video duration and ASR round trip",
+			"Length, ending, loudness, video duration and ASR round trip",
 			integrity.filter(Boolean),
+		),
+		arc_consistency: check(
+			"arc_consistency",
+			"Script shape, chapters, title and tags match the recorded selection",
+			arc.filter(Boolean),
 		),
 		visual_provenance: check(
 			"visual_provenance",

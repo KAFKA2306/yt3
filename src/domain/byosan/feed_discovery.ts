@@ -88,6 +88,22 @@ type Exclusion = { feed: string; url: string; reason: string };
 
 type Crawl = { entries: Entry[]; excluded: Exclusion[] };
 
+function excludeEmptyBodies<T extends Entry>(
+	feed: string,
+	entries: T[],
+): { entries: T[]; excluded: Exclusion[] } {
+	return {
+		entries: entries.filter((entry) => entry.body.trim().length > 0),
+		excluded: entries
+			.filter((entry) => entry.body.trim().length === 0)
+			.map((entry) => ({
+				feed,
+				url: entry.url,
+				reason: `BODY_EMPTY ${entry.url}`,
+			})),
+	};
+}
+
 const ENTITIES: Record<string, string> = {
 	"&amp;": "&",
 	"&lt;": "<",
@@ -230,9 +246,16 @@ async function settle<T extends { url: string }>(
 			}),
 		),
 	);
+	const valid = excludeEmptyBodies(
+		feed,
+		outcomes.flatMap((o) => ("entry" in o ? [o.entry] : [])),
+	);
 	return {
-		entries: outcomes.flatMap((o) => ("entry" in o ? [o.entry] : [])),
-		excluded: outcomes.flatMap((o) => ("exclusion" in o ? [o.exclusion] : [])),
+		entries: valid.entries,
+		excluded: [
+			...outcomes.flatMap((o) => ("exclusion" in o ? [o.exclusion] : [])),
+			...valid.excluded,
+		],
 	};
 }
 
@@ -300,13 +323,13 @@ async function fromRss(
 		.filter((item) => new Date(item.published).getTime() >= cutoff)
 		.slice(0, cfg.max_items_per_feed);
 	if (f.body === "feed") {
-		return {
-			entries: items.map(({ feedBody, ...item }) => ({
+		return excludeEmptyBodies(
+			feed,
+			items.map(({ feedBody, ...item }) => ({
 				...item,
 				body: feedBody,
 			})),
-			excluded: [],
-		};
+		);
 	}
 	return settle(
 		feed,

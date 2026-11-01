@@ -238,8 +238,26 @@ describe("yawa daily tts backend", () => {
 });
 
 describe("yawa daily audit", () => {
+	const selection: Selection = {
+		id: "SCR-001",
+		shape: SHAPE,
+		axes: Object.fromEntries(
+			Object.entries(config.axes).map(([axis, options]) => [
+				axis,
+				options[0] as string,
+			]),
+		),
+		title_form: 0,
+	};
 	const base = {
 		draft: draft(),
+		selection,
+		metadata: {
+			title: buildTitle(draft(), config, selection),
+			tags: buildTags(config, selection),
+		},
+		integratedLufs: config.mix.target_lufs,
+		truePeakDb: config.audit.max_true_peak_db - 1,
 		entry: pool[0],
 		scriptGeneratedInRun: true,
 		ttsRecord: {
@@ -267,6 +285,16 @@ describe("yawa daily audit", () => {
 			config,
 		);
 		expect(result.voice_reference?.status).toBe("QUALITY_FAIL");
+	});
+	test("fails on loudness, true peak and metadata that drift from the selection", () => {
+		const fail = (patch: object) =>
+			Object.values(yawaAudit({ ...base, ...patch } as never, config)).some(
+				(c) => c.status !== "PASS",
+			);
+		expect(fail({ integratedLufs: config.mix.target_lufs + 10 })).toBe(true);
+		expect(fail({ truePeakDb: 0 })).toBe(true);
+		expect(fail({ metadata: { ...base.metadata, title: "x" } })).toBe(true);
+		expect(fail({ selection: { ...selection, shape: "other" } })).toBe(true);
 	});
 	test("fails on low ASR similarity and missing ASR", () => {
 		expect(
