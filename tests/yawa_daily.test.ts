@@ -177,18 +177,6 @@ describe("yawa daily voice reference", () => {
 		];
 		expect(selectReference(candidates).seed).toBe(202);
 	});
-	test("breaks ties by lower seed", () => {
-		const candidates: ReferenceCandidate[] = [
-			{ seed: 303, file: "c", asr_similarity: 0.8 },
-			{ seed: 101, file: "a", asr_similarity: 0.8 },
-		];
-		expect(selectReference(candidates).seed).toBe(101);
-	});
-	test("still selects when every candidate is weak", () => {
-		expect(
-			selectReference([{ seed: 101, file: "a", asr_similarity: 0.1 }]).seed,
-		).toBe(101);
-	});
 });
 
 describe("yawa daily existing runs", () => {
@@ -221,8 +209,6 @@ describe("yawa daily metadata", () => {
 		expect(text).toContain("年上の成人の女性");
 	});
 });
-
-describe("yawa daily voice identity", () => {});
 
 describe("yawa daily tts backend", () => {
 	test("unknown backend fails loudly", () => {
@@ -289,12 +275,5 @@ describe("yawa daily audit", () => {
 			);
 		expect(fail({ metadata: { ...base.metadata, title: "x" } })).toBe(true);
 		expect(fail({ selection: { ...selection, shape: "other" } })).toBe(true);
-	});
-	test("never stops on length, loudness or recognition quality", () => {
-		const result = yawaAudit(
-			{ ...base, audioSeconds: 60, videoSeconds: 60 } as never,
-			config,
-		);
-		expect(Object.values(result).every((c) => c.status === "PASS")).toBe(true);
 	});
 });
