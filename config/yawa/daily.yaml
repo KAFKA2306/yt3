@@ -124,7 +124,7 @@ mix:
   loudness_range: 15
 asr:
   model: small
-  min_similarity: 0.55
+  min_similarity: 0.75
 cover:
   tool: codex-imagegen
   file: cover.png
