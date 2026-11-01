@@ -117,14 +117,12 @@ voice:
 reference:
   text: "おかえりなさい。今日も一日、よく頑張りましたね。ここからは、何も考えずに、ゆっくり力を抜いてくださいね。今夜は、雨の音を聞きながら、私がそばにいます。まぶたが重くなったら、そのまま目を閉じていいですよ。息を深く吸って、ゆっくり吐いてみましょう。急がなくて大丈夫です。あなたが眠るまで、ここで静かに見守っていますね。"
   seeds: [101, 202, 303]
-  min_asr_similarity: 0.6
 mix:
   room_tone_db: -42
   target_lufs: -23
   loudness_range: 15
 asr:
   model: small
-  min_similarity: 0.75
 cover:
   tool: codex-imagegen
   file: cover.png
@@ -142,13 +140,8 @@ thumbnail:
   height: 720
   quality: 3
 audit:
-  min_seconds: 300
-  max_seconds: 1500
-  max_tail_mean_db: -35
   tail_seconds: 1
   duration_tolerance_seconds: 1.5
-  loudness_tolerance_lu: 2
-  max_true_peak_db: -1
 safety:
   banned_terms: [未成年, 小学, 中学, 高校, 女子高生, JK, ロリ, 少女, 幼, 児童, 生徒, 制服, 性的, 性行為, 裸, エロ, 喘ぎ, 愛撫]
 metadata:

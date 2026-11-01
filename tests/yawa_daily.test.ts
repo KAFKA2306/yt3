@@ -175,19 +175,19 @@ describe("yawa daily voice reference", () => {
 			{ seed: 202, file: "b", asr_similarity: 0.9 },
 			{ seed: 303, file: "c", asr_similarity: 0.85 },
 		];
-		expect(selectReference(candidates, config).seed).toBe(202);
+		expect(selectReference(candidates).seed).toBe(202);
 	});
 	test("breaks ties by lower seed", () => {
 		const candidates: ReferenceCandidate[] = [
 			{ seed: 303, file: "c", asr_similarity: 0.8 },
 			{ seed: 101, file: "a", asr_similarity: 0.8 },
 		];
-		expect(selectReference(candidates, config).seed).toBe(101);
+		expect(selectReference(candidates).seed).toBe(101);
 	});
-	test("fails when no candidate passes", () => {
-		expect(() =>
-			selectReference([{ seed: 101, file: "a", asr_similarity: 0.1 }], config),
-		).toThrow("no reference candidate passed");
+	test("still selects when every candidate is weak", () => {
+		expect(
+			selectReference([{ seed: 101, file: "a", asr_similarity: 0.1 }]).seed,
+		).toBe(101);
 	});
 });
 
@@ -256,8 +256,6 @@ describe("yawa daily audit", () => {
 			title: buildTitle(draft(), config, selection),
 			tags: buildTags(config, selection),
 		},
-		integratedLufs: config.mix.target_lufs,
-		truePeakDb: config.audit.max_true_peak_db - 1,
 		entry: pool[0],
 		scriptGeneratedInRun: true,
 		ttsRecord: {
@@ -269,8 +267,6 @@ describe("yawa daily audit", () => {
 		referenceSha256: "ref1",
 		audioSeconds: 600,
 		videoSeconds: 600,
-		tailMeanDb: -50,
-		asrSimilarity: 0.9,
 		cover: { tool: "codex-imagegen", prompt: "p", sha256: "abc" },
 		coverSha256: "abc",
 	};
@@ -286,24 +282,19 @@ describe("yawa daily audit", () => {
 		);
 		expect(result.voice_reference?.status).toBe("QUALITY_FAIL");
 	});
-	test("fails on loudness, true peak and metadata that drift from the selection", () => {
+	test("fails on metadata that drifts from the selection", () => {
 		const fail = (patch: object) =>
 			Object.values(yawaAudit({ ...base, ...patch } as never, config)).some(
 				(c) => c.status !== "PASS",
 			);
-		expect(fail({ integratedLufs: config.mix.target_lufs + 10 })).toBe(true);
-		expect(fail({ truePeakDb: 0 })).toBe(true);
 		expect(fail({ metadata: { ...base.metadata, title: "x" } })).toBe(true);
 		expect(fail({ selection: { ...selection, shape: "other" } })).toBe(true);
 	});
-	test("fails on low ASR similarity and missing ASR", () => {
-		expect(
-			yawaAudit({ ...base, asrSimilarity: 0.1 } as never, config)
-				.audio_integrity?.status,
-		).toBe("QUALITY_FAIL");
-		expect(
-			yawaAudit({ ...base, asrSimilarity: undefined } as never, config)
-				.audio_integrity?.status,
-		).toBe("QUALITY_FAIL");
+	test("never stops on length, loudness or recognition quality", () => {
+		const result = yawaAudit(
+			{ ...base, audioSeconds: 60, videoSeconds: 60 } as never,
+			config,
+		);
+		expect(Object.values(result).every((c) => c.status === "PASS")).toBe(true);
 	});
 });

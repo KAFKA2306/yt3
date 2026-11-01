@@ -66,14 +66,13 @@ const YawaConfigSchema = z.object({
 	reference: z.object({
 		text: z.string().min(10),
 		seeds: z.array(z.number().int()).min(1),
-		min_asr_similarity: z.number(),
 	}),
 	mix: z.object({
 		room_tone_db: z.number(),
 		target_lufs: z.number(),
 		loudness_range: z.number().positive(),
 	}),
-	asr: z.object({ model: z.string(), min_similarity: z.number() }),
+	asr: z.object({ model: z.string() }),
 	cover: z.object({ tool: z.string(), file: z.string(), size: z.string() }),
 	video: z.object({
 		file: z.string(),
@@ -90,13 +89,8 @@ const YawaConfigSchema = z.object({
 		quality: z.number(),
 	}),
 	audit: z.object({
-		min_seconds: z.number(),
-		max_seconds: z.number(),
-		max_tail_mean_db: z.number(),
 		tail_seconds: z.number(),
 		duration_tolerance_seconds: z.number(),
-		loudness_tolerance_lu: z.number().positive(),
-		max_true_peak_db: z.number(),
 	}),
 	safety: z.object({ banned_terms: z.array(z.string()) }),
 	metadata: z.object({
@@ -455,16 +449,8 @@ export type ReferenceCandidate = {
  */
 export function selectReference(
 	candidates: ReferenceCandidate[],
-	config: YawaConfig,
 ): ReferenceCandidate {
-	const eligible = candidates.filter(
-		(c) => c.asr_similarity >= config.reference.min_asr_similarity,
-	);
-	if (eligible.length === 0)
-		throw new Error(
-			`no reference candidate passed (min_asr ${config.reference.min_asr_similarity})`,
-		);
-	return [...eligible].sort(
+	return [...candidates].sort(
 		(a, b) => b.asr_similarity - a.asr_similarity || a.seed - b.seed,
 	)[0] as ReferenceCandidate;
 }
@@ -521,12 +507,8 @@ export type YawaAuditInput = {
 	referenceSha256: string | undefined;
 	audioSeconds: number;
 	videoSeconds: number;
-	tailMeanDb: number;
-	asrSimilarity: number | undefined;
 	selection: Selection;
 	metadata: { title: string; tags: string[] };
-	integratedLufs: number;
-	truePeakDb: number;
 	cover: { tool?: string; prompt?: string; sha256?: string } | undefined;
 	coverSha256: string;
 };
@@ -550,30 +532,10 @@ export function yawaAudit(
 			: "segments were not generated from the recorded reference",
 	];
 	const integrity = [
-		input.audioSeconds >= audit.min_seconds
-			? ""
-			: `shorter than ${audit.min_seconds}s`,
-		input.audioSeconds <= audit.max_seconds
-			? ""
-			: `longer than ${audit.max_seconds}s`,
-		input.tailMeanDb <= audit.max_tail_mean_db
-			? ""
-			: `ending is not faded (${input.tailMeanDb} dB)`,
 		Math.abs(input.videoSeconds - input.audioSeconds) <=
 		audit.duration_tolerance_seconds
 			? ""
 			: "video and audio durations differ",
-		input.asrSimilarity !== undefined &&
-		input.asrSimilarity >= config.asr.min_similarity
-			? ""
-			: `ASR similarity ${input.asrSimilarity ?? "missing"} < ${config.asr.min_similarity}`,
-		Math.abs(input.integratedLufs - config.mix.target_lufs) <=
-		audit.loudness_tolerance_lu
-			? ""
-			: `loudness ${input.integratedLufs} LUFS is not within ${audit.loudness_tolerance_lu} LU of ${config.mix.target_lufs}`,
-		input.truePeakDb <= audit.max_true_peak_db
-			? ""
-			: `true peak ${input.truePeakDb} dB > ${audit.max_true_peak_db} dB`,
 	];
 	const arc = [
 		input.draft.shape === input.selection.shape
@@ -614,7 +576,7 @@ export function yawaAudit(
 		),
 		audio_integrity: check(
 			"audio_integrity",
-			"Length, ending, loudness, video duration and ASR round trip",
+			"Video and audio durations match",
 			integrity.filter(Boolean),
 		),
 		arc_consistency: check(

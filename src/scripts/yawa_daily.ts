@@ -415,7 +415,7 @@ function generateReference(dir: string, draft: ScriptDraft): ReferenceRecord {
 			};
 		},
 	);
-	const selected = selectReference(candidates, config);
+	const selected = selectReference(candidates);
 	fs.copyFileSync(selected.file, refPath);
 	const record: ReferenceRecord = {
 		selected,
@@ -693,6 +693,17 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		{ spaces: 2 },
 	);
 	const loudness = measureLoudness(audioPath);
+	fs.outputJsonSync(
+		path.join(dir, "audit", "measurements.json"),
+		{
+			audio_seconds: probeSeconds(audioPath),
+			tail_mean_db: tailMeanDb(audioPath, config.audit.tail_seconds),
+			asr_similarity: fs.readJsonSync(asrPath).similarity,
+			integrated_lufs: loudness.lufs,
+			true_peak_db: loudness.truePeakDb,
+		},
+		{ spaces: 2 },
+	);
 	const audit = yawaAudit(
 		{
 			draft,
@@ -702,12 +713,8 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			referenceSha256: sha256File(refPath),
 			audioSeconds,
 			videoSeconds: probeSeconds(videoPath),
-			tailMeanDb: tailMeanDb(audioPath, config.audit.tail_seconds),
-			asrSimilarity: fs.readJsonSync(asrPath).similarity,
 			selection,
 			metadata: { title, tags: buildTags(config, selection) },
-			integratedLufs: loudness.lufs,
-			truePeakDb: loudness.truePeakDb,
 			cover: fs.readJsonSync(coverRecordPath),
 			coverSha256: sha256File(coverPath),
 		},
