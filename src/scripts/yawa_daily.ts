@@ -5,7 +5,10 @@ import { sha256File } from "../domain/publication_state.js";
 import {
 	assertUnprivileged,
 	buildDescription,
+	buildTags,
 	buildTitle,
+	chooseSelection,
+	draftSegments,
 	loadPool,
 	loadYawaConfig,
 	type PoolEntry,
@@ -15,8 +18,12 @@ import {
 	referenceCandidateCall,
 	type ScriptDraft,
 	ScriptDraftSchema,
+	type Selection,
+	type SelectionRecord,
+	SelectionSchema,
 	segmentCall,
 	selectReference,
+	shapeBeats,
 	similarity,
 	validateDraft,
 	yawaAudit,
@@ -109,31 +116,80 @@ function preflight(): void {
 		throw new Error(`preflight failed: ${failures.join("; ")}`);
 }
 
-function usedIds(excludeRun: string): string[] {
+function selectionHistory(excludeRun: string): SelectionRecord[] {
 	if (!fs.existsSync(bucketDir)) return [];
 	return fs
 		.readdirSync(bucketDir)
 		.filter((name) => name !== excludeRun)
 		.map((name) => path.join(bucketDir, name, "selection.json"))
 		.filter((file) => fs.existsSync(file))
-		.map((file) => fs.readJsonSync(file).id as string);
+		.map((file) => fs.readJsonSync(file) as SelectionRecord);
 }
 
-function scriptPrompt(entry: PoolEntry, lastError?: string): string {
+type Recent = { titles: string[]; openings: string[]; closings: string[] };
+
+function recentScripts(excludeRun: string): Recent {
+	const names = fs.existsSync(bucketDir)
+		? fs
+				.readdirSync(bucketDir)
+				.filter((name) => name !== excludeRun)
+				.filter((name) =>
+					fs.existsSync(path.join(bucketDir, name, "script.json")),
+				)
+				.sort()
+				.slice(-config.diversity.recent_window)
+		: [];
+	const scripts = names.map((name) => {
+		const draft = fs.readJsonSync(path.join(bucketDir, name, "script.json"));
+		const texts: string[] =
+			draft.segments ??
+			draft.chapters.flatMap((c: { segments: string[] }) => c.segments);
+		return {
+			title: draft.title as string,
+			opening: texts[0] ?? "",
+			closing: texts[texts.length - 1] ?? "",
+		};
+	});
+	return {
+		titles: scripts.map((x) => x.title),
+		openings: scripts.map((x) => x.opening),
+		closings: scripts.map((x) => x.closing),
+	};
+}
+
+function scriptPrompt(
+	entry: PoolEntry,
+	selection: Selection,
+	recent: Recent,
+	runName: string,
+	lastError?: string,
+): string {
+	const beats = shapeBeats(config, selection.shape, runName);
+	const total = beats.reduce((sum, beat) => sum + beat.share, 0);
 	return [
 		`あなたは「夜話アーカイブ ASMR」の台本作家です。聞き手は${config.audience}。一人で夜に聴いて、疲れを下ろして眠る人です。`,
 		"次の着想元の「状況」だけを参考に、日本語で完全に新しい台本を書いてください。原文の言い回し・構成・固有名詞は使わないでください。",
 		`着想元の状況: ${entry.situation}（タグ: ${entry.tags.join("、")}）`,
+		`今回の設定: ${Object.entries(selection.axes)
+			.map(([axis, value]) => `${axis}=${value}`)
+			.join("、")}。この設定を、場面の中で自然に使う。`,
 		"条件:",
 		"- 全年齢向けの癒やしと安眠の台本。性的な表現、暴力、恐怖は入れない。",
 		"- 登場する話者は成人として設定する。年齢が分からない・若く見える設定は使わない。制服、学校、少女といった語も使わない。",
 		"- 語り手は一人。聞き手を「あなた」と呼び、距離の近い囁きで、短い文と沈黙を使う。",
-		`- segments は ${config.script.min_segments} から ${config.script.max_segments} 個。各要素は ${config.script.max_segment_chars} 文字以内の話し言葉で、1〜2文。`,
+		`- chapters は次の ${beats.length} 章を、この順に必ず出す。全体の segments は ${config.script.min_segments} から ${config.script.max_segments} 個で、割合は segment 数の目安。各 segment は ${config.script.max_segment_chars} 文字以内の話し言葉で、1〜2文。`,
+		...beats.map(
+			(beat) =>
+				`  - ${beat.name}（segment 数の約${Math.round((beat.share / total) * 100)}%）: ${beat.brief}`,
+		),
+		`- 直近の台本と、題名の語、冒頭の文、最後の文を重ねない。直近の題名: ${recent.titles.join(" / ")}`,
+		`  直近の冒頭の文: ${recent.openings.join(" / ")}`,
+		`  直近の最後の文: ${recent.closings.join(" / ")}`,
 		"- 音声は TTS が読む。ト書き、括弧、記号、効果音の指示は書かない。読み仮名が要る語はひらがなで書く。",
 		"- 声は固定の設定で読む（台本側で声の指定はしない）。語り手は成人の年上の女性として書く。",
 		"- cover_scene は文字を含まない1枚絵の情景描写（夜、柔らかい光、人物は後ろ姿か影）。",
 		"- adult_characters_confirmed は true にする。",
-		'JSON だけを返す: {"title","hook","cover_scene","adult_characters_confirmed","segments":[...]}',
+		'JSON だけを返す: {"title","hook","cover_scene","adult_characters_confirmed","chapters":[{"name","segments":[...]}]}',
 		lastError ? `前回の失敗: ${lastError}。直してください。` : "",
 	]
 		.filter(Boolean)
@@ -148,7 +204,13 @@ function parseJson(text: string): unknown {
 	return JSON.parse(body);
 }
 
-function generateScript(entry: PoolEntry, outPath: string): ScriptDraft {
+function generateScript(
+	entry: PoolEntry,
+	selection: Selection,
+	runName: string,
+	outPath: string,
+): ScriptDraft {
+	const recent = recentScripts(runName);
 	let lastError: string | undefined;
 	for (let attempt = 1; attempt <= config.script.max_attempts; attempt++) {
 		const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "yawa-script-"));
@@ -166,13 +228,14 @@ function generateScript(entry: PoolEntry, outPath: string): ScriptDraft {
 					"--ephemeral",
 					"-o",
 					answer,
-					scriptPrompt(entry, lastError),
+					scriptPrompt(entry, selection, recent, runName, lastError),
 				],
 				{ cwd: tmp },
 			);
-			const draft = ScriptDraftSchema.parse(
-				parseJson(fs.readFileSync(answer, "utf8")),
-			);
+			const draft = ScriptDraftSchema.parse({
+				...(parseJson(fs.readFileSync(answer, "utf8")) as object),
+				shape: selection.shape,
+			});
 			const failures = validateDraft(draft, config);
 			if (failures.length > 0) throw new Error(failures.join("; "));
 			fs.writeJsonSync(outPath, draft, { spaces: 2 });
@@ -268,38 +331,52 @@ function generateReference(dir: string, draft: ScriptDraft): ReferenceRecord {
 function synthesize(draft: ScriptDraft, dir: string, refWav: string): string {
 	const ttsDir = path.join(dir, "tts");
 	fs.ensureDirSync(ttsDir);
-	const gap = path.join(ttsDir, "gap.wav");
-	if (!fs.existsSync(gap))
+	const gapFile = (seconds: number): string => {
+		const gap = path.join(ttsDir, `gap_${seconds}.wav`);
+		if (!fs.existsSync(gap))
+			run([
+				"ffmpeg",
+				"-y",
+				"-loglevel",
+				"error",
+				"-f",
+				"lavfi",
+				"-i",
+				"anullsrc=r=48000:cl=mono",
+				"-t",
+				String(seconds),
+				gap,
+			]);
+		return gap;
+	};
+	const list: string[] = [];
+	draftSegments(draft, config, path.basename(dir)).forEach((segment, index) => {
+		const name = String(index + 1).padStart(3, "0");
+		const wav = path.join(ttsDir, `seg_${name}.wav`);
+		if (!fs.existsSync(wav)) {
+			const { cwd, command, env } = segmentCall(config, segment, refWav, wav);
+			run(command, { cwd, env });
+		}
+		const leveled = path.join(ttsDir, `seg_${name}.leveled.wav`);
 		run([
 			"ffmpeg",
 			"-y",
 			"-loglevel",
 			"error",
-			"-f",
-			"lavfi",
 			"-i",
-			"anullsrc=r=48000:cl=mono",
-			"-t",
-			String(config.tts.gap_seconds),
-			gap,
+			wav,
+			"-af",
+			`volume=${segment.chapter.gain_db}dB`,
+			"-ar",
+			"48000",
+			"-ac",
+			"1",
+			leveled,
 		]);
-	const list: string[] = [];
-	draft.segments.forEach((text, index) => {
-		const wav = path.join(
-			ttsDir,
-			`seg_${String(index + 1).padStart(3, "0")}.wav`,
+		list.push(
+			`file '${leveled}'`,
+			`file '${gapFile(segment.chapter.gap_seconds)}'`,
 		);
-		if (!fs.existsSync(wav)) {
-			const { cwd, command, env } = segmentCall(
-				config,
-				text,
-				config.voice.caption,
-				refWav,
-				wav,
-			);
-			run(command, { cwd, env });
-		}
-		list.push(`file '${wav}'`, `file '${gap}'`);
 	});
 	const listPath = path.join(ttsDir, "concat.txt");
 	fs.writeFileSync(listPath, `${list.join("\n")}\n`);
@@ -338,7 +415,7 @@ function mix(listPath: string, outPath: string): void {
 		"-i",
 		`anoisesrc=color=brown:amplitude=0.4:sample_rate=48000:duration=${seconds + 4}`,
 		"-filter_complex",
-		`[1:a]lowpass=f=900,volume=${config.mix.room_tone_db}dB[tone];[0:a][tone]amix=inputs=2:duration=first:normalize=0,afade=t=in:d=1.5,afade=t=out:st=${Math.max(seconds - 4, 0)}:d=4,loudnorm=I=${config.mix.target_lufs}:TP=-2:LRA=7`,
+		`[1:a]lowpass=f=900,volume=${config.mix.room_tone_db}dB[tone];[0:a][tone]amix=inputs=2:duration=first:normalize=0,afade=t=in:d=1.5,afade=t=out:st=${Math.max(seconds - 4, 0)}:d=4,loudnorm=I=${config.mix.target_lufs}:TP=-2:LRA=${config.mix.loudness_range}`,
 		"-ar",
 		"48000",
 		"-ac",
@@ -380,18 +457,29 @@ async function prepare(date: string, slot?: string): Promise<void> {
 
 	const selectionPath = path.join(dir, "selection.json");
 	const pool = loadPool(ROOT, config);
-	const entry: PoolEntry = fs.existsSync(selectionPath)
-		? (pool.find((e) => e.id === fs.readJsonSync(selectionPath).id) ??
-			(() => {
-				throw new Error("selection.json refers to an unknown pool entry");
-			})())
-		: pickEntry(pool, usedIds(name));
-	fs.writeJsonSync(selectionPath, { id: entry.id }, { spaces: 2 });
+	const history = selectionHistory(name);
+	const selection: Selection = fs.existsSync(selectionPath)
+		? SelectionSchema.parse(fs.readJsonSync(selectionPath))
+		: chooseSelection(
+				config,
+				pickEntry(
+					pool,
+					history.map((h) => h.id),
+				).id,
+				history,
+				name,
+			);
+	const entry: PoolEntry =
+		pool.find((e) => e.id === selection.id) ??
+		(() => {
+			throw new Error("selection.json refers to an unknown pool entry");
+		})();
+	fs.writeJsonSync(selectionPath, selection, { spaces: 2 });
 
 	const scriptPath = path.join(dir, "script.json");
 	const draft = fs.existsSync(scriptPath)
 		? ScriptDraftSchema.parse(fs.readJsonSync(scriptPath))
-		: generateScript(entry, scriptPath);
+		: generateScript(entry, selection, name, scriptPath);
 
 	const reference = generateReference(dir, draft);
 	const refPath = path.join(dir, "reference.wav");
@@ -415,7 +503,12 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	const asrPath = path.join(dir, "asr.json");
 	if (!fs.existsSync(asrPath))
 		fs.writeJsonSync(asrPath, {
-			similarity: asrSimilarity(audioPath, draft.segments.join("")),
+			similarity: asrSimilarity(
+				audioPath,
+				draftSegments(draft, config, name)
+					.map((x) => x.text)
+					.join(""),
+			),
 		});
 
 	const coverPath = path.join(dir, config.cover.file);
@@ -482,7 +575,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		]);
 
 	const audioSeconds = probeSeconds(audioPath);
-	const title = buildTitle(draft, config);
+	const title = buildTitle(draft, config, selection);
 	fs.writeJsonSync(
 		path.join(dir, "state.json"),
 		{
@@ -496,7 +589,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 				title,
 				thumbnail_title: title,
 				description: buildDescription(draft, entry, config, audioSeconds),
-				tags: config.metadata.tags,
+				tags: buildTags(config, selection),
 			},
 		},
 		{ spaces: 2 },

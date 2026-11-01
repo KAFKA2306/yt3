@@ -11,6 +11,29 @@ const IrodoriBackendSchema = z.object({
 	num_steps: z.number().int().positive(),
 });
 
+const RangeSchema = z.tuple([z.number().positive(), z.number().positive()]);
+
+const BeatSchema = z.object({
+	share: z.number().positive(),
+	brief: z.string().min(1),
+	style: z.string(),
+	duration_scale: RangeSchema,
+	cfg_scale_caption: z.number().positive(),
+	gap_seconds: RangeSchema,
+	gain_db: z.number(),
+});
+
+export type Chapter = {
+	name: string;
+	share: number;
+	brief: string;
+	style: string;
+	duration_scale: number;
+	cfg_scale_caption: number;
+	gap_seconds: number;
+	gain_db: number;
+};
+
 const YawaConfigSchema = z.object({
 	run: z.object({ bucket: z.string(), name_prefix: z.string() }),
 	pool_file: z.string(),
@@ -19,7 +42,6 @@ const YawaConfigSchema = z.object({
 		tool: z.literal("codex"),
 		model: z.string(),
 		sandbox: z.literal("read-only"),
-		timeout_seconds: z.number().positive(),
 		min_segments: z.number().int().positive(),
 		max_segments: z.number().int().positive(),
 		max_segment_chars: z.number().int().positive(),
@@ -30,16 +52,25 @@ const YawaConfigSchema = z.object({
 		backends: z.record(z.string(), IrodoriBackendSchema),
 		hf_home: z.string(),
 		seed: z.number().int(),
-		gap_seconds: z.number().positive(),
 		min_free_vram_mib: z.number().positive(),
 	}),
+	arc: z.object({
+		beats: z.record(z.string(), BeatSchema),
+		shapes: z.record(z.string(), z.array(z.string()).min(2)),
+	}),
+	axes: z.record(z.string(), z.array(z.string().min(1)).min(1)),
+	diversity: z.object({ recent_window: z.number().int().positive() }),
 	voice: z.object({ caption: z.string().min(10).max(300) }),
 	reference: z.object({
 		text: z.string().min(10),
 		seeds: z.array(z.number().int()).min(1),
 		min_asr_similarity: z.number(),
 	}),
-	mix: z.object({ room_tone_db: z.number(), target_lufs: z.number() }),
+	mix: z.object({
+		room_tone_db: z.number(),
+		target_lufs: z.number(),
+		loudness_range: z.number().positive(),
+	}),
 	asr: z.object({ model: z.string(), min_similarity: z.number() }),
 	cover: z.object({ tool: z.string(), file: z.string(), size: z.string() }),
 	video: z.object({
@@ -65,9 +96,12 @@ const YawaConfigSchema = z.object({
 	}),
 	safety: z.object({ banned_terms: z.array(z.string()) }),
 	metadata: z.object({
-		title_prefix: z.string(),
+		title_forms: z.array(z.string().min(1)).min(1),
 		title_suffix: z.string(),
-		tags: z.array(z.string()),
+		tags_core: z.array(z.string()),
+		tags_from_axes: z.array(z.string()),
+		tags_max: z.number().int().positive(),
+		description_lead: z.string(),
 		ai_disclosure: z.string(),
 		rights_declaration: z.string(),
 	}),
@@ -89,21 +123,152 @@ const PoolSchema = z.object({
 });
 export type PoolEntry = z.infer<typeof PoolSchema>["entries"][number];
 
-export const ScriptDraftSchema = z.object({
+export const ScriptMetaSchema = z.object({
 	title: z.string().min(4).max(60),
 	hook: z.string().min(10).max(160),
 	cover_scene: z.string().min(20).max(400),
 	adult_characters_confirmed: z.literal(true),
-	segments: z.array(z.string().min(1)),
+});
+export type ScriptMeta = z.infer<typeof ScriptMetaSchema>;
+
+export const ScriptDraftSchema = ScriptMetaSchema.extend({
+	shape: z.string().min(1),
+	chapters: z.array(
+		z.object({ name: z.string(), segments: z.array(z.string().min(1)) }),
+	),
 });
 export type ScriptDraft = z.infer<typeof ScriptDraftSchema>;
 
+export const SelectionSchema = z.object({
+	id: z.string().min(1),
+	shape: z.string().min(1),
+	axes: z.record(z.string(), z.string().min(1)),
+	title_form: z.number().int().nonnegative(),
+});
+export type Selection = z.infer<typeof SelectionSchema>;
+export type SelectionRecord = Partial<Selection> & { id: string };
+
+function hash(text: string): number {
+	let value = 2166136261;
+	for (const char of text) {
+		value ^= char.codePointAt(0) ?? 0;
+		value = Math.imul(value, 16777619) >>> 0;
+	}
+	return value >>> 0;
+}
+
+/** 使用回数が最も少ない選択肢を選ぶ。同数なら seed で決め、同じ入力には同じ結果を返す。 */
+export function pickLeast(
+	options: string[],
+	used: string[],
+	seed: string,
+): string {
+	const counts = options.map((o) => used.filter((u) => u === o).length);
+	const least = Math.min(...counts);
+	const candidates = options.filter((_, i) => counts[i] === least);
+	return candidates.reduce((a, b) =>
+		hash(`${seed}:${a}`) <= hash(`${seed}:${b}`) ? a : b,
+	);
+}
+
+export function chooseSelection(
+	config: YawaConfig,
+	id: string,
+	history: SelectionRecord[],
+	runName: string,
+): Selection {
+	const shape = pickLeast(
+		Object.keys(config.arc.shapes),
+		history.flatMap((h) => (h.shape ? [h.shape] : [])),
+		`${runName}:shape`,
+	);
+	const axes = Object.fromEntries(
+		Object.entries(config.axes).map(([axis, options]) => [
+			axis,
+			pickLeast(
+				options,
+				history.flatMap((h) => (h.axes?.[axis] ? [h.axes[axis]] : [])),
+				`${runName}:${axis}`,
+			),
+		]),
+	);
+	const title_form = Number(
+		pickLeast(
+			config.metadata.title_forms.map((_, i) => String(i)),
+			history.flatMap((h) =>
+				h.title_form === undefined ? [] : [String(h.title_form)],
+			),
+			`${runName}:form`,
+		),
+	);
+	return { id, shape, axes, title_form };
+}
+
+function between(range: [number, number], seed: string): number {
+	const [low, high] = range;
+	return Number((low + (high - low) * (hash(seed) / 4294967295)).toFixed(2));
+}
+
+/** 拍の値は範囲で持ち、run 名から決める。同じ run を作り直しても同じ値になる。 */
+export function resolveBeat(
+	config: YawaConfig,
+	name: string,
+	runName: string,
+): Chapter {
+	const beat = config.arc.beats[name];
+	if (!beat) throw new Error(`unknown beat: ${name}`);
+	return {
+		name,
+		share: beat.share,
+		brief: beat.brief,
+		style: beat.style,
+		duration_scale: between(beat.duration_scale, `${runName}:${name}:scale`),
+		cfg_scale_caption: beat.cfg_scale_caption,
+		gap_seconds: between(beat.gap_seconds, `${runName}:${name}:gap`),
+		gain_db: beat.gain_db,
+	};
+}
+
+export function shapeBeats(
+	config: YawaConfig,
+	shape: string,
+	runName: string,
+): Chapter[] {
+	const names = config.arc.shapes[shape];
+	if (!names) throw new Error(`unknown shape: ${shape}`);
+	return names.map((name) => resolveBeat(config, name, runName));
+}
+
+export type Segment = { text: string; chapter: Chapter };
+
+export function draftSegments(
+	draft: ScriptDraft,
+	config: YawaConfig,
+	runName: string,
+): Segment[] {
+	return draft.chapters.flatMap((entry) => {
+		const chapter = resolveBeat(config, entry.name, runName);
+		return entry.segments.map((text) => ({ text, chapter }));
+	});
+}
+
 export function loadYawaConfig(root: string): YawaConfig {
-	return YawaConfigSchema.parse(
+	const config = YawaConfigSchema.parse(
 		yaml.load(
 			fs.readFileSync(path.join(root, "config/yawa/daily.yaml"), "utf8"),
 		),
 	);
+	for (const [shape, names] of Object.entries(config.arc.shapes))
+		for (const name of names)
+			if (!config.arc.beats[name])
+				throw new Error(`shape '${shape}' uses unknown beat '${name}'`);
+	for (const form of config.metadata.title_forms)
+		for (const [, axis] of form.matchAll(/\{(\w+)\}/g))
+			if (!config.axes[axis as string])
+				throw new Error(`title form uses unknown axis '${axis}'`);
+	for (const axis of config.metadata.tags_from_axes)
+		if (!config.axes[axis]) throw new Error(`tags use unknown axis '${axis}'`);
+	return config;
 }
 
 export function loadPool(root: string, config: YawaConfig): PoolEntry[] {
@@ -130,14 +295,16 @@ export function validateDraft(
 ): string[] {
 	const failures: string[] = [];
 	const { min_segments, max_segments, max_segment_chars } = config.script;
-	if (
-		draft.segments.length < min_segments ||
-		draft.segments.length > max_segments
-	)
+	const expected = (config.arc.shapes[draft.shape] ?? []).join(",");
+	if (!expected) failures.push(`unknown shape: ${draft.shape}`);
+	else if (draft.chapters.map((c) => c.name).join(",") !== expected)
+		failures.push(`chapters must be exactly: ${expected}`);
+	const texts = draft.chapters.flatMap((c) => c.segments);
+	if (texts.length < min_segments || texts.length > max_segments)
 		failures.push(
-			`segments must be ${min_segments}-${max_segments}, got ${draft.segments.length}`,
+			`segments must be ${min_segments}-${max_segments}, got ${texts.length}`,
 		);
-	draft.segments.forEach((text, index) => {
+	texts.forEach((text, index) => {
 		if (text.length > max_segment_chars)
 			failures.push(`segment ${index + 1} exceeds ${max_segment_chars} chars`);
 	});
@@ -145,7 +312,7 @@ export function validateDraft(
 		draft.title,
 		draft.hook,
 		draft.cover_scene,
-		...draft.segments,
+		...texts,
 	].join("\n");
 	for (const term of config.safety.banned_terms)
 		if (everything.includes(term)) failures.push(`banned term: ${term}`);
@@ -181,6 +348,7 @@ function irodoriCall(
 	caption: string,
 	seed: number,
 	outputWav: string,
+	extra: string[] = [],
 ): IrodoriCall {
 	const backend = config.tts.backends[config.tts.backend];
 	if (!backend)
@@ -208,26 +376,33 @@ function irodoriCall(
 			String(backend.num_steps),
 			"--output-wav",
 			outputWav,
+			...extra,
 		],
 		env: { HF_HOME: config.tts.hf_home },
 	};
 }
 
-/** 動画内の全セグメントを、同じ参照音声で生成する。声の同一性はこの参照が決める。 */
+/** 動画内の全セグメントを、同じ参照音声で生成する。声の同一性はこの参照が決め、章は話し方だけを変える。 */
 export function segmentCall(
 	config: YawaConfig,
-	text: string,
-	caption: string,
+	segment: Segment,
 	refWav: string,
 	outputWav: string,
 ): IrodoriCall {
+	const { chapter } = segment;
 	return irodoriCall(
 		config,
 		["--ref-wavs", refWav],
-		text,
-		caption,
+		segment.text,
+		`${config.voice.caption}${chapter.style}`,
 		config.tts.seed,
 		outputWav,
+		[
+			"--duration-scale",
+			String(chapter.duration_scale),
+			"--cfg-scale-caption",
+			String(chapter.cfg_scale_caption),
+		],
 	);
 }
 
@@ -436,13 +611,41 @@ export function yawaAudit(
 	};
 }
 
+function render(template: string, axes: Record<string, string>): string {
+	return template.replace(/\{(\w+)\}/g, (_, axis: string) => {
+		const value = axes[axis];
+		if (value === undefined) throw new Error(`axis '${axis}' is not selected`);
+		return value;
+	});
+}
+
 /** 公開タイトル。新規投稿と既存動画の書き換えで、同じ規則を使う。 */
-export function buildTitle(draft: ScriptDraft, config: YawaConfig): string {
-	return `${config.metadata.title_prefix}${draft.title}${config.metadata.title_suffix}`;
+export function buildTitle(
+	draft: ScriptMeta,
+	config: YawaConfig,
+	selection: Selection,
+): string {
+	const form = config.metadata.title_forms[selection.title_form];
+	if (form === undefined) throw new Error("title_form is out of range");
+	return `${render(form, selection.axes)}${draft.title}${config.metadata.title_suffix}`;
+}
+
+export function buildTags(config: YawaConfig, selection: Selection): string[] {
+	return [
+		...new Set([
+			...config.metadata.tags_core,
+			...config.metadata.tags_from_axes.map((axis) => {
+				const value = selection.axes[axis];
+				if (value === undefined)
+					throw new Error(`axis '${axis}' is not selected`);
+				return value;
+			}),
+		]),
+	].slice(0, config.metadata.tags_max);
 }
 
 export function buildDescription(
-	draft: ScriptDraft,
+	draft: ScriptMeta,
 	entry: PoolEntry,
 	config: YawaConfig,
 	seconds: number,
@@ -451,7 +654,7 @@ export function buildDescription(
 	const inspired = `${entry.author ? `着想: ${entry.title} / ${entry.author}` : `着想: ${entry.title}`}\n\n${entry.url}\n`;
 	return [
 		draft.hook,
-		"年上の成人の女性が、耳元で甘く囁く癒しと安眠のASMRです。",
+		config.metadata.description_lead,
 		"",
 		`再生時間: 約${minutes}分。イヤホンでお聴きください。`,
 		"",
