@@ -19,7 +19,7 @@ rating:
   max: 5
 axes:
   genre: [Japanese technopop, electro house, electropop, future pop, dance pop, eurobeat influenced rave pop, eurobeat]
-  tempo: ["124 BPM", "128 BPM", "130 BPM", "132 BPM", "134 BPM", "140 BPM", "150 BPM", "160 BPM", "164 BPM"]
+  tempo: ["120 BPM", "124 BPM", "126 BPM", "128 BPM", "130 BPM", "136 BPM", "146 BPM", "156 BPM", "160 BPM"]
   key: [C major, A minor, D major, F# minor, E minor, G major, Eb major]
   lead: [detuned supersaw lead, bright saw arpeggios, staccato synth stabs, punchy FM bass lead, glassy digital bell lead, bright saw lead with brass stabs]
   rhythm: [sidechained pumping bass with four on the floor kick, filter sweeps with crisp digital hi-hats, sidechained chords with tight kick, glitchy percussion with rolling bass, sequenced octave bass with tight drums, staccato gated synth pluck arpeggios]

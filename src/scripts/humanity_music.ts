@@ -125,6 +125,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		schema: DraftSchema,
 		name: "humanity_music_draft",
 		llmOptions: {
+			domainId: "humanity_observatory",
 			temperature: config.temperature,
 			extra: { tools: [{ googleSearchRetrieval: {} }] },
 		},

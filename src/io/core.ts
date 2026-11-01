@@ -68,6 +68,7 @@ export interface LoopMemoryEntry {
 	timestamp: string;
 }
 export interface LlmOptions {
+	domainId?: string;
 	model?: string;
 	temperature?: number;
 	response_mime_type?: string;
@@ -80,8 +81,8 @@ export function createLlm(
 ): BaseChatModel & { keyName?: string } {
 	const { extra = {}, ...rest } = options;
 
-	let domainId: string | undefined;
-	if (options.sessionId?.includes("/")) {
+	let domainId: string | undefined = options.domainId;
+	if (!domainId && options.sessionId?.includes("/")) {
 		const parts = options.sessionId.split(path.sep);
 		const runsIdx = parts.lastIndexOf("runs");
 		if (runsIdx !== -1 && parts[runsIdx + 1]) {
