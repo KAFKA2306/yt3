@@ -68,6 +68,9 @@ function writeReceipt(root: string, withAttestations = true): void {
 			channel_id: CHANNEL_ID,
 		},
 	);
+	fs.outputJsonSync(path.join(publishDir(root), "thumbnail_attestation.json"), {
+		api_update_status: "succeeded",
+	});
 }
 
 function deps(
