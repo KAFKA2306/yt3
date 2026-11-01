@@ -557,7 +557,10 @@ export class ScriptSmith extends BaseAgent {
 				.replace("{angle}", angle)
 				.replace("{section_title}", section.title)
 				.replace("{key_points}", section.key_points.join(", "))
-				.replace("{target_chars}", section.target_character_count.toString())
+				.replace(
+					"{target_chars}",
+					section.target_character_count?.toString() ?? "",
+				)
 				.replace("{previous_context}", prevContext)
 				.replace("{comedy_beat}", JSON.stringify(section.comedy_beat, null, 2))
 				.replace("{news_context}", newsContext) +

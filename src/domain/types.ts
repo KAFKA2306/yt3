@@ -163,7 +163,7 @@ export const ContentOutlineSchema = z.object({
 			id: z.number(),
 			title: z.string(),
 			key_points: z.array(z.string()),
-			target_character_count: z.coerce.number(),
+			target_character_count: z.coerce.number().optional(),
 			comedy_beat: ComedyBeatSchema.default({ enabled: false }),
 		}),
 	),

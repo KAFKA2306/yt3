@@ -186,7 +186,7 @@ remote_audit_at: 2026-08-14T...
 - upload intent / remote audit / receipt の hash
 - retry 回数と最終停止理由
 
-最低限の eval ケースは、(a) malformed script、(b) thumbnail permission failure、(c) captions processing pending、(d) upload intent のみ存在、(e) receipt あり、(f) channel ID 不一致、(g) public gate 不一致とする。eval の失敗を prompt の追記だけで済ませず、validator・schema・routing・retry の変更へ変換する。
+最低限の eval ケースは、(a) malformed script、(b) captions processing pending、(c) upload intent のみ存在、(d) receipt あり、(e) channel ID 不一致、(f) public gate 不一致とする。eval の失敗を prompt の追記だけで済ませず、validator・schema・routing・retry の変更へ変換する。
 
 ## 実装順序
 
