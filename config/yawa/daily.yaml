@@ -36,7 +36,7 @@ arc:
       style: ""
       duration_scale: [1.0, 1.0]
       cfg_scale_caption: 3.0
-      gap_seconds: [1, 1]
+      gap_seconds: [0.3, 0.3]
       gain_db: 0
     打ち明け:
       share: 0.17
@@ -44,7 +44,7 @@ arc:
       style: ""
       duration_scale: [1.0, 1.0]
       cfg_scale_caption: 3.0
-      gap_seconds: [1, 1]
+      gap_seconds: [0.3, 0.3]
       gain_db: -1
     山場:
       share: 0.25
@@ -52,7 +52,7 @@ arc:
       style: 少し感情が高ぶり、声に抑揚がある。
       duration_scale: [1.0, 1.0]
       cfg_scale_caption: 4.0
-      gap_seconds: [1, 1]
+      gap_seconds: [0.3, 0.3]
       gain_db: 1
     静止:
       share: 0.1
@@ -60,7 +60,7 @@ arc:
       style: ""
       duration_scale: [1.0, 1.0]
       cfg_scale_caption: 3.0
-      gap_seconds: [1, 1]
+      gap_seconds: [0.3, 0.3]
       gain_db: -4
     回想:
       share: 0.16
@@ -68,7 +68,7 @@ arc:
       style: ""
       duration_scale: [1.0, 1.0]
       cfg_scale_caption: 3.0
-      gap_seconds: [1, 1]
+      gap_seconds: [0.3, 0.3]
       gain_db: -2
     ほどき:
       share: 0.18
@@ -76,7 +76,7 @@ arc:
       style: 安堵して、ゆっくり落ち着いていく。
       duration_scale: [1.0, 1.0]
       cfg_scale_caption: 3.0
-      gap_seconds: [1, 1]
+      gap_seconds: [0.3, 0.3]
       gain_db: -2
     沈み:
       share: 0.165
@@ -84,7 +84,7 @@ arc:
       style: とてもゆっくり、一語ずつ区切って話す。
       duration_scale: [1.0, 1.0]
       cfg_scale_caption: 3.0
-      gap_seconds: [1, 1]
+      gap_seconds: [0.3, 0.3]
       gain_db: -5
     締め:
       share: 0.1
@@ -92,7 +92,7 @@ arc:
       style: ほとんど囁きに近く、語尾を長くのばして静かに終わる。
       duration_scale: [1.0, 1.0]
       cfg_scale_caption: 3.0
-      gap_seconds: [1, 1]
+      gap_seconds: [0.3, 0.3]
       gain_db: -8
   shapes:
     単峰: [導入, 打ち明け, 山場, ほどき, 沈み, 締め]
