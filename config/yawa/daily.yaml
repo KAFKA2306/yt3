@@ -19,12 +19,12 @@ tts:
       kind: irodori
       dir: /home/kafka/2511youtuber/v3/yt3/sandbox/Irodori-TTS-v4.1
       hf_checkpoint: Aratako/Irodori-TTS-v4.1-Small
-      num_steps: 10
+      num_steps: 40
     irodori-v4-large:
       kind: irodori
       dir: /home/kafka/2511youtuber/v3/yt3/sandbox/Irodori-TTS-v4.1
       hf_checkpoint: Aratako/Irodori-TTS-v4-Large
-      num_steps: 10
+      num_steps: 40
   hf_home: /home/kafka/.cache/hf-yawa
   seed: 4242
   min_free_vram_mib: 6000
