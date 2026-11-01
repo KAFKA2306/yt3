@@ -7,8 +7,8 @@ script:
   tool: codex
   model: gpt-6.1-terra
   sandbox: read-only
-  min_segments: 36
-  max_segments: 60
+  min_segments: 64
+  max_segments: 90
   max_segment_chars: 90
   max_attempts: 3
 tts:
