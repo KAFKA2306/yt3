@@ -8,6 +8,10 @@ tasks:
       - uv sync --frozen
       - uv run --frozen python src/scripts/production_runtime_preflight.py --mode setup
 
+  sync:deps:
+    desc: "Install Bun dependencies from the committed lockfile into node_modules (fails when bun.lock is stale)"
+    cmds: ["bun install --frozen-lockfile"]
+
   loop:
     desc: "Run the daily production loop and audit"
     cmds:
