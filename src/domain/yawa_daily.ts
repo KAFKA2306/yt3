@@ -13,13 +13,15 @@ const IrodoriBackendSchema = z.object({
 
 const RangeSchema = z.tuple([z.number().positive(), z.number().positive()]);
 
+const GapSchema = z.tuple([z.number().nonnegative(), z.number().nonnegative()]);
+
 const BeatSchema = z.object({
 	share: z.number().positive(),
 	brief: z.string().min(1),
 	style: z.string(),
 	duration_scale: RangeSchema,
 	cfg_scale_caption: z.number().positive(),
-	gap_seconds: RangeSchema,
+	gap_seconds: GapSchema,
 	gain_db: z.number(),
 });
 

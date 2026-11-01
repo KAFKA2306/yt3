@@ -472,10 +472,9 @@ function synthesize(draft: ScriptDraft, dir: string, refWav: string): string {
 			"1",
 			leveled,
 		]);
-		list.push(
-			`file '${leveled}'`,
-			`file '${gapFile(segment.chapter.gap_seconds)}'`,
-		);
+		list.push(`file '${leveled}'`);
+		if (segment.chapter.gap_seconds > 0)
+			list.push(`file '${gapFile(segment.chapter.gap_seconds)}'`);
 	});
 	const listPath = path.join(ttsDir, "concat.txt");
 	fs.writeFileSync(listPath, `${list.join("\n")}\n`);
