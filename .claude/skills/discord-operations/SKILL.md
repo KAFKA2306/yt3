@@ -13,7 +13,7 @@ Ensure reliable and consistent communication between the YT3 autonomous producti
 ## Essential Paths
 
 - Configuration: `/home/kafka/2511youtuber/v3/yt3/config/default.yaml` (under `news_bot` and `discord`)
-- Environment Variables: `.env` (contains `DISCORD_TOKEN` and `DISCORD_WEBHOOK_URL`)
+- Environment Variables: root `.env` is the single runtime source for `DISCORD_TOKEN` (loaded by `dotenv/config`); profile files must not duplicate it. `DISCORD_WEBHOOK_URL` remains separate.
 - Utility Script: `/home/kafka/2511youtuber/v3/yt3/src/io/utils/discord.ts`
 - Standalone Bot: `/home/kafka/2511youtuber/v3/yt3/src/agents/standalone/discord_bot.ts`
 
@@ -32,6 +32,10 @@ Use `sendAlert(message, type, details)` for real-time channel notifications:
 The bot runs at `src/agents/standalone/discord_bot.ts` under service unit `yt3-discord.service`:
 - Registers `/news <query>` slash command to trigger video generation.
 - Automatically spins progress threads prefixed with `video-` to post workflow updates.
+
+## Safe Discord token replacement
+
+From the repository root, run `python3 src/scripts/set_discord_token.py` in an interactive terminal. The token is entered with hidden input, never passed on the command line or printed. The tool rejects blank/placeholder tokens and symlink targets, backs up any changed environment files as private mode 0600 copies, writes root `.env` atomically, and removes duplicate `DISCORD_TOKEN` assignments from `config/.env`, `config/.env.byosan`, and `config/.env.yawa` without changing their other keys. Backups are ignored by Git. Verify with `python3 src/scripts/set_discord_token.py --check`, then restart `yt3-discord.service` and verify the bot can authenticate. Do not use `sed` or commit tokens to Git. A successful local update does not prove Discord authentication until the service is tested.
 
 ## System Audits
 

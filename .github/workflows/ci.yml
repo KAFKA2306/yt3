@@ -15,6 +15,9 @@ jobs:
       with:
         fetch-depth: 2
 
+    - name: Verify Discord token update safety (no secrets)
+      run: python3 -m unittest discover -s tests -p 'test_set_discord_token.py' -v
+
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
       with:

@@ -79,3 +79,8 @@ scratch/
 # Migration residue and temporary test directories
 openclaw-workspace-state.json.migrated.*
 .tmp-*/
+
+# Private Discord token migration backups and staging
+/.env.backup-*
+/.env.tmp-*
+/.env.restore-*
