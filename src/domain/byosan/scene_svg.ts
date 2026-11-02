@@ -27,13 +27,19 @@ function fitFontSize(
 	fontSize: number,
 	maxWidth: number,
 	halfWidthUnits: number,
+	floor: number,
 	letterSpacing = 0,
 ): number {
 	const spacing = Array.from(text).length * letterSpacing;
-	return Math.min(
+	const fitted = Math.min(
 		fontSize,
 		Math.floor((maxWidth - spacing) / displayUnits(text, halfWidthUnits)),
 	);
+	if (fitted < Math.min(floor, fontSize))
+		throw new Error(
+			`BYOSAN_TEXT_BELOW_FLOOR: ${fitted}px < ${floor}px ${text}`,
+		);
+	return fitted;
 }
 
 function statColor(
@@ -92,6 +98,7 @@ function statCard(
 		landscape.stat_cards.label_font_size,
 		innerWidth,
 		F.captions.half_width_units,
+		F.scene.min_font_px,
 		landscape.stat_cards.label_letter_spacing,
 	);
 	const detailSize = fitFontSize(
@@ -99,6 +106,7 @@ function statCard(
 		landscape.stat_cards.detail_font_size,
 		innerWidth,
 		F.captions.half_width_units,
+		F.scene.min_font_px,
 	);
 	return `
 			<g>
@@ -182,6 +190,7 @@ function sceneParts(
 		LANDSCAPE.section_label.font_size,
 		LANDSCAPE.speaker_chip.x - LANDSCAPE.section_label.x,
 		F.captions.half_width_units,
+		F.scene.min_font_px,
 		LANDSCAPE.section_label.letter_spacing,
 	);
 	const subheadlineSize = fitFontSize(
@@ -189,6 +198,7 @@ function sceneParts(
 		LANDSCAPE.subheadline.font_size,
 		LANDSCAPE.subheadline.max_width,
 		F.captions.half_width_units,
+		F.scene.min_font_px,
 	);
 	const sourceText = `${F.scene.source_label}  ${segment.source}`;
 	const sourceSize = fitFontSize(
@@ -196,6 +206,7 @@ function sceneParts(
 		LANDSCAPE.source.font_size,
 		LANDSCAPE.source.max_width,
 		F.captions.half_width_units,
+		F.scene.min_font_px,
 	);
 	const wrap = (inner: string): string => `
 	<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
@@ -246,6 +257,7 @@ function sceneParts(
 				ST.headline_font_size,
 				LANDSCAPE.headline.max_width,
 				F.captions.half_width_units,
+				F.scene.min_font_px,
 			),
 		),
 	);

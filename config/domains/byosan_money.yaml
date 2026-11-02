@@ -644,6 +644,7 @@ feature_production:
   scene:
     headline_wrap_units: 21
     min_page_seconds: 12
+    min_font_px: 22
     statement: {headline_baseline_y: 470, headline_font_size: 132, headline_line_height: 150, subheadline_baseline_y: 700, subheadline_font_size: 44, rule_y: 300, rule_width: 240, rule_height: 10}
     headline_compact_threshold_units: 18
     stat_value_compact_threshold_units: 12
