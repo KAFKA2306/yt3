@@ -21,7 +21,7 @@ import {
 } from "../domain/youtube_analytics_traffic_sources.js";
 import {
 	createYouTubeOAuthClient,
-	getYouTubeProfileForBucket,
+	getAnalyticsProfileForBucket,
 } from "../domain/youtube_profiles.js";
 
 const ROOT = process.cwd();
@@ -496,12 +496,19 @@ async function main() {
 		return;
 	}
 	const db = new Database(DB_FILE);
+	let failures = 0;
 	try {
 		for (const video of videos) {
 			const windows = eligibleWindows(video.publishedAt);
 			if (windows.length === 0) continue;
-			const profile = getYouTubeProfileForBucket(video.bucket);
 			try {
+				const profile = getAnalyticsProfileForBucket(video.bucket);
+				if (profile === null) {
+					console.info(
+						`[SKIP_UNCONFIGURED] ${video.runId}: pulse_nlm has no authorized YouTube Analytics profile`,
+					);
+					continue;
+				}
 				const { auth } = await createYouTubeOAuthClient(profile.profileName);
 				if (video.channelId !== profile.expectedChannelId) {
 					throw new Error(
@@ -540,13 +547,19 @@ async function main() {
 					);
 				}
 			} catch (error) {
+				failures += 1;
 				console.error(
-					`[FAIL_CLOSED] ${video.videoId} (${profile.profileName}): ${(error as Error).message}`,
+					`[FAIL_CLOSED] ${video.videoId} (bucket=${video.bucket}): ${(error as Error).message}`,
 				);
 			}
 		}
 	} finally {
 		db.close();
+	}
+	if (failures > 0) {
+		throw new Error(
+			`YouTube Analytics ingestion failed for ${failures} video(s); successful videos were processed independently`,
+		);
 	}
 }
 

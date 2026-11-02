@@ -86,6 +86,15 @@ export function getYouTubeProfileForBucket(bucket: string): YouTubeProfile {
 	return profile;
 }
 
+// pulse_nlm is not one of the configured YouTube Analytics channel profiles.
+// Do not guess an OAuth identity for it; keep other unknown buckets fail-closed.
+export function getAnalyticsProfileForBucket(
+	bucket: string,
+): YouTubeProfile | null {
+	if (bucket === "pulse_nlm") return null;
+	return getYouTubeProfileForBucket(bucket);
+}
+
 export function getYouTubeProfileForChannel(
 	channelId?: string,
 	channelTitle?: string,
