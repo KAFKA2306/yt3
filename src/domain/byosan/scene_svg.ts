@@ -177,11 +177,6 @@ function sceneParts(
 			: identity.primaryAccent;
 	const hasData = render.kind !== "question" && render.kind !== "none";
 	const emotionLabel = F.emotion_labels[segment.emotion];
-	const Q = F.scene.question_mark;
-	const questionMark =
-		render.kind === "question"
-			? `<text x="${LANDSCAPE.chart_region.x + LANDSCAPE.chart_region.width - Q.right_inset}" y="${LANDSCAPE.chart_region.y + Q.baseline_offset}" font-family="${FONT}" font-size="${Q.font_size}" font-weight="${design.typography.weights.headline}" fill="${identity.primaryAccent}" fill-opacity="${Q.opacity}">?</text>`
-			: "";
 	const sectionSize = fitFontSize(
 		segment.section,
 		LANDSCAPE.section_label.font_size,
@@ -234,20 +229,37 @@ function sceneParts(
 		<text x="${LANDSCAPE.section_label.x}" y="${LANDSCAPE.section_label.baseline_y}" class="section" style="font-size:${sectionSize}px">${xml(segment.section)}</text>
 		<text x="${LANDSCAPE.source.x}" y="${LANDSCAPE.source.baseline_y}" class="source" style="font-size:${sourceSize}px">${F.scene.source_label}  ${xml(segment.source)}</text>
 `;
-	const textLayer = `
-		${
-			hasData
-				? `
+	const ST = F.scene.statement;
+	const statementLines = wrapDisplay(
+		segment.headline,
+		Math.max(
+			1,
+			Math.floor(LANDSCAPE.headline.max_width / ST.headline_font_size),
+		),
+		F.captions.half_width_units,
+	).slice(0, LANDSCAPE.headline.max_lines);
+	const statementSize = Math.min(
+		ST.headline_font_size,
+		...statementLines.map((line) =>
+			fitFontSize(
+				line,
+				ST.headline_font_size,
+				LANDSCAPE.headline.max_width,
+				F.captions.half_width_units,
+			),
+		),
+	);
+	const textLayer = hasData
+		? `
 		<text x="${LANDSCAPE.headline.x}" y="${LANDSCAPE.headline.baseline_y}" class="headline" font-size="${headlineSize}">${tspans(headlineLines, LANDSCAPE.headline.x, LANDSCAPE.headline.baseline_y, headlineLineHeight)}</text>
 		<text x="${LANDSCAPE.subheadline.x}" y="${headlineLines.length > 1 ? LANDSCAPE.subheadline.two_line_baseline_y : LANDSCAPE.subheadline.one_line_baseline_y}" class="subheadline" style="font-size:${subheadlineSize}px">${xml(segment.subheadline)}</text>
-		`
-				: ""
-		}
+`
+		: `
+		<rect x="${LANDSCAPE.headline.x}" y="${ST.rule_y}" width="${ST.rule_width}" height="${ST.rule_height}" fill="${accent}"/>
+		<text x="${LANDSCAPE.headline.x}" y="${ST.headline_baseline_y}" class="headline" font-size="${statementSize}">${tspans(statementLines, LANDSCAPE.headline.x, ST.headline_baseline_y, ST.headline_line_height)}</text>
+		<text x="${LANDSCAPE.subheadline.x}" y="${ST.subheadline_baseline_y}" class="subheadline" style="font-size:${ST.subheadline_font_size}px">${xml(segment.subheadline)}</text>
 `;
-	const dataLayer = `
-		${dataRegionContent(render, style)}
-		${questionMark}
-`;
+	const dataLayer = dataRegionContent(render, style);
 	const chipLayer = `
 		<g transform="translate(${LANDSCAPE.speaker_chip.x},${LANDSCAPE.speaker_chip.y})">
 			<rect width="${LANDSCAPE.speaker_chip.width}" height="${LANDSCAPE.speaker_chip.height}" rx="${LANDSCAPE.speaker_chip.radius}" fill="${design.colors.surface}" stroke="${speakerColor}" stroke-width="${LANDSCAPE.speaker_chip.stroke_width}"/>

@@ -16,6 +16,7 @@ import {
 } from "../src/domain/byosan/production_config.js";
 import {
 	type ByosanSceneRender,
+	pageNumbers,
 	parseDisplayValue,
 	resolveSceneRender,
 } from "../src/domain/byosan/scene_render.js";
@@ -315,5 +316,43 @@ describe("byosan scene render", () => {
 			style,
 		);
 		expect(svg).toContain('class="stat-label" style="font-size:7px"');
+	});
+});
+
+describe("byosan page numbers", () => {
+	const scene = (
+		kind: "none" | "question" | "stat_cards",
+		section: string,
+	) => ({
+		render: (kind === "stat_cards"
+			? { kind, stats: [] }
+			: { kind }) as ByosanSceneRender,
+		section,
+		duration: 6,
+	});
+	test("holds the page across scenes without data inside a section", () => {
+		const pages = pageNumbers(
+			[
+				scene("question", "導入"),
+				scene("none", "導入"),
+				scene("none", "導入"),
+				scene("stat_cards", "結論"),
+				scene("none", "結論"),
+			],
+			12,
+		);
+		expect(pages).toEqual([0, 0, 0, 1, 1]);
+	});
+	test("turns the page at a section change only after the minimum seconds", () => {
+		const pages = pageNumbers(
+			[
+				scene("question", "導入"),
+				scene("none", "比較"),
+				scene("none", "比較"),
+				scene("none", "比較"),
+			],
+			12,
+		);
+		expect(pages).toEqual([0, 0, 1, 1]);
 	});
 });

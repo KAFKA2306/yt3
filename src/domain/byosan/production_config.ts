@@ -58,13 +58,6 @@ const ColorSchema = z.object({
 	alpha: z.number().min(0).max(1),
 });
 
-const RectOffsetSchema = z.object({
-	right_inset: nonNegativeNumber,
-	baseline_offset: nonNegativeNumber,
-	font_size: positiveInteger,
-	opacity: z.number().min(0).max(1),
-});
-
 const BedToneSchema = z.object({
 	frequency_hz: z.number().positive(),
 	amplitude: z.number().positive(),
@@ -182,6 +175,17 @@ const FeatureProductionSchema = z.object({
 	}),
 	scene: z.object({
 		headline_wrap_units: positiveInteger,
+		min_page_seconds: positiveInteger,
+		statement: z.object({
+			headline_baseline_y: positiveInteger,
+			headline_font_size: positiveInteger,
+			headline_line_height: positiveInteger,
+			subheadline_baseline_y: positiveInteger,
+			subheadline_font_size: positiveInteger,
+			rule_y: positiveInteger,
+			rule_width: positiveInteger,
+			rule_height: positiveInteger,
+		}),
 		headline_compact_threshold_units: positiveInteger,
 		stat_value_compact_threshold_units: positiveInteger,
 		stat_value_medium_threshold_units: positiveInteger,
@@ -190,7 +194,6 @@ const FeatureProductionSchema = z.object({
 		stat_value_max_lines: positiveInteger,
 		stat_value_letter_spacing_px: z.number(),
 		source_label: nonEmptyString,
-		question_mark: RectOffsetSchema,
 	}),
 	thumbnail: z.object({
 		jpeg_quality: z.number().int().min(1).max(100),
