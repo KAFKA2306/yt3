@@ -172,24 +172,24 @@
 			"one_line_baseline_y": 400,
 			"two_line_baseline_y": 456,
 			"max_width": 1296,
-			"font_size": 31,
+			"font_size": 38,
 			"font_weight": 600
 		},
 		"data_region": {
 			"x": 96,
 			"y": 504,
 			"width": 1296,
-			"height": 224
+			"height": 288
 		},
 		"chart_region": {
 			"x": 96,
 			"y": 472,
 			"width": 1296,
-			"height": 304,
+			"height": 328,
 			"title_baseline_y": 448,
-			"legend_font_size": 20,
-			"axis_label_font_size": 18,
-			"key_number_font_size": 48,
+			"legend_font_size": 26,
+			"axis_label_font_size": 24,
+			"key_number_font_size": 72,
 			"stroke_width": 4,
 			"grid_stroke": 1,
 			"grid_opacity": 0.12,
@@ -197,7 +197,7 @@
 			"max_pie_slices": 5
 		},
 		"stat_cards": {
-			"height": 224,
+			"height": 288,
 			"gap": 24,
 			"widths": [
 				1296,
@@ -210,21 +210,21 @@
 			"stroke_width": 2,
 			"stroke_opacity": 0.34,
 			"accent_width": 8,
-			"accent_height": 224,
+			"accent_height": 288,
 			"accent_radius": 2,
 			"padding_left": 30,
 			"padding_right": 30,
-			"label_baseline_offset": 44,
-			"label_font_size": 23,
+			"label_baseline_offset": 56,
+			"label_font_size": 30,
 			"label_font_weight": 700,
 			"label_letter_spacing": 1,
-			"value_baseline_offset": 112,
-			"value_short_font_size": 61,
-			"value_medium_font_size": 47,
-			"value_compact_font_size": 39,
-			"value_line_height": 54,
-			"detail_baseline_offset": 196,
-			"detail_font_size": 20,
+			"value_baseline_offset": 178,
+			"value_short_font_size": 124,
+			"value_medium_font_size": 88,
+			"value_compact_font_size": 62,
+			"value_line_height": 72,
+			"detail_baseline_offset": 254,
+			"detail_font_size": 26,
 			"detail_font_weight": 500
 		},
 		"character_region": {
@@ -254,9 +254,9 @@
 		},
 		"source": {
 			"x": 96,
-			"baseline_y": 824,
+			"baseline_y": 842,
 			"max_width": 1296,
-			"font_size": 20,
+			"font_size": 26,
 			"font_weight": 500,
 			"color": "#667085"
 		},

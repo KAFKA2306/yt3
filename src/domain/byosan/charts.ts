@@ -60,6 +60,7 @@ const ChartThemeSchema = z.object({
 		label_top: OffsetSchema,
 		value_top: OffsetSchema,
 		sublabel_top: OffsetSchema,
+		unit_gap: z.number().nonnegative(),
 	}),
 	kind_labels: z.object({
 		actual: z.string().min(1),
@@ -429,6 +430,7 @@ function bignumberOption(
 								fill: theme.palette.primary,
 							},
 							unit: {
+								padding: [0, 0, 0, layout.unit_gap],
 								fontSize: size.bignumber_unit,
 								fontWeight: weight.bold,
 								fontFamily: theme.numeric_font_family,

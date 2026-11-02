@@ -36,6 +36,7 @@ import {
 } from "../domain/byosan/production_config.js";
 import {
 	type ByosanSceneRender,
+	pageNumbers,
 	resolveSceneRender,
 } from "../domain/byosan/scene_render.js";
 import { compileScenes } from "../domain/byosan/scene_spec.js";
@@ -314,33 +315,42 @@ async function renderVisualMaster(
 			),
 		});
 	}
+	const pages = pageNumbers(timed, F.scene.min_page_seconds);
+	const totalPages = (pages[pages.length - 1] ?? 0) + 1;
 	const scenes = await Promise.all(
 		timed.map(async (segment) => {
 			const character = characters.get(segment.speaker);
 			if (!character) {
 				throw new Error(`BYOSAN_CHARACTER_MISSING: ${segment.speaker}`);
 			}
-			const layers = renderSceneLayers(
-				{
-					segment,
-					render: segment.render,
-					index: segment.index,
-					total: timed.length,
-				},
-				SCENE_STYLE,
+			const page = pages[segment.index] ?? 0;
+			const owner = timed[pages.indexOf(page)] ?? segment;
+			const input = (target: TimedSegment) => ({
+				segment: target,
+				render: target.render,
+				index: page,
+				total: totalPages,
+			});
+			const layers = renderSceneLayers(input(owner), SCENE_STYLE);
+			const chip = `scene-${segment.index}-chip.svg`;
+			const pageFile = (name: string) => `scene-${page}-${name}.svg`;
+			await fs.writeFile(
+				path.join(publicDir, chip),
+				renderSceneLayers(input(segment), SCENE_STYLE).chip,
 			);
-			const files = Object.fromEntries(
-				await Promise.all(
-					Object.entries(layers).map(async ([name, svg]) => {
-						const file = `scene-${segment.index}-${name}.svg`;
-						await fs.writeFile(path.join(publicDir, file), svg);
-						return [name, file] as const;
-					}),
-				),
-			);
+			if (owner === segment)
+				for (const name of ["frame", "text", "data"] as const)
+					await fs.writeFile(
+						path.join(publicDir, pageFile(name)),
+						layers[name],
+					);
 			return {
-				...files,
-				full: segment.index === 0 ? "first-slide.png" : undefined,
+				frame: pageFile("frame"),
+				text: pageFile("text"),
+				data: pageFile("data"),
+				chip,
+				hold: owner !== segment,
+				full: page === 0 ? "first-slide.png" : undefined,
 				character: character.file,
 				characterLeft: character.left,
 				characterTop: character.top,

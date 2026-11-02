@@ -8,7 +8,6 @@
 		"lint": "bun node_modules/@biomejs/biome/bin/biome check .",
 		"format": "bun node_modules/@biomejs/biome/bin/biome format --write src tests",
 		"typecheck": "tsc --noEmit",
-		"design:preview": "bun src/scripts/design_preview.ts",
 		"check:merge:fast": "bun run lint && bun run typecheck && bun src/scripts/audit_publish_routing.ts",
 		"check:merge": "bun run check:merge:fast && SKIP_LLM=true DRY_RUN=true bun run test"
 	},

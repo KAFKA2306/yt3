@@ -35,8 +35,6 @@ Each fact table has exactly one grain.
 
 Dimension tables: `dim_date`, `dim_profile` (`byosan`, `yawa`, `humanity`), `dim_channel`, `dim_topic`, `dim_source` (one row per external script source, with its license and credit terms), `dim_check_rule`, `dim_asset`.
 
-Selection evidence for `fact_script_selection` is recorded in [docs/evidence/asmr_script_selection_20261010.md](../evidence/asmr_script_selection_20261010.md). Its selection criteria are applied before a script enters production.
-
 Rules:
 
 - Analytics values are stored only when measured by the API. Estimates are never mixed in.

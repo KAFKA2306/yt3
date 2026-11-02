@@ -224,3 +224,24 @@ export function resolveSceneRender(
 	}
 	return { kind: "stat_cards", stats: segment.stats };
 }
+
+export function pageNumbers(
+	scenes: { render: ByosanSceneRender; section: string; duration: number }[],
+	minPageSeconds: number,
+): number[] {
+	let page = -1;
+	let pageSeconds = 0;
+	let section = "";
+	return scenes.map((scene) => {
+		const hasData =
+			scene.render.kind === "stat_cards" || scene.render.kind === "chart";
+		const turn = scene.section !== section && pageSeconds >= minPageSeconds;
+		if (page < 0 || hasData || turn) {
+			page += 1;
+			pageSeconds = 0;
+			section = scene.section;
+		}
+		pageSeconds += scene.duration;
+		return page;
+	});
+}

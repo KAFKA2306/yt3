@@ -106,6 +106,25 @@
 		"landscape.character_region.height": 640,
 		"landscape.background.grid_opacity": 0,
 		"landscape.background.glow_opacity": 0,
-		"landscape.background.max_glows": 0
+		"landscape.background.max_glows": 0,
+		"landscape.data_region.height": 288,
+		"landscape.stat_cards.height": 288,
+		"landscape.stat_cards.accent_height": 288,
+		"landscape.stat_cards.label_baseline_offset": 56,
+		"landscape.stat_cards.label_font_size": 30,
+		"landscape.stat_cards.value_baseline_offset": 178,
+		"landscape.stat_cards.value_short_font_size": 124,
+		"landscape.stat_cards.value_medium_font_size": 88,
+		"landscape.stat_cards.value_compact_font_size": 62,
+		"landscape.stat_cards.value_line_height": 72,
+		"landscape.stat_cards.detail_baseline_offset": 254,
+		"landscape.stat_cards.detail_font_size": 26,
+		"landscape.subheadline.font_size": 38,
+		"landscape.source.font_size": 26,
+		"landscape.source.baseline_y": 842,
+		"landscape.chart_region.height": 328,
+		"landscape.chart_region.legend_font_size": 26,
+		"landscape.chart_region.axis_label_font_size": 24,
+		"landscape.chart_region.key_number_font_size": 72
 	}
 }

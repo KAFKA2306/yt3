@@ -643,6 +643,8 @@ feature_production:
     margin_v: 52
   scene:
     headline_wrap_units: 21
+    min_page_seconds: 12
+    statement: {headline_baseline_y: 470, headline_font_size: 132, headline_line_height: 150, subheadline_baseline_y: 700, subheadline_font_size: 44, rule_y: 300, rule_width: 240, rule_height: 10}
     headline_compact_threshold_units: 18
     stat_value_compact_threshold_units: 12
     stat_value_medium_threshold_units: 8
@@ -651,7 +653,6 @@ feature_production:
     stat_value_max_lines: 2
     stat_value_letter_spacing_px: -1
     source_label: "SOURCE"
-    question_mark: {right_inset: 80, baseline_offset: 78, font_size: 310, opacity: 0.2}
   thumbnail:
     jpeg_quality: 92
     jpeg_chroma_subsampling: "4:4:4"

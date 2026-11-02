@@ -15,6 +15,7 @@ export type SceneProps = {
 	text: string;
 	data: string;
 	chip: string;
+	hold: boolean;
 	full?: string;
 	character: string;
 	characterLeft: number;
@@ -41,7 +42,9 @@ function Scene({ scene }: { scene: SceneProps }) {
 	const { fps } = useVideoConfig();
 	if (scene.full) return layer(scene.full);
 	const enter = (delay: number) =>
-		spring({ frame: frame - delay, fps, config: { damping: 200 } });
+		scene.hold
+			? 1
+			: spring({ frame: frame - delay, fps, config: { damping: 200 } });
 	const rise = (delay: number) => ({
 		opacity: enter(delay),
 		transform: `translateY(${interpolate(enter(delay), [0, 1], [18, 0])}px)`,
@@ -73,7 +76,7 @@ function Video({ scenes, entranceFrames }: VideoProps) {
 		<AbsoluteFill>
 			{scenes.map((scene, index) => (
 				<Sequence
-					key={scene.frame}
+					key={scene.chip}
 					from={index * entranceFrames}
 					durationInFrames={entranceFrames}
 				>

@@ -36,6 +36,11 @@
 	},
 	"legend": { "top": 12, "right": 40 },
 	"symbol_size": 10,
-	"bignumber": { "label_top": 12, "value_top": 52, "sublabel_top": 186 },
+	"bignumber": {
+		"label_top": 12,
+		"value_top": 52,
+		"sublabel_top": 186,
+		"unit_gap": 20
+	},
 	"kind_labels": { "actual": "実績", "estimate": "推計", "forecast": "予想" }
 }

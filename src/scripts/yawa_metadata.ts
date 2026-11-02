@@ -3,10 +3,12 @@ import fs from "fs-extra";
 import { google } from "googleapis";
 import {
 	buildDescription,
+	buildTags,
 	buildTitle,
 	loadPool,
 	loadYawaConfig,
-	ScriptDraftSchema,
+	ScriptMetaSchema,
+	SelectionSchema,
 } from "../domain/yawa_daily.js";
 import {
 	assertYouTubeChannelMatchesProfile,
@@ -45,17 +47,19 @@ async function main() {
 	const receipt = fs.readJsonSync(path.join(dir, "publish", "receipt.json"));
 	const videoId: string = receipt.youtube.video_id;
 	if (!videoId) throw new Error(`${runName} has no published video id`);
-	const draft = ScriptDraftSchema.parse(
+	const draft = ScriptMetaSchema.parse(
 		fs.readJsonSync(path.join(dir, "script.json")),
 	);
-	const selection = fs.readJsonSync(path.join(dir, "selection.json"));
+	const selection = SelectionSchema.parse(
+		fs.readJsonSync(path.join(dir, "selection.json")),
+	);
 	const entry = loadPool(ROOT, config).find((e) => e.id === selection.id);
 	if (!entry) throw new Error(`selection ${selection.id} is not in the pool`);
 	const seconds = probeSeconds(path.join(dir, "video.mp4"));
 
-	const title = buildTitle(draft, config);
+	const title = buildTitle(draft, config, selection);
 	const description = buildDescription(draft, entry, config, seconds);
-	const tags = config.metadata.tags;
+	const tags = buildTags(config, selection);
 
 	const { auth } = await createYouTubeOAuthClient(profile.profileName);
 	await assertYouTubeChannelMatchesProfile(auth, profile);
