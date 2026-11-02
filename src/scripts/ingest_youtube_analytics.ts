@@ -504,7 +504,9 @@ async function main() {
 			try {
 				const profile = getAnalyticsProfileForBucket(video.bucket);
 				if (profile === null) {
-					console.info(`[SKIP_UNCONFIGURED] ${video.runId}: pulse_nlm has no authorized YouTube Analytics profile`);
+					console.info(
+						`[SKIP_UNCONFIGURED] ${video.runId}: pulse_nlm has no authorized YouTube Analytics profile`,
+					);
 					continue;
 				}
 				const { auth } = await createYouTubeOAuthClient(profile.profileName);
@@ -555,7 +557,9 @@ async function main() {
 		db.close();
 	}
 	if (failures > 0) {
-		throw new Error(`YouTube Analytics ingestion failed for ${failures} video(s); successful videos were processed independently`);
+		throw new Error(
+			`YouTube Analytics ingestion failed for ${failures} video(s); successful videos were processed independently`,
+		);
 	}
 }
 
