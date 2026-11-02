@@ -51,9 +51,7 @@ function Scene({ scene }: { scene: SceneProps }) {
 	});
 	return (
 		<AbsoluteFill>
-			<AbsoluteFill style={{ opacity: enter(0) }}>
-				{layer(scene.frame)}
-			</AbsoluteFill>
+			<AbsoluteFill>{layer(scene.frame)}</AbsoluteFill>
 			<AbsoluteFill style={rise(4)}>{layer(scene.text)}</AbsoluteFill>
 			<AbsoluteFill style={rise(10)}>{layer(scene.data)}</AbsoluteFill>
 			<AbsoluteFill style={{ opacity: enter(2) }}>
