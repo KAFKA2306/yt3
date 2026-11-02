@@ -40,7 +40,7 @@
 		"label_top": 12,
 		"value_top": 52,
 		"sublabel_top": 186,
-		"unit_gap": 20
+		"unit_gap": 60
 	},
 	"kind_labels": { "actual": "実績", "estimate": "推計", "forecast": "予想" }
 }
