@@ -288,19 +288,33 @@ describe("byosan scene render", () => {
 	test("shrinks long single-line text to its box", () => {
 		const segment = {
 			...segmentOf(0),
-			subheadline: "あ".repeat(60),
+			subheadline: "あ".repeat(40),
 			stats: [],
 		};
 		const svg = renderSceneSvg(
 			{ segment, render: renderOf(0), index: 0, total: 1 },
 			style,
 		);
-		expect(svg).toContain('class="subheadline" style="font-size:21px"');
+		expect(svg).toContain('class="subheadline" style="font-size:32px"');
+	});
+
+	test("stops instead of shrinking text below the readable floor", () => {
+		const segment = {
+			...segmentOf(0),
+			subheadline: "あ".repeat(60),
+			stats: [],
+		};
+		expect(() =>
+			renderSceneSvg(
+				{ segment, render: renderOf(0), index: 0, total: 1 },
+				style,
+			),
+		).toThrow("BYOSAN_TEXT_BELOW_FLOOR");
 	});
 
 	test("shrinks stat labels to the card width", () => {
 		const stat = {
-			label: "あ".repeat(40),
+			label: "あ".repeat(12),
 			value: "1%",
 			detail: "前年比",
 			color: "cyan" as const,
@@ -315,7 +329,7 @@ describe("byosan scene render", () => {
 			},
 			style,
 		);
-		expect(svg).toContain('class="stat-label" style="font-size:7px"');
+		expect(svg).toContain('class="stat-label" style="font-size:28px"');
 	});
 });
 

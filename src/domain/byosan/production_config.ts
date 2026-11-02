@@ -176,6 +176,7 @@ const FeatureProductionSchema = z.object({
 	scene: z.object({
 		headline_wrap_units: positiveInteger,
 		min_page_seconds: positiveInteger,
+		min_font_px: positiveInteger,
 		statement: z.object({
 			headline_baseline_y: positiveInteger,
 			headline_font_size: positiveInteger,
