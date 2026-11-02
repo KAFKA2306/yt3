@@ -21,6 +21,6 @@ describe("YouTube Analytics bucket authorization boundary", () => {
 	test("fails closed for a new unknown bucket", () => {
 		expect(() => getAnalyticsProfileForBucket("unrecognized_channel")).toThrow(
 			"No YouTube profile configured for bucket 'unrecognized_channel'",
-	);
+		);
 	});
 });
