@@ -218,7 +218,7 @@ function canSendDiscordNotification(
 export async function postDiscordWebhook(
 	webhookUrl: string,
 	body: unknown,
-): Promise<void> {
+): Promise<string | undefined> {
 	if (Date.now() < rateLimitedUntil) {
 		AgentLogger.warn(
 			"DISCORD",
@@ -229,7 +229,7 @@ export async function postDiscordWebhook(
 		return;
 	}
 
-	const res = await fetch(webhookUrl, {
+	const res = await fetch(`${webhookUrl}?wait=true`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body),
@@ -254,7 +254,22 @@ export async function postDiscordWebhook(
 			"HTTP_FAILED",
 			`Discord webhook responded ${res.status}`,
 		);
+		return;
 	}
+
+	const sent = (await res.json()) as { id: string };
+	const back = await fetch(`${webhookUrl}/messages/${sent.id}`);
+	if (!back.ok) {
+		AgentLogger.error(
+			"DISCORD",
+			"ALERT",
+			"READBACK_FAILED",
+			`Discord message ${sent.id} was not readable (${back.status})`,
+		);
+		return undefined;
+	}
+	AgentLogger.info("DISCORD", "ALERT", "DELIVERED", `message ${sent.id}`);
+	return sent.id;
 }
 
 /**
