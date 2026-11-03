@@ -34,6 +34,14 @@ import {
 } from "../domain/byosan/explanation.js";
 import { auditFeatureSpecAgainstExplanation } from "../domain/byosan/explanation_contract.js";
 import {
+	assertFactSheetRunSuffix,
+	assertFactSheetUnpublished,
+	factSheetHosts,
+	factSheetPathFromEnv,
+	loadFactSheet,
+	writeFactSheetResearch,
+} from "../domain/byosan/fact_sheet.js";
+import {
 	buildFeatureSpecInput,
 	DraftArticlesSchema,
 	type FeatureDraftInput,
@@ -499,6 +507,7 @@ function writeByosanCanonicalAudit(
 	runDir: string,
 	spec: ByosanFeatureSpec,
 	sourceText: string,
+	extraAllowedHosts: string[] = [],
 ): void {
 	const explanationPath = path.join(runDir, "source", "explanation.json");
 	const explanation = ExplanationSchema.parse(fs.readJsonSync(explanationPath));
@@ -534,7 +543,7 @@ function writeByosanCanonicalAudit(
 		claims: spec.claims,
 		sources: spec.sources,
 		explanationIssues,
-		allowedHosts: byosanAllowedSourceHosts(),
+		allowedHosts: [...byosanAllowedSourceHosts(), ...extraAllowedHosts],
 		productionReport: {
 			path: productionReportPath,
 			decision: productionReport.decision,
@@ -567,6 +576,10 @@ async function runByosanDaily(): Promise<void> {
 		throw new Error(`Invalid BYOSAN_DATE: ${date}`);
 	}
 	const runId = `byosan_money/${date}-daily${process.env.BYOSAN_SUFFIX ?? ""}`;
+	// Validated before any run directory is created. Unset means discovery.
+	const factSheetFile = factSheetPathFromEnv(process.env);
+	const factSheet = factSheetFile ? loadFactSheet(factSheetFile) : undefined;
+	if (factSheet) assertFactSheetRunSuffix(process.env.BYOSAN_SUFFIX);
 	const store = new AssetStore(runId);
 	const checkpoint = reconcileByosanCheckpoint(store.runDir, runId, ROOT);
 	writeByosanCheckpoint(store.runDir, checkpoint);
@@ -579,23 +592,29 @@ async function runByosanDaily(): Promise<void> {
 	const explanationPath = path.join(store.runDir, "source", "explanation.json");
 	assertByosanRetryAllowed(store.runDir);
 	const { discovery } = dailyConfig();
-	if (
+	if (factSheet) {
+		writeFactSheetResearch(factSheet, store.runDir);
+		checkpoint.stages.research_ready = true;
+		writeByosanCheckpoint(store.runDir, checkpoint);
+	} else if (
 		!(checkpoint.stages.research_ready && (await fs.pathExists(articlesPath)))
 	) {
 		await writeDiscoveryEvidence(discovery, store.runDir, new Date());
 		checkpoint.stages.research_ready = true;
 		writeByosanCheckpoint(store.runDir, checkpoint);
 	}
+	const publishedUrls = loadPublishedByosanSourceUrls(
+		ROOT,
+		new Date(`${date}T23:59:59Z`),
+		discovery.repeat_window_days,
+	);
+	if (factSheet) assertFactSheetUnpublished(factSheet.sheet, publishedUrls);
 	const input = prepareFeatureDraftInput({
 		runId,
 		asOf: date,
 		today: DraftArticlesSchema.parse(await fs.readJson(articlesPath)),
-		baseline: loadDiscoveryBaseline(discovery, new Date()),
-		publishedUrls: loadPublishedByosanSourceUrls(
-			ROOT,
-			new Date(`${date}T23:59:59Z`),
-			discovery.repeat_window_days,
-		),
+		baseline: factSheet ? [] : loadDiscoveryBaseline(discovery, new Date()),
+		publishedUrls,
 	});
 	let spec: ByosanFeatureSpec;
 	if (checkpoint.stages.spec_ready && (await fs.pathExists(specPath))) {
@@ -653,7 +672,12 @@ async function runByosanDaily(): Promise<void> {
 		["src/scripts/audit_byosan_authenticity.ts", "--run", runId],
 		process.env,
 	);
-	writeByosanCanonicalAudit(store.runDir, spec, inputSourceText(input));
+	writeByosanCanonicalAudit(
+		store.runDir,
+		spec,
+		inputSourceText(input),
+		factSheet ? factSheetHosts(factSheet.sheet) : [],
+	);
 	markFailureRecovered(store.runDir);
 	console.log(`PRODUCTION_PASS=${runId}`);
 }

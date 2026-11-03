@@ -1,0 +1,247 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "SBIホールディングス（8473）",
+	"released": "2026-11-02",
+	"source_documents": [
+		{
+			"url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"title": "SBIホールディングス 2027年3月期 中間期 決算短信（2026年4月1日〜2026年9月30日）",
+			"issuer": "SBIホールディングス株式会社",
+			"published": "2026-11-02"
+		},
+		{
+			"url": "https://www.sbigroup.co.jp/english/investors/disclosure/presentation/pdf/261102presentations.pdf",
+			"title": "SBIホールディングス 2027年3月期 中間期 決算説明資料（英文）",
+			"issuer": "SBIホールディングス株式会社",
+			"published": "2026-11-02"
+		}
+	],
+	"facts": [
+		{
+			"id": "revenue_h1",
+			"label": "連結収益",
+			"value": 1057515,
+			"unit": "百万円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "revenue_h1_yoy",
+			"label": "連結収益の前年同期比",
+			"value": 17.2,
+			"unit": "%",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "pretax_h1",
+			"label": "連結税引前利益",
+			"value": 324306,
+			"unit": "百万円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "pretax_h1_yoy",
+			"label": "連結税引前利益の前年同期比",
+			"value": 52.9,
+			"unit": "%",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "attributable_profit_h1",
+			"label": "親会社の所有者に帰属する中間利益",
+			"value": 230572,
+			"unit": "百万円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "attributable_profit_h1_yoy",
+			"label": "親会社の所有者に帰属する中間利益の前年同期比",
+			"value": 39.1,
+			"unit": "%",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "financial_services_pretax_h1",
+			"label": "金融サービス事業の税引前利益",
+			"value": 200233,
+			"unit": "百万円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "financial_services_pretax_h1_yoy",
+			"label": "金融サービス事業の税引前利益の前年同期比",
+			"value": 69.7,
+			"unit": "%",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED",
+			"note": "決算短信の印字は+69.7%。前年同期118,026百万円からの計算値は+69.65%で、小数第1位で69.7%となり印字と一致（0.1ptの差はなし）。"
+		},
+		{
+			"id": "banking_pretax_h1",
+			"label": "金融サービス事業の税引前利益（銀行業）",
+			"value": 107.3,
+			"unit": "十億円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/english/investors/disclosure/presentation/pdf/261102presentations.pdf",
+			"status": "CONFIRMED",
+			"note": "資料p.12の表記はJPY billion。"
+		},
+		{
+			"id": "banking_pretax_h1_yoy",
+			"label": "金融サービス事業の税引前利益（銀行業）の前年同期比",
+			"value": 45.8,
+			"unit": "%",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/english/investors/disclosure/presentation/pdf/261102presentations.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "securities_pretax_h1",
+			"label": "金融サービス事業の税引前利益（証券業）",
+			"value": 64.8,
+			"unit": "十億円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/english/investors/disclosure/presentation/pdf/261102presentations.pdf",
+			"status": "CONFIRMED",
+			"note": "資料p.12の表記はJPY billion。"
+		},
+		{
+			"id": "securities_pretax_h1_yoy",
+			"label": "金融サービス事業の税引前利益（証券業）の前年同期比",
+			"value": 90.0,
+			"unit": "%",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/english/investors/disclosure/presentation/pdf/261102presentations.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "insurance_pretax_h1",
+			"label": "金融サービス事業の税引前利益（保険業）",
+			"value": 18.6,
+			"unit": "十億円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/english/investors/disclosure/presentation/pdf/261102presentations.pdf",
+			"status": "CONFIRMED",
+			"note": "資料p.12の表記はJPY billion。"
+		},
+		{
+			"id": "insurance_pretax_h1_yoy",
+			"label": "金融サービス事業の税引前利益（保険業）の前年同期比",
+			"value": 227.1,
+			"unit": "%",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/english/investors/disclosure/presentation/pdf/261102presentations.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "crypto_revenue_h1",
+			"label": "暗号資産事業の収益",
+			"value": 23083,
+			"unit": "百万円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "crypto_revenue_h1_yoy",
+			"label": "暗号資産事業の収益の前年同期比",
+			"value": -30.1,
+			"unit": "%",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "crypto_pretax_h1",
+			"label": "暗号資産事業の税引前損益",
+			"value": -1595,
+			"unit": "百万円",
+			"period": "2026年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED",
+			"note": "1,595百万円の税引前損失。"
+		},
+		{
+			"id": "crypto_pretax_prior_h1",
+			"label": "暗号資産事業の税引前損益（前年同期）",
+			"value": -147,
+			"unit": "百万円",
+			"period": "2025年4月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED",
+			"note": "前年同期は147百万円の税引前損失。"
+		},
+		{
+			"id": "dividend_interim",
+			"label": "中間配当",
+			"value": 30,
+			"unit": "円",
+			"period": "2027年3月期 第2四半期末",
+			"basis": "actual",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "dividend_year_end_forecast",
+			"label": "期末配当予想",
+			"value": 80,
+			"unit": "円",
+			"period": "2027年3月期 期末",
+			"basis": "forecast",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "dividend_annual_forecast",
+			"label": "年間配当予想",
+			"value": 110,
+			"unit": "円",
+			"period": "2027年3月期",
+			"basis": "forecast",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "CONFIRMED"
+		}
+	],
+	"unverified": [
+		{
+			"id": "full_year_forecast_not_disclosed",
+			"label": "通期連結業績予想（非開示の理由）",
+			"text": "当企業グループが展開する投資・証券関連事業をはじめとする金融事業全般は、その特性上、株式市場等の変動要因による影響が極めて大きいため、業績予想の開示は行っておりませんが、四半期決算の迅速な開示に努めるとともに、合理的な業績予想が可能となった場合には、速やかにその開示を行う予定であります。",
+			"source_url": "https://www.sbigroup.co.jp/investors/library/earning/pdf/2027_2q_hrc.pdf",
+			"status": "UNVERIFIED",
+			"note": "Q1決算短信（https://www2.jpx.co.jp/disc/84730/081220260730503797_tse-qcedifsm-84730-20260731384730-ixbrl.htm）の同文はCONFIRMED。H1版の文言は未確認として保留。H1 PDFのテキスト抽出では同文が「３．2027年３月期の連結業績予想」に見えるため、人の確認後に facts へ移す。"
+		}
+	]
+}

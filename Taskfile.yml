@@ -95,7 +95,7 @@ tasks:
       - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
   byosan:prepare:
-    desc: "Prepare one 秒算マネー run through the product release gate without publishing (DATE=YYYY-MM-DD required)"
+    desc: "Prepare one 秒算マネー run through the product release gate without publishing (DATE=YYYY-MM-DD required; optional FACT_SHEET=<verified fact sheet .json|.yaml> with BYOSAN_SUFFIX=-<name> replaces discovery)"
     deps: [sync:deps]
     cmds:
       - |
@@ -103,7 +103,7 @@ tasks:
           echo "DATE=YYYY-MM-DD is required" >&2
           exit 2
         fi
-      - BYOSAN_DATE={{.DATE}} task byosan:daily
+      - BYOSAN_FACT_SHEET={{.FACT_SHEET}} BYOSAN_DATE={{.DATE}} task byosan:daily
       - task release:check PROFILE=byosan -- byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}
       - |
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}"
