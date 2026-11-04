@@ -50,6 +50,7 @@ const FactSheetSchema = z
 	.object({
 		schema_version: z.literal(FACT_SHEET_SCHEMA_VERSION),
 		company: z.string().min(1),
+		subject: z.string().min(1).optional(),
 		released: z.string().regex(ISO_DATE),
 		source_documents: z.array(SourceDocumentSchema).min(1),
 		facts: z.array(FactSchema).min(1),
