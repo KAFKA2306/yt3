@@ -256,7 +256,10 @@ export class PublishAgent extends BaseAgent {
 			);
 		}
 
-		if (dancer.publish_at || ytCfg.default_visibility !== "private") {
+		if (
+			ytCfg.require_factual_integrity !== false &&
+			(dancer.publish_at || ytCfg.default_visibility !== "private")
+		) {
 			assertFactualIntegrityGate(this.store.runDir, state);
 		}
 

@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import {
 	assertFactualIntegrityGate,
+	factualIntegrityRequired,
 	loadPublicationState,
 	transitionPublication,
 	tryReuseCanonicalPublication,
@@ -145,5 +146,22 @@ describe("factual integrity publication gate", () => {
 		} finally {
 			fs.removeSync(runDir);
 		}
+	});
+});
+
+describe("factualIntegrityRequired", () => {
+	test("is required for non-private publication unless the domain turns it off", () => {
+		expect(factualIntegrityRequired({ default_visibility: "public" })).toBe(
+			true,
+		);
+		expect(factualIntegrityRequired({ default_visibility: "private" })).toBe(
+			false,
+		);
+		expect(
+			factualIntegrityRequired({
+				default_visibility: "public",
+				require_factual_integrity: false,
+			}),
+		).toBe(false);
 	});
 });

@@ -111,6 +111,7 @@ steps:
     default_tags: ["AI", "VTuber", "Finance", "Economy"]
     category_id: 24
     default_visibility: "public"
+    require_factual_integrity: false
     discord_notifications: {publish_start: true, publish_complete: true}
 
 providers:

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { PublishAgent } from "../domain/agents/publish.js";
 import { assertProductReleaseGate } from "../domain/product_release_gate.js";
+import { factualIntegrityRequired } from "../domain/publication_state.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import { loadYouTubeProfileEnv } from "../domain/youtube_profiles.js";
 import { AssetStore } from "../io/core.js";
@@ -43,8 +44,7 @@ async function main() {
 		state,
 		profile,
 		publishVideoPath,
-		requireFactualIntegrity:
-			store.cfg.steps.youtube?.default_visibility !== "private",
+		requireFactualIntegrity: factualIntegrityRequired(store.cfg.steps.youtube),
 	});
 
 	try {

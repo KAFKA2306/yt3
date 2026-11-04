@@ -155,6 +155,16 @@ export async function tryReuseCanonicalPublication(
 	};
 }
 
+export function factualIntegrityRequired(youtube?: {
+	default_visibility?: string;
+	require_factual_integrity?: boolean;
+}): boolean {
+	return (
+		youtube?.default_visibility !== "private" &&
+		youtube?.require_factual_integrity !== false
+	);
+}
+
 export function assertFactualIntegrityGate(
 	runDir: string,
 	state: AgentState & {

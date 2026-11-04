@@ -25,6 +25,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 ## Publication
 
 - Publication is an irreversible external side effect. Use only `task publish PROFILE=<profile> -- <run-id>` or the product's daily entry, and only when the release gate reports PASS for that exact run and artifact and `publish_approved` is enabled in `config/domains/`.
+- Owner instruction 2026-11-05: byosan publication no longer requires the factual-integrity attestation (`steps.youtube.require_factual_integrity: false` in `config/domains/byosan_money.yaml`). The release gate still checks the run bucket, fallback metadata, a playable artifact, and the artifact hash. Number, source, and rights correctness of a byosan video is then the responsibility of whoever produces it. yawa and humanity are unchanged.
 - A byosan run is publish-ready only when preparation prints `[product-release-gate] PASS ... artifact_sha256=<sha256>`, `PUBLISH_READY_RUN=<run-id>`, and `PUBLISH_COMMAND=...`. Record the run id, SHA-256, and command in the governing Issue. If any condition fails, stop. Do not bypass or retry around a failed gate.
 - `DATE` must be given explicitly in `YYYY-MM-DD`. Never infer today.
 - Byosan publishes one or more videos a day, never zero. Each run is named `<date>-daily-<HHmm>` (`BYOSAN_SUFFIX`); an already-published day does not stop another run, and only a source reused within `discovery.repeat_window_days` is rejected. The timer slots are in `systemd/yt3-byosan-daily.timer`.
