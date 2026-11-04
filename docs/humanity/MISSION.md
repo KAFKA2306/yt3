@@ -43,7 +43,8 @@ AI 生成の開示は常に入れる。連絡先は外部、動画、リポジ�
 ## 6. 責務分離
 
 - `AGENTS.md`: 正準コマンド、公開の条件、権限。
-- `config/music/humanity.yaml`: 頻度、目標、曲調の軸、検査のしきい値。
+- `config/music/humanity.yaml`: 頻度、目標、曲調の軸、検査のしきい値、JIZURA 文字PVの設定（`pv`）。
+- 曲の映像は、歌詞の時刻を曲から取って JIZURA で組む文字PVが基準。静止画のカバーは使わない（`scripts/humanity_pv.py`）。
 - `docs/adr/0045-humanity-music-video-release-gate.md`: 公開ゲートの決定。
 
 本書は新しい公開許可を意味しない。実行は正準の Taskfile 経路とゲートに従う。

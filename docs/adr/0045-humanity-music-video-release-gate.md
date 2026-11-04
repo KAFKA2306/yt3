@@ -28,7 +28,7 @@ Accepted
    - 動画: `https://www.youtube.com/watch?v=<video_id>`
    - プレイリスト: `https://www.youtube.com/playlist?list=<playlist_id>`
    - 記録先: `publish/receipt.json`、`ledger.jsonl`、`playlist.m3u8`
-7. 映像素材の画像生成は `codex-imagegen "<prompt>" <out.png> --size WxH` で行う（codex-bridge ce89dd4 のラッパー、MIT）。内部で `codex exec -C <出力先> -s workspace-write` を明示するため、`~/.codex/config.toml` の既定（`danger-full-access`、`approval_policy = "never"`）の権限は使わない。生成物ごとにプロンプトと SHA-256 を `visual_provenance` へ記録する。
+7. 映像は JIZURA（852wa、MIT、`assets/jizura/` に版を固定して同梱）の文字PVで作る。歌詞の各行の開始時刻は faster-whisper（`pv.whisper_model`）で曲から取り、歌詞行と順序どおりに対応づける（対応づけられなければ停止する）。JIZURA のバージョンと SHA-256、LRC と動画の SHA-256 を `pv.json` に残し、`visual_provenance` で照合する。サムネイルは動画の1フレーム（`thumbnail.at_seconds`）から作る。画像生成は使わない。
 8. 人類観測所の既存の毎日投稿と同日に2本公開してよい（運営者の決定、2026-10-20）。同じ日の複数の曲は、run 名の末尾に枠（`SLOT`、時刻 `HHMM`）を付けて区別する（`music-<日付>-<HHMM>`）。
 
 ## 検証の層

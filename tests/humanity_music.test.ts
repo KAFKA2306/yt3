@@ -29,8 +29,8 @@ const passing = (): MusicAuditInput => ({
 	actualAudioSha256: "aa",
 	videoSeconds: 180,
 	licenseText: `x ${config.yue.license_clause} y`,
-	cover: { tool: "codex-imagegen", prompt: "p", sha256: "cc" },
-	coverSha256: "cc",
+	pv: { tool: "jizura", jizura_version: "0.10.1", sha256: "cc" },
+	videoSha256: "cc",
 	lyricsGenerated: true,
 });
 
@@ -84,8 +84,8 @@ describe("humanity music audit", () => {
 		expect(musicAudit(input, config).music_provenance?.status).not.toBe("PASS");
 	});
 
-	test("fails visual provenance when the cover hash differs", () => {
-		const input = { ...passing(), coverSha256: "dd" };
+	test("fails visual provenance when the video hash differs", () => {
+		const input = { ...passing(), videoSha256: "dd" };
 		expect(musicAudit(input, config).visual_provenance?.status).not.toBe(
 			"PASS",
 		);

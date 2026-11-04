@@ -15,6 +15,13 @@ dependencies = [
 ]
 
 [dependency-groups]
+pv = [
+    "av>=14,<17",
+    "faster-whisper>=1.2",
+    "nvidia-cublas-cu12",
+    "nvidia-cudnn-cu12",
+    "playwright>=1.58",
+]
 dev = [
     "pyrefly>=0.26",
     "ruff>=0.12",
