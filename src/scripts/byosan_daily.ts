@@ -615,6 +615,7 @@ async function runByosanDaily(): Promise<void> {
 		today: DraftArticlesSchema.parse(await fs.readJson(articlesPath)),
 		baseline: factSheet ? [] : loadDiscoveryBaseline(discovery, new Date()),
 		publishedUrls,
+		subject: factSheet?.sheet.subject,
 	});
 	let spec: ByosanFeatureSpec;
 	if (checkpoint.stages.spec_ready && (await fs.pathExists(specPath))) {

@@ -31,6 +31,7 @@ export type FeatureDraftInput = {
 	today: DraftArticle[];
 	baseline: DraftArticle[];
 	publishedUrls: ReadonlySet<string>;
+	subject?: string;
 };
 
 type FeatureCorrection = {
@@ -79,7 +80,7 @@ const renderArticles = (articles: DraftArticle[]): string =>
 		.join("\n\n");
 
 export function renderFeatureDraftInput(input: FeatureDraftInput): string {
-	return `[今日の新着記事]\n${renderArticles(input.today)}\n\n[背景（直近の記事）]\n${renderArticles(input.baseline)}`;
+	return `${input.subject ? `[今日の題材（固定）]\n${input.subject}\n\n` : ""}[今日の新着記事]\n${renderArticles(input.today)}\n\n[背景（直近の記事）]\n${renderArticles(input.baseline)}`;
 }
 
 function inputArticles(input: FeatureDraftInput): DraftArticle[] {

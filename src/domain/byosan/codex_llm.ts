@@ -252,12 +252,14 @@ function runExec(
 function codexPrompt(
 	messages: CodexMessage[],
 	jsonOnlyInstruction: string,
+	jsonSchema: string,
 ): string {
 	return [
 		...messages.map(
 			(message) => `[${message.role.toUpperCase()}]\n${message.content}`,
 		),
 		jsonOnlyInstruction,
+		`[JSON_SCHEMA]\n${jsonSchema}`,
 	].join("\n\n");
 }
 
@@ -379,6 +381,7 @@ export async function invokeCodexStructured<T, U = T>(
 			codexPrompt(
 				request.messages(attempt, lastValidationError),
 				request.llm.json_only_instruction,
+				jsonSchema,
 			),
 			attempt,
 		);

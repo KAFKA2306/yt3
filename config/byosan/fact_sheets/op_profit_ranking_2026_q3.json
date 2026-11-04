@@ -1,0 +1,297 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "世界の大手企業10社（2026年7〜9月期の営業利益）",
+	"subject": "NISAや投資信託で海外の大手企業を間接的に持つ人に向けて、2026年7〜9月期の営業利益を円換算で並べ、メモリ企業のサムスン電子とSKハイニックスがMicrosoftやAlphabetなどのビッグテックを上回る順位に入ったことを示す。順位と額は、2026年9月30日の為替で円に直した値であることを必ず添える。時価総額と予想PERは確認できていないため扱わない。題材はこのランキングに固定し、1社だけに絞らない。",
+	"released": "2026-10-30",
+	"source_documents": [
+		{
+			"url": "https://www.murc-kawasesouba.jp/fx/past/index.php?id=260930",
+			"title": "三菱UFJ銀行 公示為替相場 2026年9月30日",
+			"issuer": "三菱UFJ銀行",
+			"published": "2026-09-30"
+		},
+		{
+			"url": "https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.84775/",
+			"title": "サムスン電子 2026年7〜9月期決算",
+			"issuer": "サムスン電子",
+			"published": "2026-10-30"
+		},
+		{
+			"url": "https://news.skhynix.com/en/q3-2026-business-results/",
+			"title": "SKハイニックス 2026年7〜9月期決算",
+			"issuer": "SKハイニックス",
+			"published": "2026-10-30"
+		},
+		{
+			"url": "https://www.thestar.com.my/news/world/2026/10/29/microsoft039s-quarterly-revenue-rises-19-pct-net-income-up-32-pct",
+			"title": "Microsoft 2026年7〜9月期決算",
+			"issuer": "Microsoft",
+			"published": "2026-10-30"
+		},
+		{
+			"url": "https://www.sec.gov/Archives/edgar/data/0001652044/000165204426000080/googexhibit991q32026.htm",
+			"title": "Alphabet 2026年7〜9月期決算",
+			"issuer": "Alphabet",
+			"published": "2026-10-30"
+		},
+		{
+			"url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"title": "Apple 2026年7〜9月期決算",
+			"issuer": "Apple",
+			"published": "2026-10-30"
+		},
+		{
+			"url": "https://www.sec.gov/Archives/edgar/data/0001018724/000101872426000038/amzn-20260930xex991.htm",
+			"title": "Amazon 2026年7〜9月期決算",
+			"issuer": "Amazon",
+			"published": "2026-10-30"
+		},
+		{
+			"url": "https://www.sec.gov/Archives/edgar/data/0001326801/000162828026066773/meta-20260930.htm",
+			"title": "Meta 2026年7〜9月期決算",
+			"issuer": "Meta",
+			"published": "2026-10-30"
+		},
+		{
+			"url": "https://ssl4.eir-parts.net/doc/285A/tdnet/2902676/00.pdf",
+			"title": "キオクシア 2026年7〜9月期決算",
+			"issuer": "キオクシア",
+			"published": "2026-10-30"
+		}
+	],
+	"facts": [
+		{
+			"id": "fx_usd_jpy",
+			"label": "米ドル円（三菱UFJ銀行、TTSとTTBの中間）",
+			"value": 157.35,
+			"unit": "円",
+			"period": "2026年9月30日",
+			"basis": "actual",
+			"source_url": "https://www.murc-kawasesouba.jp/fx/past/index.php?id=260930",
+			"status": "CONFIRMED",
+			"note": "2026年9月30日の公示TTS158.35円とTTB156.35円の中間から算出"
+		},
+		{
+			"id": "fx_krw_jpy",
+			"label": "ウォン円（三菱UFJ銀行、TTSとTTBの中間、100ウォンあたり）",
+			"value": 11.58,
+			"unit": "円",
+			"period": "2026年9月30日",
+			"basis": "actual",
+			"source_url": "https://www.murc-kawasesouba.jp/fx/past/index.php?id=260930",
+			"status": "CONFIRMED",
+			"note": "2026年9月30日の公示TTS11.78円とTTB11.38円の中間から算出"
+		},
+		{
+			"id": "op_profit_samsung_local",
+			"label": "サムスン電子の営業利益（現地通貨）",
+			"value": 107.4,
+			"unit": "兆ウォン",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.84775/",
+			"status": "CONFIRMED",
+			"note": "外部監査前の速報値（Samsung IR）"
+		},
+		{
+			"id": "op_profit_samsung_jpy",
+			"label": "サムスン電子の営業利益（円換算）",
+			"value": 12.44,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.84775/",
+			"status": "CONFIRMED",
+			"note": "現地通貨の値に2026年9月30日のTTM相当レートを掛けて算出"
+		},
+		{
+			"id": "op_profit_skhynix_local",
+			"label": "SKハイニックスの営業利益（現地通貨）",
+			"value": 83.3338,
+			"unit": "兆ウォン",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://news.skhynix.com/en/q3-2026-business-results/",
+			"status": "CONFIRMED",
+			"note": "K-IFRS、確定前の速報値。独立監査で変わりうる（SK hynix発表）"
+		},
+		{
+			"id": "op_profit_skhynix_jpy",
+			"label": "SKハイニックスの営業利益（円換算）",
+			"value": 9.65,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://news.skhynix.com/en/q3-2026-business-results/",
+			"status": "CONFIRMED",
+			"note": "現地通貨の値に2026年9月30日のTTM相当レートを掛けて算出"
+		},
+		{
+			"id": "op_profit_microsoft_local",
+			"label": "Microsoftの営業利益（現地通貨）",
+			"value": 45.92,
+			"unit": "十億ドル",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.thestar.com.my/news/world/2026/10/29/microsoft039s-quarterly-revenue-rises-19-pct-net-income-up-32-pct",
+			"status": "CONFIRMED",
+			"note": "2026年7〜9月期（Microsoft FY2027第1四半期）"
+		},
+		{
+			"id": "op_profit_microsoft_jpy",
+			"label": "Microsoftの営業利益（円換算）",
+			"value": 7.23,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.thestar.com.my/news/world/2026/10/29/microsoft039s-quarterly-revenue-rises-19-pct-net-income-up-32-pct",
+			"status": "CONFIRMED",
+			"note": "現地通貨の値に2026年9月30日のTTM相当レートを掛けて算出"
+		},
+		{
+			"id": "op_profit_alphabet_local",
+			"label": "Alphabetの営業利益（現地通貨）",
+			"value": 40.576,
+			"unit": "十億ドル",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001652044/000165204426000080/googexhibit991q32026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "op_profit_alphabet_jpy",
+			"label": "Alphabetの営業利益（円換算）",
+			"value": 6.38,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001652044/000165204426000080/googexhibit991q32026.htm",
+			"status": "CONFIRMED",
+			"note": "現地通貨の値に2026年9月30日のTTM相当レートを掛けて算出"
+		},
+		{
+			"id": "op_profit_apple_local",
+			"label": "Appleの営業利益（現地通貨）",
+			"value": 35.631,
+			"unit": "十億ドル",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "Appleの会計第4四半期（2026年6月28日〜9月26日）"
+		},
+		{
+			"id": "op_profit_apple_jpy",
+			"label": "Appleの営業利益（円換算）",
+			"value": 5.61,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "現地通貨の値に2026年9月30日のTTM相当レートを掛けて算出"
+		},
+		{
+			"id": "op_profit_amazon_local",
+			"label": "Amazonの営業利益（現地通貨）",
+			"value": 28.076,
+			"unit": "十億ドル",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001018724/000101872426000038/amzn-20260930xex991.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "op_profit_amazon_jpy",
+			"label": "Amazonの営業利益（円換算）",
+			"value": 4.42,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001018724/000101872426000038/amzn-20260930xex991.htm",
+			"status": "CONFIRMED",
+			"note": "現地通貨の値に2026年9月30日のTTM相当レートを掛けて算出"
+		},
+		{
+			"id": "op_profit_meta_local",
+			"label": "Metaの営業利益（現地通貨）",
+			"value": 12.988,
+			"unit": "十億ドル",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001326801/000162828026066773/meta-20260930.htm",
+			"status": "CONFIRMED",
+			"note": "2026年8月の州司法長官との合意に関する98.9億ドルの費用を含む（10-Q）。除くと約228.8億ドル"
+		},
+		{
+			"id": "op_profit_meta_jpy",
+			"label": "Metaの営業利益（円換算）",
+			"value": 2.04,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001326801/000162828026066773/meta-20260930.htm",
+			"status": "CONFIRMED",
+			"note": "現地通貨の値に2026年9月30日のTTM相当レートを掛けて算出"
+		},
+		{
+			"id": "op_profit_kioxia_local",
+			"label": "キオクシアの営業利益（現地通貨）",
+			"value": 1.9947,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://ssl4.eir-parts.net/doc/285A/tdnet/2902676/00.pdf",
+			"status": "CONFIRMED",
+			"note": "IFRS。2027年3月期第2四半期の3か月分（決算短信）"
+		},
+		{
+			"id": "op_profit_kioxia_jpy",
+			"label": "キオクシアの営業利益（円換算）",
+			"value": 1.99,
+			"unit": "兆円",
+			"period": "2026年7月〜9月",
+			"basis": "actual",
+			"source_url": "https://ssl4.eir-parts.net/doc/285A/tdnet/2902676/00.pdf",
+			"status": "CONFIRMED",
+			"note": "円建てのためそのまま"
+		}
+	],
+	"unverified": [
+		{
+			"id": "market_cap",
+			"label": "各社の時価総額",
+			"text": "ユーザー提供: サムスン約150兆円、アラムコ約260兆円、SKハイニックス約120兆円、Microsoft約613兆円、Alphabet約540兆円、Apple約794兆円、Amazon約409兆円、TSMC約327兆円、Meta約218兆円、キオクシア約16.1兆円",
+			"status": "UNVERIFIED",
+			"note": "公式資料では確認できない市場データ。基準日も不明"
+		},
+		{
+			"id": "forward_per",
+			"label": "各社の予想PER",
+			"text": "ユーザー提供: サムスン3.1倍、アラムコ13倍、SKハイニックス2.7倍、Microsoft26倍、Alphabet18倍、Apple36倍、Amazon22倍、TSMC19.5倍、Meta19.5倍、キオクシア2.3倍",
+			"status": "UNVERIFIED",
+			"note": "アナリスト予想に依存する値で、公式資料では確認できない"
+		},
+		{
+			"id": "tsmc_op_profit",
+			"label": "TSMCの営業利益",
+			"text": "NT$8,764.5億（TSMC 3Q26決算、営業利益率58.7%）。円換算はユーザー提供で約4.3兆円",
+			"status": "UNVERIFIED",
+			"note": "台湾ドル円の2026年9月30日レートを公式に確認できず、円換算は未確認。ランキングから除外"
+		},
+		{
+			"id": "aramco_op_profit",
+			"label": "サウジアラムコの営業利益",
+			"text": "ユーザー提供: 約9.4兆円",
+			"status": "UNVERIFIED",
+			"note": "Aramcoは2026年7〜9月期の調整後純利益312億ドル等を発表したが、営業利益の数値を確認できなかった"
+		},
+		{
+			"id": "user_yen_figures",
+			"label": "ユーザー提供の円換算値",
+			"text": "サムスン約11.6兆円、SKハイニックス約9.0兆円",
+			"status": "UNVERIFIED",
+			"note": "公式レート（ウォン円0.1158円）では12.44兆円、9.65兆円。ユーザー値は別のレートによるとみられる"
+		}
+	]
+}
