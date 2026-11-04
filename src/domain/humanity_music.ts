@@ -30,21 +30,24 @@ export const ConfigSchema = z.object({
 	lines_per_section: z.number(),
 	lyrics_rule: z.string(),
 	run: z.object({ bucket: z.string(), name_prefix: z.string() }),
-	cover: z.object({ file: z.string(), size: z.string(), prompt: z.string() }),
-	video: z.object({
-		file: z.string(),
-		width: z.number(),
-		height: z.number(),
-		fps: z.number(),
+	pv: z.object({
+		chrome: z.string(),
+		jizura_html: z.string(),
+		jizura_version: z.string(),
+		whisper_model: z.string(),
+		load_ms: z.number(),
+		export_timeout_ms: z.number(),
 		crf: z.number(),
 		audio_bitrate: z.string(),
-		fade_seconds: z.number(),
+		file: z.string(),
+		record: z.string(),
 	}),
 	thumbnail: z.object({
 		file: z.string(),
 		width: z.number(),
 		height: z.number(),
 		quality: z.number(),
+		at_seconds: z.number(),
 	}),
 	audit: z.object({
 		duration_tolerance_seconds: z.number(),
@@ -204,8 +207,8 @@ export type MusicAuditInput = {
 	actualAudioSha256: string;
 	videoSeconds: number;
 	licenseText: string;
-	cover: { tool?: string; prompt?: string; sha256?: string } | undefined;
-	coverSha256: string;
+	pv: { tool?: string; jizura_version?: string; sha256?: string } | undefined;
+	videoSha256: string;
 	lyricsGenerated: boolean;
 };
 
@@ -228,7 +231,7 @@ export function musicAudit(
 	input: MusicAuditInput,
 	config: MusicConfig,
 ): Record<string, AuditCheck> {
-	const { result, song, cover } = input;
+	const { result, song, pv } = input;
 	const provenance = [
 		result.status === "complete" ? "" : "result.status is not complete",
 		result.identity ? "" : "model identity missing",
@@ -251,11 +254,11 @@ export function musicAudit(
 			: "video and audio durations differ",
 	];
 	const visual = [
-		cover?.tool ? "" : "cover tool missing",
-		cover?.prompt ? "" : "cover prompt missing",
-		cover?.sha256 && cover.sha256 === input.coverSha256
+		pv?.tool ? "" : "video tool missing",
+		pv?.jizura_version ? "" : "JIZURA version missing",
+		pv?.sha256 && pv.sha256 === input.videoSha256
 			? ""
-			: "cover sha256 mismatch",
+			: "video sha256 mismatch",
 	];
 	const rights = [
 		input.lyricsGenerated ? "" : "lyrics were not generated in this run",
@@ -274,7 +277,7 @@ export function musicAudit(
 		),
 		visual_provenance: check(
 			"visual_provenance",
-			"Cover image tool, prompt and hash are recorded",
+			"Video tool, JIZURA version and hash are recorded",
 			visual.filter(Boolean),
 		),
 		music_rights: check(

@@ -92,7 +92,11 @@ function preflight(): void {
 		Bun.spawnSync(["codex", "login", "status"]).exitCode === 0
 			? ""
 			: "codex is not logged in",
-		Bun.which("codex-imagegen") ? "" : "codex-imagegen is not on PATH",
+		fs.existsSync(config.pv.chrome) ? "" : "pv chrome is missing",
+		fs.existsSync(path.join(ROOT, config.pv.jizura_html))
+			? ""
+			: "JIZURA html is missing",
+		Bun.which("uv") ? "" : "uv is not on PATH",
 		Bun.which("ffmpeg") ? "" : "ffmpeg is not on PATH",
 		fs.existsSync(path.join(config.yue.dir, config.yue.python))
 			? ""
@@ -303,59 +307,30 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	const request = fs.readJsonSync(
 		path.join(path.dirname(songDir), "request.json"),
 	);
+	const lyricsPath = path.join(dir, "lyrics.txt");
+	fs.writeFileSync(lyricsPath, request.lyrics);
 	if (brief) {
 		const briefPath = path.join(path.dirname(songDir), "brief.json");
 		if (!fs.existsSync(briefPath) || fs.readJsonSync(briefPath).brief !== brief)
 			throw new Error("HUMANITY_BRIEF does not match the existing song");
 	}
-	const coverPath = path.join(dir, config.cover.file);
-	const coverRecordPath = path.join(dir, "cover.json");
-	if (!fs.existsSync(coverRecordPath)) {
-		const prompt = fillTemplate(config.cover.prompt, song.cell);
-		run(["codex-imagegen", prompt, coverPath, "--size", config.cover.size]);
-		fs.writeJsonSync(coverRecordPath, {
-			tool: "codex-imagegen",
-			prompt,
-			size: config.cover.size,
-			sha256: sha256File(coverPath),
-		});
-	}
-	const videoPath = path.join(dir, config.video.file);
-	const { width, height } = config.video;
-	if (!fs.existsSync(videoPath))
-		run([
-			"ffmpeg",
-			"-y",
-			"-loglevel",
-			"error",
-			"-loop",
-			"1",
-			"-framerate",
-			String(config.video.fps),
-			"-i",
-			coverPath,
-			"-i",
-			song.audio,
-			"-vf",
-			`scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},format=yuv420p`,
-			"-c:v",
-			"libx264",
-			"-tune",
-			"stillimage",
-			"-crf",
-			String(config.video.crf),
-			"-af",
-			`afade=t=out:st=${probeSeconds(song.audio) - config.video.fade_seconds}:d=${config.video.fade_seconds}`,
-			"-c:a",
-			"aac",
-			"-b:a",
-			config.video.audio_bitrate,
-			"-t",
-			String(probeSeconds(song.audio)),
-			"-movflags",
-			"+faststart",
-			videoPath,
-		]);
+	const videoPath = path.join(dir, config.pv.file);
+	const pvRecordPath = path.join(dir, config.pv.record);
+	if (!fs.existsSync(pvRecordPath))
+		run(
+			[
+				"uv",
+				"run",
+				"--group",
+				"pv",
+				"python",
+				"scripts/humanity_pv.py",
+				song.audio,
+				lyricsPath,
+				dir,
+			],
+			{ cwd: ROOT },
+		);
 	const thumbnailPath = path.join(dir, config.thumbnail.file);
 	if (!fs.existsSync(thumbnailPath))
 		run([
@@ -363,8 +338,12 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			"-y",
 			"-loglevel",
 			"error",
+			"-ss",
+			String(config.thumbnail.at_seconds),
 			"-i",
-			coverPath,
+			videoPath,
+			"-frames:v",
+			"1",
 			"-vf",
 			`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
 			"-q:v",
@@ -404,8 +383,8 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			actualAudioSha256: sha256File(song.audio),
 			videoSeconds: probeSeconds(videoPath),
 			licenseText: fs.readFileSync(config.yue.license_file, "utf-8"),
-			cover: fs.readJsonSync(coverRecordPath),
-			coverSha256: sha256File(coverPath),
+			pv: fs.readJsonSync(pvRecordPath),
+			videoSha256: sha256File(videoPath),
 			lyricsGenerated: Boolean(request.lyrics),
 		},
 		config,
