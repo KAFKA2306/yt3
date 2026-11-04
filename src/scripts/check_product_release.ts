@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { assertProductReleaseGate } from "../domain/product_release_gate.js";
+import { factualIntegrityRequired } from "../domain/publication_state.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import { loadYouTubeProfileEnv } from "../domain/youtube_profiles.js";
 import { loadConfig } from "../io/core.js";
@@ -53,8 +54,7 @@ async function main() {
 		source_manifest_path?: string;
 	};
 	const publishVideoPath = process.argv[3]?.trim() || undefined;
-	const requireFactualIntegrity =
-		cfg.steps.youtube?.default_visibility !== "private";
+	const requireFactualIntegrity = factualIntegrityRequired(cfg.steps.youtube);
 
 	const result = assertProductReleaseGate({
 		runDir,

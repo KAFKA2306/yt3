@@ -168,6 +168,7 @@ export interface AppConfig {
 			default_tags: string[];
 			category_id: number;
 			default_visibility: string;
+			require_factual_integrity?: boolean;
 			discord_notifications: {
 				publish_start: boolean;
 				publish_complete: boolean;
