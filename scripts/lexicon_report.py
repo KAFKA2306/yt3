@@ -20,7 +20,7 @@ SOURCES = {
     ),
     "yawa": (
         "runs/yawa_archive/*/script.json",
-        lambda d: "\n".join(s if isinstance(s, str) else s["text"] for s in d["segments"]),
+        lambda d: "\n".join(s if isinstance(s, str) else s["text"] for c in d.get("chapters", []) for s in c.get("segments", [])) if "chapters" in d else "\n".join(s if isinstance(s, str) else s["text"] for s in d.get("segments", [])),
     ),
     "byosan": (
         "runs/byosan_money/*/source/feature_spec.json",
@@ -48,7 +48,7 @@ def words(text):
 
 
 loaded = [json.load(open(f)) for f in sorted(glob.glob(pattern))]
-docs = [extract(d) for d in loaded if "segments" in d or name == "humanity"]
+docs = [extract(d) for d in loaded if name == "humanity" or "segments" in d or "chapters" in d]
 tokens = [words(d) for d in docs]
 sets = [set(t) for t in tokens]
 mattr = [
@@ -59,8 +59,8 @@ mattr = [
 jaccard = [len(a & b) / len(a | b) for a, b in itertools.combinations(sets, 2) if a | b]
 frequency = Counter(w for s in sets for w in s)
 print(f"{name}: documents={len(docs)} content_words={sum(map(len, tokens))}")
-print(f"MATTR(window={WINDOW}) mean={statistics.mean(mattr):.3f} documents={len(mattr)}")
-print(f"pairwise Jaccard mean={statistics.mean(jaccard):.3f} max={max(jaccard):.3f}")
+print(f"MATTR(window={WINDOW}) mean={statistics.mean(mattr):.3f} documents={len(mattr)}" if mattr else f"MATTR(window={WINDOW}) unavailable: no eligible documents")
+print(f"pairwise Jaccard mean={statistics.mean(jaccard):.3f} max={max(jaccard):.3f}" if jaccard else "pairwise Jaccard unavailable: fewer than two comparable documents")
 print("document frequency top 15:")
 for word, count in frequency.most_common(15):
     print(f"  {word}\t{count / len(docs):.0%}")
