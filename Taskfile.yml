@@ -8,6 +8,10 @@ tasks:
       - uv sync --frozen
       - uv run --frozen python src/scripts/production_runtime_preflight.py --mode setup
 
+  setup:openmontage:
+    desc: "Clone OpenMontage outside the repository at the pinned ref and install its Remotion composer (the byosan visual renderer)"
+    cmds: ["bun src/scripts/setup_openmontage.ts"]
+
   sync:deps:
     desc: "Install Bun dependencies from the committed lockfile into node_modules (fails when bun.lock is stale)"
     cmds: ["bun install --frozen-lockfile"]

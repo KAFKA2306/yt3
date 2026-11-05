@@ -1,0 +1,179 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "自社株買いと上方修正が出た決算（三菱商事、トヨタ自動車、日本製鉄、2026年11月4日〜5日）",
+	"subject": "NISAや投資信託でも持つ人がいる大手3社の決算で、自社株買いと業績予想の上方修正が出た。順に、1. 三菱商事の自社株買い（上限は取得額の約束ではなく、取得した株は消却する）、2. トヨタの営業利益予想の上方修正と自社株買い枠の拡大、3. 日本製鉄の最終益予想の上方修正、を確認する。上限や予想は確定した金額ではない点と、株価が上がるとは限らない点を必ず添える。株価の値動き、ローム・アサンテ・KHネオケム・参天製薬は確認できていないため扱わない。",
+	"released": "2026-11-05",
+	"source_documents": [
+		{
+			"url": "https://www.media-ir.com/news/?p=187161",
+			"title": "三菱商事、最大1兆円の自社株買いを決議、取得株式は全数消却へ",
+			"issuer": "日本インタビュ新聞",
+			"published": "2026-11-04"
+		},
+		{
+			"url": "https://www.media-ir.com/news/?p=187325",
+			"title": "トヨタ自動車、通期営業利益3.9兆円に上方修正、自己株取得枠1.3兆円に拡大、12億株を消却へ",
+			"issuer": "日本インタビュ新聞",
+			"published": "2026-11-05"
+		},
+		{
+			"url": "https://finance.yahoo.co.jp/news/detail/b57fc3195c624febea158f1c27d64d8dfe8bbc67",
+			"title": "【決算速報】日本製鉄、今期最終を52％上方修正",
+			"issuer": "株探ニュース",
+			"published": "2026-11-05"
+		}
+	],
+	"facts": [
+		{
+			"id": "mc_buyback_cap",
+			"label": "三菱商事の自社株買いの取得総額の上限",
+			"value": 10000,
+			"unit": "億円（1兆円）",
+			"period": "2026年11月5日〜2027年7月31日の取得期間",
+			"basis": "actual",
+			"source_url": "https://www.media-ir.com/news/?p=187161",
+			"status": "CONFIRMED",
+			"note": "取締役会の決議は2026年11月4日。上限であり、実際の取得額は市場価格で変わる。東京証券取引所の市場での買い付け"
+		},
+		{
+			"id": "mc_buyback_shares",
+			"label": "三菱商事の自社株買いの取得株数の上限",
+			"value": 4.2,
+			"unit": "億株",
+			"period": "2026年11月5日〜2027年7月31日の取得期間",
+			"basis": "actual",
+			"source_url": "https://www.media-ir.com/news/?p=187161",
+			"status": "CONFIRMED",
+			"note": "取得した株式は2027年8月31日に全株を消却する予定"
+		},
+		{
+			"id": "mc_buyback_ratio",
+			"label": "三菱商事の自社株買いの上限が発行済株式に占める割合",
+			"value": 6,
+			"unit": "%（約）",
+			"period": "2026年11月4日の決議時",
+			"basis": "forecast",
+			"source_url": "https://www.media-ir.com/news/?p=187161",
+			"status": "CONFIRMED",
+			"note": "自己株式を除く発行済株式に対する割合。1兆円を2026年11月2日の終値で買うと仮定した試算"
+		},
+		{
+			"id": "toyota_op_forecast_old",
+			"label": "トヨタ自動車の2027年3月期の営業利益予想（修正前）",
+			"value": 34000,
+			"unit": "億円（3兆4,000億円）",
+			"period": "2027年3月期",
+			"basis": "forecast",
+			"source_url": "https://www.media-ir.com/news/?p=187325",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "toyota_op_forecast_new",
+			"label": "トヨタ自動車の2027年3月期の営業利益予想（修正後）",
+			"value": 39000,
+			"unit": "億円（3兆9,000億円）",
+			"period": "2027年3月期",
+			"basis": "forecast",
+			"source_url": "https://www.media-ir.com/news/?p=187325",
+			"status": "CONFIRMED",
+			"note": "前期比3.6%増の予想。発表は2026年11月5日"
+		},
+		{
+			"id": "toyota_buyback_old",
+			"label": "トヨタ自動車の自社株買いの上限（修正前）",
+			"value": 10000,
+			"unit": "億円（1兆円、5億株）",
+			"period": "取得期間は2027年8月4日まで",
+			"basis": "actual",
+			"source_url": "https://www.media-ir.com/news/?p=187325",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "toyota_buyback_new",
+			"label": "トヨタ自動車の自社株買いの上限（修正後）",
+			"value": 13000,
+			"unit": "億円（1兆3,000億円、6億1,000万株）",
+			"period": "取得期間は2027年8月4日まで",
+			"basis": "actual",
+			"source_url": "https://www.media-ir.com/news/?p=187325",
+			"status": "CONFIRMED",
+			"note": "上限であり、取得額の約束ではない"
+		},
+		{
+			"id": "toyota_cancel_old",
+			"label": "トヨタ自動車の自己株式の消却予定数（修正前）",
+			"value": 2,
+			"unit": "億株",
+			"period": "2026年11月5日の発表前",
+			"basis": "actual",
+			"source_url": "https://www.media-ir.com/news/?p=187325",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "toyota_cancel_new",
+			"label": "トヨタ自動車の自己株式の消却予定数（修正後）",
+			"value": 12,
+			"unit": "億株",
+			"period": "2026年11月5日の発表",
+			"basis": "actual",
+			"source_url": "https://www.media-ir.com/news/?p=187325",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "nss_net_forecast_old",
+			"label": "日本製鉄の2027年3月期の最終益予想（修正前）",
+			"value": 2900,
+			"unit": "億円",
+			"period": "2027年3月期",
+			"basis": "forecast",
+			"source_url": "https://finance.yahoo.co.jp/news/detail/b57fc3195c624febea158f1c27d64d8dfe8bbc67",
+			"status": "CONFIRMED",
+			"note": "親会社株主に帰属する当期純利益。IFRS"
+		},
+		{
+			"id": "nss_net_forecast_new",
+			"label": "日本製鉄の2027年3月期の最終益予想（修正後）",
+			"value": 4400,
+			"unit": "億円",
+			"period": "2027年3月期",
+			"basis": "forecast",
+			"source_url": "https://finance.yahoo.co.jp/news/detail/b57fc3195c624febea158f1c27d64d8dfe8bbc67",
+			"status": "CONFIRMED",
+			"note": "発表は2026年11月5日の大引け後（15時30分）"
+		},
+		{
+			"id": "nss_revision_pct",
+			"label": "日本製鉄の最終益予想の修正率",
+			"value": 51.7,
+			"unit": "%",
+			"period": "2027年3月期",
+			"basis": "forecast",
+			"source_url": "https://finance.yahoo.co.jp/news/detail/b57fc3195c624febea158f1c27d64d8dfe8bbc67",
+			"status": "CONFIRMED",
+			"note": "株探ニュースの集計。見出しでは52%"
+		}
+	],
+	"unverified": [
+		{
+			"id": "price_reactions",
+			"label": "決算発表後の各社の株価の動き",
+			"text": "ユーザー提供: 三菱商事+13.64%、システナ+7.77%、ニチダイ+6.84%、ヤマト+6.28%、アサンテ+6.11%、住友化学-10.80%、芝浦-8.47%、飯野海運-4.14%（終値の参照価格比）",
+			"status": "UNVERIFIED",
+			"note": "報道では三菱商事は前日比+7.88%（終値5,148円）、住友化学は約-9.5%で、数字が異なる。参照価格の定義も確認できない"
+		},
+		{
+			"id": "other_disclosures",
+			"label": "ローム、アサンテ、KHネオケム、参天製薬の開示",
+			"text": "ユーザー提供: ロームの営業利益+66.7%・純利益+55.2%、アサンテの純利益35→210百万円、KHネオケムの自社株買い10.52%・120億円、参天製薬の自社株買い5.0%・350億円",
+			"status": "UNVERIFIED",
+			"note": "検索で各社の開示を確認できなかった"
+		},
+		{
+			"id": "mc_forecast",
+			"label": "三菱商事の通期純利益予想の修正",
+			"text": "1兆1,000億円から1兆2,000億円への上方修正",
+			"status": "UNVERIFIED",
+			"note": "複数の報道にあるが、取得した記事本文では確認できなかった"
+		}
+	]
+}

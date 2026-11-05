@@ -92,7 +92,7 @@ const FeatureProductionSchema = z.object({
 		audio_concat_list: nonEmptyString,
 		thumbnail_jpg: nonEmptyString,
 		visual_master: nonEmptyString,
-		remotion_public: nonEmptyString,
+		openmontage_props: nonEmptyString,
 		video_concat_list: nonEmptyString,
 		publish_video: nonEmptyString,
 		audit_dir: nonEmptyString,
@@ -132,10 +132,12 @@ const FeatureProductionSchema = z.object({
 		bed_tones: z.array(BedToneSchema).length(2),
 	}),
 	video: z.object({
-		remotion: z.object({
-			browser: nonEmptyString,
+		openmontage: z.object({
+			dir: nonEmptyString,
+			repo: nonEmptyString,
+			ref: nonEmptyString,
+			composition: nonEmptyString,
 			crf: positiveInteger,
-			entrance_frames: positiveInteger,
 		}),
 		scale_flags: nonEmptyString,
 		gop: positiveInteger,
@@ -175,7 +177,6 @@ const FeatureProductionSchema = z.object({
 	}),
 	scene: z.object({
 		headline_wrap_units: positiveInteger,
-		min_page_seconds: positiveInteger,
 		min_font_px: positiveInteger,
 		statement: z.object({
 			headline_baseline_y: positiveInteger,
