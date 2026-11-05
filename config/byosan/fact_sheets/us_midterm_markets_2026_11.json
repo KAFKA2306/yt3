@@ -1,0 +1,120 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "米中間選挙後の日本の自動車株と原油（2026年11月4日〜5日）",
+	"subject": "米中間選挙で民主党が上下両院の過半数を確実にした。順に、1. 関税: 高関税政策の修正への期待でトヨタなど自動車株が上がった、2. 原油: イラン戦争の早期終結への期待でWTIが1日で8%超下がった、を確認する。どちらも期待による値動きで、関税の修正や戦争の終結が決まったわけではない点を必ず添える。ブレント原油の価格、ロイター・株探・MarketWatchの記述は確認できていないため扱わない。",
+	"released": "2026-11-05",
+	"source_documents": [
+		{
+			"url": "https://www.nikkei.com/article/DGXZQOFL051K80V01C26A1000000/",
+			"title": "自動車株が高い、トヨタ半年ぶり高値 「トランプ関税」修正に期待",
+			"issuer": "日本経済新聞",
+			"published": "2026-11-05"
+		},
+		{
+			"url": "https://finance.yahoo.com/markets/article/oil-prices-fall-below-90-as-traders-bet-on-iran-war-ending-after-democrats-sweep-midterms-192105228.html",
+			"title": "Oil prices fall below $90 as traders bet on Iran war ending after Democrats sweep midterms",
+			"issuer": "Yahoo Finance",
+			"published": "2026-11-05"
+		}
+	],
+	"facts": [
+		{
+			"id": "toyota_change_yen",
+			"label": "トヨタ自動車の株価の前日比上昇幅",
+			"value": 256,
+			"unit": "円",
+			"period": "2026年11月5日（午前11時14分時点の記事）",
+			"basis": "actual",
+			"source_url": "https://www.nikkei.com/article/DGXZQOFL051K80V01C26A1000000/",
+			"status": "CONFIRMED",
+			"note": "本文は一部のみ取得（残りは会員限定）。上昇の理由は、米中間選挙で民主党が上下両院の過半数奪還を確実にし、トランプ政権の高関税政策の修正への期待が買いを誘ったとみられる、と日本経済新聞が報じている。マツダ、ホンダ、SUBARUも高いが、株価と上昇率の記載はない"
+		},
+		{
+			"id": "toyota_change_pct",
+			"label": "トヨタ自動車の株価の前日比上昇率",
+			"value": 8.45,
+			"unit": "%",
+			"period": "2026年11月5日（午前11時14分時点の記事）",
+			"basis": "actual",
+			"source_url": "https://www.nikkei.com/article/DGXZQOFL051K80V01C26A1000000/",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "toyota_price",
+			"label": "トヨタ自動車の株価（上昇時の水準）",
+			"value": 3284,
+			"unit": "円",
+			"period": "2026年11月5日（午前11時14分時点の記事）",
+			"basis": "actual",
+			"source_url": "https://www.nikkei.com/article/DGXZQOFL051K80V01C26A1000000/",
+			"status": "CONFIRMED",
+			"note": "4月21日以来約半年ぶりの高値"
+		},
+		{
+			"id": "wti_close",
+			"label": "WTI原油先物の終値",
+			"value": 88.12,
+			"unit": "ドル/バレル",
+			"period": "2026年11月4日（水曜日）",
+			"basis": "actual",
+			"source_url": "https://finance.yahoo.com/markets/article/oil-prices-fall-below-90-as-traders-bet-on-iran-war-ending-after-democrats-sweep-midterms-192105228.html",
+			"status": "CONFIRMED",
+			"note": "Yahoo Financeの記事は11月5日5時4分（日本時間）公開"
+		},
+		{
+			"id": "wti_drop_day",
+			"label": "WTI原油先物の1日の下落率",
+			"value": 8,
+			"unit": "%（8%超）",
+			"period": "2026年11月4日（水曜日）",
+			"basis": "actual",
+			"source_url": "https://finance.yahoo.com/markets/article/oil-prices-fall-below-90-as-traders-bet-on-iran-war-ending-after-democrats-sweep-midterms-192105228.html",
+			"status": "CONFIRMED",
+			"note": "記事は「more than 8%」と書いている。8%超の下落で、正確な率は記載がない"
+		},
+		{
+			"id": "wti_friday_close",
+			"label": "WTI原油先物の前の金曜日の終値",
+			"value": 104,
+			"unit": "ドル/バレル",
+			"period": "2026年10月30日（金曜日）",
+			"basis": "actual",
+			"source_url": "https://finance.yahoo.com/markets/article/oil-prices-fall-below-90-as-traders-bet-on-iran-war-ending-after-democrats-sweep-midterms-192105228.html",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "wti_three_day_drop",
+			"label": "WTI原油先物の3日間の下落率",
+			"value": 15,
+			"unit": "%（約）",
+			"period": "2026年11月2日〜4日",
+			"basis": "actual",
+			"source_url": "https://finance.yahoo.com/markets/article/oil-prices-fall-below-90-as-traders-bet-on-iran-war-ending-after-democrats-sweep-midterms-192105228.html",
+			"status": "CONFIRMED",
+			"note": "記事は約15%で、2021年11月以来最大の下落と書いている。下落の理由は、民主党の勝利でイラン戦争の早期終結への期待が高まったため。外交上のシグナルは曖昧なままで、米国のディーゼル在庫は2003年以来の低水準と記事は伝えている"
+		}
+	],
+	"unverified": [
+		{
+			"id": "brent_price",
+			"label": "ブレント原油の価格と下落率",
+			"text": "ユーザー提供: ブレントは8%超下落して94.62ドル",
+			"status": "UNVERIFIED",
+			"note": "報道によって94.66ドル、94ドル割れ、10%下落とばらつき、94.62ドルを直接確認できない"
+		},
+		{
+			"id": "reuters_kabutan_marketwatch",
+			"label": "ロイター・株探・MarketWatchの記述",
+			"text": "ユーザー提供: ロイターの東京市場の解説、株探の自動車株の買い戻し、MarketWatchの市場参加者の見方",
+			"status": "UNVERIFIED",
+			"note": "これらの記事そのものを確認できなかった。日本経済新聞とYahoo Financeの記事を根拠にした"
+		},
+		{
+			"id": "nikkei_average",
+			"label": "日経平均の動き",
+			"text": "11月4日の日経平均は一時3,000円超下落",
+			"status": "UNVERIFIED",
+			"note": "二次情報のみで一次の報道を確認していない"
+		}
+	]
+}
