@@ -35,6 +35,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 ## Autonomous operations
 
 - Commit after the checks that cover the change pass, staging only the paths you own.
+- Replace, do not layer: when a new mechanism supersedes an old one, delete the old code, config keys, tests, and documentation lines in the same change. Keep no compatibility shims or spare paths. Before deleting, confirm by type check and search that nothing references it, and run the new path once end to end.
 - Push each commit to `origin` immediately.
 - Merge a PR with `gh pr merge --merge` when exact-head CI passes. Do not squash or rebase.
 - Close an Issue only after its fix is merged to `main` and the acceptance evidence is recorded in it.
