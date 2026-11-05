@@ -3,21 +3,14 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import * as yaml from "js-yaml";
-import sharp from "sharp";
-import { getByosanChartTheme } from "../domain/byosan/charts.js";
 import { buildByosanDescription } from "../domain/byosan/description.js";
-import {
-	displayUnits,
-	wrapDisplay,
-	xml,
-} from "../domain/byosan/display_text.js";
+import { displayUnits, wrapDisplay } from "../domain/byosan/display_text.js";
 import { ExplanationSchema } from "../domain/byosan/explanation.js";
 import { explanationCheckItems } from "../domain/byosan/explanation_contract.js";
 import {
 	type ByosanFeatureSegment,
 	type ByosanFeatureSpec,
 	parseAndAuditByosanFeatureSpec,
-	staticSceneMotionFilter,
 } from "../domain/byosan/feature_spec.js";
 import {
 	byosanFontDir,
@@ -25,6 +18,7 @@ import {
 	matchFontFamily,
 	requiredFontFamilies,
 } from "../domain/byosan/fonts.js";
+import { renderOpenMontage } from "../domain/byosan/openmontage_visuals.js";
 import {
 	layoutCueSpans,
 	planSpeechParts,
@@ -36,14 +30,9 @@ import {
 } from "../domain/byosan/production_config.js";
 import {
 	type ByosanSceneRender,
-	pageNumbers,
 	resolveSceneRender,
 } from "../domain/byosan/scene_render.js";
 import { compileScenes } from "../domain/byosan/scene_spec.js";
-import {
-	renderSceneLayers,
-	type SceneSvgStyle,
-} from "../domain/byosan/scene_svg.js";
 import { buildThumbnailFiles } from "../domain/byosan/thumbnail.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
 import {
@@ -77,26 +66,19 @@ const RUN = F.run_layout;
 const FILENAMES = CONFIG.workflow.filenames;
 const VOICEVOX = CONFIG.providers.tts.voicevox;
 const DESIGN = getByosanVisualSystem();
-const LANDSCAPE = DESIGN.landscape;
-const THUMBNAIL = DESIGN.thumbnail;
+const _LANDSCAPE = DESIGN.landscape;
+const _THUMBNAIL = DESIGN.thumbnail;
 const THUMBNAIL_CANVAS = DESIGN.canvas.thumbnail;
 const WIDTH = DESIGN.canvas.landscape.width;
 const HEIGHT = DESIGN.canvas.landscape.height;
-const FPS = DESIGN.canvas.landscape.fps;
+const _FPS = DESIGN.canvas.landscape.fps;
 const FONT = DESIGN.typography.japanese;
 const PROJECT_ROOT = process.cwd();
 const FONT_DIR = byosanFontDir();
 const DEFAULT_SPEC = path.join(PROJECT_ROOT, F.default_spec);
-const VISUAL_IDENTITY = resolveByosanVisualIdentity(
+const _VISUAL_IDENTITY = resolveByosanVisualIdentity(
 	yaml.load(fs.readFileSync(BYOSAN_CONFIG_PATH, "utf8")),
 );
-const SCENE_STYLE: SceneSvgStyle = {
-	design: DESIGN,
-	feature: F,
-	identity: VISUAL_IDENTITY,
-	chart: getByosanChartTheme(),
-};
-
 function captionProtectedRanges(value: string): Array<[number, number]> {
 	const ranges: Array<[number, number]> = [];
 	const protect = (startCodeUnit: number, text: string): void => {
@@ -218,197 +200,12 @@ function run(command: string, args: string[], label: string): void {
 	}
 }
 
-async function characterSourceBuffer(
-	speaker: FeatureSegment["speaker"],
-): Promise<Buffer> {
-	const source =
-		speaker === "ずんだもん"
-			? path.join(PROJECT_ROOT, F.characters.zundamon_image)
-			: path.join(PROJECT_ROOT, F.characters.tsumugi_image);
-	if (!(await fs.pathExists(source))) {
-		throw new Error(`BYOSAN_CHARACTER_ASSET_MISSING: ${speaker}: ${source}`);
-	}
-	return fs.readFile(source);
-}
-
-async function characterBuffer(
-	speaker: FeatureSegment["speaker"],
-): Promise<Buffer> {
-	return sharp(await characterSourceBuffer(speaker))
-		.trim({ background: F.image.trim_background })
-		.resize({
-			height: LANDSCAPE.character_region.height,
-			fit: "inside",
-			withoutEnlargement: true,
-		})
-		.png()
-		.toBuffer();
-}
-
-function renderHeldSegment(
-	segment: TimedSegment,
-	masterPath: string,
-	outputPath: string,
-): void {
-	const entrance = F.video.remotion.entrance_frames / FPS;
-	const hold = Math.max(0, segment.duration - entrance);
-	run(
-		"ffmpeg",
-		[
-			"-y",
-			"-hide_banner",
-			"-loglevel",
-			"error",
-			"-ss",
-			(segment.index * entrance).toFixed(3),
-			"-t",
-			entrance.toFixed(3),
-			"-i",
-			masterPath,
-			"-vf",
-			`tpad=stop_mode=clone:stop_duration=${hold.toFixed(3)},trim=duration=${segment.duration.toFixed(3)},fps=${FPS},format=${F.video.pixel_format}`,
-			"-an",
-			...videoEncoderArgs(),
-			"-r",
-			String(FPS),
-			"-g",
-			String(F.video.gop),
-			"-bf",
-			String(F.video.b_frames),
-			"-pix_fmt",
-			F.video.pixel_format,
-			...colorArgs(),
-			outputPath,
-		],
-		`hold visual segment ${segment.index}`,
-	);
-}
-
-async function renderVisualMaster(
+function renderVisualMaster(
 	timed: TimedSegment[],
 	visualPath: string,
-	publicDir: string,
-	runDir: string,
-	firstSlidePath: string,
-): Promise<void> {
-	await fs.emptyDir(publicDir);
-	await fs.copyFile(firstSlidePath, path.join(publicDir, "first-slide.png"));
-	const characters = new Map<
-		FeatureSegment["speaker"],
-		{ file: string; left: number; top: number }
-	>();
-	for (const [speakerIndex, speaker] of [
-		...new Set(timed.map((segment) => segment.speaker)),
-	].entries()) {
-		const buffer = await characterBuffer(speaker);
-		const metadata = await sharp(buffer).metadata();
-		const region = LANDSCAPE.character_region;
-		const file = `character-${speakerIndex}.png`;
-		await fs.writeFile(path.join(publicDir, file), buffer);
-		characters.set(speaker, {
-			file,
-			left: Math.round(
-				region.x + (region.width - (metadata.width ?? region.width)) / 2,
-			),
-			top: Math.round(
-				region.y + region.height - (metadata.height ?? region.height),
-			),
-		});
-	}
-	const pages = pageNumbers(timed, F.scene.min_page_seconds);
-	const totalPages = (pages[pages.length - 1] ?? 0) + 1;
-	const scenes = await Promise.all(
-		timed.map(async (segment) => {
-			const character = characters.get(segment.speaker);
-			if (!character) {
-				throw new Error(`BYOSAN_CHARACTER_MISSING: ${segment.speaker}`);
-			}
-			const page = pages[segment.index] ?? 0;
-			const owner = timed[pages.indexOf(page)] ?? segment;
-			const input = (target: TimedSegment) => ({
-				segment: target,
-				render: target.render,
-				index: page,
-				total: totalPages,
-			});
-			const layers = renderSceneLayers(input(owner), SCENE_STYLE);
-			const chip = `scene-${segment.index}-chip.svg`;
-			const pageFile = (name: string) => `scene-${page}-${name}.svg`;
-			await fs.writeFile(
-				path.join(publicDir, chip),
-				renderSceneLayers(input(segment), SCENE_STYLE).chip,
-			);
-			if (owner === segment)
-				for (const name of ["frame", "text", "data"] as const)
-					await fs.writeFile(
-						path.join(publicDir, pageFile(name)),
-						layers[name],
-					);
-			return {
-				frame: pageFile("frame"),
-				text: pageFile("text"),
-				data: pageFile("data"),
-				chip,
-				hold: owner !== segment,
-				full: page === 0 ? "first-slide.png" : undefined,
-				character: character.file,
-				characterLeft: character.left,
-				characterTop: character.top,
-			};
-		}),
-	);
-	const propsPath = path.join(publicDir, "props.json");
-	await fs.writeJson(propsPath, {
-		width: WIDTH,
-		height: HEIGHT,
-		fps: FPS,
-		entranceFrames: F.video.remotion.entrance_frames,
-		scenes,
-	});
-	const entrancePath = path.join(publicDir, "entrance.mp4");
-	run(
-		"node",
-		[
-			"src/remotion/render.mjs",
-			propsPath,
-			entrancePath,
-			F.video.remotion.browser,
-			String(F.video.remotion.crf),
-			publicDir,
-		],
-		"render entrance clips",
-	);
-	const segmentDir = path.join(path.dirname(visualPath), "segments");
-	await fs.emptyDir(segmentDir);
-	const segments = timed.map((segment) => {
-		const segmentPath = path.join(segmentDir, `${segment.index}.mp4`);
-		renderHeldSegment(segment, entrancePath, segmentPath);
-		return segmentPath;
-	});
-	const listPath = path.join(runDir, RUN.video_concat_list);
-	fs.writeFileSync(
-		listPath,
-		`ffconcat version 1.0\n${segments.map((file) => `file '${file.replaceAll("'", "'\\''")}'`).join("\n")}\n`,
-	);
-	run(
-		"ffmpeg",
-		[
-			"-y",
-			"-hide_banner",
-			"-loglevel",
-			"error",
-			"-f",
-			"concat",
-			"-safe",
-			"0",
-			"-i",
-			listPath,
-			"-c",
-			"copy",
-			visualPath,
-		],
-		"concat visuals",
-	);
+	propsPath: string,
+): void {
+	renderOpenMontage(F.video.openmontage, timed, propsPath, visualPath);
 }
 
 async function buildThumbnail(
@@ -905,8 +702,6 @@ async function auditProduction(
 		FONT,
 		DESIGN.typography.numeric,
 		CONFIG.global_style.font_name,
-		SCENE_STYLE.chart.font_family,
-		SCENE_STYLE.chart.numeric_font_family,
 	]).map((family) => ({ family, match: matchFontFamily(family) }));
 	const fontProblems = fontMatches.flatMap(({ family, match }) => {
 		const problem = fontMatchProblem(family, match, FONT_DIR);
@@ -1148,12 +943,10 @@ async function main(): Promise<void> {
 	const thumbnail = await buildThumbnail(spec, runDir);
 	const visualPath = path.join(videoDir, RUN.visual_master);
 	const narrationPath = path.join(audioDir, FILENAMES.audio_full);
-	await renderVisualMaster(
+	renderVisualMaster(
 		timed,
 		visualPath,
-		path.join(videoDir, RUN.remotion_public),
-		runDir,
-		thumbnail.full,
+		path.join(videoDir, RUN.openmontage_props),
 	);
 	concatNarration(timed, narrationPath, runDir);
 	const finalPath = path.join(videoDir, RUN.publish_video);

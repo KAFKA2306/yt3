@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import fs from "fs-extra";
 import * as yaml from "js-yaml";
 import { z } from "zod";
-import { getByosanChartTheme } from "../src/domain/byosan/charts.js";
 import { ExplanationSchema } from "../src/domain/byosan/explanation.js";
 import {
 	ByosanFeatureClaimSchema,
@@ -11,12 +10,7 @@ import {
 	type ByosanFeatureSpec,
 } from "../src/domain/byosan/feature_spec.js";
 import {
-	BYOSAN_CONFIG_PATH,
-	getByosanProductionConfig,
-} from "../src/domain/byosan/production_config.js";
-import {
 	type ByosanSceneRender,
-	pageNumbers,
 	parseDisplayValue,
 	resolveSceneRender,
 } from "../src/domain/byosan/scene_render.js";
@@ -24,12 +18,6 @@ import {
 	ByosanScenesConfigSchema,
 	compileScenes,
 } from "../src/domain/byosan/scene_spec.js";
-import {
-	renderSceneSvg,
-	type SceneSvgStyle,
-} from "../src/domain/byosan/scene_svg.js";
-import { resolveByosanVisualIdentity } from "../src/domain/byosan/visual_identity.js";
-import { getByosanVisualSystem } from "../src/domain/design/kafka_visual_system.js";
 
 const config = z
 	.object({ scenes: ByosanScenesConfigSchema })
@@ -189,16 +177,7 @@ const spec: Pick<ByosanFeatureSpec, "claims" | "segments"> = {
 
 const scenes = compileScenes(spec, explanation, config);
 
-const style: SceneSvgStyle = {
-	design: getByosanVisualSystem(),
-	feature: getByosanProductionConfig().feature_production,
-	identity: resolveByosanVisualIdentity(
-		yaml.load(fs.readFileSync(BYOSAN_CONFIG_PATH, "utf8")),
-	),
-	chart: getByosanChartTheme(),
-};
-
-function segmentOf(index: number): ByosanFeatureSegment {
+function _segmentOf(index: number): ByosanFeatureSegment {
 	const segment = segments[index];
 	if (!segment) throw new Error(`segment ${index} missing`);
 	return segment;
@@ -283,90 +262,5 @@ describe("byosan scene render", () => {
 
 	test("returns null for a display value without a leading number", () => {
 		expect(parseDisplayValue("約3%")).toBeNull();
-	});
-
-	test("shrinks long single-line text to its box", () => {
-		const segment = {
-			...segmentOf(0),
-			subheadline: "あ".repeat(40),
-			stats: [],
-		};
-		const svg = renderSceneSvg(
-			{ segment, render: renderOf(0), index: 0, total: 1 },
-			style,
-		);
-		expect(svg).toContain('class="subheadline" style="font-size:32px"');
-	});
-
-	test("stops instead of shrinking text below the readable floor", () => {
-		const segment = {
-			...segmentOf(0),
-			subheadline: "あ".repeat(60),
-			stats: [],
-		};
-		expect(() =>
-			renderSceneSvg(
-				{ segment, render: renderOf(0), index: 0, total: 1 },
-				style,
-			),
-		).toThrow("BYOSAN_TEXT_BELOW_FLOOR");
-	});
-
-	test("shrinks stat labels to the card width", () => {
-		const stat = {
-			label: "あ".repeat(12),
-			value: "1%",
-			detail: "前年比",
-			color: "cyan" as const,
-		};
-		const segment = { ...segmentOf(0), stats: [stat, stat, stat] };
-		const svg = renderSceneSvg(
-			{
-				segment,
-				render: { kind: "stat_cards", stats: segment.stats },
-				index: 0,
-				total: 1,
-			},
-			style,
-		);
-		expect(svg).toContain('class="stat-label" style="font-size:28px"');
-	});
-});
-
-describe("byosan page numbers", () => {
-	const scene = (
-		kind: "none" | "question" | "stat_cards",
-		section: string,
-	) => ({
-		render: (kind === "stat_cards"
-			? { kind, stats: [] }
-			: { kind }) as ByosanSceneRender,
-		section,
-		duration: 6,
-	});
-	test("holds the page across scenes without data inside a section", () => {
-		const pages = pageNumbers(
-			[
-				scene("question", "導入"),
-				scene("none", "導入"),
-				scene("none", "導入"),
-				scene("stat_cards", "結論"),
-				scene("none", "結論"),
-			],
-			12,
-		);
-		expect(pages).toEqual([0, 0, 0, 1, 1]);
-	});
-	test("turns the page at a section change only after the minimum seconds", () => {
-		const pages = pageNumbers(
-			[
-				scene("question", "導入"),
-				scene("none", "比較"),
-				scene("none", "比較"),
-				scene("none", "比較"),
-			],
-			12,
-		);
-		expect(pages).toEqual([0, 0, 1, 1]);
 	});
 });
