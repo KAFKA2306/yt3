@@ -469,7 +469,7 @@ function synthesize(
 				segment,
 				refWav,
 				wav,
-				runSeed(name, "tts"),
+				runSeed(path.basename(dir), "tts"),
 			);
 			run(command, { cwd, env });
 		}
