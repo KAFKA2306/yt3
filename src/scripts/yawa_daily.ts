@@ -16,6 +16,7 @@ import {
 	preparationAction,
 	type ReferenceCandidate,
 	referenceCandidateCall,
+	runSeed,
 	type ScriptDraft,
 	ScriptDraftSchema,
 	type Selection,
@@ -386,7 +387,11 @@ type ReferenceRecord = {
  * 動画ごとの参照音声を作る。候補は参照なしで生成し、聞き取れて割れていないものを選ぶ。
  * 選んだ参照は、その動画のすべてのセグメントで使う。
  */
-function generateReference(dir: string, draft: ScriptDraft): ReferenceRecord {
+function generateReference(
+	dir: string,
+	draft: ScriptDraft,
+	name: string,
+): ReferenceRecord {
 	const refPath = path.join(dir, "reference.wav");
 	const recordPath = path.join(dir, "reference.json");
 	if (fs.existsSync(recordPath) && fs.existsSync(refPath)) {
@@ -396,25 +401,26 @@ function generateReference(dir: string, draft: ScriptDraft): ReferenceRecord {
 	}
 	const candidateDir = path.join(dir, "reference_candidates");
 	fs.ensureDirSync(candidateDir);
-	const candidates: ReferenceCandidate[] = config.reference.seeds.map(
-		(seed) => {
-			const file = path.join(candidateDir, `seed_${seed}.wav`);
-			if (!fs.existsSync(file)) {
-				const { cwd, command, env } = referenceCandidateCall(
-					config,
-					config.voice.caption,
-					seed,
-					file,
-				);
-				run(command, { cwd, env });
-			}
-			return {
+	const seeds = Array.from({ length: config.reference.candidates }, (_, i) =>
+		runSeed(name, `reference:${i}`),
+	);
+	const candidates: ReferenceCandidate[] = seeds.map((seed) => {
+		const file = path.join(candidateDir, `seed_${seed}.wav`);
+		if (!fs.existsSync(file)) {
+			const { cwd, command, env } = referenceCandidateCall(
+				config,
+				config.voice.caption,
 				seed,
 				file,
-				asr_similarity: asrSimilarity(file, config.reference.text),
-			};
-		},
-	);
+			);
+			run(command, { cwd, env });
+		}
+		return {
+			seed,
+			file,
+			asr_similarity: asrSimilarity(file, config.reference.text),
+		};
+	});
 	const selected = selectReference(candidates);
 	fs.copyFileSync(selected.file, refPath);
 	const record: ReferenceRecord = {
@@ -427,7 +433,12 @@ function generateReference(dir: string, draft: ScriptDraft): ReferenceRecord {
 	return record;
 }
 
-function synthesize(draft: ScriptDraft, dir: string, refWav: string): string {
+function synthesize(
+	draft: ScriptDraft,
+	dir: string,
+	refWav: string,
+	name: string,
+): string {
 	const ttsDir = path.join(dir, "tts");
 	fs.ensureDirSync(ttsDir);
 	const gapFile = (seconds: number): string => {
@@ -453,7 +464,13 @@ function synthesize(draft: ScriptDraft, dir: string, refWav: string): string {
 		const name = String(index + 1).padStart(3, "0");
 		const wav = path.join(ttsDir, `seg_${name}.wav`);
 		if (!fs.existsSync(wav)) {
-			const { cwd, command, env } = segmentCall(config, segment, refWav, wav);
+			const { cwd, command, env } = segmentCall(
+				config,
+				segment,
+				refWav,
+				wav,
+				runSeed(name, "tts"),
+			);
 			run(command, { cwd, env });
 		}
 		const leveled = path.join(ttsDir, `seg_${name}.leveled.wav`);
@@ -579,19 +596,19 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		? ScriptDraftSchema.parse(fs.readJsonSync(scriptPath))
 		: generateScript(entry, selection, name, scriptPath);
 
-	const reference = generateReference(dir, draft);
+	const reference = generateReference(dir, draft, name);
 	const refPath = path.join(dir, "reference.wav");
 
 	const audioPath = path.join(dir, "final_mix.wav");
 	if (!fs.existsSync(audioPath))
-		mix(synthesize(draft, dir, refPath), audioPath);
+		mix(synthesize(draft, dir, refPath, name), audioPath);
 	const backend = config.tts.backends[config.tts.backend];
 	fs.writeJsonSync(
 		path.join(dir, "tts.json"),
 		{
 			backend: config.tts.backend,
 			checkpoint: backend?.hf_checkpoint,
-			seed: config.tts.seed,
+			seed: runSeed(name, "tts"),
 			voice_caption: config.voice.caption,
 			reference_sha256: reference.sha256,
 		},
@@ -706,6 +723,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	);
 	const audit = yawaAudit(
 		{
+			runName: name,
 			draft,
 			entry,
 			scriptGeneratedInRun: fs.existsSync(scriptPath),

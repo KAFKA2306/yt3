@@ -53,7 +53,6 @@ const YawaConfigSchema = z.object({
 		backend: z.string(),
 		backends: z.record(z.string(), IrodoriBackendSchema),
 		hf_home: z.string(),
-		seed: z.number().int(),
 		min_free_vram_mib: z.number().positive(),
 	}),
 	arc: z.object({
@@ -65,7 +64,7 @@ const YawaConfigSchema = z.object({
 	voice: z.object({ caption: z.string().min(10).max(300) }),
 	reference: z.object({
 		text: z.string().min(10),
-		seeds: z.array(z.number().int()).min(1),
+		candidates: z.number().int().positive(),
 	}),
 	mix: z.object({
 		room_tone_db: z.number(),
@@ -153,6 +152,11 @@ function hash(text: string): number {
 		value = Math.imul(value, 16777619) >>> 0;
 	}
 	return value >>> 0;
+}
+
+/** 声の種は run 名から決める。動画ごとに変わり、同じ run を作り直せば同じになる。 */
+export function runSeed(runName: string, label: string): number {
+	return hash(`${runName}:${label}`);
 }
 
 /** 使用回数が最も少ない選択肢を選ぶ。同数なら seed で決め、同じ入力には同じ結果を返す。 */
@@ -386,6 +390,7 @@ export function segmentCall(
 	segment: Segment,
 	refWav: string,
 	outputWav: string,
+	seed: number,
 ): IrodoriCall {
 	const { chapter } = segment;
 	return irodoriCall(
@@ -393,7 +398,7 @@ export function segmentCall(
 		["--ref-wavs", refWav],
 		segment.text,
 		`${config.voice.caption}${chapter.style}`,
-		config.tts.seed,
+		seed,
 		outputWav,
 		[
 			"--duration-scale",
@@ -493,6 +498,7 @@ function check(
 }
 
 export type YawaAuditInput = {
+	runName: string;
 	draft: ScriptDraft;
 	entry: PoolEntry;
 	scriptGeneratedInRun: boolean;
@@ -521,7 +527,9 @@ export function yawaAudit(
 	const provenance = [
 		input.ttsRecord?.backend ? "" : "tts backend not recorded",
 		input.ttsRecord?.checkpoint ? "" : "tts checkpoint not recorded",
-		input.ttsRecord?.seed === config.tts.seed ? "" : "tts seed mismatch",
+		input.ttsRecord?.seed === runSeed(input.runName, "tts")
+			? ""
+			: "tts seed mismatch",
 		input.scriptGeneratedInRun ? "" : "script was not generated in this run",
 	];
 	const voice = [

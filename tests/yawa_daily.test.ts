@@ -12,6 +12,7 @@ import {
 	preparationAction,
 	type ReferenceCandidate,
 	resolveBeat,
+	runSeed,
 	type ScriptDraft,
 	type Selection,
 	segmentCall,
@@ -113,6 +114,7 @@ describe("yawa daily arc", () => {
 			{ text: "あ", chapter: peak },
 			REF,
 			"/o.wav",
+			1,
 		);
 		expect(call.command).toContain(String(peak.duration_scale));
 		expect(call.command).toContain(`${config.voice.caption}${peak.style}`);
@@ -164,10 +166,18 @@ describe("yawa daily arc", () => {
 
 describe("yawa daily voice reference", () => {
 	test("every segment is generated from the reference clip, never caption-only", () => {
-		const call = segmentCall(config, SEG, REF, "/tmp/x.wav");
+		const call = segmentCall(config, SEG, REF, "/tmp/x.wav", 1);
 		expect(call.command).toContain("--ref-wavs");
 		expect(call.command).toContain(REF);
 		expect(call.command).not.toContain("--no-ref");
+	});
+	test("the voice seed changes per video and is stable for one run", () => {
+		expect(runSeed("yawa-2026-11-07", "tts")).toBe(
+			runSeed("yawa-2026-11-07", "tts"),
+		);
+		expect(runSeed("yawa-2026-11-07", "tts")).not.toBe(
+			runSeed("yawa-2026-11-08", "tts"),
+		);
 	});
 	test("selects the most intelligible candidate", () => {
 		const candidates: ReferenceCandidate[] = [
@@ -218,6 +228,7 @@ describe("yawa daily tts backend", () => {
 				SEG,
 				REF,
 				"c",
+				1,
 			),
 		).toThrow("unknown tts backend");
 	});
@@ -236,6 +247,7 @@ describe("yawa daily audit", () => {
 		title_form: 0,
 	};
 	const base = {
+		runName: "yawa-2026-11-07",
 		draft: draft(),
 		selection,
 		metadata: {
@@ -247,7 +259,7 @@ describe("yawa daily audit", () => {
 		ttsRecord: {
 			backend: "irodori-v4.1-small",
 			checkpoint: "x",
-			seed: config.tts.seed,
+			seed: runSeed("yawa-2026-11-07", "tts"),
 			reference_sha256: "ref1",
 		},
 		referenceSha256: "ref1",
