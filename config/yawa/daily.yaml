@@ -12,18 +12,17 @@ script:
   max_segment_chars: 90
   max_attempts: 3
 tts:
-  # 切り替えは backend の 1 行だけ。自動の代替はしない（失敗は失敗として止める）。
-  backend: irodori-v4.1-small
+  # Irodori-TTS は ComfyUI（ローカル API）経由で生成する。ComfyUI が起動していなければ preflight で止まる。
+  backend: comfyui-irodori
   backends:
-    irodori-v4.1-small:
-      kind: irodori
-      dir: /home/kafka/projects/yt3/sandbox/Irodori-TTS-v4.1
-      hf_checkpoint: Aratako/Irodori-TTS-v4.1-Small
-      num_steps: 40
-    irodori-v4-large:
-      kind: irodori
-      dir: /home/kafka/projects/yt3/sandbox/Irodori-TTS-v4.1
-      hf_checkpoint: Aratako/Irodori-TTS-v4-Large
+    comfyui-irodori:
+      kind: comfyui
+      base_url: http://127.0.0.1:8188
+      input_dir: /home/kafka/projects/comfyui/ComfyUI/input
+      output_dir: /home/kafka/projects/comfyui/ComfyUI/output
+      ckpt_name: Irodori-TTS-v4.1-Small.safetensors
+      codec_repo: Aratako/Semantic-DACVAE-Japanese-32dim
+      dtype: bf16
       num_steps: 40
   hf_home: /home/kafka/.cache/hf-yawa
   seed: 4242

@@ -165,9 +165,9 @@ describe("yawa daily arc", () => {
 describe("yawa daily voice reference", () => {
 	test("every segment is generated from the reference clip, never caption-only", () => {
 		const call = segmentCall(config, SEG, REF, "/tmp/x.wav");
-		expect(call.command).toContain("--ref-wavs");
+		expect(call.command).toContain("--ref-wav");
 		expect(call.command).toContain(REF);
-		expect(call.command).not.toContain("--no-ref");
+		expect(call.command).not.toContain("--ref-wavs");
 	});
 	test("selects the most intelligible candidate", () => {
 		const candidates: ReferenceCandidate[] = [
@@ -245,7 +245,7 @@ describe("yawa daily audit", () => {
 		entry: pool[0],
 		scriptGeneratedInRun: true,
 		ttsRecord: {
-			backend: "irodori-v4.1-small",
+			backend: "comfyui-irodori",
 			checkpoint: "x",
 			seed: config.tts.seed,
 			reference_sha256: "ref1",

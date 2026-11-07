@@ -203,9 +203,16 @@ function preflight(): void {
 		Bun.which("codex-imagegen") ? "" : "codex-imagegen is not on PATH",
 		Bun.which("ffmpeg") ? "" : "ffmpeg is not on PATH",
 		Bun.which("uv") ? "" : "uv is not on PATH",
-		backend && fs.existsSync(path.join(backend.dir, ".venv"))
+		backend &&
+		Bun.spawnSync([
+			"curl",
+			"-sf",
+			"-m",
+			"5",
+			`${backend.base_url}/system_stats`,
+		]).exitCode === 0
 			? ""
-			: `TTS environment missing for backend '${config.tts.backend}'`,
+			: `ComfyUI is not reachable at ${backend?.base_url ?? "(no backend)"}`,
 		process.env.YOUTUBE_REFRESH_TOKEN ||
 		fs.existsSync(path.join(ROOT, "config/.cache/youtube/yawa.json"))
 			? ""
@@ -590,7 +597,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		path.join(dir, "tts.json"),
 		{
 			backend: config.tts.backend,
-			checkpoint: backend?.hf_checkpoint,
+			checkpoint: backend?.ckpt_name,
 			seed: config.tts.seed,
 			voice_caption: config.voice.caption,
 			reference_sha256: reference.sha256,

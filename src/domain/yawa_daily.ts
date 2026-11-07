@@ -4,10 +4,14 @@ import * as yaml from "js-yaml";
 import { z } from "zod";
 import type { AuditCheck } from "./types.js";
 
-const IrodoriBackendSchema = z.object({
-	kind: z.literal("irodori"),
-	dir: z.string().min(1),
-	hf_checkpoint: z.string().min(1),
+const ComfyIrodoriBackendSchema = z.object({
+	kind: z.literal("comfyui"),
+	base_url: z.string().url(),
+	input_dir: z.string().min(1),
+	output_dir: z.string().min(1),
+	ckpt_name: z.string().min(1),
+	codec_repo: z.string().min(1),
+	dtype: z.enum(["bf16", "fp16", "fp32"]),
 	num_steps: z.number().int().positive(),
 });
 
@@ -51,7 +55,7 @@ const YawaConfigSchema = z.object({
 	}),
 	tts: z.object({
 		backend: z.string(),
-		backends: z.record(z.string(), IrodoriBackendSchema),
+		backends: z.record(z.string(), ComfyIrodoriBackendSchema),
 		hf_home: z.string(),
 		seed: z.number().int(),
 		min_free_vram_mib: z.number().positive(),
@@ -354,15 +358,23 @@ function irodoriCall(
 			`unknown tts backend '${config.tts.backend}' in daily.yaml`,
 		);
 	return {
-		cwd: backend.dir,
+		cwd: process.cwd(),
 		command: [
-			"uv",
-			"run",
-			"--frozen",
-			"python",
-			"infer.py",
-			"--hf-checkpoint",
-			backend.hf_checkpoint,
+			"python3",
+			"-I",
+			path.join(import.meta.dir, "../../scripts/yawa_comfy_tts.py"),
+			"--base-url",
+			backend.base_url,
+			"--input-dir",
+			backend.input_dir,
+			"--output-dir",
+			backend.output_dir,
+			"--ckpt-name",
+			backend.ckpt_name,
+			"--codec-repo",
+			backend.codec_repo,
+			"--dtype",
+			backend.dtype,
 			...speaker,
 			"--text",
 			text,
@@ -376,7 +388,7 @@ function irodoriCall(
 			outputWav,
 			...extra,
 		],
-		env: { HF_HOME: config.tts.hf_home },
+		env: {},
 	};
 }
 
@@ -390,7 +402,7 @@ export function segmentCall(
 	const { chapter } = segment;
 	return irodoriCall(
 		config,
-		["--ref-wavs", refWav],
+		["--ref-wav", refWav],
 		segment.text,
 		`${config.voice.caption}${chapter.style}`,
 		config.tts.seed,
@@ -413,7 +425,7 @@ export function referenceCandidateCall(
 ): IrodoriCall {
 	return irodoriCall(
 		config,
-		["--no-ref"],
+		[],
 		config.reference.text,
 		caption,
 		seed,
