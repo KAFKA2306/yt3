@@ -249,3 +249,16 @@ tasks:
   improve:report:
     desc: "Generate the improvement report directly from run evidence"
     cmds: ["bun src/scripts/improve_report.ts"]
+
+  env:refresh:
+    desc: "Run one autonomous dev-environment refresh cycle (DRY_RUN=1 prints the command only)"
+    cmds: ["bash scripts/env_refresh.sh"]
+
+  env:refresh:install:
+    desc: "Install and enable the hourly environment refresh timer (systemd user)"
+    cmds:
+      - mkdir -p "$HOME/.config/systemd/user"
+      - cp systemd/yt3-env-refresh.service systemd/yt3-env-refresh.timer "$HOME/.config/systemd/user/"
+      - systemctl --user daemon-reload
+      - systemctl --user enable --now yt3-env-refresh.timer
+      - systemctl --user list-timers yt3-env-refresh.timer --no-pager

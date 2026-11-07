@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly autonomous dev-environment refresh (YT3)
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=yt3-env-refresh.service
+
+[Install]
+WantedBy=timers.target
