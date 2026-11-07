@@ -1,8 +1,4 @@
 import { z } from "zod";
-import {
-	ComedyBeatRoleSchema,
-	ComedyBeatSchema,
-} from "./content/comedy_beat.js";
 import { ExperienceContractSchema } from "./experience/schema.js";
 export enum RunStage {
 	RESEARCH = "research",
@@ -63,7 +59,6 @@ export type IqaResult = z.infer<typeof IqaResultSchema>;
 export const ScriptLineSchema = z.object({
 	speaker: z.string(),
 	text: z.string(),
-	beat_role: ComedyBeatRoleSchema.optional(),
 	duration: z.number().default(0.0),
 });
 export type ScriptLine = z.infer<typeof ScriptLineSchema>;
@@ -164,7 +159,6 @@ export const ContentOutlineSchema = z.object({
 			title: z.string(),
 			key_points: z.array(z.string()),
 			target_character_count: z.coerce.number().optional(),
-			comedy_beat: ComedyBeatSchema.default({ enabled: false }),
 		}),
 	),
 });
@@ -174,7 +168,6 @@ export const ContentSegmentSchema = z.object({
 		z.object({
 			speaker: z.string(),
 			text: z.string(),
-			beat_role: ComedyBeatRoleSchema.optional(),
 		}),
 	),
 });
