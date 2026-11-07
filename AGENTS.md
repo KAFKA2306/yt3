@@ -29,7 +29,8 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - A byosan run is publish-ready only when preparation prints `[product-release-gate] PASS ... artifact_sha256=<sha256>`, `PUBLISH_READY_RUN=<run-id>`, and `PUBLISH_COMMAND=...`. Record the run id, SHA-256, and command in the governing Issue. If any condition fails, stop. Do not bypass or retry around a failed gate.
 - `DATE` must be given explicitly in `YYYY-MM-DD`. Never infer today.
 - Byosan publishes one or more videos a day, never zero. Each run is named `<date>-daily-<HHmm>` (`BYOSAN_SUFFIX`); an already-published day does not stop another run, and only a source reused within `discovery.repeat_window_days` is rejected. The timer slots are in `systemd/yt3-byosan-daily.timer`.
-- Standing authorization: daily publication of `yawa`, `byosan`, and `humanity` through their canonical Taskfile entries once the gate passes. Manual `yawa` publication outside the daily path is not covered. `yawa` metadata changes go only through `task yawa:metadata`.
+- **Publication authorization is per run and always explicit (owner instruction, 2026-11-07, binding).** An agent publishes only after the owner names that exact run-id and artifact in the current conversation. A standing or daily authorization does not cover agent publication. An agent must not run `task publish`, `task yawa:daily`, `task byosan:daily`, or `task humanity:*` publish paths on its own initiative. `yawa` metadata changes also need explicit per-run authorization.
+- **Run inputs are always explicit.** `DATE`, `SLOT`, `RUN`, and profile must be supplied by the owner or taken from the run's own record; never inferred. Missing credentials (for example `config/.env.yawa`) stop the run and are reported as blocked; agents do not create or fetch them.
 - Publication is VERIFIED only after remote receipt and read-back.
 
 ## Autonomous operations
