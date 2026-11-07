@@ -1,0 +1,140 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "データセンターの電力と、米中間選挙の争点（2026年11月）",
+	"subject": "AIデータセンターの電力が、米中間選挙の争点になった。順に、1. 電力需要: 世界のデータセンターは2024年に415TWh（世界の電力の約1.5%）を使い、IEAは2030年に約945TWhへ倍増すると見通す、2. 容量: JLLは世界の容量が103GWから2030年に200GWへ倍増すると見通す、3. 家計: 米国の家庭の電気料金は2024年から10%超上がり、選挙では州の公益事業委員会9つの議席が争われた、4. 規制: ニューヨーク州は2026年7月14日、50MW以上のデータセンターの州の環境許可を12か月止めた。需要と容量は将来の見通しで、確定した数字ではない。電気料金の上昇の原因がデータセンターだとは確認されていない点を必ず添える。選挙の結果と、選挙後の市場の動きは確認できていないため扱わない。",
+	"released": "2026-11-06",
+	"source_documents": [
+		{
+			"url": "https://www.iea.org/reports/energy-and-ai/executive-summary",
+			"title": "Energy and AI: Executive summary",
+			"issuer": "IEA（国際エネルギー機関）",
+			"published": "2025-04-10"
+		},
+		{
+			"url": "https://www.jll.com/en-au/newsroom/global-data-center-sector-to-nearly-double-to-200gw-amid-ai-infrastructure-boom",
+			"title": "Global data center sector to nearly double to 200GW amid AI infrastructure boom",
+			"issuer": "JLL",
+			"published": "2026-01-06"
+		},
+		{
+			"url": "https://www.staradvertiser.com/2026/10/31/breaking-news/power-bills-and-data-centers-cast-rare-spotlight-on-utilities-in-u-s-midterms/",
+			"title": "Power bills and data centers cast rare spotlight on utilities in U.S. midterms",
+			"issuer": "Reuters（Honolulu Star-Advertiser 転載）",
+			"published": "2026-10-31"
+		},
+		{
+			"url": "https://sustainablefutures.linklaters.com/post/102nc7q/new-york-becomes-first-u-s-state-to-impose-a-statewide-data-center-moratorium",
+			"title": "New York becomes first U.S. state to impose a statewide data center moratorium",
+			"issuer": "Linklaters",
+			"published": "2026-07-16"
+		}
+	],
+	"facts": [
+		{
+			"id": "dc_power_2024_twh",
+			"label": "世界のデータセンターの消費電力（2024年）",
+			"value": 415,
+			"unit": "TWh",
+			"period": "2024年",
+			"basis": "actual",
+			"source_url": "https://www.iea.org/reports/energy-and-ai/executive-summary",
+			"status": "CONFIRMED",
+			"note": "IEAは、世界の電力消費の約1.5%と書いている。国別では米国が45%、中国が25%"
+		},
+		{
+			"id": "dc_power_2030_twh",
+			"label": "世界のデータセンターの消費電力（2030年の見通し）",
+			"value": 945,
+			"unit": "TWh（約）",
+			"period": "2030年",
+			"basis": "forecast",
+			"source_url": "https://www.iea.org/reports/energy-and-ai/executive-summary",
+			"status": "CONFIRMED",
+			"note": "IEAのBase Caseで、2024年の2倍超。2035年は約1,200TWhと見通すが、2030年以降は不確実性が大きいとIEAは書いている"
+		},
+		{
+			"id": "dc_capacity_now_gw",
+			"label": "世界のデータセンターの容量",
+			"value": 103,
+			"unit": "GW",
+			"period": "2026年1月時点（JLLの発表）",
+			"basis": "actual",
+			"source_url": "https://www.jll.com/en-au/newsroom/global-data-center-sector-to-nearly-double-to-200gw-amid-ai-infrastructure-boom",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "dc_capacity_2030_gw",
+			"label": "世界のデータセンターの容量（2030年の見通し）",
+			"value": 200,
+			"unit": "GW",
+			"period": "2030年",
+			"basis": "forecast",
+			"source_url": "https://www.jll.com/en-au/newsroom/global-data-center-sector-to-nearly-double-to-200gw-amid-ai-infrastructure-boom",
+			"status": "CONFIRMED",
+			"note": "JLLは、今後5年の投資が最大3兆ドルになると見通す。容量の定義は出典ごとに違い、他社の数字とは比べられない"
+		},
+		{
+			"id": "us_home_power_price_rise",
+			"label": "米国の家庭の電気料金の上昇（2024年以降）",
+			"value": 10,
+			"unit": "%超",
+			"period": "2024年〜2026年10月",
+			"basis": "actual",
+			"source_url": "https://www.staradvertiser.com/2026/10/31/breaking-news/power-bills-and-data-centers-cast-rare-spotlight-on-utilities-in-u-s-midterms/",
+			"status": "CONFIRMED",
+			"note": "ロイターがEIAのデータとして報じている。上昇の原因は、データセンターのほかに天然ガス価格や送電網の更新費用もあり、データセンターだけが原因とは確認されていない"
+		},
+		{
+			"id": "psc_seats_on_ballot",
+			"label": "選挙で争われた州の公益事業委員会の議席があった州の数",
+			"value": 9,
+			"unit": "州",
+			"period": "2026年11月3日の選挙",
+			"basis": "actual",
+			"source_url": "https://www.staradvertiser.com/2026/10/31/breaking-news/power-bills-and-data-centers-cast-rare-spotlight-on-utilities-in-u-s-midterms/",
+			"status": "CONFIRMED",
+			"note": "ロイターは、9つの州の公益事業委員会で議席が争われたと報じている。結果は確認できていない"
+		},
+		{
+			"id": "ny_moratorium_mw",
+			"label": "ニューヨーク州の許可停止の対象となるデータセンターの規模",
+			"value": 50,
+			"unit": "MW以上",
+			"period": "2026年7月14日の知事令（第62号）から12か月",
+			"basis": "actual",
+			"source_url": "https://sustainablefutures.linklaters.com/post/102nc7q/new-york-becomes-first-u-s-state-to-impose-a-statewide-data-center-moratorium",
+			"status": "CONFIRMED",
+			"note": "止まるのは州の環境許可で、期間は12か月。除外の有無は出典に記載がない"
+		}
+	],
+	"unverified": [
+		{
+			"id": "user_site_counts",
+			"label": "ユーザー提供の施設数と容量の数字",
+			"text": "世界1,360か所（2025年末）、SemiAnalysisのテキサス41%、Statista系の1万1,700か所、Synergyの1万か所超",
+			"status": "UNVERIFIED",
+			"note": "一次の報告書を確認できていない。Synergyのハイパースケール施設数は、二次の報道が1,297か所としているが、これも直接は確認していない"
+		},
+		{
+			"id": "pew_poll",
+			"label": "データセンターが家計に与える影響の世論調査",
+			"text": "Pewの調査で、悪い影響が38%、良い影響が6%",
+			"status": "UNVERIFIED",
+			"note": "Oilpriceの二次の引用のみで、Pewの原文を確認していない"
+		},
+		{
+			"id": "post_election_results",
+			"label": "選挙の結果と選挙後の市場の動き",
+			"text": "公益事業委員会の選挙結果、データセンター関連株の値動き",
+			"status": "UNVERIFIED",
+			"note": "2026年11月6日時点で、結果を伝える報道を見つけられなかった"
+		},
+		{
+			"id": "charlotte_maine_status",
+			"label": "シャーロット市とメイン州の規制の現状",
+			"text": "シャーロットの150日間の停止は11月5日まで、メイン州の州全体の停止は2027年11月まで",
+			"status": "UNVERIFIED",
+			"note": "延長や知事の署名の有無を確認できていない"
+		}
+	]
+}
