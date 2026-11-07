@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted（導入手順まで。音声生成の実行は未検証）
+Accepted（導入手順と単発合成まで検証済み。2026-11-07: upstream `Aratako/Irodori-TTS` を `sandbox/Irodori-TTS-v4.1` に clone、`uv sync --frozen`、`infer.py --hf-checkpoint Aratako/Irodori-TTS-v4.1-Small --no-ref` で 4.76 秒・mono・48kHz の WAV を生成。yawa の参照音声付き生成（`--ref-wavs`）と daily 全体は未検証）
 
 ## Context
 
