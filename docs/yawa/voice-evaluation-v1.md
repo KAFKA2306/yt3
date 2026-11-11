@@ -55,6 +55,8 @@ Python音響評価器と日次profile巡回を実装。参照音声の収集、�
 5. 参照音声を使い、公式モデルID `Aratako/Irodori-TTS-v4-Large-Quantized/int4-weight-only` で同じ評価台詞を生成する。これは隔離した実験runのみで行う。「Large 4.1」は公式モデル名として確認できないため、記録にはモデルIDを使う。
 6. 1か月後にユーザーが好みのrun IDやprofileを返したら、`feedback.template.csv` に記録し、好みprofileを更新する。フィードバックまで日次生成と公開は通常経路で継続する。
 
+同じ日に複数profileを作るときは別々の `SLOT` を使い、`YAWA_VOICE_PROFILE` でprofileを指定する。`YAWA_TTS_DEVICE=cpu` はIrodoriのモデルとcodecを明示的にCPU実行し、そのrunではGPU空き容量条件を使わない。自動でCPUへ切り替えることはなく、実行デバイスはrun記録に残す。例: `YAWA_VOICE_PROFILE=high_bright YAWA_TTS_DEVICE=cpu task yawa:daily DATE=2026-11-11 SLOT=highbright`。
+
 モデル候補の検索・seed探索・補正・Large試験は `runs/yawa_voice_lab/<run-id>/` に隔離し、日次既定値や公開済み音声を自動変更しない。採用後にのみ日次設定変更を別途行う。
 
 ## Python実装案

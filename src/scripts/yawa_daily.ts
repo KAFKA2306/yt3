@@ -36,6 +36,23 @@ import { ROOT } from "../io/core.js";
 const config = loadYawaConfig(ROOT);
 const bucketDir = path.join(ROOT, "runs", config.run.bucket);
 const VOICE_EVALUATOR_VERSION = "1.0.0";
+type TtsDevice = "cpu" | "cuda";
+
+function requestedTtsDevice(): TtsDevice | undefined {
+	const raw = process.env.YAWA_TTS_DEVICE?.trim();
+	if (!raw) return undefined;
+	if (raw !== "cpu" && raw !== "cuda")
+		throw new Error("YAWA_TTS_DEVICE must be cpu or cuda");
+	return raw;
+}
+
+function requestedVoiceProfile(): string | undefined {
+	const profileId = process.env.YAWA_VOICE_PROFILE?.trim();
+	if (!profileId) return undefined;
+	if (!/^[a-z0-9_-]{1,40}$/.test(profileId))
+		throw new Error("YAWA_VOICE_PROFILE must be a configured profile id");
+	return profileId;
+}
 
 function run(
 	command: string[],
@@ -184,21 +201,24 @@ function observeArc(
 	);
 }
 
-function preflight(): void {
+function preflight(device?: TtsDevice): void {
 	assertUnprivileged(process.getuid?.(), [
 		config.tts.hf_home,
 		path.join(ROOT, "runs"),
 	]);
-	const free = Number(
-		run([
-			"nvidia-smi",
-			"--query-gpu=memory.free",
-			"--format=csv,noheader,nounits",
-		]).trim(),
-	);
+	const free =
+		device === "cpu"
+			? null
+			: Number(
+					run([
+						"nvidia-smi",
+						"--query-gpu=memory.free",
+						"--format=csv,noheader,nounits",
+					]).trim(),
+				);
 	const backend = config.tts.backends[config.tts.backend];
 	const failures = [
-		free >= config.tts.min_free_vram_mib
+		device === "cpu" || (free !== null && free >= config.tts.min_free_vram_mib)
 			? ""
 			: `free VRAM ${free} MiB < ${config.tts.min_free_vram_mib} MiB`,
 		Bun.spawnSync(["codex", "login", "status"]).exitCode === 0
@@ -395,6 +415,7 @@ function generateReference(
 	dir: string,
 	name: string,
 	voiceProfile: VoiceProfile,
+	device?: TtsDevice,
 ): ReferenceRecord {
 	const refPath = path.join(dir, "reference.wav");
 	const recordPath = path.join(dir, "reference.json");
@@ -411,13 +432,14 @@ function generateReference(
 		runSeed(name, `reference:${i}`),
 	);
 	const candidates: ReferenceCandidate[] = seeds.map((seed) => {
-		const file = path.join(candidateDir, `seed_${seed}.wav`);
+		const file = path.join(candidateDir, `${voiceProfile.id}_seed_${seed}.wav`);
 		if (!fs.existsSync(file)) {
 			const { cwd, command, env } = referenceCandidateCall(
 				config,
 				voiceProfile.caption,
 				seed,
 				file,
+				device,
 			);
 			run(command, { cwd, env });
 		}
@@ -508,6 +530,7 @@ function synthesize(
 	dir: string,
 	refWav: string,
 	voiceProfile: VoiceProfile,
+	device?: TtsDevice,
 ): string {
 	const ttsDir = path.join(dir, "tts");
 	fs.ensureDirSync(ttsDir);
@@ -544,6 +567,7 @@ function synthesize(
 				refWav,
 				wav,
 				runSeed(path.basename(dir), "tts"),
+				device,
 			);
 			run(command, { cwd, env });
 		}
@@ -617,7 +641,9 @@ function mix(listPath: string, outPath: string): void {
 async function prepare(date: string, slot?: string): Promise<void> {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
 		throw new Error("DATE=YYYY-MM-DD is required");
-	const voiceProfile = voiceProfileForDate(config, date);
+	const profileId = requestedVoiceProfile();
+	const ttsDevice = requestedTtsDevice();
+	const voiceProfile = voiceProfileForDate(config, date, profileId);
 	// 同じ日に 2 本目を作るときだけ SLOT（英数字）を付ける。省略時の名前は従来どおり。
 	if (slot && !/^[a-z0-9]+$/.test(slot))
 		throw new Error("SLOT must be lowercase letters or digits");
@@ -642,7 +668,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		throw new Error(
 			`${runId} was produced before the voice reference; refusing to add one to existing audio`,
 		);
-	preflight();
+	preflight(ttsDevice);
 	fs.ensureDirSync(dir);
 
 	const selectionPath = path.join(dir, "selection.json");
@@ -671,13 +697,13 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		? ScriptDraftSchema.parse(fs.readJsonSync(scriptPath))
 		: generateScript(entry, selection, name, scriptPath);
 
-	const reference = generateReference(dir, name, voiceProfile);
+	const reference = generateReference(dir, name, voiceProfile, ttsDevice);
 	const refPath = path.join(dir, "reference.wav");
 	const voiceFeatures = measureReferenceVoice(dir, refPath, reference.sha256);
 
 	const audioPath = path.join(dir, "final_mix.wav");
 	if (!fs.existsSync(audioPath))
-		mix(synthesize(draft, dir, refPath, voiceProfile), audioPath);
+		mix(synthesize(draft, dir, refPath, voiceProfile, ttsDevice), audioPath);
 	const backend = config.tts.backends[config.tts.backend];
 	fs.writeJsonSync(
 		path.join(dir, "tts.json"),
@@ -687,6 +713,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			seed: runSeed(name, "tts"),
 			voice_caption: voiceProfile.caption,
 			voice_profile_id: voiceProfile.id,
+			tts_device: ttsDevice ?? "default",
 			reference_sha256: reference.sha256,
 		},
 		{ spaces: 2 },
@@ -698,11 +725,13 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			date,
 			run_id: runId,
 			profile_id: voiceProfile.id,
+			profile_selection: profileId ? "explicit" : "date_rotation",
 			axis: voiceProfile.axis,
 			cycle_index: voiceProfile.cycle_index,
 			cycle_length: voiceProfile.cycle_length,
 			caption: voiceProfile.caption,
 			model_id: backend?.hf_checkpoint,
+			tts_device: ttsDevice ?? "default",
 			tts_seed: runSeed(name, "tts"),
 			reference_seed: reference.selected.seed,
 			reference_sha256: reference.sha256,
@@ -867,6 +896,6 @@ async function prepare(date: string, slot?: string): Promise<void> {
 }
 
 const [command, date, slot] = process.argv.slice(2);
-if (command === "preflight") preflight();
+if (command === "preflight") preflight(requestedTtsDevice());
 else if (command === "prepare" && date) await prepare(date, slot);
 else throw new Error("usage: yawa_daily.ts preflight | prepare YYYY-MM-DD");

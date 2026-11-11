@@ -133,6 +133,7 @@ const UTC_DAY_MS = 24 * 60 * 60 * 1000;
 export function voiceProfileForDate(
 	config: YawaConfig,
 	date: string,
+	requestedProfileId?: string,
 ): VoiceProfile {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
 		throw new Error("DATE=YYYY-MM-DD is required");
@@ -147,10 +148,20 @@ export function voiceProfileForDate(
 		throw new Error("at least two voice profiles are required");
 	const dayIndex = Math.floor((timestamp - VOICE_CYCLE_START_UTC) / UTC_DAY_MS);
 	const cycleIndex = ((dayIndex % cycleLength) + cycleLength) % cycleLength;
-	const profile = config.voice.profiles[cycleIndex];
-	if (!profile)
-		throw new Error(`no voice profile at cycle index ${cycleIndex}`);
-	return { ...profile, cycle_index: cycleIndex, cycle_length: cycleLength };
+	const selectedIndex = requestedProfileId
+		? config.voice.profiles.findIndex(
+				(profile) => profile.id === requestedProfileId,
+			)
+		: cycleIndex;
+	if (selectedIndex < 0)
+		throw new Error(`unknown voice profile: ${requestedProfileId}`);
+	const profile = config.voice.profiles[selectedIndex];
+	if (!profile) throw new Error(`no voice profile at index ${selectedIndex}`);
+	return {
+		...profile,
+		cycle_index: selectedIndex,
+		cycle_length: cycleLength,
+	};
 }
 
 const PoolSchema = z.object({
@@ -409,6 +420,7 @@ function irodoriCall(
 	seed: number,
 	outputWav: string,
 	extra: string[] = [],
+	device?: "cpu" | "cuda",
 ): IrodoriCall {
 	const backend = config.tts.backends[config.tts.backend];
 	if (!backend)
@@ -436,6 +448,7 @@ function irodoriCall(
 			String(backend.num_steps),
 			"--output-wav",
 			outputWav,
+			...(device ? ["--model-device", device, "--codec-device", device] : []),
 			...extra,
 		],
 		env: { HF_HOME: config.tts.hf_home },
@@ -449,6 +462,7 @@ export function segmentCall(
 	refWav: string,
 	outputWav: string,
 	seed: number,
+	device?: "cpu" | "cuda",
 ): IrodoriCall {
 	const { chapter } = segment;
 	return irodoriCall(
@@ -464,6 +478,7 @@ export function segmentCall(
 			"--cfg-scale-caption",
 			String(chapter.cfg_scale_caption),
 		],
+		device,
 	);
 }
 
@@ -473,6 +488,7 @@ export function referenceCandidateCall(
 	caption: string,
 	seed: number,
 	outputWav: string,
+	device?: "cpu" | "cuda",
 ): IrodoriCall {
 	return irodoriCall(
 		config,
@@ -481,6 +497,8 @@ export function referenceCandidateCall(
 		caption,
 		seed,
 		outputWav,
+		[],
+		device,
 	);
 }
 
