@@ -38,9 +38,8 @@ const bucketDir = path.join(ROOT, "runs", config.run.bucket);
 const VOICE_EVALUATOR_VERSION = "1.0.0";
 type TtsDevice = "cpu" | "cuda";
 
-function requestedTtsDevice(): TtsDevice | undefined {
-	const raw = process.env.YAWA_TTS_DEVICE?.trim();
-	if (!raw) return undefined;
+function requestedTtsDevice(): TtsDevice {
+	const raw = process.env.YAWA_TTS_DEVICE?.trim() || config.tts.device;
 	if (raw !== "cpu" && raw !== "cuda")
 		throw new Error("YAWA_TTS_DEVICE must be cpu or cuda");
 	return raw;
@@ -713,7 +712,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			seed: runSeed(name, "tts"),
 			voice_caption: voiceProfile.caption,
 			voice_profile_id: voiceProfile.id,
-			tts_device: ttsDevice ?? "default",
+			tts_device: ttsDevice,
 			reference_sha256: reference.sha256,
 		},
 		{ spaces: 2 },
@@ -731,7 +730,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			cycle_length: voiceProfile.cycle_length,
 			caption: voiceProfile.caption,
 			model_id: backend?.hf_checkpoint,
-			tts_device: ttsDevice ?? "default",
+			tts_device: ttsDevice,
 			tts_seed: runSeed(name, "tts"),
 			reference_seed: reference.selected.seed,
 			reference_sha256: reference.sha256,

@@ -65,6 +65,7 @@ const YawaConfigSchema = z.object({
 	}),
 	tts: z.object({
 		backend: z.string(),
+		device: z.enum(["cpu", "cuda"]),
 		backends: z.record(z.string(), IrodoriBackendSchema),
 		hf_home: z.string(),
 		min_free_vram_mib: z.number().positive(),

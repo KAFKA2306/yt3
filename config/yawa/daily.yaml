@@ -12,8 +12,9 @@ script:
   max_segment_chars: 90
   max_attempts: 3
 tts:
-  # 切り替えは backend の 1 行だけ。自動の代替はしない（失敗は失敗として止める）。
+  # backend と device を明示する。自動の代替はしない（失敗は失敗として止める）。
   backend: irodori-v4.1-small
+  device: cpu
   backends:
     irodori-v4.1-small:
       kind: irodori
