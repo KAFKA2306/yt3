@@ -25,6 +25,20 @@ const BeatSchema = z.object({
 	gain_db: z.number(),
 });
 
+const VoiceProfileSchema = z.object({
+	id: z.string().regex(/^[a-z0-9_-]{1,40}$/),
+	axis: z.enum([
+		"high_pitch",
+		"nasal_resonance",
+		"sweetness",
+		"intonation",
+		"breathiness",
+		"expressivity",
+		"control",
+	]),
+	caption: z.string().min(10).max(300),
+});
+
 export type Chapter = {
 	name: string;
 	share: number;
@@ -61,7 +75,10 @@ const YawaConfigSchema = z.object({
 	}),
 	axes: z.record(z.string(), z.array(z.string().min(1)).min(1)),
 	diversity: z.object({ recent_window: z.number().int().positive() }),
-	voice: z.object({ caption: z.string().min(10).max(300) }),
+	voice: z.object({
+		caption: z.string().min(10).max(300),
+		profiles: z.array(VoiceProfileSchema).min(2),
+	}),
 	reference: z.object({
 		text: z.string().min(10),
 		candidates: z.number().int().positive(),
@@ -104,6 +121,37 @@ const YawaConfigSchema = z.object({
 	}),
 });
 export type YawaConfig = z.infer<typeof YawaConfigSchema>;
+export type VoiceProfile = z.infer<typeof VoiceProfileSchema> & {
+	cycle_index: number;
+	cycle_length: number;
+};
+
+const VOICE_CYCLE_START_UTC = Date.UTC(2026, 10, 11);
+const UTC_DAY_MS = 24 * 60 * 60 * 1000;
+
+/** 日付で固定した巡回。再実行は同じprofileになり、隣接日は別profileになる。 */
+export function voiceProfileForDate(
+	config: YawaConfig,
+	date: string,
+): VoiceProfile {
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
+		throw new Error("DATE=YYYY-MM-DD is required");
+	const timestamp = Date.parse(`${date}T00:00:00.000Z`);
+	if (
+		!Number.isFinite(timestamp) ||
+		new Date(timestamp).toISOString().slice(0, 10) !== date
+	)
+		throw new Error(`invalid calendar date: ${date}`);
+	const cycleLength = config.voice.profiles.length;
+	if (cycleLength < 2)
+		throw new Error("at least two voice profiles are required");
+	const dayIndex = Math.floor((timestamp - VOICE_CYCLE_START_UTC) / UTC_DAY_MS);
+	const cycleIndex = ((dayIndex % cycleLength) + cycleLength) % cycleLength;
+	const profile = config.voice.profiles[cycleIndex];
+	if (!profile)
+		throw new Error(`no voice profile at cycle index ${cycleIndex}`);
+	return { ...profile, cycle_index: cycleIndex, cycle_length: cycleLength };
+}
 
 const PoolSchema = z.object({
 	entries: z.array(
@@ -270,6 +318,16 @@ export function loadYawaConfig(root: string): YawaConfig {
 				throw new Error(`title form uses unknown axis '${axis}'`);
 	for (const axis of config.metadata.tags_from_axes)
 		if (!config.axes[axis]) throw new Error(`tags use unknown axis '${axis}'`);
+	if (
+		new Set(config.voice.profiles.map((profile) => profile.id)).size !==
+		config.voice.profiles.length
+	)
+		throw new Error("voice profile ids must be unique");
+	if (
+		new Set(config.voice.profiles.map((profile) => profile.axis)).size !==
+		config.voice.profiles.length
+	)
+		throw new Error("voice profile axes must be unique");
 	return config;
 }
 

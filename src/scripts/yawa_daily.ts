@@ -26,13 +26,16 @@ import {
 	selectReference,
 	shapeBeats,
 	similarity,
+	type VoiceProfile,
 	validateDraft,
+	voiceProfileForDate,
 	yawaAudit,
 } from "../domain/yawa_daily.js";
 import { ROOT } from "../io/core.js";
 
 const config = loadYawaConfig(ROOT);
 const bucketDir = path.join(ROOT, "runs", config.run.bucket);
+const VOICE_EVALUATOR_VERSION = "1.0.0";
 
 function run(
 	command: string[],
@@ -377,6 +380,7 @@ function asrSimilarity(audio: string, expected: string): number {
 }
 
 type ReferenceRecord = {
+	profile_id: string;
 	selected: ReferenceCandidate;
 	candidates: ReferenceCandidate[];
 	sha256: string;
@@ -389,13 +393,15 @@ type ReferenceRecord = {
  */
 function generateReference(
 	dir: string,
-	draft: ScriptDraft,
 	name: string,
+	voiceProfile: VoiceProfile,
 ): ReferenceRecord {
 	const refPath = path.join(dir, "reference.wav");
 	const recordPath = path.join(dir, "reference.json");
 	if (fs.existsSync(recordPath) && fs.existsSync(refPath)) {
 		const record = fs.readJsonSync(recordPath) as ReferenceRecord;
+		if (record.profile_id !== voiceProfile.id)
+			throw new Error("stored voice reference uses a different daily profile");
 		if (record.sha256 === sha256File(refPath)) return record;
 		throw new Error("reference.wav does not match reference.json");
 	}
@@ -409,7 +415,7 @@ function generateReference(
 		if (!fs.existsSync(file)) {
 			const { cwd, command, env } = referenceCandidateCall(
 				config,
-				config.voice.caption,
+				voiceProfile.caption,
 				seed,
 				file,
 			);
@@ -424,6 +430,7 @@ function generateReference(
 	const selected = selectReference(candidates);
 	fs.copyFileSync(selected.file, refPath);
 	const record: ReferenceRecord = {
+		profile_id: voiceProfile.id,
 		selected,
 		candidates,
 		sha256: sha256File(refPath),
@@ -433,11 +440,74 @@ function generateReference(
 	return record;
 }
 
+function measureReferenceVoice(
+	dir: string,
+	referencePath: string,
+	referenceSha256: string,
+):
+	| { status: "MEASURED"; features: Record<string, unknown> }
+	| {
+			status: "UNAVAILABLE";
+			error: string;
+	  } {
+	const outputPath = path.join(dir, "voice_features.json");
+	if (fs.existsSync(outputPath)) {
+		const previous = fs.readJsonSync(outputPath);
+		if (
+			previous.reference_sha256 === referenceSha256 &&
+			previous.status === "MEASURED" &&
+			previous.evaluator_version === VOICE_EVALUATOR_VERSION &&
+			previous.features
+		)
+			return { status: "MEASURED", features: previous.features };
+	}
+	try {
+		run(
+			[
+				"uv",
+				"run",
+				"--offline",
+				"--frozen",
+				"--no-sync",
+				"--quiet",
+				"python",
+				"voice_physics.py",
+				"extract",
+				referencePath,
+				"--output",
+				outputPath,
+			],
+			{ cwd: path.join(ROOT, "tools/yawa-voice-eval") },
+		);
+		const extracted = fs.readJsonSync(outputPath);
+		if (!extracted.features || Object.keys(extracted.features).length === 0)
+			throw new Error("voice evaluator returned no acoustic features");
+		if (extracted.evaluator_version !== VOICE_EVALUATOR_VERSION)
+			throw new Error("voice evaluator version mismatch");
+		const result = {
+			status: "MEASURED" as const,
+			reference_sha256: referenceSha256,
+			evaluator_version: extracted.evaluator_version as string,
+			features: extracted.features as Record<string, unknown>,
+		};
+		fs.writeJsonSync(outputPath, result, { spaces: 2 });
+		return result;
+	} catch (error) {
+		const result = {
+			status: "UNAVAILABLE" as const,
+			reference_sha256: referenceSha256,
+			error: error instanceof Error ? error.message : String(error),
+		};
+		fs.writeJsonSync(outputPath, result, { spaces: 2 });
+		return result;
+	}
+}
+
 function synthesize(
 	draft: ScriptDraft,
 	dir: string,
 	refWav: string,
-	name: string,
+	voiceProfile: VoiceProfile,
 ): string {
 	const ttsDir = path.join(dir, "tts");
 	fs.ensureDirSync(ttsDir);
@@ -460,12 +530,16 @@ function synthesize(
 		return gap;
 	};
 	const list: string[] = [];
+	const runConfig = {
+		...config,
+		voice: { ...config.voice, caption: voiceProfile.caption },
+	};
 	draftSegments(draft, config, path.basename(dir)).forEach((segment, index) => {
 		const name = String(index + 1).padStart(3, "0");
 		const wav = path.join(ttsDir, `seg_${name}.wav`);
 		if (!fs.existsSync(wav)) {
 			const { cwd, command, env } = segmentCall(
-				config,
+				runConfig,
 				segment,
 				refWav,
 				wav,
@@ -543,6 +617,7 @@ function mix(listPath: string, outPath: string): void {
 async function prepare(date: string, slot?: string): Promise<void> {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
 		throw new Error("DATE=YYYY-MM-DD is required");
+	const voiceProfile = voiceProfileForDate(config, date);
 	// 同じ日に 2 本目を作るときだけ SLOT（英数字）を付ける。省略時の名前は従来どおり。
 	if (slot && !/^[a-z0-9]+$/.test(slot))
 		throw new Error("SLOT must be lowercase letters or digits");
@@ -596,12 +671,13 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		? ScriptDraftSchema.parse(fs.readJsonSync(scriptPath))
 		: generateScript(entry, selection, name, scriptPath);
 
-	const reference = generateReference(dir, draft, name);
+	const reference = generateReference(dir, name, voiceProfile);
 	const refPath = path.join(dir, "reference.wav");
+	const voiceFeatures = measureReferenceVoice(dir, refPath, reference.sha256);
 
 	const audioPath = path.join(dir, "final_mix.wav");
 	if (!fs.existsSync(audioPath))
-		mix(synthesize(draft, dir, refPath, name), audioPath);
+		mix(synthesize(draft, dir, refPath, voiceProfile), audioPath);
 	const backend = config.tts.backends[config.tts.backend];
 	fs.writeJsonSync(
 		path.join(dir, "tts.json"),
@@ -609,8 +685,33 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			backend: config.tts.backend,
 			checkpoint: backend?.hf_checkpoint,
 			seed: runSeed(name, "tts"),
-			voice_caption: config.voice.caption,
+			voice_caption: voiceProfile.caption,
+			voice_profile_id: voiceProfile.id,
 			reference_sha256: reference.sha256,
+		},
+		{ spaces: 2 },
+	);
+	fs.writeJsonSync(
+		path.join(dir, "voice_experiment.json"),
+		{
+			schema_version: 1,
+			date,
+			run_id: runId,
+			profile_id: voiceProfile.id,
+			axis: voiceProfile.axis,
+			cycle_index: voiceProfile.cycle_index,
+			cycle_length: voiceProfile.cycle_length,
+			caption: voiceProfile.caption,
+			model_id: backend?.hf_checkpoint,
+			tts_seed: runSeed(name, "tts"),
+			reference_seed: reference.selected.seed,
+			reference_sha256: reference.sha256,
+			candidate_asr_similarity: reference.candidates.map((candidate) => ({
+				seed: candidate.seed,
+				similarity: candidate.asr_similarity,
+			})),
+			acoustic_measurement: voiceFeatures,
+			feedback_status: "awaiting_owner_feedback",
 		},
 		{ spaces: 2 },
 	);
@@ -748,6 +849,11 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			run_id: runId,
 			entry: entry.id,
 			seconds: audioSeconds,
+			voice_profile: voiceProfile.id,
+			voice_axis: voiceProfile.axis,
+			voice_feature_status: voiceFeatures.status,
+			voice_feature_error:
+				voiceFeatures.status === "UNAVAILABLE" ? voiceFeatures.error : null,
 			reference_seed: reference.selected.seed,
 			audit: Object.fromEntries(
 				Object.entries(audit).map(([n, c]) => [n, c.status]),
