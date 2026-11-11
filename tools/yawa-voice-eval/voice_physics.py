@@ -16,7 +16,7 @@ import numpy as np
 import parselmouth
 import soundfile as sf
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 PITCH_FLOOR_HZ = 100.0
 PITCH_TOP_HZ = 800.0
 PITCH_STEP_S = 0.01
@@ -185,20 +185,17 @@ def _vowel_features(
 def extract_features(audio_path: Path, intervals_csv: Path | None = None) -> dict[str, Any]:
     samples, sample_rate = _load_audio(audio_path)
     sound = parselmouth.Sound(samples, sampling_frequency=sample_rate)
-    pitch = parselmouth.praat.call(
-        sound,
-        "To Pitch (filtered autocorrelation)...",
-        PITCH_STEP_S,
-        PITCH_FLOOR_HZ,
-        PITCH_TOP_HZ,
-        15,
-        False,
-        0.03,
-        0.09,
-        0.50,
-        0.055,
-        0.35,
-        0.14,
+    pitch = sound.to_pitch_ac(
+        time_step=PITCH_STEP_S,
+        pitch_floor=PITCH_FLOOR_HZ,
+        max_number_of_candidates=15,
+        very_accurate=False,
+        silence_threshold=0.09,
+        voicing_threshold=0.50,
+        octave_cost=0.055,
+        octave_jump_cost=0.35,
+        voiced_unvoiced_cost=0.14,
+        pitch_ceiling=PITCH_TOP_HZ,
     )
     pitch_values = np.asarray(pitch.selected_array["frequency"], dtype=float)
     pitch_times = np.asarray(pitch.xs(), dtype=float)
@@ -248,7 +245,7 @@ def extract_features(audio_path: Path, intervals_csv: Path | None = None) -> dic
         **_vowel_features(sound, intervals_csv, pitch_times, pitch_values),
         "analysis": {
             "tool": "Praat via Parselmouth",
-            "pitch_method": "filtered autocorrelation",
+            "pitch_method": "Parselmouth Sound.to_pitch_ac",
             "pitch_floor_hz": PITCH_FLOOR_HZ,
             "pitch_top_hz": PITCH_TOP_HZ,
             "pitch_step_s": PITCH_STEP_S,

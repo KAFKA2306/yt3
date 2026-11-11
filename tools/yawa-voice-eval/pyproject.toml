@@ -1,6 +1,6 @@
 [project]
 name = "yawa-voice-eval"
-version = "1.0.0"
+version = "1.0.1"
 description = "Offline acoustic feature extraction and reference similarity scoring for Yawa Archive"
 requires-python = ">=3.12,<3.14"
 dependencies = [
