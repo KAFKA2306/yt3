@@ -16,7 +16,7 @@ import numpy as np
 import parselmouth
 import soundfile as sf
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 PITCH_FLOOR_HZ = 100.0
 PITCH_TOP_HZ = 800.0
 PITCH_STEP_S = 0.01
@@ -67,7 +67,9 @@ def _load_audio(path: Path) -> tuple[np.ndarray, int]:
     return mono, int(sample_rate)
 
 
-def _frame_arrays(samples: np.ndarray, sample_rate: int) -> tuple[np.ndarray, np.ndarray]:
+def _frame_arrays(
+    samples: np.ndarray, sample_rate: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     frame_length = max(1, round(FRAME_S * sample_rate))
     hop_length = max(1, round(HOP_S * sample_rate))
     if len(samples) < frame_length:
@@ -78,12 +80,22 @@ def _frame_arrays(samples: np.ndarray, sample_rate: int) -> tuple[np.ndarray, np
     rms_values: list[float] = []
     tilts: list[float] = []
     hf_ratios: list[float] = []
+    centroids: list[float] = []
+    rolloffs85: list[float] = []
+    flatness: list[float] = []
     lower = (frequencies >= 300.0) & (frequencies <= min(4000.0, sample_rate / 2))
     low_band = (frequencies >= 500.0) & (frequencies < min(4000.0, sample_rate / 2))
     high_band = (frequencies >= 4000.0) & (frequencies <= min(10000.0, sample_rate / 2))
-    if np.count_nonzero(lower) < 3 or not np.any(low_band) or not np.any(high_band):
+    spectrum_band = (frequencies >= 300.0) & (frequencies <= min(10000.0, sample_rate / 2))
+    if (
+        np.count_nonzero(lower) < 3
+        or not np.any(low_band)
+        or not np.any(high_band)
+        or np.count_nonzero(spectrum_band) < 3
+    ):
         raise EvaluationError("sample rate does not cover required spectral bands")
     log_frequencies = np.log2(frequencies[lower])
+    spectrum_frequencies = frequencies[spectrum_band]
 
     # Bounded batches keep peak memory stable on long-form episodes.
     for offset in range(0, len(starts), 512):
@@ -102,7 +114,64 @@ def _frame_arrays(samples: np.ndarray, sample_rate: int) -> tuple[np.ndarray, np
         high_power = np.sum(power[:, high_band], axis=1)
         ratios = 10.0 * np.log10(np.maximum(high_power, 1e-20) / np.maximum(low_power, 1e-20))
         hf_ratios.extend(ratios.tolist())
-    return np.asarray(rms_values), np.asarray(tilts), np.asarray(hf_ratios)
+        spectrum = np.maximum(power[:, spectrum_band], 1e-20)
+        spectrum_power = np.sum(spectrum, axis=1)
+        centroids.extend((spectrum @ spectrum_frequencies / spectrum_power).tolist())
+        cumulative = np.cumsum(spectrum, axis=1)
+        rolloff_indices = np.argmax(cumulative >= (0.85 * spectrum_power[:, None]), axis=1)
+        rolloffs85.extend(spectrum_frequencies[rolloff_indices].tolist())
+        flatness.extend(
+            (np.exp(np.mean(np.log(spectrum), axis=1)) / np.mean(spectrum, axis=1)).tolist()
+        )
+    return (
+        np.asarray(rms_values),
+        np.asarray(tilts),
+        np.asarray(hf_ratios),
+        np.asarray(centroids),
+        np.asarray(rolloffs85),
+        np.asarray(flatness),
+    )
+
+
+def _unsegmented_formant_estimates(
+    sound: parselmouth.Sound,
+    pitch_times: np.ndarray,
+    pitch_values: np.ndarray,
+) -> dict[str, Any]:
+    """Return exploratory Burg tracks on voiced frames without vowel alignment."""
+    formants = parselmouth.praat.call(
+        sound, "To Formant (burg)...", 0.01, 5.0, 5500.0, 0.025, 50.0
+    )
+    f1: list[float] = []
+    f2: list[float] = []
+    f3: list[float] = []
+    b1: list[float] = []
+    for time, pitch_hz in zip(pitch_times, pitch_values, strict=True):
+        if not math.isfinite(float(pitch_hz)) or pitch_hz < PITCH_FLOOR_HZ:
+            continue
+        values = [float(formants.get_value_at_time(i, float(time))) for i in (1, 2, 3)]
+        bandwidth = float(formants.get_bandwidth_at_time(1, float(time)))
+        if (
+            all(math.isfinite(value) for value in values)
+            and 100.0 <= values[0] < 1200.0
+            and 250.0 <= values[1] < 4000.0
+            and 800.0 <= values[2] < 5500.0
+            and values[0] < values[1] < values[2]
+        ):
+            f1.append(values[0])
+            f2.append(values[1])
+            f3.append(values[2])
+            if math.isfinite(bandwidth) and bandwidth > 0:
+                b1.append(bandwidth)
+    return {
+        "status": "EXPLORATORY_UNSEGMENTED" if f1 else "INSUFFICIENT_TRACKS",
+        "f1_median_hz": float(np.median(f1)) if f1 else None,
+        "f1_bandwidth_median_hz": float(np.median(b1)) if b1 else None,
+        "f2_median_hz": float(np.median(f2)) if f2 else None,
+        "f3_median_hz": float(np.median(f3)) if f3 else None,
+        "voiced_frames_used": len(f1),
+        "note": "Unsegmented Praat Burg tracks include consonant transitions; advisory only, not a calibrated vowel or nasalization measurement.",
+    }
 
 
 def _vowel_features(
@@ -217,9 +286,10 @@ def extract_features(audio_path: Path, intervals_csv: Path | None = None) -> dic
     hnr = hnr[np.isfinite(hnr)]
     if not hnr.size:
         raise EvaluationError("HNR analysis returned no finite frames")
-    rms, tilt, hf_ratio = _frame_arrays(samples, sample_rate)
+    rms, tilt, hf_ratio, centroid, rolloff85, flatness = _frame_arrays(samples, sample_rate)
     rms_db = 20.0 * np.log10(np.maximum(rms, 1e-12))
     low_energy_rate = float(np.mean(rms_db < float(np.max(rms_db)) - 35.0))
+    active_frames = rms_db >= float(np.max(rms_db)) - 35.0
     clipping_rate = float(np.mean(np.abs(samples) >= 0.999))
     leading = _edge_silence_seconds(samples, sample_rate, from_end=False)
     trailing = _edge_silence_seconds(samples, sample_rate, from_end=True)
@@ -235,6 +305,9 @@ def extract_features(audio_path: Path, intervals_csv: Path | None = None) -> dic
         "voiced_ratio": float(np.mean(voiced_mask)),
         "hnr_median_db": float(np.median(hnr)),
         "spectral_tilt_db_octave": float(np.median(tilt)),
+        "spectral_centroid_median_hz": float(np.median(centroid[active_frames])),
+        "spectral_rolloff85_median_hz": float(np.median(rolloff85[active_frames])),
+        "spectral_flatness_median": float(np.median(flatness[active_frames])),
         "rms_p90_p10_db": float(np.percentile(rms_db, 90) - np.percentile(rms_db, 10)),
         "low_energy_frame_rate": low_energy_rate,
         "high_frequency_energy_ratio_db": float(np.median(hf_ratio)),
@@ -242,6 +315,9 @@ def extract_features(audio_path: Path, intervals_csv: Path | None = None) -> dic
         "dc_offset": float(np.mean(samples)),
         "leading_silence_seconds": leading,
         "trailing_silence_seconds": trailing,
+        "formant_estimates_unsegmented": _unsegmented_formant_estimates(
+            sound, pitch_times, pitch_values
+        ),
         **_vowel_features(sound, intervals_csv, pitch_times, pitch_values),
         "analysis": {
             "tool": "Praat via Parselmouth",
@@ -251,6 +327,9 @@ def extract_features(audio_path: Path, intervals_csv: Path | None = None) -> dic
             "pitch_step_s": PITCH_STEP_S,
             "pitch_reference_hz": PITCH_REFERENCE_HZ,
             "spectral_tilt_band_hz": [300, min(4000, sample_rate // 2)],
+            "spectral_summary_band_hz": [300, min(10000, sample_rate // 2)],
+            "spectral_summary_active_frame_threshold_db_below_peak": 35.0,
+            "spectral_rolloff_fraction": 0.85,
             "low_energy_threshold_db_below_peak": 35.0,
             "high_frequency_bands_hz": [[500, 4000], [4000, min(10000, sample_rate // 2)]],
         },

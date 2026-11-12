@@ -35,7 +35,7 @@ import { ROOT } from "../io/core.js";
 
 const config = loadYawaConfig(ROOT);
 const bucketDir = path.join(ROOT, "runs", config.run.bucket);
-const VOICE_EVALUATOR_VERSION = "1.0.1";
+const VOICE_EVALUATOR_VERSION = "1.0.2";
 type TtsDevice = "cpu" | "cuda";
 
 function requestedTtsDevice(): TtsDevice {

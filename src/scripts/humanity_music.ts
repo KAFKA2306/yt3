@@ -75,20 +75,32 @@ function run(
 }
 
 function preflight(): void {
-	const free = Number(
-		run([
-			"nvidia-smi",
-			"--query-gpu=memory.free",
-			"--format=csv,noheader,nounits",
-		]).trim(),
+	const freeVram =
+		config.yue.device === "cuda"
+			? Number(
+					run([
+						"nvidia-smi",
+						"--query-gpu=memory.free",
+						"--format=csv,noheader,nounits",
+					]).trim(),
+				)
+			: null;
+	const availableRam = /^MemAvailable:\s+(\d+)\s+kB$/m.exec(
+		fs.readFileSync("/proc/meminfo", "utf-8"),
 	);
+	if (!availableRam) throw new Error("MemAvailable is missing from /proc/meminfo");
+	const freeRam = Math.floor(Number(availableRam[1]) / 1024);
 	const snapshots = fs.existsSync(config.yue.snapshot_dir)
 		? fs.readdirSync(config.yue.snapshot_dir)
 		: [];
 	const failures = [
-		free >= config.yue.min_free_vram_mib
+		config.yue.device === "cpu" ||
+		(freeVram !== null && freeVram >= config.yue.min_free_vram_mib)
 			? ""
-			: `free VRAM ${free} MiB < ${config.yue.min_free_vram_mib} MiB (another GPU process is running)`,
+			: `free VRAM ${freeVram} MiB < ${config.yue.min_free_vram_mib} MiB`,
+		config.yue.device !== "cpu" || freeRam >= config.yue.min_free_ram_mib
+			? ""
+			: `free RAM ${freeRam} MiB < ${config.yue.min_free_ram_mib} MiB for CPU generation`,
 		Bun.spawnSync(["codex", "login", "status"]).exitCode === 0
 			? ""
 			: "codex is not logged in",
@@ -101,6 +113,9 @@ function preflight(): void {
 		fs.existsSync(path.join(config.yue.dir, config.yue.python))
 			? ""
 			: "YuE2 python environment is missing",
+		fs.existsSync(path.join(config.yue.dir, config.yue.script))
+			? ""
+			: "YuE2 generation script is missing",
 		snapshots.some((name) =>
 			fs.existsSync(
 				path.join(config.yue.snapshot_dir, name, "model.safetensors"),
@@ -178,12 +193,24 @@ async function generate(brief?: string): Promise<GenerationRow> {
 	});
 	run(
 		[
+			"uv",
+			"run",
+			"--offline",
+			"--no-project",
+			"--no-python-downloads",
+			"--python",
 			path.join(config.yue.dir, config.yue.python),
 			config.yue.script,
+			"generate",
 			"--request",
 			requestPath,
 			"--output",
 			songDir,
+			"--device",
+			config.yue.device,
+			"--memory-budget-gib",
+			String(config.yue.memory_budget_gib),
+			"--offline",
 		],
 		{ cwd: config.yue.dir, env: { HF_HOME: config.yue.hf_home } },
 	);

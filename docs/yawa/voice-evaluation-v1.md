@@ -1,8 +1,8 @@
-# Yawa Archive 音響嗜好評価 v1.0
+# Yawa Archive 音響嗜好評価 v1.0.2
 
 ## Status
 
-Python音響評価器と日次profile巡回を実装。参照音声の収集、参照モデルの構築、本人の好みの学習は未実施。
+Python音響評価器と日次profile巡回を実装。Praat/Parselmouth 0.4.7を `uv.lock` で固定し、日次runのreference音声からF0、スペクトル、フォルマントを記録する。参照音声の収集、参照モデルの構築、本人の好みの学習は未実施。
 
 目的は、Yawa Archive 向けに選んだ声の「高音・鼻にかかる響き・甘さ・若々しい印象・抑揚」を測定し、候補間の好みを予測すること。声優本人の同一性や声真似の再現度は評価しない。
 
@@ -20,6 +20,8 @@ Python音響評価器と日次profile巡回を実装。参照音声の収集、�
 | 軸 | 数値特徴 | 人手評価・注意 |
 | --- | --- | --- |
 | 高音 | 有声音フレームのF0中央値、P05/P95、中央値からの半音差 | 270〜280Hzはユーザーの初期目標。Parselmouth `Sound.to_pitch_ac` で測定し、初期設定はfloor 100Hz、ceiling 800Hz、10ms刻み。範囲外の音声は切り捨てず、無声判定率も報告する。 |
+| 周波数スペクトル | 300–10,000Hzのスペクトル重心・85%ロールオフ・スペクトル平坦度、スペクトル傾斜、高域/低域エネルギー比 | 40ms窓・10ms hopで計算し、ピークから35dB以内のフレームの中央値を記録する。録音、母音、音量に依存する参考値であり、好みや音質の合否判定には使わない。 |
+| フォルマント | F1/F2/F3とF1帯域幅 | 母音区間未注釈の場合も、有声音フレームのPraat Burg推定値を `formant_estimates_unsegmented` に探索値として記録する。子音遷移を含み母音ごとの測定ではないため、参考値に限る。注釈済み母音区間の値とは別フィールドに保存し、鼻声・年齢の断定に使わない。 |
 | 鼻にかかる響き | 母音区間のA1−P0、F1帯域幅。可能ならnasalanceを補助測定 | 同じ母音・同じ音韻環境で比較する。F1帯域幅はPraat Formant (burg)で測定し、母音区間CSVを付ける。A1−P0は高F0時に不確かなので手動計測値のみ受け付け、話者・母音差のため単独の絶対値を「鼻声点」にしない。 |
 | 甘さ | HNR、H1−H2、スペクトル傾斜、息成分率を候補特徴として記録 | 甘さは物理量だけで定義できない。匿名のブラインド試聴で「甘さ」を1〜5評価し、音響特徴との関係を学習する。 |
 | 若々しい印象 | F0、F1〜F3、話速などを記録 | 数値だけで年齢を推定しない。成人として明確に聞こえるかを含め、ブラインド評価で採点する。 |
@@ -73,7 +75,7 @@ uv run --project tools/yawa-voice-eval --frozen python tools/yawa-voice-eval/voi
 uv run --project tools/yawa-voice-eval --frozen python tools/yawa-voice-eval/voice_physics.py score candidate.wav --model runs/yawa_voice_lab/reference_model.json
 ```
 
-日次runでは選択した約30秒のreferenceを同じ抽出器で測り、`voice_features.json` と `voice_experiment.json` に記録する。特徴抽出が使えない場合は理由を記録し、TTS・公開の成否には影響させない。1か月後の評価は `voice-feedback.template.csv` に `run_id` と好みを記入して紐付ける。
+日次runでは選択した約30秒のreferenceを同じ抽出器で測り、`voice_features.json` と `voice_experiment.json` に記録する。`voice_features.json` はParselmouthバージョン更新時に再測定される。F0、スペクトル、フォルマントの数値は参考情報で、特徴抽出が使えない場合も理由を記録してTTS・公開の成否には影響させない。1か月後の評価は `voice-feedback.template.csv` に `run_id` と好みを記入して紐付ける。
 
 ## 技術根拠
 

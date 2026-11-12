@@ -2,10 +2,13 @@ yue:
   dir: /home/kafka/YuE
   hf_home: /home/kafka/.cache/hf-kafka
   python: .venv/bin/python
-  script: examples/generate.py
+  script: skills/yue2-music/scripts/run_yue2.py
+  device: cpu
+  memory_budget_gib: 12
   license_file: /home/kafka/YuE/MODEL_LICENSE
   license_clause: Individual creators and output monetization
   min_free_vram_mib: 9000
+  min_free_ram_mib: 10000
   snapshot_dir: /home/kafka/.cache/hf-kafka/hub/models--m-a-p--YuE2-3B/snapshots
 output_dir: runs/humanity_music
 style_template: "{genre}, {tempo}, {key}, {lead}, {rhythm}, {vocal}"
