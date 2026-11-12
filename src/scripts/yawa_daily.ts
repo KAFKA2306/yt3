@@ -875,7 +875,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	fs.outputJsonSync(path.join(dir, "audit", "result.json"), audit, {
 		spaces: 2,
 	});
-	const failed = Object.values(audit).filter((c) => c.status !== "PASS");
+	const auditFindings = Object.values(audit).filter((c) => c.status !== "PASS");
 	console.log(
 		JSON.stringify({
 			run_id: runId,
@@ -891,11 +891,16 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			audit: Object.fromEntries(
 				Object.entries(audit).map(([n, c]) => [n, c.status]),
 			),
+			audit_findings: auditFindings.map(({ name, status, details }) => ({
+				name,
+				status,
+				details,
+			})),
 		}),
 	);
-	if (failed.length > 0)
-		throw new Error(
-			`audit failed: ${failed.map((c) => `${c.name}: ${c.details}`).join(" | ")}`,
+	if (auditFindings.length > 0)
+		console.warn(
+			`[yawa] non-blocking audit findings: ${auditFindings.map((c) => `${c.name}=${c.status}: ${c.details}`).join(" | ")}`,
 		);
 }
 

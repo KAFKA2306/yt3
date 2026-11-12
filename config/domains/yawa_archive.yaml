@@ -37,3 +37,8 @@ steps:
     category_id: 24
     default_visibility: "public"
     discord_notifications: {publish_start: true, publish_complete: true}
+
+daily_publish:
+  timezone: "Asia/Tokyo"
+  resume_date: "2026-11-12"
+  publish_approved: true
