@@ -25,17 +25,18 @@ const BeatSchema = z.object({
 	gain_db: z.number(),
 });
 
+const SituationPatternSchema = z.object({
+	id: z.string().regex(/^[a-z0-9_-]{1,50}$/),
+	weight: z.number().int().positive(),
+	market_keywords: z.array(z.string().min(1)).min(1),
+	premise: z.string().min(20),
+	shapes: z.array(z.string().min(1)).min(1),
+});
+
 const VoiceProfileSchema = z.object({
 	id: z.string().regex(/^[a-z0-9_-]{1,40}$/),
-	axis: z.enum([
-		"high_pitch",
-		"nasal_resonance",
-		"sweetness",
-		"intonation",
-		"breathiness",
-		"expressivity",
-		"control",
-	]),
+	// This is a profile-family label; one caption may combine several voice traits.
+	axis: z.string().regex(/^[a-z0-9_-]{1,80}$/),
 	caption: z.string().min(10).max(300),
 });
 
@@ -75,6 +76,7 @@ const YawaConfigSchema = z.object({
 		shapes: z.record(z.string(), z.array(z.string()).min(2)),
 	}),
 	axes: z.record(z.string(), z.array(z.string().min(1)).min(1)),
+	situation_patterns: z.array(SituationPatternSchema).min(2),
 	diversity: z.object({ recent_window: z.number().int().positive() }),
 	voice: z.object({
 		caption: z.string().min(10).max(300),
@@ -201,6 +203,7 @@ export const SelectionSchema = z.object({
 	shape: z.string().min(1),
 	axes: z.record(z.string(), z.string().min(1)),
 	title_form: z.number().int().nonnegative(),
+	situation_pattern: SituationPatternSchema.optional(),
 });
 export type Selection = z.infer<typeof SelectionSchema>;
 export type SelectionRecord = Partial<Selection> & { id: string };
@@ -233,14 +236,47 @@ export function pickLeast(
 	);
 }
 
+/** Market-derived patterns use frequency tiers while history keeps recent use near those proportions. */
+export function pickWeightedLeast(
+	options: Array<{ id: string; weight: number }>,
+	used: string[],
+	seed: string,
+): string {
+	if (options.length === 0)
+		throw new Error("at least one weighted option is required");
+	const utilization = options.map((option) => ({
+		id: option.id,
+		ratio: used.filter((value) => value === option.id).length / option.weight,
+	}));
+	const least = Math.min(...utilization.map((option) => option.ratio));
+	const candidates = utilization
+		.filter((option) => option.ratio === least)
+		.map((option) => option.id);
+	return candidates.reduce((a, b) =>
+		hash(`${seed}:${a}`) <= hash(`${seed}:${b}`) ? a : b,
+	);
+}
+
 export function chooseSelection(
 	config: YawaConfig,
 	id: string,
 	history: SelectionRecord[],
 	runName: string,
 ): Selection {
+	const situationPatternId = pickWeightedLeast(
+		config.situation_patterns,
+		history.flatMap((h) =>
+			h.situation_pattern ? [h.situation_pattern.id] : [],
+		),
+		`${runName}:situation-pattern`,
+	);
+	const situationPattern = config.situation_patterns.find(
+		(pattern) => pattern.id === situationPatternId,
+	);
+	if (!situationPattern)
+		throw new Error(`unknown situation pattern: ${situationPatternId}`);
 	const shape = pickLeast(
-		Object.keys(config.arc.shapes),
+		situationPattern.shapes,
 		history.flatMap((h) => (h.shape ? [h.shape] : [])),
 		`${runName}:shape`,
 	);
@@ -263,7 +299,13 @@ export function chooseSelection(
 			`${runName}:form`,
 		),
 	);
-	return { id, shape, axes, title_form };
+	return {
+		id,
+		shape,
+		axes,
+		title_form,
+		situation_pattern: situationPattern,
+	};
 }
 
 function between(range: [number, number], seed: string): number {
@@ -324,6 +366,17 @@ export function loadYawaConfig(root: string): YawaConfig {
 		for (const name of names)
 			if (!config.arc.beats[name])
 				throw new Error(`shape '${shape}' uses unknown beat '${name}'`);
+	if (
+		new Set(config.situation_patterns.map((pattern) => pattern.id)).size !==
+		config.situation_patterns.length
+	)
+		throw new Error("situation pattern ids must be unique");
+	for (const pattern of config.situation_patterns)
+		for (const shape of pattern.shapes)
+			if (!config.arc.shapes[shape])
+				throw new Error(
+					`situation pattern '${pattern.id}' uses unknown shape '${shape}'`,
+				);
 	for (const form of config.metadata.title_forms)
 		for (const [, axis] of form.matchAll(/\{(\w+)\}/g))
 			if (!config.axes[axis as string])
@@ -335,11 +388,6 @@ export function loadYawaConfig(root: string): YawaConfig {
 		config.voice.profiles.length
 	)
 		throw new Error("voice profile ids must be unique");
-	if (
-		new Set(config.voice.profiles.map((profile) => profile.axis)).size !==
-		config.voice.profiles.length
-	)
-		throw new Error("voice profile axes must be unique");
 	return config;
 }
 

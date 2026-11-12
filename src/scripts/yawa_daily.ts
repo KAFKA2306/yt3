@@ -288,13 +288,17 @@ function scriptPrompt(
 ): string {
 	const beats = shapeBeats(config, selection.shape, runName);
 	const total = beats.reduce((sum, beat) => sum + beat.share, 0);
+	const situationPattern = selection.situation_pattern;
 	return [
 		`あなたは「夜話アーカイブ ASMR」の台本作家です。聞き手は${config.audience}。一人で夜に聴いて、疲れを下ろして眠る人です。`,
-		"次の着想元の「状況」だけを参考に、日本語で完全に新しい台本を書いてください。原文の言い回し・構成・固有名詞は使わないでください。",
-		`着想元の状況: ${entry.situation}（タグ: ${entry.tags.join("、")}）`,
+		"市販ASMRの公開キーワードから選んだ状況パターンを物語の主軸にして、日本語で完全に新しい台本を書いてください。着想元の状況は、矛盾しない場合だけ小さな補助モチーフとして使い、合わない場合は使わないでください。既存作品のタイトル、台詞、固有名詞、筋書きは使わないでください。",
+		situationPattern
+			? `今回の市場キーワード: ${situationPattern.market_keywords.join("、")}。主軸となる状況: ${situationPattern.premise}`
+			: "市場キーワード由来の状況パターンは未記録の旧runです。着想元だけを使い、完全に新しい台本を書いてください。",
+		`補助着想元: ${entry.situation}（タグ: ${entry.tags.join("、")}）`,
 		`今回の設定: ${Object.entries(selection.axes)
 			.map(([axis, value]) => `${axis}=${value}`)
-			.join("、")}。この設定を、場面の中で自然に使う。`,
+			.join("、")}。市場パターンと矛盾しない設定を場面に自然に使い、合わない候補は無理に詰め込まない。`,
 		"条件:",
 		"- 全年齢向けの癒やしと安眠の台本。性的な表現、暴力、恐怖は入れない。",
 		"- 登場する話者は成人として設定する。年齢が分からない・若く見える設定は使わない。制服、学校、少女といった語も使わない。",
@@ -876,6 +880,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		JSON.stringify({
 			run_id: runId,
 			entry: entry.id,
+			situation_pattern: selection.situation_pattern?.id ?? null,
 			seconds: audioSeconds,
 			voice_profile: voiceProfile.id,
 			voice_axis: voiceProfile.axis,

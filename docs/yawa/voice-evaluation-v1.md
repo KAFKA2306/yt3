@@ -2,7 +2,7 @@
 
 ## Status
 
-Python音響評価器と日次profile巡回を実装。Praat/Parselmouth 0.4.7を `uv.lock` で固定し、日次runのreference音声からF0、スペクトル、フォルマントを記録する。参照音声の収集、参照モデルの構築、本人の好みの学習は未実施。
+Python音響評価器と日次profile巡回を実装。Praat/Parselmouth 0.4.7を `uv.lock` で固定し、日次runのreference音声からF0、スペクトル、フォルマントを記録する。参照音声の収集、参照モデルの構築、本人の好みの学習は未実施。2026-11-12の設計調査で、以前のcaptionが同じ声像を強く縛っていたことと、F0目標がseed間で再現されていないことを確認した。profileの広げ方、市場キーワード調査、制約は[調査記録](./voice-situation-design-research-2026-11-12.md)に記録する。
 
 目的は、Yawa Archive 向けに選んだ声の「高音・鼻にかかる響き・甘さ・若々しい印象・抑揚」を測定し、候補間の好みを予測すること。声優本人の同一性や声真似の再現度は評価しない。
 
@@ -51,8 +51,8 @@ Python音響評価器と日次profile巡回を実装。Praat/Parselmouth 0.4.7�
 ## 実験手順
 
 1. 同じ短い日本語テキストを用意する。母音「あいうえお」、サ行、句末、通常速度とゆっくりした発話を含め、読みと録音条件を固定する。
-2. 日次生成は成人の声のまま、6つの声質profileと現行の基準profileを合わせた7つを日付で巡回する。高音、鼻にかかる響き、甘さ、抑揚、息遣い、演技の強弱を一日一軸ずつ変える。基準profileも1週間に一度含め、同じ日の再試行は同じprofile・seedになる。
-3. 各profileの日次reference候補は既存の3 seedから選ぶ。Caption全文、model ID、seed、reference SHA-256、ASR類似度をrunの `voice_experiment.json` に残す。ASRは読みやすさの選抜に限り、好みの選抜には使わない。
+2. 日次生成は成人の声のまま、7つの探索用profileを日付で巡回する。各profileは音域・共鳴・発声・抑揚を組み合わせ、共通の「年上・近距離・優しい・柔らかい語尾・息控えめ」で均さない。同じ日の再試行は同じprofile・seedになる。測定値は設計への追従を観察する参考情報で、ゲートにしない。
+3. 各profileの日次reference候補は3 seedから選ぶ。Caption全文、model ID、seed、reference SHA-256、ASR類似度をrunの `voice_experiment.json` に残す。ASRは読みやすさの参考に限り、好みの選抜には使わない。シチュエーションは `config/yawa/daily.yaml` の公開市場キーワード由来パターンから、最近の利用頻度とYAML weightをもとに選ぶ。パターンと互換arcもrunの `selection.json` に記録する。
 4. 候補から同一話者の短いクリーンな複数クリップを選び、合計約30秒の参照を作る。未処理原音を保存し、ディエッサー処理は別ファイルで行う。
 5. 参照音声を使い、公式モデルID `Aratako/Irodori-TTS-v4-Large-Quantized/int4-weight-only` で同じ評価台詞を生成する。これは隔離した実験runのみで行う。「Large 4.1」は公式モデル名として確認できないため、記録にはモデルIDを使う。
 6. 1か月後にユーザーが好みのrun IDやprofileを返したら、`feedback.template.csv` に記録し、好みprofileを更新する。フィードバックまで日次生成と公開は通常経路で継続する。
