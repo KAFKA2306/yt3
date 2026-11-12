@@ -664,15 +664,24 @@ function synthesize(
 		const controlWav = experimentAudio?.control;
 		const treatmentWav = experimentAudio?.treatment;
 		const measurement = (file: string | undefined) => {
-			if (!file || !fs.existsSync(file)) return null;
-			const loudness = measureLoudness(file);
-			return {
-				path: path.relative(dir, file),
-				sha256: sha256File(file),
-				duration_seconds: Number(probeSeconds(file).toFixed(3)),
-				integrated_lufs: loudness.lufs,
-				true_peak_dbfs: loudness.truePeakDb,
-			};
+			if (!file || !fs.existsSync(file))
+				return { status: "unavailable" as const };
+			try {
+				const loudness = measureLoudness(file);
+				return {
+					status: "measured" as const,
+					path: path.relative(dir, file),
+					sha256: sha256File(file),
+					duration_seconds: Number(probeSeconds(file).toFixed(3)),
+					integrated_lufs: loudness.lufs,
+					true_peak_dbfs: loudness.truePeakDb,
+				};
+			} catch (error) {
+				return {
+					status: "measurement_failed" as const,
+					error: error instanceof Error ? error.message : String(error),
+				};
+			}
 		};
 		if (!segment) throw new Error("nonverbal experiment segment disappeared");
 		fs.writeJsonSync(
