@@ -63,6 +63,7 @@ const YawaConfigSchema = z.object({
 		max_segments: z.number().int().positive(),
 		max_segment_chars: z.number().int().positive(),
 		max_attempts: z.number().int().positive(),
+		variation_rules: z.array(z.string().min(1)).min(1),
 	}),
 	tts: z.object({
 		backend: z.string(),

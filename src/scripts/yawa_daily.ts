@@ -302,8 +302,10 @@ function scriptPrompt(
 		"条件:",
 		"- 全年齢向けの癒やしと安眠の台本。性的な表現、暴力、恐怖は入れない。",
 		"- 登場する話者は成人として設定する。年齢が分からない・若く見える設定は使わない。制服、学校、少女といった語も使わない。",
-		"- 語り手は一人。聞き手を「あなた」と呼び、距離の近い囁きで、短い文と沈黙を使う。",
+		"- 語り手は一人。聞き手を「あなた」と呼ぶ。役割・性格・場面に合う話し方にし、全編を囁きや同じ睡眠誘導の調子に固定しない。",
 		`- chapters は次の ${beats.length} 章を、この順に必ず出す。全体の segments は ${config.script.min_segments} から ${config.script.max_segments} 個で、割合は segment 数の目安。各 segment は ${config.script.max_segment_chars} 文字以内の話し言葉で、1〜2文。`,
+		"- 次の変化ルールをすべて反映する:",
+		...config.script.variation_rules.map((rule) => `  - ${rule}`),
 		...beats.map(
 			(beat) =>
 				`  - ${beat.name}（segment 数の約${Math.round((beat.share / total) * 100)}%）: ${beat.brief}`,
@@ -312,7 +314,7 @@ function scriptPrompt(
 		`  直近の冒頭の文: ${recent.openings.join(" / ")}`,
 		`  直近の最後の文: ${recent.closings.join(" / ")}`,
 		"- 音声は TTS が読む。ト書き、括弧、記号、効果音の指示は書かない。読み仮名が要る語はひらがなで書く。",
-		"- 声は固定の設定で読む（台本側で声の指定はしない）。語り手は成人の年上の女性として書く。",
+		"- 声は今回のvoice profile設定で読む。台詞は声の説明ではなく、今回の役割・性格・状況が伝わる自然な話し言葉にする。登場人物は成人として書く。",
 		"- cover_scene は文字を含まない1枚絵の情景描写（夜、柔らかい光、人物は後ろ姿か影）。",
 		"- adult_characters_confirmed は true にする。",
 		'JSON だけを返す: {"title","hook","cover_scene","adult_characters_confirmed","chapters":[{"name","segments":[...]}]}',
