@@ -34,6 +34,47 @@ tts:
       num_steps: 40
   hf_home: /home/kafka/.cache/hf-yawa
   min_free_vram_mib: 6000
+nonverbal_experiment:
+  enabled: true
+  # One cue is chosen per run. The control/treatment pair shares text, reference,
+  # caption, sampler settings, and seed; only the emoji token differs.
+  cues:
+    - id: sigh
+      emoji: "😮‍💨"
+      weight: 4
+      chapters: [ほどき, 沈み, 締め]
+      positions: [after_clause, suffix]
+      repetitions: [1, 2]
+    - id: chuckle
+      emoji: "🤭"
+      weight: 2
+      chapters: [余談]
+      positions: [after_clause, suffix]
+      repetitions: [1, 2]
+    - id: gasp
+      emoji: "😮"
+      weight: 1
+      chapters: [発見, 山場]
+      positions: [prefix, after_clause]
+      repetitions: [1]
+    - id: yawn
+      emoji: "🥱"
+      weight: 2
+      chapters: [沈み, 締め]
+      positions: [prefix, suffix]
+      repetitions: [1, 2]
+    - id: pause
+      emoji: "⏸️"
+      weight: 2
+      chapters: [静止, 沈み]
+      positions: [after_clause, suffix]
+      repetitions: [1, 2]
+    - id: humming
+      emoji: "🎵"
+      weight: 1
+      chapters: [導入, 回想]
+      positions: [prefix, suffix]
+      repetitions: [1, 2]
 arc:
   beats:
     導入:

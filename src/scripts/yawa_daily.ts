@@ -7,10 +7,12 @@ import {
 	buildDescription,
 	buildTags,
 	buildTitle,
+	chooseNonverbalCue,
 	chooseSelection,
 	draftSegments,
 	loadPool,
 	loadYawaConfig,
+	type NonverbalCuePlan,
 	type PoolEntry,
 	pickEntry,
 	preparationAction,
@@ -535,6 +537,7 @@ function synthesize(
 	dir: string,
 	refWav: string,
 	voiceProfile: VoiceProfile,
+	nonverbalCue: NonverbalCuePlan | undefined,
 	device?: TtsDevice,
 ): string {
 	const ttsDir = path.join(dir, "tts");
@@ -562,21 +565,80 @@ function synthesize(
 		...config,
 		voice: { ...config.voice, caption: voiceProfile.caption },
 	};
-	draftSegments(draft, config, path.basename(dir)).forEach((segment, index) => {
+	const runName = path.basename(dir);
+	const runId = `${config.run.bucket}/${runName}`;
+	const backend = config.tts.backends[config.tts.backend];
+	const segments = draftSegments(draft, config, runName);
+	let experimentAudio:
+		| {
+				control: string;
+				treatment: string;
+				controlError?: string;
+			}
+		| undefined;
+	segments.forEach((segment, index) => {
 		const name = String(index + 1).padStart(3, "0");
-		const wav = path.join(ttsDir, `seg_${name}.wav`);
-		if (!fs.existsSync(wav)) {
+		const isExperimentSegment = nonverbalCue?.segment_index === index;
+		let wav = path.join(ttsDir, `seg_${name}.wav`);
+		if (isExperimentSegment && nonverbalCue) {
+			const controlWav = path.join(ttsDir, `seg_${name}.emoji-control.wav`);
+			const treatmentWav = path.join(ttsDir, `seg_${name}.emoji-treatment.wav`);
+			if (segment.text !== nonverbalCue.base_text)
+				throw new Error(
+					"nonverbal cue plan no longer matches the selected script segment",
+				);
+			if (!fs.existsSync(treatmentWav)) {
+				const { cwd, command, env } = segmentCall(
+					runConfig,
+					{ ...segment, text: nonverbalCue.treatment_text },
+					refWav,
+					treatmentWav,
+					runSeed(runName, "tts"),
+					device,
+				);
+				run(command, { cwd, env });
+			}
+			wav = treatmentWav;
+			if (!fs.existsSync(controlWav)) {
+				try {
+					const { cwd, command, env } = segmentCall(
+						runConfig,
+						segment,
+						refWav,
+						controlWav,
+						runSeed(runName, "tts"),
+						device,
+					);
+					run(command, { cwd, env });
+				} catch (error) {
+					experimentAudio = {
+						control: controlWav,
+						treatment: treatmentWav,
+						controlError:
+							error instanceof Error ? error.message : String(error),
+					};
+					console.warn(
+						`[yawa] nonverbal control audio failed; treatment remains in production: ${experimentAudio.controlError}`,
+					);
+				}
+			}
+			experimentAudio ??= { control: controlWav, treatment: treatmentWav };
+		}
+		if (!isExperimentSegment && !fs.existsSync(wav)) {
 			const { cwd, command, env } = segmentCall(
 				runConfig,
 				segment,
 				refWav,
 				wav,
-				runSeed(path.basename(dir), "tts"),
+				runSeed(runName, "tts"),
 				device,
 			);
 			run(command, { cwd, env });
 		}
-		const leveled = path.join(ttsDir, `seg_${name}.leveled.wav`);
+		const leveled = path.join(
+			ttsDir,
+			`seg_${name}${isExperimentSegment ? ".emoji-treatment" : ""}.leveled.wav`,
+		);
 		run([
 			"ffmpeg",
 			"-y",
@@ -596,6 +658,79 @@ function synthesize(
 		if (segment.chapter.gap_seconds > 0)
 			list.push(`file '${gapFile(segment.chapter.gap_seconds)}'`);
 	});
+	const experimentPath = path.join(dir, "nonverbal_experiment.json");
+	if (nonverbalCue) {
+		const segment = segments[nonverbalCue.segment_index];
+		const controlWav = experimentAudio?.control;
+		const treatmentWav = experimentAudio?.treatment;
+		const measurement = (file: string | undefined) => {
+			if (!file || !fs.existsSync(file)) return null;
+			const loudness = measureLoudness(file);
+			return {
+				path: path.relative(dir, file),
+				sha256: sha256File(file),
+				duration_seconds: Number(probeSeconds(file).toFixed(3)),
+				integrated_lufs: loudness.lufs,
+				true_peak_dbfs: loudness.truePeakDb,
+			};
+		};
+		if (!segment) throw new Error("nonverbal experiment segment disappeared");
+		fs.writeJsonSync(
+			experimentPath,
+			{
+				schema_version: 1,
+				protocol: "paired_single_emoji",
+				status:
+					controlWav && fs.existsSync(controlWav)
+						? "paired_audio_ready"
+						: "control_failed",
+				run_id: runId,
+				model_id: backend?.hf_checkpoint,
+				device: device ?? config.tts.device,
+				seed: runSeed(runName, "tts"),
+				reference_sha256: sha256File(refWav),
+				caption: `${voiceProfile.caption}${segment.chapter.style}`,
+				duration_scale: segment.chapter.duration_scale,
+				cfg_scale_caption: segment.chapter.cfg_scale_caption,
+				segment_index: nonverbalCue.segment_index + 1,
+				chapter: nonverbalCue.chapter,
+				base_text: nonverbalCue.base_text,
+				treatment_text: nonverbalCue.treatment_text,
+				cue: {
+					id: nonverbalCue.cue_id,
+					emoji: nonverbalCue.emoji,
+					position: nonverbalCue.position,
+					repetitions: nonverbalCue.repetitions,
+				},
+				conditions: {
+					control: measurement(controlWav),
+					treatment: measurement(treatmentWav),
+				},
+				control_error: experimentAudio?.controlError,
+				feedback: {
+					status: "awaiting_owner_feedback",
+					occurrence: null,
+					placement: null,
+					naturalness: null,
+					speech_quality: null,
+					preferred_condition: null,
+				},
+			},
+			{ spaces: 2 },
+		);
+	} else {
+		fs.writeJsonSync(
+			experimentPath,
+			{
+				schema_version: 1,
+				run_id: runId,
+				status: config.nonverbal_experiment.enabled
+					? "no_eligible_segment"
+					: "disabled",
+			},
+			{ spaces: 2 },
+		);
+	}
 	const listPath = path.join(ttsDir, "concat.txt");
 	fs.writeFileSync(listPath, `${list.join("\n")}\n`);
 	return listPath;
@@ -701,6 +836,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	const draft = fs.existsSync(scriptPath)
 		? ScriptDraftSchema.parse(fs.readJsonSync(scriptPath))
 		: generateScript(entry, selection, name, scriptPath);
+	const nonverbalCue = chooseNonverbalCue(config, draft, name);
 
 	const reference = generateReference(dir, name, voiceProfile, ttsDevice);
 	const refPath = path.join(dir, "reference.wav");
@@ -708,7 +844,10 @@ async function prepare(date: string, slot?: string): Promise<void> {
 
 	const audioPath = path.join(dir, "final_mix.wav");
 	if (!fs.existsSync(audioPath))
-		mix(synthesize(draft, dir, refPath, voiceProfile, ttsDevice), audioPath);
+		mix(
+			synthesize(draft, dir, refPath, voiceProfile, nonverbalCue, ttsDevice),
+			audioPath,
+		);
 	const backend = config.tts.backends[config.tts.backend];
 	fs.writeJsonSync(
 		path.join(dir, "tts.json"),

@@ -40,6 +40,15 @@ const VoiceProfileSchema = z.object({
 	caption: z.string().min(10).max(300),
 });
 
+const NonverbalCueSchema = z.object({
+	id: z.string().regex(/^[a-z0-9_-]{1,40}$/),
+	emoji: z.string().min(1),
+	weight: z.number().int().positive(),
+	chapters: z.array(z.string().min(1)).min(1),
+	positions: z.array(z.enum(["prefix", "after_clause", "suffix"])).min(1),
+	repetitions: z.array(z.number().int().min(1).max(3)).min(1),
+});
+
 export type Chapter = {
 	name: string;
 	share: number;
@@ -71,6 +80,10 @@ const YawaConfigSchema = z.object({
 		backends: z.record(z.string(), IrodoriBackendSchema),
 		hf_home: z.string(),
 		min_free_vram_mib: z.number().positive(),
+	}),
+	nonverbal_experiment: z.object({
+		enabled: z.boolean(),
+		cues: z.array(NonverbalCueSchema).min(1),
 	}),
 	arc: z.object({
 		beats: z.record(z.string(), BeatSchema),
@@ -346,6 +359,17 @@ export function shapeBeats(
 
 export type Segment = { text: string; chapter: Chapter };
 
+export type NonverbalCuePlan = {
+	cue_id: string;
+	emoji: string;
+	repetitions: number;
+	position: "prefix" | "after_clause" | "suffix";
+	segment_index: number;
+	chapter: string;
+	base_text: string;
+	treatment_text: string;
+};
+
 export function draftSegments(
 	draft: ScriptDraft,
 	config: YawaConfig,
@@ -355,6 +379,102 @@ export function draftSegments(
 		const chapter = resolveBeat(config, entry.name, runName);
 		return entry.segments.map((text) => ({ text, chapter }));
 	});
+}
+
+function seededIndex(runName: string, label: string, length: number): number {
+	if (length < 1) throw new Error("cannot select from an empty option list");
+	return runSeed(runName, label) % length;
+}
+
+function insertEmoji(
+	text: string,
+	emoji: string,
+	repetitions: number,
+	position: NonverbalCuePlan["position"],
+): string {
+	const marker = emoji.repeat(repetitions);
+	if (position === "prefix") return `${marker}${text}`;
+	if (position === "suffix") return `${text}${marker}`;
+	const punctuation = /[、。！？!?]/u.exec(text);
+	if (!punctuation || punctuation.index === undefined)
+		return `${text}${marker}`;
+	const insertionPoint = punctuation.index + punctuation[0].length;
+	return `${text.slice(0, insertionPoint)}${marker}${text.slice(insertionPoint)}`;
+}
+
+/** Pick one reproducible, context-matched cue. No eligible chapter means no cue, not a failed run. */
+export function chooseNonverbalCue(
+	config: YawaConfig,
+	draft: ScriptDraft,
+	runName: string,
+): NonverbalCuePlan | undefined {
+	if (!config.nonverbal_experiment.enabled) return undefined;
+	const segments = draftSegments(draft, config, runName);
+	const eligible = config.nonverbal_experiment.cues.flatMap((cue) => {
+		const choices = segments.flatMap((segment, index) =>
+			cue.chapters.includes(segment.chapter.name) ? [index] : [],
+		);
+		return choices.length > 0 ? [{ cue, choices }] : [];
+	});
+	if (eligible.length === 0) return undefined;
+	const totalWeight = eligible.reduce((sum, item) => sum + item.cue.weight, 0);
+	const cueRoll =
+		(runSeed(runName, "nonverbal:cue") / 0x1_0000_0000) * totalWeight;
+	let cumulativeWeight = 0;
+	const selected =
+		eligible.find((item) => {
+			cumulativeWeight += item.cue.weight;
+			return cueRoll < cumulativeWeight;
+		}) ?? eligible[eligible.length - 1];
+	if (!selected) throw new Error("no eligible nonverbal cue could be selected");
+	const segmentIndex =
+		selected.choices[
+			seededIndex(
+				runName,
+				`nonverbal:${selected.cue.id}:segment`,
+				selected.choices.length,
+			)
+		];
+	if (segmentIndex === undefined)
+		throw new Error("selected nonverbal cue has no matching segment");
+	const segment = segments[segmentIndex];
+	if (!segment)
+		throw new Error("selected nonverbal cue has no matching segment");
+	const position =
+		selected.cue.positions[
+			seededIndex(
+				runName,
+				`nonverbal:${selected.cue.id}:position`,
+				selected.cue.positions.length,
+			)
+		];
+	const repetitions =
+		selected.cue.repetitions[
+			seededIndex(
+				runName,
+				`nonverbal:${selected.cue.id}:repetitions`,
+				selected.cue.repetitions.length,
+			)
+		];
+	if (position === undefined || repetitions === undefined)
+		throw new Error(
+			"selected nonverbal cue is missing a position or repetition",
+		);
+	return {
+		cue_id: selected.cue.id,
+		emoji: selected.cue.emoji,
+		repetitions,
+		position,
+		segment_index: segmentIndex,
+		chapter: segment.chapter.name,
+		base_text: segment.text,
+		treatment_text: insertEmoji(
+			segment.text,
+			selected.cue.emoji,
+			repetitions,
+			position,
+		),
+	};
 }
 
 export function loadYawaConfig(root: string): YawaConfig {
@@ -389,6 +509,17 @@ export function loadYawaConfig(root: string): YawaConfig {
 		config.voice.profiles.length
 	)
 		throw new Error("voice profile ids must be unique");
+	if (
+		new Set(config.nonverbal_experiment.cues.map((cue) => cue.id)).size !==
+		config.nonverbal_experiment.cues.length
+	)
+		throw new Error("nonverbal cue ids must be unique");
+	for (const cue of config.nonverbal_experiment.cues)
+		for (const chapter of cue.chapters)
+			if (!config.arc.beats[chapter])
+				throw new Error(
+					`nonverbal cue '${cue.id}' uses unknown chapter '${chapter}'`,
+				);
 	return config;
 }
 
