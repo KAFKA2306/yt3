@@ -57,6 +57,20 @@ Python音響評価器と日次profile巡回を実装。Praat/Parselmouth 0.4.7�
 5. 参照音声を使い、公式モデルID `Aratako/Irodori-TTS-v4-Large-Quantized/int4-weight-only` で同じ評価台詞を生成する。これは隔離した実験runのみで行う。「Large 4.1」は公式モデル名として確認できないため、記録にはモデルIDを使う。
 6. 1か月後にユーザーが好みのrun IDやprofileを返したら、`feedback.template.csv` に記録し、好みprofileを更新する。フィードバックまで日次生成と公開は通常経路で継続する。
 
+## 日次制作と比較実験のループ
+
+日次投稿は複数の声profile・場面・台本を広く試す探索ランであり、1回の結果から「この声条件が好まれた」と因果を断定しない。日次制作・投稿は従来どおり実行し、音響値、ASR、監査の結果は投稿可否ゲートにしない。
+
+特定の差を確かめるときは `voice-lab-run-spec.template.yaml` を `runs/yawa_voice_lab/<run-id>/run-spec.yaml` にコピーし、生成前に次を記録する。
+
+1. **問いと基準**: 何を変えた候補を何と比べるか。直近の「良かった回」だけでなく、同じ条件の基準候補を用意する。
+2. **揃える条件**: 台詞、Irodori checkpoint、参照音声、サンプリング設定、音量処理を明記する。声captionの効果を見たいなら参照音声を固定し、参照音声の効果を見たいならcaptionを固定する。両方を変える場合はその組み合わせを別条件として記録する。
+3. **seedの反復**: 候補と基準に同じseed列を使って対にする。まず3組を目安にし、1組しか作れない場合は探索メモとし、優劣を確定した扱いにしない。
+4. **結果の保存**: 成功・失敗を含めてrun仕様、実際の設定、音声hash、測定値、実行環境の差をrun directoryに残す。失敗runも消さず、失敗理由と次回に試すことを書く。
+5. **比較と申し送り**: 同一条件の基準、前回、これまでの最良候補を並べ、seed間の中央値と幅を見る。単発の上振れは改善と呼ばず、繰り返して確認できた結果だけを次の設定変更の根拠にする。確認できていないことは次runの問いに残す。
+
+日次runの `voice_experiment.json` と `selection.json` はその日の実条件の記録として使い、管理された比較実験の代わりにはしない。フィードバックでは声・場面・台本・全体を別々に評価し、声だけの評価と、作品全体としての好みを混ぜない。YAMLのprofileやsampling weightは観察の記録を残したうえで調整する。日次投稿を止めたり、実験結果を公開の合否条件にしたりしない。
+
 同じ日に複数profileを作るときは別々の `SLOT` を使い、`YAWA_VOICE_PROFILE` でprofileを指定する。日次既定デバイスはCPU。`YAWA_TTS_DEVICE=cpu` はIrodoriのモデルとcodecを明示的にCPU実行し、そのrunではGPU空き容量条件を使わない。`YAWA_TTS_DEVICE=cuda` を指定したrunだけGPU空き容量条件を確認する。自動でデバイスを切り替えることはなく、実行デバイスはrun記録に残す。例: `YAWA_VOICE_PROFILE=high_bright YAWA_TTS_DEVICE=cpu task yawa:daily DATE=2026-11-11 SLOT=highbright`。
 
 モデル候補の検索・seed探索・補正・Large試験は `runs/yawa_voice_lab/<run-id>/` に隔離し、日次既定値や公開済み音声を自動変更しない。採用後にのみ日次設定変更を別途行う。

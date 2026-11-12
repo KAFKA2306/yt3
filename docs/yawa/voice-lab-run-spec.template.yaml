@@ -1,0 +1,42 @@
+schema_version: 1
+run_id: "yawa-voice-lab-YYYYMMDD-<short-name>"
+status: planned # planned | completed | failed | cancelled
+
+question: "今回、どの音響・知覚上の差を確かめるか"
+hypothesis: "候補が基準よりどう変わると予想するか。分からなければ空欄"
+
+comparison:
+  factor: "caption | reference_audio | seed | other"
+  baseline_id: baseline
+  conditions:
+    - id: baseline
+      description: "現行の比較基準"
+      caption: ""
+      reference_audio: ""
+    - id: candidate
+      description: "変更する条件をここに記す"
+      caption: ""
+      reference_audio: ""
+  paired_seeds: [101, 202, 303]
+
+shared_conditions:
+  text_file: utterance.txt
+  checkpoint: ""
+  sampler_settings: ""
+  preprocessing: ""
+  tts_device: ""
+  notes: "固定した条件、または固定できなかった条件"
+
+measurements:
+  acoustic_features: [f0, spectrum, formants, hnr, pauses, speaking_rate]
+  blind_listening: true
+  ratings: [voice, situation, script, overall]
+  notes: "音響値は参考記録。人の好み評価と分けて解釈する"
+
+result:
+  completed_conditions: []
+  failed_conditions: []
+  observed_differences: ""
+  environment_deviations: ""
+  conclusion: ""
+  next_run_question: ""
