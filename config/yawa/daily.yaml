@@ -7,17 +7,13 @@ script:
   tool: codex
   model: gpt-6.1-terra
   sandbox: read-only
-  min_segments: 64
-  max_segments: 90
   max_segment_chars: 90
   max_attempts: 3
   variation_rules:
-    - 各章で状況を一歩進める。場面固有の動作、物、音、発見、反応を入れ、意味のない慰め文で尺を埋めない。
-    - 同じ一文や文型を繰り返さない。「ゆっくり息を吐いて」「ここで休んで」などの汎用句は各1回まで。
-    - 選ばれた場所・小道具・時間・音のうち最低3つを、具体的な行動や出来事に結びつける。
-    - 章ごとに会話の目的を変える。説明、質問、観察、軽い冗談、回想、決断、余韻を組み合わせる。
-    - 一文の長さと語尾を散らす。全編を囁きや睡眠誘導の定型句に固定しない。
-    - 「少し」「ゆっくり」「今夜」などの汎用語に頼りすぎず、選ばれた状況固有の動作・道具・音を具体的な語彙で描く。
+    - 今回の場面でしか起こらない行動、発見、判断、やり取りを中心に書く。
+    - 状況の目的から台詞、間、声の演技、終わり方を組み立て、章名や終幕の型を使い回さない。
+    - 安らぎや睡眠への誘導に自動で収束させず、場面に合う感情の動きと結末を選ぶ。
+    - 既視感のある慰め文で尺を埋めず、具体的な出来事が完結したところで終える。
 tts:
   # backend と device を明示する。自動の代替はしない（失敗は失敗として止める）。
   backend: irodori-v4.1-small
@@ -77,6 +73,12 @@ nonverbal_experiment:
       positions: [prefix, suffix]
       repetitions: [1, 2]
 arc:
+  dynamic:
+    duration_scale: [0.94, 1.10]
+    cfg_scale_caption: [2.8, 3.6]
+    gap_seconds: [0.18, 0.72]
+    gain_db: [-2, 2]
+  # The former beats/shapes below are legacy records; production uses dynamic ranges only.
   beats:
     導入:
       share: 0.14
@@ -198,20 +200,7 @@ arc:
       cfg_scale_caption: 3.0
       gap_seconds: [0.25, 0.65]
       gain_db: 0
-  shapes:
-    単峰: [導入, 打ち明け, 山場, ほどき, 沈み, 締め]
-    二峰: [導入, 山場, 静止, 山場, 沈み, 締め]
-    回想型: [導入, 回想, 打ち明け, 山場, 沈み, 締め]
-    後半の山: [導入, 打ち明け, 回想, 山場, ほどき, 沈み, 締め]
-    施術と休息型: [導入, 相談, 施術, 静止, ほどき, 沈み, 締め]
-    静かな作業型: [導入, 準備, 施術, 発見, ほどき, 沈み, 締め]
-    日常会話型: [導入, 余談, 打ち明け, 静止, ほどき, 沈み, 締め]
-    散策・音探し型: [導入, 案内, 発見, 回想, ほどき, 沈み, 締め]
-    短い物語型: [導入, 回想, 発見, 山場, ほどき, 沈み, 締め]
-    便り・ラジオ型: [導入, 手紙, 余談, 静止, ほどき, 沈み, 締め]
-# Keywords come from public genre tags. Every situation gets equal exploration weight;
-# tag frequency is not treated as a target distribution or sales share.
-# Pattern-specific axes keep the selected setting coherent with the premise.
+# Historical patterns are retained only to interpret older selection records; production no longer picks them.
 situation_patterns:
   - id: whispered_ear_care
     weight: 1
@@ -465,52 +454,42 @@ axes:
   interaction: [ゆっくりした案内, 軽い掛け合い, 控えめな冗談, 聞き役と話し手, 手順の確認, 音を一緒に聞き比べる]
   emotional_turn: [緊張がほどける, 距離が少し縮まる, 小さな発見がある, 昔の記憶がつながる, 失敗を笑いに変える, 何気ない会話が安心に変わる, 不安が好奇心に変わる, 再会の喜びが安心に変わる]
 diversity:
-  recent_window: 10
-# 声は動画ごとに変える。profile ごとに音域・共鳴・発声・抑揚を大きく離し、各動画内では一つの声像を保つ。
-# reference 候補はASR類似度で可読性を選ぶ。音響値は記録だけに使い、ゲートにはしない。
+  recent_window: 30
+# The reference sentence is shared across runs for a controlled listening comparison.
 voice:
-  caption: "成人女性。中低音から中音域で、少しハスキーな乾いた響き。落ち着いた速さで、語尾は低く短く収める。"
-  # caption はプロファイルが選ばれたrunで参照音声と全セグメントに使う。
-  profiles:
-    - id: high_bright
-      axis: high_pitch
-      caption: "成人女性。高い音域を中心に話し、F0中央値280〜300Hzを目安にする。明るく前方へ抜ける響き、軽快なテンポ、輪郭のはっきりした子音、短く落ちる語尾。"
-    - id: nasal_clear
-      axis: nasal_resonance
-      caption: "成人女性。中高音域、F0中央値255〜275Hz。鼻にかかった前方共鳴を強く、明るく通る声。子音は明瞭、テンポは速め、句末の上げ下げを大きくつける。"
-    - id: sweet_round
-      axis: sweetness
-      caption: "成人女性。低めの中音域、F0中央値205〜225Hz。丸く厚みのある温かな響き。母音を長めになめらかにつなぎ、息は少なく、語尾は柔らかく下げる。"
-    - id: melodic_ending
-      axis: intonation
-      caption: "成人女性。中高音域、F0中央値245〜270Hz。音域を広く使い、句頭から句末まで旋律的に動く。語尾は上げる、下げる、伸ばすを文ごとに明確に変える。"
-    - id: airy_soft
-      axis: breathiness
-      caption: "成人女性。中高音域、F0中央値230〜250Hz。息が混じる軽い声で、有声音と短い囁きを行き来する。子音の当たりは弱く、語尾に長い息の余韻を残す。"
-    - id: expressive_dynamic
-      axis: expressivity
-      caption: "成人女性。F0中央値240〜270Hz。張りのある声で、音域・声量・話速を広く変化させる。語頭は明瞭、感情の反応は速く、重要な語を強く立てる。"
-    - id: baseline_soft
-      axis: control
-      caption: "成人女性。低い中音域、F0中央値180〜205Hz。少しハスキーで乾いた胸寄りの響き。速度と音量は安定させ、抑揚は狭く、語尾を低く短く収める。"
-    - id: low_smoky
-      axis: low_register
-      caption: "成人女性。低音域、F0中央値170〜195Hz。暗く落ち着いた胸寄りの共鳴と、かすかなざらつき。ゆっくり明瞭に話し、低い語尾を保つ。"
-    - id: bell_high
-      axis: bright_resonance
-      caption: "成人女性。高音域、F0中央値285〜305Hz。澄んだ鈴のような明るい響きで、子音は軽く鋭く、母音は短め。話速は小気味よく、抑揚は明快。"
-    - id: velvet_low
-      axis: warm_resonance
-      caption: "成人女性。中低音域、F0中央値195〜215Hz。息を抑えたベルベットのような密度と丸い母音。ゆったりした速度で音を滑らかにつなぐ。"
-    - id: playful_crooked
-      axis: playful_intonation
-      caption: "成人女性。中高音域、F0中央値245〜270Hz。少し鼻にかかる明るい声で、話速は軽快。短い間、急な上昇、語尾の小さな跳ねを不規則に混ぜる。"
-    - id: firm_storyteller
-      axis: firm_delivery
-      caption: "成人女性。中音域、F0中央値220〜245Hz。芯のある落ち着いた響きで、言葉を明瞭に区切る。低めの安定した語尾と、要点を伝える強い語頭を使う。"
+  axes:
+    register:
+      - {id: upper_high, cue: "中高音から高音を中心にし、F0中央値270〜280Hzも探索の目安にするが、実際の響きを優先して固定しない", preference_weight: 4}
+      - {id: upper_mid, cue: "明るい中高音を使い、台詞の感情に応じて自然に上下させる", preference_weight: 3}
+      - {id: middle, cue: "中音を軸にしながら、抑揚で高音域へ抜ける", preference_weight: 1}
+      - {id: low_contrast, cue: "低めの響きも比較用に試し、暗く平坦にならないよう表情を残す", preference_weight: 1}
+    resonance:
+      - {id: forward_nasal, cue: "鼻にかかる前方の明るい共鳴を感じさせる", preference_weight: 4}
+      - {id: bright_open, cue: "明瞭で抜けのよい明るい響きにする", preference_weight: 3}
+      - {id: rounded, cue: "丸くやわらかな響きにし、こもらせない", preference_weight: 2}
+      - {id: mixed_resonance, cue: "前方の明るさと丸い響きを場面に応じて行き来する", preference_weight: 2}
+    sweetness:
+      - {id: sweet, cue: "甘さと幼さを感じる柔らかい音色にする。幼い役柄や年齢設定にはしない", preference_weight: 4}
+      - {id: warm, cue: "温かく親しみのある音色にする", preference_weight: 2}
+      - {id: playful, cue: "声にいたずらっぽい明るさを混ぜる", preference_weight: 2}
+      - {id: neutral_contrast, cue: "甘さを控えた声も比較用に試し、他の軸との組み合わせを観察する", preference_weight: 1}
+    phonation:
+      - {id: soft_breath, cue: "柔らかい発声に自然な息を少量添える", preference_weight: 3}
+      - {id: clear_voice, cue: "息を抑え、輪郭のある声にする", preference_weight: 2}
+      - {id: airy_voice, cue: "息の混ざり方を増やし、声の明瞭さは保つ", preference_weight: 2}
+      - {id: textured, cue: "わずかな声の質感を加える", preference_weight: 1}
+    articulation:
+      - {id: clear, cue: "子音を明瞭にし、音の輪郭を保つ", preference_weight: 3}
+      - {id: blended, cue: "言葉を滑らかにつなぎ、聞き取りやすさを保つ", preference_weight: 2}
+      - {id: crisp, cue: "子音を少し立て、反応の速さを出す", preference_weight: 2}
+    prosody:
+      - {id: expressive_endings, cue: "語尾を上げる、下げる、伸ばすなど、台詞ごとに表情豊かに変える", preference_weight: 4}
+      - {id: melodic, cue: "音域の動きを豊かにし、旋律的な抑揚をつける", preference_weight: 3}
+      - {id: quick_reaction, cue: "気づきや返答に素早い抑揚の変化をつける", preference_weight: 2}
+      - {id: restrained_contrast, cue: "抑揚を控えめにした箇所も作り、変化を際立たせる", preference_weight: 1}
 reference:
   text: "こんばんは。今日は新しい店を見つけました。青い傘を閉じて、白い棚から薄い本と小さな鈴を選びます。これは少し不思議な形ですね。どれを先に試しましょうか。さあ、順番に確かめてみます。思ったより軽いです。駅まで歩きながら、続きを話しましょう。"
-  candidates: 3
+  candidate_range: [3, 5]
 mix:
   room_tone_db: -42
   target_lufs: -23
@@ -539,16 +518,11 @@ audit:
 safety:
   banned_terms: [未成年, 小学, 中学, 高校, 女子高生, JK, ロリ, 少女, 幼, 児童, 生徒, 制服, 性的, 性行為, 裸, エロ, 喘ぎ, 愛撫]
 metadata:
-  # 検索されやすい語をタイトルの前半に置く（SEO の on-page 手順）。台本の題名は後ろに残す。
-  title_forms:
-    - "【シチュボ／{narrator_role}】"
-    - "【シチュボ／{mood}】"
-    - "【シチュボ／{place}】"
-    - "【添い寝／{sound_world}】"
+  # タイトルと説明は作品の内容から作る。固定の癒し・睡眠訴求を前置しない。
   title_suffix: " | 夜話アーカイブ ASMR"
-  tags_core: [シチュエーションボイス, シチュボ, ASMR, 睡眠導入, 癒し, 囁き, 年上, AI音声]
+  tags_core: [ASMR, 夜話アーカイブ, AI音声]
   tags_from_axes: [place, sound_world, mood]
   tags_max: 15
-  description_lead: 年上の成人の女性が、耳元で優しく語りかける、癒しと安眠のシチュエーションボイスです。
+  description_lead: ""
   ai_disclosure: この作品の台本、音声、画像はAIで生成しています。
   rights_declaration: 台本は今回新たに生成した日本語の原作で、第三者の台本・音声・画像は転載していません。

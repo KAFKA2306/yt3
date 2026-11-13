@@ -26,11 +26,10 @@ import {
 	SelectionSchema,
 	segmentCall,
 	selectReference,
-	shapeBeats,
 	similarity,
 	type VoiceProfile,
 	validateDraft,
-	voiceProfileForDate,
+	voiceDesignForRun,
 	yawaAudit,
 } from "../domain/yawa_daily.js";
 import { ROOT } from "../io/core.js";
@@ -45,14 +44,6 @@ function requestedTtsDevice(): TtsDevice {
 	if (raw !== "cpu" && raw !== "cuda")
 		throw new Error("YAWA_TTS_DEVICE must be cpu or cuda");
 	return raw;
-}
-
-function requestedVoiceProfile(): string | undefined {
-	const profileId = process.env.YAWA_VOICE_PROFILE?.trim();
-	if (!profileId) return undefined;
-	if (!/^[a-z0-9_-]{1,40}$/.test(profileId))
-		throw new Error("YAWA_VOICE_PROFILE must be a configured profile id");
-	return profileId;
 }
 
 function run(
@@ -288,42 +279,30 @@ function recentScripts(excludeRun: string): Recent {
 function scriptPrompt(
 	entry: PoolEntry,
 	selection: Selection,
-	recent: Recent,
-	runName: string,
+	_recent: Recent,
+	_runName: string,
 	lastError?: string,
 ): string {
-	const beats = shapeBeats(config, selection.shape, runName);
-	const total = beats.reduce((sum, beat) => sum + beat.share, 0);
-	const situationPattern = selection.situation_pattern;
 	return [
-		`あなたは「夜話アーカイブ ASMR」の台本作家です。聞き手は${config.audience}。一人で夜に聴いて、疲れを下ろして眠る人です。`,
-		"市販ASMRの公開キーワードから選んだ状況パターンを物語の主軸にして、日本語で完全に新しい台本を書いてください。着想元の状況は、矛盾しない場合だけ小さな補助モチーフとして使い、合わない場合は使わないでください。既存作品のタイトル、台詞、固有名詞、筋書きは使わないでください。",
-		situationPattern
-			? `今回の市場キーワード: ${situationPattern.market_keywords.join("、")}。主軸となる状況: ${situationPattern.premise}`
-			: "市場キーワード由来の状況パターンは未記録の旧runです。着想元だけを使い、完全に新しい台本を書いてください。",
-		`補助着想元: ${entry.situation}（タグ: ${entry.tags.join("、")}）`,
+		`あなたは「夜話アーカイブ ASMR」の台本作家です。ゴールは、何度も聴きたくなる声で、その作品ならではの体験を届けることです。聞き手は${config.audience}です。`,
+		"過去の状況パターン、章構成、結末の型を使わず、今回の目的と行動から新しい物語を作ってください。耳ケアなら道具ごとの音を聞き分け、散策なら音の正体を探し、便りならその一通に返事をするなど、聞き手が何を体験する作品なのかを明確にしてください。",
+		`市販作品の参考メタデータ（筋書きや表現は使わない）: ${entry.situation}（公開タグ: ${entry.tags.join("、")}）。作品に合う場合だけ抽象的な着想として使い、既存作品のタイトル、台詞、固有名詞、筋書きは使わないでください。`,
 		`今回の設定: ${Object.entries(selection.axes)
 			.map(([axis, value]) => `${axis}=${value}`)
 			.join(
 				"、",
-			)}。今回の設定候補は状況パターンに合わせて選んであります。場所・語り手の役割・物語の目的・音の世界を台本全体に反映し、小道具・時刻・性格・やり取り・感情の変化も具体的な行動や出来事に使ってください。設定を列挙するだけにせず、会話と場面の進行に結びつけてください。明らかな矛盾が残る場合だけ、その軸を優先順位の低いものから省いてください。`,
+			)}。軸は独立に選ばれています。矛盾を避けるために既存の定型状況へ戻さず、今回ならではの自然な出来事にまとめてください。使った設定を会話、選択、発見、音の変化に結びつけてください。`,
 		"条件:",
-		"- 全年齢向けの癒やしと安眠の台本。性的な表現、暴力、恐怖は入れない。",
+		"- ASMRの近接感と音の細部を活かす。睡眠誘導、癒やし、安らぎへ自動で収束させず、場面に合う感情と結末を選ぶ。",
+		"- 全年齢向け。性的な表現、暴力、恐怖は入れない。",
 		"- 登場する話者は成人として設定する。年齢が分からない・若く見える設定は使わない。制服、学校、少女といった語も使わない。",
-		"- 語り手は一人。聞き手を「あなた」と呼ぶ。役割・性格・場面に合う話し方にし、全編を囁きや同じ睡眠誘導の調子に固定しない。",
-		`- chapters は次の ${beats.length} 章を、この順に必ず出す。全体の segments は ${config.script.min_segments} から ${config.script.max_segments} 個で、割合は segment 数の目安。各 segment は ${config.script.max_segment_chars} 文字以内の話し言葉で、1〜2文。`,
-		"- 次の変化ルールをすべて反映する:",
+		"- 語り手は一人。聞き手を「あなた」と呼ぶ。役割・性格・場面に合わせて話し方、間、感情、語尾を変化させる。",
+		`- chapters は今回の物語に必要な数と順序を自分で決め、章名も今回固有にする。導入・山場・沈静・おやすみの共通配列を使わない。各 segment は ${config.script.max_segment_chars} 文字以内の自然な話し言葉で、1〜2文。量は出来事が完結する長さにし、数合わせをしない。`,
+		"- 次の編集方針は品質の目安であり、表現や構成を固定するテンプレートではない:",
 		...config.script.variation_rules.map((rule) => `  - ${rule}`),
-		...beats.map(
-			(beat) =>
-				`  - ${beat.name}（segment 数の約${Math.round((beat.share / total) * 100)}%）: ${beat.brief}`,
-		),
-		`- 直近の台本と、題名の語、冒頭の文、最後の文を重ねない。直近の題名: ${recent.titles.join(" / ")}`,
-		`  直近の冒頭の文: ${recent.openings.join(" / ")}`,
-		`  直近の最後の文: ${recent.closings.join(" / ")}`,
 		"- 音声は TTS が読む。ト書き、括弧、記号、効果音の指示は書かない。読み仮名が要る語はひらがなで書く。",
-		"- 声は今回のvoice profile設定で読む。台詞は声の説明ではなく、今回の役割・性格・状況が伝わる自然な話し言葉にする。登場人物は成人として書く。",
-		"- cover_scene は文字を含まない1枚絵の情景描写（夜、柔らかい光、人物は後ろ姿か影）。",
+		"- 声は独立した複数の音響特徴を組み合わせる。台詞は声の説明ではなく、役割・性格・状況が伝わる自然な話し言葉にする。",
+		"- cover_scene は作品の場面と感情に合う、文字を含まない情景描写。夜景、暖色、人物の影などの共通画風や構図を指定しない。",
 		"- adult_characters_confirmed は true にする。",
 		'JSON だけを返す: {"title","hook","cover_scene","adult_characters_confirmed","chapters":[{"name","segments":[...]}]}',
 		lastError ? `前回の失敗: ${lastError}。直してください。` : "",
@@ -441,7 +420,12 @@ function generateReference(
 	}
 	const candidateDir = path.join(dir, "reference_candidates");
 	fs.ensureDirSync(candidateDir);
-	const seeds = Array.from({ length: config.reference.candidates }, (_, i) =>
+	const [minimumCandidates, maximumCandidates] = config.reference.candidate_range;
+	const candidateCount =
+		minimumCandidates +
+		(runSeed(name, "reference:candidate-count") %
+			(maximumCandidates - minimumCandidates + 1));
+	const seeds = Array.from({ length: candidateCount }, (_, i) =>
 		runSeed(name, `reference:${i}`),
 	);
 	const candidates: ReferenceCandidate[] = seeds.map((seed) => {
@@ -456,10 +440,17 @@ function generateReference(
 			);
 			run(command, { cwd, env });
 		}
+		const measurement = measureReferenceVoice(
+			dir,
+			file,
+			sha256File(file),
+			path.join(candidateDir, `${voiceProfile.id}_seed_${seed}.features.json`),
+		);
 		return {
 			seed,
 			file,
 			asr_similarity: asrSimilarity(file, config.reference.text),
+			acoustic_measurement: measurement,
 		};
 	});
 	const selected = selectReference(candidates);
@@ -479,13 +470,13 @@ function measureReferenceVoice(
 	dir: string,
 	referencePath: string,
 	referenceSha256: string,
+	outputPath = path.join(dir, "voice_features.json"),
 ):
 	| { status: "MEASURED"; features: Record<string, unknown> }
 	| {
 			status: "UNAVAILABLE";
 			error: string;
 	  } {
-	const outputPath = path.join(dir, "voice_features.json");
 	if (fs.existsSync(outputPath)) {
 		const previous = fs.readJsonSync(outputPath);
 		if (
@@ -796,13 +787,12 @@ function mix(listPath: string, outPath: string): void {
 async function prepare(date: string, slot?: string): Promise<void> {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
 		throw new Error("DATE=YYYY-MM-DD is required");
-	const profileId = requestedVoiceProfile();
 	const ttsDevice = requestedTtsDevice();
-	const voiceProfile = voiceProfileForDate(config, date, profileId);
 	// 同じ日に 2 本目を作るときだけ SLOT（英数字）を付ける。省略時の名前は従来どおり。
 	if (slot && !/^[a-z0-9]+$/.test(slot))
 		throw new Error("SLOT must be lowercase letters or digits");
 	const name = `${config.run.name_prefix}${date}${slot ? `-${slot}` : ""}`;
+	const voiceProfile = voiceDesignForRun(config, name);
 	const dir = path.join(bucketDir, name);
 	const runId = `${config.run.bucket}/${name}`;
 	const action = preparationAction({
@@ -884,10 +874,9 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			date,
 			run_id: runId,
 			profile_id: voiceProfile.id,
-			profile_selection: profileId ? "explicit" : "date_rotation",
+			profile_selection: "independent_preference_weighted_axes",
 			axis: voiceProfile.axis,
-			cycle_index: voiceProfile.cycle_index,
-			cycle_length: voiceProfile.cycle_length,
+			selected_axes: voiceProfile.selected_axes,
 			caption: voiceProfile.caption,
 			model_id: backend?.hf_checkpoint,
 			tts_device: ttsDevice,
@@ -914,11 +903,46 @@ async function prepare(date: string, slot?: string): Promise<void> {
 					.join(""),
 			),
 		});
+	const asrRecord = fs.readJsonSync(asrPath) as { similarity: number };
+	fs.writeJsonSync(
+		path.join(dir, "experience_evaluation.json"),
+		{
+			schema_version: 1,
+			advisory_only: true,
+			gate_applied: false,
+			intelligibility: {
+				metric: "ASR character bigram similarity",
+				value: asrRecord.similarity,
+				interpretation: "readability proxy only",
+			},
+			voice_preference: {
+				status: "awaiting_owner_feedback",
+				selected_axes: voiceProfile.selected_axes,
+				acoustic_measurement: voiceFeatures,
+				reference_candidates: reference.candidates.map((candidate) => ({
+					seed: candidate.seed,
+					asr_similarity: candidate.asr_similarity,
+					acoustic_measurement: candidate.acoustic_measurement,
+				})),
+				preference_score: null,
+			},
+			story_specificity: {
+				axes: selection.axes,
+				chapter_names: draft.chapters.map((chapter) => chapter.name),
+				story_shape_id: draft.shape,
+			},
+			diversity: {
+				observation_window: config.diversity.recent_window,
+				used_as_gate: false,
+			},
+		},
+		{ spaces: 2 },
+	);
 
 	const coverPath = path.join(dir, config.cover.file);
 	const coverRecordPath = path.join(dir, "cover.json");
 	if (!fs.existsSync(coverRecordPath)) {
-		const prompt = `夜の静かな部屋の絵。${draft.cover_scene} 柔らかい暖色の光、落ち着いた配色、文字や記号は一切入れない、人物は後ろ姿か影のみ。16:9の構図。`;
+		const prompt = `${draft.cover_scene} 作品固有の場面と感情に合う画材、色、構図を選び、他作品の定型画風に寄せない。文字や記号は入れない。16:9の構図。`;
 		run([config.cover.tool, prompt, coverPath, "--size", config.cover.size]);
 		fs.writeJsonSync(coverRecordPath, {
 			tool: config.cover.tool,

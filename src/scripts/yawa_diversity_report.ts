@@ -30,6 +30,7 @@ type Observation = {
 	text: string;
 	words: string[];
 	voice_profile_id: string | null;
+	voice_axes: Record<string, string> | null;
 	nonverbal_cue_id: string | null;
 	voice_features: Record<string, unknown> | null;
 };
@@ -147,6 +148,14 @@ function readObservations(): {
 				typeof voiceExperiment.profile_id === "string"
 					? voiceExperiment.profile_id
 					: null;
+			const voiceAxes =
+				typeof voiceExperiment === "object" &&
+				voiceExperiment !== null &&
+				"selected_axes" in voiceExperiment &&
+				typeof voiceExperiment.selected_axes === "object" &&
+				voiceExperiment.selected_axes !== null
+					? (voiceExperiment.selected_axes as Record<string, string>)
+					: null;
 			const nonverbalExperiment = readOptionalJson(
 				path.join(runDir, "nonverbal_experiment.json"),
 			);
@@ -197,6 +206,7 @@ function readObservations(): {
 				text,
 				words: tokenize(text),
 				voice_profile_id: voiceProfileId,
+				voice_axes: voiceAxes,
 				nonverbal_cue_id: nonverbalCueId,
 				voice_features: voiceFeatures,
 			});
@@ -331,11 +341,11 @@ function buildReport() {
 			selections.map((selection) => selection.situation_pattern?.id),
 		),
 		story_shape: distribution(
-			Object.keys(config.arc.shapes),
+			Object.keys(config.arc.shapes ?? {}),
 			selections.map((selection) => selection.shape),
 		),
 		voice_profile: distribution(
-			config.voice.profiles.map((profile) => profile.id),
+			[],
 			observations.map((observation) => observation.voice_profile_id),
 		),
 		nonverbal_cue: distribution(
@@ -348,11 +358,18 @@ function buildReport() {
 			options,
 			selections.map((selection) => selection.axes[axis]),
 		);
+	for (const [axis, options] of Object.entries(config.voice.axes))
+		dimensions[`voice_${axis}`] = distribution(
+			options.map((option) => option.id),
+			observations.map((observation) => observation.voice_axes?.[axis]),
+		);
 
 	const wordCounts = wordFrequency(observations);
 	const pairwiseSimilarity = maxJaccardSimilarity(observations);
 	const suggestions: string[] = [];
 	for (const [dimension, report] of Object.entries(dimensions)) {
+		if (dimension === "situation_pattern" || dimension === "story_shape")
+			continue;
 		if (report.configured_options > 0 && report.sample_count > 0) {
 			const unused = Object.entries(report.counts)
 				.filter(([, count]) => count === 0)
@@ -371,7 +388,7 @@ function buildReport() {
 		observations.some((observation) => !observation.selection.situation_pattern)
 	)
 		suggestions.push(
-			"新しい状況パターン形式の記録がない過去runが含まれます。状況分布は記録のあるrun数と分けて解釈してください。",
+			"新作は旧状況パターンを使わず、場面軸を独立に組み合わせています。旧runとの状況パターン比較は歴史診断として解釈してください。",
 		);
 
 	return {

@@ -1,8 +1,16 @@
 # Yawa Archive 音響嗜好評価 v1.0.2
 
+## Current production design (2026-11-13)
+
+The previous date-rotated voice profiles, common low/dry caption, fixed situation-pattern picker, and fixed chapter-shape endings are retired from production. `config/yawa/daily.yaml` now stores independent voice axes (register, resonance, sweetness, phonation, articulation, and prosody). Each run samples each axis from its own seeded, preference-weighted distribution. Preference weights express the owner's stated starting direction; they are not learned probabilities or hard targets. F0 270–280 Hz remains one exploration cue, not a generation gate.
+
+The reference text stays the same across voice runs so candidate voices can be compared on the same words. Each run samples 3–5 reference seeds, records ASR readability and acoustic measurements for every candidate, and selects by ASR only as a readability proxy. It does not rank personal preference. `experience_evaluation.json` keeps readability, acoustic measurements, pending owner voice feedback, and story-specificity observations in separate fields; none blocks production or publication.
+
+New episodes no longer select historical situation patterns or fixed arc arrays. Their scene axes are sampled independently, and the script model creates a situation, chapter order, and ending from that episode's specific listener experience. Historical YAML pattern entries remain only to interpret older runs. Segment count follows the story; the TTS chunk-size limit and adult-only, rights, provenance, and reproducible-seed records remain operational safeguards.
+
 ## Status
 
-Python音響評価器と日次profile巡回を実装。Praat/Parselmouth 0.4.7を `uv.lock` で固定し、日次runのreference音声からF0、スペクトル、フォルマントを記録する。参照音声の収集、参照モデルの構築、本人の好みの学習は未実施。2026-11-12の設計調査で、以前のcaptionが同じ声像を強く縛っていたことと、F0目標がseed間で再現されていないことを確認した。profileの広げ方、市場キーワード調査、制約は[調査記録](./voice-situation-design-research-2026-11-12.md)に記録する。
+Python音響評価器はPraat/Parselmouth 0.4.7を `uv.lock` で固定し、日次runのreference音声からF0、スペクトル、フォルマントを記録する。音響計測とASRは参考値であり、本人の好みは聴取フィードバックが届くまで未学習・未確定。2026-11-13に独立音響軸と場面起点の自由構成へ更新した。以前の設計経緯は[調査記録](./voice-situation-design-research-2026-11-12.md)に記録する。
 
 目的は、Yawa Archive 向けに選んだ声の「高音・鼻にかかる響き・甘さ・若々しい印象・抑揚」を測定し、候補間の好みを予測すること。声優本人の同一性や声真似の再現度は評価しない。
 
@@ -44,22 +52,22 @@ Python音響評価器と日次profile巡回を実装。Praat/Parselmouth 0.4.7�
 
 ### v1: 本人の好み予測
 
-日次profileと音声は匿名IDで提示し、5軸を各1〜5、全体の好みを1〜5で記録する。将来の予測値は `S_pref = 100 × P(Y ≥ 4 | features, profile)` と定義し、複数のブラインド評価を集めた後にだけ学習・校正する。今はデータがないためPython出力の `preference_prediction` は `null`。参照音響近似度を好みの確率と表示しない。
+日次音声は匿名run IDで提示し、音響特徴ごとの印象（高さ、共鳴、甘さ、息、明瞭さ、抑揚）と、声全体の好みを別々に記録する。将来の予測値は `S_pref = 100 × P(Y ≥ 4 | features, selected_axes)` と定義し、複数のブラインド評価を集めた後にだけ学習・校正する。今はデータがないためPython出力の `preference_prediction` は `null`。参照音響近似度を好みの確率と表示しない。
 
-話者埋め込みや人物IDは嗜好予測の入力にしない。同じ参照録音や同じ日次profileが学習・検証へ漏れないよう、評価時は日付profile周期単位で分割する。
+話者埋め込みや人物IDは嗜好予測の入力にしない。同じ参照録音や同じ声条件のseedが学習・検証へ漏れないよう、評価時はrun IDとseedの組で分割する。
 
 ## 実験手順
 
 1. 同じ短い日本語テキストを用意する。母音「あいうえお」、サ行、句末、通常速度とゆっくりした発話を含め、読みと録音条件を固定する。
-2. 日次生成は成人の声のまま、7つの探索用profileを日付で巡回する。各profileは音域・共鳴・発声・抑揚を組み合わせ、共通の「年上・近距離・優しい・柔らかい語尾・息控えめ」で均さない。同じ日の再試行は同じprofile・seedになる。測定値は設計への追従を観察する参考情報で、ゲートにしない。
-3. 各profileの日次reference候補は3 seedから選ぶ。Caption全文、model ID、seed、reference SHA-256、ASR類似度をrunの `voice_experiment.json` に残す。ASRは読みやすさの参考に限り、好みの選抜には使わない。シチュエーションは `config/yawa/daily.yaml` の公開市場キーワード由来パターンから、最近の利用頻度とYAML weightをもとに選ぶ。パターンと互換arcもrunの `selection.json` に記録する。
+2. 日次生成は成人の声のまま、音域・共鳴・甘さ・発声・明瞭さ・抑揚を独立に組み合わせる。好みの方向は重み付けし、低音などの対照も探索から除外しない。同じrunを再実行すれば軸とseedは再現される。測定値は参考情報で、ゲートにしない。
+3. 各runは同一の参照台詞で3〜5 seedの候補を作る。Caption全文、選択軸、model ID、seed、reference SHA-256、ASR類似度、候補別F0・スペクトル・フォルマント等をrunに残す。ASRは読みやすさの参考に限り、好みの選抜には使わない。好みは同じ台詞の聴き比べと所有者フィードバックで決める。場面軸は独立抽選し、モデルがその回の目的から状況・章順・終わり方を作る。旧パターンは歴史比較以外に使わない。
 4. 候補から同一話者の短いクリーンな複数クリップを選び、合計約30秒の参照を作る。未処理原音を保存し、ディエッサー処理は別ファイルで行う。
 5. 参照音声を使い、公式モデルID `Aratako/Irodori-TTS-v4-Large-Quantized/int4-weight-only` で同じ評価台詞を生成する。これは隔離した実験runのみで行う。「Large 4.1」は公式モデル名として確認できないため、記録にはモデルIDを使う。
 6. 1か月後にユーザーが好みのrun IDやprofileを返したら、`feedback.template.csv` に記録し、好みprofileを更新する。フィードバックまで日次生成と公開は通常経路で継続する。
 
 ## 日次制作と比較実験のループ
 
-日次投稿は複数の声profile・場面・台本を広く試す探索ランであり、1回の結果から「この声条件が好まれた」と因果を断定しない。日次制作・投稿は従来どおり実行し、音響値、ASR、監査の結果は投稿可否ゲートにしない。
+日次投稿では声の嗜好、聞き取りやすさ、場面固有性を別々に記録する。1回の結果から「この声条件が好まれた」と因果を断定しない。日次制作・投稿は継続し、音響値、ASR、多様性診断は投稿可否ゲートにしない。
 
 特定の差を確かめるときは `voice-lab-run-spec.template.yaml` を `runs/yawa_voice_lab/<run-id>/run-spec.yaml` にコピーし、生成前に次を記録する。
 
@@ -69,9 +77,9 @@ Python音響評価器と日次profile巡回を実装。Praat/Parselmouth 0.4.7�
 4. **結果の保存**: 成功・失敗を含めてrun仕様、実際の設定、音声hash、測定値、実行環境の差をrun directoryに残す。失敗runも消さず、失敗理由と次回に試すことを書く。
 5. **比較と申し送り**: 同一条件の基準、前回、これまでの最良候補を並べ、seed間の中央値と幅を見る。単発の上振れは改善と呼ばず、繰り返して確認できた結果だけを次の設定変更の根拠にする。確認できていないことは次runの問いに残す。
 
-日次runの `voice_experiment.json` と `selection.json` はその日の実条件の記録として使い、管理された比較実験の代わりにはしない。フィードバックでは声・場面・台本・全体を別々に評価し、声だけの評価と、作品全体としての好みを混ぜない。YAMLのprofileやsampling weightは観察の記録を残したうえで調整する。日次投稿を止めたり、実験結果を公開の合否条件にしたりしない。
+日次runの `voice_experiment.json`、`experience_evaluation.json`、`selection.json` は実条件の記録として使い、管理された比較実験の代わりにはしない。フィードバックでは声・場面・台本・全体を別々に評価し、声だけの評価と作品全体の好みを混ぜない。軸の重みは聴取結果を記録してから更新し、実験結果を公開の合否条件にしない。
 
-同じ日に複数profileを作るときは別々の `SLOT` を使い、`YAWA_VOICE_PROFILE` でprofileを指定する。日次既定デバイスはCPU。`YAWA_TTS_DEVICE=cpu` はIrodoriのモデルとcodecを明示的にCPU実行し、そのrunではGPU空き容量条件を使わない。`YAWA_TTS_DEVICE=cuda` を指定したrunだけGPU空き容量条件を確認する。自動でデバイスを切り替えることはなく、実行デバイスはrun記録に残す。例: `YAWA_VOICE_PROFILE=high_bright YAWA_TTS_DEVICE=cpu task yawa:daily DATE=2026-11-11 SLOT=highbright`。
+同じ日に複数runを作るときは別々の `SLOT` を使う。`YAWA_VOICE_PROFILE` による固定profile指定は廃止した。日次既定デバイスはCPU。`YAWA_TTS_DEVICE=cpu` はIrodoriのモデルとcodecを明示的にCPU実行し、そのrunではGPU空き容量条件を使わない。`YAWA_TTS_DEVICE=cuda` を指定したrunだけGPU空き容量条件を確認する。自動でデバイスを切り替えることはなく、実行デバイスはrun記録に残す。
 
 モデル候補の検索・seed探索・補正・Large試験は `runs/yawa_voice_lab/<run-id>/` に隔離し、日次既定値や公開済み音声を自動変更しない。採用後にのみ日次設定変更を別途行う。
 

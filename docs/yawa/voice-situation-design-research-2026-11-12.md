@@ -1,5 +1,7 @@
 # Yawa voice and situation design research — 2026-11-12
 
+> Historical snapshot. On 2026-11-13 the production workflow retired the dated profile cycle, fixed situation-pattern selection, fixed arc arrays, and fixed metadata pitch. Voice traits are now sampled independently with preference-weighted seeds; scene axes are composed freely and the script model chooses its own chapters and ending. Historical patterns remain for comparison only. See [voice evaluation workflow](./voice-evaluation-v1.md) for the active design.
+
 ## Findings
 
 The previous design had many theoretical combinations but little perceptual range. It crossed six short YAML lists (place, prop, time, narrator role, sound world, mood) with four story shapes. The raw cross product was 33,600 axis combinations, but nearly every option stayed inside a quiet, night-time care scene. The 21-entry inspiration pool was mostly free scripts and was not a count of commercial-market keywords.

@@ -14,6 +14,7 @@ const IrodoriBackendSchema = z.object({
 const RangeSchema = z.tuple([z.number().positive(), z.number().positive()]);
 
 const GapSchema = z.tuple([z.number().nonnegative(), z.number().nonnegative()]);
+const SignedRangeSchema = z.tuple([z.number(), z.number()]);
 
 const BeatSchema = z.object({
 	share: z.number().positive(),
@@ -36,13 +37,6 @@ const SituationPatternSchema = z.object({
 		.optional(),
 });
 
-const VoiceProfileSchema = z.object({
-	id: z.string().regex(/^[a-z0-9_-]{1,40}$/),
-	// This is a profile-family label; one caption may combine several voice traits.
-	axis: z.string().regex(/^[a-z0-9_-]{1,80}$/),
-	caption: z.string().min(10).max(300),
-});
-
 const NonverbalCueSchema = z.object({
 	id: z.string().regex(/^[a-z0-9_-]{1,40}$/),
 	emoji: z.string().min(1),
@@ -50,6 +44,12 @@ const NonverbalCueSchema = z.object({
 	chapters: z.array(z.string().min(1)).min(1),
 	positions: z.array(z.enum(["prefix", "after_clause", "suffix"])).min(1),
 	repetitions: z.array(z.number().int().min(1).max(3)).min(1),
+});
+
+const VoiceAxisOptionSchema = z.object({
+	id: z.string().regex(/^[a-z0-9_-]{1,40}$/),
+	cue: z.string().min(1).max(240),
+	preference_weight: z.number().int().positive(),
 });
 
 export type Chapter = {
@@ -71,8 +71,9 @@ const YawaConfigSchema = z.object({
 		tool: z.literal("codex"),
 		model: z.string(),
 		sandbox: z.literal("read-only"),
-		min_segments: z.number().int().positive(),
-		max_segments: z.number().int().positive(),
+		// Legacy fields remain typed for old run fixtures; production does not enforce segment counts.
+		min_segments: z.number().int().positive().default(1),
+		max_segments: z.number().int().positive().default(Number.MAX_SAFE_INTEGER),
 		max_segment_chars: z.number().int().positive(),
 		max_attempts: z.number().int().positive(),
 		variation_rules: z.array(z.string().min(1)).min(1),
@@ -89,19 +90,25 @@ const YawaConfigSchema = z.object({
 		cues: z.array(NonverbalCueSchema).min(1),
 	}),
 	arc: z.object({
-		beats: z.record(z.string(), BeatSchema),
-		shapes: z.record(z.string(), z.array(z.string()).min(2)),
+		dynamic: z.object({
+			duration_scale: RangeSchema,
+			cfg_scale_caption: RangeSchema,
+			gap_seconds: GapSchema,
+			gain_db: SignedRangeSchema,
+		}),
+		beats: z.record(z.string(), BeatSchema).default({}),
+		shapes: z.record(z.string(), z.array(z.string()).min(2)).default({}),
 	}),
 	axes: z.record(z.string(), z.array(z.string().min(1)).min(1)),
 	situation_patterns: z.array(SituationPatternSchema).min(2),
 	diversity: z.object({ recent_window: z.number().int().positive() }),
 	voice: z.object({
-		caption: z.string().min(10).max(300),
-		profiles: z.array(VoiceProfileSchema).min(2),
+		caption: z.string().min(1).max(600).optional(),
+		axes: z.record(z.string(), z.array(VoiceAxisOptionSchema).min(2)),
 	}),
 	reference: z.object({
 		text: z.string().min(10),
-		candidates: z.number().int().positive(),
+		candidate_range: z.tuple([z.number().int().positive(), z.number().int().positive()]),
 	}),
 	mix: z.object({
 		room_tone_db: z.number(),
@@ -130,7 +137,7 @@ const YawaConfigSchema = z.object({
 	}),
 	safety: z.object({ banned_terms: z.array(z.string()) }),
 	metadata: z.object({
-		title_forms: z.array(z.string().min(1)).min(1),
+		title_forms: z.array(z.string().min(1)).min(1).optional(),
 		title_suffix: z.string(),
 		tags_core: z.array(z.string()),
 		tags_from_axes: z.array(z.string()),
@@ -141,48 +148,12 @@ const YawaConfigSchema = z.object({
 	}),
 });
 export type YawaConfig = z.infer<typeof YawaConfigSchema>;
-export type VoiceProfile = z.infer<typeof VoiceProfileSchema> & {
-	cycle_index: number;
-	cycle_length: number;
+export type VoiceProfile = {
+	id: string;
+	axis: string;
+	caption: string;
+	selected_axes: Record<string, string>;
 };
-
-const VOICE_CYCLE_START_UTC = Date.UTC(2026, 10, 11);
-const UTC_DAY_MS = 24 * 60 * 60 * 1000;
-
-/** 日付で固定した巡回。再実行は同じprofileになり、隣接日は別profileになる。 */
-export function voiceProfileForDate(
-	config: YawaConfig,
-	date: string,
-	requestedProfileId?: string,
-): VoiceProfile {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
-		throw new Error("DATE=YYYY-MM-DD is required");
-	const timestamp = Date.parse(`${date}T00:00:00.000Z`);
-	if (
-		!Number.isFinite(timestamp) ||
-		new Date(timestamp).toISOString().slice(0, 10) !== date
-	)
-		throw new Error(`invalid calendar date: ${date}`);
-	const cycleLength = config.voice.profiles.length;
-	if (cycleLength < 2)
-		throw new Error("at least two voice profiles are required");
-	const dayIndex = Math.floor((timestamp - VOICE_CYCLE_START_UTC) / UTC_DAY_MS);
-	const cycleIndex = ((dayIndex % cycleLength) + cycleLength) % cycleLength;
-	const selectedIndex = requestedProfileId
-		? config.voice.profiles.findIndex(
-				(profile) => profile.id === requestedProfileId,
-			)
-		: cycleIndex;
-	if (selectedIndex < 0)
-		throw new Error(`unknown voice profile: ${requestedProfileId}`);
-	const profile = config.voice.profiles[selectedIndex];
-	if (!profile) throw new Error(`no voice profile at index ${selectedIndex}`);
-	return {
-		...profile,
-		cycle_index: selectedIndex,
-		cycle_length: cycleLength,
-	};
-}
 
 const PoolSchema = z.object({
 	entries: z.array(
@@ -210,7 +181,7 @@ export type ScriptMeta = z.infer<typeof ScriptMetaSchema>;
 export const ScriptDraftSchema = ScriptMetaSchema.extend({
 	shape: z.string().min(1),
 	chapters: z.array(
-		z.object({ name: z.string(), segments: z.array(z.string().min(1)) }),
+		z.object({ name: z.string().min(1), segments: z.array(z.string().min(1)).min(1) }),
 	),
 });
 export type ScriptDraft = z.infer<typeof ScriptDraftSchema>;
@@ -237,6 +208,41 @@ function hash(text: string): number {
 /** 声の種は run 名から決める。動画ごとに変わり、同じ run を作り直せば同じになる。 */
 export function runSeed(runName: string, label: string): number {
 	return hash(`${runName}:${label}`);
+}
+
+/** 声の特徴軸を独立に選ぶ。好みの方向は重み付けするが、数値や一つの声像には固定しない。 */
+export function voiceDesignForRun(
+	config: YawaConfig,
+	runName: string,
+): VoiceProfile {
+	const selected = Object.fromEntries(
+		Object.entries(config.voice.axes).map(([axis, options]) => {
+			const total = options.reduce(
+				(sum, option) => sum + option.preference_weight,
+				0,
+			);
+			let roll = hash(`${runName}:voice:${axis}`) % total;
+			const option = options.find((candidate) => {
+				roll -= candidate.preference_weight;
+				return roll < 0;
+			});
+			if (!option) throw new Error(`no voice option for axis '${axis}'`);
+			return [axis, option];
+		}),
+	);
+	const selected_axes = Object.fromEntries(
+		Object.entries(selected).map(([axis, option]) => [axis, option.id]),
+	);
+	const cues = Object.values(selected).map((option) => option.cue);
+	const id = `axes-${hash(JSON.stringify(selected_axes)).toString(16)}`;
+	return {
+		id,
+		axis: Object.entries(selected_axes)
+			.map(([axis, value]) => `${axis}:${value}`)
+			.join("+"),
+		selected_axes,
+		caption: `成人女性。今回の声の特徴を独立に組み合わせる: ${cues.join("。 ")}。場面の感情に合わせて自然に変化させ、特定の数値や語尾に固定しない。`,
+	};
 }
 
 /** 使用回数が最も少ない選択肢を選ぶ。同数なら seed で決め、同じ入力には同じ結果を返す。 */
@@ -280,51 +286,18 @@ export function chooseSelection(
 	history: SelectionRecord[],
 	runName: string,
 ): Selection {
-	const situationPatternId = pickWeightedLeast(
-		config.situation_patterns,
-		history.flatMap((h) =>
-			h.situation_pattern ? [h.situation_pattern.id] : [],
-		),
-		`${runName}:situation-pattern`,
-	);
-	const situationPattern = config.situation_patterns.find(
-		(pattern) => pattern.id === situationPatternId,
-	);
-	if (!situationPattern)
-		throw new Error(`unknown situation pattern: ${situationPatternId}`);
-	const shape = pickLeast(
-		situationPattern.shapes,
-		history.flatMap((h) => (h.shape ? [h.shape] : [])),
-		`${runName}:shape`,
-	);
+	void history;
 	const axes = Object.fromEntries(
-		Object.entries(config.axes).map(([axis, allOptions]) => {
-			const options = situationPattern.axis_options?.[axis] ?? allOptions;
-			return [
-				axis,
-				pickLeast(
-					options,
-					history.flatMap((h) => (h.axes?.[axis] ? [h.axes[axis]] : [])),
-					`${runName}:${situationPattern.id}:${axis}`,
-				),
-			];
+		Object.entries(config.axes).map(([axis, options]) => {
+			const index = hash(`${runName}:scene:${axis}`) % options.length;
+			return [axis, options[index] as string];
 		}),
-	);
-	const title_form = Number(
-		pickLeast(
-			config.metadata.title_forms.map((_, i) => String(i)),
-			history.flatMap((h) =>
-				h.title_form === undefined ? [] : [String(h.title_form)],
-			),
-			`${runName}:form`,
-		),
 	);
 	return {
 		id,
-		shape,
+		shape: `original-${hash(`${runName}:story`).toString(16)}`,
 		axes,
-		title_form,
-		situation_pattern: situationPattern,
+		title_form: 0,
 	};
 }
 
@@ -339,17 +312,19 @@ export function resolveBeat(
 	name: string,
 	runName: string,
 ): Chapter {
-	const beat = config.arc.beats[name];
-	if (!beat) throw new Error(`unknown beat: ${name}`);
+	const dynamic = config.arc.dynamic;
 	return {
 		name,
-		share: beat.share,
-		brief: beat.brief,
-		style: beat.style,
-		duration_scale: between(beat.duration_scale, `${runName}:${name}:scale`),
-		cfg_scale_caption: beat.cfg_scale_caption,
-		gap_seconds: between(beat.gap_seconds, `${runName}:${name}:gap`),
-		gain_db: beat.gain_db,
+		share: 1,
+		brief: "",
+		style: "",
+		duration_scale: between(dynamic.duration_scale, `${runName}:${name}:scale`),
+		cfg_scale_caption: between(
+			dynamic.cfg_scale_caption,
+			`${runName}:${name}:cfg`,
+		),
+		gap_seconds: between(dynamic.gap_seconds, `${runName}:${name}:gap`),
+		gain_db: between(dynamic.gain_db, `${runName}:${name}:gain`),
 	};
 }
 
@@ -358,7 +333,7 @@ export function shapeBeats(
 	shape: string,
 	runName: string,
 ): Chapter[] {
-	const names = config.arc.shapes[shape];
+	const names = config.arc.shapes?.[shape];
 	if (!names) throw new Error(`unknown shape: ${shape}`);
 	return names.map((name) => resolveBeat(config, name, runName));
 }
@@ -417,9 +392,7 @@ export function chooseNonverbalCue(
 	if (!config.nonverbal_experiment.enabled) return undefined;
 	const segments = draftSegments(draft, config, runName);
 	const eligible = config.nonverbal_experiment.cues.flatMap((cue) => {
-		const choices = segments.flatMap((segment, index) =>
-			cue.chapters.includes(segment.chapter.name) ? [index] : [],
-		);
+		const choices = segments.map((_, index) => index);
 		return choices.length > 0 ? [{ cue, choices }] : [];
 	});
 	if (eligible.length === 0) return undefined;
@@ -489,57 +462,29 @@ export function loadYawaConfig(root: string): YawaConfig {
 			fs.readFileSync(path.join(root, "config/yawa/daily.yaml"), "utf8"),
 		),
 	);
-	for (const [shape, names] of Object.entries(config.arc.shapes))
+	for (const [shape, names] of Object.entries(config.arc.shapes ?? {}))
 		for (const name of names)
-			if (!config.arc.beats[name])
+			if (!config.arc.beats?.[name])
 				throw new Error(`shape '${shape}' uses unknown beat '${name}'`);
 	if (
 		new Set(config.situation_patterns.map((pattern) => pattern.id)).size !==
 		config.situation_patterns.length
 	)
 		throw new Error("situation pattern ids must be unique");
-	for (const pattern of config.situation_patterns)
-		for (const shape of pattern.shapes)
-			if (!config.arc.shapes[shape])
-				throw new Error(
-					`situation pattern '${pattern.id}' uses unknown shape '${shape}'`,
-				);
-	for (const pattern of config.situation_patterns) {
-		for (const [axis, options] of Object.entries(pattern.axis_options ?? {})) {
-			const configuredOptions = config.axes[axis];
-			if (!configuredOptions)
-				throw new Error(
-					`situation pattern '${pattern.id}' uses unknown axis '${axis}'`,
-				);
-			for (const option of options)
-				if (!configuredOptions.includes(option))
-					throw new Error(
-						`situation pattern '${pattern.id}' uses unknown ${axis} option '${option}'`,
-					);
-		}
-	}
-	for (const form of config.metadata.title_forms)
+	for (const form of config.metadata.title_forms ?? [])
 		for (const [, axis] of form.matchAll(/\{(\w+)\}/g))
 			if (!config.axes[axis as string])
 				throw new Error(`title form uses unknown axis '${axis}'`);
 	for (const axis of config.metadata.tags_from_axes)
 		if (!config.axes[axis]) throw new Error(`tags use unknown axis '${axis}'`);
-	if (
-		new Set(config.voice.profiles.map((profile) => profile.id)).size !==
-		config.voice.profiles.length
-	)
-		throw new Error("voice profile ids must be unique");
+	for (const [axis, options] of Object.entries(config.voice.axes))
+		if (new Set(options.map((option) => option.id)).size !== options.length)
+			throw new Error(`voice axis '${axis}' ids must be unique`);
 	if (
 		new Set(config.nonverbal_experiment.cues.map((cue) => cue.id)).size !==
 		config.nonverbal_experiment.cues.length
 	)
 		throw new Error("nonverbal cue ids must be unique");
-	for (const cue of config.nonverbal_experiment.cues)
-		for (const chapter of cue.chapters)
-			if (!config.arc.beats[chapter])
-				throw new Error(
-					`nonverbal cue '${cue.id}' uses unknown chapter '${chapter}'`,
-				);
 	return config;
 }
 
@@ -566,16 +511,9 @@ export function validateDraft(
 	config: YawaConfig,
 ): string[] {
 	const failures: string[] = [];
-	const { min_segments, max_segments, max_segment_chars } = config.script;
-	const expected = (config.arc.shapes[draft.shape] ?? []).join(",");
-	if (!expected) failures.push(`unknown shape: ${draft.shape}`);
-	else if (draft.chapters.map((c) => c.name).join(",") !== expected)
-		failures.push(`chapters must be exactly: ${expected}`);
+	const { max_segment_chars } = config.script;
+	if (draft.chapters.length === 0) failures.push("script must contain chapters");
 	const texts = draft.chapters.flatMap((c) => c.segments);
-	if (texts.length < min_segments || texts.length > max_segments)
-		failures.push(
-			`segments must be ${min_segments}-${max_segments}, got ${texts.length}`,
-		);
 	texts.forEach((text, index) => {
 		if (text.length > max_segment_chars)
 			failures.push(`segment ${index + 1} exceeds ${max_segment_chars} chars`);
@@ -670,7 +608,7 @@ export function segmentCall(
 		config,
 		["--ref-wavs", refWav],
 		segment.text,
-		`${config.voice.caption}${chapter.style}`,
+		`${config.voice.caption ?? ""}${chapter.style}`,
 		seed,
 		outputWav,
 		[
@@ -723,11 +661,11 @@ export type ReferenceCandidate = {
 	seed: number;
 	file: string;
 	asr_similarity: number;
+	acoustic_measurement?: Record<string, unknown>;
 };
 
 /**
- * 候補から参照音声を 1 つ選ぶ。基準は「聞き取れること」と「割れていないこと」。
- * 魅力の判定はしない。聴いた人の評価は別に行う。
+ * ASR類似度は参照文の聞き取りやすさだけに使う。好みは本人の聴取評価で決める。
  */
 export function selectReference(
 	candidates: ReferenceCandidate[],
@@ -827,8 +765,7 @@ export function yawaAudit(
 			? ""
 			: "script shape differs from the recorded selection",
 		...validateDraft(input.draft, config).filter(
-			(failure) =>
-				failure.startsWith("chapters") || failure.startsWith("unknown shape"),
+			(failure) => failure.startsWith("chapters") || failure.startsWith("script"),
 		),
 		input.metadata.title === buildTitle(input.draft, config, input.selection)
 			? ""
@@ -894,23 +831,13 @@ export function yawaAudit(
 	};
 }
 
-function render(template: string, axes: Record<string, string>): string {
-	return template.replace(/\{(\w+)\}/g, (_, axis: string) => {
-		const value = axes[axis];
-		if (value === undefined) throw new Error(`axis '${axis}' is not selected`);
-		return value;
-	});
-}
-
 /** 公開タイトル。新規投稿と既存動画の書き換えで、同じ規則を使う。 */
 export function buildTitle(
 	draft: ScriptMeta,
 	config: YawaConfig,
-	selection: Selection,
+	_selection: Selection,
 ): string {
-	const form = config.metadata.title_forms[selection.title_form];
-	if (form === undefined) throw new Error("title_form is out of range");
-	return `${render(form, selection.axes)}${draft.title}${config.metadata.title_suffix}`;
+	return `${draft.title}${config.metadata.title_suffix}`;
 }
 
 export function buildTags(config: YawaConfig, selection: Selection): string[] {
@@ -945,5 +872,5 @@ export function buildDescription(
 		config.metadata.rights_declaration,
 		"",
 		inspired,
-	].join("\n");
+	].filter(Boolean).join("\n");
 }
