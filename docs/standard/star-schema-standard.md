@@ -40,6 +40,39 @@ Rules:
 - Analytics values are stored only when measured by the API. Estimates are never mixed in.
 - The 30-day retention boundary of `analytics:refresh` applies to `fact_analytics_daily` as well.
 
+### Transformation boundaries (dbt-inspired design target)
+
+The target follows the separation of staging, intermediate, and marts models described in the [dbt project-structure guide](https://docs.getdbt.com/best-practices/how-we-structure/1-guide-overview). These names define responsibilities; they do not add a dbt runtime or change the current SQLite and versioned SQL/TypeScript implementation.
+
+| boundary | responsibility | target checks |
+|---|---|---|
+| Raw | Preserve source payloads and generated artifacts with provenance and hashes. | Source identity, capture time, and payload hash are present. |
+| Staging | Normalize one source at a time: names, types, and source-specific shapes. Preserve its row grain; do not define business KPIs here. | Required fields and source keys parse consistently. |
+| Intermediate | Perform purpose-built joins, filters, and calculations that prepare data for a mart. Declare the input and output grain. | Join cardinality and grain changes are explicit and reproducible. |
+| Marts | Expose business-facing dimensions, facts, and agreed KPI values. Each fact has one declared grain. | Keys, relationships, metric definitions, and source lineage match the declared contract. |
+
+In the existing model, staging and intermediate belong to the reproducible Transform layer; marts correspond to the Star layer. These are target boundaries, not a claim that matching model folders or automated checks already exist. Build them incrementally as read-only views before changing existing writes.
+
+An intermediate model must have a specific transformation purpose, such as isolating a complex join or an explicit grain change. A simple staging-to-mart path can remain direct when an intermediate step adds no clarity; do not create empty layers for their own sake.
+
+### KPI definition contract (target)
+
+Each KPI has one canonical definition, reused by every report that presents it. Its contract records:
+
+- stable metric ID and business meaning;
+- formula and source fields;
+- fact grain, time window, unit, and filters or exclusions;
+- whether the value is API-measured or derived, with links to its evidence;
+- definition version and the transform version that produced the value.
+
+Measured values, derived values, and estimates remain distinguishable. A change to meaning, formula, grain, source, or exclusions is a semantic change and is reviewed as one bounded change unit; routine model output is checked against the approved contract.
+
+### Change review and acceptance evidence (target)
+
+AI-generated data changes should be proposed in small units with a named output, declared grain, input evidence, and exact acceptance checks. Automatable checks should cover parsing, keys and relationships, grain, required provenance, and reproducibility where the transform is deterministic. Store the check result with the input and output hashes so a reviewer can inspect the evidence without manually approving every generated row.
+
+Human review is reserved for changes to business meaning, KPI definitions, source authority, data exposure, or other decisions that cannot be established from the declared contract. These analytics checks do not add a publication prerequisite or change the product publication path.
+
 ## Object layer
 
 Above the star layer sits the object layer that carries business meaning. Object types and relations are defined in stage P0 below; no machine-checked source exists yet.
