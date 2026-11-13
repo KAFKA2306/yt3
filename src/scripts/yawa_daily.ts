@@ -147,13 +147,17 @@ function observeArc(
 	dir: string,
 	audioPath: string,
 	recent: Recent,
+	experimentSegmentIndex?: number,
 ): void {
 	const segments = draftSegments(draft, config, name);
-	const raw = segments.map((_, i) =>
-		probeSeconds(
-			path.join(dir, "tts", `seg_${String(i + 1).padStart(3, "0")}.wav`),
-		),
-	);
+	const raw = segments.map((_, i) => {
+		const segmentName = String(i + 1).padStart(3, "0");
+		const fileName =
+			i === experimentSegmentIndex
+				? `seg_${segmentName}.emoji-treatment.wav`
+				: `seg_${segmentName}.wav`;
+		return probeSeconds(path.join(dir, "tts", fileName));
+	});
 	const total = segments.reduce(
 		(sum, segment, i) => sum + (raw[i] ?? 0) + segment.chapter.gap_seconds,
 		0,
@@ -1021,7 +1025,14 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		},
 		config,
 	);
-	observeArc(draft, name, dir, audioPath, recentScripts(name));
+	observeArc(
+		draft,
+		name,
+		dir,
+		audioPath,
+		recentScripts(name),
+		nonverbalCue?.segment_index,
+	);
 	fs.outputJsonSync(path.join(dir, "audit", "result.json"), audit, {
 		spaces: 2,
 	});
