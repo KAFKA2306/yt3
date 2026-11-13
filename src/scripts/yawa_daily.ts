@@ -245,7 +245,21 @@ function selectionHistory(excludeRun: string): SelectionRecord[] {
 		.map((file) => fs.readJsonSync(file) as SelectionRecord);
 }
 
-type Recent = { titles: string[]; openings: string[]; closings: string[] };
+type Recent = {
+	titles: string[];
+	openings: string[];
+	closings: string[];
+	sample_count: number;
+	frequent_terms: Array<{ word: string; count: number; runs: number }>;
+};
+
+const promptSegmenter = new Intl.Segmenter("ja", { granularity: "word" });
+const promptStopWords = new Set([
+	"って", "てい", "ます", "した", "いる", "しょう", "んで", "から", "まで",
+	"こと", "ここ", "なく", "です", "ない", "いい", "たら", "だけ", "もう",
+	"して", "する", "ある", "よう", "ので", "でも", "また", "しま", "さい",
+	"くだ", "この", "その", "これ", "それ", "あなた",
+]);
 
 function recentScripts(excludeRun: string): Recent {
 	const names = fs.existsSync(bucketDir)
@@ -267,19 +281,37 @@ function recentScripts(excludeRun: string): Recent {
 			title: draft.title as string,
 			opening: texts[0] ?? "",
 			closing: texts[texts.length - 1] ?? "",
+			text: texts.join(" "),
 		};
 	});
+	const counts = new Map<string, number>();
+	const runCounts = new Map<string, number>();
+	for (const script of scripts) {
+		const words = [...promptSegmenter.segment(script.text.normalize("NFKC"))]
+			.filter((part) => part.isWordLike && part.segment.length >= 2)
+			.map((part) => part.segment.toLowerCase())
+			.filter((word) => !promptStopWords.has(word));
+		for (const word of words) counts.set(word, (counts.get(word) ?? 0) + 1);
+		for (const word of new Set(words))
+			runCounts.set(word, (runCounts.get(word) ?? 0) + 1);
+	}
+	const frequent_terms = [...counts]
+		.map(([word, count]) => ({ word, count, runs: runCounts.get(word) ?? 0 }))
+		.sort((a, b) => b.count - a.count || (a.word < b.word ? -1 : 1))
+		.slice(0, 10);
 	return {
 		titles: scripts.map((x) => x.title),
 		openings: scripts.map((x) => x.opening),
 		closings: scripts.map((x) => x.closing),
+		sample_count: scripts.length,
+		frequent_terms,
 	};
 }
 
 function scriptPrompt(
 	entry: PoolEntry,
 	selection: Selection,
-	_recent: Recent,
+	recent: Recent,
 	_runName: string,
 	lastError?: string,
 ): string {
@@ -287,11 +319,20 @@ function scriptPrompt(
 		`あなたは「夜話アーカイブ ASMR」の台本作家です。ゴールは、何度も聴きたくなる声で、その作品ならではの体験を届けることです。聞き手は${config.audience}です。`,
 		"過去の状況パターン、章構成、結末の型を使わず、今回の目的と行動から新しい物語を作ってください。耳ケアなら道具ごとの音を聞き分け、散策なら音の正体を探し、便りならその一通に返事をするなど、聞き手が何を体験する作品なのかを明確にしてください。",
 		`市販作品の参考メタデータ（筋書きや表現は使わない）: ${entry.situation}（公開タグ: ${entry.tags.join("、")}）。作品に合う場合だけ抽象的な着想として使い、既存作品のタイトル、台詞、固有名詞、筋書きは使わないでください。`,
-		`今回の設定: ${Object.entries(selection.axes)
-			.map(([axis, value]) => `${axis}=${value}`)
-			.join(
-				"、",
-			)}。軸は独立に選ばれています。矛盾を避けるために既存の定型状況へ戻さず、今回ならではの自然な出来事にまとめてください。使った設定を会話、選択、発見、音の変化に結びつけてください。`,
+		"今回の設定候補: " +
+			Object.entries(selection.axes)
+				.map(([axis, value]) => axis + "=" + value)
+				.join("、") +
+			"。これは発想の種で、全てを採用する義務はありません。聞き手が体験することと今回の目的を先に決め、自然に役立つ値だけを使うか変形し、合わない値は捨ててください。",
+		recent.frequent_terms.length > 0
+			? "語彙頻度の観測（直近" +
+				recent.sample_count +
+				"作品）: " +
+				recent.frequent_terms
+					.map((item) => item.word + "(" + item.count + ")")
+					.join("、") +
+				"。禁止語ではありません。場面に必要なら使えますが、間を埋める定型句として自動反復せず、今回の動作・物・音から具体的な言い方を考えてください。"
+			: "",
 		"条件:",
 		"- ASMRの近接感と音の細部を活かす。睡眠誘導、癒やし、安らぎへ自動で収束させず、場面に合う感情と結末を選ぶ。",
 		"- 全年齢向け。性的な表現、暴力、恐怖は入れない。",
@@ -395,6 +436,7 @@ type ReferenceRecord = {
 	profile_id: string;
 	selected: ReferenceCandidate;
 	candidates: ReferenceCandidate[];
+	selection_seed: number;
 	sha256: string;
 	text: string;
 };
@@ -453,12 +495,14 @@ function generateReference(
 			acoustic_measurement: measurement,
 		};
 	});
-	const selected = selectReference(candidates);
+	const selectionSeed = runSeed(name, "reference:selection");
+	const selected = selectReference(candidates, selectionSeed);
 	fs.copyFileSync(selected.file, refPath);
 	const record: ReferenceRecord = {
 		profile_id: voiceProfile.id,
 		selected,
 		candidates,
+		selection_seed: selectionSeed,
 		sha256: sha256File(refPath),
 		text: config.reference.text,
 	};
@@ -882,6 +926,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			tts_device: ttsDevice,
 			tts_seed: runSeed(name, "tts"),
 			reference_seed: reference.selected.seed,
+			reference_selection_seed: reference.selection_seed,
 			reference_sha256: reference.sha256,
 			candidate_asr_similarity: reference.candidates.map((candidate) => ({
 				seed: candidate.seed,
@@ -918,6 +963,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			voice_preference: {
 				status: "awaiting_owner_feedback",
 				selected_axes: voiceProfile.selected_axes,
+				reference_selection_seed: reference.selection_seed,
 				acoustic_measurement: voiceFeatures,
 				reference_candidates: reference.candidates.map((candidate) => ({
 					seed: candidate.seed,
@@ -927,7 +973,9 @@ async function prepare(date: string, slot?: string): Promise<void> {
 				preference_score: null,
 			},
 			story_specificity: {
-				axes: selection.axes,
+				selected_axis_hints: selection.axes,
+				title: draft.title,
+				hook: draft.hook,
 				chapter_names: draft.chapters.map((chapter) => chapter.name),
 				story_shape_id: draft.shape,
 			},

@@ -179,13 +179,15 @@ describe("yawa daily voice reference", () => {
 			runSeed("yawa-2026-11-08", "tts"),
 		);
 	});
-	test("selects the most intelligible candidate", () => {
+	test("selects a reproducible candidate independently of ASR scores", () => {
 		const candidates: ReferenceCandidate[] = [
 			{ seed: 101, file: "a", asr_similarity: 0.7 },
 			{ seed: 202, file: "b", asr_similarity: 0.9 },
 			{ seed: 303, file: "c", asr_similarity: 0.85 },
 		];
-		expect(selectReference(candidates).seed).toBe(202);
+		expect(selectReference(candidates, 1).seed).toBe(202);
+		expect(selectReference(candidates, 1).seed).toBe(202);
+		expect(selectReference(candidates, 2).seed).toBe(303);
 	});
 });
 

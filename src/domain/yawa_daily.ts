@@ -665,14 +665,15 @@ export type ReferenceCandidate = {
 };
 
 /**
- * ASR類似度は参照文の聞き取りやすさだけに使う。好みは本人の聴取評価で決める。
+ * ASRと音響特徴は記録するだけ。参照候補はrun-seedで選び、好みは本人の聴取評価で決める。
  */
 export function selectReference(
 	candidates: ReferenceCandidate[],
+	selectionSeed: number,
 ): ReferenceCandidate {
-	return [...candidates].sort(
-		(a, b) => b.asr_similarity - a.asr_similarity || a.seed - b.seed,
-	)[0] as ReferenceCandidate;
+	if (candidates.length === 0)
+		throw new Error("Cannot select a reference from an empty candidate list");
+	return candidates[(selectionSeed >>> 0) % candidates.length] as ReferenceCandidate;
 }
 
 function bigrams(text: string): Map<string, number> {

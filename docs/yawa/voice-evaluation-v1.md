@@ -4,9 +4,9 @@
 
 The previous date-rotated voice profiles, common low/dry caption, fixed situation-pattern picker, and fixed chapter-shape endings are retired from production. `config/yawa/daily.yaml` now stores independent voice axes (register, resonance, sweetness, phonation, articulation, and prosody). Each run samples each axis from its own seeded, preference-weighted distribution. Preference weights express the owner's stated starting direction; they are not learned probabilities or hard targets. F0 270–280 Hz remains one exploration cue, not a generation gate.
 
-The reference text stays the same across voice runs so candidate voices can be compared on the same words. Each run samples 3–5 reference seeds, records ASR readability and acoustic measurements for every candidate, and selects by ASR only as a readability proxy. It does not rank personal preference. `experience_evaluation.json` keeps readability, acoustic measurements, pending owner voice feedback, and story-specificity observations in separate fields; none blocks production or publication.
+The reference text stays the same across voice runs so candidate voices can be compared on the same words. Each run samples 3–5 reference seeds, records ASR readability and acoustic measurements for every candidate, and chooses the production reference with a reproducible run-seeded draw independent of ASR and acoustic scores. This is an exploratory choice, not a claim about preference; the candidate WAVs remain available for listening feedback. `experience_evaluation.json` keeps readability, acoustic measurements, pending owner voice feedback, and story-specificity observations in separate fields; none blocks production or publication.
 
-New episodes no longer select historical situation patterns or fixed arc arrays. Their scene axes are sampled independently, and the script model creates a situation, chapter order, and ending from that episode's specific listener experience. Historical YAML pattern entries remain only to interpret older runs. Segment count follows the story; the TTS chunk-size limit and adult-only, rights, provenance, and reproducible-seed records remain operational safeguards.
+New episodes no longer select historical situation patterns or fixed arc arrays. Scene-axis values are open-ended hints; the script model may keep, adapt, or drop them according to the episode's listener experience. Recent vocabulary frequency is included as an advisory signal to reduce stock phrasing, without banning words. Historical YAML pattern entries remain only to interpret older runs. Segment count follows the story; the TTS chunk-size limit and adult-only, rights, provenance, and reproducible-seed records remain operational safeguards.
 
 ## Status
 
@@ -60,7 +60,7 @@ Python音響評価器はPraat/Parselmouth 0.4.7を `uv.lock` で固定し、日�
 
 1. 同じ短い日本語テキストを用意する。母音「あいうえお」、サ行、句末、通常速度とゆっくりした発話を含め、読みと録音条件を固定する。
 2. 日次生成は成人の声のまま、音域・共鳴・甘さ・発声・明瞭さ・抑揚を独立に組み合わせる。好みの方向は重み付けし、低音などの対照も探索から除外しない。同じrunを再実行すれば軸とseedは再現される。測定値は参考情報で、ゲートにしない。
-3. 各runは同一の参照台詞で3〜5 seedの候補を作る。Caption全文、選択軸、model ID、seed、reference SHA-256、ASR類似度、候補別F0・スペクトル・フォルマント等をrunに残す。ASRは読みやすさの参考に限り、好みの選抜には使わない。好みは同じ台詞の聴き比べと所有者フィードバックで決める。場面軸は独立抽選し、モデルがその回の目的から状況・章順・終わり方を作る。旧パターンは歴史比較以外に使わない。
+3. 各runは同一の参照台詞で3〜5 seedの候補を作る。Caption全文、選択軸、model ID、seed、reference SHA-256、ASR類似度、候補別F0・スペクトル・フォルマント等をrunに残す。ASRと音響値で候補を順位付けせず、run seedによる再現可能な抽選を使う。好みは同じ台詞の聴き比べと所有者フィードバックで決める。場面軸は独立抽選した着想候補とし、モデルは目的に合うものだけ使う。章順・終わり方はその回の目的から作り、旧パターンは歴史比較以外に使わない。
 4. 候補から同一話者の短いクリーンな複数クリップを選び、合計約30秒の参照を作る。未処理原音を保存し、ディエッサー処理は別ファイルで行う。
 5. 参照音声を使い、公式モデルID `Aratako/Irodori-TTS-v4-Large-Quantized/int4-weight-only` で同じ評価台詞を生成する。これは隔離した実験runのみで行う。「Large 4.1」は公式モデル名として確認できないため、記録にはモデルIDを使う。
 6. 1か月後にユーザーが好みのrun IDやprofileを返したら、`feedback.template.csv` に記録し、好みprofileを更新する。フィードバックまで日次生成と公開は通常経路で継続する。
