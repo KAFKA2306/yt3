@@ -30,7 +30,7 @@ Treat voice as several interacting layers rather than a single “high and sweet
 
 PromptTTS++ separates speaker identity descriptions from utterance-level style prompts; its results report that style-only prompts did not adequately distinguish speaker individuality. A study on perceptual voice-quality control treats roughness, breathiness, resonance, and weight as separate dimensions and learns them from examples instead of assuming a single acoustic proxy. Irodori v4 accepts both a reference waveform and caption conditioning, so they should be tested separately and together: hold text/seed fixed while changing one condition, then repeat across seeds. The current reference-first workflow changes the caption and seed together, which cannot tell whether a difference came from the design or sampling noise.
 
-The expanded seven-profile YAML now uses broader combinations of pitch, resonance, phonation, articulation, and prosody. It removes the repeated “older, gentle, close, soft-ending” anchor. The diagnostic reference text is now neutral conversation with varied vowels, sibilants, statements, and questions. F0, spectrum, and formants remain advisory measurements; they do not block preparation or publication.
+The expanded twelve-profile YAML now uses broader combinations of pitch, resonance, phonation, articulation, and prosody. It removes the repeated “older, gentle, close, soft-ending” anchor. The diagnostic reference text is now neutral conversation with varied vowels, sibilants, statements, and questions. F0, spectrum, and formants remain advisory measurements; they do not block preparation or publication.
 
 ## Commercial-market keyword sample
 
@@ -55,12 +55,16 @@ DLsite’s own 2020 award release highlights gentle whispering, massage, and ear
 
 The YAML pattern pool uses these public genre keywords as discovery inputs, not as copied titles or plots. It includes adult-only care, companionship, travel, sound walks, radio letters, and light comedy. The source catalogue also contains age-coded and sexualized tags; those were excluded. “Binaural” was not added as an output tag because the current Yawa audio pipeline renders mono.
 
-Sampling weights are frequency tiers (5/4/3/2/1), not estimated sales shares. Selection is history-aware: patterns with lower observed usage relative to their YAML weight are favored, with a deterministic run-name tie break. Every selected pattern and its keyword list are snapshotted into `selection.json`. Compatible story shapes prevent a treatment scene from being forced into a mystery arc. No new release gate was added.
+The first YAML draft used frequency tiers (5/4/3/2/1), but those tiers risked narrowing exploration despite not being sales shares. The current design gives every situation pattern equal weight (1) and uses recent history with a deterministic run-name tie break. Each pattern now constrains its setting axes to options compatible with its premise; the loader checks that every axis and option exists. The prompt asks the script to carry the selected place, narrator role, story goal, and sound world into the actual scene. Every selected pattern and its keyword list are snapshotted into `selection.json`.
+
+`task yawa:diversity:report` independently summarizes the latest configured window of runs: situation, shape, voice profile, nonverbal cue, setting-axis coverage and entropy, Japanese word frequencies, pairwise lexical overlap, and available acoustic reference measurements. It writes JSON and Markdown under `logs/`. The report is advisory, is not called by production or publication, and has no threshold that can block either path. Its findings guide YAML design revisions; it does not trigger automatic retries or release decisions.
+
+The first snapshot on 2026-11-13 covered 10 readable runs. It recorded 3 of 15 situation patterns, 4 of 12 voice profiles across 7 runs with profile data, and 1 of 6 nonverbal cues in the single run with cue data (nine runs had no cue record). The most frequent lexical items after common function words were omitted were `少し` (61 occurrences) and `ゆっくり` (52). Narrator personality and story goal were present in only 2 of 10 selections, while situation patterns were missing from 7 of 10. This snapshot drove the current equal-weight pattern selection, premise-specific axis options, and a prompt instruction to use concrete situation vocabulary.
 
 ## Limits and next learning step
 
 - The ASMR Den counts describe that aggregator’s catalog; they do not establish what sells or what the Yawa audience prefers.
-- The current voice metrics are not a voice-identity embedding and do not measure nasal resonance or perceived sweetness reliably.
+- The current voice metrics are not a voice-identity embedding and do not measure nasal resonance or perceived sweetness reliably. The standalone diversity report describes available acoustic values; it does not infer perceived preference from them.
 - The daily profile caption is still an instruction, not a guaranteed control. Record the caption, seed, reference hash, F0, spectrum, formants, and ASR score; keep all measurements advisory.
 - After about one month, collect the owner’s blind preference ratings by run ID. Keep “liked voice,” “liked scene,” and overall preference separate so voice changes are not confused with story changes.
 

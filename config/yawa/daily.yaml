@@ -17,6 +17,7 @@ script:
     - 選ばれた場所・小道具・時間・音のうち最低3つを、具体的な行動や出来事に結びつける。
     - 章ごとに会話の目的を変える。説明、質問、観察、軽い冗談、回想、決断、余韻を組み合わせる。
     - 一文の長さと語尾を散らす。全編を囁きや睡眠誘導の定型句に固定しない。
+    - 「少し」「ゆっくり」「今夜」などの汎用語に頼りすぎず、選ばれた状況固有の動作・道具・音を具体的な語彙で描く。
 tts:
   # backend と device を明示する。自動の代替はしない（失敗は失敗として止める）。
   backend: irodori-v4.1-small
@@ -208,95 +209,261 @@ arc:
     散策・音探し型: [導入, 案内, 発見, 回想, ほどき, 沈み, 締め]
     短い物語型: [導入, 回想, 発見, 山場, ほどき, 沈み, 締め]
     便り・ラジオ型: [導入, 手紙, 余談, 静止, ほどき, 沈み, 締め]
-  # Keyword families and weights are discovery priors from public product tags, not sales shares.
-  # Each selected pattern is recorded in selection.json; shape choices are limited to compatible arcs.
+# Keywords come from public genre tags. Every situation gets equal exploration weight;
+# tag frequency is not treated as a target distribution or sales share.
+# Pattern-specific axes keep the selected setting coherent with the premise.
 situation_patterns:
   - id: whispered_ear_care
-    weight: 5
+    weight: 1
     market_keywords: [ささやき, 耳かき, 睡眠導入]
     premise: 成人の施術者が成人の客の希望を聞き、素材や道具を変えながら耳のケアをする。
     shapes: [施術と休息型, 静かな作業型]
+    axis_options:
+      place: [耳ケア専門店, 小さな施術室]
+      prop: [竹の耳かき, 綿棒, やわらかいブラシ]
+      time: [日付が変わる頃, 閉店後]
+      narrator_role: [耳ケアの施術者]
+      narrator_personality: [几帳面, 落ち着いた専門家, 率直で面倒見がよい]
+      story_goal: [道具の使い方を試す, 施術の順番を決める]
+      sound_world: [ささやき, 耳かきの音, 水音]
+      mood: [安らぎ, 静けさ, ぬくもり]
+      interaction: [手順の確認, 音を一緒に聞き比べる]
+      emotional_turn: [緊張がほどける, 小さな発見がある]
   - id: comfort_and_reassurance
-    weight: 5
+    weight: 1
     market_keywords: [癒し, 慰め, 寄り添い・付き添い]
     premise: 成人の友人や同僚が、疲れの理由を少しずつ聞き、具体的な小さな助けを一緒に見つける。
     shapes: [日常会話型, 回想型, 単峰]
+    axis_options:
+      place: [縁側, 夜の喫茶店, 共同の台所]
+      prop: [湯呑み, 古い時計, 手紙]
+      time: [夕暮れ, 雨の日の昼下がり, 日付が変わる頃]
+      narrator_role: [同じ職場の先輩, 古い友人, 近所の店主]
+      narrator_personality: [率直で面倒見がよい, 物静かで観察好き, 少し不器用]
+      story_goal: [雨が止むまで過ごす, 明日の予定を一緒に決める, 古い約束を果たす]
+      sound_world: [雨, 湯が沸く音, 紙をめくる音]
+      mood: [安らぎ, ぬくもり, 仕事終わりの解放感]
+      interaction: [聞き役と話し手, 軽い掛け合い]
+      emotional_turn: [緊張がほどける, 距離が少し縮まる, 何気ない会話が安心に変わる]
   - id: sleep_companion
-    weight: 4
+    weight: 1
     market_keywords: [添い寝, 膝枕, 甘え・愛情]
     premise: 成人の恋人同士が一晩を過ごし、寝支度の会話や静かな環境音を共有して眠りにつく。
     shapes: [単峰, 回想型, 二峰]
+    axis_options:
+      place: [縁側, 温泉宿, 夜行列車]
+      prop: [タオル, 湯呑み, ランプ, 古い時計]
+      time: [日付が変わる頃, 雪の降り始め, 旅館の夕食後]
+      narrator_role: [成人の恋人]
+      narrator_personality: [率直で面倒見がよい, 少し不器用, 茶目っ気がある]
+      story_goal: [寝る前の支度を整える, 明日の予定を一緒に決める, 雨が止むまで過ごす]
+      sound_world: [ささやき, 雨, 暖炉, 遠い列車]
+      mood: [安らぎ, ぬくもり, 余韻]
+      interaction: [軽い掛け合い, 聞き役と話し手]
+      emotional_turn: [距離が少し縮まる, 何気ない会話が安心に変わる]
   - id: ear_massage
-    weight: 4
+    weight: 1
     market_keywords: [耳マッサージ, リラックス, 優しい声]
     premise: 成人の施術者が強さや順番を確認しながら耳まわりをケアし、聞き手の緊張をほどく。
     shapes: [施術と休息型, 静かな作業型]
+    axis_options:
+      place: [耳ケア専門店, 小さな施術室]
+      prop: [タオル, やわらかいブラシ, 小さな鈴]
+      time: [閉店後, 雨上がりの夜]
+      narrator_role: [耳ケアの施術者]
+      narrator_personality: [落ち着いた専門家, 率直で面倒見がよい, 几帳面]
+      story_goal: [施術の順番を決める, 道具の使い方を試す]
+      sound_world: [マッサージ, ささやき, 水音]
+      mood: [安らぎ, 静けさ, ぬくもり]
+      interaction: [手順の確認, ゆっくりした案内]
+      emotional_turn: [緊張がほどける, 距離が少し縮まる]
   - id: massage_reset
-    weight: 4
+    weight: 1
     market_keywords: [マッサージ, リラックス, 睡眠導入]
     premise: 成人のセラピストが肩や手を無理のない範囲でほぐし、仕事終わりの休息を手伝う。
     shapes: [施術と休息型, 静かな作業型]
+    axis_options:
+      place: [小さな施術室, ヘッドスパ, 温泉宿]
+      prop: [タオル, 湯呑み, やわらかいブラシ]
+      time: [閉店後, 夕暮れ, 雨上がりの夜]
+      narrator_role: [落ち着いたセラピスト, ヘッドスパ担当, 旅館の女将]
+      narrator_personality: [落ち着いた専門家, 率直で面倒見がよい, 物静かで観察好き]
+      story_goal: [施術の順番を決める, 仕事終わりの休み方を見つける]
+      sound_world: [マッサージ, 水音, ささやき]
+      mood: [安らぎ, 仕事終わりの解放感, ぬくもり]
+      interaction: [手順の確認, ゆっくりした案内]
+      emotional_turn: [緊張がほどける, 何気ない会話が安心に変わる]
   - id: hair_and_head_spa
-    weight: 3
+    weight: 1
     market_keywords: [シャンプー, ヘッドマッサージ, 水音]
     premise: 成人の美容師が閉店後のヘッドスパで、湯音やタオル、髪を整える音を丁寧に聞かせる。
     shapes: [施術と休息型, 静かな作業型]
+    axis_options:
+      place: [ヘッドスパ, 小さな施術室]
+      prop: [タオル, やわらかいブラシ, 木の櫛]
+      time: [閉店後, 雨上がりの夜]
+      narrator_role: [ヘッドスパ担当]
+      narrator_personality: [几帳面, 落ち着いた専門家, 好奇心旺盛]
+      story_goal: [髪を整える手順を試す, 施術の順番を決める]
+      sound_world: [水音, 髪を梳く音, ささやき]
+      mood: [安らぎ, 静けさ, ぬくもり]
+      interaction: [手順の確認, 音を一緒に聞き比べる]
+      emotional_turn: [緊張がほどける, 小さな発見がある]
   - id: guided_sleep
-    weight: 3
+    weight: 1
     market_keywords: [呼吸音, 子守唄, 寝かしつけ]
     premise: 成人の案内役が呼吸の数え方や短い歌を使い、聞き手が自分のペースで休めるよう導く。
     shapes: [単峰, 後半の山]
+    axis_options:
+      place: [縁側, 温泉宿, 小さなラジオ局]
+      prop: [ランプ, 小さなオルゴール, タオル]
+      time: [日付が変わる頃, 明け方前, 旅館の夕食後]
+      narrator_role: [睡眠導入の案内人, 夜ラジオの話し手, 旅館の女将]
+      narrator_personality: [物静かで観察好き, 率直で面倒見がよい, 落ち着いた専門家]
+      story_goal: [呼吸を数えて眠りにつく, 短い歌で夜を締めくくる, 寝る前の支度を整える]
+      sound_world: [ささやき, 暖炉, 夜の虫の声, オルゴールの音]
+      mood: [安らぎ, 静けさ, ぬくもり]
+      interaction: [ゆっくりした案内, 聞き役と話し手]
+      emotional_turn: [緊張がほどける, 何気ない会話が安心に変わる]
   - id: everyday_companionship
-    weight: 3
+    weight: 1
     market_keywords: [日常, 親密, カジュアルな会話]
     premise: 成人の友人やパートナーと家で飲み物を用意し、日中の出来事を軽いやり取りで振り返る。
     shapes: [日常会話型, 回想型]
+    axis_options:
+      place: [縁側, 夜の喫茶店, 共同の台所]
+      prop: [湯呑み, 古い時計, 手紙]
+      time: [夕暮れ, 雨の日の昼下がり, 閉店後]
+      narrator_role: [古い友人, 同じ職場の先輩, 成人の恋人]
+      narrator_personality: [乾いた冗談好き, 率直で面倒見がよい, 少し不器用]
+      story_goal: [明日の予定を一緒に決める, 届かなかった手紙を渡す, 古い約束を果たす]
+      sound_world: [雨, 湯が沸く音, 紙をめくる音]
+      mood: [軽い冗談, ぬくもり, 仕事終わりの解放感]
+      interaction: [軽い掛け合い, 控えめな冗談, 聞き役と話し手]
+      emotional_turn: [距離が少し縮まる, 失敗を笑いに変える, 何気ない会話が安心に変わる]
   - id: onsen_getaway
-    weight: 2
+    weight: 1
     market_keywords: [温泉, 旅行, 添い寝]
     premise: 成人同士の小旅行で、宿への道中、湯上がり、就寝前の休息をひと続きに描く。
     shapes: [散策・音探し型, 後半の山]
+    axis_options:
+      place: [温泉宿, 夜行列車, 山あいの宿]
+      prop: [切符, 地図, タオル, 湯上がりの瓶]
+      time: [夕暮れ, 雪の降り始め, 旅館の夕食後]
+      narrator_role: [成人の旅案内人, 旅館の女将, 成人の恋人]
+      narrator_personality: [好奇心旺盛, 物静かで観察好き, 落ち着いた専門家]
+      story_goal: [宿までの道を見つける, 湯上がりに休む場所を決める, 旅の行き先を決める]
+      sound_world: [水音, 遠い列車, 足音, 雨]
+      mood: [安らぎ, 好奇心, 旅先の高揚]
+      interaction: [ゆっくりした案内, 音を一緒に聞き比べる]
+      emotional_turn: [小さな発見がある, 緊張がほどける, 距離が少し縮まる]
   - id: nature_sound_walk
-    weight: 2
+    weight: 1
     market_keywords: [自然音, 散策, 環境音]
     premise: 成人の案内人と夜明け前の散策をし、雨粒や風、足音などを聞き比べながら静けさを見つける。
     shapes: [散策・音探し型, 二峰]
+    axis_options:
+      place: [温室, 神社の参道, 海辺の遊歩道]
+      prop: [地図, 小さな鈴, ランプ]
+      time: [明け方前, 雨上がりの夜, 夕暮れ]
+      narrator_role: [成人の旅案内人, 夜間の博物館案内人, 港の宿直係]
+      narrator_personality: [好奇心旺盛, 物静かで観察好き, 少し不器用]
+      story_goal: [音の正体を突き止める, 雨が止むまで過ごす, 忘れ物を探す]
+      sound_world: [雨, 波の音, 足音, 夜の虫の声]
+      mood: [静けさ, 好奇心, 穏やかな不思議]
+      interaction: [ゆっくりした案内, 音を一緒に聞き比べる]
+      emotional_turn: [小さな発見がある, 不安が好奇心に変わる, 緊張がほどける]
   - id: late_night_radio
-    weight: 2
+    weight: 1
     market_keywords: [ストーリーテリング, 手紙, 睡眠導入]
     premise: 成人の深夜ラジオパーソナリティが一通の便りを読み、短い雑談と余韻を一人の聞き手に届ける。
     shapes: [便り・ラジオ型, 回想型]
+    axis_options:
+      place: [小さなラジオ局, 夜の喫茶店]
+      prop: [手紙, 古い時計, ランプ]
+      time: [日付が変わる頃, 雨上がりの夜, 閉店後]
+      narrator_role: [夜ラジオの話し手]
+      narrator_personality: [乾いた冗談好き, 物静かで観察好き, 好奇心旺盛]
+      story_goal: [深夜放送の便りに答える, 届かなかった手紙を渡す, 古い約束を果たす]
+      sound_world: [紙をめくる音, ささやき, 雨, 古い時計の音]
+      mood: [懐かしさ, 余韻, ぬくもり]
+      interaction: [聞き役と話し手, 控えめな冗談]
+      emotional_turn: [昔の記憶がつながる, 距離が少し縮まる, 何気ない会話が安心に変わる]
   - id: light_daily_comedy
-    weight: 2
+    weight: 1
     market_keywords: [日常生活, からかい, コメディ]
     premise: 成人の友人や同僚が小さな失敗を笑いに変え、軽い冗談のあとに穏やかな休息へ移る。
     shapes: [日常会話型, 二峰]
+    axis_options:
+      place: [夜の喫茶店, 修理工房, 共同の台所]
+      prop: [古い時計, 木箱, 湯呑み]
+      time: [閉店後, 夕暮れ, 雨の日の昼下がり]
+      narrator_role: [同じ職場の先輩, 古い友人, 修理工房の職人]
+      narrator_personality: [乾いた冗談好き, 少し不器用, 茶目っ気がある]
+      story_goal: [閉店までに品物を修理する, 小さな展示を完成させる, 忘れ物を探す]
+      sound_world: [古い時計の音, 鈴の音, 紙をめくる音]
+      mood: [軽い冗談, 仕事終わりの解放感, ぬくもり]
+      interaction: [軽い掛け合い, 控えめな冗談]
+      emotional_turn: [失敗を笑いに変える, 距離が少し縮まる, 何気ない会話が安心に変わる]
   - id: reunion_memory
-    weight: 2
+    weight: 1
     market_keywords: [懐かしさ, 友情, ロマンス]
     premise: 久しぶりに会った成人の友人や恋人が、昔の場所や音をきっかけに近況と記憶を交わす。
     shapes: [回想型, 後半の山]
+    axis_options:
+      place: [古書店, 縁側, 港の待合室, 海辺の遊歩道]
+      prop: [手紙, 切符, 古い時計, 地図]
+      time: [夕暮れ, 雨上がりの夜, 雪の降り始め]
+      narrator_role: [古い友人, 成人の恋人, 近所の店主]
+      narrator_personality: [物静かで観察好き, 少し不器用, 率直で面倒見がよい]
+      story_goal: [古い約束を果たす, 届かなかった手紙を渡す, 忘れ物を探す]
+      sound_world: [遠い列車, 波の音, 紙をめくる音, 雨]
+      mood: [懐かしさ, 再会の喜び, 余韻]
+      interaction: [聞き役と話し手, 軽い掛け合い]
+      emotional_turn: [昔の記憶がつながる, 距離が少し縮まる, 再会の喜びが安心に変わる]
   - id: quiet_fantasy_care
     weight: 1
     market_keywords: [ファンタジー, 癒し, 案内]
     premise: 成人の旅人が不思議な宿や庭を訪れ、案内人と静かな儀式や環境音を体験して休む。
     shapes: [散策・音探し型, 短い物語型]
+    axis_options:
+      place: [温室, 神社の参道, 山あいの宿]
+      prop: [小さな鈴, ランプ, 木箱, 小さなオルゴール]
+      time: [明け方前, 雪の降り始め, 星がよく見える夜]
+      narrator_role: [成人の旅案内人, 旅館の女将, 夜間の博物館案内人]
+      narrator_personality: [好奇心旺盛, 物静かで観察好き, 落ち着いた専門家]
+      story_goal: [小さな展示を完成させる, 音の正体を突き止める, 旅の行き先を決める]
+      sound_world: [暖炉, 鈴の音, 夜の虫の声, オルゴールの音]
+      mood: [静けさ, 穏やかな不思議, 好奇心]
+      interaction: [ゆっくりした案内, 音を一緒に聞き比べる]
+      emotional_turn: [小さな発見がある, 不安が好奇心に変わる, 緊張がほどける]
   - id: gentle_sound_mystery
     weight: 1
     market_keywords: [小さな謎, 音探し, 物語]
     premise: 成人の二人が部屋に響く小さな音の正体を探し、見つけた品にまつわる穏やかな記憶を話す。
     shapes: [短い物語型, 散策・音探し型]
+    axis_options:
+      place: [古書店, 温室, 港の待合室, 修理工房]
+      prop: [古い時計, 小さな鈴, 木箱, 手紙]
+      time: [日付が変わる頃, 雨の日の昼下がり, 雪の降り始め]
+      narrator_role: [古道具の鑑定士, 図書館司書, 修理工房の職人, 港の宿直係]
+      narrator_personality: [好奇心旺盛, 几帳面, 物静かで観察好き]
+      story_goal: [音の正体を突き止める, 忘れ物を探す, 小さな展示を完成させる]
+      sound_world: [鈴の音, 古い時計の音, 紙をめくる音, 足音]
+      mood: [好奇心, 穏やかな不思議, 懐かしさ]
+      interaction: [音を一緒に聞き比べる, 手順の確認]
+      emotional_turn: [小さな発見がある, 昔の記憶がつながる, 不安が好奇心に変わる]
 axes:
-  place: [縁側, 夜の喫茶店, 耳ケア専門店, ヘッドスパ, 温泉宿, 夜行列車, 古書店, 小さなラジオ局, 温室, 港の待合室, 神社の参道, 海辺の遊歩道]
-  prop: [竹の耳かき, 綿棒, やわらかいブラシ, タオル, 湯呑み, 古い時計, 手紙, 小さな鈴, 切符, 地図, ランプ, 木箱]
-  time: [日付が変わる頃, 明け方前, 雨上がりの夜, 雪の降り始め, 閉店後, 夕暮れ, 雨の日の昼下がり]
-  narrator_role: [耳ケアの施術者, ヘッドスパ担当, 夜ラジオの話し手, 成人の旅案内人, 旅館の女将, 同じ職場の先輩, 古い友人, 成人の恋人, 近所の店主, 図書館司書, 古道具の鑑定士, 夜間の博物館案内人, 修理工房の職人, 港の宿直係]
+  place: [縁側, 夜の喫茶店, 耳ケア専門店, 小さな施術室, ヘッドスパ, 温泉宿, 山あいの宿, 夜行列車, 古書店, 小さなラジオ局, 温室, 港の待合室, 神社の参道, 海辺の遊歩道, 共同の台所, 修理工房]
+  prop: [竹の耳かき, 綿棒, やわらかいブラシ, タオル, 湯呑み, 古い時計, 手紙, 小さな鈴, 切符, 地図, ランプ, 木箱, 木の櫛, 小さなオルゴール, 湯上がりの瓶]
+  time: [日付が変わる頃, 明け方前, 雨上がりの夜, 雪の降り始め, 閉店後, 夕暮れ, 雨の日の昼下がり, 旅館の夕食後, 星がよく見える夜]
+  narrator_role: [耳ケアの施術者, ヘッドスパ担当, 夜ラジオの話し手, 成人の旅案内人, 旅館の女将, 同じ職場の先輩, 古い友人, 成人の恋人, 近所の店主, 図書館司書, 古道具の鑑定士, 夜間の博物館案内人, 修理工房の職人, 港の宿直係, 睡眠導入の案内人, 落ち着いたセラピスト]
   narrator_personality: [好奇心旺盛, 乾いた冗談好き, 率直で面倒見がよい, 物静かで観察好き, 少し不器用, 几帳面, 茶目っ気がある, 落ち着いた専門家]
-  story_goal: [閉店までに品物を修理する, 音の正体を突き止める, 届かなかった手紙を渡す, 旅の行き先を決める, 忘れ物を探す, 小さな展示を完成させる, 深夜放送の便りに答える, 古い約束を果たす, 道具の使い方を試す, 雨が止むまで過ごす]
-  sound_world: [ささやき, 耳かきの音, マッサージ, 水音, 雨, 暖炉, 遠い列車, 波の音, 鈴の音, 紙をめくる音, 足音, 夜の虫の声]
-  mood: [安らぎ, 懐かしさ, 静けさ, ぬくもり, 余韻, 好奇心, 軽い冗談, 再会の喜び, 仕事終わりの解放感, 穏やかな不思議]
+  story_goal: [閉店までに品物を修理する, 音の正体を突き止める, 届かなかった手紙を渡す, 旅の行き先を決める, 忘れ物を探す, 小さな展示を完成させる, 深夜放送の便りに答える, 古い約束を果たす, 道具の使い方を試す, 雨が止むまで過ごす, 寝る前の支度を整える, 明日の予定を一緒に決める, 施術の順番を決める, 仕事終わりの休み方を見つける, 髪を整える手順を試す, 呼吸を数えて眠りにつく, 短い歌で夜を締めくくる, 宿までの道を見つける, 湯上がりに休む場所を決める]
+  sound_world: [ささやき, 耳かきの音, マッサージ, 水音, 雨, 暖炉, 遠い列車, 波の音, 鈴の音, 紙をめくる音, 足音, 夜の虫の声, 湯が沸く音, 髪を梳く音, 古い時計の音, オルゴールの音]
+  mood: [安らぎ, 懐かしさ, 静けさ, ぬくもり, 余韻, 好奇心, 軽い冗談, 再会の喜び, 仕事終わりの解放感, 穏やかな不思議, 旅先の高揚]
   interaction: [ゆっくりした案内, 軽い掛け合い, 控えめな冗談, 聞き役と話し手, 手順の確認, 音を一緒に聞き比べる]
-  emotional_turn: [緊張がほどける, 距離が少し縮まる, 小さな発見がある, 昔の記憶がつながる, 失敗を笑いに変える, 何気ない会話が安心に変わる]
+  emotional_turn: [緊張がほどける, 距離が少し縮まる, 小さな発見がある, 昔の記憶がつながる, 失敗を笑いに変える, 何気ない会話が安心に変わる, 不安が好奇心に変わる, 再会の喜びが安心に変わる]
 diversity:
   recent_window: 10
 # 声は動画ごとに変える。profile ごとに音域・共鳴・発声・抑揚を大きく離し、各動画内では一つの声像を保つ。

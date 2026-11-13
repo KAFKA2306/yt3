@@ -31,6 +31,9 @@ const SituationPatternSchema = z.object({
 	market_keywords: z.array(z.string().min(1)).min(1),
 	premise: z.string().min(20),
 	shapes: z.array(z.string().min(1)).min(1),
+	axis_options: z
+		.record(z.string(), z.array(z.string().min(1)).min(1))
+		.optional(),
 });
 
 const VoiceProfileSchema = z.object({
@@ -250,7 +253,7 @@ export function pickLeast(
 	);
 }
 
-/** Market-derived patterns use frequency tiers while history keeps recent use near those proportions. */
+/** Configured exploration weights set the target use rate; recent history favors underused patterns. */
 export function pickWeightedLeast(
 	options: Array<{ id: string; weight: number }>,
 	used: string[],
@@ -295,14 +298,17 @@ export function chooseSelection(
 		`${runName}:shape`,
 	);
 	const axes = Object.fromEntries(
-		Object.entries(config.axes).map(([axis, options]) => [
-			axis,
-			pickLeast(
-				options,
-				history.flatMap((h) => (h.axes?.[axis] ? [h.axes[axis]] : [])),
-				`${runName}:${axis}`,
-			),
-		]),
+		Object.entries(config.axes).map(([axis, allOptions]) => {
+			const options = situationPattern.axis_options?.[axis] ?? allOptions;
+			return [
+				axis,
+				pickLeast(
+					options,
+					history.flatMap((h) => (h.axes?.[axis] ? [h.axes[axis]] : [])),
+					`${runName}:${situationPattern.id}:${axis}`,
+				),
+			];
+		}),
 	);
 	const title_form = Number(
 		pickLeast(
@@ -498,6 +504,20 @@ export function loadYawaConfig(root: string): YawaConfig {
 				throw new Error(
 					`situation pattern '${pattern.id}' uses unknown shape '${shape}'`,
 				);
+	for (const pattern of config.situation_patterns) {
+		for (const [axis, options] of Object.entries(pattern.axis_options ?? {})) {
+			const configuredOptions = config.axes[axis];
+			if (!configuredOptions)
+				throw new Error(
+					`situation pattern '${pattern.id}' uses unknown axis '${axis}'`,
+				);
+			for (const option of options)
+				if (!configuredOptions.includes(option))
+					throw new Error(
+						`situation pattern '${pattern.id}' uses unknown ${axis} option '${option}'`,
+					);
+		}
+	}
 	for (const form of config.metadata.title_forms)
 		for (const [, axis] of form.matchAll(/\{(\w+)\}/g))
 			if (!config.axes[axis as string])

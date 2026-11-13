@@ -93,6 +93,10 @@ tasks:
       - task yawa:prepare DATE={{.DATE}} SLOT={{.SLOT}}
       - task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
 
+  yawa:diversity:report:
+    desc: "Generate an advisory diversity report for recent Yawa runs; does not affect production or publication"
+    cmds: ["bun src/scripts/yawa_diversity_report.ts"]
+
   byosan:daily:
     desc: "Research, produce, and audit one 秒算マネー feature without publishing"
     cmds:
