@@ -29,16 +29,19 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - A byosan run is publish-ready only when preparation prints `[product-release-gate] PASS ... artifact_sha256=<sha256>`, `PUBLISH_READY_RUN=<run-id>`, and `PUBLISH_COMMAND=...`. Record the run id, SHA-256, and command in the governing Issue. If any condition fails, stop. Do not bypass or retry around a failed gate.
 - `DATE` must be given explicitly in `YYYY-MM-DD`. Never infer today.
 - Byosan publishes one or more videos a day, never zero. Each run is named `<date>-daily-<HHmm>` (`BYOSAN_SUFFIX`); an already-published day does not stop another run, and only a source reused within `discovery.repeat_window_days` is rejected. The timer slots are in `systemd/yt3-byosan-daily.timer`.
-- Standing authorization: daily publication of `yawa`, `byosan`, and `humanity` through their canonical Taskfile entries once the gate passes. Manual `yawa` publication outside the daily path is not covered. `yawa` metadata changes go only through `task yawa:metadata`.
+- **Publication authorization is per run and always explicit (owner instruction, 2026-11-07, binding).** An agent publishes only after the owner names that exact run-id and artifact in the current conversation. A standing or daily authorization does not cover agent publication. An agent must not run `task publish`, `task yawa:daily`, `task byosan:daily`, or `task humanity:*` publish paths on its own initiative. `yawa` metadata changes also need explicit per-run authorization.
+- **Run inputs are always explicit.** `DATE`, `SLOT`, `RUN`, and profile must be supplied by the owner or taken from the run's own record; never inferred. Missing credentials (for example `config/.env.yawa`) stop the run and are reported as blocked; agents do not create or fetch them.
 - Publication is VERIFIED only after remote receipt and read-back.
 
 ## Autonomous operations
 
 - Commit after the checks that cover the change pass, staging only the paths you own.
+- Replace, do not layer: when a new mechanism supersedes an old one, delete the old code, config keys, tests, and documentation lines in the same change. Keep no compatibility shims or spare paths. Before deleting, confirm by type check and search that nothing references it, and run the new path once end to end.
 - Push each commit to `origin` immediately.
 - Merge a PR with `gh pr merge --merge` when exact-head CI passes. Do not squash or rebase.
 - Close an Issue only after its fix is merged to `main` and the acceptance evidence is recorded in it.
-- Keep branches and Issues few. Delete a branch, local and remote, once its PR is merged. Fold Issues that overlap into one, and close an Issue that no longer applies with the reason recorded in it. Open a new Issue only for work that no open Issue covers.
+- **One-branch rule (owner mandate, 2026-11-07, binding):** `main` is the only branch. Commit and push to `main` directly. Do not create feature, subagent, or `env-refresh/*` branches. A branch that already exists must be folded into `main` and deleted once its work is merged; deleting a branch whose work is not merged still needs the owner's instruction.
+- Keep Issues few. Delete a branch, local and remote, once its PR is merged. Fold Issues that overlap into one, and close an Issue that no longer applies with the reason recorded in it. Open a new Issue only for work that no open Issue covers.
 - Not covered, and requiring the owner's explicit instruction: force push, deleting a branch whose work is not merged, deletion of run data or published videos, billing, and handling of secrets or contact details.
 
 ## Byosan prompt and constraint policy
@@ -67,3 +70,11 @@ Script quality is steered by guidance lines in `dialogue_style.guidance` (direct
 - Execution runs as the `kafka` account, never as root or with `sudo`.
 - Do not read out or display `.env` files, tokens, OAuth credentials, or contact details. Scripts check only whether a value is present. An empty value must not overwrite a non-empty one.
 - Personal contact details never go into external requests, repositories, videos, PRs, Issues, or logs.
+
+## Environment refresh
+
+- The hourly loop in [docs/standard/environment-refresh.md](docs/standard/environment-refresh.md) runs `task env:refresh` through `systemd/yt3-env-refresh.timer`. Its research, change, measurement, rollback, and ledger rules are owned by that standard.
+- Each cycle makes one bounded change with a measurement that can fail. Adopt only measured improvements; record outcomes in `logs/environment-refresh.jsonl`.
+- Cycles commit to `main` under the one-branch rule. They never merge, publish, delete user data, force-push, or run sudo. sudo-only steps are recorded as `blocked`.
+- A dirty working tree stops the cycle. Other sessions' changes are reported, not reverted.
+- Other repositories receive proposals in the ledger, not edits.

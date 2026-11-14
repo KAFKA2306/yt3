@@ -12,6 +12,7 @@ import {
 	irodoriCall,
 	loadYawaConfig,
 	type Performance,
+	parseYawaJson,
 	preparationAction,
 	type ScriptDraft,
 	ScriptDraftSchema,
@@ -366,15 +367,6 @@ function validateTtsInputs(draft: ScriptDraft): void {
 	}
 }
 
-function parseJson(text: string): unknown {
-	return JSON.parse(
-		text
-			.trim()
-			.replace(/^```(?:json)?\s*/i, "")
-			.replace(/```\s*$/, ""),
-	);
-}
-
 function generateScript(
 	dir: string,
 	tools: { tts: string[]; images: string[] },
@@ -407,7 +399,7 @@ function generateScript(
 				{ cwd: tempDir },
 			);
 			draft = ScriptDraftSchema.parse(
-				parseJson(fs.readFileSync(answer, "utf8")),
+				parseYawaJson(fs.readFileSync(answer, "utf8")),
 			);
 		} finally {
 			fs.removeSync(tempDir);

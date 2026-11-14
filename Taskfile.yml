@@ -12,6 +12,10 @@ tasks:
     desc: "Clone OpenMontage outside the repository at the pinned ref and install its Remotion composer (the byosan visual renderer)"
     cmds: ["bun src/scripts/setup_openmontage.ts"]
 
+  lexicon:report:
+    desc: "Report vocabulary distribution (MATTR, pairwise Jaccard, document frequency) of generated scripts (CLI_ARGS: humanity|yawa|byosan)"
+    cmds: ["uv run --no-project scripts/lexicon_report.py {{.CLI_ARGS}}"]
+
   sync:deps:
     desc: "Install Bun dependencies from the committed lockfile into node_modules (fails when bun.lock is stale)"
     cmds: ["bun install --frozen-lockfile"]
@@ -72,8 +76,12 @@ tasks:
         fi
       - bun src/scripts/yawa_validate.ts {{.DATE}} {{.SLOT}}
 
+  yawa:diversity-audit:
+    desc: "Compare completed Yawa runs independently (CLI args: [--listening observations.json] <run-name> <run-name> [...])"
+    cmds: ["bun src/scripts/yawa_diversity_audit.ts {{.CLI_ARGS}}"]
+
   yawa:metadata:
-    desc: "Rewrite the title, description and tags of one published 夜話アーカイブ episode to the current rules, then read back and record it (RUN=yawa-YYYY-MM-DD[-slot])"
+    desc: "Apply saved metadata to one published 夜話アーカイブ episode, then read back and record it (RUN=yawa-YYYY-MM-DD[-slot])"
     cmds:
       - bun src/scripts/yawa_metadata.ts {{.RUN}}
 
@@ -92,10 +100,6 @@ tasks:
     cmds:
       - task yawa:prepare DATE={{.DATE}} SLOT={{.SLOT}}
       - task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
-
-  yawa:diversity:report:
-    desc: "Generate an advisory diversity report for recent Yawa runs; does not affect production or publication"
-    cmds: ["bun src/scripts/yawa_diversity_report.ts"]
 
   byosan:daily:
     desc: "Research, produce, and audit one 秒算マネー feature without publishing"
@@ -249,3 +253,16 @@ tasks:
   improve:report:
     desc: "Generate the improvement report directly from run evidence"
     cmds: ["bun src/scripts/improve_report.ts"]
+
+  env:refresh:
+    desc: "Run one autonomous dev-environment refresh cycle (DRY_RUN=1 prints the command only)"
+    cmds: ["bash scripts/env_refresh.sh"]
+
+  env:refresh:install:
+    desc: "Install and enable the hourly environment refresh timer (systemd user)"
+    cmds:
+      - mkdir -p "$HOME/.config/systemd/user"
+      - cp systemd/yt3-env-refresh.service systemd/yt3-env-refresh.timer "$HOME/.config/systemd/user/"
+      - systemctl --user daemon-reload
+      - systemctl --user enable --now yt3-env-refresh.timer
+      - systemctl --user list-timers yt3-env-refresh.timer --no-pager

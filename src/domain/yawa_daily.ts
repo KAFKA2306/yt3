@@ -4,6 +4,9 @@ import * as yaml from "js-yaml";
 import { z } from "zod";
 import type { AuditCheck } from "./types.js";
 
+export const YAWA_BUCKET = "yawa_archive";
+export const YAWA_RUN_NAME = /^yawa-\d{4}-\d{2}-\d{2}(-[a-z0-9]+)?$/;
+
 const CreativeSchema = z.record(z.string(), z.unknown());
 
 const RuntimeSchema = z
@@ -209,6 +212,15 @@ export function loadYawaConfig(root: string): YawaConfig {
 		...RuntimeSchema.parse(read("config/yawa/runtime.yaml")),
 		creative: CreativeSchema.parse(read("config/yawa/daily.yaml")),
 	};
+}
+
+export function parseYawaJson(text: string): unknown {
+	return JSON.parse(
+		text
+			.trim()
+			.replace(/^```(?:json)?\s*/i, "")
+			.replace(/```\s*$/, ""),
+	);
 }
 
 export function capabilities(config: YawaConfig): {

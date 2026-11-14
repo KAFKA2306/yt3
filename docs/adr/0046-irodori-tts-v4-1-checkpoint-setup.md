@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted（導入手順まで。音声生成の実行は未検証）
+Accepted（導入手順と単発合成まで検証済み。2026-11-07: upstream `Aratako/Irodori-TTS` を `sandbox/Irodori-TTS-v4.1` に clone、`uv sync --frozen`、`infer.py --hf-checkpoint Aratako/Irodori-TTS-v4.1-Small --no-ref` で 4.76 秒・mono・48kHz の WAV を生成。`--ref-wavs` に smoke WAV を参照として与えた生成も 5.0 秒・48kHz で成功。yawa の daily 全体（台本、TTS、動画、メタデータ）は未検証）
 
 ## Context
 
@@ -12,16 +12,9 @@ ADR-0004 の方針（`sandbox/Irodori-TTS` に導入し、`src/` には入れな
 
 ## Decision
 
-1. 公式リポジトリ `Aratako/Irodori-TTS` を `sandbox/Irodori-TTS` に clone する（`main`、v4/v4.1 対応を確認済み）。
-2. 依存関係は `uv sync` で入れる。`UV_CACHE_DIR=.uv-cache` を使う（ADR-0004 準拠）。
-3. チェックポイントは `checkpoints/v4.1-small/` に取得する。取得元は `Aratako/Irodori-TTS-v4.1-Small`（6 ファイル、`model.safetensors` 約 3.06GB）。
-4. 生成は `infer.py` で行う。既定は `--no-ref` と `--caption` を使い、`--seed` を固定する。
-
-## Consequences
-
-- 導入の手順は確認できた。`uv sync`（exit 0）と、チェックポイントの取得（6/6 完了）は VERIFIED。
-- 音声生成（`infer.py` の実行）と、台本 01 の読み上げ確認は UNVERIFIED。自動モードの分類器が「Code from External」として実行を拒否したため。解消条件は Issue で管理する。
-- `sandbox/` と `checkpoints/`、`outputs/`、`.uv-cache/` は Git の管理対象外とする。Gitleaks 検査と push protection の対象は、このディレクトリに含めない。
+- 本番の音声合成は `scripts/yawa_irodori.py` が Irodori-TTS のランタイムを呼び、作品中の音声を一度のモデル読込で生成する。チェックアウト、チェックポイント、キャッシュ、デバイスは `config/yawa/runtime.yaml` に指定する。対象ホストでは Irodori-TTS 側で `uv sync --frozen --extra cu128` を実行する。
+- 参照の有無、演技、任意の発話秒数は作品の台本から渡す。台詞とキャプションはチェックポイントのトークナイザーと上限で検証する。
+- カバーは作品固有の指示を `codex-imagegen` に渡す。準備と公開は既存の `task yawa:prepare` と `task publish` を使う。
 
 ## Related
 
