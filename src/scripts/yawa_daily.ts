@@ -774,7 +774,7 @@ function renderVideo(
 	const filter = [
 		`scale=${width * 2}:${height * 2}:force_original_aspect_ratio=increase`,
 		`crop=${width * 2}:${height * 2}`,
-		...(motionFilter ? [motionFilter] : []),
+		...(motionFilter ? [motionFilter] : [`scale=${width}:${height}`]),
 		"format=yuv420p",
 	].join(",");
 	const temp = path.join(dir, `.video.${process.pid}.tmp.mp4`);
