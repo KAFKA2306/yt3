@@ -234,7 +234,7 @@ function scriptPrompt(
 				),
 			),
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
-		"JSONにはtitle、voices[{id,caption,reference_text?}]、cover_prompt、thumbnail_prompt、production{tts_backend,image_tool,order,video?,cover_size?,thumbnail_size?,mix?,motion?}とperformances[...]またはchapters[...]を入れます。description/tagsは任意。各発話のtextは台詞、acting・pause_after_seconds・duration_scaleは任意です。",
+		"JSONにはtitle、voices[{id,caption,reference_text?}]、cover_prompt、thumbnail_prompt、production{tts_backend,image_tool,order,video?,cover_size?,thumbnail_size?,mix?,motion?}を入れます。台詞はperformancesとchaptersを作品に合わせて使い、両方の併用もできます。description/tagsは任意。各発話のtextは台詞、acting・pause_after_seconds・duration_scaleは任意です。",
 	].join("\n");
 }
 

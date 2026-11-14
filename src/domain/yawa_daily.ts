@@ -151,12 +151,6 @@ const DraftShape = z
 	.passthrough();
 
 export const ScriptDraftSchema = DraftShape.superRefine((draft, context) => {
-	if (Boolean(draft.performances) === Boolean(draft.chapters)) {
-		context.addIssue({
-			code: z.ZodIssueCode.custom,
-			message: "provide performances or chapters",
-		});
-	}
 	if (new Set(draft.production.order).size !== 2) {
 		context.addIssue({
 			code: z.ZodIssueCode.custom,
@@ -170,10 +164,10 @@ export const ScriptDraftSchema = DraftShape.superRefine((draft, context) => {
 			message: "voice ids must be unique",
 		});
 	}
-	const performances =
-		draft.performances ??
-		draft.chapters?.flatMap((chapter) => chapter.performances) ??
-		[];
+	const performances = [
+		...(draft.performances ?? []),
+		...(draft.chapters?.flatMap((chapter) => chapter.performances) ?? []),
+	];
 	for (const performance of performances) {
 		if (!voices.has(performance.voice_id)) {
 			context.addIssue({
@@ -234,11 +228,10 @@ export function capabilities(config: YawaConfig): {
 }
 
 export function flattenPerformances(draft: ScriptDraft): Performance[] {
-	return (
-		draft.performances ??
-		draft.chapters?.flatMap((chapter) => chapter.performances) ??
-		[]
-	);
+	return [
+		...(draft.performances ?? []),
+		...(draft.chapters?.flatMap((chapter) => chapter.performances) ?? []),
+	];
 }
 
 export function validateDraft(

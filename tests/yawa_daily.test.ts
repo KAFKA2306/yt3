@@ -3,6 +3,7 @@ import {
 	assertUnprivileged,
 	buildDescription,
 	capabilities,
+	flattenPerformances,
 	irodoriCall,
 	loadYawaConfig,
 	preparationAction,
@@ -66,6 +67,12 @@ describe("Yawa creative handoff", () => {
 			],
 		});
 		expect(chapterDraft.chapters?.[0]?.name).toBe("時計の裏側");
+		const mixedDraft = draft({
+			chapters: [
+				{ performances: [{ voice_id: "worker", text: "章の中の台詞。" }] },
+			],
+		});
+		expect(flattenPerformances(mixedDraft)).toHaveLength(2);
 	});
 
 	test("does not impose story patterns or segment character limits", () => {

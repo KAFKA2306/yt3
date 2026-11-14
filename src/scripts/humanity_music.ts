@@ -88,7 +88,8 @@ function preflight(): void {
 	const availableRam = /^MemAvailable:\s+(\d+)\s+kB$/m.exec(
 		fs.readFileSync("/proc/meminfo", "utf-8"),
 	);
-	if (!availableRam) throw new Error("MemAvailable is missing from /proc/meminfo");
+	if (!availableRam)
+		throw new Error("MemAvailable is missing from /proc/meminfo");
 	const freeRam = Math.floor(Number(availableRam[1]) / 1024);
 	const snapshots = fs.existsSync(config.yue.snapshot_dir)
 		? fs.readdirSync(config.yue.snapshot_dir)
