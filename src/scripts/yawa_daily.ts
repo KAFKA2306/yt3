@@ -1,378 +1,396 @@
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
-import { sha256File } from "../domain/publication_state.js";
 import {
 	assertUnprivileged,
 	buildDescription,
 	buildTags,
 	buildTitle,
-	chooseNonverbalCue,
-	chooseSelection,
-	draftSegments,
-	loadPool,
+	capabilities,
+	flattenPerformances,
+	type IrodoriCall,
+	irodoriCall,
 	loadYawaConfig,
-	type NonverbalCuePlan,
-	type PoolEntry,
-	pickEntry,
+	type Performance,
 	preparationAction,
-	type ReferenceCandidate,
-	referenceCandidateCall,
-	runSeed,
 	type ScriptDraft,
 	ScriptDraftSchema,
-	type Selection,
-	type SelectionRecord,
-	SelectionSchema,
-	segmentCall,
-	selectReference,
-	similarity,
-	type VoiceProfile,
+	type VoiceDesign,
 	validateDraft,
-	voiceDesignForRun,
 	yawaAudit,
 } from "../domain/yawa_daily.js";
 import { ROOT } from "../io/core.js";
 
 const config = loadYawaConfig(ROOT);
-const bucketDir = path.join(ROOT, "runs", config.run.bucket);
-const VOICE_EVALUATOR_VERSION = "1.0.2";
-type TtsDevice = "cpu" | "cuda";
+const bucket = path.join(ROOT, "runs", config.run.bucket);
+type Device = "cpu" | "cuda";
 
-function requestedTtsDevice(): TtsDevice {
-	const raw = process.env.YAWA_TTS_DEVICE?.trim() || config.tts.device;
-	if (raw !== "cpu" && raw !== "cuda")
-		throw new Error("YAWA_TTS_DEVICE must be cpu or cuda");
-	return raw;
+class StepFailure extends Error {
+	constructor(
+		readonly stage: string,
+		message: string,
+	) {
+		super(`${stage}: ${message}`);
+		this.name = "StepFailure";
+	}
 }
 
 function run(
+	stage: string,
 	command: string[],
 	options: { cwd?: string; env?: Record<string, string> } = {},
 ): string {
 	const result = Bun.spawnSync(command, {
 		cwd: options.cwd,
 		env: { ...process.env, ...options.env },
+		stdout: "pipe",
 		stderr: "pipe",
 	});
+	const stdout = result.stdout.toString();
+	const stderr = result.stderr.toString();
 	if (result.exitCode !== 0)
-		throw new Error(
-			`${command[0]} failed (${result.exitCode}): ${result.stderr.toString().slice(-600)}`,
+		throw new StepFailure(
+			stage,
+			`${command[0]} exited ${result.exitCode}: ${stderr.slice(-1200)}`,
 		);
-	return `${result.stdout.toString()}${result.stderr.toString()}`;
+	return `${stdout}${stderr}`;
+}
+
+function writeJsonAtomic(file: string, value: unknown): void {
+	fs.ensureDirSync(path.dirname(file));
+	const temp = `${file}.${process.pid}.tmp`;
+	fs.writeFileSync(temp, `${JSON.stringify(value, null, 2)}\n`);
+	fs.renameSync(temp, file);
+}
+
+function writeTextAtomic(file: string, value: string): void {
+	const temp = `${file}.${process.pid}.tmp`;
+	fs.writeFileSync(temp, value);
+	fs.renameSync(temp, file);
 }
 
 function probeSeconds(file: string): number {
-	return Number(
-		run([
-			"ffprobe",
-			"-v",
-			"error",
-			"-show_entries",
-			"format=duration",
-			"-of",
-			"csv=p=0",
-			file,
-		]).trim(),
-	);
+	const output = run("media-probe", [
+		"ffprobe",
+		"-v",
+		"error",
+		"-show_entries",
+		"format=duration",
+		"-of",
+		"default=noprint_wrappers=1:nokey=1",
+		file,
+	]).trim();
+	const seconds = Number(output);
+	if (!Number.isFinite(seconds) || seconds <= 0)
+		throw new StepFailure("media-probe", `${file} has no positive duration`);
+	return seconds;
 }
 
-function tailMeanDb(file: string, seconds: number): number {
-	const output = run([
-		"ffmpeg",
-		"-hide_banner",
-		"-ss",
-		String(probeSeconds(file) - seconds),
-		"-i",
+function probeImage(file: string): { width: number; height: number } {
+	const output = run("image-probe", [
+		"ffprobe",
+		"-v",
+		"error",
+		"-select_streams",
+		"v:0",
+		"-show_entries",
+		"stream=width,height",
+		"-of",
+		"json",
 		file,
-		"-af",
-		"volumedetect",
-		"-f",
-		"null",
-		"-",
 	]);
-	return Number(/mean_volume: (-?[\d.]+) dB/.exec(output)?.[1]);
+	const stream = (
+		JSON.parse(output) as {
+			streams?: Array<{ width?: number; height?: number }>;
+		}
+	).streams?.[0];
+	if (!stream?.width || !stream.height)
+		throw new StepFailure("image-probe", `${file} is not a readable image`);
+	return { width: stream.width, height: stream.height };
 }
 
-function measureLoudness(file: string): { lufs: number; truePeakDb: number } {
-	const output = run([
-		"ffmpeg",
-		"-hide_banner",
-		"-nostats",
-		"-i",
+function probeVideo(file: string): {
+	seconds: number;
+	width: number;
+	height: number;
+} {
+	const output = run("video-probe", [
+		"ffprobe",
+		"-v",
+		"error",
+		"-show_entries",
+		"format=duration:stream=codec_type,width,height",
+		"-of",
+		"json",
 		file,
-		"-af",
-		"ebur128=peak=true",
-		"-f",
-		"null",
-		"-",
-	]).split("Summary:")[1];
+	]);
+	const probe = JSON.parse(output) as {
+		format?: { duration?: string };
+		streams?: Array<{ codec_type?: string; width?: number; height?: number }>;
+	};
+	const seconds = Number(probe.format?.duration);
+	const video = probe.streams?.find((stream) => stream.codec_type === "video");
+	const audio = probe.streams?.find((stream) => stream.codec_type === "audio");
+	if (
+		!Number.isFinite(seconds) ||
+		seconds <= 0 ||
+		!video?.width ||
+		!video.height ||
+		!audio
+	)
+		throw new StepFailure(
+			"video-probe",
+			`${file} needs readable audio and video streams`,
+		);
+	return { seconds, width: video.width, height: video.height };
+}
+
+function assertPlayable(file: string): number {
+	if (!fs.existsSync(file) || fs.statSync(file).size === 0)
+		throw new StepFailure("artifact-check", `${file} is missing or empty`);
+	return probeSeconds(file);
+}
+
+function availableTools(): { tts: string[]; images: string[] } {
+	const configured = capabilities(config);
 	return {
-		lufs: Number(/I:\s+(-?[\d.]+) LUFS/.exec(output ?? "")?.[1]),
-		truePeakDb: Number(/Peak:\s+(-?[\d.]+) dBFS/.exec(output ?? "")?.[1]),
+		tts: configured.tts.filter((id) => {
+			const backend = config.tts.backends[id];
+			return Boolean(
+				backend &&
+					Bun.which("uv") &&
+					fs.existsSync(path.join(backend.dir, ".venv")),
+			);
+		}),
+		images: configured.images.filter((id) => {
+			const tool = config.image_tools[id];
+			return Boolean(tool && Bun.which(tool.command));
+		}),
 	};
 }
 
-function meanVolumeDb(file: string, start: number, seconds: number): number {
-	const output = run([
-		"ffmpeg",
-		"-hide_banner",
-		"-ss",
-		String(start),
-		"-t",
-		String(seconds),
-		"-i",
-		file,
-		"-af",
-		"volumedetect",
-		"-f",
-		"null",
-		"-",
-	]);
-	return Number(/mean_volume: (-?[\d.]+) dB/.exec(output)?.[1]);
-}
-
-function observeArc(
-	draft: ScriptDraft,
-	name: string,
-	dir: string,
-	audioPath: string,
-	recent: Recent,
-	experimentSegmentIndex?: number,
+function preflight(
+	tools: { tts: string[]; images: string[] },
+	device: Device,
 ): void {
-	const segments = draftSegments(draft, config, name);
-	const raw = segments.map((_, i) => {
-		const segmentName = String(i + 1).padStart(3, "0");
-		const fileName =
-			i === experimentSegmentIndex
-				? `seg_${segmentName}.emoji-treatment.wav`
-				: `seg_${segmentName}.wav`;
-		return probeSeconds(path.join(dir, "tts", fileName));
-	});
-	const total = segments.reduce(
-		(sum, segment, i) => sum + (raw[i] ?? 0) + segment.chapter.gap_seconds,
-		0,
-	);
-	const scale = probeSeconds(audioPath) / total;
-	let cursor = 0;
-	let index = 0;
-	const chapters = draft.chapters.map((chapter) => {
-		const start = cursor;
-		let chars = 0;
-		let speech = 0;
-		for (const text of chapter.segments) {
-			chars += text.length;
-			speech += raw[index] ?? 0;
-			cursor += (raw[index] ?? 0) + (segments[index]?.chapter.gap_seconds ?? 0);
-			index += 1;
-		}
-		const from = start * scale;
-		const length = cursor * scale - from;
-		return {
-			name: chapter.name,
-			segments: chapter.segments.length,
-			chars,
-			chars_per_second: Number((chars / speech).toFixed(2)),
-			start_seconds: Number(from.toFixed(1)),
-			seconds: Number(length.toFixed(1)),
-			mean_volume_db: meanVolumeDb(audioPath, from, length),
-		};
-	});
-	const first = segments[0]?.text ?? "";
-	const last = segments[segments.length - 1]?.text ?? "";
-	const worst = (current: string, past: string[]): number =>
-		Number(Math.max(0, ...past.map((x) => similarity(current, x))).toFixed(3));
-	fs.outputJsonSync(
-		path.join(dir, "audit", "arc_observation.json"),
-		{
-			shape: draft.shape,
-			chapters,
-			overlap_with_recent: {
-				title: worst(draft.title, recent.titles),
-				opening: worst(first, recent.openings),
-				closing: worst(last, recent.closings),
-			},
-		},
-		{ spaces: 2 },
-	);
-}
-
-function preflight(device?: TtsDevice): void {
-	assertUnprivileged(process.getuid?.(), [
-		config.tts.hf_home,
-		path.join(ROOT, "runs"),
-	]);
-	const free =
-		device === "cpu"
-			? null
-			: Number(
-					run([
-						"nvidia-smi",
-						"--query-gpu=memory.free",
-						"--format=csv,noheader,nounits",
-					]).trim(),
-				);
-	const backend = config.tts.backends[config.tts.backend];
+	assertUnprivileged(process.getuid?.(), [config.tts.hf_home, bucket]);
 	const failures = [
-		device === "cpu" || (free !== null && free >= config.tts.min_free_vram_mib)
-			? ""
-			: `free VRAM ${free} MiB < ${config.tts.min_free_vram_mib} MiB`,
-		Bun.spawnSync(["codex", "login", "status"]).exitCode === 0
+		Bun.which("codex") ? "" : "codex is not on PATH",
+		Bun.spawnSync(["codex", "login", "status"], {
+			stdout: "ignore",
+			stderr: "ignore",
+		}).exitCode === 0
 			? ""
 			: "codex is not logged in",
-		Bun.which("codex-imagegen") ? "" : "codex-imagegen is not on PATH",
 		Bun.which("ffmpeg") ? "" : "ffmpeg is not on PATH",
+		Bun.which("ffprobe") ? "" : "ffprobe is not on PATH",
 		Bun.which("uv") ? "" : "uv is not on PATH",
-		backend && fs.existsSync(path.join(backend.dir, ".venv"))
+		tools.tts.length > 0
 			? ""
-			: `TTS environment missing for backend '${config.tts.backend}'`,
-		process.env.YOUTUBE_REFRESH_TOKEN ||
-		fs.existsSync(path.join(ROOT, "config/.cache/youtube/yawa.json"))
+			: "no configured Irodori environment is available",
+		tools.images.length > 0 ? "" : "no configured image tool is available",
+		device === config.tts.device
 			? ""
-			: "yawa YouTube credentials are missing",
+			: `requested TTS device '${device}' differs from runtime device '${config.tts.device}'`,
 	].filter(Boolean);
-	if (failures.length > 0)
-		throw new Error(`preflight failed: ${failures.join("; ")}`);
+	if (failures.length) throw new StepFailure("preflight", failures.join("; "));
 }
 
-function selectionHistory(excludeRun: string): SelectionRecord[] {
-	if (!fs.existsSync(bucketDir)) return [];
-	return fs
-		.readdirSync(bucketDir)
-		.filter((name) => name !== excludeRun)
-		.map((name) => path.join(bucketDir, name, "selection.json"))
-		.filter((file) => fs.existsSync(file))
-		.map((file) => fs.readJsonSync(file) as SelectionRecord);
-}
-
-type Recent = {
-	titles: string[];
-	openings: string[];
-	closings: string[];
-	sample_count: number;
-	frequent_terms: Array<{ word: string; count: number; runs: number }>;
-};
-
-const promptSegmenter = new Intl.Segmenter("ja", { granularity: "word" });
-const promptStopWords = new Set([
-	"って", "てい", "ます", "した", "いる", "しょう", "んで", "から", "まで",
-	"こと", "ここ", "なく", "です", "ない", "いい", "たら", "だけ", "もう",
-	"して", "する", "ある", "よう", "ので", "でも", "また", "しま", "さい",
-	"くだ", "この", "その", "これ", "それ", "あなた",
-]);
-
-function recentScripts(excludeRun: string): Recent {
-	const names = fs.existsSync(bucketDir)
-		? fs
-				.readdirSync(bucketDir)
-				.filter((name) => name !== excludeRun)
-				.filter((name) =>
-					fs.existsSync(path.join(bucketDir, name, "script.json")),
-				)
-				.sort()
-				.slice(-config.diversity.recent_window)
-		: [];
-	const scripts = names.map((name) => {
-		const draft = fs.readJsonSync(path.join(bucketDir, name, "script.json"));
-		const texts: string[] =
-			draft.segments ??
-			draft.chapters.flatMap((c: { segments: string[] }) => c.segments);
-		return {
-			title: draft.title as string,
-			opening: texts[0] ?? "",
-			closing: texts[texts.length - 1] ?? "",
-			text: texts.join(" "),
-		};
-	});
-	const counts = new Map<string, number>();
-	const runCounts = new Map<string, number>();
-	for (const script of scripts) {
-		const words = [...promptSegmenter.segment(script.text.normalize("NFKC"))]
-			.filter((part) => part.isWordLike && part.segment.length >= 2)
-			.map((part) => part.segment.toLowerCase())
-			.filter((word) => !promptStopWords.has(word));
-		for (const word of words) counts.set(word, (counts.get(word) ?? 0) + 1);
-		for (const word of new Set(words))
-			runCounts.set(word, (runCounts.get(word) ?? 0) + 1);
-	}
-	const frequent_terms = [...counts]
-		.map(([word, count]) => ({ word, count, runs: runCounts.get(word) ?? 0 }))
-		.sort((a, b) => b.count - a.count || (a.word < b.word ? -1 : 1))
-		.slice(0, 10);
-	return {
-		titles: scripts.map((x) => x.title),
-		openings: scripts.map((x) => x.opening),
-		closings: scripts.map((x) => x.closing),
-		sample_count: scripts.length,
-		frequent_terms,
-	};
+function requestedDevice(): Device {
+	const value = process.env.YAWA_TTS_DEVICE?.trim() || config.tts.device;
+	if (value !== "cpu" && value !== "cuda")
+		throw new Error("YAWA_TTS_DEVICE must be cpu or cuda");
+	return value;
 }
 
 function scriptPrompt(
-	entry: PoolEntry,
-	selection: Selection,
-	recent: Recent,
-	_runName: string,
-	lastError?: string,
+	tools: { tts: string[]; images: string[] },
+	runId: string,
 ): string {
 	return [
-		`あなたは「夜話アーカイブ ASMR」の台本作家です。ゴールは、何度も聴きたくなる声で、その作品ならではの体験を届けることです。聞き手は${config.audience}です。`,
-		"過去の状況パターン、章構成、結末の型を使わず、今回の目的と行動から新しい物語を作ってください。耳ケアなら道具ごとの音を聞き分け、散策なら音の正体を探し、便りならその一通に返事をするなど、聞き手が何を体験する作品なのかを明確にしてください。",
-		`市販作品の参考メタデータ（筋書きや表現は使わない）: ${entry.situation}（公開タグ: ${entry.tags.join("、")}）。作品に合う場合だけ抽象的な着想として使い、既存作品のタイトル、台詞、固有名詞、筋書きは使わないでください。`,
-		"今回の設定候補: " +
-			Object.entries(selection.axes)
-				.map(([axis, value]) => axis + "=" + value)
-				.join("、") +
-			"。これは発想の種で、全てを採用する義務はありません。聞き手が体験することと今回の目的を先に決め、自然に役立つ値だけを使うか変形し、合わない値は捨ててください。",
-		recent.frequent_terms.length > 0
-			? "語彙頻度の観測（直近" +
-				recent.sample_count +
-				"作品）: " +
-				recent.frequent_terms
-					.map((item) => item.word + "(" + item.count + ")")
-					.join("、") +
-				"。禁止語ではありません。場面に必要なら使えますが、間を埋める定型句として自動反復せず、今回の動作・物・音から具体的な言い方を考えてください。"
-			: "",
-		"条件:",
-		"- ASMRの近接感と音の細部を活かす。睡眠誘導、癒やし、安らぎへ自動で収束させず、場面に合う感情と結末を選ぶ。",
-		"- 全年齢向け。性的な表現、暴力、恐怖は入れない。",
-		"- 登場する話者は成人として設定する。年齢が分からない・若く見える設定は使わない。制服、学校、少女といった語も使わない。",
-		"- 語り手は一人。聞き手を「あなた」と呼ぶ。役割・性格・場面に合わせて話し方、間、感情、語尾を変化させる。",
-		`- chapters は今回の物語に必要な数と順序を自分で決め、章名も今回固有にする。導入・山場・沈静・おやすみの共通配列を使わない。各 segment は ${config.script.max_segment_chars} 文字以内の自然な話し言葉で、1〜2文。量は出来事が完結する長さにし、数合わせをしない。`,
-		"- 次の編集方針は品質の目安であり、表現や構成を固定するテンプレートではない:",
-		...config.script.variation_rules.map((rule) => `  - ${rule}`),
-		"- 音声は TTS が読む。ト書き、括弧、記号、効果音の指示は書かない。読み仮名が要る語はひらがなで書く。",
-		"- 声は独立した複数の音響特徴を組み合わせる。台詞は声の説明ではなく、役割・性格・状況が伝わる自然な話し言葉にする。",
-		"- cover_scene は作品の場面と感情に合う、文字を含まない情景描写。夜景、暖色、人物の影などの共通画風や構図を指定しない。",
-		"- adult_characters_confirmed は true にする。",
-		'JSON だけを返す: {"title","hook","cover_scene","adult_characters_confirmed","chapters":[{"name","segments":[...]}]}',
-		lastError ? `前回の失敗: ${lastError}。直してください。` : "",
-	]
-		.filter(Boolean)
-		.join("\n");
+		"あなたは夜話アーカイブの制作AIです。次のYAMLは目的と参考情報です。",
+		JSON.stringify(config.creative),
+		`制作ID: ${runId}。このIDから題材を決めず、今回の作品を独立に考えてください。`,
+		"この作品ならではの魅力を決め、成人人物の日本語台本を書いてください。状況、関係、展開、形式、尺、話者数、声、演技、画像を作品ごとに考えます。物語型、声質、画風を固定しません。",
+		"声の好みは参考情報で、音響値や決まった声質の条件ではありません。声優像と画像表現は作品ごとに考案します。Captionには声の質感、各発話のactingにはその場の演技を書きます。参照文は必要な声にだけ任意で付け、Captionと矛盾しない台詞にしてください。",
+		"使えるツール: " +
+			JSON.stringify({
+				tts: tools.tts,
+				images: tools.images,
+				video: ["ffmpeg"],
+			}),
+		"使えるTTS・画像ツールから選び、production.orderで実行順を決めます。画像サイズは提示された候補から作品に合わせて選びます。videoのwidth/heightは作品に合う偶数の画素数で任意に選べます。mixは音量補正が必要な作品だけ、motionは動きが合う作品だけ指定します。",
+		"cover_prompt と thumbnail_prompt はそれぞれ今回の絵を直接指示してください。アダプターは共通の画風・色・構図を追加しません。画像生成ツールの入力サイズは " +
+			JSON.stringify(
+				Object.fromEntries(
+					tools.images.map((id) => [
+						id,
+						{
+							default: config.image_tools[id]?.size,
+							choices: config.image_tools[id]?.sizes,
+						},
+					]),
+				),
+			),
+		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
+		"JSONにはtitle、voices[{id,caption,reference_text?}]、cover_prompt、thumbnail_prompt、production{tts_backend,image_tool,order,video?,cover_size?,thumbnail_size?,mix?,motion?}とperformances[...]またはchapters[...]を入れます。description/tagsは任意。各発話のtextは台詞、acting・pause_after_seconds・duration_scaleは任意です。",
+	].join("\n");
+}
+
+const tokenGuard = `
+import json, sys
+from pathlib import Path
+from huggingface_hub import hf_hub_download
+from safetensors import safe_open
+from transformers import AutoTokenizer
+
+checkpoint_repo, input_file = sys.argv[1:]
+checkpoint = Path(hf_hub_download(checkpoint_repo, filename="model.safetensors"))
+with safe_open(str(checkpoint), framework="pt", device="cpu") as handle:
+    metadata = handle.metadata() or {}
+config = json.loads(metadata["config_json"])
+text_limit = config.get("max_text_len")
+text_limit = text_limit if type(text_limit) is int and text_limit > 0 else 256
+caption_limit = config.get("max_caption_len")
+caption_limit = caption_limit if type(caption_limit) is int and caption_limit > 0 else text_limit
+text_repo = config.get("text_tokenizer_repo") or "sbintuitions/sarashina2.2-0.5b"
+caption_repo = config.get("caption_tokenizer_repo") or text_repo
+text_bos = bool(config.get("text_add_bos", True))
+caption_bos = config.get("caption_add_bos")
+caption_bos = text_bos if caption_bos is None else bool(caption_bos)
+caption_enabled = bool(config.get("use_caption_condition", False))
+
+def load_tokenizer(repo):
+    for candidate in (checkpoint.parent / "tokenizer", checkpoint.parent.parent / "tokenizer"):
+        if (candidate / "tokenizer_config.json").is_file():
+            return AutoTokenizer.from_pretrained(candidate, use_fast=True, trust_remote_code=False)
+    return AutoTokenizer.from_pretrained(repo, use_fast=True, trust_remote_code=False)
+
+text_tokenizer = load_tokenizer(text_repo)
+caption_tokenizer = load_tokenizer(caption_repo) if caption_enabled else None
+data = json.loads(Path(input_file).read_text(encoding="utf-8"))
+failures = []
+
+def inspect(kind, label, text, tokenizer, add_bos, limit):
+    count = len(tokenizer.encode(text, add_special_tokens=False)) + int(add_bos)
+    if count > limit:
+        failures.append({"kind": kind, "label": label, "tokens": count, "limit": limit})
+
+for item in data["texts"]:
+    inspect("text", item["label"], item["text"], text_tokenizer, text_bos, text_limit)
+if caption_tokenizer:
+    for item in data["captions"]:
+        inspect("caption", item["label"], item["text"], caption_tokenizer, caption_bos, caption_limit)
+print(json.dumps({"failures": failures}, ensure_ascii=False))
+`;
+
+function validateTtsInputs(draft: ScriptDraft): void {
+	const backend = config.tts.backends[draft.production.tts_backend];
+	if (!backend) throw new StepFailure("tts-input-check", "unknown TTS backend");
+	const voices = new Map(draft.voices.map((voice) => [voice.id, voice]));
+	const performances = flattenPerformances(draft);
+	const temp = fs.mkdtempSync(path.join(os.tmpdir(), "yawa-token-check-"));
+	const input = path.join(temp, "input.json");
+	fs.writeJsonSync(input, {
+		texts: [
+			...draft.voices.flatMap((voice) =>
+				voice.reference_text
+					? [{ label: `reference ${voice.id}`, text: voice.reference_text }]
+					: [],
+			),
+			...performances.map((item, index) => ({
+				label: `performance ${index + 1}`,
+				text: item.text,
+			})),
+		],
+		captions: [
+			...draft.voices.flatMap((voice) =>
+				voice.reference_text
+					? [{ label: `reference ${voice.id}`, text: voice.caption }]
+					: [],
+			),
+			...performances.map((item, index) => {
+				const voice = voices.get(item.voice_id);
+				return {
+					label: `performance ${index + 1}`,
+					text: [voice?.caption, item.acting].filter(Boolean).join("\n"),
+				};
+			}),
+		],
+	});
+	try {
+		const result = Bun.spawnSync(
+			[
+				"uv",
+				"run",
+				"--frozen",
+				"python",
+				"-c",
+				tokenGuard,
+				backend.checkpoint,
+				input,
+			],
+			{
+				cwd: backend.dir,
+				env: { ...process.env, HF_HOME: config.tts.hf_home },
+				stdout: "pipe",
+				stderr: "pipe",
+			},
+		);
+		if (result.exitCode !== 0)
+			throw new StepFailure(
+				"tts-input-check",
+				`tokenizer exited ${result.exitCode}: ${result.stderr.toString().slice(-1000)}`,
+			);
+		const checked = JSON.parse(result.stdout.toString()) as {
+			failures: Array<{
+				kind: string;
+				label: string;
+				tokens: number;
+				limit: number;
+			}>;
+		};
+		if (checked.failures.length)
+			throw new StepFailure(
+				"tts-input-check",
+				`Irodori would truncate inputs: ${checked.failures.map((item) => `${item.kind} ${item.label} (${item.tokens}/${item.limit} tokens)`).join(", ")}`,
+			);
+	} catch (error) {
+		if (error instanceof StepFailure) throw error;
+		throw new StepFailure(
+			"tts-input-check",
+			error instanceof Error ? error.message : String(error),
+		);
+	} finally {
+		fs.removeSync(temp);
+	}
 }
 
 function parseJson(text: string): unknown {
-	const body = text
-		.trim()
-		.replace(/^```(?:json)?\s*/i, "")
-		.replace(/```\s*$/, "");
-	return JSON.parse(body);
+	return JSON.parse(
+		text
+			.trim()
+			.replace(/^```(?:json)?\s*/i, "")
+			.replace(/```\s*$/, ""),
+	);
 }
 
 function generateScript(
-	entry: PoolEntry,
-	selection: Selection,
-	runName: string,
-	outPath: string,
+	dir: string,
+	tools: { tts: string[]; images: string[] },
+	runId: string,
 ): ScriptDraft {
-	const recent = recentScripts(runName);
-	let lastError: string | undefined;
-	for (let attempt = 1; attempt <= config.script.max_attempts; attempt++) {
-		const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "yawa-script-"));
+	const file = path.join(dir, "script.json");
+	const existed = fs.existsSync(file);
+	let draft: ScriptDraft;
+	if (existed) {
+		draft = ScriptDraftSchema.parse(fs.readJsonSync(file));
+	} else {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "yawa-script-"));
 		try {
-			const answer = path.join(tmp, "answer.txt");
+			const answer = path.join(tempDir, "answer.json");
 			run(
+				"script-generation",
 				[
 					"codex",
 					"exec",
@@ -384,626 +402,392 @@ function generateScript(
 					"--ephemeral",
 					"-o",
 					answer,
-					scriptPrompt(entry, selection, recent, runName, lastError),
+					scriptPrompt(tools, runId),
 				],
-				{ cwd: tmp },
+				{ cwd: tempDir },
 			);
-			const draft = ScriptDraftSchema.parse({
-				...(parseJson(fs.readFileSync(answer, "utf8")) as object),
-				shape: selection.shape,
-			});
-			const failures = validateDraft(draft, config);
-			if (failures.length > 0) throw new Error(failures.join("; "));
-			fs.writeJsonSync(outPath, draft, { spaces: 2 });
-			return draft;
-		} catch (error) {
-			lastError =
-				error instanceof Error ? error.message.slice(0, 400) : String(error);
-			console.error(`[yawa] script attempt ${attempt} rejected: ${lastError}`);
+			draft = ScriptDraftSchema.parse(
+				parseJson(fs.readFileSync(answer, "utf8")),
+			);
 		} finally {
-			fs.removeSync(tmp);
+			fs.removeSync(tempDir);
 		}
 	}
-	throw new Error(`script generation failed: ${lastError}`);
+	const failures = validateDraft(draft, config, tools);
+	if (failures.length)
+		throw new StepFailure("script-validation", failures.join("; "));
+	validateTtsInputs(draft);
+	if (!existed) writeJsonAtomic(file, draft);
+	return draft;
 }
 
-function asrSimilarity(audio: string, expected: string): number {
-	const out = run(
-		[
-			"uv",
-			"run",
-			"--no-project",
-			"--with",
-			"faster-whisper",
-			"python",
-			"-I",
-			path.join(ROOT, "src/scripts/yawa_asr_qa.py"),
-			audio,
-			config.asr.model,
-		],
-		{ env: { HF_HOME: config.tts.hf_home } },
-	);
-	const line = out
-		.trim()
-		.split("\n")
-		.filter((l) => l.startsWith("{"))
-		.pop();
-	if (!line) throw new Error("ASR produced no JSON");
-	return similarity(JSON.parse(line).text as string, expected);
-}
-
-type ReferenceRecord = {
-	profile_id: string;
-	selected: ReferenceCandidate;
-	candidates: ReferenceCandidate[];
-	selection_seed: number;
-	sha256: string;
-	text: string;
-};
-
-/**
- * 動画ごとの参照音声を作る。候補は参照なしで生成し、聞き取れて割れていないものを選ぶ。
- * 選んだ参照は、その動画のすべてのセグメントで使う。
- */
-function generateReference(
-	dir: string,
-	name: string,
-	voiceProfile: VoiceProfile,
-	device?: TtsDevice,
-): ReferenceRecord {
-	const refPath = path.join(dir, "reference.wav");
-	const recordPath = path.join(dir, "reference.json");
-	if (fs.existsSync(recordPath) && fs.existsSync(refPath)) {
-		const record = fs.readJsonSync(recordPath) as ReferenceRecord;
-		if (record.profile_id !== voiceProfile.id)
-			throw new Error("stored voice reference uses a different daily profile");
-		if (record.sha256 === sha256File(refPath)) return record;
-		throw new Error("reference.wav does not match reference.json");
+function writeAudioCall(
+	stage: string,
+	call: IrodoriCall,
+	target: string,
+): void {
+	if (fs.existsSync(target)) {
+		assertPlayable(target);
+		return;
 	}
-	const candidateDir = path.join(dir, "reference_candidates");
-	fs.ensureDirSync(candidateDir);
-	const [minimumCandidates, maximumCandidates] = config.reference.candidate_range;
-	const candidateCount =
-		minimumCandidates +
-		(runSeed(name, "reference:candidate-count") %
-			(maximumCandidates - minimumCandidates + 1));
-	const seeds = Array.from({ length: candidateCount }, (_, i) =>
-		runSeed(name, `reference:${i}`),
+	const raw = path.join(
+		path.dirname(target),
+		`.${path.basename(target, ".wav")}.${process.pid}.tts.wav`,
 	);
-	const candidates: ReferenceCandidate[] = seeds.map((seed) => {
-		const file = path.join(candidateDir, `${voiceProfile.id}_seed_${seed}.wav`);
-		if (!fs.existsSync(file)) {
-			const { cwd, command, env } = referenceCandidateCall(
-				config,
-				voiceProfile.caption,
-				seed,
-				file,
-				device,
-			);
-			run(command, { cwd, env });
-		}
-		const measurement = measureReferenceVoice(
-			dir,
-			file,
-			sha256File(file),
-			path.join(candidateDir, `${voiceProfile.id}_seed_${seed}.features.json`),
-		);
-		return {
-			seed,
-			file,
-			asr_similarity: asrSimilarity(file, config.reference.text),
-			acoustic_measurement: measurement,
-		};
-	});
-	const selectionSeed = runSeed(name, "reference:selection");
-	const selected = selectReference(candidates, selectionSeed);
-	fs.copyFileSync(selected.file, refPath);
-	const record: ReferenceRecord = {
-		profile_id: voiceProfile.id,
-		selected,
-		candidates,
-		selection_seed: selectionSeed,
-		sha256: sha256File(refPath),
-		text: config.reference.text,
-	};
-	fs.writeJsonSync(recordPath, record, { spaces: 2 });
-	return record;
-}
-
-function measureReferenceVoice(
-	dir: string,
-	referencePath: string,
-	referenceSha256: string,
-	outputPath = path.join(dir, "voice_features.json"),
-):
-	| { status: "MEASURED"; features: Record<string, unknown> }
-	| {
-			status: "UNAVAILABLE";
-			error: string;
-	  } {
-	if (fs.existsSync(outputPath)) {
-		const previous = fs.readJsonSync(outputPath);
-		if (
-			previous.reference_sha256 === referenceSha256 &&
-			previous.status === "MEASURED" &&
-			previous.evaluator_version === VOICE_EVALUATOR_VERSION &&
-			previous.features
-		)
-			return { status: "MEASURED", features: previous.features };
-	}
+	const normalized = path.join(
+		path.dirname(target),
+		`.${path.basename(target, ".wav")}.${process.pid}.normalized.wav`,
+	);
 	try {
-		run(
-			[
-				"uv",
-				"run",
-				"--offline",
-				"--frozen",
-				"--no-sync",
-				"--quiet",
-				"python",
-				"voice_physics.py",
-				"extract",
-				referencePath,
-				"--output",
-				outputPath,
-			],
-			{ cwd: path.join(ROOT, "tools/yawa-voice-eval") },
-		);
-		const extracted = fs.readJsonSync(outputPath);
-		if (!extracted.features || Object.keys(extracted.features).length === 0)
-			throw new Error("voice evaluator returned no acoustic features");
-		if (extracted.evaluator_version !== VOICE_EVALUATOR_VERSION)
-			throw new Error("voice evaluator version mismatch");
-		const result = {
-			status: "MEASURED" as const,
-			reference_sha256: referenceSha256,
-			evaluator_version: extracted.evaluator_version as string,
-			features: extracted.features as Record<string, unknown>,
-		};
-		fs.writeJsonSync(outputPath, result, { spaces: 2 });
-		return result;
-	} catch (error) {
-		const result = {
-			status: "UNAVAILABLE" as const,
-			reference_sha256: referenceSha256,
-			error: error instanceof Error ? error.message : String(error),
-		};
-		fs.writeJsonSync(outputPath, result, { spaces: 2 });
-		return result;
-	}
-}
-
-function synthesize(
-	draft: ScriptDraft,
-	dir: string,
-	refWav: string,
-	voiceProfile: VoiceProfile,
-	nonverbalCue: NonverbalCuePlan | undefined,
-	device?: TtsDevice,
-): string {
-	const ttsDir = path.join(dir, "tts");
-	fs.ensureDirSync(ttsDir);
-	const gapFile = (seconds: number): string => {
-		const gap = path.join(ttsDir, `gap_${seconds}.wav`);
-		if (!fs.existsSync(gap))
-			run([
-				"ffmpeg",
-				"-y",
-				"-loglevel",
-				"error",
-				"-f",
-				"lavfi",
-				"-i",
-				"anullsrc=r=48000:cl=mono",
-				"-t",
-				String(seconds),
-				gap,
-			]);
-		return gap;
-	};
-	const list: string[] = [];
-	const runConfig = {
-		...config,
-		voice: { ...config.voice, caption: voiceProfile.caption },
-	};
-	const runName = path.basename(dir);
-	const runId = `${config.run.bucket}/${runName}`;
-	const backend = config.tts.backends[config.tts.backend];
-	const segments = draftSegments(draft, config, runName);
-	let experimentAudio:
-		| {
-				control: string;
-				treatment: string;
-				controlError?: string;
-			}
-		| undefined;
-	segments.forEach((segment, index) => {
-		const name = String(index + 1).padStart(3, "0");
-		const isExperimentSegment = nonverbalCue?.segment_index === index;
-		let wav = path.join(ttsDir, `seg_${name}.wav`);
-		if (isExperimentSegment && nonverbalCue) {
-			const controlWav = path.join(ttsDir, `seg_${name}.emoji-control.wav`);
-			const treatmentWav = path.join(ttsDir, `seg_${name}.emoji-treatment.wav`);
-			if (segment.text !== nonverbalCue.base_text)
-				throw new Error(
-					"nonverbal cue plan no longer matches the selected script segment",
-				);
-			if (!fs.existsSync(treatmentWav)) {
-				const { cwd, command, env } = segmentCall(
-					runConfig,
-					{ ...segment, text: nonverbalCue.treatment_text },
-					refWav,
-					treatmentWav,
-					runSeed(runName, "tts"),
-					device,
-				);
-				run(command, { cwd, env });
-			}
-			wav = treatmentWav;
-			if (!fs.existsSync(controlWav)) {
-				try {
-					const { cwd, command, env } = segmentCall(
-						runConfig,
-						segment,
-						refWav,
-						controlWav,
-						runSeed(runName, "tts"),
-						device,
-					);
-					run(command, { cwd, env });
-				} catch (error) {
-					experimentAudio = {
-						control: controlWav,
-						treatment: treatmentWav,
-						controlError:
-							error instanceof Error ? error.message : String(error),
-					};
-					console.warn(
-						`[yawa] nonverbal control audio failed; treatment remains in production: ${experimentAudio.controlError}`,
-					);
-				}
-			}
-			experimentAudio ??= { control: controlWav, treatment: treatmentWav };
-		}
-		if (!isExperimentSegment && !fs.existsSync(wav)) {
-			const { cwd, command, env } = segmentCall(
-				runConfig,
-				segment,
-				refWav,
-				wav,
-				runSeed(runName, "tts"),
-				device,
-			);
-			run(command, { cwd, env });
-		}
-		const leveled = path.join(
-			ttsDir,
-			`seg_${name}${isExperimentSegment ? ".emoji-treatment" : ""}.leveled.wav`,
-		);
-		run([
+		const command = [...call.command];
+		const outputIndex = command.indexOf("--output-wav");
+		if (outputIndex < 0 || !command[outputIndex + 1])
+			throw new StepFailure(stage, "Irodori call has no output path");
+		command[outputIndex + 1] = raw;
+		run(stage, command, { cwd: call.cwd, env: call.env });
+		if (!fs.existsSync(raw))
+			throw new StepFailure(stage, "TTS returned without an output file");
+		assertPlayable(raw);
+		run(`${stage}:format`, [
 			"ffmpeg",
 			"-y",
 			"-loglevel",
 			"error",
 			"-i",
-			wav,
-			"-af",
-			`volume=${segment.chapter.gain_db}dB`,
+			raw,
 			"-ar",
 			"48000",
 			"-ac",
 			"1",
-			leveled,
+			"-c:a",
+			"pcm_s16le",
+			normalized,
 		]);
-		list.push(`file '${leveled}'`);
-		if (segment.chapter.gap_seconds > 0)
-			list.push(`file '${gapFile(segment.chapter.gap_seconds)}'`);
-	});
-	const experimentPath = path.join(dir, "nonverbal_experiment.json");
-	if (nonverbalCue) {
-		const segment = segments[nonverbalCue.segment_index];
-		const controlWav = experimentAudio?.control;
-		const treatmentWav = experimentAudio?.treatment;
-		const measurement = (file: string | undefined) => {
-			if (!file || !fs.existsSync(file))
-				return { status: "unavailable" as const };
-			try {
-				const loudness = measureLoudness(file);
-				return {
-					status: "measured" as const,
-					path: path.relative(dir, file),
-					sha256: sha256File(file),
-					duration_seconds: Number(probeSeconds(file).toFixed(3)),
-					integrated_lufs: loudness.lufs,
-					true_peak_dbfs: loudness.truePeakDb,
-				};
-			} catch (error) {
-				return {
-					status: "measurement_failed" as const,
-					error: error instanceof Error ? error.message : String(error),
-				};
-			}
-		};
-		if (!segment) throw new Error("nonverbal experiment segment disappeared");
-		fs.writeJsonSync(
-			experimentPath,
-			{
-				schema_version: 1,
-				protocol: "paired_single_emoji",
-				status:
-					controlWav && fs.existsSync(controlWav)
-						? "paired_audio_ready"
-						: "control_failed",
-				run_id: runId,
-				model_id: backend?.hf_checkpoint,
-				device: device ?? config.tts.device,
-				seed: runSeed(runName, "tts"),
-				reference_sha256: sha256File(refWav),
-				caption: `${voiceProfile.caption}${segment.chapter.style}`,
-				duration_scale: segment.chapter.duration_scale,
-				cfg_scale_caption: segment.chapter.cfg_scale_caption,
-				segment_index: nonverbalCue.segment_index + 1,
-				chapter: nonverbalCue.chapter,
-				base_text: nonverbalCue.base_text,
-				treatment_text: nonverbalCue.treatment_text,
-				cue: {
-					id: nonverbalCue.cue_id,
-					emoji: nonverbalCue.emoji,
-					position: nonverbalCue.position,
-					repetitions: nonverbalCue.repetitions,
-				},
-				conditions: {
-					control: measurement(controlWav),
-					treatment: measurement(treatmentWav),
-				},
-				control_error: experimentAudio?.controlError,
-				feedback: {
-					status: "awaiting_owner_feedback",
-					occurrence: null,
-					placement: null,
-					naturalness: null,
-					speech_quality: null,
-					preferred_condition: null,
-				},
-			},
-			{ spaces: 2 },
-		);
-	} else {
-		fs.writeJsonSync(
-			experimentPath,
-			{
-				schema_version: 1,
-				run_id: runId,
-				status: config.nonverbal_experiment.enabled
-					? "no_eligible_segment"
-					: "disabled",
-			},
-			{ spaces: 2 },
-		);
+		assertPlayable(normalized);
+		fs.renameSync(normalized, target);
+	} finally {
+		if (fs.existsSync(raw)) fs.removeSync(raw);
+		if (fs.existsSync(normalized)) fs.removeSync(normalized);
 	}
-	const listPath = path.join(ttsDir, "concat.txt");
-	fs.writeFileSync(listPath, `${list.join("\n")}\n`);
-	return listPath;
 }
 
-function mix(listPath: string, outPath: string): void {
-	const raw = `${outPath}.raw.wav`;
-	run([
-		"ffmpeg",
-		"-y",
-		"-loglevel",
-		"error",
-		"-f",
-		"concat",
-		"-safe",
-		"0",
-		"-i",
-		listPath,
-		"-ar",
-		"48000",
-		"-ac",
-		"1",
-		raw,
-	]);
-	const seconds = probeSeconds(raw);
-	run([
-		"ffmpeg",
-		"-y",
-		"-loglevel",
-		"error",
-		"-i",
-		raw,
-		"-f",
-		"lavfi",
-		"-i",
-		`anoisesrc=color=brown:amplitude=0.4:sample_rate=48000:duration=${seconds + 4}`,
-		"-filter_complex",
-		`[1:a]lowpass=f=900,volume=${config.mix.room_tone_db}dB[tone];[0:a][tone]amix=inputs=2:duration=first:normalize=0,afade=t=in:d=1.5,afade=t=out:st=${Math.max(seconds - 4, 0)}:d=4,loudnorm=I=${config.mix.target_lufs}:TP=-2:LRA=${config.mix.loudness_range}`,
-		"-ar",
-		"48000",
-		"-ac",
-		"1",
-		outPath,
-	]);
-	fs.removeSync(raw);
+function voiceMap(draft: ScriptDraft): Map<string, VoiceDesign> {
+	return new Map(draft.voices.map((voice) => [voice.id, voice]));
 }
 
-async function prepare(date: string, slot?: string): Promise<void> {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
-		throw new Error("DATE=YYYY-MM-DD is required");
-	const ttsDevice = requestedTtsDevice();
-	// 同じ日に 2 本目を作るときだけ SLOT（英数字）を付ける。省略時の名前は従来どおり。
-	if (slot && !/^[a-z0-9]+$/.test(slot))
-		throw new Error("SLOT must be lowercase letters or digits");
-	const name = `${config.run.name_prefix}${date}${slot ? `-${slot}` : ""}`;
-	const voiceProfile = voiceDesignForRun(config, name);
-	const dir = path.join(bucketDir, name);
-	const runId = `${config.run.bucket}/${name}`;
-	const action = preparationAction({
-		publishVerified:
-			fs.existsSync(path.join(dir, "publish", "state.json")) &&
-			fs.readJsonSync(path.join(dir, "publish", "state.json")).phase ===
-				"VERIFIED",
-		finalMixExists: fs.existsSync(path.join(dir, "final_mix.wav")),
-		referenceExists: fs.existsSync(path.join(dir, "reference.json")),
-	});
-	if (action === "skip_verified") {
-		console.log(
-			`[yawa] ${runId} is already VERIFIED; artifacts are not regenerated`,
+function callForPerformance(
+	draft: ScriptDraft,
+	performance: Performance,
+	output: string,
+	device: Device,
+	ref?: string,
+): IrodoriCall {
+	const voice = voiceMap(draft).get(performance.voice_id);
+	if (!voice)
+		throw new StepFailure(
+			"voice-resolution",
+			`unknown voice '${performance.voice_id}'`,
 		);
+	const caption = [voice.caption, performance.acting]
+		.filter(Boolean)
+		.join("\n");
+	return irodoriCall(config, {
+		backendId: draft.production.tts_backend,
+		text: performance.text,
+		caption,
+		referenceWav: ref,
+		durationScale: performance.duration_scale,
+		outputWav: output,
+		device,
+	});
+}
+
+function generateReference(
+	draft: ScriptDraft,
+	voice: VoiceDesign,
+	index: number,
+	device: Device,
+	dir: string,
+): string | undefined {
+	if (!voice.reference_text) return undefined;
+	const refsDir = path.join(dir, "tts", "references");
+	fs.ensureDirSync(refsDir);
+	const output = path.join(
+		refsDir,
+		`voice_${String(index + 1).padStart(3, "0")}.wav`,
+	);
+	const refCall = irodoriCall(config, {
+		backendId: draft.production.tts_backend,
+		text: voice.reference_text,
+		caption: voice.caption,
+		outputWav: output,
+		device,
+	});
+	writeAudioCall(`reference:${voice.id}`, refCall, output);
+	return output;
+}
+
+function concatEntry(file: string): string {
+	return `file '${file.replace(/'/g, "'\\''")}'`;
+}
+
+function renderAudio(draft: ScriptDraft, dir: string, device: Device): string {
+	const ttsDir = path.join(dir, "tts");
+	fs.ensureDirSync(ttsDir);
+	const references = new Map<string, string | undefined>();
+	draft.voices.forEach((voice, index) => {
+		references.set(
+			voice.id,
+			generateReference(draft, voice, index, device, dir),
+		);
+	});
+	const performances = flattenPerformances(draft);
+	const files: string[] = [];
+	performances.forEach((performance, index) => {
+		const basename = `performance_${String(index + 1).padStart(5, "0")}.wav`;
+		const output = path.join(ttsDir, basename);
+		const call = callForPerformance(
+			draft,
+			performance,
+			output,
+			device,
+			references.get(performance.voice_id),
+		);
+		writeAudioCall(`tts:${index + 1}`, call, output);
+		files.push(concatEntry(output));
+		if ((performance.pause_after_seconds ?? 0) > 0) {
+			const pause = path.join(
+				ttsDir,
+				`pause_${String(index + 1).padStart(5, "0")}.wav`,
+			);
+			if (!fs.existsSync(pause)) {
+				const temp = `${pause}.${process.pid}.tmp.wav`;
+				try {
+					run(`pause:${index + 1}`, [
+						"ffmpeg",
+						"-y",
+						"-loglevel",
+						"error",
+						"-f",
+						"lavfi",
+						"-i",
+						"anullsrc=r=48000:cl=mono",
+						"-t",
+						String(performance.pause_after_seconds),
+						temp,
+					]);
+					assertPlayable(temp);
+					fs.renameSync(temp, pause);
+				} finally {
+					if (fs.existsSync(temp)) fs.removeSync(temp);
+				}
+			} else assertPlayable(pause);
+			files.push(concatEntry(pause));
+		}
+	});
+	const list = path.join(ttsDir, "concat.txt");
+	writeTextAtomic(list, `${files.join("\n")}\n`);
+	const raw = path.join(ttsDir, "joined.wav");
+	if (!fs.existsSync(raw)) {
+		const temp = path.join(ttsDir, `.joined.${process.pid}.tmp.wav`);
+		try {
+			run("audio-concat", [
+				"ffmpeg",
+				"-y",
+				"-loglevel",
+				"error",
+				"-f",
+				"concat",
+				"-safe",
+				"0",
+				"-i",
+				list,
+				"-ar",
+				"48000",
+				"-ac",
+				"1",
+				temp,
+			]);
+			assertPlayable(temp);
+			fs.renameSync(temp, raw);
+		} finally {
+			if (fs.existsSync(temp)) fs.removeSync(temp);
+		}
+	} else assertPlayable(raw);
+	const output = path.join(dir, "final_mix.wav");
+	if (fs.existsSync(output)) {
+		assertPlayable(output);
+		return output;
+	}
+	const mix = draft.production.mix;
+	if (!mix) {
+		fs.copyFileSync(raw, output);
+		assertPlayable(output);
+		return output;
+	}
+	const temp = path.join(dir, `.final_mix.${process.pid}.tmp.wav`);
+	try {
+		run("audio-mix", [
+			"ffmpeg",
+			"-y",
+			"-loglevel",
+			"error",
+			"-i",
+			raw,
+			"-af",
+			`loudnorm=I=${mix.target_lufs}:TP=${mix.true_peak_db}:LRA=${mix.loudness_range}`,
+			"-ar",
+			"48000",
+			"-ac",
+			"1",
+			temp,
+		]);
+		assertPlayable(temp);
+		fs.renameSync(temp, output);
+	} finally {
+		if (fs.existsSync(temp)) fs.removeSync(temp);
+	}
+	return output;
+}
+
+function generateImage(
+	toolId: string,
+	prompt: string,
+	size: string,
+	target: string,
+	stage: string,
+): void {
+	if (fs.existsSync(target)) {
+		probeImage(target);
 		return;
 	}
-	if (action === "refuse_legacy")
-		throw new Error(
-			`${runId} was produced before the voice reference; refusing to add one to existing audio`,
-		);
-	preflight(ttsDevice);
-	fs.ensureDirSync(dir);
-
-	const selectionPath = path.join(dir, "selection.json");
-	const pool = loadPool(ROOT, config);
-	const history = selectionHistory(name);
-	const selection: Selection = fs.existsSync(selectionPath)
-		? SelectionSchema.parse(fs.readJsonSync(selectionPath))
-		: chooseSelection(
-				config,
-				pickEntry(
-					pool,
-					history.map((h) => h.id),
-				).id,
-				history,
-				name,
-			);
-	const entry: PoolEntry =
-		pool.find((e) => e.id === selection.id) ??
-		(() => {
-			throw new Error("selection.json refers to an unknown pool entry");
-		})();
-	fs.writeJsonSync(selectionPath, selection, { spaces: 2 });
-
-	const scriptPath = path.join(dir, "script.json");
-	const draft = fs.existsSync(scriptPath)
-		? ScriptDraftSchema.parse(fs.readJsonSync(scriptPath))
-		: generateScript(entry, selection, name, scriptPath);
-	const nonverbalCue = chooseNonverbalCue(config, draft, name);
-
-	const reference = generateReference(dir, name, voiceProfile, ttsDevice);
-	const refPath = path.join(dir, "reference.wav");
-	const voiceFeatures = measureReferenceVoice(dir, refPath, reference.sha256);
-
-	const audioPath = path.join(dir, "final_mix.wav");
-	if (!fs.existsSync(audioPath))
-		mix(
-			synthesize(draft, dir, refPath, voiceProfile, nonverbalCue, ttsDevice),
-			audioPath,
-		);
-	const backend = config.tts.backends[config.tts.backend];
-	fs.writeJsonSync(
-		path.join(dir, "tts.json"),
-		{
-			backend: config.tts.backend,
-			checkpoint: backend?.hf_checkpoint,
-			seed: runSeed(name, "tts"),
-			voice_caption: voiceProfile.caption,
-			voice_profile_id: voiceProfile.id,
-			tts_device: ttsDevice,
-			reference_sha256: reference.sha256,
-		},
-		{ spaces: 2 },
+	const tool = config.image_tools[toolId];
+	if (!tool) throw new StepFailure(stage, `unknown image tool '${toolId}'`);
+	const temp = path.join(
+		path.dirname(target),
+		`.${path.basename(target, ".png")}.${process.pid}.tmp.png`,
 	);
-	fs.writeJsonSync(
-		path.join(dir, "voice_experiment.json"),
-		{
-			schema_version: 1,
-			date,
-			run_id: runId,
-			profile_id: voiceProfile.id,
-			profile_selection: "independent_preference_weighted_axes",
-			axis: voiceProfile.axis,
-			selected_axes: voiceProfile.selected_axes,
-			caption: voiceProfile.caption,
-			model_id: backend?.hf_checkpoint,
-			tts_device: ttsDevice,
-			tts_seed: runSeed(name, "tts"),
-			reference_seed: reference.selected.seed,
-			reference_selection_seed: reference.selection_seed,
-			reference_sha256: reference.sha256,
-			candidate_asr_similarity: reference.candidates.map((candidate) => ({
-				seed: candidate.seed,
-				similarity: candidate.asr_similarity,
-			})),
-			acoustic_measurement: voiceFeatures,
-			feedback_status: "awaiting_owner_feedback",
-		},
-		{ spaces: 2 },
-	);
-
-	const asrPath = path.join(dir, "asr.json");
-	if (!fs.existsSync(asrPath))
-		fs.writeJsonSync(asrPath, {
-			similarity: asrSimilarity(
-				audioPath,
-				draftSegments(draft, config, name)
-					.map((x) => x.text)
-					.join(""),
-			),
-		});
-	const asrRecord = fs.readJsonSync(asrPath) as { similarity: number };
-	fs.writeJsonSync(
-		path.join(dir, "experience_evaluation.json"),
-		{
-			schema_version: 1,
-			advisory_only: true,
-			gate_applied: false,
-			intelligibility: {
-				metric: "ASR character bigram similarity",
-				value: asrRecord.similarity,
-				interpretation: "readability proxy only",
-			},
-			voice_preference: {
-				status: "awaiting_owner_feedback",
-				selected_axes: voiceProfile.selected_axes,
-				reference_selection_seed: reference.selection_seed,
-				acoustic_measurement: voiceFeatures,
-				reference_candidates: reference.candidates.map((candidate) => ({
-					seed: candidate.seed,
-					asr_similarity: candidate.asr_similarity,
-					acoustic_measurement: candidate.acoustic_measurement,
-				})),
-				preference_score: null,
-			},
-			story_specificity: {
-				selected_axis_hints: selection.axes,
-				title: draft.title,
-				hook: draft.hook,
-				chapter_names: draft.chapters.map((chapter) => chapter.name),
-				story_shape_id: draft.shape,
-			},
-			diversity: {
-				observation_window: config.diversity.recent_window,
-				used_as_gate: false,
-			},
-		},
-		{ spaces: 2 },
-	);
-
-	const coverPath = path.join(dir, config.cover.file);
-	const coverRecordPath = path.join(dir, "cover.json");
-	if (!fs.existsSync(coverRecordPath)) {
-		const prompt = `${draft.cover_scene} 作品固有の場面と感情に合う画材、色、構図を選び、他作品の定型画風に寄せない。文字や記号は入れない。16:9の構図。`;
-		run([config.cover.tool, prompt, coverPath, "--size", config.cover.size]);
-		fs.writeJsonSync(coverRecordPath, {
-			tool: config.cover.tool,
-			prompt,
-			size: config.cover.size,
-			sha256: sha256File(coverPath),
-		});
+	try {
+		run(stage, [tool.command, prompt, temp, "--size", size]);
+		probeImage(temp);
+		fs.renameSync(temp, target);
+	} finally {
+		if (fs.existsSync(temp)) fs.removeSync(temp);
 	}
+}
 
-	const videoPath = path.join(dir, config.video.file);
-	const { width, height } = config.video;
-	if (!fs.existsSync(videoPath))
-		run([
+function renderImages(
+	draft: ScriptDraft,
+	dir: string,
+): { cover: string; thumbnail: string } {
+	const cover = path.join(dir, "cover.png");
+	const thumbnailSource = path.join(dir, "thumbnail_source.png");
+	const thumbnail = path.join(dir, config.thumbnail.file);
+	const imageSettings = config.image_tools[draft.production.image_tool];
+	if (!imageSettings)
+		throw new StepFailure(
+			"image-generation",
+			`unknown image tool '${draft.production.image_tool}'`,
+		);
+	generateImage(
+		draft.production.image_tool,
+		draft.cover_prompt,
+		draft.production.cover_size ?? imageSettings.size,
+		cover,
+		"cover-generation",
+	);
+	generateImage(
+		draft.production.image_tool,
+		draft.thumbnail_prompt,
+		draft.production.thumbnail_size ?? imageSettings.size,
+		thumbnailSource,
+		"thumbnail-generation",
+	);
+	if (!fs.existsSync(thumbnail)) {
+		const temp = path.join(dir, `.thumbnail.${process.pid}.tmp.jpg`);
+		try {
+			run("thumbnail-render", [
+				"ffmpeg",
+				"-y",
+				"-loglevel",
+				"error",
+				"-i",
+				thumbnailSource,
+				"-vf",
+				`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
+				"-q:v",
+				String(config.thumbnail.quality),
+				temp,
+			]);
+			const dimensions = probeImage(temp);
+			if (
+				dimensions.width !== config.thumbnail.width ||
+				dimensions.height !== config.thumbnail.height
+			)
+				throw new StepFailure(
+					"thumbnail-check",
+					`expected ${config.thumbnail.width}x${config.thumbnail.height}, got ${dimensions.width}x${dimensions.height}`,
+				);
+			fs.renameSync(temp, thumbnail);
+		} finally {
+			if (fs.existsSync(temp)) fs.removeSync(temp);
+		}
+	} else {
+		const dimensions = probeImage(thumbnail);
+		if (
+			dimensions.width !== config.thumbnail.width ||
+			dimensions.height !== config.thumbnail.height
+		)
+			throw new StepFailure(
+				"thumbnail-check",
+				"existing thumbnail dimensions differ from runtime settings",
+			);
+	}
+	return { cover, thumbnail };
+}
+
+function renderVideo(
+	draft: ScriptDraft,
+	audio: string,
+	cover: string,
+	dir: string,
+): string {
+	const output = path.join(dir, config.video.file);
+	const audioSeconds = probeSeconds(audio);
+	const { width, height } = draft.production.video ?? config.video;
+	const { fps } = config.video;
+	if (fs.existsSync(output)) {
+		const existing = probeVideo(output);
+		if (
+			Math.abs(existing.seconds - audioSeconds) >
+				config.audit.duration_tolerance_seconds ||
+			existing.width !== width ||
+			existing.height !== height
+		)
+			throw new StepFailure(
+				"video-check",
+				"existing video duration differs from the audio",
+			);
+		return output;
+	}
+	const move = draft.production.motion;
+	const motionFilter = move
+		? (() => {
+				const frames = Math.max(1, Math.ceil(audioSeconds * fps));
+				const interpolate = (start: number, end: number) =>
+					`(${start}+(${end}-${start})*on/${frames})`;
+				return `zoompan=z='${interpolate(move.zoom_start, move.zoom_end)}':x='(iw-iw/zoom)*${interpolate(move.x_start, move.x_end)}':y='(ih-ih/zoom)*${interpolate(move.y_start, move.y_end)}':d=1:s=${width}x${height}:fps=${fps}`;
+			})()
+		: undefined;
+	const filter = [
+		`scale=${width * 2}:${height * 2}:force_original_aspect_ratio=increase`,
+		`crop=${width * 2}:${height * 2}`,
+		...(motionFilter ? [motionFilter] : []),
+		"format=yuv420p",
+	].join(",");
+	const temp = path.join(dir, `.video.${process.pid}.tmp.mp4`);
+	try {
+		run("video-render", [
 			"ffmpeg",
 			"-y",
 			"-loglevel",
@@ -1011,135 +795,189 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			"-loop",
 			"1",
 			"-framerate",
-			String(config.video.fps),
+			String(fps),
 			"-i",
-			coverPath,
+			cover,
 			"-i",
-			audioPath,
+			audio,
 			"-vf",
-			`scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},format=yuv420p`,
+			filter,
+			"-t",
+			String(audioSeconds),
 			"-c:v",
 			"libx264",
-			"-tune",
-			"stillimage",
 			"-crf",
 			String(config.video.crf),
 			"-c:a",
 			"aac",
 			"-b:a",
 			config.video.audio_bitrate,
-			"-t",
-			String(probeSeconds(audioPath)),
+			"-shortest",
 			"-movflags",
 			"+faststart",
-			videoPath,
+			temp,
 		]);
-	const thumbnailPath = path.join(dir, config.thumbnail.file);
-	if (!fs.existsSync(thumbnailPath))
-		run([
-			"ffmpeg",
-			"-y",
-			"-loglevel",
-			"error",
-			"-i",
-			coverPath,
-			"-vf",
-			`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
-			"-q:v",
-			String(config.thumbnail.quality),
-			thumbnailPath,
-		]);
+		const rendered = probeVideo(temp);
+		if (
+			Math.abs(rendered.seconds - audioSeconds) >
+				config.audit.duration_tolerance_seconds ||
+			rendered.width !== width ||
+			rendered.height !== height
+		)
+			throw new StepFailure(
+				"video-check",
+				`video ${rendered.width}x${rendered.height} ${rendered.seconds.toFixed(2)}s differs from expected output`,
+			);
+		fs.renameSync(temp, output);
+	} finally {
+		if (fs.existsSync(temp)) fs.removeSync(temp);
+	}
+	return output;
+}
 
-	const audioSeconds = probeSeconds(audioPath);
-	const title = buildTitle(draft, config, selection);
-	fs.writeJsonSync(
-		path.join(dir, "state.json"),
-		{
-			run_id: runId,
-			bucket: config.run.bucket,
-			status: "READY",
-			video_path: videoPath,
-			thumbnail_path: thumbnailPath,
-			contains_synthetic_media: true,
-			metadata: {
-				title,
-				thumbnail_title: title,
-				description: buildDescription(draft, entry, config, audioSeconds),
-				tags: buildTags(config, selection),
-			},
-		},
-		{ spaces: 2 },
-	);
-	const loudness = measureLoudness(audioPath);
-	fs.outputJsonSync(
-		path.join(dir, "audit", "measurements.json"),
-		{
-			audio_seconds: probeSeconds(audioPath),
-			tail_mean_db: tailMeanDb(audioPath, config.audit.tail_seconds),
-			asr_similarity: fs.readJsonSync(asrPath).similarity,
-			integrated_lufs: loudness.lufs,
-			true_peak_db: loudness.truePeakDb,
-		},
-		{ spaces: 2 },
-	);
-	const audit = yawaAudit(
-		{
-			runName: name,
-			draft,
-			entry,
-			scriptGeneratedInRun: fs.existsSync(scriptPath),
-			ttsRecord: fs.readJsonSync(path.join(dir, "tts.json")),
-			referenceSha256: sha256File(refPath),
-			audioSeconds,
-			videoSeconds: probeSeconds(videoPath),
-			selection,
-			metadata: { title, tags: buildTags(config, selection) },
-			cover: fs.readJsonSync(coverRecordPath),
-			coverSha256: sha256File(coverPath),
-		},
-		config,
-	);
-	observeArc(
-		draft,
-		name,
-		dir,
-		audioPath,
-		recentScripts(name),
-		nonverbalCue?.segment_index,
-	);
-	fs.outputJsonSync(path.join(dir, "audit", "result.json"), audit, {
-		spaces: 2,
-	});
-	const auditFindings = Object.values(audit).filter((c) => c.status !== "PASS");
-	console.log(
+function acquireLock(dir: string): string {
+	const lock = path.join(dir, ".prepare.lock");
+	let fd: number;
+	try {
+		fd = fs.openSync(lock, "wx");
+	} catch {
+		throw new StepFailure("run-lock", `another prepare may be active: ${lock}`);
+	}
+	fs.writeFileSync(
+		fd,
 		JSON.stringify({
-			run_id: runId,
-			entry: entry.id,
-			situation_pattern: selection.situation_pattern?.id ?? null,
-			seconds: audioSeconds,
-			voice_profile: voiceProfile.id,
-			voice_axis: voiceProfile.axis,
-			voice_feature_status: voiceFeatures.status,
-			voice_feature_error:
-				voiceFeatures.status === "UNAVAILABLE" ? voiceFeatures.error : null,
-			reference_seed: reference.selected.seed,
-			audit: Object.fromEntries(
-				Object.entries(audit).map(([n, c]) => [n, c.status]),
-			),
-			audit_findings: auditFindings.map(({ name, status, details }) => ({
-				name,
-				status,
-				details,
-			})),
+			pid: process.pid,
+			host: os.hostname(),
+			started_at: new Date().toISOString(),
 		}),
 	);
-	if (auditFindings.length > 0)
-		console.warn(
-			`[yawa] non-blocking audit findings: ${auditFindings.map((c) => `${c.name}=${c.status}: ${c.details}`).join(" | ")}`,
+	fs.closeSync(fd);
+	return lock;
+}
+
+function assertDate(date: string): void {
+	const parsed = new Date(`${date}T00:00:00.000Z`);
+	if (
+		!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+		!Number.isFinite(parsed.valueOf()) ||
+		parsed.toISOString().slice(0, 10) !== date
+	)
+		throw new Error("DATE must be a real YYYY-MM-DD date");
+}
+
+async function prepare(date: string, slot?: string): Promise<void> {
+	assertDate(date);
+	if (slot && !/^[a-z0-9]+$/.test(slot))
+		throw new Error("SLOT must be lowercase letters or digits");
+	if (process.getuid?.() === 0)
+		throw new Error("yawa daily must not run as root; use the kafka user");
+	const name = `${config.run.name_prefix}${date}${slot ? `-${slot}` : ""}`;
+	const dir = path.join(bucket, name);
+	fs.ensureDirSync(dir);
+	const lock = acquireLock(dir);
+	let stage = "preflight";
+	try {
+		const existingState = path.join(dir, "publish", "state.json");
+		const action = preparationAction({
+			publishVerified:
+				fs.existsSync(existingState) &&
+				fs.readJsonSync(existingState).phase === "VERIFIED",
+		});
+		if (action === "skip_verified") {
+			console.log(
+				`[yawa] ${name} is VERIFIED; existing artifacts are left untouched`,
+			);
+			return;
+		}
+		const device = requestedDevice();
+		const tools = availableTools();
+		preflight(tools, device);
+		stage = "script-generation";
+		const draft = generateScript(dir, tools, name);
+		let audio: string | undefined;
+		let images: { cover: string; thumbnail: string } | undefined;
+		for (const task of draft.production.order) {
+			stage = task === "audio" ? "audio-production" : "image-production";
+			if (task === "audio") audio = renderAudio(draft, dir, device);
+			else images = renderImages(draft, dir);
+		}
+		if (!audio || !images)
+			throw new StepFailure(
+				"production-plan",
+				"audio or image output is missing",
+			);
+		stage = "video-render";
+		const video = renderVideo(draft, audio, images.cover, dir);
+		const audioSeconds = probeSeconds(audio);
+		const videoSeconds = probeVideo(video).seconds;
+		const title = buildTitle(draft);
+		const description = buildDescription(draft, config);
+		const tags = buildTags(draft);
+		stage = "technical-audit";
+		const report = yawaAudit(
+			{
+				audioSeconds,
+				videoSeconds,
+				coverReadable: Boolean(probeImage(images.cover)),
+				thumbnailReadable: Boolean(probeImage(images.thumbnail)),
+				metadataValid: true,
+			},
+			config,
 		);
+		writeJsonAtomic(path.join(dir, "audit", "result.json"), report);
+		const failures = Object.entries(report).filter(
+			([, item]) => item.status !== "PASS",
+		);
+		if (failures.length)
+			throw new StepFailure(
+				"technical-audit",
+				failures.map(([key]) => key).join(", "),
+			);
+		writeJsonAtomic(path.join(dir, "state.json"), {
+			run_id: `${config.run.bucket}/${name}`,
+			bucket: config.run.bucket,
+			status: "READY",
+			video_path: video,
+			thumbnail_path: images.thumbnail,
+			contains_synthetic_media: true,
+			metadata: { title, thumbnail_title: title, description, tags },
+		});
+		console.log(
+			JSON.stringify({
+				run_id: `${config.run.bucket}/${name}`,
+				title,
+				audio_seconds: audioSeconds,
+				video_path: video,
+				thumbnail_path: images.thumbnail,
+			}),
+		);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		try {
+			writeJsonAtomic(path.join(dir, "failure.json"), {
+				run_id: `${config.run.bucket}/${name}`,
+				stage: error instanceof StepFailure ? error.stage : stage,
+				message,
+				at: new Date().toISOString(),
+			});
+		} catch (recordError) {
+			console.error(
+				`[yawa] could not write failure record: ${String(recordError)}`,
+			);
+		}
+		throw error;
+	} finally {
+		fs.removeSync(lock);
+	}
 }
 
 const [command, date, slot] = process.argv.slice(2);
-if (command === "preflight") preflight(requestedTtsDevice());
-else if (command === "prepare" && date) await prepare(date, slot);
-else throw new Error("usage: yawa_daily.ts preflight | prepare YYYY-MM-DD");
+if (command === "preflight") {
+	const tools = availableTools();
+	preflight(tools, requestedDevice());
+	console.log(JSON.stringify({ status: "READY", tools }));
+} else if (command === "prepare" && date) {
+	await prepare(date, slot);
+} else {
+	throw new Error("usage: yawa_daily.ts preflight | prepare YYYY-MM-DD [slot]");
+}

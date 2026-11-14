@@ -2,292 +2,155 @@ import { describe, expect, test } from "bun:test";
 import {
 	assertUnprivileged,
 	buildDescription,
-	buildTags,
-	buildTitle,
-	chooseSelection,
-	draftSegments,
-	loadPool,
+	capabilities,
+	irodoriCall,
 	loadYawaConfig,
-	pickLeast,
 	preparationAction,
-	type ReferenceCandidate,
-	resolveBeat,
-	runSeed,
-	type ScriptDraft,
-	type Selection,
-	segmentCall,
-	selectReference,
+	ScriptDraftSchema,
 	validateDraft,
 	yawaAudit,
 } from "../src/domain/yawa_daily.js";
-import { fixtureAt } from "./fixtures/fixture_at.js";
 
-const root = process.cwd();
-const config = loadYawaConfig(root);
-const pool = loadPool(root, config);
-const REF = "/tmp/ref.wav";
-const SHAPE = "単峰";
-const SEG = {
-	text: "こんばんは",
-	chapter: resolveBeat(config, "導入", "yawa-t"),
-};
+const config = loadYawaConfig(process.cwd());
+const tools = capabilities(config);
 
-function chaptersOf(texts: string[], shape = SHAPE): ScriptDraft["chapters"] {
-	const names = config.arc.shapes[shape] ?? [];
-	return names.map((name, index) => ({
-		name,
-		segments: texts.filter((_, i) => i % names.length === index),
-	}));
-}
-
-function draft(overrides: Partial<ScriptDraft> = {}): ScriptDraft {
-	return {
-		title: "雨の夜のおやすみ",
-		hook: "今日もお疲れさまでした。雨の音と一緒にゆっくり休みましょう。",
-		cover_scene: "雨の夜の窓辺に置かれた小さなランプと、湯気の立つマグカップ。",
-		adult_characters_confirmed: true,
-		shape: SHAPE,
-		chapters: chaptersOf(
-			Array.from(
-				{ length: config.script.min_segments },
-				(_, i) => `ゆっくり息を吐きましょう。${i}`,
-			),
-		),
+function draft(overrides: Record<string, unknown> = {}) {
+	return ScriptDraftSchema.parse({
+		title: "雨音の修理工房",
+		description: "閉店後の工房で、二人が小さな音の正体を探す。",
+		tags: ["ASMR", "音声ドラマ"],
+		voices: [{ id: "worker", caption: "明るく、少し掠れた声" }],
+		performances: [
+			{
+				voice_id: "worker",
+				text: "この音、さっきと少し違うね。",
+				acting: "気づきに弾みをつける",
+			},
+		],
+		cover_prompt: "雨の工房で小さな時計を調べる成人二人。",
+		thumbnail_prompt: "時計の内部を覗き込む二人の手元。",
+		production: {
+			tts_backend: config.tts.backend,
+			image_tool: "codex-imagegen",
+			order: ["image", "audio"],
+			motion: {
+				zoom_start: 1,
+				zoom_end: 1.12,
+				x_start: 0.4,
+				x_end: 0.6,
+				y_start: 0.5,
+				y_end: 0.5,
+			},
+		},
 		...overrides,
-	};
+	});
 }
 
-describe("yawa daily safety", () => {
-	test("accepts a clean draft", () => {
-		expect(validateDraft(draft(), config)).toEqual([]);
+describe("Yawa creative handoff", () => {
+	test("loads open-ended creative guidance separately from runtime settings", () => {
+		expect(Object.keys(config.creative).length).toBeGreaterThan(0);
+		expect(config.tts.device).toBe("cpu");
 	});
-	test("rejects banned and age-ambiguous terms", () => {
-		const bad = draft({
-			chapters: chaptersOf(
-				Array(config.script.min_segments).fill("制服の少女です。"),
-			),
+
+	test("accepts flat performances and an independently chosen chapter structure", () => {
+		expect(draft().performances).toHaveLength(1);
+		const chapterDraft = draft({
+			performances: undefined,
+			chapters: [
+				{
+					name: "時計の裏側",
+					performances: [
+						{ voice_id: "worker", text: "歯車がひとつ、逆向きに回っている。" },
+					],
+				},
+			],
 		});
-		expect(
-			validateDraft(bad, config).some((f) => f.startsWith("banned term")),
-		).toBe(true);
+		expect(chapterDraft.chapters?.[0]?.name).toBe("時計の裏側");
 	});
-	test("rejects wrong segment count and long segments", () => {
+
+	test("does not impose story patterns or segment character limits", () => {
+		const longPerformance = { voice_id: "worker", text: "あ".repeat(300) };
+		const value = draft({
+			title: "深海の図書館",
+			performances: [longPerformance],
+		});
+		expect(validateDraft(value, config, tools)).toEqual([]);
+	});
+
+	test("checks only publication metadata limits and available tools", () => {
 		expect(
-			validateDraft(draft({ chapters: chaptersOf(["短い"]) }), config).length,
-		).toBeGreaterThan(0);
-		const long = Array(config.script.min_segments).fill(
-			"あ".repeat(config.script.max_segment_chars + 1),
+			validateDraft(draft({ title: "x".repeat(101) }), config, tools),
+		).toContain("title exceeds YouTube's 100-character limit");
+		expect(
+			validateDraft(
+				draft({ production: { ...draft().production, image_tool: "missing" } }),
+				config,
+				tools,
+			),
+		).toContain("image tool unavailable: missing");
+	});
+});
+
+describe("Yawa TTS handoff", () => {
+	test("supports reference-free calls without recording a seed", () => {
+		const call = irodoriCall(config, {
+			backendId: config.tts.backend,
+			text: "今夜は遠回りして帰ろう。",
+			caption: "少し高めで、明るく率直な声。",
+			outputWav: "/tmp/yawa.wav",
+			durationScale: 1.12,
+			device: "cpu",
+		});
+		expect(call.command).toContain("--no-ref");
+		expect(call.command).not.toContain("--seed");
+		expect(call.command).toContain("--duration-scale");
+	});
+
+	test("passes an optional per-work reference", () => {
+		const call = irodoriCall(config, {
+			backendId: config.tts.backend,
+			text: "返事を待っていたんだ。",
+			caption: "乾いた低めの声。",
+			referenceWav: "/tmp/voice.wav",
+			outputWav: "/tmp/yawa.wav",
+		});
+		expect(call.command).toContain("--ref-wavs");
+		expect(call.command).toContain("/tmp/voice.wav");
+		expect(call.command).not.toContain("--no-ref");
+	});
+});
+
+describe("Yawa technical completion", () => {
+	test("never regenerates a verified publication", () => {
+		expect(preparationAction({ publishVerified: true })).toBe("skip_verified");
+		expect(preparationAction({ publishVerified: false })).toBe("prepare");
+	});
+
+	test("keeps the independent audit limited to playable deliverables", () => {
+		const audit = yawaAudit(
+			{
+				audioSeconds: 240,
+				videoSeconds: 240.5,
+				coverReadable: true,
+				thumbnailReadable: true,
+				metadataValid: true,
+			},
+			config,
 		);
-		expect(
-			validateDraft(draft({ chapters: chaptersOf(long) }), config).length,
-		).toBeGreaterThan(0);
+		expect(Object.values(audit).every((item) => item.status === "PASS")).toBe(
+			true,
+		);
+		expect(Object.keys(audit)).not.toContain("creative_similarity");
 	});
-	test("refuses to run as root", () => {
+
+	test("refuses root execution", () => {
 		expect(() => assertUnprivileged(0, [])).toThrow("must not run as root");
 	});
 });
 
-describe("yawa daily arc", () => {
-	const selection: Selection = {
-		id: "SCR-001",
-		shape: SHAPE,
-		axes: Object.fromEntries(
-			Object.entries(config.axes).map(([axis, options]) => [
-				axis,
-				options[0] as string,
-			]),
-		),
-		title_form: 0,
-	};
-	test("a beat sets its pace and caption on the same reference, stable per run", () => {
-		const beat = config.arc.beats.山場;
-		const peak = resolveBeat(config, "山場", "yawa-2026-11-02");
-		expect(peak).toEqual(resolveBeat(config, "山場", "yawa-2026-11-02"));
-		expect(peak.duration_scale).toBeGreaterThanOrEqual(
-			beat?.duration_scale[0] ?? 0,
-		);
-		expect(peak.duration_scale).toBeLessThanOrEqual(
-			beat?.duration_scale[1] ?? 0,
-		);
-		const call = segmentCall(
-			config,
-			{ text: "あ", chapter: peak },
-			REF,
-			"/o.wav",
-			1,
-		);
-		expect(call.command).toContain(String(peak.duration_scale));
-		expect(call.command).toContain(`${config.voice.caption}${peak.style}`);
-		expect(call.command).toContain(REF);
-	});
-	test("every shape is accepted, ends in a descent, and a mismatch is rejected", () => {
-		for (const [shape, names] of Object.entries(config.arc.shapes)) {
-			const texts = Array.from(
-				{ length: config.script.min_segments },
-				(_, i) => `あ${i}`,
-			);
-			const d = draft({ shape, chapters: chaptersOf(texts, shape) });
-			expect(validateDraft(d, config)).toEqual([]);
-			expect(draftSegments(d, config, "yawa-t").length).toBe(texts.length);
-			expect(["沈み", "締め"]).toContain(names[names.length - 1] as string);
-		}
-		const bad = draft({ chapters: [{ name: "導入", segments: ["あ"] }] });
-		expect(
-			validateDraft(bad, config).some((f) => f.startsWith("chapters")),
-		).toBe(true);
-		expect(validateDraft(draft({ shape: "none" }), config)[0]).toContain(
-			"unknown shape",
-		);
-	});
-	test("selection rotates through unused options and feeds the title and tags", () => {
-		expect(pickLeast(["a", "b", "c"], ["a", "b", "a"], "s")).toBe("c");
-		const next = chooseSelection(
-			config,
-			"SCR-001",
-			[selection, selection],
-			"yawa-x",
-		);
-		expect(next.shape).not.toBe(selection.shape);
-		expect(next.axes.place).not.toBe(selection.axes.place);
-		const meta = {
-			title: "月あかりの調合室で",
-			hook: "x".repeat(12),
-			cover_scene: "x".repeat(24),
-			adult_characters_confirmed: true as const,
-		};
-		expect(buildTitle(meta, config, selection)).toContain(
-			selection.axes.narrator_role as string,
-		);
-		expect(buildTags(config, selection)).toContain(
-			selection.axes.place as string,
-		);
-	});
-});
-
-describe("yawa daily voice reference", () => {
-	test("every segment is generated from the reference clip, never caption-only", () => {
-		const call = segmentCall(config, SEG, REF, "/tmp/x.wav", 1);
-		expect(call.command).toContain("--ref-wavs");
-		expect(call.command).toContain(REF);
-		expect(call.command).not.toContain("--no-ref");
-	});
-	test("the voice seed changes per video and is stable for one run", () => {
-		expect(runSeed("yawa-2026-11-07", "tts")).toBe(
-			runSeed("yawa-2026-11-07", "tts"),
-		);
-		expect(runSeed("yawa-2026-11-07", "tts")).not.toBe(
-			runSeed("yawa-2026-11-08", "tts"),
-		);
-	});
-	test("selects a reproducible candidate independently of ASR scores", () => {
-		const candidates: ReferenceCandidate[] = [
-			{ seed: 101, file: "a", asr_similarity: 0.7 },
-			{ seed: 202, file: "b", asr_similarity: 0.9 },
-			{ seed: 303, file: "c", asr_similarity: 0.85 },
-		];
-		expect(selectReference(candidates, 1).seed).toBe(202);
-		expect(selectReference(candidates, 1).seed).toBe(202);
-		expect(selectReference(candidates, 2).seed).toBe(303);
-	});
-});
-
-describe("yawa daily existing runs", () => {
-	test("never regenerates a published run", () => {
-		expect(
-			preparationAction({
-				publishVerified: true,
-				finalMixExists: true,
-				referenceExists: false,
-			}),
-		).toBe("skip_verified");
-	});
-	test("refuses to add a reference to audio made without one", () => {
-		expect(
-			preparationAction({
-				publishVerified: false,
-				finalMixExists: true,
-				referenceExists: false,
-			}),
-		).toBe("refuse_legacy");
-	});
-});
-
-describe("yawa daily metadata", () => {
-	test("description keeps the AI disclosure and the inspiration credit", () => {
-		const inspiration = fixtureAt(pool, 0);
-		const text = buildDescription(draft(), inspiration, config, 430);
-		expect(text).toContain(config.metadata.ai_disclosure);
-		expect(text).toContain(inspiration.url);
-		expect(text).toContain("年上の成人の女性");
-	});
-});
-
-describe("yawa daily tts backend", () => {
-	test("unknown backend fails loudly", () => {
-		expect(() =>
-			segmentCall(
-				{ ...config, tts: { ...config.tts, backend: "nope" } },
-				SEG,
-				REF,
-				"c",
-				1,
-			),
-		).toThrow("unknown tts backend");
-	});
-});
-
-describe("yawa daily audit", () => {
-	const selection: Selection = {
-		id: "SCR-001",
-		shape: SHAPE,
-		axes: Object.fromEntries(
-			Object.entries(config.axes).map(([axis, options]) => [
-				axis,
-				options[0] as string,
-			]),
-		),
-		title_form: 0,
-	};
-	const base = {
-		runName: "yawa-2026-11-07",
-		draft: draft(),
-		selection,
-		metadata: {
-			title: buildTitle(draft(), config, selection),
-			tags: buildTags(config, selection),
-		},
-		entry: pool[0],
-		scriptGeneratedInRun: true,
-		ttsRecord: {
-			backend: "irodori-v4.1-small",
-			checkpoint: "x",
-			seed: runSeed("yawa-2026-11-07", "tts"),
-			reference_sha256: "ref1",
-		},
-		referenceSha256: "ref1",
-		audioSeconds: 600,
-		videoSeconds: 600,
-		cover: { tool: "codex-imagegen", prompt: "p", sha256: "abc" },
-		coverSha256: "abc",
-	};
-	test("passes a complete run", () => {
-		const result = yawaAudit(base as never, config);
-		expect(Object.values(result).every((c) => c.status === "PASS")).toBe(true);
-		expect(Object.keys(result)).toContain("voice_reference");
-	});
-	test("fails when segments were not generated from the recorded reference", () => {
-		const result = yawaAudit(
-			{ ...base, referenceSha256: "other" } as never,
-			config,
-		);
-		expect(result.voice_reference?.status).toBe("QUALITY_FAIL");
-	});
-	test("fails on metadata that drifts from the selection", () => {
-		const fail = (patch: object) =>
-			Object.values(yawaAudit({ ...base, ...patch } as never, config)).some(
-				(c) => c.status !== "PASS",
-			);
-		expect(fail({ metadata: { ...base.metadata, title: "x" } })).toBe(true);
-		expect(fail({ selection: { ...selection, shape: "other" } })).toBe(true);
-	});
+test("metadata retains factual disclosures without fixed creative title or lead", () => {
+	const text = buildDescription(draft(), config);
+	expect(text).toContain(config.metadata.ai_disclosure);
+	expect(text).toContain(config.metadata.rights_declaration);
+	expect(text).not.toContain("再生時間:");
 });

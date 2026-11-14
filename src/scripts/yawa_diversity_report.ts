@@ -1,508 +1,253 @@
+import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
-import { sha256File } from "../domain/publication_state.js";
-import {
-	loadYawaConfig,
-	type Selection,
-	SelectionSchema,
-} from "../domain/yawa_daily.js";
+import { loadYawaConfig } from "../domain/yawa_daily.js";
 import { ROOT } from "../io/core.js";
 
 const config = loadYawaConfig(ROOT);
-const bucketDir = path.join(ROOT, "runs", config.run.bucket);
-const reportWindow = config.diversity.recent_window;
-
-const ScriptSnapshotSchema = z.object({
-	title: z.string().optional(),
-	hook: z.string().optional(),
-	segments: z.array(z.string()).optional(),
-	chapters: z
-		.array(z.object({ segments: z.array(z.string()) }).passthrough())
-		.optional(),
+const bucket = path.join(ROOT, "runs", config.run.bucket);
+const DomainSchema = z.object({
+	perceptual_status: z.enum([
+		"directly_observed",
+		"partly_observed",
+		"unavailable",
+	]),
+	findings: z.array(
+		z.object({
+			observation: z.string(),
+			evidence: z.array(
+				z.object({
+					run_id: z.string(),
+					file: z.string(),
+					location: z.string(),
+					detail: z.string(),
+				}),
+			),
+			cause: z.string(),
+			confidence: z.enum([
+				"confirmed_in_code_or_config",
+				"supported_inference",
+				"undetermined",
+			]),
+			improvement: z.string(),
+		}),
+	),
+	limitations: z.array(z.string()),
+});
+const ReportSchema = z.object({
+	summary: z.string(),
+	voice: DomainSchema,
+	style: DomainSchema,
+	visual: DomainSchema,
+	limitations: z.array(z.string()),
 });
 
-type Observation = {
-	run_id: string;
-	selection: Selection;
-	title: string;
-	hook: string;
-	text: string;
-	words: string[];
-	voice_profile_id: string | null;
-	voice_axes: Record<string, string> | null;
-	nonverbal_cue_id: string | null;
-	voice_features: Record<string, unknown> | null;
-};
-
-type Distribution = {
-	sample_count: number;
-	missing_count: number;
-	configured_options: number;
-	observed_options: number;
-	coverage_ratio: number | null;
-	normalized_entropy: number | null;
-	counts: Record<string, number>;
-};
-
-const segmenter = new Intl.Segmenter("ja", { granularity: "word" });
-const lexicalStopWords = new Set([
-	"って",
-	"てい",
-	"ます",
-	"した",
-	"いる",
-	"しょう",
-	"んで",
-	"から",
-	"まで",
-	"こと",
-	"ここ",
-	"なく",
-	"です",
-	"ない",
-	"いい",
-	"たら",
-	"だけ",
-	"もう",
-	"して",
-	"する",
-	"ある",
-	"よう",
-	"ので",
-	"でも",
-	"また",
-	"しま",
-	"さい",
-	"くだ",
-	"この",
-	"その",
-	"これ",
-	"それ",
-	"あなた",
-]);
-
-function tokenize(text: string): string[] {
-	return [...segmenter.segment(text.normalize("NFKC"))]
-		.filter((part) => part.isWordLike && part.segment.length >= 2)
-		.map((part) => part.segment.toLowerCase())
-		.filter((word) => !lexicalStopWords.has(word));
+function run(command: string[]): string {
+	const result = Bun.spawnSync(command, {
+		cwd: ROOT,
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	if (result.exitCode !== 0)
+		throw new Error(
+			`audit command failed (${result.exitCode}): ${result.stderr.toString().slice(-1000)}`,
+		);
+	return result.stdout.toString();
 }
 
-function readOptionalJson(file: string): unknown | undefined {
-	if (!fs.existsSync(file)) return undefined;
-	return fs.readJsonSync(file);
-}
-
-function readObservations(): {
-	observations: Observation[];
-	excluded: string[];
-	missingArtifactRuns: string[];
-	windowRunCount: number;
+function mediaInfo(file: string): {
+	status: "missing" | "unreadable" | "readable";
+	seconds: number | null;
+	error?: string;
 } {
-	if (!fs.existsSync(bucketDir))
+	if (!fs.existsSync(file)) return { status: "missing", seconds: null };
+	try {
+		const value = Number(
+			run([
+				"ffprobe",
+				"-v",
+				"error",
+				"-show_entries",
+				"format=duration",
+				"-of",
+				"default=noprint_wrappers=1:nokey=1",
+				file,
+			]).trim(),
+		);
+		if (!Number.isFinite(value) || value <= 0)
+			return {
+				status: "unreadable",
+				seconds: null,
+				error: "no positive duration",
+			};
+		return { status: "readable", seconds: value };
+	} catch (error) {
 		return {
-			observations: [],
-			excluded: [],
-			missingArtifactRuns: [],
-			windowRunCount: 0,
+			status: "unreadable",
+			seconds: null,
+			error: error instanceof Error ? error.message : String(error),
 		};
-	const observations: Observation[] = [];
-	const excluded: string[] = [];
-	const missingArtifactRuns: string[] = [];
-	const runNames = fs
-		.readdirSync(bucketDir)
-		.filter((name) => fs.statSync(path.join(bucketDir, name)).isDirectory())
-		.sort()
-		.slice(-reportWindow);
-
-	for (const runName of runNames) {
-		const runDir = path.join(bucketDir, runName);
-		const selectionFile = path.join(runDir, "selection.json");
-		const scriptFile = path.join(runDir, "script.json");
-		const missingFiles = [selectionFile, scriptFile]
-			.filter((file) => !fs.existsSync(file))
-			.map((file) => path.basename(file));
-		if (missingFiles.length > 0) {
-			missingArtifactRuns.push(
-				`${runName}: missing ${missingFiles.join(", ")}`,
-			);
-			continue;
-		}
-		try {
-			const selection = SelectionSchema.parse(fs.readJsonSync(selectionFile));
-			const script = ScriptSnapshotSchema.parse(fs.readJsonSync(scriptFile));
-			const segments =
-				script.segments ??
-				script.chapters?.flatMap((chapter) => chapter.segments) ??
-				[];
-			const text = segments.join(" ");
-			if (!text.trim()) throw new Error("script contains no segment text");
-			const voiceExperiment = readOptionalJson(
-				path.join(runDir, "voice_experiment.json"),
-			);
-			const voiceProfileId =
-				typeof voiceExperiment === "object" &&
-				voiceExperiment !== null &&
-				"profile_id" in voiceExperiment &&
-				typeof voiceExperiment.profile_id === "string"
-					? voiceExperiment.profile_id
-					: null;
-			const voiceAxes =
-				typeof voiceExperiment === "object" &&
-				voiceExperiment !== null &&
-				"selected_axes" in voiceExperiment &&
-				typeof voiceExperiment.selected_axes === "object" &&
-				voiceExperiment.selected_axes !== null
-					? (voiceExperiment.selected_axes as Record<string, string>)
-					: null;
-			const nonverbalExperiment = readOptionalJson(
-				path.join(runDir, "nonverbal_experiment.json"),
-			);
-			const nonverbalCueId =
-				typeof nonverbalExperiment === "object" &&
-				nonverbalExperiment !== null &&
-				"cue" in nonverbalExperiment &&
-				typeof nonverbalExperiment.cue === "object" &&
-				nonverbalExperiment.cue !== null &&
-				"id" in nonverbalExperiment.cue &&
-				typeof nonverbalExperiment.cue.id === "string"
-					? nonverbalExperiment.cue.id
-					: null;
-			const voiceFeaturesValue = readOptionalJson(
-				path.join(runDir, "voice_features.json"),
-			);
-			const rawVoiceFeatures =
-				typeof voiceFeaturesValue === "object" &&
-				voiceFeaturesValue !== null &&
-				"features" in voiceFeaturesValue &&
-				typeof voiceFeaturesValue.features === "object" &&
-				voiceFeaturesValue.features !== null
-					? (voiceFeaturesValue.features as Record<string, unknown>)
-					: null;
-			const nestedFormants = rawVoiceFeatures?.formant_estimates_unsegmented;
-			const formantRecord =
-				typeof nestedFormants === "object" && nestedFormants !== null
-					? (nestedFormants as Record<string, unknown>)
-					: null;
-			const voiceFeatures = rawVoiceFeatures
-				? {
-						...rawVoiceFeatures,
-						...(formantRecord
-							? {
-									f1_median_hz: formantRecord.f1_median_hz,
-									f1_bandwidth_median_hz: formantRecord.f1_bandwidth_median_hz,
-									f2_median_hz: formantRecord.f2_median_hz,
-									f3_median_hz: formantRecord.f3_median_hz,
-								}
-							: {}),
-					}
-				: null;
-			observations.push({
-				run_id: runName,
-				selection,
-				title: script.title ?? "",
-				hook: script.hook ?? "",
-				text,
-				words: tokenize(text),
-				voice_profile_id: voiceProfileId,
-				voice_axes: voiceAxes,
-				nonverbal_cue_id: nonverbalCueId,
-				voice_features: voiceFeatures,
-			});
-		} catch (error) {
-			const reason =
-				error instanceof z.ZodError
-					? error.issues
-							.map(
-								(issue) =>
-									`${issue.path.join(".") || "root"}: ${issue.message}`,
-							)
-							.join("; ")
-					: String(error);
-			excluded.push(`${runName}: ${reason}`);
-		}
 	}
-	return {
-		observations,
-		excluded,
-		missingArtifactRuns,
-		windowRunCount: runNames.length,
-	};
 }
 
-function distribution(
-	options: string[],
-	values: Array<string | null | undefined>,
-): Distribution {
-	const counts = Object.fromEntries(options.map((option) => [option, 0]));
-	let sampleCount = 0;
-	for (const value of values) {
-		if (!value) continue;
-		if (!(value in counts)) counts[value] = 0;
-		counts[value] = (counts[value] ?? 0) + 1;
-		sampleCount++;
-	}
-	const nonzero = Object.values(counts).filter((count) => count > 0);
-	const entropy = nonzero.reduce((sum, count) => {
-		const probability = count / sampleCount;
-		return sum - probability * Math.log(probability);
-	}, 0);
-	return {
-		sample_count: sampleCount,
-		missing_count: values.length - sampleCount,
-		configured_options: options.length,
-		observed_options: nonzero.length,
-		coverage_ratio: options.length > 0 ? nonzero.length / options.length : null,
-		normalized_entropy:
-			options.length > 1 && sampleCount > 0
-				? Number((entropy / Math.log(options.length)).toFixed(4))
-				: null,
-		counts,
-	};
-}
-
-function maxJaccardSimilarity(observations: Observation[]) {
-	let maximum = 0;
-	let pair: [string, string] | null = null;
-	for (let left = 0; left < observations.length; left++) {
-		for (let right = left + 1; right < observations.length; right++) {
-			const a = new Set(observations[left]?.words ?? []);
-			const b = new Set(observations[right]?.words ?? []);
-			const union = new Set([...a, ...b]);
-			if (union.size === 0) continue;
-			let intersection = 0;
-			for (const word of a) if (b.has(word)) intersection++;
-			const similarity = intersection / union.size;
-			if (similarity > maximum) {
-				maximum = similarity;
-				pair = [
-					observations[left]?.run_id ?? "",
-					observations[right]?.run_id ?? "",
-				];
+function imageInfo(file: string): {
+	status: "missing" | "unreadable" | "readable";
+	width?: number;
+	height?: number;
+	error?: string;
+} {
+	if (!fs.existsSync(file)) return { status: "missing" };
+	try {
+		const output = run([
+			"ffprobe",
+			"-v",
+			"error",
+			"-select_streams",
+			"v:0",
+			"-show_entries",
+			"stream=width,height",
+			"-of",
+			"json",
+			file,
+		]);
+		const stream = (
+			JSON.parse(output) as {
+				streams?: Array<{ width?: number; height?: number }>;
 			}
-		}
+		).streams?.[0];
+		if (!stream?.width || !stream.height)
+			return { status: "unreadable", error: "missing image dimensions" };
+		return { status: "readable", width: stream.width, height: stream.height };
+	} catch (error) {
+		return {
+			status: "unreadable",
+			error: error instanceof Error ? error.message : String(error),
+		};
 	}
-	return { score: Number(maximum.toFixed(4)), pair };
 }
 
-function wordFrequency(observations: Observation[]) {
-	const counts = new Map<string, number>();
-	const runCounts = new Map<string, number>();
-	for (const observation of observations) {
-		const oncePerRun = new Set(observation.words);
-		for (const word of observation.words)
-			counts.set(word, (counts.get(word) ?? 0) + 1);
-		for (const word of oncePerRun)
-			runCounts.set(word, (runCounts.get(word) ?? 0) + 1);
-	}
-	return [...counts]
-		.map(([word, count]) => ({
-			word,
-			count,
-			runs: runCounts.get(word) ?? 0,
-		}))
-		.sort((a, b) => b.count - a.count || a.word.localeCompare(b.word))
-		.slice(0, 30);
+function runNames(): { ids: string[]; total: number } {
+	if (!fs.existsSync(bucket)) return { ids: [], total: 0 };
+	const available = fs
+		.readdirSync(bucket)
+		.filter((name) => /^yawa-\d{4}-\d{2}-\d{2}(-[a-z0-9]+)?$/.test(name))
+		.filter((name) => fs.existsSync(path.join(bucket, name, "script.json")))
+		.sort();
+	const requested = process.env.YAWA_AUDIT_RUNS?.split(",")
+		.map((id) => id.trim())
+		.filter(Boolean);
+	if (!requested?.length)
+		return { ids: available.slice(-12), total: available.length };
+	for (const id of requested)
+		if (!/^yawa-\d{4}-\d{2}-\d{2}(-[a-z0-9]+)?$/.test(id))
+			throw new Error(`invalid run id in YAWA_AUDIT_RUNS: ${id}`);
+	return { ids: requested, total: available.length };
 }
 
-function numericSummary(observations: Observation[], key: string) {
-	const values = observations
-		.map((observation) => observation.voice_features?.[key])
-		.filter(
-			(value): value is number =>
-				typeof value === "number" &&
-				Number.isFinite(value) &&
-				!(key === "hnr_median_db" && value <= -100),
-		)
-		.sort((a, b) => a - b);
-	if (values.length === 0)
-		return { count: 0, min: null, median: null, max: null };
-	const middle = Math.floor(values.length / 2);
-	const median =
-		values.length % 2 === 0
-			? ((values[middle - 1] ?? 0) + (values[middle] ?? 0)) / 2
-			: values[middle];
-	return {
-		count: values.length,
-		min: values[0] ?? null,
-		median: median ?? null,
-		max: values[values.length - 1] ?? null,
-	};
+function evidenceManifest(ids: string[], total: number) {
+	const runs = ids.map((id) => {
+		const dir = path.join(bucket, id);
+		const files = {
+			script: path.join(dir, "script.json"),
+			audio: path.join(dir, "final_mix.wav"),
+			video: path.join(dir, config.video.file),
+			cover: path.join(dir, "cover.png"),
+			thumbnail: path.join(dir, config.thumbnail.file),
+		};
+		return {
+			run_id: id,
+			files: Object.fromEntries(
+				Object.entries(files).map(([key, file]) => [
+					key,
+					{
+						path: fs.existsSync(file)
+							? path.relative(ROOT, file).replaceAll(path.sep, "/")
+							: null,
+						status: fs.existsSync(file) ? "present" : "missing",
+					},
+				]),
+			),
+			audio: mediaInfo(files.audio),
+			video: mediaInfo(files.video),
+			cover: imageInfo(files.cover),
+			thumbnail: imageInfo(files.thumbnail),
+		};
+	});
+	return { requested_runs: ids, available_script_runs: total, runs };
 }
 
-function buildReport() {
-	const { observations, excluded, missingArtifactRuns, windowRunCount } =
-		readObservations();
-	const selections = observations.map((observation) => observation.selection);
-	const dimensions: Record<string, Distribution> = {
-		situation_pattern: distribution(
-			config.situation_patterns.map((pattern) => pattern.id),
-			selections.map((selection) => selection.situation_pattern?.id),
-		),
-		story_shape: distribution(
-			Object.keys(config.arc.shapes ?? {}),
-			selections.map((selection) => selection.shape),
-		),
-		voice_profile: distribution(
-			[],
-			observations.map((observation) => observation.voice_profile_id),
-		),
-		nonverbal_cue: distribution(
-			config.nonverbal_experiment.cues.map((cue) => cue.id),
-			observations.map((observation) => observation.nonverbal_cue_id),
-		),
-	};
-	for (const [axis, options] of Object.entries(config.axes))
-		dimensions[axis] = distribution(
-			options,
-			selections.map((selection) => selection.axes[axis]),
-		);
-	for (const [axis, options] of Object.entries(config.voice.axes))
-		dimensions[`voice_${axis}`] = distribution(
-			options.map((option) => option.id),
-			observations.map((observation) => observation.voice_axes?.[axis]),
-		);
-
-	const wordCounts = wordFrequency(observations);
-	const pairwiseSimilarity = maxJaccardSimilarity(observations);
-	const suggestions: string[] = [];
-	for (const [dimension, report] of Object.entries(dimensions)) {
-		if (dimension === "situation_pattern" || dimension === "story_shape")
-			continue;
-		if (report.configured_options > 0 && report.sample_count > 0) {
-			const unused = Object.entries(report.counts)
-				.filter(([, count]) => count === 0)
-				.map(([value]) => value);
-			if (unused.length > 0)
-				suggestions.push(
-					`${dimension}: 未使用候補 ${unused.slice(0, 8).join("、")}${unused.length > 8 ? " ほか" : ""}`,
-				);
-		}
-	}
-	if (pairwiseSimilarity.pair && pairwiseSimilarity.score > 0)
-		suggestions.push(
-			`台本全体の語彙Jaccard最大値 ${pairwiseSimilarity.score} (${pairwiseSimilarity.pair.join(" vs ")}); 上位頻出語と状況設定を次のYAML設計で見直す`,
-		);
-	if (
-		observations.some((observation) => !observation.selection.situation_pattern)
-	)
-		suggestions.push(
-			"新作は旧状況パターンを使わず、場面軸を独立に組み合わせています。旧runとの状況パターン比較は歴史診断として解釈してください。",
-		);
-
-	return {
-		generated_at: new Date().toISOString(),
-		advisory_only: true,
-		gate_applied: false,
-		production_or_publication_effect: "none",
-		config_path: "config/yawa/daily.yaml",
-		config_sha256: sha256File(path.join(ROOT, "config/yawa/daily.yaml")),
-		window: reportWindow,
-		window_run_count: windowRunCount,
-		observation_count: observations.length,
-		missing_artifact_runs: missingArtifactRuns,
-		excluded_runs: excluded,
-		dimensions,
-		scripts: {
-			unique_word_count: new Set(observations.flatMap((item) => item.words))
-				.size,
-			max_pairwise_word_jaccard: pairwiseSimilarity,
-			top_word_frequency: wordCounts,
-		},
-		voice_measurements: {
-			advisory_only: true,
-			f0_median_hz: numericSummary(observations, "f0_median_hz"),
-			f0_p95_p05_semitone: numericSummary(observations, "f0_p95_p05_semitone"),
-			spectral_centroid_median_hz: numericSummary(
-				observations,
-				"spectral_centroid_median_hz",
-			),
-			spectral_rolloff85_median_hz: numericSummary(
-				observations,
-				"spectral_rolloff85_median_hz",
-			),
-			spectral_tilt_db_octave: numericSummary(
-				observations,
-				"spectral_tilt_db_octave",
-			),
-			hnr_median_db: numericSummary(observations, "hnr_median_db"),
-			a1_p0_median_db: numericSummary(observations, "a1_p0_median_db"),
-			f1_median_hz: numericSummary(observations, "f1_median_hz"),
-			f2_median_hz: numericSummary(observations, "f2_median_hz"),
-			f3_median_hz: numericSummary(observations, "f3_median_hz"),
-			f1_bandwidth_median_hz: numericSummary(
-				observations,
-				"f1_bandwidth_median_hz",
-			),
-		},
-		suggestions,
-	};
-}
-
-function formatReport(report: ReturnType<typeof buildReport>): string {
-	const dimensionLines = Object.entries(report.dimensions).map(
-		([name, value]) =>
-			`- ${name}: ${value.observed_options}/${value.configured_options} options; coverage=${value.coverage_ratio === null ? "n/a" : value.coverage_ratio.toFixed(2)}; normalized_entropy=${value.normalized_entropy === null ? "n/a" : value.normalized_entropy.toFixed(3)}; samples=${value.sample_count}, missing=${value.missing_count}`,
-	);
+function promptFor(manifest: ReturnType<typeof evidenceManifest>): string {
 	return [
-		"# Yawa Diversity Diagnostic",
-		"",
-		`Generated: ${report.generated_at}`,
-		`Window: ${report.observation_count}/${report.window_run_count} readable runs (target ${report.window})`,
-		"Mode: advisory only; no gate; no production or publication effect",
-		"",
-		"## Design dimensions",
-		...dimensionLines,
-		"",
-		"## Voice measurements (reference values only)",
-		`- F0 median (Hz): ${JSON.stringify(report.voice_measurements.f0_median_hz)}`,
-		`- F0 range (semitones): ${JSON.stringify(report.voice_measurements.f0_p95_p05_semitone)}`,
-		`- Spectral centroid median (Hz): ${JSON.stringify(report.voice_measurements.spectral_centroid_median_hz)}`,
-		`- Spectral rolloff 85% (Hz): ${JSON.stringify(report.voice_measurements.spectral_rolloff85_median_hz)}`,
-		`- Spectral tilt (dB/octave): ${JSON.stringify(report.voice_measurements.spectral_tilt_db_octave)}`,
-		`- HNR (dB): ${JSON.stringify(report.voice_measurements.hnr_median_db)}`,
-		`- A1−P0 (dB): ${JSON.stringify(report.voice_measurements.a1_p0_median_db)}`,
-		`- Formant estimates F1/F2/F3 (Hz; unsegmented and exploratory): ${JSON.stringify([report.voice_measurements.f1_median_hz, report.voice_measurements.f2_median_hz, report.voice_measurements.f3_median_hz])}`,
-		"- HNR samples at or below -100 dB are omitted from summaries as unusable silence/unvoiced values.",
-		"",
-		"## Frequent words",
-		"(Common function words and direct-address pronouns omitted.)",
-		...report.scripts.top_word_frequency
-			.slice(0, 20)
-			.map(
-				(item) =>
-					`- ${item.word}: ${item.count} occurrences in ${item.runs} runs`,
-			),
-		"",
-		"## Design suggestions",
-		...(report.suggestions.length > 0
-			? report.suggestions.map((suggestion) => `- ${suggestion}`)
-			: ["- No advisory suggestions in this window."]),
-		"",
-		...(report.excluded_runs.length > 0
-			? [
-					"## Excluded malformed runs",
-					...report.excluded_runs.map((value) => `- ${value}`),
-					"",
-				]
-			: []),
-		...(report.missing_artifact_runs.length > 0
-			? [
-					"## Runs missing selection or script",
-					...report.missing_artifact_runs.map((value) => `- ${value}`),
-					"",
-				]
-			: []),
+		"あなたは夜話アーカイブの独立監査AIです。制作AIの指示を作らず、監査結果を次の制作・公開へ注入しません。作品を却下・再生成せず、数値閾値や理想の声・作風・画風を設定しません。",
+		"対象runの完成音声・台本・動画・カバー・サムネイルを実物から確認し、必要なら設定・制作コード・保存された各作品固有の指示を照合してください。観測事実、推論、コード・設定で確認した制約を分けます。",
+		`ユーザーの声の好み: ${config.creative.preference}`,
+		`作品一覧と欠損状況: ${JSON.stringify(manifest)}`,
+		"制作設定: config/yawa/daily.yaml と config/yawa/runtime.yaml。制作・画像アダプター: src/domain/yawa_daily.ts と src/scripts/yawa_daily.ts。実runのscript.jsonには各作品の声、演技、画像指示、制作順があります。",
+		"声の音色・共鳴・発声と、演技・抑揚・間・速度を区別。完成音声を直接聴けた場合だけ heard とし、run id・秒数・観測を示す。聴取能力がない場合は unavailable とし、ASR・波形・メタデータから聴いたと装わない。画像は実際に表示を確認できた場合だけ directly_observed とし、視認できなければ unavailable と記す。",
+		"作風は人物関係、状況、展開、台詞、タイトルを実物から確認します。画像は構図、色、描写、人物表現を確認します。語句・画像の類似度スコアだけで原因を断定しません。共通性がユーザーの嗜好と合う場合、構造的固定化と区別します。",
+		"各所見に対象run、ファイル、音声の秒数または台本の短い位置情報、観測内容、原因と確度、確認できた原因に対する改善案を記載。証拠不足はundeterminedにしてください。欠損・対象期間・監査上の限界も記載してください。",
+		"JSONだけで出力してください。schema: {summary:string,voice:{perceptual_status:directly_observed|partly_observed|unavailable,findings:[{observation,evidence:[{run_id,file,location,detail}],cause,confidence:confirmed_in_code_or_config|supported_inference|undetermined,improvement}],limitations:string[]},style:{同じ形式},visual:{同じ形式},limitations:string[]}。分からない情報を埋めず、findingがなければ空配列にします。",
 	].join("\n");
 }
 
-const report = buildReport();
-const markdown = formatReport(report);
-const outputDir = path.join(ROOT, "logs");
-fs.ensureDirSync(outputDir);
-fs.writeJsonSync(path.join(outputDir, "yawa_diversity_report.json"), report, {
-	spaces: 2,
-});
-fs.writeFileSync(path.join(outputDir, "yawa_diversity_report.md"), markdown);
-console.log(markdown);
+function parseJson(text: string): unknown {
+	return JSON.parse(
+		text
+			.trim()
+			.replace(/^```(?:json)?\s*/i, "")
+			.replace(/```\s*$/, ""),
+	);
+}
+
+async function main(): Promise<void> {
+	const { ids, total } = runNames();
+	if (!ids.length) throw new Error("no yawa runs with script.json were found");
+	const manifest = evidenceManifest(ids, total);
+	const temp = fs.mkdtempSync(path.join(os.tmpdir(), "yawa-audit-"));
+	try {
+		const answer = path.join(temp, "answer.json");
+		const result = run([
+			"codex",
+			"exec",
+			"-m",
+			config.script.model,
+			"--sandbox",
+			"read-only",
+			"--skip-git-repo-check",
+			"--ephemeral",
+			"-o",
+			answer,
+			promptFor(manifest),
+		]);
+		const raw = fs.existsSync(answer)
+			? fs.readFileSync(answer, "utf8")
+			: result;
+		const report = ReportSchema.parse(parseJson(raw));
+		const outputDir = path.join(ROOT, "outputs");
+		fs.ensureDirSync(outputDir);
+		const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+		const output = path.join(outputDir, `yawa-diversity-audit-${stamp}.json`);
+		const record = {
+			generated_at: new Date().toISOString(),
+			scope: manifest,
+			read_only: true,
+			automatic_action: false,
+			report,
+		};
+		const staged = `${output}.${process.pid}.tmp`;
+		fs.writeFileSync(staged, `${JSON.stringify(record, null, 2)}\n`);
+		fs.renameSync(staged, output);
+		console.log(
+			JSON.stringify({
+				output: path.relative(ROOT, output),
+				run_count: ids.length,
+				total_available: total,
+			}),
+		);
+	} finally {
+		fs.removeSync(temp);
+	}
+}
+
+await main();
