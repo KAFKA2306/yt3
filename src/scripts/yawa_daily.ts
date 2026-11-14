@@ -204,24 +204,20 @@ function requestedDevice(): Device {
 	return value;
 }
 
-function scriptPrompt(
-	tools: { tts: string[]; images: string[] },
-	runId: string,
-): string {
+function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 	return [
 		"あなたは夜話アーカイブの制作AIです。次のYAMLは目的と参考情報です。",
 		JSON.stringify(config.creative),
-		`制作ID: ${runId}。このIDから題材を決めず、今回の作品を独立に考えてください。`,
-		"この作品ならではの魅力を決め、成人人物の日本語台本を書いてください。状況、関係、展開、形式、尺、話者数、声、演技、画像を作品ごとに考えます。物語型、声質、画風を固定しません。",
-		"声の好みは参考情報で、音響値や決まった声質の条件ではありません。声優像と画像表現は作品ごとに考案します。Captionには声の質感、各発話のactingにはその場の演技を書きます。参照文は必要な声にだけ任意で付け、Captionと矛盾しない台詞にしてください。",
+		"固有の魅力を持つ成人人物の日本語音声作品を創作してください。状況、人物、形式、尺、声、演技、画風は作品ごとに決め、既成の型を前提にしません。",
+		"声の好みは参考で条件ではありません。voices.captionに質感、各performance.actingに演技を書き、reference_textは必要な声だけに任意で付けてcaptionと整合させます。",
 		"使えるツール: " +
 			JSON.stringify({
 				tts: tools.tts,
 				images: tools.images,
 				video: ["ffmpeg"],
 			}),
-		"使えるTTS・画像ツールから選び、production.orderにはaudioとimageを一度ずつ含め、実行順を決めます。画像サイズは提示された候補から作品に合わせて選びます。videoのwidth/heightは作品に合う偶数の画素数で任意に選べます。mixは音量補正が必要な作品だけ、motionは動きが合う作品だけ指定します。",
-		"cover_prompt と thumbnail_prompt はそれぞれ今回の絵を直接指示してください。アダプターは共通の画風・色・構図を追加しません。画像生成ツールの入力サイズは " +
+		"使えるTTS・画像ツールを選び、production.orderはaudioとimageを各1回、任意の順で指定します。画像サイズは候補から、video.width/heightは偶数で選びます。mixとmotionは必要な場合のみ指定します。",
+		"cover_promptとthumbnail_promptで作品固有の絵を指示します。共通の画風・色・構図は追加しません。対応サイズ: " +
 			JSON.stringify(
 				Object.fromEntries(
 					tools.images.map((id) => [
@@ -234,7 +230,7 @@ function scriptPrompt(
 				),
 			),
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
-		"JSONにはtitle、voices[{id,caption,reference_text?}]、cover_prompt、thumbnail_prompt、production{tts_backend,image_tool,order,video?,cover_size?,thumbnail_size?,mix?,motion?}を入れます。台詞はperformancesとchaptersを作品に合わせて使い、両方の併用もできます。description/tagsは任意。各発話のtextは台詞、acting・pause_after_seconds・duration_scaleは任意です。",
+		"JSONのみ。title、voices[{id,caption,reference_text?}]、cover_prompt、thumbnail_prompt、production{tts_backend,image_tool,order,video?,cover_size?,thumbnail_size?,mix?,motion?}を含めます。performances/chaptersは任意で単独・併用可。各performanceのtextは必須、acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
 	].join("\n");
 }
 
@@ -370,7 +366,6 @@ function validateTtsInputs(draft: ScriptDraft): void {
 function generateScript(
 	dir: string,
 	tools: { tts: string[]; images: string[] },
-	runId: string,
 ): ScriptDraft {
 	const file = path.join(dir, "script.json");
 	const existed = fs.existsSync(file);
@@ -394,7 +389,7 @@ function generateScript(
 					"--ephemeral",
 					"-o",
 					answer,
-					scriptPrompt(tools, runId),
+					scriptPrompt(tools),
 				],
 				{ cwd: tempDir },
 			);
@@ -885,7 +880,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		const tools = availableTools();
 		preflight(tools, device);
 		stage = "script-generation";
-		const draft = generateScript(dir, tools, name);
+		const draft = generateScript(dir, tools);
 		let audio: string | undefined;
 		let images: { cover: string; thumbnail: string } | undefined;
 		for (const task of draft.production.order) {
