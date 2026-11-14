@@ -1,0 +1,11 @@
+script:
+  model: gpt-6.1-terra
+tts:
+  directory: sandbox/Irodori-TTS-v4.1
+  checkpoint: Aratako/Irodori-TTS-v4.1-Small
+  cache: ~/.cache/hf-yawa
+  device: cuda
+  precision: bf16
+cover:
+  tool: codex-imagegen
+  size: 1536x1024

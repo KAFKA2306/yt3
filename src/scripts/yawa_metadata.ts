@@ -2,13 +2,9 @@ import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import {
-	buildDescription,
-	buildTags,
-	buildTitle,
-	loadPool,
-	loadYawaConfig,
-	ScriptMetaSchema,
-	SelectionSchema,
+	readYawaMetadata,
+	YAWA_BUCKET,
+	YAWA_RUN_NAME,
 } from "../domain/yawa_daily.js";
 import {
 	assertYouTubeChannelMatchesProfile,
@@ -17,49 +13,18 @@ import {
 } from "../domain/youtube_profiles.js";
 import { ROOT } from "../io/core.js";
 
-const config = loadYawaConfig(ROOT);
 const profile = YOUTUBE_PROFILES.yawa;
 
-function probeSeconds(file: string): number {
-	const result = Bun.spawnSync([
-		"ffprobe",
-		"-v",
-		"error",
-		"-show_entries",
-		"format=duration",
-		"-of",
-		"csv=p=0",
-		file,
-	]);
-	if (result.exitCode !== 0) throw new Error(`ffprobe failed for ${file}`);
-	return Number(result.stdout.toString().trim());
-}
-
-/**
- * 公開済みの yawa 動画のメタデータを、現在の規則（タイトル・説明文・タグ）に書き換える。
- * 書き換えの前後を YouTube から読み直して確認し、結果を run の台帳（jsonl）に追記する。
- */
 async function main() {
 	const runName = process.argv[2];
-	if (!runName || !/^yawa-\d{4}-\d{2}-\d{2}(-[a-z0-9]+)?$/.test(runName))
+	if (!runName || !YAWA_RUN_NAME.test(runName))
 		throw new Error("usage: yawa_metadata.ts yawa-YYYY-MM-DD[-slot]");
-	const dir = path.join(ROOT, "runs", config.run.bucket, runName);
+	const dir = path.join(ROOT, "runs", YAWA_BUCKET, runName);
 	const receipt = fs.readJsonSync(path.join(dir, "publish", "receipt.json"));
 	const videoId: string = receipt.youtube.video_id;
 	if (!videoId) throw new Error(`${runName} has no published video id`);
-	const draft = ScriptMetaSchema.parse(
-		fs.readJsonSync(path.join(dir, "script.json")),
-	);
-	const selection = SelectionSchema.parse(
-		fs.readJsonSync(path.join(dir, "selection.json")),
-	);
-	const entry = loadPool(ROOT, config).find((e) => e.id === selection.id);
-	if (!entry) throw new Error(`selection ${selection.id} is not in the pool`);
-	const seconds = probeSeconds(path.join(dir, "video.mp4"));
-
-	const title = buildTitle(draft, config, selection);
-	const description = buildDescription(draft, entry, config, seconds);
-	const tags = buildTags(config, selection);
+	const state = fs.readJsonSync(path.join(dir, "state.json"));
+	const { title, description, tags } = readYawaMetadata(state.metadata);
 
 	const { auth } = await createYouTubeOAuthClient(profile.profileName);
 	await assertYouTubeChannelMatchesProfile(auth, profile);
@@ -102,7 +67,7 @@ async function main() {
 
 	const record = {
 		at: new Date().toISOString(),
-		run_id: `${config.run.bucket}/${runName}`,
+		run_id: `${YAWA_BUCKET}/${runName}`,
 		video_id: videoId,
 		channel_title: after?.snippet?.channelTitle,
 		before: {

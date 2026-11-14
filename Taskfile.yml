@@ -76,8 +76,12 @@ tasks:
         fi
       - bun src/scripts/yawa_validate.ts {{.DATE}} {{.SLOT}}
 
+  yawa:diversity-audit:
+    desc: "Compare completed Yawa runs independently (CLI args: [--listening observations.json] <run-name> <run-name> [...])"
+    cmds: ["bun src/scripts/yawa_diversity_audit.ts {{.CLI_ARGS}}"]
+
   yawa:metadata:
-    desc: "Rewrite the title, description and tags of one published 夜話アーカイブ episode to the current rules, then read back and record it (RUN=yawa-YYYY-MM-DD[-slot])"
+    desc: "Apply saved metadata to one published 夜話アーカイブ episode, then read back and record it (RUN=yawa-YYYY-MM-DD[-slot])"
     cmds:
       - bun src/scripts/yawa_metadata.ts {{.RUN}}
 

@@ -1,676 +1,154 @@
+import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 import * as yaml from "js-yaml";
 import { z } from "zod";
-import type { AuditCheck } from "./types.js";
 
-const ComfyIrodoriBackendSchema = z.object({
-	kind: z.literal("comfyui"),
-	base_url: z.string().url(),
-	input_dir: z.string().min(1),
-	output_dir: z.string().min(1),
-	ckpt_name: z.string().min(1),
-	codec_repo: z.string().min(1),
-	dtype: z.enum(["bf16", "fp16", "fp32"]),
-	num_steps: z.number().int().positive(),
+export const YAWA_BUCKET = "yawa_archive";
+export const YAWA_RUN_NAME = /^yawa-\d{4}-\d{2}-\d{2}(-[a-z0-9]+)?$/;
+
+const text = z.string().trim().min(1);
+const filename = text.regex(/^[\w.-]+\.wav$/i);
+const creativeSchema = z.strictObject({
+	purpose: text,
+	direction: text,
+	voice_preference: text,
+	creative_control: text,
+	runtime: text.regex(/^[a-zA-Z0-9_.-]+\.ya?ml$/),
+});
+const runtimeSchema = z.strictObject({
+	script: z.strictObject({ model: text }),
+	tts: z.strictObject({
+		directory: text,
+		checkpoint: text,
+		cache: text,
+		device: z.enum(["cuda", "cpu", "mps"]),
+		precision: z.enum(["bf16", "fp32"]),
+	}),
+	cover: z.strictObject({ tool: z.literal("codex-imagegen"), size: text }),
 });
 
-const RangeSchema = z.tuple([z.number().positive(), z.number().positive()]);
+export function loadYawaConfig(root: string) {
+	const dir = path.join(root, "config", "yawa");
+	const read = (name: string) =>
+		yaml.load(fs.readFileSync(path.join(dir, name), "utf8"));
+	const { runtime, ...creative } = creativeSchema.parse(read("daily.yaml"));
+	return { creative, ...runtimeSchema.parse(read(runtime)) };
+}
 
-const GapSchema = z.tuple([z.number().nonnegative(), z.number().nonnegative()]);
+export function runtimePath(root: string, value: string): string {
+	return value.startsWith("~/")
+		? path.join(os.homedir(), value.slice(2))
+		: path.resolve(root, value);
+}
 
-const BeatSchema = z.object({
-	share: z.number().positive(),
-	brief: z.string().min(1),
-	style: z.string(),
-	duration_scale: RangeSchema,
-	cfg_scale_caption: z.number().positive(),
-	gap_seconds: GapSchema,
-	gain_db: z.number(),
+const segment = z.strictObject({
+	text,
+	voice: text.optional(),
+	direction: text.optional(),
+	seconds: z.number().positive().optional(),
+	pause: z.number().nonnegative().optional(),
+	gain_db: z.number().optional(),
+});
+const voice = z.strictObject({
+	caption: text.optional(),
+	reference: z
+		.union([z.strictObject({ text }), z.strictObject({ file: filename })])
+		.optional(),
+});
+const metadataSchema = z.object({
+	title: text,
+	description: z.string().trim().optional(),
+	tags: z.array(text).optional(),
 });
 
-export type Chapter = {
-	name: string;
-	share: number;
-	brief: string;
-	style: string;
-	duration_scale: number;
-	cfg_scale_caption: number;
-	gap_seconds: number;
-	gain_db: number;
-};
+export const ScriptDraftSchema = metadataSchema
+	.extend({
+		adult_characters_confirmed: z.literal(true),
+		rights_confirmed: z.literal(true),
+		voices: z.record(text, voice),
+		segments: z.array(segment).min(1).optional(),
+		chapters: z
+			.array(
+				z.strictObject({
+					name: text.optional(),
+					segments: z.array(segment).min(1),
+				}),
+			)
+			.min(1)
+			.optional(),
+		image: text,
+		first: z.enum(["audio", "image"]).optional(),
+		zoom: z
+			.tuple([z.number().min(1).max(10), z.number().min(1).max(10)])
+			.optional(),
+	})
+	.strict()
+	.superRefine((draft, context) => {
+		if (Boolean(draft.segments) === Boolean(draft.chapters))
+			context.addIssue({
+				code: "custom",
+				message: "Supply segments or chapters",
+			});
+		const names = Object.keys(draft.voices);
+		if (names.length === 0)
+			context.addIssue({
+				code: "custom",
+				message: "Supply at least one voice",
+			});
+		for (const [index, item] of draftSegments(draft).entries()) {
+			if (
+				item.voice === undefined
+					? names.length !== 1
+					: !Object.hasOwn(draft.voices, item.voice)
+			)
+				context.addIssue({
+					code: "custom",
+					message: `Unknown or ambiguous voice in segment ${index + 1}`,
+				});
+		}
+	});
 
-const YawaConfigSchema = z.object({
-	run: z.object({ bucket: z.string(), name_prefix: z.string() }),
-	pool_file: z.string(),
-	audience: z.string(),
-	script: z.object({
-		tool: z.literal("codex"),
-		model: z.string(),
-		sandbox: z.literal("read-only"),
-		min_segments: z.number().int().positive(),
-		max_segments: z.number().int().positive(),
-		max_segment_chars: z.number().int().positive(),
-		max_attempts: z.number().int().positive(),
-	}),
-	tts: z.object({
-		backend: z.string(),
-		backends: z.record(z.string(), ComfyIrodoriBackendSchema),
-		hf_home: z.string(),
-		seed: z.number().int(),
-		min_free_vram_mib: z.number().positive(),
-	}),
-	arc: z.object({
-		beats: z.record(z.string(), BeatSchema),
-		shapes: z.record(z.string(), z.array(z.string()).min(2)),
-	}),
-	axes: z.record(z.string(), z.array(z.string().min(1)).min(1)),
-	diversity: z.object({ recent_window: z.number().int().positive() }),
-	voice: z.object({ caption: z.string().min(10).max(300) }),
-	reference: z.object({
-		text: z.string().min(10),
-		seeds: z.array(z.number().int()).min(1),
-	}),
-	mix: z.object({
-		room_tone_db: z.number(),
-		target_lufs: z.number(),
-		loudness_range: z.number().positive(),
-	}),
-	asr: z.object({ model: z.string() }),
-	cover: z.object({ tool: z.string(), file: z.string(), size: z.string() }),
-	video: z.object({
-		file: z.string(),
-		width: z.number(),
-		height: z.number(),
-		fps: z.number(),
-		crf: z.number(),
-		audio_bitrate: z.string(),
-	}),
-	thumbnail: z.object({
-		file: z.string(),
-		width: z.number(),
-		height: z.number(),
-		quality: z.number(),
-	}),
-	audit: z.object({
-		tail_seconds: z.number(),
-		duration_tolerance_seconds: z.number(),
-	}),
-	safety: z.object({ banned_terms: z.array(z.string()) }),
-	metadata: z.object({
-		title_forms: z.array(z.string().min(1)).min(1),
-		title_suffix: z.string(),
-		tags_core: z.array(z.string()),
-		tags_from_axes: z.array(z.string()),
-		tags_max: z.number().int().positive(),
-		description_lead: z.string(),
-		ai_disclosure: z.string(),
-		rights_declaration: z.string(),
-	}),
-});
-export type YawaConfig = z.infer<typeof YawaConfigSchema>;
-
-const PoolSchema = z.object({
-	entries: z.array(
-		z.object({
-			id: z.string(),
-			title: z.string(),
-			author: z.string().nullable(),
-			url: z.string().url(),
-			tags: z.array(z.string()),
-			situation: z.string(),
-			eligible: z.boolean(),
-		}),
-	),
-});
-export type PoolEntry = z.infer<typeof PoolSchema>["entries"][number];
-
-export const ScriptMetaSchema = z.object({
-	title: z.string().min(4).max(60),
-	hook: z.string().min(10).max(160),
-	cover_scene: z.string().min(20).max(400),
-	adult_characters_confirmed: z.literal(true),
-});
-export type ScriptMeta = z.infer<typeof ScriptMetaSchema>;
-
-export const ScriptDraftSchema = ScriptMetaSchema.extend({
-	shape: z.string().min(1),
-	chapters: z.array(
-		z.object({ name: z.string(), segments: z.array(z.string().min(1)) }),
-	),
-});
 export type ScriptDraft = z.infer<typeof ScriptDraftSchema>;
 
-export const SelectionSchema = z.object({
-	id: z.string().min(1),
-	shape: z.string().min(1),
-	axes: z.record(z.string(), z.string().min(1)),
-	title_form: z.number().int().nonnegative(),
-});
-export type Selection = z.infer<typeof SelectionSchema>;
-export type SelectionRecord = Partial<Selection> & { id: string };
-
-function hash(text: string): number {
-	let value = 2166136261;
-	for (const char of text) {
-		value ^= char.codePointAt(0) ?? 0;
-		value = Math.imul(value, 16777619) >>> 0;
-	}
-	return value >>> 0;
-}
-
-/** 使用回数が最も少ない選択肢を選ぶ。同数なら seed で決め、同じ入力には同じ結果を返す。 */
-export function pickLeast(
-	options: string[],
-	used: string[],
-	seed: string,
-): string {
-	const counts = options.map((o) => used.filter((u) => u === o).length);
-	const least = Math.min(...counts);
-	const candidates = options.filter((_, i) => counts[i] === least);
-	return candidates.reduce((a, b) =>
-		hash(`${seed}:${a}`) <= hash(`${seed}:${b}`) ? a : b,
+export function draftSegments(draft: ScriptDraft) {
+	return (
+		draft.segments ??
+		draft.chapters?.flatMap((chapter) => chapter.segments) ??
+		[]
 	);
 }
 
-export function chooseSelection(
-	config: YawaConfig,
-	id: string,
-	history: SelectionRecord[],
-	runName: string,
-): Selection {
-	const shape = pickLeast(
-		Object.keys(config.arc.shapes),
-		history.flatMap((h) => (h.shape ? [h.shape] : [])),
-		`${runName}:shape`,
-	);
-	const axes = Object.fromEntries(
-		Object.entries(config.axes).map(([axis, options]) => [
-			axis,
-			pickLeast(
-				options,
-				history.flatMap((h) => (h.axes?.[axis] ? [h.axes[axis]] : [])),
-				`${runName}:${axis}`,
-			),
-		]),
-	);
-	const title_form = Number(
-		pickLeast(
-			config.metadata.title_forms.map((_, i) => String(i)),
-			history.flatMap((h) =>
-				h.title_form === undefined ? [] : [String(h.title_form)],
-			),
-			`${runName}:form`,
-		),
-	);
-	return { id, shape, axes, title_form };
-}
-
-function between(range: [number, number], seed: string): number {
-	const [low, high] = range;
-	return Number((low + (high - low) * (hash(seed) / 4294967295)).toFixed(2));
-}
-
-/** 拍の値は範囲で持ち、run 名から決める。同じ run を作り直しても同じ値になる。 */
-export function resolveBeat(
-	config: YawaConfig,
-	name: string,
-	runName: string,
-): Chapter {
-	const beat = config.arc.beats[name];
-	if (!beat) throw new Error(`unknown beat: ${name}`);
-	return {
-		name,
-		share: beat.share,
-		brief: beat.brief,
-		style: beat.style,
-		duration_scale: between(beat.duration_scale, `${runName}:${name}:scale`),
-		cfg_scale_caption: beat.cfg_scale_caption,
-		gap_seconds: between(beat.gap_seconds, `${runName}:${name}:gap`),
-		gain_db: beat.gain_db,
-	};
-}
-
-export function shapeBeats(
-	config: YawaConfig,
-	shape: string,
-	runName: string,
-): Chapter[] {
-	const names = config.arc.shapes[shape];
-	if (!names) throw new Error(`unknown shape: ${shape}`);
-	return names.map((name) => resolveBeat(config, name, runName));
-}
-
-export type Segment = { text: string; chapter: Chapter };
-
-export function draftSegments(
-	draft: ScriptDraft,
-	config: YawaConfig,
-	runName: string,
-): Segment[] {
-	return draft.chapters.flatMap((entry) => {
-		const chapter = resolveBeat(config, entry.name, runName);
-		return entry.segments.map((text) => ({ text, chapter }));
+export function buildMetadata(
+	input: Pick<ScriptDraft, "title" | "description" | "tags">,
+) {
+	return readYawaMetadata({
+		title: input.title,
+		description: [
+			input.description,
+			"台本・音声・画像はAIを使用して制作しました。",
+		]
+			.filter(Boolean)
+			.join("\n\n"),
+		tags: input.tags,
 	});
 }
 
-export function loadYawaConfig(root: string): YawaConfig {
-	const config = YawaConfigSchema.parse(
-		yaml.load(
-			fs.readFileSync(path.join(root, "config/yawa/daily.yaml"), "utf8"),
-		),
-	);
-	for (const [shape, names] of Object.entries(config.arc.shapes))
-		for (const name of names)
-			if (!config.arc.beats[name])
-				throw new Error(`shape '${shape}' uses unknown beat '${name}'`);
-	for (const form of config.metadata.title_forms)
-		for (const [, axis] of form.matchAll(/\{(\w+)\}/g))
-			if (!config.axes[axis as string])
-				throw new Error(`title form uses unknown axis '${axis}'`);
-	for (const axis of config.metadata.tags_from_axes)
-		if (!config.axes[axis]) throw new Error(`tags use unknown axis '${axis}'`);
-	return config;
+export function readYawaMetadata(value: unknown) {
+	const { title, description = "", tags = [] } = metadataSchema.parse(value);
+	const tagLength = tags
+		.map((tag) => (tag.includes(" ") ? `"${tag}"` : tag))
+		.join(",");
+	if (
+		/[<>]/.test(title + description) ||
+		title.length > 100 ||
+		Buffer.byteLength(description) > 5000 ||
+		[...tagLength].length > 500
+	)
+		throw new Error("Yawa metadata exceeds the YouTube snippet contract");
+	return { title, description, tags };
 }
 
-export function loadPool(root: string, config: YawaConfig): PoolEntry[] {
-	return PoolSchema.parse(
-		fs.readJsonSync(path.join(root, config.pool_file)),
-	).entries.filter((entry) => entry.eligible);
-}
-
-/** 未使用の着想元を先頭から選ぶ。全て使い終えたら最初から回す。 */
-export function pickEntry(pool: PoolEntry[], usedIds: string[]): PoolEntry {
-	if (pool.length === 0) throw new Error("script pool has no eligible entry");
-	const counts = new Map(pool.map((entry) => [entry.id, 0]));
-	for (const id of usedIds)
-		if (counts.has(id)) counts.set(id, (counts.get(id) ?? 0) + 1);
-	const least = Math.min(...counts.values());
-	const picked = pool.find((entry) => counts.get(entry.id) === least);
-	if (!picked) throw new Error("no pool entry could be picked");
-	return picked;
-}
-
-export function validateDraft(
-	draft: ScriptDraft,
-	config: YawaConfig,
-): string[] {
-	const failures: string[] = [];
-	const { min_segments, max_segments, max_segment_chars } = config.script;
-	const expected = (config.arc.shapes[draft.shape] ?? []).join(",");
-	if (!expected) failures.push(`unknown shape: ${draft.shape}`);
-	else if (draft.chapters.map((c) => c.name).join(",") !== expected)
-		failures.push(`chapters must be exactly: ${expected}`);
-	const texts = draft.chapters.flatMap((c) => c.segments);
-	if (texts.length < min_segments || texts.length > max_segments)
-		failures.push(
-			`segments must be ${min_segments}-${max_segments}, got ${texts.length}`,
-		);
-	texts.forEach((text, index) => {
-		if (text.length > max_segment_chars)
-			failures.push(`segment ${index + 1} exceeds ${max_segment_chars} chars`);
-	});
-	const everything = [
-		draft.title,
-		draft.hook,
-		draft.cover_scene,
-		...texts,
-	].join("\n");
-	for (const term of config.safety.banned_terms)
-		if (everything.includes(term)) failures.push(`banned term: ${term}`);
-	return failures;
-}
-
-/** root で動かさない。root 所有のファイルにも依存させない。 */
-export function assertUnprivileged(
-	uid: number | undefined,
-	writableDirs: string[],
-): void {
-	if (uid === 0)
-		throw new Error("yawa daily must not run as root; use the kafka user");
-	for (const dir of writableDirs) {
-		fs.ensureDirSync(dir);
-		fs.accessSync(dir, fs.constants.W_OK);
-		const owner = fs.statSync(dir).uid;
-		if (uid !== undefined && owner !== uid)
-			throw new Error(`${dir} is owned by uid ${owner}, expected ${uid}`);
-	}
-}
-
-export type IrodoriCall = {
-	cwd: string;
-	command: string[];
-	env: Record<string, string>;
-};
-
-function irodoriCall(
-	config: YawaConfig,
-	speaker: string[],
-	text: string,
-	caption: string,
-	seed: number,
-	outputWav: string,
-	extra: string[] = [],
-): IrodoriCall {
-	const backend = config.tts.backends[config.tts.backend];
-	if (!backend)
-		throw new Error(
-			`unknown tts backend '${config.tts.backend}' in daily.yaml`,
-		);
-	return {
-		cwd: process.cwd(),
-		command: [
-			"python3",
-			"-I",
-			path.join(import.meta.dir, "../../scripts/yawa_comfy_tts.py"),
-			"--base-url",
-			backend.base_url,
-			"--input-dir",
-			backend.input_dir,
-			"--output-dir",
-			backend.output_dir,
-			"--ckpt-name",
-			backend.ckpt_name,
-			"--codec-repo",
-			backend.codec_repo,
-			"--dtype",
-			backend.dtype,
-			...speaker,
-			"--text",
-			text,
-			"--caption",
-			caption,
-			"--seed",
-			String(seed),
-			"--num-steps",
-			String(backend.num_steps),
-			"--output-wav",
-			outputWav,
-			...extra,
-		],
-		env: {},
-	};
-}
-
-/** 動画内の全セグメントを、同じ参照音声で生成する。声の同一性はこの参照が決め、章は話し方だけを変える。 */
-export function segmentCall(
-	config: YawaConfig,
-	segment: Segment,
-	refWav: string,
-	outputWav: string,
-): IrodoriCall {
-	const { chapter } = segment;
-	return irodoriCall(
-		config,
-		["--ref-wav", refWav],
-		segment.text,
-		`${config.voice.caption}${chapter.style}`,
-		config.tts.seed,
-		outputWav,
-		[
-			"--duration-scale",
-			String(chapter.duration_scale),
-			"--cfg-scale-caption",
-			String(chapter.cfg_scale_caption),
-		],
-	);
-}
-
-/** 参照音声の候補だけを、参照なしで生成する。動画間の声は固定しない。 */
-export function referenceCandidateCall(
-	config: YawaConfig,
-	caption: string,
-	seed: number,
-	outputWav: string,
-): IrodoriCall {
-	return irodoriCall(
-		config,
-		[],
-		config.reference.text,
-		caption,
-		seed,
-		outputWav,
-	);
-}
-
-export type PreparationAction = "prepare" | "skip_verified" | "refuse_legacy";
-
-/**
- * 既存の run に対して何をするかを決める。
- * 公開済みの run は再生成しない。参照の導入前に作られた音声に、後から参照を付けない。
- */
-export function preparationAction(input: {
-	publishVerified: boolean;
-	finalMixExists: boolean;
-	referenceExists: boolean;
-}): PreparationAction {
-	if (input.publishVerified) return "skip_verified";
-	if (input.finalMixExists && !input.referenceExists) return "refuse_legacy";
-	return "prepare";
-}
-
-export type ReferenceCandidate = {
-	seed: number;
-	file: string;
-	asr_similarity: number;
-};
-
-/**
- * 候補から参照音声を 1 つ選ぶ。基準は「聞き取れること」と「割れていないこと」。
- * 魅力の判定はしない。聴いた人の評価は別に行う。
- */
-export function selectReference(
-	candidates: ReferenceCandidate[],
-): ReferenceCandidate {
-	return [...candidates].sort(
-		(a, b) => b.asr_similarity - a.asr_similarity || a.seed - b.seed,
-	)[0] as ReferenceCandidate;
-}
-
-function bigrams(text: string): Map<string, number> {
-	const normalized = text.replace(/[\s、。，．,.!?！？「」『』…ー〜~]/g, "");
-	const grams = new Map<string, number>();
-	for (let i = 0; i < normalized.length - 1; i++) {
-		const gram = normalized.slice(i, i + 2);
-		grams.set(gram, (grams.get(gram) ?? 0) + 1);
-	}
-	return grams;
-}
-
-export function similarity(a: string, b: string): number {
-	const left = bigrams(a);
-	const right = bigrams(b);
-	let overlap = 0;
-	let total = 0;
-	for (const count of left.values()) total += count;
-	for (const count of right.values()) total += count;
-	for (const [gram, count] of left)
-		overlap += Math.min(count, right.get(gram) ?? 0);
-	return total === 0 ? 0 : (2 * overlap) / total;
-}
-
-function check(
-	name: string,
-	description: string,
-	failures: string[],
-): AuditCheck {
-	return {
-		name,
-		description,
-		status: failures.length === 0 ? "PASS" : "QUALITY_FAIL",
-		details: failures.length === 0 ? "ok" : failures.join("; "),
-		critical: true,
-		type: "DETERMINISTIC",
-	};
-}
-
-export type YawaAuditInput = {
-	draft: ScriptDraft;
-	entry: PoolEntry;
-	scriptGeneratedInRun: boolean;
-	ttsRecord:
-		| {
-				backend: string;
-				checkpoint: string;
-				seed: number;
-				reference_sha256: string;
-		  }
-		| undefined;
-	referenceSha256: string | undefined;
-	audioSeconds: number;
-	videoSeconds: number;
-	selection: Selection;
-	metadata: { title: string; tags: string[] };
-	cover: { tool?: string; prompt?: string; sha256?: string } | undefined;
-	coverSha256: string;
-};
-
-export function yawaAudit(
-	input: YawaAuditInput,
-	config: YawaConfig,
-): Record<string, AuditCheck> {
-	const { audit } = config;
-	const provenance = [
-		input.ttsRecord?.backend ? "" : "tts backend not recorded",
-		input.ttsRecord?.checkpoint ? "" : "tts checkpoint not recorded",
-		input.ttsRecord?.seed === config.tts.seed ? "" : "tts seed mismatch",
-		input.scriptGeneratedInRun ? "" : "script was not generated in this run",
-	];
-	const voice = [
-		input.referenceSha256 ? "" : "reference audio is missing",
-		input.ttsRecord?.reference_sha256 &&
-		input.ttsRecord.reference_sha256 === input.referenceSha256
-			? ""
-			: "segments were not generated from the recorded reference",
-	];
-	const integrity = [
-		Math.abs(input.videoSeconds - input.audioSeconds) <=
-		audit.duration_tolerance_seconds
-			? ""
-			: "video and audio durations differ",
-	];
-	const arc = [
-		input.draft.shape === input.selection.shape
-			? ""
-			: "script shape differs from the recorded selection",
-		...validateDraft(input.draft, config).filter(
-			(failure) =>
-				failure.startsWith("chapters") || failure.startsWith("unknown shape"),
-		),
-		input.metadata.title === buildTitle(input.draft, config, input.selection)
-			? ""
-			: "title does not match the selection",
-		input.metadata.tags.join("\n") ===
-		buildTags(config, input.selection).join("\n")
-			? ""
-			: "tags do not match the selection",
-	];
-	const visual = [
-		input.cover?.tool ? "" : "cover tool missing",
-		input.cover?.prompt ? "" : "cover prompt missing",
-		input.cover?.sha256 && input.cover.sha256 === input.coverSha256
-			? ""
-			: "cover sha256 mismatch",
-	];
-	const safety = validateDraft(input.draft, config).filter((failure) =>
-		failure.startsWith("banned term"),
-	);
-	return {
-		tts_provenance: check(
-			"tts_provenance",
-			"TTS backend, checkpoint and seed are recorded for this run",
-			provenance.filter(Boolean),
-		),
-		voice_reference: check(
-			"voice_reference",
-			"All segments were generated from one recorded reference clip",
-			voice.filter(Boolean),
-		),
-		audio_integrity: check(
-			"audio_integrity",
-			"Video and audio durations match",
-			integrity.filter(Boolean),
-		),
-		arc_consistency: check(
-			"arc_consistency",
-			"Script shape, chapters, title and tags match the recorded selection",
-			arc.filter(Boolean),
-		),
-		visual_provenance: check(
-			"visual_provenance",
-			"Cover image tool, prompt and hash are recorded",
-			visual.filter(Boolean),
-		),
-		content_safety: check(
-			"content_safety",
-			"Adult-only characters confirmed and no banned terms",
-			[
-				...safety,
-				input.draft.adult_characters_confirmed
-					? ""
-					: "adult characters not confirmed",
-			].filter(Boolean),
-		),
-		rights: check(
-			"rights",
-			"Original script and declaration recorded",
-			[
-				config.metadata.rights_declaration ? "" : "rights declaration missing",
-			].filter(Boolean),
-		),
-	};
-}
-
-function render(template: string, axes: Record<string, string>): string {
-	return template.replace(/\{(\w+)\}/g, (_, axis: string) => {
-		const value = axes[axis];
-		if (value === undefined) throw new Error(`axis '${axis}' is not selected`);
-		return value;
-	});
-}
-
-/** 公開タイトル。新規投稿と既存動画の書き換えで、同じ規則を使う。 */
-export function buildTitle(
-	draft: ScriptMeta,
-	config: YawaConfig,
-	selection: Selection,
-): string {
-	const form = config.metadata.title_forms[selection.title_form];
-	if (form === undefined) throw new Error("title_form is out of range");
-	return `${render(form, selection.axes)}${draft.title}${config.metadata.title_suffix}`;
-}
-
-export function buildTags(config: YawaConfig, selection: Selection): string[] {
-	return [
-		...new Set([
-			...config.metadata.tags_core,
-			...config.metadata.tags_from_axes.map((axis) => {
-				const value = selection.axes[axis];
-				if (value === undefined)
-					throw new Error(`axis '${axis}' is not selected`);
-				return value;
-			}),
-		]),
-	].slice(0, config.metadata.tags_max);
-}
-
-export function buildDescription(
-	draft: ScriptMeta,
-	entry: PoolEntry,
-	config: YawaConfig,
-	seconds: number,
-): string {
-	const minutes = Math.round(seconds / 60);
-	const inspired = `${entry.author ? `着想: ${entry.title} / ${entry.author}` : `着想: ${entry.title}`}\n\n${entry.url}\n`;
-	return [
-		draft.hook,
-		config.metadata.description_lead,
-		"",
-		`再生時間: 約${minutes}分。イヤホンでお聴きください。`,
-		"",
-		config.metadata.ai_disclosure,
-		config.metadata.rights_declaration,
-		"",
-		inspired,
-	].join("\n");
+export function parseYawaJson(text: string): unknown {
+	return JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/gi, ""));
 }

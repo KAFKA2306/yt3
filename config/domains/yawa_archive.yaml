@@ -33,7 +33,6 @@ steps:
     enabled: true
     max_title_length: 100
     max_description_length: 5000
-    default_tags: ["ASMR", "夜話アーカイブ", "睡眠導入", "AI音声"]
     category_id: 24
     default_visibility: "public"
     discord_notifications: {publish_start: true, publish_complete: true}
