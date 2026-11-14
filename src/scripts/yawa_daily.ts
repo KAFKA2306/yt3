@@ -220,7 +220,7 @@ function scriptPrompt(
 				images: tools.images,
 				video: ["ffmpeg"],
 			}),
-		"使えるTTS・画像ツールから選び、production.orderで実行順を決めます。画像サイズは提示された候補から作品に合わせて選びます。videoのwidth/heightは作品に合う偶数の画素数で任意に選べます。mixは音量補正が必要な作品だけ、motionは動きが合う作品だけ指定します。",
+		"使えるTTS・画像ツールから選び、production.orderにはaudioとimageを一度ずつ含め、実行順を決めます。画像サイズは提示された候補から作品に合わせて選びます。videoのwidth/heightは作品に合う偶数の画素数で任意に選べます。mixは音量補正が必要な作品だけ、motionは動きが合う作品だけ指定します。",
 		"cover_prompt と thumbnail_prompt はそれぞれ今回の絵を直接指示してください。アダプターは共通の画風・色・構図を追加しません。画像生成ツールの入力サイズは " +
 			JSON.stringify(
 				Object.fromEntries(
