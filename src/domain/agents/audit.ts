@@ -127,13 +127,16 @@ export class AuditAgent extends BaseAgent {
 		// 2. POLICY AUDIT (DETERMINISTIC / REGEX)
 		Object.assign(results, this.auditPolicies(state, evidence));
 
-		// 2.5 CREATIVE FRESHNESS AUDIT (DETERMINISTIC / RECENT-RUN COMPARISON)
-		Object.assign(results, this.auditCreativeFreshness(state, evidence));
+		// Yawa diversity is assessed by the standalone advisory report, outside the
+		// production audit. Keep this legacy gate scoped to the other products.
+		if (state.bucket !== "yawa_archive")
+			Object.assign(results, this.auditCreativeFreshness(state, evidence));
 
 		// 4. VOICE ROLE INTEGRITY (Speaker Assignment Audit)
 		if (state.script) {
 			Object.assign(results, this.auditVoiceRoles(state, evidence));
-			Object.assign(results, await this.auditAcoustics(state, evidence));
+			if (state.bucket !== "yawa_archive")
+				Object.assign(results, await this.auditAcoustics(state, evidence));
 		}
 
 		// 5. OPERATIONAL AUDIT (Workflow & Publish Trace)

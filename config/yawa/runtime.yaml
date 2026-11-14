@@ -1,11 +1,14 @@
-script:
-  model: gpt-6.1-terra
+run: {bucket: yawa_archive, name_prefix: yawa-}
+script: {model: gpt-6.1-terra, sandbox: read-only}
 tts:
-  directory: sandbox/Irodori-TTS-v4.1
-  checkpoint: Aratako/Irodori-TTS-v4.1-Small
-  cache: ~/.cache/hf-yawa
-  device: cuda
-  precision: bf16
-cover:
-  tool: codex-imagegen
-  size: 1536x1024
+  backend: irodori-v4.1-small
+  device: cpu
+  hf_home: /home/kafka/.cache/hf-yawa
+  backends:
+    irodori-v4.1-small: {dir: /home/kafka/2511youtuber/v3/yt3/sandbox/Irodori-TTS-v4.1, checkpoint: Aratako/Irodori-TTS-v4.1-Small, codec: Aratako/Semantic-DACVAE-Japanese-32dim, steps: 40}
+image_tools:
+  codex-imagegen: {command: codex-imagegen, size: 1536x1024, sizes: [1024x1024, 1536x1024, 1024x1536, 1280x640, 3840x2160]}
+video: {file: video.mp4, width: 1920, height: 1080, fps: 24, crf: 28, audio_bitrate: 192k}
+thumbnail: {file: thumbnail.jpg, width: 1280, height: 720, quality: 3}
+metadata: {ai_disclosure: この作品の台本・音声・画像はAIで生成しています。, rights_declaration: 台本・音声・画像は本作品用に生成しています。}
+audit: {duration_tolerance_seconds: 1.5}

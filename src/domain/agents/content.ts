@@ -14,11 +14,6 @@ import {
 	ScriptIntegrityLinter,
 } from "../../io/utils/qa/script_linter.js";
 import {
-	assertComedyBeatCount,
-	buildComedyBeatReport,
-	validateComedyBeatRealization,
-} from "../content/comedy_beat.js";
-import {
 	type AgentState,
 	type ContentOutline,
 	ContentOutlineSchema,
@@ -110,14 +105,7 @@ export class ScriptSmith extends BaseAgent {
 					"OUTLINE_GEN",
 					`Generated outline: ${outline.title}`,
 				);
-				assertComedyBeatCount(outline.sections);
-
 				let allLines: ScriptLine[] = [];
-				const comedyRealizations: Array<{
-					section_id: number;
-					beat: ContentOutline["sections"][number]["comedy_beat"];
-					lines: ScriptLine[];
-				}> = [];
 				for (const section of outline.sections) {
 					const segmentLines = await this.generateSegment(
 						director.angle,
@@ -127,12 +115,6 @@ export class ScriptSmith extends BaseAgent {
 						channelType,
 						lastErrorFeedback,
 					);
-					validateComedyBeatRealization(section.comedy_beat, segmentLines);
-					comedyRealizations.push({
-						section_id: section.id,
-						beat: section.comedy_beat,
-						lines: segmentLines,
-					});
 					allLines = [...allLines, ...segmentLines];
 				}
 
@@ -156,12 +138,6 @@ export class ScriptSmith extends BaseAgent {
 					result = null;
 					continue;
 				}
-				fs.writeJsonSync(
-					path.join(this.store.runDir, "comedy_beat_report.json"),
-					buildComedyBeatReport(comedyRealizations),
-					{ spaces: 2 },
-				);
-
 				const scriptText = allLines
 					.map((l) => `${l.speaker}: ${l.text}`)
 					.join("\n");
@@ -465,13 +441,6 @@ export class ScriptSmith extends BaseAgent {
 
 		for (const line of lines) {
 			const textLength = line.text.length;
-			if (line.beat_role) {
-				totals.set(line.speaker, (totals.get(line.speaker) || 0) + textLength);
-				output.push({ ...line });
-				lastSpeaker = line.speaker;
-				streak = streak + 1;
-				continue;
-			}
 			const availableSpeakers =
 				lastSpeaker && streak >= 2
 					? pool.filter((speaker) => speaker !== lastSpeaker)
@@ -562,7 +531,6 @@ export class ScriptSmith extends BaseAgent {
 					section.target_character_count?.toString() ?? "",
 				)
 				.replace("{previous_context}", prevContext)
-				.replace("{comedy_beat}", JSON.stringify(section.comedy_beat, null, 2))
 				.replace("{news_context}", newsContext) +
 			(feedback ? `\n\n${feedback}` : "");
 
@@ -577,7 +545,6 @@ export class ScriptSmith extends BaseAgent {
 				processedLines.push({
 					speaker: l.speaker,
 					text: chunk,
-					beat_role: l.beat_role,
 					duration: 0,
 				});
 			}

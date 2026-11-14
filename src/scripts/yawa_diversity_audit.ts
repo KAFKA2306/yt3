@@ -118,7 +118,7 @@ for (const item of listening) {
 		);
 }
 const images = runs.flatMap((run) =>
-	run.images.slice(0, 1).map((file) => path.join(run.dir, file)),
+	run.images.map((file) => path.join(run.dir, file)),
 );
 const prompt = [
 	"夜話アーカイブ ASMRの完成作を比較する独立監査。作風は台本から、画風は添付の実画像から観測する。",
