@@ -1,10 +1,10 @@
 # 秒算マネーの歴史比較台本を再現する評価
 
-評価基準 v0.2。対象は [Issue #538](https://github.com/KAFKA2306/yt3/issues/538) の調査から、秒算マネーで制作に渡せる日本語台本を作る能力。候補は GPT-6 Astra（`gpt-6-astra`）。比較対象は現行の GPT-6.1 Terra（`medium`）と[参照原稿](https://github.com/KAFKA2306/yt3/blob/e2741a079863b057e9ec66a82d2a6b5fe4d16dad/config/productions/historical_market_crashes.json)。本評価は収録前の台本を扱う。視聴後の評価には [#416](https://github.com/KAFKA2306/yt3/issues/416) の実測を使う。
+評価基準 v0.3。対象は [Issue #538](https://github.com/KAFKA2306/yt3/issues/538) の調査から、秒算マネーで制作に渡せる日本語台本を作る能力。候補は GPT-6 Astra（`gpt-6-astra`）。比較対象は現行の GPT-6.1 Terra（`medium`）と[参照原稿](https://github.com/KAFKA2306/yt3/blob/e2741a079863b057e9ec66a82d2a6b5fe4d16dad/config/productions/historical_market_crashes.json)。本評価は収録前の台本を扱う。視聴後の評価には [#416](https://github.com/KAFKA2306/yt3/issues/416) の実測を使う。
 
 ## 試行の条件
 
-- 各モデルに、同じ依頼、同じ版の資料本文・図表、同じ台本スキーマを渡す。モデルに渡す資料は別ディレクトリに置き、参照原稿・採点表・正解・前回出力へのアクセスを遮断する。この試行では外部検索を止め、渡した資料を読み取る能力を測る。検索技能を測るときは、同じ情報取得権限で別に試行する。
+- 各モデルに、同じ依頼、指定版の資料から切り出したファクトシート・抜粋、同じ台本スキーマを渡す。モデルに渡す資料は別ディレクトリに置き、参照原稿・採点表・正解・前回出力へのアクセスを遮断する。この試行では外部検索を止め、同じ根拠から台本を作る能力を測る。全文を読み解く能力は、同じJSONの資料欄に本文を設定して検証する。検索技能を測るときは、同じ情報取得権限で別に試行する。
 - 依頼文は「渡した資料を使い、秒算マネー向けに、ずんだもんと春日部つむぎの対話台本を作る。視聴者が問いと答えを説明できる構成にし、台詞、画面表示、説明欄、根拠の箇所を揃える」。成果物は `ByosanFeatureDraftSchema` のJSONと、主張ID・資料の版・ページ／節／表・計算式を対応させた採点用メモ。資料で確かめられない箇所は未確認と書き、使える資料で成立する部分を仕上げる。
 - モデルID、解決された実モデルまたはスナップショット、推論設定、資料の版、入力・成果物のハッシュ、開始と終了、使用量、生成の成功・失敗を既存の記録方式で残す。API名とCodex上の指定名は実行環境で確認する。別モデルに切り替わった試行は候補の成績に加えず、切替理由と試行件数を記録する。
 - 採点者には採点表と原典を渡し、生成モデル名を隠す。同一ケースで出力を比較する場合は順序を入れ替える。数値と出典は資料を見て判定し、文章の評価はまず人が基準を合わせる。モデル採点を使う場合は、編集者の判定と突き合わせ、相違を解消するまでは参考値にする。
@@ -52,54 +52,43 @@
 - 上の6ケースを各3回、新しいセッションから実行する。各試行は必須条件をすべて満たし、編集品質が8点以上かつ0点の軸がなければ合格。モデルごとに初回提出での合格数／18件、3回すべて合格したケース数／6件、ケース別の失敗理由を残す。修正機会を与えた場合は、修正後の成績を別に出す。
 - 試行開始前に置く暫定目標は、重大誤り0件、初回15/18件以上、全ケースで最低2/3件合格。どのケースで現行モデルを下回ったかも残す。比較に使用した時刻・モデル・推論設定・利用量を併記する。少数試行のため、全題材への一般化は未確認とする。
 - この文書の例題は公開されている。採用を判断する前に、試行者が未公開の新規題材を用意し、採点基準と答えを実行前に確定して同条件で試す。原稿で採点者を校正するときは、原稿自体の曖昧さも記録し、原典を優先する。例として参照原稿の「5年の観測窓」を読むときは、表4の数値を期間中の最大下落率に読み替えない。
-- 追記する評価記録は `rubric_version`、`case_id`、`trial_id`、資料・原稿ハッシュ、モデル／推論設定、採点者、必須条件の結果、軸別の点数と根拠、修正記録、総合判定。基準の版はGitで管理し、実行結果は[既存の台帳規約](../standard/ledger-standard.md)に従って追記する。現時点の測定結果は未実施。日次制作の合否は既存ルールに従う。
+- 追記する評価記録は `rubric_version`、`case_id`、`trial_id`、資料・原稿ハッシュ、モデル／推論設定、採点者、必須条件の結果、軸別の点数と根拠、修正記録、総合判定。基準の版はGitで管理し、実行結果は[既存の台帳規約](../standard/ledger-standard.md)に従って追記する。AstraとTerraの実資料での比較は未測定。日次制作の合否は既存ルールに従う。
 
 評価方法の参照出典は[OpenAI Evaluation best practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices)、[Anthropic Demystifying evals for AI agents](https://www.anthropic.com/research/demystifying-evals-for-ai-agents)、[GPT-6 Astraモデル仕様](https://developers.openai.com/api/docs/models/gpt-6-astra)。説明欄の長さは[YouTube Data APIの仕様](https://developers.google.com/youtube/data/reference/rest/v3/videos)による。
 
 
-## UNIXツールの構成
+## 実行方法
 
-生成、制作入力の検査、編集評価を別々に実行し、各段階が読んだファイルと出力を残す。AstraとTerraは同じ生成経路を使い、出力を保存してから、モデルを再度呼ばずに制作入力を検査する。
-
-| 段階 | 使うもの | 入力 → 出力 |
-| --- | --- | --- |
-| 入力の固定 | シェル、`sha256sum`、Bunと既存のZod | 課題・原典・モデルに渡す資料・`ByosanFeatureDraftSchema` → 資料の版とハッシュ、同一のプロンプト、Zodから出力したJSON Schema |
-| 生成 | OpenAI公式 `codex exec` | 標準入力から課題と資料 → 1試行1件の `trial.json`、標準エラー、終了コード。AstraとTerraで作業領域を共有せず、試行ごとに新規セッションを使う |
-| 制作入力の検査 | Bunでyt3の既存関数を呼ぶ | `draft.json` と元資料 → スキーマ・出典・数値の検査、シーン、読み上げ計画、説明欄のバイト数 |
-| 根拠と編集の採点 | 上記の採点表と原典。集計は `jq` | 台本・正解資料 → 必須判定、軸別の点数、該当する台詞と参照箇所。一括再採点やJUnitが必要な場合はPromptfooの保存済み出力モードを使う |
-
-yt3が持つのは、課題、資料の指定版、判定基準、既存関数を呼んだ結果を1試行1行のJSONにする接続部分。Bunに渡す入口は試行のファイルを読み、結果を標準出力、実行上の診断を標準エラーへ出す。検査の中身は既存関数を使う。意味上の照合には、この文書の正解と原典を使う。たとえば、22.6%という値が入力にあっても、NYダウかS&P 500かは、台詞の該当箇所と出典を突き合わせて判定する。
-
-### 公式CLIで1試行を作る
-
-`EVAL_INPUT` は参照原稿・正解・制作資格情報を持たない評価専用作業環境、`EVAL_OUT` は採点側に渡す新規の試行ディレクトリ。いずれも絶対パスを指定する。Codexがモデルへの通信に使う認証は実行環境のものを使う。評価用プロファイルでMCP・アプリ・プラグインを無効にし、モデルが読み取れるファイル範囲も確認する。読み取り専用サンドボックスは書き込みを制限するための設定で、参照原稿を隔離するには評価専用環境のファイル配置とアクセス権が必要。
+最小の構成は、公式Codex CLIとyt3が使用中のBun v1.4.4・Zod v4.6.7。Codexの2026年版が提供する非対話実行と構造化出力、Bunのファイル・JSONL・子プロセス機能、ZodのJSON Schema生成を使う。各段階の入出力をファイルにし、シェルが渡す。新しいライブラリは追加していない。標準のシェルとファイル操作は実行基盤として使う。
 
 ```sh
-umask 077
-codex exec --cd "$EVAL_INPUT" --skip-git-repo-check --ephemeral \
-  --sandbox read-only -c 'web_search="disabled"' \
-  --model "$EVAL_MODEL" -c "model_reasoning_effort=\"$EVAL_EFFORT\"" \
-  --output-schema "$EVAL_INPUT/trial.schema.json" \
-  --output-last-message "$EVAL_OUT/trial.json" - \
-  < "$EVAL_INPUT/prompt.txt" > /dev/null 2> "$EVAL_OUT/codex.stderr"
+sh scripts/evaluate_byosan.sh prepare /tmp/byosan-eval-a
+sh scripts/evaluate_byosan.sh generate /tmp/byosan-eval-a
+sh scripts/evaluate_byosan.sh report /tmp/byosan-eval-a
 ```
 
-`trial.schema.json` は既存のZodスキーマを `draft` に再利用し、根拠メモを `evidence` とした出力を定義する。既存検査に渡す台本は `jq -e .draft trial.json > draft.json` で取り出す。`evidence` の各行は、主張ID、資料IDと版、ページ・節・表のいずれか、計算式（派生値の場合）、確認状況を持つ。集計用JSONLは1試行1行とし、`rubric_version`、`case_id`、`trial_id`、`requested_model`、`resolved_model`、`status`、`hard_fail_count`、`editorial_scores`、根拠への参照を記録する。`status` は `pass`、`fail`、`run_error`、`not_run` のいずれか。終了コードが失敗のときは出力が残っていても採点に進めない。認証、利用上限、モデル利用不可は実行障害として記録する。モデルが回答して内容が不合格だった試行とは区別する。実行障害が残る状態では18件を完了したと判定しない。モデルIDは要求値と実行側が確認できた値を別に記録し、後者が確認できない場合は未確認とする。生成サービスとの通信は必要。保存済みファイルの決定的検査と `jq` による集計はローカルで再実行できる。初回合格率は合格数と予定試行数、3回連続合格は合格した課題数と予定課題数を併記する。実行障害と未実施の件数は別欄に出す。
+- `prepare` はファクトシートから課題別の資料JSONと採点用のキーを作る。配布用の資料を更新するときは原典URL・版・参照箇所を残す。資料本文は要旨・抜粋として収録した範囲で評価する。未公開問題は、課題用JSONと採点キーを外部で用意して単体コマンドへ渡せる。
+- `generate` が公式CLIを呼ぶ回数は各課題・モデル・試行あたり1回。既定の試行数は1、Astraは `low`、Terraは現行設定の `medium`。範囲は評価対象1本に必要な資料に絞る。試行回数・推論設定は準備時に記録する。標準構成で比較用の試行を揃えるときは `EVAL_TRIALS=3 EVAL_EFFORT=medium sh scripts/evaluate_byosan.sh prepare /tmp/byosan-eval-b` のように新規ディレクトリを使う。同じ推論設定と、Terraの現行運用を基準にした比較は設定を明記する。
+- 既存のyt3検査に保存済みの出力を渡し、根拠ID、台本の形式、シーンと読み上げ計画、説明欄の長さを確認する。台詞から見積もった尺で確認するため、最終動画の尺と公開可否は制作経路で確認する。`report` は生成・採点の結果と実測トークンを集計する。実効モデルをCLIが返さない場合は `resolved_model: null`。使用量が取れなかった試行も明示する。コマンドは終了コード0が成功、2が内容の不合格、1が実行障害。
+- 模擬の意味採点を使う場合だけ `sh scripts/evaluate_byosan.sh judge /tmp/byosan-eval-a`。既存検査に落ちた出力はモデルへ送らず、合格した出力だけを独立したモデルに1回渡す。採点するモデルは `EVAL_JUDGE_MODEL`（既定はSol）、推論設定は `EVAL_JUDGE_EFFORT`（既定はlow）。自動採点は暫定。採点者が原典と照合した結果を `decide` に渡すと最終判定を再計算する。判定計算、集計、形式の再検査にモデルは不要。大規模な再採点やJUnit出力には[Promptfooの保存済み出力モード](https://www.promptfoo.dev/docs/configuration/expected-outputs/#running-assertions-directly-on-outputs)を使える。
+- 運用で比較する指標は初回合格率、各ケースで全試行が合格した割合、重大誤り、生成と採点それぞれの入力・出力・キャッシュ済みトークン。Astraを低い推論設定から試し、同じ品質基準を保った範囲で実測トークンが少ない設定を選ぶ。生成と採点にはサービス通信が必要。照合済みデータの再計算はローカルで完結する。
 
-### 保存済み出力をPromptfooで確かめる
+### 単体の入出力
 
-最初の比較はCodex、Bun、`jq`で実行できる。一括再採点やJUnitが必要になったときは、保存済みの台本をPromptfooに渡す。例では同一課題の出力を1セットとして扱い、ファイル名と試行IDの順序を記録する。プロバイダーやLLM採点を使わない場合の例。
+`src/scripts/evaluate_byosan.ts` はリポジトリ直下から `bun src/scripts/evaluate_byosan.ts` に次の引数を続けて呼ぶ。結果は標準出力のJSONを1行出し、実行エラーは標準エラーへ出る。生成と採点のサブディレクトリに回答、診断、使用量を残す。完全なCodexイベント列は保存しない。
 
-```sh
-jq -Rs '[.]' draft.json > outputs.json
-PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 \
-  promptfoo eval --assertions assertions.yaml --model-outputs outputs.json \
-  --no-cache --no-share --no-table --no-progress-bar \
-  -o results.json -o results.junit.xml
-```
+| 引数 | 入出力 |
+| --- | --- |
+| `check PACKET TRIAL` | 保存済み台本の構造と根拠リンクを検査。モデル呼び出し0回 |
+| `generate PACKET MODEL EFFORT NEW_DIR` | 生成1回と形式検査 |
+| `judge PACKET TRIAL KEY MODEL EFFORT NEW_DIR` | 保存済み台本を再検査し、通れば暫定の意味採点1回 |
+| `decide PACKET TRIAL REVIEW` | 原典を確認した採点JSONを使い最終判定。結果を試行ディレクトリの `assessment.json` に保存すると集計対象になる |
+| `report DIR` | 実行・採点記録を読み取り、モデル別に集計 |
 
-実行は出力を置いたディレクトリから行い、上の相対パスを使う。Promptfoo 0.125.1で、本物のJSONと平文を渡す `is-json` の確認を実施。期待どおり1件ずつ合格・不合格となり、JSONとJUnitが生成された。これは再採点の接続確認で、台本の意味やモデル性能の確認ではない。同バージョンでは絶対パスの `--model-outputs` が作業ディレクトリの下に解決されて失敗した。評価用JSONとログに原文が含まれ得るため、共有する集計は試行ID、版、判定など必要項目だけを `jq` で抽出する。
+採点JSONのキーは `critical_errors`（文字列配列）、`required_points_met` と `source_limits_respected`（真偽値）、`supported_claims` と `important_claims`（件数）、`scores`（`axis`・`score`・`example` を持つ5件）。軸IDは `question`、`comparison`、`mechanism`、`dialogue`、`visuals`。
 
-実行の初期構成はCodex CLI、Bun、`jq`。一括再採点はPromptfooに委ねる。並列実行やモデルの呼び出し管理も委ねる段階では、Promptfoo組み込みの `openai:codex-app-server` を候補とし、独立試行・権限・実際のモデル指定を確認してから切り替える。
+資料は `case_id`、`as_of`、`task`、`articles` を持つ。各資料は `title`、`url`、`issuer`、`published`、`body`。生成結果は `draft` と `evidence` を持ち、後者は `claim_id`、`source_id`、`locator`、派生値に必要な `calculation` を記録する。
 
-ツールの根拠は[OpenAIのCodex非対話モード](https://learn.chatgpt.com/docs/non-interactive-mode)、[Codexの設定とネットワーク](https://learn.chatgpt.com/docs/agent-approvals-security)、[jqマニュアル](https://jqlang.org/manual/)、[OpenAIのPromptfooガイド](https://developers.openai.com/api/docs/guides/promptfoo-codex)、[Promptfooの保存済み出力モード](https://www.promptfoo.dev/docs/configuration/expected-outputs/#running-assertions-directly-on-outputs)、[エクスポート仕様](https://www.promptfoo.dev/docs/configuration/outputs/)、[Codex App Server連携](https://www.promptfoo.dev/docs/providers/openai-codex-app-server/)。
+完全な盲検では、公開済みの課題を採用判定に使わず、環境から採点資料にアクセスできないことを確認する。コマンドでは新規の作業ディレクトリと一時セッションを使い、シェル、Web検索、アプリ、プラグイン、MCPを無効にする。実行環境のCodexの認証、管理設定と接続可否は実行側で確認する。
+
+参照実装と仕様。[OpenAI Codex非対話モード](https://learn.chatgpt.com/docs/non-interactive-mode)、[Codex 0.167.1](https://github.com/openai/codex/releases/tag/rust-v0.167.1)、[Bun 1.4.4](https://github.com/oven-sh/bun/releases/tag/bun-v1.4.4)、[Bun JSONL](https://bun.com/docs/runtime/jsonl)、[Zod 4.6.7](https://github.com/colinhacks/zod/releases/tag/v4.6.7)、[Promptfoo 0.125.1](https://github.com/promptfoo/promptfoo/releases/tag/0.125.1)。
