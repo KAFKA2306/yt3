@@ -2,7 +2,7 @@ run: {bucket: yawa_archive, name_prefix: yawa-}
 script: {model: gpt-6.1-terra, sandbox: read-only}
 tts:
   backend: irodori-v4.1-small
-  device: cpu
+  device: cuda
   hf_home: /home/kafka/.cache/hf-yawa
   backends:
     irodori-v4.1-small: {dir: /home/kafka/2511youtuber/v3/yt3/sandbox/Irodori-TTS-v4.1, checkpoint: Aratako/Irodori-TTS-v4.1-Small, codec: Aratako/Semantic-DACVAE-Japanese-32dim, steps: 40}

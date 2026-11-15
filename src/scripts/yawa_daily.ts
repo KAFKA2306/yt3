@@ -229,6 +229,7 @@ function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 					]),
 				),
 			),
+		"先にタイトル案だけを見て内容・聴く価値・曖昧さを批判し、その指摘を台本と照合して改題します。専門用語、作業報告調、発見の見えにくさ、長すぎる説明を見直します。",
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
 		"JSONのみ。title、voices[{id,caption,reference_text?}]、cover_prompt、thumbnail_prompt、production{tts_backend,image_tool,order,video?,cover_size?,thumbnail_size?,mix?,motion?}を含めます。performances/chaptersは任意で単独・併用可。各performanceのtextは必須、acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
 	].join("\n");
