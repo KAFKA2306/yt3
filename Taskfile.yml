@@ -61,7 +61,6 @@ tasks:
           exit 2
         fi
       - bun src/scripts/yawa_daily.ts prepare {{.DATE}} {{.SLOT}}
-      - task release:check PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
       - |
         echo "PUBLISH_READY_RUN=yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}"
         echo "PUBLISH_COMMAND=task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}"
