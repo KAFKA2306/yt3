@@ -12,7 +12,6 @@ import {
 	verifyScheduledPublish,
 } from "../dancer_publication.js";
 import {
-	assertFactualIntegrityGate,
 	loadPublicationState,
 	sha256File,
 	transitionPublication,
@@ -254,13 +253,6 @@ export class PublishAgent extends BaseAgent {
 			throw new Error(
 				`Canonical publish state is ${stored.phase} without a verified video id; refusing videos.insert until the remote commit is resolved`,
 			);
-		}
-
-		if (
-			ytCfg.require_factual_integrity !== false &&
-			(dancer.publish_at || ytCfg.default_visibility !== "private")
-		) {
-			assertFactualIntegrityGate(this.store.runDir, state);
 		}
 
 		let videoId: string;

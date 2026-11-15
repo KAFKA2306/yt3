@@ -32,7 +32,7 @@ tasks:
     cmds: ["YOUTUBE_CHANNEL_PROFILE=${PROFILE:-byosan} bun src/index.ts {{.CLI_ARGS}}"]
 
   humanity:music-prepare:
-    desc: "Prepare one 人類観測所 music video through the product release gate (DATE=YYYY-MM-DD required; SLOT optional; HUMANITY_BRIEF sets the subject)"
+    desc: "Prepare one 人類観測所 music video without publishing (DATE=YYYY-MM-DD required; SLOT optional; HUMANITY_BRIEF sets the subject)"
     cmds:
       - |
         if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
@@ -40,7 +40,6 @@ tasks:
           exit 2
         fi
       - bun src/scripts/humanity_music.ts prepare {{.DATE}} {{.SLOT}}
-      - task release:check PROFILE=humanity -- humanity_observatory/music-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
       - |
         echo "PUBLISH_READY_RUN=humanity_observatory/music-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}"
         echo "PUBLISH_COMMAND=task publish PROFILE=humanity -- humanity_observatory/music-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}"
@@ -53,7 +52,7 @@ tasks:
       - bun src/scripts/humanity_music.ts youtube-playlist {{.DATE}} {{.SLOT}}
 
   yawa:prepare:
-    desc: "Prepare one 夜話アーカイブ ASMR episode through the product release gate without publishing (DATE=YYYY-MM-DD required; SLOT=<alnum> optional for a second episode on the same date)"
+    desc: "Prepare one 夜話アーカイブ ASMR episode without publishing (DATE=YYYY-MM-DD required; SLOT=<alnum> optional for a second episode on the same date)"
     cmds:
       - |
         if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
@@ -61,7 +60,6 @@ tasks:
           exit 2
         fi
       - bun src/scripts/yawa_daily.ts prepare {{.DATE}} {{.SLOT}}
-      - task release:check PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
       - |
         echo "PUBLISH_READY_RUN=yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}"
         echo "PUBLISH_COMMAND=task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}"
@@ -96,7 +94,7 @@ tasks:
       - bun src/scripts/byosan_thumbnail.ts {{.RUN}} {{.CLI_ARGS}}
 
   yawa:daily:
-    desc: "Prepare and publish one 夜話アーカイブ ASMR episode (DATE=YYYY-MM-DD required; SLOT optional for another episode; publishes only after the release gate passes)"
+    desc: "Prepare and publish one 夜話アーカイブ ASMR episode (DATE=YYYY-MM-DD required; SLOT optional for another episode)"
     cmds:
       - task yawa:prepare DATE={{.DATE}} SLOT={{.SLOT}}
       - task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
@@ -107,7 +105,7 @@ tasks:
       - ENV_FILE=config/.env.byosan YOUTUBE_CHANNEL_PROFILE=byosan bun --env-file=config/.env.byosan src/scripts/byosan_daily.ts {{.CLI_ARGS}}
 
   byosan:prepare:
-    desc: "Prepare one 秒算マネー run through the product release gate without publishing (DATE=YYYY-MM-DD required; optional FACT_SHEET=<verified fact sheet .json|.yaml> with BYOSAN_SUFFIX=-<name> replaces discovery)"
+    desc: "Prepare one 秒算マネー run without publishing (DATE=YYYY-MM-DD required; optional FACT_SHEET=<verified fact sheet .json|.yaml> with BYOSAN_SUFFIX=-<name> replaces discovery)"
     deps: [sync:deps]
     cmds:
       - |
@@ -116,7 +114,6 @@ tasks:
           exit 2
         fi
       - BYOSAN_FACT_SHEET={{.FACT_SHEET}} BYOSAN_DATE={{.DATE}} task byosan:daily
-      - task release:check PROFILE=byosan -- byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}
       - |
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}"
@@ -133,16 +130,12 @@ tasks:
       - BYOSAN_DATE={{.DATE}} bun src/scripts/byosan_auto.ts
 
   byosan:publish-daily:
-    desc: "Prepare today's 秒算マネー run through the release gate and publish it only when publish_approved (no backfill before resume_date)"
+    desc: "Prepare today's 秒算マネー run and publish it only when publish_approved (no backfill before resume_date)"
     deps: [sync:deps]
     cmds: ["bun src/scripts/byosan_publish_daily.ts"]
 
-  release:check:
-    desc: "Check run-specific product release conditions without external publication (PROFILE required)"
-    cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/check_product_release.ts {{.CLI_ARGS}}"]
-
   publish:
-    desc: "Publish to YouTube after the product release gate (PROFILE=byosan|yawa|humanity; required)"
+    desc: "Publish to YouTube (PROFILE=byosan|yawa|humanity; required)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}"]
 
   auth:

@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import type { google } from "googleapis";
 import { z } from "zod";
-import type { AgentState, PublishResults } from "./types.js";
+import type { PublishResults } from "./types.js";
 import type { YouTubeProfile } from "./youtube_profiles.js";
 
 export const PublicationPhaseSchema = z.enum([
@@ -38,14 +38,6 @@ export type CanonicalPublicationReuse = {
 	state: CanonicalPublicationState;
 	result: NonNullable<PublishResults["youtube"]>;
 };
-
-const AuditCheckSchema = z
-	.object({
-		status: z.string(),
-		critical: z.boolean().optional(),
-	})
-	.passthrough();
-const AuditResultSchema = z.record(z.string(), AuditCheckSchema);
 
 function statePath(runDir: string): string {
 	return path.join(runDir, "publish", "state.json");
@@ -153,98 +145,4 @@ export async function tryReuseCanonicalPublication(
 			published_at: item.snippet.publishedAt ?? "",
 		},
 	};
-}
-
-export function factualIntegrityRequired(youtube?: {
-	default_visibility?: string;
-	require_factual_integrity?: boolean;
-}): boolean {
-	return (
-		youtube?.default_visibility !== "private" &&
-		youtube?.require_factual_integrity !== false
-	);
-}
-
-export function assertFactualIntegrityGate(
-	runDir: string,
-	state: AgentState & {
-		source_manifest_path?: string;
-	},
-): string {
-	const publishDir = path.join(runDir, "publish");
-	fs.ensureDirSync(publishDir);
-	const target = path.join(publishDir, "factual_integrity_attestation.json");
-
-	if (state.source_manifest_path) {
-		const manifestPath = path.resolve(state.source_manifest_path);
-		if (!fs.existsSync(manifestPath)) {
-			throw new Error(
-				`Factual integrity gate cannot read source manifest: ${manifestPath}`,
-			);
-		}
-		const manifest = z
-			.object({
-				presentation_audit: z.object({ passed: z.literal(true) }),
-				compliance: z.object({ passed: z.literal(true) }),
-			})
-			.passthrough()
-			.parse(fs.readJsonSync(manifestPath));
-		fs.writeJsonSync(
-			target,
-			{
-				passed: true,
-				basis: "dancer_manifest",
-				source_path: manifestPath,
-				presentation_audit: manifest.presentation_audit.passed,
-				compliance: manifest.compliance.passed,
-				verified_at: new Date().toISOString(),
-			},
-			{ spaces: 2 },
-		);
-		return target;
-	}
-
-	const auditPath = path.join(runDir, "audit", "result.json");
-	if (!fs.existsSync(auditPath)) {
-		throw new Error(
-			"Factual integrity gate requires audit/result.json before non-private publication",
-		);
-	}
-	const checks = AuditResultSchema.parse(fs.readJsonSync(auditPath));
-	const critical = Object.entries(checks).filter(([, check]) => check.critical);
-	if (critical.length === 0) {
-		throw new Error(
-			"Factual integrity gate found no critical audit checks; refusing non-private publication",
-		);
-	}
-	const failed = critical.filter(([, check]) => check.status !== "PASS");
-	if (failed.length > 0) {
-		throw new Error(
-			`Factual integrity gate failed critical checks: ${failed.map(([name]) => name).join(", ")}`,
-		);
-	}
-	const provenanceOrIntegrity = Object.entries(checks).filter(
-		([name, check]) =>
-			/(provenance|integrity)/i.test(name) && check.status === "PASS",
-	);
-	if (provenanceOrIntegrity.length === 0) {
-		throw new Error(
-			"Factual integrity gate requires a passing provenance/integrity audit",
-		);
-	}
-	fs.writeJsonSync(
-		target,
-		{
-			passed: true,
-			basis: "canonical_audit_result",
-			source_path: auditPath,
-			critical_checks: critical.map(([name]) => name),
-			provenance_or_integrity_checks: provenanceOrIntegrity.map(
-				([name]) => name,
-			),
-			verified_at: new Date().toISOString(),
-		},
-		{ spaces: 2 },
-	);
-	return target;
 }

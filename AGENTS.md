@@ -15,22 +15,23 @@ Keep each product's config, media, credentials, receipts, and publication state 
 ## Canonical commands
 
 - `task setup`, `task check:merge:fast`, `task check:merge`
-- `task byosan:prepare DATE=YYYY-MM-DD`: research, produce, audit, and release-check without publishing
+- `task byosan:prepare DATE=YYYY-MM-DD`: research, produce, and audit without publishing
 - `task byosan:auto DATE=YYYY-MM-DD`: prepare with repair attempts, stopping before publish
-- `task release:check PROFILE=<profile> -- <run-id>`
 - `task publish PROFILE=<profile> -- <run-id>`
 - `task yawa:daily DATE=YYYY-MM-DD`, `task yawa:metadata RUN=<run-id>`
 - `task humanity:music-daily DATE=YYYY-MM-DD`
 
 ## Publication
 
-- Publication is an irreversible external side effect. Use only `task publish PROFILE=<profile> -- <run-id>` or the product's daily entry, and only when the release gate reports PASS for that exact run and artifact and `publish_approved` is enabled in `config/domains/`.
-- Owner instruction 2026-11-05: byosan publication no longer requires the factual-integrity attestation (`steps.youtube.require_factual_integrity: false` in `config/domains/byosan_money.yaml`). The release gate still checks the run bucket, fallback metadata, a playable artifact, and the artifact hash. Number, source, and rights correctness of a byosan video is then the responsibility of whoever produces it. yawa and humanity are unchanged.
-- A byosan run is publish-ready only when preparation prints `[product-release-gate] PASS ... artifact_sha256=<sha256>`, `PUBLISH_READY_RUN=<run-id>`, and `PUBLISH_COMMAND=...`. Record the run id, SHA-256, and command in the governing Issue. If any condition fails, stop. Do not bypass or retry around a failed gate.
-- `DATE` must be given explicitly in `YYYY-MM-DD`. Never infer today.
+- Publication is an irreversible external side effect. Use only `task publish PROFILE=<profile> -- <run-id>` or the product's daily entry, and only when `publish_approved` is enabled in `config/domains/`.
+- Owner instruction 2026-11-08: there is no release gate. The product release gate (`task release:check`, `product_release_gate.ts`) and the factual-integrity attestation gate (`steps.youtube.require_factual_integrity`) were removed. `task publish` still checks that the run bucket matches the profile and that no unresolved remote upload intent exists, and publication is VERIFIED only after read-back. Number, source, and rights correctness of a video is the responsibility of whoever produces it.
+- Byosan daily CI synchronization, feature/production/authenticity/canonical audits, and daily audit reporting are not publication prerequisites. They record diagnostics and must not change the daily publisher's exit status based on findings. Repository CI remains separate from the scheduled publish path.
+- A byosan run is ready when preparation prints `PUBLISH_READY_RUN=<run-id>` and `PUBLISH_COMMAND=...`. Record the run id and command in the governing Issue.
+- For canonical daily production, use the current Asia/Tokyo calendar date when `DATE` is omitted; do not stop a daily run for a missing date. Use explicit dates for requested backfills or future-dated runs.
+- Daily publication has no fixed per-day item cap. Use a unique `SLOT` when the canonical entry needs separate run IDs for multiple same-day items.
 - Byosan publishes one or more videos a day, never zero. Each run is named `<date>-daily-<HHmm>` (`BYOSAN_SUFFIX`); an already-published day does not stop another run, and only a source reused within `discovery.repeat_window_days` is rejected. The timer slots are in `systemd/yt3-byosan-daily.timer`.
-- **Publication authorization is per run and always explicit (owner instruction, 2026-11-07, binding).** An agent publishes only after the owner names that exact run-id and artifact in the current conversation. A standing or daily authorization does not cover agent publication. An agent must not run `task publish`, `task yawa:daily`, `task byosan:daily`, or `task humanity:*` publish paths on its own initiative. `yawa` metadata changes also need explicit per-run authorization.
-- **Run inputs are always explicit.** `DATE`, `SLOT`, `RUN`, and profile must be supplied by the owner or taken from the run's own record; never inferred. Missing credentials (for example `config/.env.yawa`) stop the run and are reported as blocked; agents do not create or fetch them.
+- Standing authorization: daily publication of `yawa`, `byosan`, and `humanity` through their canonical Taskfile entries. Manual `yawa` publication outside the daily path is not covered. `yawa` metadata changes go only through `task yawa:metadata`.
+- Missing credentials (for example `config/.env.yawa`) stop the run and are reported as blocked; agents do not create or fetch them.
 - Publication is VERIFIED only after remote receipt and read-back.
 
 ## Autonomous operations

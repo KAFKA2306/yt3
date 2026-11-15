@@ -189,7 +189,6 @@ function preflight(
 		tools.tts.length > 0
 			? ""
 			: "no configured Irodori environment is available",
-		tools.images.length > 0 ? "" : "no configured image tool is available",
 		device === config.tts.device
 			? ""
 			: `requested TTS device '${device}' differs from runtime device '${config.tts.device}'`,
@@ -205,6 +204,8 @@ function requestedDevice(): Device {
 }
 
 function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
+	const imageTools =
+		process.env.YAWA_GENERATE_IMAGES === "1" ? tools.images : [];
 	return [
 		"あなたは夜話アーカイブの制作AIです。次のYAMLは目的と参考情報です。",
 		JSON.stringify(config.creative),
@@ -213,14 +214,14 @@ function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 		"使えるツール: " +
 			JSON.stringify({
 				tts: tools.tts,
-				images: tools.images,
+				images: imageTools,
 				video: ["ffmpeg"],
 			}),
-		"使えるTTS・画像ツールを選び、production.orderはaudioとimageを各1回、任意の順で指定します。画像サイズは候補から、video.width/heightは偶数で選びます。mixとmotionは必要な場合のみ指定します。",
-		"cover_promptとthumbnail_promptで作品固有の絵を指示します。共通の画風・色・構図は追加しません。対応サイズ: " +
+		"音声を先に完成させます。画像生成は任意の添え物です。YAWA_GENERATE_IMAGES=1のときだけ画像ツールを使えます。通常は画像生成を省き、音声波形の動画を作って公開準備を優先します。画像が生成できない場合も公開準備を続けます。video.width/heightは偶数で選び、mixとmotionは必要な場合のみ指定します。",
+		"画像を使う場合は作品固有のcover_promptとthumbnail_promptを指定します。共通の画風・色・構図は追加しません。対応サイズ: " +
 			JSON.stringify(
 				Object.fromEntries(
-					tools.images.map((id) => [
+					imageTools.map((id) => [
 						id,
 						{
 							default: config.image_tools[id]?.size,
@@ -229,8 +230,9 @@ function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 					]),
 				),
 			),
+		"先にタイトル案だけを見て内容・聴く価値・曖昧さを批判し、その指摘を台本と照合して改題します。専門用語、作業報告調、発見の見えにくさ、長すぎる説明を見直します。",
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
-		"JSONのみ。title、voices[{id,caption,reference_text?}]、cover_prompt、thumbnail_prompt、production{tts_backend,image_tool,order,video?,cover_size?,thumbnail_size?,mix?,motion?}を含めます。performances/chaptersは任意で単独・併用可。各performanceのtextは必須、acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
+		"JSONのみ。title、voices[{id,caption,reference_text?}]、production{tts_backend,image_tool?,video?,cover_size?,thumbnail_size?,mix?,motion?}を含めます。cover_promptとthumbnail_promptは任意です。performances/chaptersは任意で単独・併用可。各performanceのtextは必須、acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
 	].join("\n");
 }
 
@@ -666,77 +668,138 @@ function generateImage(
 function renderImages(
 	draft: ScriptDraft,
 	dir: string,
-): { cover: string; thumbnail: string } {
+): {
+	cover?: string;
+	thumbnail?: string;
+} {
 	const cover = path.join(dir, "cover.png");
 	const thumbnailSource = path.join(dir, "thumbnail_source.png");
 	const thumbnail = path.join(dir, config.thumbnail.file);
-	const imageSettings = config.image_tools[draft.production.image_tool];
-	if (!imageSettings)
-		throw new StepFailure(
-			"image-generation",
-			`unknown image tool '${draft.production.image_tool}'`,
-		);
-	generateImage(
-		draft.production.image_tool,
-		draft.cover_prompt,
-		draft.production.cover_size ?? imageSettings.size,
-		cover,
-		"cover-generation",
+	const toolId = draft.production.image_tool;
+	const imageSettings = toolId ? config.image_tools[toolId] : undefined;
+	const enabled = process.env.YAWA_GENERATE_IMAGES === "1";
+	const requested = Boolean(
+		enabled && toolId && (draft.cover_prompt || draft.thumbnail_prompt),
 	);
-	generateImage(
-		draft.production.image_tool,
-		draft.thumbnail_prompt,
-		draft.production.thumbnail_size ?? imageSettings.size,
-		thumbnailSource,
-		"thumbnail-generation",
-	);
-	if (!fs.existsSync(thumbnail)) {
-		const temp = path.join(dir, `.thumbnail.${process.pid}.tmp.jpg`);
+	const errors: string[] = [];
+	const readable = (file: string) => {
 		try {
-			run("thumbnail-render", [
-				"ffmpeg",
-				"-y",
-				"-loglevel",
-				"error",
-				"-i",
-				thumbnailSource,
-				"-vf",
-				`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
-				"-q:v",
-				String(config.thumbnail.quality),
-				temp,
-			]);
-			const dimensions = probeImage(temp);
-			if (
-				dimensions.width !== config.thumbnail.width ||
-				dimensions.height !== config.thumbnail.height
-			)
-				throw new StepFailure(
-					"thumbnail-check",
-					`expected ${config.thumbnail.width}x${config.thumbnail.height}, got ${dimensions.width}x${dimensions.height}`,
-				);
-			fs.renameSync(temp, thumbnail);
-		} finally {
-			if (fs.existsSync(temp)) fs.removeSync(temp);
+			return fs.existsSync(file) && Boolean(probeImage(file));
+		} catch {
+			return false;
 		}
-	} else {
-		const dimensions = probeImage(thumbnail);
-		if (
-			dimensions.width !== config.thumbnail.width ||
-			dimensions.height !== config.thumbnail.height
-		)
-			throw new StepFailure(
-				"thumbnail-check",
-				"existing thumbnail dimensions differ from runtime settings",
-			);
+	};
+	const existing = {
+		...(readable(cover) ? { cover } : {}),
+		...(readable(thumbnail) ? { thumbnail } : {}),
+	};
+	if (!enabled) return record(existing, "YAWA_GENERATE_IMAGES is not enabled");
+	if (!requested)
+		return record(existing, "no image tool or image prompt selected");
+	if (requested && (!imageSettings || !Bun.which(imageSettings.command))) {
+		errors.push(`image tool unavailable: ${toolId}`);
+	} else if (requested && imageSettings && toolId) {
+		for (const item of [
+			{
+				prompt: draft.cover_prompt,
+				target: cover,
+				size: draft.production.cover_size ?? imageSettings.size,
+				stage: "cover-generation",
+			},
+			{
+				prompt: draft.thumbnail_prompt,
+				target: thumbnailSource,
+				size: draft.production.thumbnail_size ?? imageSettings.size,
+				stage: "thumbnail-generation",
+			},
+		]) {
+			if (!item.prompt) continue;
+			try {
+				generateImage(toolId, item.prompt, item.size, item.target, item.stage);
+			} catch (error) {
+				errors.push(error instanceof Error ? error.message : String(error));
+			}
+		}
+		if (readable(thumbnailSource)) {
+			if (!readable(thumbnail)) {
+				const temp = path.join(dir, `.thumbnail.${process.pid}.tmp.jpg`);
+				try {
+					run("thumbnail-render", [
+						"ffmpeg",
+						"-y",
+						"-loglevel",
+						"error",
+						"-i",
+						thumbnailSource,
+						"-vf",
+						`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
+						"-q:v",
+						String(config.thumbnail.quality),
+						temp,
+					]);
+					fs.renameSync(temp, thumbnail);
+				} catch (error) {
+					errors.push(error instanceof Error ? error.message : String(error));
+				} finally {
+					if (fs.existsSync(temp)) fs.removeSync(temp);
+				}
+			}
+			if (readable(thumbnail)) {
+				const dimensions = probeImage(thumbnail);
+				if (
+					dimensions.width !== config.thumbnail.width ||
+					dimensions.height !== config.thumbnail.height
+				) {
+					errors.push(
+						"generated thumbnail dimensions differ from runtime settings",
+					);
+				} else {
+					return record({ cover, thumbnail });
+				}
+			}
+		}
 	}
-	return { cover, thumbnail };
+	return record({
+		...(readable(cover) ? { cover } : {}),
+		...(readable(thumbnail) ? { thumbnail } : {}),
+	});
+
+	function record(
+		outputs: { cover?: string; thumbnail?: string },
+		reason?: string,
+	) {
+		const status = !requested
+			? "omitted"
+			: errors.length
+				? outputs.cover || outputs.thumbnail
+					? "partial"
+					: "failed"
+				: "complete";
+		const report = {
+			status,
+			...(reason ? { reason } : {}),
+			...(errors.length ? { errors } : {}),
+			at: new Date().toISOString(),
+		};
+		try {
+			writeJsonAtomic(path.join(dir, "image_generation.json"), report);
+		} catch (error) {
+			console.warn(
+				`[yawa] image status could not be recorded: ${String(error)}`,
+			);
+		}
+		if (errors.length)
+			console.warn(
+				`[yawa] optional image generation ${status}; continuing to video and publication: ${errors.join("; ")}`,
+			);
+		return outputs;
+	}
 }
 
 function renderVideo(
 	draft: ScriptDraft,
 	audio: string,
-	cover: string,
+	cover: string | undefined,
 	dir: string,
 ): string {
 	const output = path.join(dir, config.video.file);
@@ -774,21 +837,39 @@ function renderVideo(
 	].join(",");
 	const temp = path.join(dir, `.video.${process.pid}.tmp.mp4`);
 	try {
+		const input = cover
+			? [
+					"-loop",
+					"1",
+					"-framerate",
+					String(fps),
+					"-i",
+					cover,
+					"-i",
+					audio,
+					"-vf",
+					filter,
+					"-map",
+					"0:v:0",
+					"-map",
+					"1:a:0",
+				]
+			: [
+					"-i",
+					audio,
+					"-filter_complex",
+					`[0:a]showwaves=s=${width}x${height}:mode=cline:rate=${fps}:colors=0x85c7ff,format=yuv420p[v]`,
+					"-map",
+					"[v]",
+					"-map",
+					"0:a:0",
+				];
 		run("video-render", [
 			"ffmpeg",
 			"-y",
 			"-loglevel",
 			"error",
-			"-loop",
-			"1",
-			"-framerate",
-			String(fps),
-			"-i",
-			cover,
-			"-i",
-			audio,
-			"-vf",
-			filter,
+			...input,
 			"-t",
 			String(audioSeconds),
 			"-c:v",
@@ -881,18 +962,10 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		preflight(tools, device);
 		stage = "script-generation";
 		const draft = generateScript(dir, tools);
-		let audio: string | undefined;
-		let images: { cover: string; thumbnail: string } | undefined;
-		for (const task of draft.production.order) {
-			stage = task === "audio" ? "audio-production" : "image-production";
-			if (task === "audio") audio = renderAudio(draft, dir, device);
-			else images = renderImages(draft, dir);
-		}
-		if (!audio || !images)
-			throw new StepFailure(
-				"production-plan",
-				"audio or image output is missing",
-			);
+		stage = "audio-production";
+		const audio = renderAudio(draft, dir, device);
+		stage = "image-production";
+		const images = renderImages(draft, dir);
 		stage = "video-render";
 		const video = renderVideo(draft, audio, images.cover, dir);
 		const audioSeconds = probeSeconds(audio);
@@ -905,8 +978,6 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			{
 				audioSeconds,
 				videoSeconds,
-				coverReadable: Boolean(probeImage(images.cover)),
-				thumbnailReadable: Boolean(probeImage(images.thumbnail)),
 				metadataValid: true,
 			},
 			config,
@@ -925,7 +996,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			bucket: config.run.bucket,
 			status: "READY",
 			video_path: video,
-			thumbnail_path: images.thumbnail,
+			...(images.thumbnail ? { thumbnail_path: images.thumbnail } : {}),
 			contains_synthetic_media: true,
 			metadata: { title, thumbnail_title: title, description, tags },
 		});
@@ -935,7 +1006,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 				title,
 				audio_seconds: audioSeconds,
 				video_path: video,
-				thumbnail_path: images.thumbnail,
+				...(images.thumbnail ? { thumbnail_path: images.thumbnail } : {}),
 			}),
 		);
 	} catch (error) {

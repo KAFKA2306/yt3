@@ -50,7 +50,7 @@ function draft(overrides: Record<string, unknown> = {}) {
 describe("Yawa creative handoff", () => {
 	test("loads open-ended creative guidance separately from runtime settings", () => {
 		expect(Object.keys(config.creative).length).toBeGreaterThan(0);
-		expect(config.tts.device).toBe("cpu");
+		expect(["cpu", "cuda"]).toContain(config.tts.device);
 	});
 
 	test("accepts flat performances and an independently chosen chapter structure", () => {
@@ -84,17 +84,18 @@ describe("Yawa creative handoff", () => {
 		expect(validateDraft(value, config, tools)).toEqual([]);
 	});
 
-	test("checks only publication metadata limits and available tools", () => {
+	test("requires TTS but allows image generation to be omitted", () => {
 		expect(
 			validateDraft(draft({ title: "x".repeat(101) }), config, tools),
 		).toContain("title exceeds YouTube's 100-character limit");
+		const noImages = draft({
+			cover_prompt: undefined,
+			thumbnail_prompt: undefined,
+			production: { tts_backend: config.tts.backend },
+		});
 		expect(
-			validateDraft(
-				draft({ production: { ...draft().production, image_tool: "missing" } }),
-				config,
-				tools,
-			),
-		).toContain("image tool unavailable: missing");
+			validateDraft(noImages, config, { tts: tools.tts, images: [] }),
+		).toEqual([]);
 	});
 });
 
@@ -138,8 +139,6 @@ describe("Yawa technical completion", () => {
 			{
 				audioSeconds: 240,
 				videoSeconds: 240.5,
-				coverReadable: true,
-				thumbnailReadable: true,
 				metadataValid: true,
 			},
 			config,
