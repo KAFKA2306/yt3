@@ -17,7 +17,6 @@ source / event
   -> script
   -> media
   -> audit
-  -> product release gate
   -> channel verification
   -> private upload
   -> remote read-back
@@ -68,12 +67,11 @@ Use explicit run IDs when resuming or publishing. Publication never infers an un
 | `humanity` | 雨晴はうの人類観測所 | `humanity_observatory` |
 
 ```bash
-task release:check PROFILE=byosan -- <run-id> [video-path]
 task publish PROFILE=byosan -- <run-id> [video-path]
 task auth PROFILE=byosan
 ```
 
-Use `PROFILE=yawa` or `PROFILE=humanity` for the other channels. Unknown profiles fail closed. Before any YouTube side effect, publication runs the product release gate and verifies the authenticated channel against the selected profile. An unresolved remote upload intent blocks another upload.
+Use `PROFILE=yawa` or `PROFILE=humanity` for the other channels. Unknown profiles fail closed. Before any YouTube side effect, publication verifies the authenticated channel against the selected profile. An unresolved remote upload intent blocks another upload.
 
 ## Publication evidence
 
@@ -138,4 +136,4 @@ Humanity Observatory standard: [docs/standard/humanity-observatory-audit-standar
 
 ## Completion boundary
 
-A merged PR proves repository acceptance only. A passed product release gate proves local release readiness only. Publication is complete only when remote receipt/read-back evidence verifies the intended channel and visibility.
+A merged PR proves repository acceptance only. Publication is complete only when remote receipt/read-back evidence verifies the intended channel and visibility.

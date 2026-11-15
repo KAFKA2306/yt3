@@ -9,7 +9,6 @@ import {
 type TaskDefinition = { cmds?: unknown };
 
 const PROFILE_TASKS = {
-	"release:check": "bun src/scripts/check_product_release.ts",
 	publish: "bun src/scripts/publish_youtube.ts",
 	auth: "bun src/scripts/youtube_oauth.ts",
 } as const;

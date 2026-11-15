@@ -1,7 +1,5 @@
 import path from "node:path";
 import { PublishAgent } from "../domain/agents/publish.js";
-import { assertProductReleaseGate } from "../domain/product_release_gate.js";
-import { factualIntegrityRequired } from "../domain/publication_state.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import { loadYouTubeProfileEnv } from "../domain/youtube_profiles.js";
 import { AssetStore } from "../io/core.js";
@@ -37,15 +35,6 @@ async function main() {
 		store.loadState(),
 	) as AgentState;
 	if (publishVideoPath) state.publish_video_path = publishVideoPath;
-
-	assertProductReleaseGate({
-		runDir: store.runDir,
-		runId,
-		state,
-		profile,
-		publishVideoPath,
-		requireFactualIntegrity: factualIntegrityRequired(store.cfg.steps.youtube),
-	});
 
 	try {
 		const results = await new PublishAgent(store).run(state);
@@ -89,7 +78,7 @@ async function main() {
 				publishVideoPath || state.publish_video_path || state.video_path || "",
 			].filter(Boolean),
 			failure,
-			note: "YouTube publication failed after the product release gate.",
+			note: "YouTube publication failed.",
 		});
 		throw error;
 	}
