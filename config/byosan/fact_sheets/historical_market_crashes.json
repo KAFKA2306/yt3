@@ -1,0 +1,264 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "歴史上の暴落",
+	"subject": "暴落のあと、なぜすぐ戻る市場と戻らない市場があるのか？",
+	"released": "2026-11-15",
+	"source_documents": [
+		{
+			"url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1987",
+			"title": "Federal Reserve History, Stock Market Crash of 1987（2013-11-22）",
+			"issuer": "Federal Reserve History",
+			"published": "2013-11-22"
+		},
+		{
+			"url": "https://www.federalreserve.gov/pubs/feds/2007/200713/index.html",
+			"title": "Carlson, A Brief History of the 1987 Stock Market Crash（FEDS 2007-13、3.2節）",
+			"issuer": "Federal Reserve Board",
+			"published": "2007-05-01"
+		},
+		{
+			"url": "https://www.sec.gov/newsroom/speeches-statements/ts051110mls-testimony-concerning-severe-market-disruption-may-6-2010",
+			"title": "SEC, Testimony Concerning the Severe Market Disruption on May 6, 2010（2010-05-11、II.A）",
+			"issuer": "SEC",
+			"published": "2010-05-11"
+		},
+		{
+			"url": "https://www.sec.gov/files/marketevents-report.pdf",
+			"title": "SEC・CFTC, Findings Regarding the Market Events of May 6, 2010（2010-09-30、要旨 pp. 2–4）",
+			"issuer": "SEC・CFTC",
+			"published": "2010-09-30"
+		},
+		{
+			"url": "https://www.bankofengland.co.uk/quarterly-bulletin/2023/2023/financial-stability-buy-sell-tools-a-gilt-market-case-study",
+			"title": "Bank of England, Financial stability buy/sell tools: a gilt market case study（2023-11-20、2節）",
+			"issuer": "Bank of England",
+			"published": "2023-11-20"
+		},
+		{
+			"url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1929",
+			"title": "Federal Reserve History, Stock Market Crash of 1929（2013-11-22、図1）",
+			"issuer": "Federal Reserve History",
+			"published": "2013-11-22"
+		},
+		{
+			"url": "https://fraser.stlouisfed.org/files/docs/publications/aer/aer_1983_bernanke_nonmonetary_effects.pdf",
+			"title": "Bernanke, Nonmonetary Effects of the Financial Crisis in the Propagation of the Great Depression（AER、1983年6月、p. 257）",
+			"issuer": "American Economic Association / FRASER",
+			"published": "1983-06-01"
+		},
+		{
+			"url": "https://www.nber.org/system/files/working_papers/w14760/w14760.pdf",
+			"title": "Barro & Ursúa, Stock-Market Crashes and Depressions（2009年10月改訂、pp. 4–5）",
+			"issuer": "NBER",
+			"published": "2009-02-01"
+		},
+		{
+			"url": "https://www.nber.org/system/files/working_papers/w21693/revisions/w21693.rev1.pdf",
+			"title": "Goetzmann, Bubble Investing: Learning from History（2016年1月改訂、Tables 4–5）",
+			"issuer": "NBER",
+			"published": "2015-10-01"
+		},
+		{
+			"url": "https://fred.stlouisfed.org/data/SP500",
+			"title": "S&P Dow Jones Indices, S&P 500 日次終値（FRED掲載、2026-11-15参照）",
+			"issuer": "S&P Dow Jones Indices / FRED",
+			"published": "2026-11-15"
+		},
+		{
+			"url": "https://www.nber.org/system/files/working_papers/w26945/w26945.pdf",
+			"title": "Baker et al., The Unprecedented Stock Market Impact of COVID-19（2020年6月改訂、pp. 2–3）",
+			"issuer": "NBER",
+			"published": "2020-04-01"
+		}
+	],
+	"facts": [
+		{
+			"id": "dow_black_monday",
+			"label": "NYダウ前営業日比",
+			"value": -22.6,
+			"unit": "%",
+			"period": "1987年10月19日終値",
+			"basis": "actual",
+			"source_url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1987",
+			"status": "CONFIRMED",
+			"note": "前営業日終値が基準。"
+		},
+		{
+			"id": "dow_flash",
+			"label": "NYダウ日中",
+			"value": -5.49,
+			"unit": "%",
+			"period": "2010年5月6日 米東部時間14時42分から14時47分",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/newsroom/speeches-statements/ts051110mls-testimony-concerning-severe-market-disruption-may-6-2010",
+			"status": "CONFIRMED",
+			"note": "SEC証言II.A。10,445.84から9,872.57。"
+		},
+		{
+			"id": "dow_flash_close",
+			"label": "NYダウ前日終値比",
+			"value": -3.2,
+			"unit": "%",
+			"period": "2010年5月6日終値",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/newsroom/speeches-statements/ts051110mls-testimony-concerning-severe-market-disruption-may-6-2010",
+			"status": "CONFIRMED",
+			"note": "SEC証言II.Aの表記は-3.20%。"
+		},
+		{
+			"id": "flash_pause",
+			"label": "Eミニ先物の自動売買停止",
+			"value": 5,
+			"unit": "秒",
+			"period": "2010年5月6日",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/files/marketevents-report.pdf",
+			"status": "CONFIRMED",
+			"note": "共同報告の要旨。停止の前から買い注文が薄く、再開後に買い手が戻った。"
+		},
+		{
+			"id": "portfolio_scope",
+			"label": "Carlsonが分析したブラックマンデーの発生年",
+			"value": 1987,
+			"unit": "年",
+			"period": "10月19日",
+			"basis": "actual",
+			"source_url": "https://www.federalreserve.gov/pubs/feds/2007/200713/index.html",
+			"status": "CONFIRMED",
+			"note": "§3.2。下落に応じた先物売りの寄与について複数当局の見解を比較。"
+		},
+		{
+			"id": "gilt_yield",
+			"label": "英国30年国債利回り",
+			"value": 1.3,
+			"unit": "ポイント",
+			"period": "2022年9月28日までの3取引日",
+			"basis": "actual",
+			"source_url": "https://www.bankofengland.co.uk/quarterly-bulletin/2023/2023/financial-stability-buy-sell-tools-a-gilt-market-case-study",
+			"status": "CONFIRMED",
+			"note": "130ベーシスポイントを換算。画面表記は+1.30ポイント。国債価格が下がると利回りは上がる。追加担保を求められた年金向けファンドの国債売りが下落を増幅。"
+		},
+		{
+			"id": "dow_depression_peak",
+			"label": "NYダウ終値",
+			"value": 381.17,
+			"unit": "ポイント",
+			"period": "1929年9月3日",
+			"basis": "actual",
+			"source_url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1929",
+			"status": "CONFIRMED",
+			"note": "図1。配当なし・名目。"
+		},
+		{
+			"id": "dow_depression_bottom",
+			"label": "NYダウ終値",
+			"value": 41.22,
+			"unit": "ポイント",
+			"period": "1932年7月8日",
+			"basis": "actual",
+			"source_url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1929",
+			"status": "CONFIRMED",
+			"note": "図1。ピーク比-89.2%（41.22 ÷ 381.17 − 1を丸め）。"
+		},
+		{
+			"id": "credit_window",
+			"label": "金融混乱の分析対象期間",
+			"value": 1930,
+			"unit": "年開始",
+			"period": "1930年から1933年",
+			"basis": "actual",
+			"source_url": "https://fraser.stlouisfed.org/files/docs/publications/aer/aer_1983_bernanke_nonmonetary_effects.pdf",
+			"status": "CONFIRMED",
+			"note": "p. 257。金融混乱が借り入れを難しくして需要を下押ししたという著者の説明。"
+		},
+		{
+			"id": "barro_crashes",
+			"label": "複数年の実質株式リターンが25%以上低下した事例",
+			"value": 232,
+			"unit": "件",
+			"period": "30カ国、2006年まで",
+			"basis": "actual",
+			"source_url": "https://www.nber.org/system/files/working_papers/w14760/w14760.pdf",
+			"status": "CONFIRMED",
+			"note": "pp. 4–5。"
+		},
+		{
+			"id": "barro_matched",
+			"label": "深い景気後退と重複・隣接した株式暴落",
+			"value": 71,
+			"unit": "件",
+			"period": "30カ国、2006年まで",
+			"basis": "actual",
+			"source_url": "https://www.nber.org/system/files/working_papers/w14760/w14760.pdf",
+			"status": "CONFIRMED",
+			"note": "pp. 3–5。景気後退は一人当たりの実質消費またはGDPが複数年で10%以上減少するなど、同論文の基準による。因果を示す集計ではない。"
+		},
+		{
+			"id": "goetzmann_boom",
+			"label": "急騰後に半値以下",
+			"value": 9.8,
+			"unit": "%",
+			"period": "3年で倍以上になった後の5年の観測窓",
+			"basis": "actual",
+			"source_url": "https://www.nber.org/system/files/working_papers/w21693/revisions/w21693.rev1.pdf",
+			"status": "CONFIRMED",
+			"note": "2016年1月改訂稿 Table 4。34件 / 346件。"
+		},
+		{
+			"id": "goetzmann_all",
+			"label": "全観測から半値以下",
+			"value": 8.4,
+			"unit": "%",
+			"period": "同じ5年の観測窓",
+			"basis": "actual",
+			"source_url": "https://www.nber.org/system/files/working_papers/w21693/revisions/w21693.rev1.pdf",
+			"status": "CONFIRMED",
+			"note": "2016年1月改訂稿 Table 4。287件 / 3,412件。全観測には急騰後も含む。"
+		},
+		{
+			"id": "belgium",
+			"label": "ベルギー株価指数の急騰後5年目",
+			"value": 2.35,
+			"unit": "倍",
+			"period": "1985年の急騰終了時点を基準",
+			"basis": "actual",
+			"source_url": "https://www.nber.org/system/files/working_papers/w21693/revisions/w21693.rev1.pdf",
+			"status": "CONFIRMED",
+			"note": "2016年1月改訂稿 Table 5。"
+		},
+		{
+			"id": "spx_baseline",
+			"label": "S&P 500の名目価格上昇率",
+			"value": 44.3,
+			"unit": "%",
+			"period": "2016年12月30日から2019年12月31日",
+			"basis": "actual",
+			"source_url": "https://fred.stlouisfed.org/data/SP500",
+			"status": "CONFIRMED",
+			"note": "終値2,238.83から3,230.78。先行3暦年。"
+		},
+		{
+			"id": "spx_covid",
+			"label": "S&P 500の名目価格下落率",
+			"value": -33.9,
+			"unit": "%",
+			"period": "2020年2月19日から3月23日",
+			"basis": "actual",
+			"source_url": "https://fred.stlouisfed.org/data/SP500",
+			"status": "CONFIRMED",
+			"note": "終値3,386.15から2,237.40。"
+		},
+		{
+			"id": "covid_news_window",
+			"label": "米株の大幅な日次変動を照合した初期区間",
+			"value": 22,
+			"unit": "取引日",
+			"period": "2020年2月24日から3月24日",
+			"basis": "actual",
+			"source_url": "https://www.nber.org/system/files/working_papers/w26945/w26945.pdf",
+			"status": "CONFIRMED",
+			"note": "pp. 2–3。翌日の報道が挙げた理由を分類し、感染拡大や対策との関連を記録。各日の因果は識別しない。"
+		}
+	],
+	"unverified": []
+}
