@@ -95,8 +95,7 @@ const MotionSchema = z
 const ProductionSchema = z
 	.object({
 		tts_backend: z.string().min(1),
-		image_tool: z.string().min(1),
-		order: z.array(z.enum(["audio", "image"])).length(2),
+		image_tool: z.string().min(1).optional(),
 		mix: z
 			.object({
 				target_lufs: z.number().finite(),
@@ -144,19 +143,13 @@ const DraftShape = z
 			)
 			.min(1)
 			.optional(),
-		cover_prompt: z.string().min(1),
-		thumbnail_prompt: z.string().min(1),
+		cover_prompt: z.string().min(1).optional(),
+		thumbnail_prompt: z.string().min(1).optional(),
 		production: ProductionSchema,
 	})
 	.passthrough();
 
 export const ScriptDraftSchema = DraftShape.superRefine((draft, context) => {
-	if (new Set(draft.production.order).size !== 2) {
-		context.addIssue({
-			code: z.ZodIssueCode.custom,
-			message: "production.order must contain audio and image once each",
-		});
-	}
 	const voices = new Set(draft.voices.map((voice) => voice.id));
 	if (voices.size !== draft.voices.length) {
 		context.addIssue({
@@ -258,8 +251,6 @@ export function validateDraft(
 		failures.push("tags exceed YouTube's 500-character limit");
 	if (!available.tts.includes(draft.production.tts_backend))
 		failures.push(`TTS tool unavailable: ${draft.production.tts_backend}`);
-	if (!available.images.includes(draft.production.image_tool))
-		failures.push(`image tool unavailable: ${draft.production.image_tool}`);
 	return failures;
 }
 
@@ -354,8 +345,6 @@ export function yawaAudit(
 	input: {
 		audioSeconds: number;
 		videoSeconds: number;
-		coverReadable: boolean;
-		thumbnailReadable: boolean;
 		metadataValid: boolean;
 	},
 	config: YawaConfig,
@@ -381,16 +370,6 @@ export function yawaAudit(
 			"media_duration",
 			"Audio and video durations agree",
 			durationMatches,
-		),
-		cover_readable: check(
-			"cover_readable",
-			"Cover image was produced",
-			input.coverReadable,
-		),
-		thumbnail_readable: check(
-			"thumbnail_readable",
-			"Thumbnail image was produced",
-			input.thumbnailReadable,
 		),
 		metadata_valid: check(
 			"metadata_valid",
