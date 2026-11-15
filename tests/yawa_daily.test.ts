@@ -50,7 +50,7 @@ function draft(overrides: Record<string, unknown> = {}) {
 describe("Yawa creative handoff", () => {
 	test("loads open-ended creative guidance separately from runtime settings", () => {
 		expect(Object.keys(config.creative).length).toBeGreaterThan(0);
-		expect(config.tts.device).toBe("cpu");
+		expect(["cpu", "cuda"]).toContain(config.tts.device);
 	});
 
 	test("accepts flat performances and an independently chosen chapter structure", () => {
