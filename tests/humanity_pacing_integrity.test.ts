@@ -7,7 +7,7 @@ describe("humanity pacing audit integrity", () => {
 		expect(source).not.toContain(
 			'signalResults.multimodal_pacing.status = "PASS"',
 		);
-		expect(source).not.toContain("Bypassed for ${state.bucket}");
+		expect(source).not.toContain(`Bypassed for \${state.bucket}`);
 		expect(source).toContain("Object.assign(results, signalResults)");
 	});
 });

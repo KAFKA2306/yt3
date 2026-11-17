@@ -6,7 +6,7 @@ StartLimitBurst=3
 
 [Service]
 Type=oneshot
-Restart=on-failure
+Restart=no
 RestartSec=600
 TimeoutStartSec=infinity
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3

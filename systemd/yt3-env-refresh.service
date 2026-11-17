@@ -1,0 +1,12 @@
+[Unit]
+Description=YT3 autonomous dev-environment refresh cycle
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/kafka/projects/yt3
+ExecStart=/home/kafka/.local/bin/task env:refresh
+Environment=PATH=/home/kafka/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/kafka
+TimeoutStartSec=55min

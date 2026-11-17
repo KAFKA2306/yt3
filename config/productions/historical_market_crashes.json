@@ -1,0 +1,656 @@
+{
+	"angle": "歴史上の下落を観測期間と売買・信用の経路で比較し、事前の急騰に注目する見方を対照事例で検証する。",
+	"searchQuery": "stock market crashes 1987 2010 flash crash 2022 UK gilt 1929 Goetzmann Bubble Investing",
+	"title": "暴落のあと、なぜすぐ戻る市場と戻らない市場があるのか？",
+	"thumbnailTitle": "暴落のあと\nなぜ戻らない？",
+	"thumbnail": {
+		"eyebrow": "秒算マネー",
+		"lead": "暴落のあと",
+		"accent": "なぜ戻らない？",
+		"reaction": "なぜ？",
+		"secondLine": "買い手は戻る？",
+		"calloutTop": "数分で反発、数年続く下落",
+		"calloutBottom": "売りが続いた理由を追う"
+	},
+	"descriptionLead": "暴落後の違いを、値動き・強制売り・信用への波及から追います。",
+	"descriptionBullets": [
+		"すぐ戻った市場、売りが続いた市場、急騰後も上がった市場を比べます。"
+	],
+	"disclaimer": "歴史資料に基づく市場の解説です。",
+	"noveltyQueries": [
+		"black monday flash crash 2022 gilt crisis comparison",
+		"bubble investing boom no crash Belgium 1985"
+	],
+	"tags": ["秒算マネー", "暴落", "フラッシュクラッシュ", "英国債", "株式市場"],
+	"sources": [
+		{
+			"id": "fed1987",
+			"name": "FRB史・Stock Market Crash of 1987（2013-11-22）",
+			"url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1987"
+		},
+		{
+			"id": "carlson",
+			"name": "Carlson・FEDS 2007-13（2007年5月、3.2節）",
+			"url": "https://www.federalreserve.gov/pubs/feds/2007/200713/index.html"
+		},
+		{
+			"id": "sec",
+			"name": "SEC議会証言（2010-05-11、II.A）",
+			"url": "https://www.sec.gov/newsroom/speeches-statements/ts051110mls-testimony-concerning-severe-market-disruption-may-6-2010"
+		},
+		{
+			"id": "flash",
+			"name": "SEC/CFTC・2010年5月6日の共同報告（2010-09-30、pp. 2–6）",
+			"url": "https://www.sec.gov/files/marketevents-report.pdf"
+		},
+		{
+			"id": "boe",
+			"name": "英中銀・2022年英国債の介入記録（2023-11-20、2節）",
+			"url": "https://www.bankofengland.co.uk/quarterly-bulletin/2023/2023/financial-stability-buy-sell-tools-a-gilt-market-case-study"
+		},
+		{
+			"id": "fed1929",
+			"name": "FRB史・Stock Market Crash of 1929（2013-11-22、図1）",
+			"url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1929"
+		},
+		{
+			"id": "bernanke",
+			"name": "Bernanke・AER 73(3)（1983年6月、p. 257）",
+			"url": "https://fraser.stlouisfed.org/files/docs/publications/aer/aer_1983_bernanke_nonmonetary_effects.pdf"
+		},
+		{
+			"id": "barro",
+			"name": "Barro/Ursúa・NBER 14760（2009年10月改訂、pp. 3–5）",
+			"url": "https://www.nber.org/system/files/working_papers/w14760/w14760.pdf"
+		},
+		{
+			"id": "goetzmann",
+			"name": "Goetzmann・NBER 21693（2016年1月改訂、Tables 4–5）",
+			"url": "https://www.nber.org/system/files/working_papers/w21693/revisions/w21693.rev1.pdf"
+		},
+		{
+			"id": "fred",
+			"name": "S&P DJI/FRED・S&P 500（2026-11-15参照）",
+			"url": "https://fred.stlouisfed.org/data/SP500"
+		},
+		{
+			"id": "baker",
+			"name": "Bakerほか・NBER 26945（2020年6月改訂、pp. 2–3）",
+			"url": "https://www.nber.org/system/files/working_papers/w26945/w26945.pdf"
+		}
+	],
+	"claims": [
+		{
+			"id": "black_monday",
+			"claim": "1987年10月19日、NYダウ終値は前営業日比22.6%安。",
+			"sourceIds": ["fed1987"],
+			"status": "verified"
+		},
+		{
+			"id": "portfolio",
+			"claim": "1987年の先物売りにポートフォリオ保険が寄与。下落の増幅度は見解が分かれた。",
+			"sourceIds": ["carlson"],
+			"status": "verified"
+		},
+		{
+			"id": "flash_dow",
+			"claim": "2010年5月6日、NYダウは14時42分から14時47分に5.49%下落。終値は前日比3.20%安。",
+			"sourceIds": ["sec"],
+			"status": "verified"
+		},
+		{
+			"id": "flash_flow",
+			"claim": "2010年は薄い買い注文に大口の先物売りが重なった。買い注文が戻ると反発。",
+			"sourceIds": ["flash"],
+			"status": "verified"
+		},
+		{
+			"id": "gilt_rate",
+			"claim": "英国30年国債利回りは2022年9月28日までの3取引日で1.30ポイント上昇。",
+			"sourceIds": ["boe"],
+			"status": "derived_with_caveat",
+			"caveat": "130bpを換算。"
+		},
+		{
+			"id": "gilt_flow",
+			"claim": "追加担保を求められた年金向けファンドの国債売りが、下落を増幅。英中銀は長期国債を一時買い入れ。",
+			"sourceIds": ["boe"],
+			"status": "verified"
+		},
+		{
+			"id": "depression_dow",
+			"claim": "NYダウは1929年9月3日の381.17から1932年7月8日の41.22へ。約89.2%安。",
+			"sourceIds": ["fed1929"],
+			"status": "derived_with_caveat",
+			"caveat": "終値で計算。配当なし。"
+		},
+		{
+			"id": "depression_credit",
+			"claim": "Bernankeは1930〜33年の金融混乱が信用を縮め、景気の低迷を長引かせたと論じた。",
+			"sourceIds": ["bernanke"],
+			"status": "verified"
+		},
+		{
+			"id": "crash_depression",
+			"claim": "30カ国の複数年の株式暴落232件のうち、深い景気後退と重複・隣接したのは71件。",
+			"sourceIds": ["barro"],
+			"status": "verified",
+			"caveat": "実質株式リターンは25%以上の下落。"
+		},
+		{
+			"id": "after_boom",
+			"claim": "国別株価指数が3年で倍増後、5年の観測窓で半値以下は9.8%、全観測では8.4%。",
+			"sourceIds": ["goetzmann"],
+			"status": "verified",
+			"caveat": "年次データ。"
+		},
+		{
+			"id": "belgium",
+			"claim": "1985年ベルギーは急騰終了から5年目に2.35倍。",
+			"sourceIds": ["goetzmann"],
+			"status": "verified"
+		},
+		{
+			"id": "covid",
+			"claim": "S&P 500は2019年末までの3暦年で44.3%上昇。2020年2月19日から3月23日に33.9%下落。",
+			"sourceIds": ["fred", "baker"],
+			"status": "derived_with_caveat",
+			"caveat": "配当なしの名目終値。"
+		},
+		{
+			"id": "covid_news",
+			"claim": "Bakerらは、2020年の米株急変を感染拡大や対策に結びつけた翌日の報道を記録。",
+			"sourceIds": ["baker"],
+			"status": "verified"
+		}
+	],
+	"packaging": {
+		"primaryClaimId": "flash_dow",
+		"claimIds": ["flash_dow", "gilt_flow", "depression_credit", "after_boom"]
+	},
+	"segments": [
+		{
+			"claimIds": ["flash_dow", "depression_dow"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "同じ暴落、違う時間",
+			"headline": "暴落のあと、なぜすぐ戻る市場と戻らない市場があるのか？",
+			"subheadline": "数分で反発する市場と、何年も下がる市場",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC議会証言／Federal Reserve History 図1",
+			"text": "株の暴落って、数分で反発することも、何年も下がり続けることもあるのだ。どこで違いが出るのだ？"
+		},
+		{
+			"claimIds": ["flash_flow", "gilt_flow", "depression_credit"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "同じ暴落、違う時間",
+			"headline": "暴落のあと、なぜすぐ戻る市場と戻らない市場があるのか？",
+			"subheadline": "数分で反発する市場と、何年も下がる市場",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC・CFTC共同報告／イングランド銀行／Bernanke（AER）",
+			"text": "買い手がすぐ戻るか、値下がりしても売らざるを得ない人が残っているか。まずこの違いを見よう。下落が何年も続いたケースでは、銀行の貸し出しや景気にも目を向ける。"
+		},
+		{
+			"claimIds": ["black_monday", "portfolio"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "一日で売りが重なる",
+			"headline": "一日で売りが重なる",
+			"subheadline": "NYダウの前営業日終値から当日終値まで",
+			"visualType": "stat",
+			"stats": [
+				{
+					"label": "NYダウ・1987年10月19日終値（前営業日比）",
+					"value": "-22.6%",
+					"detail": "1987年10月19日終値・前営業日比",
+					"color": "cyan"
+				}
+			],
+			"source": "Federal Reserve History／FRB・Carlson",
+			"text": "千九百八十七年十月十九日、ブラックマンデー。ニューヨークのダウ平均は、前の取引日の終値から一日で二十二・六パーセント下がった。米国では株だけでなく、株価指数の先物市場も混乱した。"
+		},
+		{
+			"claimIds": ["portfolio"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "一日で売りが重なる",
+			"headline": "一日で売りが重なる",
+			"subheadline": "NYダウの前営業日終値から当日終値まで",
+			"visualType": "text",
+			"stats": [],
+			"source": "FRB・Carlson",
+			"text": "下がったら売る仕組みがあったと聞いたのだ。損を減らすつもりで売ると、どうして市場全体が困るのだ？"
+		},
+		{
+			"claimIds": ["portfolio"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "一日で売りが重なる",
+			"headline": "一日で売りが重なる",
+			"subheadline": "NYダウの前営業日終値から当日終値まで",
+			"visualType": "text",
+			"stats": [],
+			"source": "FRB・Carlson",
+			"text": "株が下がったときに指数先物を売って、さらに下がった場合の損を抑える。これが当時のポートフォリオ保険のやり方の一つだよ。同じように動く投資家が重なると、下落中の市場に追加の売りが出る。"
+		},
+		{
+			"claimIds": ["portfolio"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "一日で売りが重なる",
+			"headline": "一日で売りが重なる",
+			"subheadline": "NYダウの前営業日終値から当日終値まで",
+			"visualType": "text",
+			"stats": [],
+			"source": "FRB・Carlson",
+			"text": "米連邦準備制度のカールソンが、当時の調査を比べているよ。シカゴの取引所の調査は、この戦略が先物売りを増やしたと見た。先物売りが現物株の売りを呼び、連鎖したという説明には、別の当局から異論が出た。"
+		},
+		{
+			"claimIds": ["flash_dow"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "数分で買い手が戻る",
+			"headline": "NYダウの日中と終値",
+			"subheadline": "NYダウの日中の変化と当日の終値",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC議会証言",
+			"text": "翌朝のニュースで終値だけを見たら、取引中に何が起きたかまで分かるのだ？"
+		},
+		{
+			"claimIds": ["flash_dow"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "数分で買い手が戻る",
+			"headline": "NYダウの日中と終値",
+			"subheadline": "NYダウの日中の変化と当日の終値",
+			"visualType": "text",
+			"stats": [
+				{
+					"label": "14時42分からの5分間",
+					"value": "-5.49%",
+					"detail": "直前の指数水準が基準",
+					"color": "cyan"
+				},
+				{
+					"label": "当日終値",
+					"value": "前日比 -3.20%",
+					"detail": "前日終値が基準",
+					"color": "amber"
+				}
+			],
+			"source": "SEC議会証言",
+			"text": "米国の証券取引委員会によると、二千十年五月六日、ダウ平均が午後二時四十二分から五分間で五・四九パーセント下がった。そこから大きく戻し、その日の終値は前日比三・二〇パーセント安。二つの数字は、比べ始める時刻が違うよ。"
+		},
+		{
+			"claimIds": ["flash_flow"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "数分で買い手が戻る",
+			"headline": "NYダウの日中と終値",
+			"subheadline": "NYダウの日中の変化と当日の終値",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC・CFTC共同報告",
+			"text": "フラッシュクラッシュと呼ばれるこの日、買い注文が薄いところに、株価指数先物の大口売りが重なった。先物の下落は現物株にも広がり、一部の参加者は株の注文を出すのを一時的に控えた。"
+		},
+		{
+			"claimIds": ["flash_flow"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "数分で買い手が戻る",
+			"headline": "NYダウの日中と終値",
+			"subheadline": "NYダウの日中の変化と当日の終値",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC・CFTC共同報告",
+			"text": "注文がたくさん成立していても、次の売りを同じ値段で受け止める買い手は減っていることがあるのだ？"
+		},
+		{
+			"claimIds": ["flash_flow"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "数分で買い手が戻る",
+			"headline": "NYダウの日中と終値",
+			"subheadline": "NYダウの日中の変化と当日の終値",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC・CFTC共同報告",
+			"text": "あるよ。取引量は成立した売買の量で、その値段の近くに次の買い注文がどれだけあるかは別の数字。先物が短時間止まった前後に買い注文が戻り、価格は反発した。市場が反発している間も、大口の売り注文の執行は続いていた。"
+		},
+		{
+			"claimIds": ["gilt_flow"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "担保の請求が売りを呼ぶ",
+			"headline": "担保の請求が売りを呼ぶ",
+			"subheadline": "英国30年国債の利回りが3取引日で上昇",
+			"visualType": "text",
+			"stats": [],
+			"source": "イングランド銀行",
+			"text": "株の注文が止まる話は分かったのだ。国債まで大きく売られたときには、誰が売っていたのだ？"
+		},
+		{
+			"claimIds": ["gilt_rate", "gilt_flow"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "担保の請求が売りを呼ぶ",
+			"headline": "担保の請求が売りを呼ぶ",
+			"subheadline": "英国30年国債の利回りが3取引日で上昇",
+			"visualType": "stat",
+			"stats": [
+				{
+					"label": "英国30年国債利回り・3取引日の変化",
+					"value": "+1.30ポイント",
+					"detail": "2022年9月28日までの3取引日",
+					"color": "cyan"
+				}
+			],
+			"source": "イングランド銀行",
+			"text": "二千二十二年九月、英国政府が財政計画を発表したあと、イングランド銀行の集計では、三十年国債の利回りは三取引日で一点三〇ポイント上がった。利払いが固定された国債は、価格が下がると、その価格で買う人の利回りが上がる。"
+		},
+		{
+			"claimIds": ["gilt_flow"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "担保の請求が売りを呼ぶ",
+			"headline": "担保の請求が売りを呼ぶ",
+			"subheadline": "英国30年国債の利回りが3取引日で上昇",
+			"visualType": "text",
+			"stats": [],
+			"source": "イングランド銀行",
+			"text": "年金は、遠い将来にもお金を払う必要がある。英国では、その見通しが金利変動で大きくぶれないようにするための運用に、借り入れやデリバティブを使うファンドがあった。国債が下がると、取引相手から現金などの担保を追加で求められた。"
+		},
+		{
+			"claimIds": ["gilt_flow"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "担保の請求が売りを呼ぶ",
+			"headline": "担保の請求が売りを呼ぶ",
+			"subheadline": "英国30年国債の利回りが3取引日で上昇",
+			"visualType": "text",
+			"stats": [],
+			"source": "イングランド銀行",
+			"text": "現金を用意するために手元の国債を売る。その売りで国債がもっと下がると、また担保が要るのだ？"
+		},
+		{
+			"claimIds": ["gilt_flow"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "担保の請求が売りを呼ぶ",
+			"headline": "担保の請求が売りを呼ぶ",
+			"subheadline": "英国30年国債の利回りが3取引日で上昇",
+			"visualType": "text",
+			"stats": [],
+			"source": "イングランド銀行",
+			"text": "そう。年金側から現金を集めるのが間に合わず、国債売りが下落を強める場面があった。イングランド銀行は長期国債を一時的に買い入れた。担保の期限までに現金が集まるかどうかで、国債を売る必要が変わった。"
+		},
+		{
+			"claimIds": ["depression_dow", "depression_credit"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "下落が何年も続く",
+			"headline": "下落が何年も続く",
+			"subheadline": "NYダウの高値と安値の終値。配当は含まない",
+			"visualType": "text",
+			"stats": [],
+			"source": "Federal Reserve History 図1／Bernanke（AER）",
+			"text": "逆に、買い手が戻るまでずっと時間がかかった例では、その間に何が起きたのだ？"
+		},
+		{
+			"claimIds": ["depression_dow"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "下落が何年も続く",
+			"headline": "下落が何年も続く",
+			"subheadline": "NYダウの高値と安値の終値。配当は含まない",
+			"visualType": "stat",
+			"stats": [
+				{
+					"label": "NYダウ・1929年9月から1932年7月",
+					"value": "-89.2%",
+					"detail": "1929年9月の高値から1932年7月の安値",
+					"color": "cyan"
+				}
+			],
+			"source": "Federal Reserve History 図1",
+			"text": "ニューヨークのダウ平均は、千九百二十九年九月の高値から、千九百三十二年七月の安値までに約八十九・二パーセント下がった。十月の急落の一日分ではなく、数年間の値下がりを合わせた数字だよ。"
+		},
+		{
+			"claimIds": ["depression_credit"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "下落が何年も続く",
+			"headline": "下落が何年も続く",
+			"subheadline": "NYダウの高値と安値の終値。配当は含まない",
+			"visualType": "text",
+			"stats": [],
+			"source": "Bernanke（AER）",
+			"text": "その数年には銀行の混乱もあった。経済学者のバーナンキは、銀行などが貸し手と借り手を結びつけにくくなり、借り入れが難しくなったことで、消費や投資の弱さが長引いたと論じている。"
+		},
+		{
+			"claimIds": ["crash_depression"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "下落が何年も続く",
+			"headline": "下落が何年も続く",
+			"subheadline": "NYダウの高値と安値の終値。配当は含まない",
+			"visualType": "text",
+			"stats": [],
+			"source": "Barro・Ursúa（NBER）",
+			"text": "株価が大きく下がれば、いつも景気も同じように悪くなるのだ？"
+		},
+		{
+			"claimIds": ["crash_depression"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "下落が何年も続く",
+			"headline": "下落が何年も続く",
+			"subheadline": "NYダウの高値と安値の終値。配当は含まない",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "株式の長期下落（30カ国）",
+					"value": "232件",
+					"detail": "30カ国・2006年まで",
+					"color": "cyan"
+				},
+				{
+					"label": "深い景気後退と時期が一致・隣接",
+					"value": "71件",
+					"detail": "同じ調査の該当事例",
+					"color": "amber"
+				}
+			],
+			"source": "Barro・Ursúa（NBER）",
+			"text": "バローとウルスアは、三十カ国で、インフレを差し引いた株式のリターンが複数年で二十五パーセント以上下がった事例を二百三十二件数えた。深い景気後退と時期が重なるか隣り合ったのは七十一件。一人当たりの実質消費や国内総生産が一割以上落ち込むようなケースだよ。重なった事例にも、戦争など、株と景気の両方に影響した出来事がある。"
+		},
+		{
+			"claimIds": ["after_boom"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "急騰した市場を全部数える",
+			"headline": "急騰した市場を全部数える",
+			"subheadline": "国別株価指数。年次で観測した半値以下の頻度",
+			"visualType": "text",
+			"stats": [],
+			"source": "Goetzmann（NBER）",
+			"text": "下がった後を見ると違いが分かったのだ。下がる前はどうなのだ？ 市場が倍にもなれば、いずれ半値に戻りやすいのだ？"
+		},
+		{
+			"claimIds": ["after_boom"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "急騰した市場を全部数える",
+			"headline": "急騰した市場を全部数える",
+			"subheadline": "国別株価指数。5年の観測窓で半値以下",
+			"visualType": "comparison",
+			"stats": [
+				{
+					"label": "3年で倍以上になった後",
+					"value": "9.8%",
+					"detail": "5年の観測窓で半値以下",
+					"color": "cyan"
+				},
+				{
+					"label": "急騰の有無で絞らない全観測",
+					"value": "8.4%",
+					"detail": "同じ5年の観測窓",
+					"color": "amber"
+				}
+			],
+			"source": "Goetzmann（NBER）",
+			"text": "ゴーツマンの研究は、三年で倍以上になった国別株価指数を拾い、その後の五年の観測窓で半値以下になった例を数えた。該当したのは九・八パーセント。急騰の有無で絞らない全観測では八・四パーセントだった。"
+		},
+		{
+			"claimIds": ["belgium", "after_boom"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "急騰した市場を全部数える",
+			"headline": "急騰した市場を全部数える",
+			"subheadline": "国別株価指数。年次で観測した半値以下の頻度",
+			"visualType": "stat",
+			"stats": [
+				{
+					"label": "ベルギー株式・1985年の急騰終了から5年目",
+					"value": "2.35倍",
+					"detail": "1985年の急騰終了時点から5年目",
+					"color": "cyan"
+				}
+			],
+			"source": "Goetzmann（NBER）",
+			"text": "たとえば千九百八十五年のベルギーは、急騰が終わった時点を基準にしても、五年目の株価指数が二・三五倍だった。この研究は年ごとの数字を使うので、途中の日中の安値までは分からない。"
+		},
+		{
+			"claimIds": ["covid"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "急騰した市場を全部数える",
+			"headline": "急騰した市場を全部数える",
+			"subheadline": "国別株価指数。年次で観測した半値以下の頻度",
+			"visualType": "text",
+			"stats": [],
+			"source": "S&P DJI・FRED",
+			"text": "反対に、直前の数年で倍になっていなくても、大きく下がった例はあるのだ？"
+		},
+		{
+			"claimIds": ["covid"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "急騰した市場を全部数える",
+			"headline": "急騰した市場を全部数える",
+			"subheadline": "S&P 500の名目終値。配当なし",
+			"visualType": "text",
+			"stats": [
+				{
+					"label": "2019年末までの3暦年",
+					"value": "上昇率 +44.3%",
+					"detail": "S&P 500 名目終値・配当なし",
+					"color": "cyan"
+				},
+				{
+					"label": "2020年2月19日から3月23日",
+					"value": "-33.9%",
+					"detail": "同じ価格指数。比較期間は別",
+					"color": "amber"
+				}
+			],
+			"source": "S&P DJI・FRED",
+			"text": "米国のエス・アンド・ピー・ファイブハンドレッドは、二千十九年末までの三暦年で四十四・三パーセント上昇。その翌年の二月十九日から三月二十三日には三十三・九パーセント下がった。どちらも配当を含まないドル建ての終値で計算しているよ。"
+		},
+		{
+			"claimIds": ["covid_news", "covid"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "急騰した市場を全部数える",
+			"headline": "急騰した市場を全部数える",
+			"subheadline": "国別株価指数。年次で観測した半値以下の頻度",
+			"visualType": "text",
+			"stats": [],
+			"source": "Bakerほか（NBER）／S&P DJI・FRED",
+			"text": "当時の新聞を調べたベイカーたちは、米国株が大きく動いた日の報道で、感染拡大や対策が理由に挙がった例を記録した。記事が伝えたのは、その時点での説明だよ。株価が動いた理由を確かめるには、取引や政策の記録も要る。"
+		},
+		{
+			"claimIds": ["flash_dow", "gilt_flow", "crash_depression"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "暴落の数字を読む順番",
+			"headline": "暴落の数字を読む順番",
+			"subheadline": "観測期間、売り手と買い手、信用や景気への波及",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC議会証言／イングランド銀行／Barro・Ursúa（NBER）",
+			"text": "暴落のニュースを見たら、最初に何を調べると、その後の見方が変わるのだ？"
+		},
+		{
+			"claimIds": ["flash_flow", "gilt_flow", "depression_credit"],
+			"speaker": "春日部つむぎ",
+			"emotion": "analytical",
+			"section": "暴落の数字を読む順番",
+			"headline": "暴落の数字を読む順番",
+			"subheadline": "観測期間、売り手と買い手、信用や景気への波及",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC・CFTC共同報告／イングランド銀行／Bernanke（AER）",
+			"text": "まず、何がいつからいつまでに下がったか。次に、現金や担保が必要で売っている人はいるか。その売りを引き受ける買い手は戻ったか。売りが続くなら、企業や家計が銀行から借りにくくなっていないかも見る。"
+		},
+		{
+			"claimIds": ["flash_dow", "crash_depression"],
+			"speaker": "ずんだもん",
+			"emotion": "curious",
+			"section": "暴落の数字を読む順番",
+			"headline": "暴落の数字を読む順番",
+			"subheadline": "観測期間、売り手と買い手、信用や景気への波及",
+			"visualType": "text",
+			"stats": [],
+			"source": "SEC議会証言／Barro・Ursúa（NBER）",
+			"text": "積み立てている投資信託の指数に「暴落」と出たら、まず終値なのか、取引中なのかを確かめるのだ。五分で五・四九パーセント下がった日のことは、終値だけを見ていたら気づけないのだ。"
+		}
+	],
+	"explanation": {
+		"conclusion": "暴落後の経過は、買い注文が戻る速さ、担保を賄う売りが続くか、信用や景気にも影響が及ぶかで異なる。",
+		"principle": "日中の急変と複数年の下落を別々に測り、価格と売買・資金調達の記録を同じ時系列に置く。事前の急騰を調べるときは、急騰後に崩れなかった観測も含める。",
+		"figures": [
+			{
+				"metric": "NYダウ日中",
+				"population": "NYダウ",
+				"period": "2010年5月6日 米東部時間14時42分から14時47分",
+				"unit": "%",
+				"value": "-5.49%",
+				"quote": "NYダウ日中: -5.49%",
+				"kind": "actual"
+			},
+			{
+				"metric": "英国30年国債利回り",
+				"population": "英国30年国債",
+				"period": "2022年9月28日までの3取引日",
+				"unit": "ポイント",
+				"value": "+1.30ポイント",
+				"quote": "画面表記は+1.30ポイント",
+				"kind": "actual"
+			},
+			{
+				"metric": "急騰後に半値以下",
+				"population": "国別株価指数",
+				"period": "3年で倍以上になった後の5年の観測窓",
+				"unit": "%",
+				"value": "9.8%",
+				"quote": "急騰後に半値以下: 9.8%",
+				"kind": "actual"
+			},
+			{
+				"metric": "全観測から半値以下",
+				"population": "国別株価指数",
+				"period": "同じ5年の観測窓",
+				"unit": "%",
+				"value": "8.4%",
+				"quote": "全観測から半値以下: 8.4%",
+				"kind": "actual"
+			}
+		],
+		"check": "何がどの観測期間に下落したか。\n誰が売り、買い手はいつ戻ったか。\n追加担保、銀行貸出、景気に変化が出たか。"
+	}
+}

@@ -1,0 +1,345 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "Apple（AAPL）",
+	"released": "2026-11-02",
+	"source_documents": [
+		{
+			"url": "https://www.apple.com/newsroom/2026/11/apple-reports-fourth-quarter-results/",
+			"title": "Apple reports fourth quarter results",
+			"issuer": "Apple Inc.",
+			"published": "2026-11-02"
+		},
+		{
+			"url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"title": "Apple Inc. Form 8-K Exhibit 99.1 FY2026 Q4",
+			"issuer": "Apple Inc.",
+			"published": "2026-11-02"
+		}
+	],
+	"facts": [
+		{
+			"id": "revenue_q4",
+			"label": "売上高",
+			"value": 114477,
+			"unit": "百万ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "revenue_q4_prior",
+			"label": "売上高（前年同期）",
+			"value": 102466,
+			"unit": "百万ドル",
+			"period": "2025年7月〜9月（Apple FY2025 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "revenue_q4_yoy",
+			"label": "売上高の前年同期比",
+			"value": 11.7,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "8-K別紙の売上・費用の数値から算出"
+		},
+		{
+			"id": "net_income_q4",
+			"label": "純利益",
+			"value": 30711,
+			"unit": "百万ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "net_income_q4_prior",
+			"label": "純利益（前年同期）",
+			"value": 27466,
+			"unit": "百万ドル",
+			"period": "2025年7月〜9月（Apple FY2025 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "eps_q4",
+			"label": "希薄化後EPS",
+			"value": 2.1,
+			"unit": "ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "eps_q4_prior",
+			"label": "希薄化後EPS（前年同期）",
+			"value": 1.85,
+			"unit": "ドル",
+			"period": "2025年7月〜9月（Apple FY2025 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "iphone_q4",
+			"label": "iPhone売上高",
+			"value": 57583,
+			"unit": "百万ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "iphone_q4_prior",
+			"label": "iPhone売上高（前年同期）",
+			"value": 49025,
+			"unit": "百万ドル",
+			"period": "2025年7月〜9月（Apple FY2025 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "iphone_q4_yoy",
+			"label": "iPhone売上高の前年同期比",
+			"value": 17.5,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "8-K別紙の売上・費用の数値から算出"
+		},
+		{
+			"id": "iphone_share_q4",
+			"label": "iPhoneの売上高構成比",
+			"value": 50.3,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "8-K別紙の売上・費用の数値から算出"
+		},
+		{
+			"id": "services_q4",
+			"label": "サービス売上高",
+			"value": 31573,
+			"unit": "百万ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "services_q4_prior",
+			"label": "サービス売上高（前年同期）",
+			"value": 28750,
+			"unit": "百万ドル",
+			"period": "2025年7月〜9月（Apple FY2025 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "services_share_q4",
+			"label": "サービスの売上高構成比",
+			"value": 27.6,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "8-K別紙の売上・費用の数値から算出"
+		},
+		{
+			"id": "mac_q4",
+			"label": "Mac売上高",
+			"value": 10792,
+			"unit": "百万ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "mac_q4_prior",
+			"label": "Mac売上高（前年同期）",
+			"value": 8726,
+			"unit": "百万ドル",
+			"period": "2025年7月〜9月（Apple FY2025 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "mac_q4_yoy",
+			"label": "Mac売上高の前年同期比",
+			"value": 23.7,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "8-K別紙の売上・費用の数値から算出"
+		},
+		{
+			"id": "ipad_q4",
+			"label": "iPad売上高",
+			"value": 6229,
+			"unit": "百万ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "ipad_q4_prior",
+			"label": "iPad売上高（前年同期）",
+			"value": 6952,
+			"unit": "百万ドル",
+			"period": "2025年7月〜9月（Apple FY2025 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "wearables_q4",
+			"label": "ウェアラブル・ホーム・アクセサリ売上高",
+			"value": 8300,
+			"unit": "百万ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "wearables_q4_prior",
+			"label": "ウェアラブル・ホーム・アクセサリ売上高（前年同期）",
+			"value": 9013,
+			"unit": "百万ドル",
+			"period": "2025年7月〜9月（Apple FY2025 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "gross_margin_q4",
+			"label": "全体の粗利率",
+			"value": 47.9,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.apple.com/newsroom/2026/11/apple-reports-fourth-quarter-results/",
+			"status": "CONFIRMED",
+			"note": "関税還付による約1ポイントの押し上げを含む（Apple発表）"
+		},
+		{
+			"id": "gross_margin_q4_products",
+			"label": "製品の粗利率",
+			"value": 37.2,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "8-K別紙の売上・費用の数値から算出"
+		},
+		{
+			"id": "gross_margin_q4_services",
+			"label": "サービスの粗利率",
+			"value": 76.0,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "8-K別紙の売上・費用の数値から算出"
+		},
+		{
+			"id": "services_gross_profit_share_q4",
+			"label": "サービスが粗利に占める割合",
+			"value": 43.7,
+			"unit": "%",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0000320193/000032019326000024/a8-kex991q4202609262026.htm",
+			"status": "CONFIRMED",
+			"note": "8-K別紙の売上・費用の数値から算出"
+		},
+		{
+			"id": "tariff_refund_gm_pt",
+			"label": "関税還付が粗利率に与えた押し上げ",
+			"value": 1,
+			"unit": "ポイント",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.apple.com/newsroom/2026/11/apple-reports-fourth-quarter-results/",
+			"status": "CONFIRMED",
+			"note": "約1ポイント（Apple発表）"
+		},
+		{
+			"id": "tariff_refund_eps",
+			"label": "関税還付がEPSに与えた押し上げ",
+			"value": 0.05,
+			"unit": "ドル",
+			"period": "2026年7月〜9月（Apple FY2026 Q4）",
+			"basis": "actual",
+			"source_url": "https://www.apple.com/newsroom/2026/11/apple-reports-fourth-quarter-results/",
+			"status": "CONFIRMED"
+		}
+	],
+	"unverified": [
+		{
+			"id": "installed_base",
+			"label": "稼働端末数",
+			"text": "稼働端末25億台超",
+			"status": "UNVERIFIED",
+			"note": "公式資料で未確認。ユーザー提供の記述"
+		},
+		{
+			"id": "paid_subscriptions",
+			"label": "有料サブスク数",
+			"text": "有料サブスク15億件超",
+			"status": "UNVERIFIED",
+			"note": "公式資料で未確認。ユーザー提供の記述"
+		},
+		{
+			"id": "pro_price_hike",
+			"label": "Pro系の値上げ",
+			"text": "Pro系を各100ドル値上げ",
+			"status": "UNVERIFIED",
+			"note": "公式資料で未確認。ユーザー提供の記述"
+		},
+		{
+			"id": "foldable_duo",
+			"label": "折りたたみiPhone Duo",
+			"text": "1,999ドル、10月23日発売、納期は2027年1月下旬まで後ろ倒し",
+			"status": "UNVERIFIED",
+			"note": "公式資料で未確認。ユーザー提供の記述"
+		},
+		{
+			"id": "ai_cost_guidance",
+			"label": "AI費用と来期粗利率",
+			"text": "AIは来期の粗利率を押す費用として説明された",
+			"status": "UNVERIFIED",
+			"note": "公式資料で未確認。ユーザー提供の記述"
+		},
+		{
+			"id": "unit_volume_estimate",
+			"label": "台数の外部推定",
+			"text": "外部推定では台数横ばい〜微減、価格とミックス寄り",
+			"status": "UNVERIFIED",
+			"note": "公式資料で未確認。ユーザー提供の記述"
+		}
+	]
+}

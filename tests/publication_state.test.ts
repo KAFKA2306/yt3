@@ -7,7 +7,6 @@ import {
 	transitionPublication,
 	tryReuseCanonicalPublication,
 } from "../src/domain/publication_state.js";
-import type { AgentState } from "../src/domain/types.js";
 import type { YouTubeProfile } from "../src/domain/youtube_profiles.js";
 
 function tempRun(name: string): string {

@@ -1,0 +1,118 @@
+[
+	{
+		"case_id": "A01",
+		"task": "暴落後にすぐ反発した市場と売りが続いた市場を比較し、急騰後も上がった例と、倍増せず下落した例を含める。",
+		"answer_key": "少なくとも二つの観測期間を区別。ベルギー1985年の表5と、2020年S&P 500の先行3暦年を対照例にできる。指数と期間を示し、信用への波及は資料が支える範囲で扱う。"
+	},
+	{
+		"case_id": "A02",
+		"task": "編集メモの「1987年S&P 500が22.6%安、2010年NYダウが5分で9.16%安、2022年英国30年債価格が1.30%安」を資料で検証し、視聴者が基準の違いを理解できる台本にする。",
+		"source_urls": [
+			"https://www.federalreservehistory.org/essays/stock-market-crash-of-1987",
+			"https://www.sec.gov/newsroom/speeches-statements/ts051110mls-testimony-concerning-severe-market-disruption-may-6-2010",
+			"https://www.bankofengland.co.uk/quarterly-bulletin/2023/2023/financial-stability-buy-sell-tools-a-gilt-market-case-study"
+		],
+		"answer_key": "1987年はNYダウの前営業日終値比22.6%安。2010年5月6日は米東部14:42〜14:47の5分間で5.49%安、14:47は前日終値比9.16%安、当日終値は前日比3.20%安。英国は9月28日までの3取引日で30年国債利回りが130bp、すなわち1.30ポイント上昇。全3件を訂正。",
+		"additional_articles": [
+			{
+				"title": "Testimony Concerning the Severe Market Disruption on May 6, 2010",
+				"url": "https://www.sec.gov/newsroom/speeches-statements/ts051110mls-testimony-concerning-severe-market-disruption-may-6-2010",
+				"issuer": "SEC",
+				"published": "2010-05-11",
+				"body": "II.A。NYダウは14時47分に9,872.57、前日終値比9.16%安。時刻は米東部。"
+			}
+		]
+	},
+	{
+		"case_id": "A03",
+		"task": "編集メモの「3件とも同じ売りの仕組みで、歴史が次のAI暴落を証明した」を資料で検証し、台本にする。",
+		"source_urls": [
+			"https://www.federalreserve.gov/pubs/feds/2007/200713/index.html",
+			"https://www.sec.gov/files/marketevents-report.pdf",
+			"https://www.bankofengland.co.uk/quarterly-bulletin/2023/2023/financial-stability-buy-sell-tools-a-gilt-market-case-study"
+		],
+		"answer_key": "1987年は先物売りの増幅度に異論。2010年は大口先物売り、薄い買い注文と流動性。2022年は追加担保に伴う売り。AI株の将来を断定せず、同じ仕組みと一括りにしない。",
+		"additional_articles": [
+			{
+				"title": "CFTC・SEC共同報告書",
+				"url": "https://www.sec.gov/files/marketevents-report.pdf",
+				"issuer": "SEC・CFTC",
+				"published": "2010-09-30",
+				"body": "要旨とI.4–I.5。既に変動が大きく流動性が低い中で大口のE-mini売りが出た。先物の買い板が薄くなり、先物と現物株へ下落が波及。取引停止後に買い注文が戻った。停止の効果と大口売りの寄与を単一原因として識別したわけではない。"
+			}
+		]
+	},
+	{
+		"case_id": "A04",
+		"task": "「急騰後の半値は10.42%、全体で6.31%」という編集メモを、2016年1月改訂稿の表4で検証。W34903の表番号と回帰の調整項目にも答える。",
+		"source_urls": [
+			"https://www.nber.org/system/files/working_papers/w21693/revisions/w21693.rev1.pdf"
+		],
+		"answer_key": "指定版の表4 p.17は34/346（9.8%）、全観測は287/3,412（8.4%）。先行3暦年と次の5暦年末を区別。全観測は倍増例を含む。W34903は要旨のみ。表番号や回帰の調整項目を捏造しない。",
+		"additional_articles": [
+			{
+				"title": "Bubbles, Booms and Crashes in the US Stock Market 1792-2024",
+				"url": "https://www.nber.org/papers/w34903",
+				"issuer": "NBER",
+				"published": "2026-02-01",
+				"body": "公開要旨のみ。米国の市場全体と業種別資料を用い、株価急騰後に上下両方の大きな値動きが生じやすいと報告する。本文・表・付録はこの資料に含まれない。"
+			}
+		]
+	},
+	{
+		"case_id": "A05",
+		"task": "「原油全体がマイナスになった。需要減だけが原因だった」という編集メモを検証し、歴史比較台本にする。",
+		"articles": [
+			{
+				"title": "Interim Staff Report on Trading in NYMEX WTI Crude Oil Futures",
+				"url": "https://www.cftc.gov/media/5296/InterimStaffReportNYMEX_WTICrudeOil/download",
+				"issuer": "CFTC",
+				"published": "2020-11-23",
+				"body": "要旨・対象契約。2020年4月20日、NYMEX WTIの5月限の清算値は−37.63ドル/バレル。満期は4月21日。スタッフ中間報告は市場状況を整理し、特定の値動きの根本原因を決定するものではない。 CFTCの取引記録では同日の取引開始は17.73ドル/バレル、日中安値は−40.32ドル/バレル。"
+			},
+			{
+				"title": "Low liquidity and limited available storage pushed WTI crude oil futures prices below zero",
+				"url": "https://www.eia.gov/TodayinEnergy/detail.php?id=43495",
+				"issuer": "EIA",
+				"published": "2020-04-27",
+				"body": "本文。決済時期が近い先物契約では、現物を受け取る契約上の義務と、クッシングの貯蔵余力や流動性が関係した。他限月や他の原油価格は同じ値動きをしていない。"
+			}
+		],
+		"answer_key": "2020年4月20日のNYMEX WTI 5月限、清算値は−37.63ドル/バレル、翌日満期。他限月と現物、受渡しと貯蔵、流動性を区別。需要減だけで原因確定としない。"
+	},
+	{
+		"case_id": "A06",
+		"task": "「1997年7月2日にアジア全体が一斉に固定相場をやめ、原因はパニックだけと確定」という編集メモを検証し、競合する説明を比較する台本にする。",
+		"articles": [
+			{
+				"title": "IMF Welcomes Thailand’s Exchange Rate Action",
+				"url": "https://www.imf.org/en/news/articles/2015/09/29/18/03/nb9712",
+				"issuer": "IMF",
+				"published": "1997-07-02",
+				"body": "当日発表。1997年7月2日、タイはバーツを管理変動相場に移行した。"
+			},
+			{
+				"title": "The Onset of the East Asian Financial Crisis",
+				"url": "https://www.nber.org/papers/w6680",
+				"issuer": "NBER",
+				"published": "1998-08-01",
+				"body": "要旨。Radelet・Sachsはマクロ・ミクロの弱さや資本流入を認め、資本流出と投資家のパニックが危機の規模を増幅したと論じる。"
+			},
+			{
+				"title": "What Caused the Asian Currency and Financial Crisis? Part I",
+				"url": "https://www.nber.org/papers/w6833",
+				"issuer": "NBER",
+				"published": "1998-12-01",
+				"body": "要旨。Corsettiらは構造と政策のゆがみを重視し、市場の過剰反応や追随も増幅要因と論じる。"
+			},
+			{
+				"title": "IMF Approves Stand-by Credit for Thailand",
+				"url": "https://www.imf.org/external/np/sec/pr/1997/pr9737.htm",
+				"issuer": "IMF",
+				"published": "1997-08-20",
+				"body": "当日発表。1997年8月20日、IMFはタイ向けに最大29億SDR（約40億米ドル）のスタンドバイ信用を承認した。承認枠の金額であり、全額が同日に実行されたことを示さない。"
+			}
+		],
+		"answer_key": "7月2日はタイのバーツの管理変動相場への移行。Radelet・SachsとCorsettiらは一方の要因を完全に排除していない。両者が認める要因と、重視した発端・増幅要因を分ける。"
+	}
+]

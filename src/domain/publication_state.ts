@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import type { google } from "googleapis";
 import { z } from "zod";
-import type { AgentState, PublishResults } from "./types.js";
+import type { PublishResults } from "./types.js";
 import type { YouTubeProfile } from "./youtube_profiles.js";
 
 export const PublicationPhaseSchema = z.enum([
@@ -38,14 +38,6 @@ export type CanonicalPublicationReuse = {
 	state: CanonicalPublicationState;
 	result: NonNullable<PublishResults["youtube"]>;
 };
-
-const AuditCheckSchema = z
-	.object({
-		status: z.string(),
-		critical: z.boolean().optional(),
-	})
-	.passthrough();
-const AuditResultSchema = z.record(z.string(), AuditCheckSchema);
 
 function statePath(runDir: string): string {
 	return path.join(runDir, "publish", "state.json");
