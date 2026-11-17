@@ -88,6 +88,5 @@ Zod remains the parser for untrusted API, artifact, configuration, and persisted
 - **TypeScript** is the type owner.
 - **Oxlint** is not installed because it would duplicate lint ownership without a migration.
 - **Nx** is not installed because YT3 does not need a monorepo task graph.
-- `.pre-commit-config.yaml` delegates to `bun run check:merge:fast`; hooks do not implement a separate gate.
 
 A green CI run must never be reported as product completion or production verification. Conversely, unavailable production hardware, credentials, or services must never be reported as a repository merge blocker when the merge gate itself passes.
