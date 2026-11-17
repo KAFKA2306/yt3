@@ -16,17 +16,15 @@ const MAX_TASK_OUTPUT_BYTES = 1024 * 1024 * 512;
 export type TaskResult = { status: number; output: string };
 export type TaskRunner = (args: string[]) => TaskResult;
 
-export type GateEvidence = {
+export type PreparedRun = {
 	runId: string;
-	artifactSha256: string;
 	publishCommand: string;
 };
 
 const ReadyRecordSchema = z.object({
 	run_id: z.string(),
-	status: z.enum(["GATE_FAILED", "READY", "PUBLISH_ATTEMPTED", "PUBLISHED"]),
+	status: z.enum(["PREPARE_FAILED", "READY", "PUBLISH_ATTEMPTED", "PUBLISHED"]),
 	reason: z.string().optional(),
-	artifact_sha256: z.string().optional(),
 	publish_command: z.string().optional(),
 	recorded_at: z.string(),
 });
@@ -60,32 +58,18 @@ function publishArgs(runId: string): string[] {
 	return ["publish", `PROFILE=${PROFILE}`, "--", runId];
 }
 
-export function parseGateEvidence(
+export function parsePreparedRun(
 	output: string,
 	runId: string,
-): GateEvidence | null {
-	const gate = output.match(
-		/^\[product-release-gate\] PASS profile=(\S+) run=(\S+) artifact_sha256=([0-9a-f]{64})$/m,
-	);
+): PreparedRun | null {
 	const readyRun = output.match(/^PUBLISH_READY_RUN=(\S+)$/m);
 	const publishCommand = output.match(/^PUBLISH_COMMAND=(.+)$/m);
-	if (!gate || !readyRun || !publishCommand) return null;
-	const [, profile, gateRunId, artifactSha256] = gate;
+	if (!readyRun || !publishCommand) return null;
 	const expectedCommand = `task ${publishArgs(runId).join(" ")}`;
-	if (
-		profile !== PROFILE ||
-		gateRunId !== runId ||
-		artifactSha256 === undefined ||
-		readyRun[1] !== runId ||
-		publishCommand[1] !== expectedCommand
-	) {
+	if (readyRun[1] !== runId || publishCommand[1] !== expectedCommand) {
 		return null;
 	}
-	return {
-		runId,
-		artifactSha256,
-		publishCommand: expectedCommand,
-	};
+	return { runId, publishCommand: expectedCommand };
 }
 
 function recordFile(root: string, runId: string): string {
@@ -96,7 +80,7 @@ function writeRecord(file: string, record: ReadyRecord): void {
 	fs.outputJsonSync(file, record, { spaces: 2 });
 }
 
-function prepareGate(
+function prepareRun(
 	deps: PublishDailyDeps,
 	date: string,
 	runId: string,
@@ -104,25 +88,24 @@ function prepareGate(
 ): ReadyRecord {
 	const prepared = deps.runTask(["byosan:auto", `DATE=${date}`]);
 	const evidence =
-		prepared.status === 0 ? parseGateEvidence(prepared.output, runId) : null;
+		prepared.status === 0 ? parsePreparedRun(prepared.output, runId) : null;
 	const recordedAt = deps.now.toISOString();
 	if (!evidence) {
 		const reason =
 			prepared.status === 0
-				? "gate_evidence_incomplete"
+				? "prepare_output_incomplete"
 				: `prepare_status=${prepared.status}`;
 		writeRecord(file, {
 			run_id: runId,
-			status: "GATE_FAILED",
+			status: "PREPARE_FAILED",
 			reason,
 			recorded_at: recordedAt,
 		});
-		throw new Error(`PREPARE_GATE_FAILED: ${runId} ${reason}`);
+		throw new Error(`PREPARE_FAILED: ${runId} ${reason}`);
 	}
 	const record: ReadyRecord = {
 		run_id: runId,
 		status: "READY",
-		artifact_sha256: evidence.artifactSha256,
 		publish_command: evidence.publishCommand,
 		recorded_at: recordedAt,
 	};
@@ -146,11 +129,11 @@ export function runByosanPublishDaily(deps: PublishDailyDeps): void {
 	const existingRecord = fs.existsSync(file)
 		? ReadyRecordSchema.parse(fs.readJsonSync(file))
 		: null;
-	// GATE_FAILED means nothing was published, so a same-date retry re-prepares.
+	// PREPARE_FAILED means nothing was published, so a same-date retry re-prepares.
 	const record =
-		existingRecord && existingRecord.status !== "GATE_FAILED"
+		existingRecord && existingRecord.status !== "PREPARE_FAILED"
 			? existingRecord
-			: prepareGate(deps, date, runId, file);
+			: prepareRun(deps, date, runId, file);
 	if (record.status !== "READY") {
 		throw new Error(
 			`SAME_DATE_RETRY_BLOCKED: ${runId} status=${record.status} reason=${record.reason ?? "none"}`,

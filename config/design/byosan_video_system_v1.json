@@ -42,21 +42,21 @@
 		"background_alt": "#F7F5EF",
 		"surface": "#FFFFFF",
 		"surface_strong": "#FFFFFF",
-		"brand_blue": "#2563EB",
-		"brand_accent": "#2563EB",
+		"brand_blue": "#7BA7E1",
+		"brand_accent": "#7BA7E1",
 		"text_primary": "#17233F",
 		"text_secondary": "#17233F",
-		"text_muted": "#667085",
+		"text_muted": "#8FA1B3",
 		"text_dark": "#17233F",
-		"accent_primary": "#7DD3FC",
-		"accent_secondary": "#17233F",
+		"accent_primary": "#F7B7C1",
+		"accent_secondary": "#B8A7E6",
 		"human_cream": "#FFFFFF",
-		"warning": "#A16207",
-		"accent_pink": "#FF9FB2",
-		"grid": "#D9D6CE",
+		"warning": "#FFD8A8",
+		"accent_pink": "#F7B7C1",
+		"grid": "#8FA1B3",
 		"shadow": "#F7F5EF",
 		"alert": "#B91C1C",
-		"success": "#15803D"
+		"success": "#A8D5BA"
 	},
 	"typography": {
 		"japanese": "IBM Plex Sans JP",
@@ -85,7 +85,7 @@
 			"height": 1016,
 			"radius": 2,
 			"stroke_width": 2,
-			"color": "#D9D6CE",
+			"color": "#8FA1B3",
 			"opacity": 0.22
 		},
 		"accent_rail": {
@@ -145,7 +145,7 @@
 			"width": 320,
 			"height": 4,
 			"radius": 2,
-			"track": "#D9D6CE"
+			"track": "#8FA1B3"
 		},
 		"section_label": {
 			"x": 96,
@@ -153,7 +153,7 @@
 			"font_size": 22,
 			"font_weight": 700,
 			"letter_spacing": 3,
-			"color": "#2563EB"
+			"color": "#17233F"
 		},
 		"headline": {
 			"x": 96,
@@ -258,7 +258,7 @@
 			"max_width": 1296,
 			"font_size": 26,
 			"font_weight": 500,
-			"color": "#667085"
+			"color": "#17233F"
 		},
 		"subtitle": {
 			"font_size": 64,
@@ -290,7 +290,7 @@
 			"radius": 2,
 			"stroke_width": 2,
 			"opacity": 0.22,
-			"color": "#D9D6CE"
+			"color": "#8FA1B3"
 		},
 		"accent_rail": {
 			"x": 0,
@@ -320,7 +320,7 @@
 			"fill": "#17233F",
 			"outer_stroke": "#FFFFFF",
 			"outer_stroke_width": 16,
-			"inner_stroke": "#2563EB",
+			"inner_stroke": "#7BA7E1",
 			"inner_stroke_width": 6
 		},
 		"subtitle": {
@@ -329,7 +329,7 @@
 			"width": 760,
 			"font_size": 48,
 			"font_weight": 700,
-			"color": "#2563EB",
+			"color": "#7BA7E1",
 			"max_lines": 1
 		},
 		"character_zone": {
@@ -357,7 +357,7 @@
 			"radius": 2,
 			"stroke_width": 2,
 			"opacity": 0.22,
-			"color": "#D9D6CE"
+			"color": "#8FA1B3"
 		},
 		"accent_rail": {
 			"x": 0,

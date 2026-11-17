@@ -80,7 +80,7 @@ Above the star layer sits the object layer that carries business meaning. Object
 Actions are the only way to change object state:
 
 - `prepare_run`: create a Run, and produce Script and Asset.
-- `publish`: run only when every AuditCheck is PASS, `task release:check` is PASS, and the publish-destination guard ([ADR-0038](../adr/0038-publish-destination-guard.md)) is satisfied. Completion is confirmed by read-back.
+- `publish`: run only when the publish-destination guard ([ADR-0038](../adr/0038-publish-destination-guard.md)) is satisfied. Completion is confirmed by read-back.
 - `schedule`: set `publish_at`. Requires the same preconditions as `publish`.
 
 ## Evidence status

@@ -52,7 +52,6 @@ export type DiscoveryConfig = {
 	body_chars: number;
 	min_paragraph_chars: number;
 	concurrency: number;
-	title_rule: string;
 	registry: string;
 	user_agent: string;
 	owner_articles: string;

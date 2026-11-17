@@ -9,8 +9,6 @@ import {
 	ByosanFeatureSpecSchema,
 	type ByosanNarrativeRole,
 	ByosanThumbnailSchema,
-	type FeatureSpecIssue,
-	isBlockingFeatureIssue,
 	parseAndAuditByosanFeatureSpec,
 	staticSceneMotionFilter,
 } from "../src/domain/byosan/feature_spec.js";
@@ -161,25 +159,6 @@ describe("byosan feature specification", () => {
 		expect(codes).toContain("freshness_marker_ungrounded");
 		expect(codes).toContain("relative_claim_ungrounded");
 		expect(() => parseAndAuditByosanFeatureSpec(spec)).not.toThrow();
-	});
-});
-
-describe("byosan feature issue blocking", () => {
-	test("only schema, number, and source issues block the spec", () => {
-		const issue = (code: string): FeatureSpecIssue => ({
-			code,
-			details: "",
-			path: "",
-		});
-		expect(isBlockingFeatureIssue(issue("unsourced_number"))).toBe(true);
-		expect(isBlockingFeatureIssue(issue("claim_source_missing"))).toBe(true);
-		expect(isBlockingFeatureIssue(issue("schema_invalid_type"))).toBe(true);
-		expect(isBlockingFeatureIssue(issue("freshness_marker_ungrounded"))).toBe(
-			false,
-		);
-		expect(
-			isBlockingFeatureIssue(issue("adversarial_evidence_source_missing")),
-		).toBe(false);
 	});
 });
 

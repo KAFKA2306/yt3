@@ -3,6 +3,19 @@
 
 唯一の正本は [kafka_visual_system_v1.json](../../config/design/kafka_visual_system_v1.json) です。renderer はこの JSON を read-only で参照します。
 
+## Color: KAFKA SIGNAL Design System
+
+| Role | Hex |
+| --- | --- |
+| Primary | `#7BA7E1` |
+| Secondary | `#B8A7E6` |
+| Accent | `#F7B7C1` |
+| Success | `#A8D5BA` |
+| Warning | `#FFD8A8` |
+| Neutral | `#8FA1B3` |
+
+Pastel, watercolor and impressionist, one light theme. Text uses the ink foreground, never a pastel fill. Tokens: `config/design/foundation.tokens.json`.
+
 ## Canvas
 
 | Surface | Width | Height | FPS |

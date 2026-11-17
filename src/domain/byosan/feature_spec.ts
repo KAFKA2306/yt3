@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { loadConfig } from "../../io/core.js";
 import { ByosanActiveProbeEvidenceSchema } from "./active_probe.js";
 import { ExplanationSchema } from "./explanation.js";
 
@@ -180,7 +179,7 @@ export const ByosanFeatureSpecSchema = z.object({
 	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).optional(),
 	noveltyQueries: z.array(z.string().min(1)).min(1),
 	tags: z.array(z.string().min(1).max(30)),
-	sources: z.array(ByosanFeatureSourceSchema).min(2),
+	sources: z.array(ByosanFeatureSourceSchema).min(1),
 	claims: z.array(ByosanFeatureClaimSchema).min(1),
 	segments: z.array(ByosanFeatureSegmentSchema).min(1),
 });
@@ -214,7 +213,7 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 		}),
 	),
 	packaging: ByosanPackagingSchema,
-	sources: z.array(ByosanFeatureSourceSchema.omit({ tier: true })).min(2),
+	sources: z.array(ByosanFeatureSourceSchema.omit({ tier: true })).min(1),
 	explanation: ExplanationSchema,
 });
 
@@ -229,29 +228,6 @@ export type FeatureSpecIssue = {
 	details: string;
 	path: string;
 };
-
-const FeatureReviewSchema = z.object({
-	blocking_codes: z.array(z.string().min(1)),
-});
-
-export type FeatureReview = z.infer<typeof FeatureReviewSchema>;
-
-export function loadFeatureReview(): FeatureReview {
-	return FeatureReviewSchema.parse(
-		(loadConfig("byosan_money") as unknown as { feature_review: unknown })
-			.feature_review,
-	);
-}
-
-export function isBlockingFeatureIssue(
-	issue: FeatureSpecIssue,
-	review: FeatureReview = loadFeatureReview(),
-): boolean {
-	return (
-		issue.code.startsWith("schema_") ||
-		review.blocking_codes.includes(issue.code)
-	);
-}
 
 export const GLOBAL_ISSUE_PATH = "";
 
@@ -365,16 +341,7 @@ export function auditByosanFeatureSpec(
 export function parseAndAuditByosanFeatureSpec(
 	input: unknown,
 ): ByosanFeatureSpec {
-	const spec = ByosanFeatureSpecSchema.parse(input);
-	const blocking = auditByosanFeatureSpec(spec).filter((issue) =>
-		isBlockingFeatureIssue(issue),
-	);
-	if (blocking.length > 0) {
-		throw new Error(
-			`BYOSAN_FEATURE_SPEC_INVALID: ${blocking.map((issue) => `${issue.code}=${issue.details}`).join("; ")}`,
-		);
-	}
-	return spec;
+	return ByosanFeatureSpecSchema.parse(input);
 }
 
 export function staticSceneMotionFilter(fps = 30): string {

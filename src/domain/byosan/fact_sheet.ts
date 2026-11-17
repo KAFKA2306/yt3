@@ -191,11 +191,13 @@ const BASIS_LABEL: Record<FactSheetFact["basis"], string> = {
 	forecast: "予想",
 };
 
-const formatValue = (value: number): string =>
-	Number.isInteger(value) ? value.toLocaleString("en-US") : String(value);
+const formatValue = (value: number, unit: string): string =>
+	Number.isInteger(value) && !unit.startsWith("年")
+		? value.toLocaleString("en-US")
+		: String(value);
 
 const renderFact = (fact: FactSheetFact): string =>
-	`- ${fact.label}: ${formatValue(fact.value)}${fact.unit}（${fact.period}・${BASIS_LABEL[fact.basis]}）${fact.note ? ` 注記: ${fact.note}` : ""}`;
+	`- ${fact.label}: ${formatValue(fact.value, fact.unit)}${fact.unit}（${fact.period}・${BASIS_LABEL[fact.basis]}）${fact.note ? ` 概要欄用の限界（台詞には入れない）: ${fact.note}` : ""}`;
 
 // One article per cited source URL. Its body is only the verified facts that
 // cite it, so every figure the script may use is one of those facts.

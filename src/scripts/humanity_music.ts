@@ -88,7 +88,8 @@ function preflight(): void {
 	const availableRam = /^MemAvailable:\s+(\d+)\s+kB$/m.exec(
 		fs.readFileSync("/proc/meminfo", "utf-8"),
 	);
-	if (!availableRam) throw new Error("MemAvailable is missing from /proc/meminfo");
+	if (!availableRam)
+		throw new Error("MemAvailable is missing from /proc/meminfo");
 	const freeRam = Math.floor(Number(availableRam[1]) / 1024);
 	const snapshots = fs.existsSync(config.yue.snapshot_dir)
 		? fs.readdirSync(config.yue.snapshot_dir)
@@ -139,6 +140,7 @@ function preflight(): void {
 
 async function generate(brief?: string): Promise<GenerationRow> {
 	preflight();
+	const past = generations(readLedger());
 	const cell = rarestCell(readLedger(), config.axes, Math.random);
 	const draft = await invokeStructuredLlm({
 		schema: DraftSchema,
@@ -169,7 +171,8 @@ async function generate(brief?: string): Promise<GenerationRow> {
 					...cell,
 					...(brief ? { brief } : {}),
 					today: getCurrentDateString(),
-					past_titles: generations(readLedger()).map((row) => row.title),
+					past_titles: past.map((row) => row.title),
+					past_scenes: past.map((row) => row.cell.scene),
 				}),
 			},
 		],

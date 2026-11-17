@@ -1,0 +1,122 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "野村総合研究所「データセンターの光と影」前編・後編（知的資産創造 2024年12月号・2025年1月号）",
+	"subject": "野村総合研究所（NRI）の月刊誌「知的資産創造」の論文「データセンターの光と影」（前編は2024年12月号、後編は2025年1月号）を紹介する。順に、1. 電力: IEAの2024年の予測では、世界のデータセンターの電力は2022年の460TWhから2026年に少なくとも1.5倍近い620TWhになる、2. 冷却と水: 大規模な冷却では1MWあたり年間で最大3,000万リットルの水を使うとされる、3. 規制: 欧州は電力使用効率（PUE）の上限を厳しくしていて、ドイツは2026年7月以降に運用を始める新設のデータセンターにPUE 1.2以下を求める、4. ジレンマ: NRIは、市場が広がるほど環境問題も広がり、設計の標準化が新しい環境技術の導入を妨げる、と整理している。数字は2024年から2025年初めの論文時点のもので、今の値ではない点、規制は2025年1月時点のNRIの整理で、現在も同じかは確認できていない点を必ず添える。本文は引用せず、数字と要点を自分の言葉で紹介し、出典をNRIと号で言う。この論文の電力の数字（IEA Electricity 2024に基づく）は、IEAの別の報告（Energy and AI、2024年は415TWh）と推計の時期と範囲が違うので、並べて比べない。",
+	"released": "2026-11-07",
+	"source_documents": [
+		{
+			"url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202412/files/000041216.pdf",
+			"title": "データセンターの光と影（前編）デジタルインフラとしてデータセンター市場拡大と省エネ・環境対応の課題（知的資産創造 2024年12月号）",
+			"issuer": "野村総合研究所（NRI）",
+			"published": "2024-12-01"
+		},
+		{
+			"url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202501/files/000042522.pdf",
+			"title": "データセンターの光と影（後編）デジタルインフラとしてデータセンター市場拡大と省エネ・環境対応の課題と対応（知的資産創造 2025年1月号）",
+			"issuer": "野村総合研究所（NRI）",
+			"published": "2025-01-01"
+		}
+	],
+	"facts": [
+		{
+			"id": "dc_power_2022_twh",
+			"label": "世界のデータセンターの電力需要（2022年）",
+			"value": 460,
+			"unit": "TWh",
+			"period": "2022年",
+			"basis": "actual",
+			"source_url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202412/files/000041216.pdf",
+			"status": "CONFIRMED",
+			"note": "NRIがIEA「Electricity 2024」を基に示した数字。論文の図2に基づく"
+		},
+		{
+			"id": "dc_power_2026_twh",
+			"label": "世界のデータセンターの電力需要（2026年の見通し）",
+			"value": 620,
+			"unit": "TWh",
+			"period": "2026年",
+			"basis": "forecast",
+			"source_url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202412/files/000041216.pdf",
+			"status": "CONFIRMED",
+			"note": "論文は、2022年に比べて少なくとも1.5倍近い620TWhになるとIEAが予測している、と書く。IEAの予測の幅は広く、高いケースはもっと大きい。2024年時点の予測で、現在の数字ではない"
+		},
+		{
+			"id": "rack_power_kw",
+			"label": "GPUサーバーの1ラックあたりの消費電力",
+			"value": 20,
+			"unit": "kW以上",
+			"period": "2024年の論文の記述",
+			"basis": "actual",
+			"source_url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202412/files/000041216.pdf",
+			"status": "CONFIRMED",
+			"note": "論文は、従来のCPUサーバーは1ラックで8kW程度、GPUサーバーでは20kWまたはそれ以上になるといわれる、と書く"
+		},
+		{
+			"id": "water_per_mw_liter",
+			"label": "冷却システムが1MWあたり年間で使う水の量",
+			"value": 3000,
+			"unit": "万リットル（最大）",
+			"period": "年間",
+			"basis": "actual",
+			"source_url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202412/files/000041216.pdf",
+			"status": "CONFIRMED",
+			"note": "MWは電力の大きさの単位で、冷却能力の単位ではない。論文は何の1MWかを明記していないので、動画ではMWを冷却能力と説明しない。論文は、25mプール約70杯分で、50MW級の大型センターでは膨大な量になると書く。「といわれている」という書き方で、測定値ではない"
+		},
+		{
+			"id": "eu_pue_2030",
+			"label": "EUのデータセンター認証が求める電力使用効率（PUE）の上限",
+			"value": 1.3,
+			"unit": "未満",
+			"period": "2030年まで（温暖な地域は1.4未満）",
+			"basis": "forecast",
+			"source_url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202501/files/000042522.pdf",
+			"status": "CONFIRMED",
+			"note": "NRIが2025年1月号でまとめた、欧州データセンター協会（EUDCA）の認証の目標。PUEは1.0に近いほど、冷却などに電力を使っていない。現在も同じ基準かは確認できていない"
+		},
+		{
+			"id": "germany_pue_new",
+			"label": "ドイツが2026年7月1日以降に運用を始める新設データセンターに求めるPUE",
+			"value": 1.2,
+			"unit": "以下",
+			"period": "2026年7月1日以降に運用開始の新設",
+			"basis": "forecast",
+			"source_url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202501/files/000042522.pdf",
+			"status": "CONFIRMED",
+			"note": "NRIがエネルギー効率法の要件として示したもの。それ以前に運用を始めた既存のセンターは、2027年7月以降にPUE 1.5以下、2030年7月以降は年平均1.3以下。2025年1月時点の整理で、現在の施行状況は確認できていない"
+		},
+		{
+			"id": "aws_japan_invest_trillion_yen",
+			"label": "米AWSの東京・大阪のクラウド基盤への投資額",
+			"value": 2.3,
+			"unit": "兆円（約）",
+			"period": "2027年まで",
+			"basis": "forecast",
+			"source_url": "https://www.nri.com/jp/knowledge/publication/chitekishisan_202412/files/000041216.pdf",
+			"status": "CONFIRMED",
+			"note": "論文が日本国内の投資例として挙げた一つで、会社の計画。ほかに米Microsoftが約4400億円、米オラクルが今後10年で約1.2兆円。実際に投じられた額ではない"
+		}
+	],
+	"unverified": [
+		{
+			"id": "ghg_share_2040",
+			"label": "データセンターの温室効果ガスの割合",
+			"text": "世界の炭素排出量に占める割合が、2025年の3.2%から2040年に14%まで急増する可能性がある",
+			"status": "UNVERIFIED",
+			"note": "論文は「といわれている」と書き、出典を示していない。動画では使わない"
+		},
+		{
+			"id": "current_regulation_status",
+			"label": "欧州とドイツの規制の現在の状況",
+			"text": "EUDCAの認証やドイツのエネルギー効率法の要件が、2026年11月時点も同じか",
+			"status": "UNVERIFIED",
+			"note": "論文は2025年1月時点の整理で、官報や法令の原文を確認していない"
+		},
+		{
+			"id": "nri_iea_vintage",
+			"label": "IEAの別の報告との比較",
+			"text": "IEA Energy and AIの2024年415TWhとの比較",
+			"status": "UNVERIFIED",
+			"note": "推計の時期と範囲が違い、同じ指標として並べられるか確認していない。動画では並べない"
+		}
+	]
+}

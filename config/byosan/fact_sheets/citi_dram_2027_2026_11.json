@@ -1,0 +1,140 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "CitiのDRAM需給予測（2027年）の見直し（2026年11月）",
+	"subject": "米大手銀行Citiは2026年11月、2027年のメモリ（DRAMとNAND）の需給の見通しを見直した。この動画の構成は次のとおり。【冒頭の5秒】結論を先に言い切る。メモリの不足は、見直しで半分以下に縮まった。それでも不足は終わらない。問いは「不足が縮まったら、もう安心なのか」。【山場】DRAMの2027年の需給ギャップは、従来のマイナス8.7%からマイナス3.8%へ縮まった。ただし供給の伸びは24%、需要の伸びは28%で、作る量が増えても、欲しい量のほうがもっと増える。この24%と28%の差が、この動画のいちばんの見どころで、ここに最も時間を使う。【広がり】NANDも同じ向きで、マイナス6.1%からマイナス3.3%へ縮まる。DRAMだけの話ではなく、メモリ全体の空気が変わった。【時間軸】TrendForceは、新工場による大きな増産の効果が出るのは2028年以降と見る。2027年のうちは、増産が間に合わない。【暮らしと投資】メモリはスマホ、パソコン、サーバーの値段に響く。メモリ関連の株を見る人は、不足の幅が縮まったことを、次の決算の価格と出荷の数字で確かめる。売買の推奨はしない。【オチ】冒頭の問いに答えて終える。縮まっただけで、まだ足りない。語り口は、トップインフルエンサーの自負をもって、堂々と言い切る。",
+	"released": "2026-11-08",
+	"source_documents": [
+		{
+			"url": "https://jp.investing.com/news/stock-market-news/article-1739455",
+			"title": "シティ、メモリ供給不足の見通しを縮小（Citiの調査を報じた記事）",
+			"issuer": "Investing.com",
+			"published": "2026-11-04"
+		},
+		{
+			"url": "https://www.trendforce.com/presscenter/news/20260730-13158.html",
+			"title": "TrendForceの2027年のDRAM供給の見通し",
+			"issuer": "TrendForce",
+			"published": "2026-07-30"
+		}
+	],
+	"facts": [
+		{
+			"id": "citi_dram_gap_2027_new",
+			"label": "Citiが見込む2027年のDRAMの需給ギャップ（今回）",
+			"value": -3.8,
+			"unit": "%",
+			"period": "2027年",
+			"basis": "forecast",
+			"source_url": "https://jp.investing.com/news/stock-market-news/article-1739455",
+			"status": "CONFIRMED",
+			"note": "Citiの報告書そのものは入手しておらず、報じた記事に基づく。マイナスは供給が需要に足りない状態を表す"
+		},
+		{
+			"id": "citi_dram_gap_2027_old",
+			"label": "Citiが見込んでいた2027年のDRAMの需給ギャップ（従来）",
+			"value": -8.7,
+			"unit": "%",
+			"period": "2027年",
+			"basis": "forecast",
+			"source_url": "https://jp.investing.com/news/stock-market-news/article-1739455",
+			"status": "CONFIRMED",
+			"note": "従来の予測。報じた記事に基づく"
+		},
+		{
+			"id": "citi_nand_gap_2027_new",
+			"label": "Citiが見込む2027年のNANDの需給ギャップ（今回）",
+			"value": -3.3,
+			"unit": "%",
+			"period": "2027年",
+			"basis": "forecast",
+			"source_url": "https://jp.investing.com/news/stock-market-news/article-1739455",
+			"status": "CONFIRMED",
+			"note": "従来はマイナス6.1%。報じた記事に基づく"
+		},
+		{
+			"id": "citi_dram_supply_growth_2027",
+			"label": "Citiが見込む2027年のDRAMの供給の伸び",
+			"value": 24,
+			"unit": "%",
+			"period": "2027年",
+			"basis": "forecast",
+			"source_url": "https://jp.investing.com/news/stock-market-news/article-1739455",
+			"status": "CONFIRMED",
+			"note": "報じた記事に基づく"
+		},
+		{
+			"id": "citi_dram_demand_growth_2027",
+			"label": "Citiが見込む2027年のDRAMの需要の伸び",
+			"value": 28,
+			"unit": "%",
+			"period": "2027年",
+			"basis": "forecast",
+			"source_url": "https://jp.investing.com/news/stock-market-news/article-1739455",
+			"status": "CONFIRMED",
+			"note": "供給の伸び24%を上回る。報じた記事に基づく"
+		},
+		{
+			"id": "trendforce_new_fab_year",
+			"label": "TrendForceが見る、新工場による大きな増産の効果が出る時期",
+			"value": 2028,
+			"unit": "年以降",
+			"period": "TrendForceの2026年7月30日の見通し",
+			"basis": "forecast",
+			"source_url": "https://www.trendforce.com/presscenter/news/20260730-13158.html",
+			"status": "CONFIRMED",
+			"note": "2027年に新設を計画する事業者はあるが、本格的な生産の立ち上がりは2027年後半以降にずれ込むとしている。2027年のDRAMは供給が制約され、価格は上向くと見る"
+		},
+		{
+			"id": "citi_dram_growth_diff_points",
+			"label": "2027年のDRAMの需要の伸びと供給の伸びの差（28%−24%）",
+			"value": 4,
+			"unit": "ポイント",
+			"period": "2027年",
+			"basis": "forecast",
+			"source_url": "https://jp.investing.com/news/stock-market-news/article-1739455",
+			"status": "CONFIRMED",
+			"note": "Citiの予測の需要の伸び28%から供給の伸び24%を引いた計算値。報じた記事の数字に基づく"
+		},
+		{
+			"id": "citi_dram_gap_shrink_points",
+			"label": "2027年のDRAMの需給ギャップの縮まり幅（8.7%−3.8%）",
+			"value": 4.9,
+			"unit": "ポイント",
+			"period": "2027年",
+			"basis": "forecast",
+			"source_url": "https://jp.investing.com/news/stock-market-news/article-1739455",
+			"status": "CONFIRMED",
+			"note": "従来のマイナス8.7%と今回のマイナス3.8%の差の計算値。報じた記事の数字に基づく"
+		}
+	],
+	"unverified": [
+		{
+			"id": "gartner_2027",
+			"label": "Gartnerの2027年のDRAM需給予測",
+			"text": "2027年に約4%の供給不足",
+			"status": "UNVERIFIED",
+			"note": "Gartnerのページを取得できなかった（403）。動画では使わない"
+		},
+		{
+			"id": "citi_2031_path",
+			"label": "Citiの2031年までの需給予測",
+			"text": "2029年に不足が0.3%に縮まり、2031年に再び4.4%の不足",
+			"status": "UNVERIFIED",
+			"note": "Xの転載で、Citiの原表と照合できていない。動画では使わない"
+		},
+		{
+			"id": "hbm_wafer_ratio",
+			"label": "HBMの製造に必要なウェハーの量",
+			"text": "DDR5の3倍のウェハー、EUV工程が120日",
+			"status": "UNVERIFIED",
+			"note": "TrendForceは、HBMは通常のDRAMより多くのウェハーを要するとだけ書き、倍率を示していない。動画では倍率を使わない"
+		},
+		{
+			"id": "citi_sep_forecast",
+			"label": "Citiの2026年9月の予測の内訳",
+			"text": "2027年のDRAMの供給の伸び19%、需要の伸び30%",
+			"status": "UNVERIFIED",
+			"note": "9月の記事を確認していない。動画では使わない"
+		}
+	]
+}

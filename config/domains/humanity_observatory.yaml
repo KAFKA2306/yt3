@@ -68,7 +68,7 @@ steps:
   video:
     resolution: "1920x1080"
     fps: 25
-    background_color: "#FFFDF8"
+    background_color: "#F7F5EF"
     intro_seconds: 5
     codec: "h264_nvenc"
     effects:
@@ -110,7 +110,7 @@ steps:
       humanity_min: 0.8
       corner_size: 0
     palettes:
-      - {background_image: "assets/humanity_observatory_branding/base_thumbnail.png", background_color: "#FFFDF8", title_color: "#333333", outline_inner_color: "#BFE7FF", outline_inner_width: 5, outline_outer_color: "#FFFFFF", outline_outer_width: 0, subtitle_color: "#FFB86B"}
+      - {background_image: "assets/humanity_observatory_branding/base_thumbnail.png", background_color: "#F7F5EF", title_color: "#17233F", outline_inner_color: "#7BA7E1", outline_inner_width: 5, outline_outer_color: "#FFFFFF", outline_outer_width: 0, subtitle_color: "#17233F"}
     overlays: []
   youtube:
     enabled: true
@@ -185,19 +185,19 @@ mcp:
       args: ["-y", "@modelcontextprotocol/server-arxiv"]
 
 design_tokens:
-  primary_brand_color: "#103766"
-  accent_brand_color: "#288CFA"
-  contrast_text_color: "#0A0A12"
-  humanity_base_white: "#FFFDF8"
-  humanity_soft_sky: "#BFE7FF"
-  humanity_human_cream: "#FFF1D6"
-  humanity_evening_orange: "#FFB86B"
-  humanity_gentle_blue: "#7DC8F7"
-  humanity_soft_gray: "#E9E6DF"
-  humanity_text_charcoal: "#333333"
-  humanity_accent_pink: "#FF9FB2"
-  alert_color: "#C62828"
-  success_color: "#00A3AF"
+  primary_brand_color: "#7BA7E1"
+  accent_brand_color: "#B8A7E6"
+  contrast_text_color: "#17233F"
+  humanity_base_white: "#F7F5EF"
+  humanity_soft_sky: "#7BA7E1"
+  humanity_human_cream: "#FFD8A8"
+  humanity_evening_orange: "#FFD8A8"
+  humanity_gentle_blue: "#7BA7E1"
+  humanity_soft_gray: "#8FA1B3"
+  humanity_text_charcoal: "#17233F"
+  humanity_accent_pink: "#F7B7C1"
+  alert_color: "#B91C1C"
+  success_color: "#A8D5BA"
   font_display: "Geist"
   font_text: "Atkinson Hyperlegible"
   font_japanese: "Noto Sans JP"

@@ -2,7 +2,7 @@
 
 ## ステータス
 
-Accepted
+Superseded（2026-11-08）。公開ゲート（`release:check`、`assertProductReleaseGate`、`assertFactualIntegrityGate`）はオーナーの指示で削除した。以降、公開は `task publish PROFILE=humanity -- <run-id>` だけで行う。以下は削除前の経緯の記録である。
 
 ## 背景
 

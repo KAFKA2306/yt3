@@ -53,27 +53,11 @@ Every test file under `tests/` runs in `check:merge`. These areas were reviewed 
 | Active run discovery | removed | the module had no callers in the repository, so the module and its test were deleted |
 | Repository structure, documentation, KPI plan, config-shape, and source-policy checks | removed | structure rules (root allowlist, ADR index, doc path references, Taskfile/doc contract, KPI plan traceability, hardcode and source-registry coverage) no longer block merges; their scripts, configs, and tests were deleted |
 
-## Product release gate
+## Publication
 
-```bash
-task release:check PROFILE=byosan -- <run-id> [video-path]
-```
+`task publish PROFILE=<profile> -- <run-id> [video-path]` checks that the run bucket matches the profile and that no unresolved remote upload intent exists, verifies the authenticated channel, then records canonical publication evidence and remote read-back state. There is no separate release gate: the product release gate (`task release:check`, `product_release_gate.ts`) and the factual-integrity attestation gate were removed on 2026-11-08 by owner instruction.
 
-Use `PROFILE=yawa` or `PROFILE=humanity` for the other channels.
-
-The release gate verifies one exact run/artifact:
-
-- explicit profile and canonical profile routing
-- run bucket/profile agreement
-- canonical run state
-- artifact existence and SHA-256 identity
-- no fallback-labeled metadata
-- no conflicting or uncertain canonical publication state
-- factual-integrity evidence when configured visibility is non-private
-
-Passing this gate does not prove publication occurred.
-
-`task publish PROFILE=<profile> -- <run-id> [video-path]` runs the same release gate before OAuth/channel verification or any YouTube side effect, then records canonical publication evidence and remote read-back state.
+For Byosan, feature, production, authenticity, canonical, and daily audit findings are recorded for review and do not gate `task byosan:publish-daily`. Repository CI runs on pushes and pull requests; it is not part of the scheduled publication path.
 
 ## Ownership
 
@@ -84,7 +68,6 @@ Passing this gate does not prove publication occurred.
 | static channel routing | repository audit | yes | inherited |
 | unit/contract tests | repository checks | yes | not target evidence |
 | target runtime behavior | product qualification | no | when required |
-| concrete run/artifact | product release gate | no | yes |
 | authenticated channel | publication path | no | yes |
 | remote receipt/read-back | publication path | no | yes |
 

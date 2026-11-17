@@ -46,7 +46,6 @@ const SOURCE_GROUPS = {
 		"src/domain/byosan/feature_draft.ts",
 		"src/domain/byosan/explanation.ts",
 		"src/domain/byosan/explanation_contract.ts",
-		"src/domain/byosan/dialogue_style.ts",
 		"src/scripts/byosan_daily.ts",
 	],
 	media: [
@@ -110,8 +109,6 @@ function specFingerprint(root: string): string {
 		hashFiles(root, SOURCE_GROUPS.spec),
 		JSON.stringify({
 			feature_draft: config.feature_draft,
-			feature_review: config.feature_review,
-			dialogue_style: config.dialogue_style,
 			llm: config.llm,
 		}),
 	]);

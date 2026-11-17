@@ -3,8 +3,6 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import {
-	assertFactualIntegrityGate,
-	factualIntegrityRequired,
 	loadPublicationState,
 	transitionPublication,
 	tryReuseCanonicalPublication,
@@ -104,64 +102,5 @@ describe("canonical publication state", () => {
 		} finally {
 			fs.removeSync(runDir);
 		}
-	});
-});
-
-describe("factual integrity publication gate", () => {
-	test("accepts a canonical audit only when critical and provenance checks pass", () => {
-		const runDir = tempRun("audit-pass");
-		try {
-			fs.ensureDirSync(path.join(runDir, "audit"));
-			fs.writeJsonSync(path.join(runDir, "audit", "result.json"), {
-				provenance: { status: "PASS", critical: true },
-				script_integrity: { status: "PASS", critical: true },
-			});
-			const state = {
-				run_id: "byosan_money/test",
-				bucket: "byosan_money",
-			} as AgentState;
-			const evidence = assertFactualIntegrityGate(runDir, state);
-			expect(fs.existsSync(evidence)).toBe(true);
-			expect(fs.readJsonSync(evidence).passed).toBe(true);
-		} finally {
-			fs.removeSync(runDir);
-		}
-	});
-
-	test("blocks public publication when a critical audit failed", () => {
-		const runDir = tempRun("audit-fail");
-		try {
-			fs.ensureDirSync(path.join(runDir, "audit"));
-			fs.writeJsonSync(path.join(runDir, "audit", "result.json"), {
-				provenance: { status: "PASS", critical: true },
-				script_integrity: { status: "FAIL", critical: true },
-			});
-			const state = {
-				run_id: "byosan_money/test",
-				bucket: "byosan_money",
-			} as AgentState;
-			expect(() => assertFactualIntegrityGate(runDir, state)).toThrow(
-				"failed critical checks",
-			);
-		} finally {
-			fs.removeSync(runDir);
-		}
-	});
-});
-
-describe("factualIntegrityRequired", () => {
-	test("is required for non-private publication unless the domain turns it off", () => {
-		expect(factualIntegrityRequired({ default_visibility: "public" })).toBe(
-			true,
-		);
-		expect(factualIntegrityRequired({ default_visibility: "private" })).toBe(
-			false,
-		);
-		expect(
-			factualIntegrityRequired({
-				default_visibility: "public",
-				require_factual_integrity: false,
-			}),
-		).toBe(false);
 	});
 });

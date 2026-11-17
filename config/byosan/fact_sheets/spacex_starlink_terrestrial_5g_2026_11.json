@@ -1,0 +1,47 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "Qualcommの公式発表：SpaceXがStarlink Mobileの米国地上5G網にDragonwingを採用。複数年契約で数万サイト規模を計画し、展開開始は2027年予定。正確なサイト数は発表されていない。",
+	"subject": "衛星通信のStarlinkが地上5G網も整える理由を扱う。Qualcommの公式発表では、衛星と地上のネットワークを組み合わせる計画で、地上網の全米展開は2027年開始予定。64T64Rはアンテナ技術の仕様であり、64本の基地局が建つという意味ではない。衛星だけでは通信できないと断定しない。80,000サイトという数字は公式発表にないため使わない。構成、尺、演出は固定せず、視聴者が組み合わせる狙いを直感的につかめる作品を作る。",
+	"released": "2026-11-04",
+	"source_documents": [
+		{
+			"url": "https://www.qualcomm.com/news/releases/2026/11/spacex-selects-qualcomm-to-accelerate-starlink-mobile-s-nationwi",
+			"title": "SpaceX Selects Qualcomm to Accelerate Starlink Mobile’s Nationwide 5G Network",
+			"issuer": "Qualcomm",
+			"published": "2026-11-04"
+		}
+	],
+	"facts": [
+		{
+			"id": "rollout_start_year",
+			"label": "Starlink Mobileの米国地上5G網の展開開始予定年",
+			"value": 2027,
+			"unit": "年",
+			"period": "Qualcomm発表時点の計画",
+			"basis": "forecast",
+			"source_url": "https://www.qualcomm.com/news/releases/2026/11/spacex-selects-qualcomm-to-accelerate-starlink-mobile-s-nationwi",
+			"status": "CONFIRMED",
+			"note": "開始予定であり、すでに全米展開済みという意味ではない"
+		},
+		{
+			"id": "massive_mimo_paths_per_direction",
+			"label": "Dragonwing QRU100の送受信パス数（各方向）",
+			"value": 64,
+			"unit": "パス",
+			"period": "Qualcomm発表時点の仕様",
+			"basis": "actual",
+			"source_url": "https://www.qualcomm.com/news/releases/2026/11/spacex-selects-qualcomm-to-accelerate-starlink-mobile-s-nationwi",
+			"status": "CONFIRMED",
+			"note": "64T64Rの仕様。基地局数ではない"
+		}
+	],
+	"unverified": [
+		{
+			"id": "reported_80000_sites",
+			"label": "SpaceXが確保したとされる基地局用地",
+			"text": "約8万サイト",
+			"status": "UNVERIFIED",
+			"note": "匿名情報に基づく報道であり、Qualcommの公式発表に正確なサイト数はない。この制作では使用しない"
+		}
+	]
+}

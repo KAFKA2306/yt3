@@ -15,21 +15,23 @@ Keep each product's config, media, credentials, receipts, and publication state 
 ## Canonical commands
 
 - `task setup`, `task check:merge:fast`, `task check:merge`
-- `task byosan:prepare DATE=YYYY-MM-DD`: research, produce, audit, and release-check without publishing
+- `task byosan:prepare DATE=YYYY-MM-DD`: research, produce, and audit without publishing
 - `task byosan:auto DATE=YYYY-MM-DD`: prepare with repair attempts, stopping before publish
-- `task release:check PROFILE=<profile> -- <run-id>`
+- `task byosan:publish-daily`: prepare and publish the current Tokyo date through the Byosan daily path
 - `task publish PROFILE=<profile> -- <run-id>`
 - `task yawa:daily DATE=YYYY-MM-DD`, `task yawa:metadata RUN=<run-id>`
 - `task humanity:music-daily DATE=YYYY-MM-DD`
 
 ## Publication
 
-- Publication is an irreversible external side effect. Use only `task publish PROFILE=<profile> -- <run-id>` or the product's daily entry, and only when the release gate reports PASS for that exact run and artifact and `publish_approved` is enabled in `config/domains/`.
-- Owner instruction 2026-11-05: byosan publication no longer requires the factual-integrity attestation (`steps.youtube.require_factual_integrity: false` in `config/domains/byosan_money.yaml`). The release gate still checks the run bucket, fallback metadata, a playable artifact, and the artifact hash. Number, source, and rights correctness of a byosan video is then the responsibility of whoever produces it. yawa and humanity are unchanged.
-- A byosan run is publish-ready only when preparation prints `[product-release-gate] PASS ... artifact_sha256=<sha256>`, `PUBLISH_READY_RUN=<run-id>`, and `PUBLISH_COMMAND=...`. Record the run id, SHA-256, and command in the governing Issue. If any condition fails, stop. Do not bypass or retry around a failed gate.
-- `DATE` must be given explicitly in `YYYY-MM-DD`. Never infer today.
+- Publication is an irreversible external side effect. Use only `task publish PROFILE=<profile> -- <run-id>` or the product's daily entry, and only when `publish_approved` is enabled in `config/domains/`.
+- Owner instruction 2026-11-08: there is no release gate. The product release gate (`task release:check`, `product_release_gate.ts`) and the factual-integrity attestation gate (`steps.youtube.require_factual_integrity`) were removed. `task publish` still checks that the run bucket matches the profile and that no unresolved remote upload intent exists, and publication is VERIFIED only after read-back. Number, source, and rights correctness of a video is the responsibility of whoever produces it.
+- Byosan daily CI synchronization, feature/production/authenticity/canonical audits, and daily audit reporting are not publication prerequisites. They record diagnostics and must not change the daily publisher's exit status based on findings. Repository CI remains separate from the scheduled publish path.
+- A byosan run is ready when preparation prints `PUBLISH_READY_RUN=<run-id>` and `PUBLISH_COMMAND=...`. Record the run id and command in the governing Issue.
+- For canonical daily production, use the current Asia/Tokyo calendar date when `DATE` is omitted; do not stop a daily run for a missing date. Use explicit dates for requested backfills or future-dated runs.
+- Daily publication has no fixed per-day item cap. Use a unique `SLOT` when the canonical entry needs separate run IDs for multiple same-day items.
 - Byosan publishes one or more videos a day, never zero. Each run is named `<date>-daily-<HHmm>` (`BYOSAN_SUFFIX`); an already-published day does not stop another run, and only a source reused within `discovery.repeat_window_days` is rejected. The timer slots are in `systemd/yt3-byosan-daily.timer`.
-- Standing authorization: daily publication of `yawa`, `byosan`, and `humanity` through their canonical Taskfile entries once the gate passes. Manual `yawa` publication outside the daily path is not covered. `yawa` metadata changes go only through `task yawa:metadata`.
+- Standing authorization: daily publication of `yawa`, `byosan`, and `humanity` through their canonical Taskfile entries. Manual `yawa` publication outside the daily path is not covered. `yawa` metadata changes go only through `task yawa:metadata`.
 - Publication is VERIFIED only after remote receipt and read-back.
 
 ## Autonomous operations
@@ -43,19 +45,23 @@ Keep each product's config, media, credentials, receipts, and publication state 
 
 ## Byosan prompt and constraint policy
 
-Current Claude models follow prompts closely, so over-specified prompts and stacked checks degrade output. Prompts state the goal and the facts that must hold, not the method. A check that stops a daily run is limited to number and source integrity, the actual/estimate/forecast distinction, rights, a playable artifact, and the publication gates. Other quality heuristics are not gates.
+Current Claude models follow prompts closely, so over-specified prompts and stacked checks degrade output. Prompts state the goal and the facts that must hold, not the method. Byosan feature, production, and authenticity audits are recorded for review and do not stop a daily run. Runtime failures that prevent preparation or upload still surface as errors.
 
-The byosan topic and script come from one LLM call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. The number, source, and published-source checks run deterministically against those articles, and a failed check rewrites the same call with the findings attached, up to `llm.max_attempts`.
+The byosan topic and script come from one LLM call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. Feature, source, and published-source audit findings are saved with the run as diagnostics; structured output and schema parsing still provide the data needed to render.
 
 LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). When `codex` hits a usage or rate limit, the same call is redone on `llm.fallback_backend` within the same run and the switch is recorded as a `fallback` event in `audit/llm_calls.jsonl`; a limit on `claude` fails the run explicitly. The deterministic script checks are identical for every backend. Script generation produces one draft and runs the deterministic checks; persona panel review is not part of daily production. Daily publication is mandatory.
 
 ## Byosan visuals and titles
 
-Video visuals are rendered by OpenMontage's Remotion `Explainer` composition, installed outside this repository (AGPL-3.0) at `feature_production.video.openmontage.dir` and pinned to `ref` (`task setup:openmontage`). `src/domain/byosan/openmontage_visuals.ts` turns each timed segment into one scene (a stat card for one number, a comparison for two, a callout for three, a bar chart for a chart, a title card for the opening, a text card otherwise); chart series keep their actual/estimate/forecast label. FFmpeg then burns the byosan captions and mixes the audio as before. The old character slides (`scene_svg.ts`, `src/remotion`) were removed on 2026-11-05 by owner instruction. The thumbnail is separate: `codex-imagegen` (gpt-image-2) draws the two characters from the reference sprites, and the question text (`thumbnailTitle`) is overlaid deterministically with the project font so the wording and numbers are exact (`feature_production.thumbnail` in config). Published thumbnails are replaced only through `task byosan:thumbnail` and published titles only through `task byosan:metadata ... -- --title=TEXT`, each read back and recorded; a published video's first slide cannot be changed. The title is one strong simple question set by `discovery.title_rule`; that questions raise click-through is UNVERIFIED and is measured against real viewer metrics (#416).
+Video visuals use the existing OpenMontage renderer and FFmpeg pipeline. Its visual scene types and available assets describe tool capabilities. Thumbnails are secondary: generate episode-specific art and overlay exact title text with the project font. No title syntax or fixed character arrangement is required.
 
-The 漫才 form (ずんだもん as ボケ, 春日部つむぎ as ツッコミ) and the Comedy Beat contract (`comedy_beat.ts`, the `beat_role` field, the linter check) were removed on 2026-11-07 by owner instruction; ずんだもん now asks the viewer's plain questions and 春日部つむぎ answers with the numbers.
+The former 漫才 role contract was removed on 2026-11-07. Scripts may use either available character or both in the roles that suit the episode.
 
-Script quality is steered by guidance lines in `dialogue_style.guidance` (direction, not gates), written from independent persona reviews of published videos; the review mean is a reference only and never blocks or reshapes a run.
+The visual standard is the KAFKA SIGNAL Design System (owner instruction 2026-11-08): pastel, watercolor and impressionist, one light theme. Colors: Primary `#7BA7E1`, Secondary `#B8A7E6`, Accent `#F7B7C1`, Success `#A8D5BA`, Warning `#FFD8A8`, Neutral `#8FA1B3`. The tokens live in `config/design/foundation.tokens.json`; `bun src/scripts/sync_video_design.ts` writes them into `kafka_visual_system_v1.json` and `byosan_video_system_v1.json`, and text stays in the ink foreground so pastel fills never carry text. The old navy palette, the dark tokens, the pin to `KAFKA2306/design`, and the HEAD-pinned design fixture were removed. The independent canonical repository of KAFKA SIGNAL is UNVERIFIED.
+
+Each episode chooses its own opening, pacing, shape, and ending. Do not require a conclusion-first opening, one designated peak, declarative delivery, or a ban on spoken qualifications. Keep factual claims grounded and explain uncertainty where it helps the viewer understand the evidence.
+
+Feature, production, and authenticity findings remain available as diagnostics. They inform review but do not prescribe a recurring style or block daily publication.
 
 ## Evidence and credentials
 

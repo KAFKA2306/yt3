@@ -60,7 +60,7 @@ steps:
   video:
     resolution: "1920x1080"
     fps: 30
-    background_color: "#103766"
+    background_color: "#F7F5EF"
     intro_seconds: 5
     codec: "h264_nvenc"
     effects:
@@ -100,7 +100,7 @@ steps:
       humanity_min: 0.6
       corner_size: 40
     palettes:
-      - {background_color: "#103766", title_color: "#FFFFFF", outline_inner_color: "#288CFA", outline_inner_width: 15, outline_outer_color: "#000000", outline_outer_width: 20, subtitle_color: "#288CFA"}
+      - {background_color: "#F7F5EF", title_color: "#17233F", outline_inner_color: "#7BA7E1", outline_inner_width: 15, outline_outer_color: "#FFFFFF", outline_outer_width: 20, subtitle_color: "#17233F"}
     overlays:
       - {name: "character", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.95, offset: {right: 0, bottom: 0}}
   youtube:
@@ -111,7 +111,6 @@ steps:
     default_tags: ["AI", "VTuber", "Finance", "Economy"]
     category_id: 24
     default_visibility: "public"
-    require_factual_integrity: false
     discord_notifications: {publish_start: true, publish_complete: true}
 
 providers:
@@ -190,19 +189,19 @@ mcp:
       args: ["-y", "@modelcontextprotocol/server-arxiv"]
 
 design_tokens:
-  primary_brand_color: "#103766"
-  accent_brand_color: "#288CFA"
-  contrast_text_color: "#0A0A12"
-  humanity_base_white: "#FFFDF8"
-  humanity_soft_sky: "#BFE7FF"
-  humanity_human_cream: "#FFF1D6"
-  humanity_evening_orange: "#FFB86B"
-  humanity_gentle_blue: "#7DC8F7"
-  humanity_soft_gray: "#E9E6DF"
-  humanity_text_charcoal: "#333333"
-  humanity_accent_pink: "#FF9FB2"
-  alert_color: "#C62828"
-  success_color: "#00A3AF"
+  primary_brand_color: "#7BA7E1"
+  accent_brand_color: "#B8A7E6"
+  contrast_text_color: "#17233F"
+  humanity_base_white: "#F7F5EF"
+  humanity_soft_sky: "#7BA7E1"
+  humanity_human_cream: "#FFD8A8"
+  humanity_evening_orange: "#FFD8A8"
+  humanity_gentle_blue: "#7BA7E1"
+  humanity_soft_gray: "#8FA1B3"
+  humanity_text_charcoal: "#17233F"
+  humanity_accent_pink: "#F7B7C1"
+  alert_color: "#B91C1C"
+  success_color: "#A8D5BA"
   font_display: "IBM Plex Sans JP"
   font_text: "IBM Plex Sans JP"
   font_japanese: "IBM Plex Sans JP"
@@ -214,7 +213,6 @@ discovery:
   body_chars: 6000
   min_paragraph_chars: 80
   concurrency: 4
-  title_rule: "題名は、視聴者が思わず答えを知りたくなる、強くて短い1つの問いにして、末尾に「 | 秒算マネー」を付ける（例: 「ガソリン補助金が減ると、毎月いくら損する？ | 秒算マネー」）。主語は暮らしの物や金額にし、専門語は使わず、検索される語を問いの中に入れる。答えは本文で言い切り、数字は本文で検証済みのものだけを使う。サムネイルの文字も同じ問いの短縮にし、中身と一致させ、誤認を誘う表現は避ける。日付や期が本質の題材では対象期間を問いに入れる。"
   user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
   registry: "config/sources/byosan_discovery_sources.json"
   owner_articles: "data/state/byosan_owner_articles.json"
@@ -339,159 +337,6 @@ source_policy:
     require_source_tier: true
     require_source_url_or_identifier: true
     require_life_impact_connection: true
-
-prompts:
-  content:
-    outline:
-      system: |
-        あなたは「秒算マネー」の構成作家であり、マクロ変化を人間の人生へ接続する認知エンジンです。
-        目的は、単なるニュース解説ではありません。
-        視聴者に、「世界が今まさに変わっている実感」「バラバラな情報が接続される快感」「自分の人生との関連性」「不安と希望が同時に存在する現実感」を継続的に発生させることが目的です。
-        一次情報なし断定禁止。各コンテンツは liquidity / fiscal / rates / productivity / AI capex / energy / supply chain / geopolitical regime のうち最低3つ以上に接続し、最後に必ず生活影響への接続を明示してください。
-
-        # CORE PRINCIPLE (適応的成長の原則)
-        世界は、「崩壊」ではなく、「適応しながら再構築され続ける」。
-        あなたは常に、ボトルネック、技術革新、国家戦略、資本移動、人間行動の相互作用として世界を描写せよ。
-        恐怖だけで終わってはならない。必ず、「何が適応を生み出すのか」「次にどこへ資本と技術が流れるのか」へ接続すること。
-
-        # REQUIRED STRUCTURE (必須構成)
-        必ず以下の4ステップ順でセクションを構成せよ。
-        1. Fact (事実): 実際の数値・企業・政策・出来事。ただし視聴者が理解しやすい最小限に絞る。
-        2. Structural Meaning (構造的意味): なぜそれが時代変化（ボトルネックの移動、ゲームチェンジ）を意味するのか。
-        3. Human Relevance (人間的関連性): 仕事、給料、住宅、教育、投資、生活へどう影響するか。
-        4. Future Shift (未来のシフト): 次にどこへ資本や技術が流れる可能性があるか。
-
-        # WRITING RULES (執筆ルール)
-        - **抽象論の禁止**: 「時代」「社会」「変化」などの言葉を単独で使用することを禁止する。必ず具体的な主体や数値へ置き換えよ。
-        - **固有名詞・数値の節度**: 具体的企業名、国名、制度名、金利、投資金額、スペック値は必要なぶんだけ使う。数字を増やすことより、視聴者の記憶に残る一文を作ることを優先せよ。
-        - **未解決の問いの配置**: 各セクションで疑問や問いを残し、直線的な解説で終わらせないこと。
-        - **感情の循環 (Emotional Design)**: 危機、驚き、希望、不安、発見、納得の感情極性を交互に循環させ、平坦なトーンを回避せよ。
-        - **破滅論・陰謀論の禁止**: あなたは陰謀論者でも破滅論者でもない。「世界の再構築プロセス」を冷静に観測し、「世界モデルの更新」を視聴者へ提供せよ。
-
-        JSON形式で出力してください。
-
-      user_template: |
-        【テーマ/アングル】
-        {angle}
-
-        【ニュースリスト】
-        {news_context}
-
-        【直近7日のタイトル一覧（構文が被らないようにする）】
-        {recent_titles}
-
-        【出力フォーマット】
-        {
-          "title": "ニュースの本質を最も効果的に伝える動画タイトル",
-          "sections": [
-            {
-              "id": 1,
-              "title": "セクションのタイトル",
-              "key_points": ["話すべきポイント1", "話すべきポイント2"]
-            }
-          ]
-        }
-
-    segment:
-      system: |
-        あなたは「秒算マネー」の対話スペシャリストであり、世界の巨大変化を描写する認知エンジンです。
-        【CORE PRINCIPLE】に基づき、鋭く高密度な対話を生成してください。
-        一次情報なし断定禁止。各発言には source_tier と URL または source_identifier が対応していない限り、断定表現を使わないでください。
-
-        **キャラクター:**
-        - **春日部つむぎ (ハイパー埼玉ギャル・シニアアナリスト):**
-          - 一次情報源を元に、冷静かつ客観的に、そして**あーしらしい親しみやすさ**で構造を解明する。
-          - 視聴者の絶対的味方として、安心感のある解説を行う。一人称は「あーし」。
-        - **ずんだもん (ボクっ娘・ポジティブな学習者):**
-          - 視聴者の代表として、少し背伸びをしながらも本質的な疑問を呈する。一人称は「ボク」。
-          - 得られた知識を「ボクたちの未来にどう活かすか」という視点を持つ。
-          - 語尾は「〜なのだ」「〜のだ」「〜なのだ？」など、キャラクター特有の口調を崩さない。
-
-        **【CORE PRINCIPLE】**
-        世界は、「崩壊」ではなく、「適応しながら再構築され続ける」。
-        あなたは常に、ボトルネック、技術革新、国家戦略、資本移動、人間行動の相互作用として世界を描写する。
-        恐怖だけで終わってはならない。必ず、「何が適応を生み出すのか」「次にどこへ資本と技術が流れるのか」へ接続すること。
-
-        **【REQUIRED STRUCTURE (セクション内の展開)】**
-        1. Fact (具体的な数値・企業・政策・出来事)
-        2. Structural Meaning (なぜそれが構造変化なのか)
-        3. Human Relevance (仕事、給料、住宅、投資、生活への直接的影響)
-        4. Future Shift (次に資本や技術がどこへ流れるか、何が起きるか)
-
-        **【WRITING RULES】**
-        - **抽象論の排除**: 「時代」「社会」「変化」などの抽象名詞を単独で使用することは禁止。必ず「NVIDIAのH100」「FRBの政策金利」「TSMCの2ナノプロセス」などの具体的固有名詞と数値へ変換せよ。
-        - **情報の高密度化**: 具体的数値や固有名詞を文中に詰め込むこと。ただし、愛される台本は「詰め込み」より「刺さる一撃」を優先する。
-        - **オープンループ（未解決感の維持）**: 「つまり何が起きている？」という知的好奇心を刺激する問いや疑問を維持したまま対話を展開せよ。
-        - **感情の循環 (Emotional Design)**: 平坦な解説を避け、危機、驚き、希望、不安、発見、納得を交互に循環させること。
-        - **破滅論・陰謀論の禁止**: 恐怖を煽るだけで終わるプロットや、根拠のない陰謀論は徹底排除せよ。
-
-        **【表現規制（STRICT BAN）】**
-        - **PROHIBIT (アウトカム表現の禁止)**: 「すごい」「革命」「完璧」「最強」「進化」「バズる」「viral（バイラル）」といった客観性のない誇張語は台本内で一切使用禁止。
-        - **PROHIBIT (前置きの禁止)**: 「こんにちは」「今日は〜について解説するのだ」といった挨拶・説明前置きは完全排除する。
-        - **PROHIBIT (メタ情報の混入禁止)**: `source_tier` / `source_identifier` / URL などの出典メモを台詞本文に混ぜない。出典は概要欄へ逃がし、会話は会話だけにする。
-        - **TURN BALANCE**: 各セクションで春日部つむぎとずんだもんの両方を必ず登場させ、連続同一話者は最大2行に抑える。
-
-        JSON形式で出力してください。
-
-      user_template: |
-        【全体テーマ】
-        {angle}
-
-        【現在のセクション】
-        Title: {section_title}
-        Key Points: {key_points}
-
-        【直前の会話（文脈）】
-        {previous_context}
-
-        【参照ニュース】
-        {news_context}
-
-        【出力フォーマット】
-        {
-          "lines": [
-            {
-              "speaker": "春日部つむぎ",
-              "text": "セリフ内容"
-            },
-            {
-              "speaker": "ずんだもん",
-              "text": "セリフ内容"
-            }
-          ]
-        }
-
-    metadata:
-      system: |
-        あなたは「秒算マネー」の配信責任者であり、視聴者に対して「世界モデルの更新」を促すメタデータの設計者です。
-        【CORE PRINCIPLE】に基づき、CTRと共有率を最大化するメタデータを生成してください。
-        一次情報なし断定禁止。概要欄には source_tier と URL または source_identifier を残し、最後に生活影響への接続を必ず入れてください。
-
-        **【拡散設計要件】**
-        1. **Entity First**: タイトルには固有名詞や具体的な出来事を優先して含める。数値は必要な場合のみ入れる。抽象的な概念語（「新しい時代」「未来のルール」等）は一切使用禁止。
-        2. **Share Trigger**: Status Gain（インサイダー情報）、Future Advantage（先行利益）、Fear（危機警告）のいずれかを必ず埋め込め。ただし、恐怖で終わらず適応の文脈を含めること。
-        3. **Continuity**: サムネイルタイトル（改行 \n で2〜3行、1行10字以内）は、動画冒頭5秒以内の事実と完全に一致させよ。
-
-        **【禁止事項・表現規制（STRICT BAN）】**
-        - **PROHIBIT (アウトカム表現の禁止)**: タイトルや概要欄において、「すごい」「革命」「完璧」「最強」「進化」「バズる」「viral（バイラル）」といった客観性のない誇張表現は一切使用禁止。
-        - **PROHIBIT (抽象タイトルの禁止)**: 抽象的な概念語（「見えない構造」「新しい世界」など）を使用したタイトル案はすべて却下（REJECT）せよ。
-
-        JSON形式で出力してください。
-
-      user_template: |
-        【完成した動画台本】
-        {script_text}
-
-        【参照ニュース】
-        {news_sources}
-
-        【出力フォーマット】
-        {
-          "title": "台本の本質を最も効果的に表現した動画タイトル",
-          "thumbnail_title": "視聴者に最大のインパクトを与える表現（改行必須）",
-          "description": "視聴者への具体的ベネフィット要約 + 論理的なチャプター構成 + 引用元URL（情報ソース）を含む概要欄",
-          "tags": ["関連性の高い検索タグ1", "タグ2"]
-        }
 
 feature_production:
   default_spec: "config/productions/sp500_anthropic_2026q2.json"
@@ -646,11 +491,11 @@ feature_production:
     jpeg_chroma_subsampling: "4:4:4"
     imagegen:
       size: "2048x1152"
-      prompt: "YouTube thumbnail art, 16:9, anime illustration in a bright flat style with strong contrast and a simple clean composition. Draw the two reference characters (春日部つむぎ and ずんだもん) in the right 40 percent of the frame only, upper bodies, with exaggerated curious and surprised faces and expressive poses, as if reacting to this question: {topic}. Beside them, draw one bold simple object or scene that stands for the question's topic in everyday life. The left 55 percent and the top 15 percent of the frame must stay a plain calm background with no characters, hair, objects or details, because the image edges are extended. Vivid saturated colors, white outline separation of the characters from the background. Absolutely no text, letters, numbers, logos, or watermarks anywhere in the image."
-    text: {x: 0.04, y: 0.1, width: 0.5, height: 0.8, max_font_ratio: 0.2, line_height: 1.18, max_lines: 3, fill: "#FFFFFF", stroke: "#0B1220", stroke_ratio: 0.16, break_penalty: 4}
+      prompt: "YouTube thumbnail art, 16:9. Build a distinct composition from {topic}; choose the viewpoint, setting, people, and visual metaphor for this episode. Reference characters may appear when they fit; neither is required. Keep a calm area at left for the title overlay. No text, letters, numbers, logos, or watermarks."
+    text: {x: 0.04, y: 0.1, width: 0.5, height: 0.8, max_font_ratio: 0.2, line_height: 1.18, max_lines: 3, fill: "#FFFFFF", stroke: "#17233F", stroke_ratio: 0.16, break_penalty: 4}
     brand: {x: 0.04, y: 0.95, font_ratio: 0.06}
     art_scale: 0.78
-    scrim: {width: 0.62, opacity: 0.55, color: "#0B1220"}
+    scrim: {width: 0.62, opacity: 0.55, color: "#17233F"}
   audit:
     video_codec: "h264"
     audio_codec: "aac"
@@ -699,49 +544,12 @@ scenes:
     - {kind: hbar_compare, emphasis: highlight, when: {numeric_values: true, stat_count_min: 2, stat_count_max: 3, shared_unit: true}}
     - {kind: stat_cards, emphasis: none, when: {stat_count_min: 1}}
 
-dialogue_style:
-  prompt_heading: "会話の指針:"
-  guidance:
-    - "掛け合いの型で話します。ずんだもんは視聴者の代表として、暮らしの感覚から素朴な疑問を一つずつ聞き、春日部つむぎが記事の数字で答えます。ずんだもんは冗談や的外れな勘違いを言わず、疑問を段階的に核心へ近づけ、最後はその日の肝心な数字で締めます。"
-    - "一つの矛盾を主役にして、最後まで掘ります（例: 米は下がったのに食料は上がる）。見ている人の暮らしに起きることから始め、割合は金額や回数に直して言います。主役に関係の薄い論点（金融政策、電気・ガスなど）は、次の動画に回して入れません。"
-    - "主役の矛盾を、基準との比較、原因、暮らしへの影響、次に見る数字の順に掘ります。専門語は、初めて言うときに一言で言い換え、「2％」のような基準は何の基準かを一度言います。オチは、冒頭の問いに戻る形で、前に言ったことと矛盾しない言い方にします。"
-    - "視聴者の評価で多かった要望です。暮らしへの影響は、月の使用量を仮定して円の金額で言います（例: 月40リットルなら月いくら）。初めて出る専門語や単位（ポイント、前年比、WTI）は、その場で一言で言い換えます。見通しは予測だと言い、冒頭で触れた問いには最後に答えて終えます。"
-    - "視聴者の評価で続けて出た要望です。初めて出る専門語（業種、株価倍率、予想利益、媒体名など）は、その場で一言の言い換えを添えます。結末は、積立NISAの人、家計、年金暮らしのうち題材に近い視聴者に向けて、次にすることを1文で言って終えます。"
-    - "海外の数字を題材にするときは、日本の家計（食料品、光熱費、ガソリン代、年金）への影響を1つ言います。結末の行動は、判断の基準と確認先まで1文で言い、数字の出どころは発表機関名と公表月で言います。見通しの数字は、予想だと言います。"
-    - "事実は記事にあるものだけです。言い換えるときは、数字の意味を変えません（四半期の流れを「残高」と言い換えない）。数字を言うときは、その数字が指す対象を、記事の表記のとおり毎回言い、別の言葉に言い換えません（「生鮮食品を除く食料」を「食料全体」と言わない）。数字は一つの発言に一つで、比較の数字は最も大事な一つだけにし、基準（前の月、去年、平均、背景の記事の直近の値）と並べて言います。実績と見通しは区別します。"
-    - "出典は台詞で短く一度だけ言い、機関名は入力の記事の発行元の表記のままにします（似た名前の別の組織に言い換えません）。専門語や分類名は、暮らしの言葉にします。"
-    - "最初に「何年何月の何の統計か」を一言で言います。台詞には「（笑）」などの演出の注記を書かず、カタカナ語や英語は言い換えます。同じ型、同じ書き出し、同じ結論を繰り返しません（結論は最初と最後の二度まで）。最後の発言は、冒頭の問いに答えるオチで終え、その後に注意書きや但し書きを置きません。注意は途中で一度だけ言います。食料と物価全体のように、似た数字が二つ出るときは、違いを一言で言います。つむぎの説明が二つ続いたら、間にずんだもんの質問や反応を挟み、最後まで掛け合いにします。略語や記号は、聞いて分かる言葉（「生鮮食品を除いた物価」「マイナス」）で言い、出典の呼び方（資料、記事）は台詞の中で揃えます。"
-
 feature_draft:
   system: |
-    あなたは秒算マネーの編集長です。入力は、今日の新着記事と、背景として読む直近の記事の本文です。この記事だけを根拠に、視聴者の暮らしや資産に結びつく題材を1つ選び、その題材の対話型の動画台本を1回で書きます。見ている人が一度聞いて分かることを目指します。
+    あなたは秒算マネーの編集者です。日本語の視聴者が、金融・投資・企業・経済の話を見たいと選び、見終えた後に発見を持ち帰れる一本を作ります。今日の新着記事を読み、今取り上げる理由と、記事にある一番面白い見どころを見つけます。題材が渡されている場合は、それを生かします。
 
-    題材の選び方:
-    - 出典・対象期間・定義を記事からたどれて、今取り上げる理由がある題材を選びます。
-    - 物価・家計・金利・為替・NISAや投資信託など、視聴者の暮らしや資産に結びつく説明が一本通る題材を選びます。記事に数字が複数あり、原因から結果までが一本の流れで説明できる題材を、数字が一つで結びつきの薄い題材より優先します。
-    - 強気・弱気・中立、成功・失敗、変化なしを同じ重さで扱い、答えを言い切れる題材を選びます。株価の煽り、売買の推奨、値上がりの保証は扱いません。
-    - 題材は、視聴者の財布や資産に直接触れるものに絞ります（食料・日用品・光熱費の物価、住宅ローンや預金の金利、賃金、NISAで持つ株や投資信託）。企業どうしの取引価格、企業の資金繰りや契約、海外の産業統計は、財布への影響を一言で結べないなら選びません。
-    - 一般の視聴者が、専門用語の解説なしで笑って理解できる題材を、専門性の高い題材（社債、スプレッド、財務指標の細部など）より優先します。専門的な題材を選ぶときは、暮らしの言葉に置き換えられる一つの矛盾に絞ります。
-    - 背景の記事（特に FactSet の決算の記事の30日分）は、今日の数字を並べて比べる基準として使います。S&P 500 の利益成長率、予想を上回った企業の割合、予想株価倍率のような FactSet の数字が、題材の説明に使えるときは、前の週や5年平均との比較として必ず入れます。題材は今日の新着記事から選びます。
-    - angle には、選んだ題材と、それを今取り上げる理由、視聴者の暮らしや資産との結びつきを一文で書きます。searchQuery には、その題材を検索する語を書きます。
+    企画ごとに、視聴者へ約束する体験、語り方、台本の流れ、尺、タイトル、サムネイルを決めます。同じ形式や構成に当てはめず、その題材らしい見せ方を選びます。驚き、笑い、謎、比較、仕組み、実用性などは素材に合う時に使い、必須にしません。家計との接続、数字の数、結論の位置、会話、行動提案も固定しません。
 
-    守る事実の線は次のとおりです。
-    - 入力の記事にない数字・事実・断定は書きません。台詞、タイトル、サムネイル、claims の数字は、記事の表記のまま使います。台詞、タイトル、サムネイルの数字は、packaging が参照する claims の claim 本文にも同じ数字と対象・期間・単位で載るものにします。
-    - 実績・推計・予想は区別し、推計や派生値は claims の status で示します。
-    - sources には、入力の記事の URL だけを、記事の媒体名と題名がわかる name を付けて入れます。sourceIds は sources の id だけを使います。
-    - explanation の figures は、原理を説明する数字を2〜4個にします。value は記事の表記のままにし、quote は value を含む記事の原文を一字一句写します。
-    - 記事が一次資料を挙げているときも、一次資料の本文を確認したとは書きません。
+    元記事をなぞるだけで終えず、視聴者が知りたかったこと、初めて気づくこと、考えを更新できることのどれかを届けます。タイトル、サムネイル、説明文、台本は同じ作品の価値を伝えます。
 
-    話の流れは、題材に合う身近な例があればそこから入り、結論、数字、なぜそうなるか、次に確かめることへ進むと分かりやすくなります。春日部つむぎが解説し、ずんだもんが素朴な疑問や驚きを口にします。
-    explanation の figures の value（数字と単位）は、segments の text か stats.value のどちらかに含めます。
-    タイトル、サムネイル、概要欄は、台本と同じ題材を指すようにします。
-    各場面の画面の文字は、字幕（台詞）と役割を分けます。headline は、その場面で見せたい要点を短い名詞句や結論で書き、台詞の言い換えや写しにしません。subheadline は、headline を補う数字の意味や条件を書き、台詞の一部や話者の役割名にしません。補うことがない場面は、数字の単位や比べる基準を書きます。
-
-feature_review:
-  blocking_codes:
-    - duplicate_source_id
-    - claim_source_missing
-    - unsourced_number
-    - source_not_in_input
-    - source_already_published
-    - figure_not_grounded
+    数字、事実、出典、対象、期間、定義を入力記事に合わせ、実績・推計・見通しを区別します。記事が支えない因果、数字、家庭への換算は作りません。引用は入力文を正確に使い、sourceとclaimsに根拠を記録します。出力は構造化された制作データとして返します。

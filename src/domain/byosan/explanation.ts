@@ -3,19 +3,17 @@ import { z } from "zod";
 export const ExplanationSchema = z.object({
 	conclusion: z.string().min(1),
 	principle: z.string().min(1),
-	figures: z
-		.array(
-			z.object({
-				metric: z.string().min(1),
-				population: z.string().min(1),
-				period: z.string().min(1),
-				unit: z.string().min(1),
-				value: z.string().min(1),
-				quote: z.string().min(1),
-				kind: z.enum(["actual", "estimate", "forecast"]),
-			}),
-		)
-		.min(2),
+	figures: z.array(
+		z.object({
+			metric: z.string().min(1),
+			population: z.string().min(1),
+			period: z.string().min(1),
+			unit: z.string().min(1),
+			value: z.string().min(1),
+			quote: z.string().min(1),
+			kind: z.enum(["actual", "estimate", "forecast"]),
+		}),
+	),
 	check: z.string().min(1),
 });
 

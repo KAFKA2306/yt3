@@ -17,7 +17,6 @@ source / event
   -> script
   -> media
   -> audit
-  -> product release gate
   -> channel verification
   -> private upload
   -> remote read-back
@@ -49,13 +48,12 @@ See [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
 ## Production
 
 ```bash
-task loop
-task run                       # 秒算マネー by default
+task loop                       # 秒算マネー日次公開 + 人類観測所
+task run                       # 秒算マネーの日次制作・公開
 PROFILE=humanity task run      # 人類観測所
-task byosan:publish-daily      # 準備ゲート経由の日次公開（publish_approved が true のときのみ公開）
 ```
 
-`task run` resolves the workflow bucket and environment from `YOUTUBE_PROFILES`; it does not maintain a second profile-to-config mapping. 夜話アーカイブ uses the shared release and publication path with `PROFILE=yawa`; it does not use `src/index.ts`.
+`task run` sends the default `byosan` profile through its daily producer and publisher; `PROFILE=humanity` uses `src/index.ts` and the Humanity workflow. 夜話アーカイブ uses its separate ASMR production path.
 
 Use explicit run IDs when resuming or publishing. Publication never infers an unrelated latest run.
 
@@ -68,12 +66,11 @@ Use explicit run IDs when resuming or publishing. Publication never infers an un
 | `humanity` | 雨晴はうの人類観測所 | `humanity_observatory` |
 
 ```bash
-task release:check PROFILE=byosan -- <run-id> [video-path]
 task publish PROFILE=byosan -- <run-id> [video-path]
 task auth PROFILE=byosan
 ```
 
-Use `PROFILE=yawa` or `PROFILE=humanity` for the other channels. Unknown profiles fail closed. Before any YouTube side effect, publication runs the product release gate and verifies the authenticated channel against the selected profile. An unresolved remote upload intent blocks another upload.
+Use `PROFILE=yawa` or `PROFILE=humanity` for the other channels. Unknown profiles fail closed. Before any YouTube side effect, publication verifies the authenticated channel against the selected profile. An unresolved remote upload intent blocks another upload.
 
 ## Publication evidence
 
@@ -138,4 +135,4 @@ Humanity Observatory standard: [docs/standard/humanity-observatory-audit-standar
 
 ## Completion boundary
 
-A merged PR proves repository acceptance only. A passed product release gate proves local release readiness only. Publication is complete only when remote receipt/read-back evidence verifies the intended channel and visibility.
+A merged PR proves repository acceptance only. Publication is complete only when remote receipt/read-back evidence verifies the intended channel and visibility.

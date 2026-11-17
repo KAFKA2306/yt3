@@ -1,0 +1,61 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "TrendForceのPC向けDRAM・Client SSDの価格見通し",
+	"subject": "日本語の短い経済動画。2026年第4四半期の契約価格予測では、PC向けDRAMが前四半期比13〜18%上昇する一方、Client SSDは5%未満。『同じPC部品なのに、なぜ上げ幅が違う？』を解く。冒頭で2つの予測を並べ、これは店頭価格ではなく契約価格だとすぐ明かす。DRAM側では、AI需要が供給配分を圧迫し、メーカーは2027年のPC向けDRAM供給を減らす計画。ただし先行発注による在庫とPC需要の鈍さがあり、値上げ幅は前四半期より減速する見込み。SSD側では、PC各社が需要の弱さと高い完成品在庫から調達を抑え、比較的値上げ幅が小さい中国の供給元が受注を増やし、上昇を抑えている。ノートPC出荷が2026年第3四半期に前四半期比15.8%減った事実を使い、部品価格と消費者需要をつなぐ。結びは『AI需要が強くても、部品ごとの供給・在庫・代替先で価格の動きは分かれる』という発見。契約価格の予測を小売価格や確定値と呼ばず、価格高騰が全製品に同じように広がるとも断定しない。投資助言はしない。",
+	"released": "2026-11-11",
+	"source_documents": [
+		{
+			"url": "https://www.trendforce.com/presscenter/news/20261111-13303.html",
+			"title": "Mounting Finished-Goods Inventories Prompt Some PC OEMs to Adjust Memory Procurement Plans for 2027",
+			"issuer": "TrendForce",
+			"published": "2026-11-11"
+		}
+	],
+	"facts": [
+		{
+			"id": "pc_dram_contract_price_low_pct",
+			"label": "PC向けDRAM契約価格の上昇見通し（下限）",
+			"value": 13,
+			"unit": "%",
+			"period": "2026年第4四半期（前四半期比）",
+			"basis": "forecast",
+			"source_url": "https://www.trendforce.com/presscenter/news/20261111-13303.html",
+			"status": "CONFIRMED",
+			"note": "TrendForceの予測レンジは13〜18%。契約価格の予測で、店頭価格の値上げ率ではない。AI向け需要により、メーカーは2027年のPC向けDRAM供給を減らす計画だが、先行発注後の在庫増加と需要の鈍さを背景に、価格上昇は前四半期より減速すると見る"
+		},
+		{
+			"id": "pc_dram_contract_price_high_pct",
+			"label": "PC向けDRAM契約価格の上昇見通し（上限）",
+			"value": 18,
+			"unit": "%",
+			"period": "2026年第4四半期（前四半期比）",
+			"basis": "forecast",
+			"source_url": "https://www.trendforce.com/presscenter/news/20261111-13303.html",
+			"status": "CONFIRMED",
+			"note": "TrendForceの予測レンジは13〜18%。契約価格の予測で、店頭価格の値上げ率ではない"
+		},
+		{
+			"id": "client_ssd_contract_price_below_pct",
+			"label": "Client SSD契約価格の上昇見通し",
+			"value": 5,
+			"unit": "%未満",
+			"period": "2026年第4四半期（前四半期比）",
+			"basis": "forecast",
+			"source_url": "https://www.trendforce.com/presscenter/news/20261111-13303.html",
+			"status": "CONFIRMED",
+			"note": "契約価格の予測で、店頭価格の値上げ率ではない。PCメーカーはSSDの調達を抑えており、比較的値上げ幅を抑えた中国の供給元が受注シェアを伸ばし、上昇圧力を和らげている"
+		},
+		{
+			"id": "notebook_shipments_qoq_pct",
+			"label": "ノートPC出荷台数の前四半期からの変化",
+			"value": -15.8,
+			"unit": "%",
+			"period": "2026年第3四半期（前四半期比）",
+			"basis": "actual",
+			"source_url": "https://www.trendforce.com/presscenter/news/20261111-13303.html",
+			"status": "CONFIRMED",
+			"note": "出荷台数の変化。TrendForceは4Qにも1桁台の減少となる可能性を示し、完成品在庫の増加が一部PCメーカーの2027年調達計画見直しにつながっている"
+		}
+	],
+	"unverified": []
+}
