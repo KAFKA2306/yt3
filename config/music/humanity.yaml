@@ -27,10 +27,20 @@ axes:
   lead: [detuned supersaw lead, bright saw arpeggios, staccato synth stabs, punchy FM bass lead, glassy digital bell lead, bright saw lead with brass stabs]
   rhythm: [sidechained pumping bass with four on the floor kick, filter sweeps with crisp digital hi-hats, sidechained chords with tight kick, glitchy percussion with rolling bass, sequenced octave bass with tight drums, staccato gated synth pluck arpeggios]
   vocal: [cute bright synthetic female vocal, robotic autotuned female vocal, vocoder female vocal, bright pitch-corrected female vocal, processed female vocal with unison doubling, stuttered vocal chops female]
+  narrator: [一人称, 二人称, 三人称, 複数の声, 人ではないものの声]
+  time: [一瞬, 数分, 一日, 数日, 一季節, 一年, 一生]
+  expression: [会話, 独白, 手紙, 問いかけ, 列挙, 実況, 回想]
 structure: [Verse, Pre-Chorus, Chorus, Verse, Pre-Chorus, Chorus, Bridge, Chorus]
 lines_per_section: 4
-trend_rule: 作詞の前にウェブ検索で、今日の日本で話題の出来事・流行語・ヒット作・SNSの空気を調べ、その中から1つを題材の核にする。固有名詞や他者の作品の歌詞は使わず、そこに暮らす人の不器用さと愛おしさを書く。
-lyrics_rule: 題材は音楽ジャンル以外すべて自由。過去のタイトルと題材・主要な名詞が重ならない新しい題材を選ぶ。人類の不器用さを愛おしむ温度で、専門用語で威張らず、既存曲の歌詞や固有の言い回しを使わない。日本語で書く。ChorusとPre-Chorusは毎回同じ歌詞、VerseとBridgeは毎回違う歌詞にする。
+trend_rule: 作詞の前にウェブ検索で、今日の日本で話題の出来事・流行語・ヒット作・SNSの空気を調べる。その中から、生活、人間関係、社会、技術、自然などの分野が過去の曲と偏らないものを1つ選び、題材の核にする。固有名詞は使わず、他者の作品の歌詞も使わない。その題材のそばで暮らす人の、1場面を書く。
+lyrics_rule: >-
+  語り手の人称、時間の長さ、表現の形式は、渡されたnarrator、time、expressionの値に従う。
+  視点、場所、出来事、話の流れ、結末は、それぞれ曲ごとに別々に選ぶ。
+  題材、中心となる物、主要な語彙、決まり文句は、past_scenesとpast_titlesにある過去の曲と重ならないようにする。
+  感情は、曲ごとに選び、肯定的なものに限らず、怒り、無関心、葛藤、諦めなども選べる。
+  抽象的な感情の説明に頼らず、具体的な出来事、行動、会話、感覚から歌詞を組み立てる。
+  既存曲の歌詞や固有の言い回しは流用せず、自然な日本語で書く。
+  ChorusとPre-Chorusは、曲中で毎回同じ歌詞にする。VerseとBridgeは、内容を展開させる。
 run:
   bucket: humanity_observatory
   name_prefix: music-

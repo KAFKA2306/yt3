@@ -5,13 +5,13 @@ import {
 	normalizeFeatureDraft,
 	prepareFeatureDraftInput,
 } from "../src/domain/byosan/feature_draft.js";
-import { isBlockingFeatureIssue } from "../src/domain/byosan/feature_spec.js";
+
 import { fixtureDraft, fixtureInput } from "./fixtures/byosan_draft.js";
 
-const blocking = (draft: Json, input = fixtureInput()): string[] =>
-	featureDraftIssues(draft, input)
-		.filter((issue) => isBlockingFeatureIssue(issue))
-		.map((issue) => `${issue.code}=${issue.details}`);
+const diagnostics = (draft: Json, input = fixtureInput()): string[] =>
+	featureDraftIssues(draft, input).map(
+		(issue) => `${issue.code}=${issue.details}`,
+	);
 
 const withText = (draft: Json, text: string): Json => {
 	const [first, ...rest] = draft.segments as Json[];
@@ -49,13 +49,13 @@ describe("normalizeFeatureDraft corrects format-only errors", () => {
 	});
 });
 
-describe("deterministic checks against the input articles", () => {
-	test("a draft whose numbers and sources all come from the articles has no blocking issue", () => {
-		expect(blocking(fixtureDraft())).toEqual([]);
+describe("diagnostics against the input articles", () => {
+	test("a grounded draft has no findings", () => {
+		expect(diagnostics(fixtureDraft())).toEqual([]);
 	});
 
-	test("a number found in no article blocks", () => {
-		const issues = blocking(
+	test("a number absent from the articles is reported", () => {
+		const issues = diagnostics(
 			withText(
 				fixtureDraft(),
 				"利益が987654%も増えたのだ、という話を始めます。",
@@ -64,10 +64,10 @@ describe("deterministic checks against the input articles", () => {
 		expect(issues).toContain("unsourced_number=987654");
 	});
 
-	test("a claim number found in no article blocks", () => {
+	test("a claim number absent from the articles is reported", () => {
 		const draft = fixtureDraft();
 		const [first, second, ...rest] = draft.claims as Json[];
-		const issues = blocking({
+		const issues = diagnostics({
 			...draft,
 			claims: [
 				first,
@@ -78,23 +78,23 @@ describe("deterministic checks against the input articles", () => {
 		expect(issues).toContain("unsourced_number=777777");
 	});
 
-	test("a source URL outside the input blocks", () => {
+	test("a source URL outside the input is reported", () => {
 		const draft = fixtureDraft();
 		const [first, ...rest] = draft.sources as Json[];
 		expect(
-			blocking({
+			diagnostics({
 				...draft,
 				sources: [{ ...first, url: "https://example.com/other" }, ...rest],
 			}),
 		).toContain("source_not_in_input=https://example.com/other");
 	});
 
-	test("a quote that no article contains blocks", () => {
+	test("a quote absent from the articles is reported", () => {
 		const draft = fixtureDraft();
 		const explanation = draft.explanation as Json & { figures: Json[] };
 		const [figure, ...rest] = explanation.figures;
 		expect(
-			blocking({
+			diagnostics({
 				...draft,
 				explanation: {
 					...explanation,
@@ -107,7 +107,7 @@ describe("deterministic checks against the input articles", () => {
 		).toContain("figure_not_grounded=47.4%");
 	});
 
-	test("a published source is removed from the input and cited as already published", () => {
+	test("a published source is removed from the input and reported", () => {
 		const input = fixtureInput();
 		const first = input.today[0];
 		if (!first) throw new Error("fixture article is missing");
@@ -119,7 +119,7 @@ describe("deterministic checks against the input articles", () => {
 		expect(prepared.today.map((article) => article.url)).not.toContain(
 			first.url,
 		);
-		expect(blocking(fixtureDraft(), prepared)).toContain(
+		expect(diagnostics(fixtureDraft(), prepared)).toContain(
 			`source_already_published=${first.url}`,
 		);
 	});

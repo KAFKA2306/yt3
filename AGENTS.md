@@ -17,6 +17,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - `task setup`, `task check:merge:fast`, `task check:merge`
 - `task byosan:prepare DATE=YYYY-MM-DD`: research, produce, and audit without publishing
 - `task byosan:auto DATE=YYYY-MM-DD`: prepare with repair attempts, stopping before publish
+- `task byosan:publish-daily`: prepare and publish the current Tokyo date through the Byosan daily path
 - `task publish PROFILE=<profile> -- <run-id>`
 - `task yawa:daily DATE=YYYY-MM-DD`, `task yawa:metadata RUN=<run-id>`
 - `task humanity:music-daily DATE=YYYY-MM-DD`
@@ -47,19 +48,23 @@ Keep each product's config, media, credentials, receipts, and publication state 
 
 ## Byosan prompt and constraint policy
 
-Current Claude models follow prompts closely, so over-specified prompts and stacked checks degrade output. Prompts state the goal and the facts that must hold, not the method. A check that stops a daily run is limited to number and source integrity, the actual/estimate/forecast distinction, rights, a playable artifact, and the publication gates. Other quality heuristics are not gates.
+Current Claude models follow prompts closely, so over-specified prompts and stacked checks degrade output. Prompts state the goal and the facts that must hold, not the method. Byosan feature, production, and authenticity audits are recorded for review and do not stop a daily run. Runtime failures that prevent preparation or upload still surface as errors.
 
-The byosan topic and script come from one LLM call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. The number, source, and published-source checks run deterministically against those articles, and a failed check rewrites the same call with the findings attached, up to `llm.max_attempts`.
+The byosan topic and script come from one LLM call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. Feature, source, and published-source audit findings are saved with the run as diagnostics; structured output and schema parsing still provide the data needed to render.
 
 LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). When `codex` hits a usage or rate limit, the same call is redone on `llm.fallback_backend` within the same run and the switch is recorded as a `fallback` event in `audit/llm_calls.jsonl`; a limit on `claude` fails the run explicitly. The deterministic script checks are identical for every backend. Script generation produces one draft and runs the deterministic checks; persona panel review is not part of daily production. Daily publication is mandatory.
 
 ## Byosan visuals and titles
 
-Video visuals are rendered by OpenMontage's Remotion `Explainer` composition, installed outside this repository (AGPL-3.0) at `feature_production.video.openmontage.dir` and pinned to `ref` (`task setup:openmontage`). `src/domain/byosan/openmontage_visuals.ts` turns each timed segment into one scene (a stat card for one number, a comparison for two, a callout for three, a bar chart for a chart, a title card for the opening, a text card otherwise); chart series keep their actual/estimate/forecast label. FFmpeg then burns the byosan captions and mixes the audio as before. The old character slides (`scene_svg.ts`, `src/remotion`) were removed on 2026-11-05 by owner instruction. The thumbnail is separate: `codex-imagegen` (gpt-image-2) draws the two characters from the reference sprites, and the question text (`thumbnailTitle`) is overlaid deterministically with the project font so the wording and numbers are exact (`feature_production.thumbnail` in config). Published thumbnails are replaced only through `task byosan:thumbnail` and published titles only through `task byosan:metadata ... -- --title=TEXT`, each read back and recorded; a published video's first slide cannot be changed. The title is one strong simple question set by `discovery.title_rule`; that questions raise click-through is UNVERIFIED and is measured against real viewer metrics (#416).
+Video visuals use the existing OpenMontage renderer and FFmpeg pipeline. Its visual scene types and available assets describe tool capabilities. Thumbnails are secondary: generate episode-specific art and overlay exact title text with the project font. No title syntax or fixed character arrangement is required.
 
-The 漫才 form (ずんだもん as ボケ, 春日部つむぎ as ツッコミ) and the Comedy Beat contract (`comedy_beat.ts`, the `beat_role` field, the linter check) were removed on 2026-11-07 by owner instruction; ずんだもん now asks the viewer's plain questions and 春日部つむぎ answers with the numbers.
+The former 漫才 role contract was removed on 2026-11-07. Scripts may use either available character or both in the roles that suit the episode.
 
-Script quality is steered by guidance lines in `dialogue_style.guidance` (direction, not gates), written from independent persona reviews of published videos; the review mean is a reference only and never blocks or reshapes a run.
+The visual standard is the KAFKA SIGNAL Design System (owner instruction 2026-11-08): pastel, watercolor and impressionist, one light theme. Colors: Primary `#7BA7E1`, Secondary `#B8A7E6`, Accent `#F7B7C1`, Success `#A8D5BA`, Warning `#FFD8A8`, Neutral `#8FA1B3`. The tokens live in `config/design/foundation.tokens.json`; `bun src/scripts/sync_video_design.ts` writes them into `kafka_visual_system_v1.json` and `byosan_video_system_v1.json`, and text stays in the ink foreground so pastel fills never carry text. The old navy palette, the dark tokens, the pin to `KAFKA2306/design`, and the HEAD-pinned design fixture were removed. The independent canonical repository of KAFKA SIGNAL is UNVERIFIED.
+
+Each episode chooses its own opening, pacing, shape, and ending. Do not require a conclusion-first opening, one designated peak, declarative delivery, or a ban on spoken qualifications. Keep factual claims grounded and explain uncertainty where it helps the viewer understand the evidence.
+
+Feature, production, and authenticity findings remain available as diagnostics. They inform review but do not prescribe a recurring style or block daily publication.
 
 ## Evidence and credentials
 

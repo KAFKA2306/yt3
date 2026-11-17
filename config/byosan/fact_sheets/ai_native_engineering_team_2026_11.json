@@ -1,0 +1,103 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "OpenAIの「AIネイティブな開発チームの作り方」ガイド（2026年11月7日に確認）",
+	"subject": "OpenAIが公開している開発者向けガイド「Building an AI-Native Engineering Team」を紹介する。順に、1. 構成: ガイドは開発の流れを7つの工程（計画、設計、実装、テスト、レビュー、文書化、運用）に分け、各工程でAIに任せること、人が確認すること、人が持ち続けることを分けている、2. 根拠: ガイドが引く第三者の評価機関METRの測定では、GPT-5が50%の確率で完了できる作業は人の作業時間で2時間17分、80%の確率では25分、3. 傾向: METRは、この作業の長さがおよそ7か月で2倍になる傾向を過去に観測している。ガイドの公開日はページに記載がないため、公開日は言わず、確認した日として扱う。ガイドはOpenAI自身の製品の紹介でもあり、社内の効果や導入企業の成果は第三者に確認されていない点を必ず添える。METRの数字は2025年8月時点で、今のモデルの数字ではない点を添える。週2〜5時間のレビュー時間、開発が数週間から数日になったという主張、導入企業の事例は確認できていないため扱わない。",
+	"released": "2026-11-07",
+	"source_documents": [
+		{
+			"url": "https://learn.chatgpt.com/guides/build-ai-native-engineering-team",
+			"title": "Building an AI-Native Engineering Team（公開日の記載なし。確認日を入れている）",
+			"issuer": "OpenAI",
+			"published": "2026-11-07"
+		},
+		{
+			"url": "https://metr.org/evaluations/gpt-5-report/",
+			"title": "Details about METR's evaluation of OpenAI GPT-5",
+			"issuer": "METR",
+			"published": "2025-08-07"
+		}
+	],
+	"facts": [
+		{
+			"id": "guide_phase_count",
+			"label": "ガイドが開発の流れを分けている工程の数",
+			"value": 7,
+			"unit": "工程",
+			"period": "2026年11月7日に確認",
+			"basis": "actual",
+			"source_url": "https://learn.chatgpt.com/guides/build-ai-native-engineering-team",
+			"status": "CONFIRMED",
+			"note": "計画、設計、実装、テスト、レビュー、文書化、運用。各工程で、AIに任せること、人が確認すること、人が持ち続けることを分けている。第三者の記事の中には6工程と書くものがあるが、ガイド本体の見出しは7つ"
+		},
+		{
+			"id": "metr_50_horizon_min",
+			"label": "GPT-5が50%の確率で完了できる作業の長さ（人の作業時間）",
+			"value": 137,
+			"unit": "分（2時間17分）",
+			"period": "2025年8月7日のMETRの報告",
+			"basis": "actual",
+			"source_url": "https://metr.org/evaluations/gpt-5-report/",
+			"status": "CONFIRMED",
+			"note": "95%信頼区間は65分〜4時間25分と幅が広い。ガイドは50%を「50%の確からしさ」と書くが、METRの定義は、人が同じ時間をかける作業のうち、モデルが半分の確率で成功できる長さ"
+		},
+		{
+			"id": "metr_80_horizon_min",
+			"label": "GPT-5が80%の確率で完了できる作業の長さ（人の作業時間）",
+			"value": 25,
+			"unit": "分",
+			"period": "2025年8月7日のMETRの報告",
+			"basis": "actual",
+			"source_url": "https://metr.org/evaluations/gpt-5-report/",
+			"status": "CONFIRMED",
+			"note": "95%信頼区間は8分〜65分。50%の長さの約5分の1"
+		},
+		{
+			"id": "metr_doubling_months",
+			"label": "METRが過去に観測した、完了できる作業の長さが2倍になる期間",
+			"value": 7,
+			"unit": "か月",
+			"period": "METRの最初の研究（過去の傾向）",
+			"basis": "actual",
+			"source_url": "https://metr.org/evaluations/gpt-5-report/",
+			"status": "CONFIRMED",
+			"note": "METRのページは、GPT-5の結果が長期の傾向と整合的で、2024年1月〜2025年2月の速い傾向のほうによく合うと書いている。過去の傾向であり、将来を保証しない"
+		}
+	],
+	"unverified": [
+		{
+			"id": "review_hours_per_week",
+			"label": "開発者のコードレビューの時間",
+			"text": "ガイドは、開発者が週に平均2〜5時間をレビューに使うと書く",
+			"status": "UNVERIFIED",
+			"note": "ガイドに出典の記載がない"
+		},
+		{
+			"id": "weeks_to_days",
+			"label": "OpenAI社内の効果",
+			"text": "以前は数週間かかった作業が数日で届くようになった",
+			"status": "UNVERIFIED",
+			"note": "OpenAI自身の主張で、第三者の確認も数字もない"
+		},
+		{
+			"id": "customer_examples",
+			"label": "導入企業の事例",
+			"text": "Cloudwalk、Sansan、Virgin Atlanticの利用例",
+			"status": "UNVERIFIED",
+			"note": "ガイドが挙げる事例で、各社の一次資料を確認していない"
+		},
+		{
+			"id": "guide_publication_date",
+			"label": "ガイドの公開日",
+			"text": "ページに公開日・更新日・著者の記載がない",
+			"status": "UNVERIFIED",
+			"note": "source_documentsのpublishedには確認日を入れている。公開日ではない"
+		},
+		{
+			"id": "metr_current_models",
+			"label": "最新のモデルの数字",
+			"text": "METRは後の測定方法（Time Horizon 1.1）で、GPT-5の数字を別の値に更新している",
+			"status": "UNVERIFIED",
+			"note": "二次の集計のみで、METRの更新ページを確認していない。2025年8月の数字は、今のモデルの数字ではない"
+		}
+	]
+}

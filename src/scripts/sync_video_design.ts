@@ -12,8 +12,8 @@ const OUTPUT_PATH = path.join(DESIGN_DIR, "byosan_video_system_v1.json");
 const HexSchema = z.string().regex(/^#[0-9A-F]{6}$/);
 
 const DesignSourceSchema = z.object({
-	repo: z.string().min(1),
-	sha: z.string().regex(/^[0-9a-f]{40}$/),
+	name: z.string().min(1),
+	specified_by: z.string().min(1),
 	file: z.string().min(1),
 	sha256: z.string().regex(/^[0-9a-f]{64}$/),
 });
@@ -94,7 +94,7 @@ function setAt(
 	parent[leaf] = value;
 }
 
-export function buildByosanVideoSystem(
+export function applyDesignTokens(
 	base: Record<string, unknown>,
 	map: ByosanTokenMap,
 	tokens: DesignTokens,
@@ -109,6 +109,15 @@ export function buildByosanVideoSystem(
 		...exceptionTokens,
 	])
 		setAt(next, pointer, resolveToken(tokens, tokenPath));
+	return next;
+}
+
+export function buildByosanVideoSystem(
+	base: Record<string, unknown>,
+	map: ByosanTokenMap,
+	tokens: DesignTokens,
+): Record<string, unknown> {
+	const next = applyDesignTokens(base, map, tokens);
 	for (const [pointer, value] of Object.entries(map.overrides))
 		setAt(next, pointer, value);
 	return next;
@@ -117,8 +126,15 @@ export function buildByosanVideoSystem(
 if (import.meta.main) {
 	const tokens = loadDesignTokens();
 	const map = loadByosanTokenMap();
-	const base = fs.readJsonSync(BASE_PATH) as Record<string, unknown>;
-	const next = buildByosanVideoSystem(base, map, tokens);
-	fs.writeFileSync(OUTPUT_PATH, `${JSON.stringify(next, null, "\t")}\n`);
-	console.log(`[sync-video-design] wrote ${OUTPUT_PATH}`);
+	const base = applyDesignTokens(
+		fs.readJsonSync(BASE_PATH) as Record<string, unknown>,
+		map,
+		tokens,
+	);
+	fs.writeFileSync(BASE_PATH, `${JSON.stringify(base, null, "\t")}\n`);
+	fs.writeFileSync(
+		OUTPUT_PATH,
+		`${JSON.stringify(buildByosanVideoSystem(base, map, tokens), null, "\t")}\n`,
+	);
+	console.log(`[sync-video-design] wrote ${BASE_PATH} and ${OUTPUT_PATH}`);
 }

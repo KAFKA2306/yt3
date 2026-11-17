@@ -1,6 +1,6 @@
 {
-	"repo": "KAFKA2306/design",
-	"sha": "a43543d5172caf35547b06e86e093cfcb8a9deaf",
+	"name": "KAFKA SIGNAL Design System",
+	"specified_by": "owner instruction 2026-11-08",
 	"file": "tokens/foundation.tokens.json",
-	"sha256": "10b2ffa7824ee12d711771f95a0502d8d4ebcaf6c0a25ccd46f43ea55b5d06fe"
+	"sha256": "25bfa209af53b1832daeabac7d36ad66792fca1a44a60d63ad6da00952ae88c5"
 }

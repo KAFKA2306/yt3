@@ -11,7 +11,6 @@ import {
 
 const RUN_ID = "byosan_money/2026-10-13-daily-0100";
 const CHANNEL_ID = "UCYtjO-PYBfdG3MuPLXfhA-Q";
-const ARTIFACT_SHA = "a".repeat(64);
 const NOW_JST_NEXT_DAY = new Date("2026-10-12T16:00:00Z");
 const tempRoots: string[] = [];
 
@@ -43,9 +42,8 @@ function readyRecord(root: string): { status: string } {
 	return fs.readJsonSync(path.join(publishDir(root), "ready.json"));
 }
 
-function gateOutput(): string {
+function preparedOutput(): string {
 	return [
-		`[product-release-gate] PASS profile=byosan run=${RUN_ID} artifact_sha256=${ARTIFACT_SHA}`,
 		`PUBLISH_READY_RUN=${RUN_ID}`,
 		`PUBLISH_COMMAND=task publish PROFILE=byosan -- ${RUN_ID}`,
 	].join("\n");
@@ -103,19 +101,20 @@ function recordingRunner(
 	};
 }
 
-describe("byosan daily publish gate", () => {
+describe("byosan daily publish", () => {
 	test("uses the Asia/Tokyo calendar date for the explicit DATE", () => {
 		expect(tokyoDate(NOW_JST_NEXT_DAY, "Asia/Tokyo")).toBe("2026-10-13");
 	});
 
-	test("publishes only after the gate emits all three evidence lines for the same run", () => {
+	test("publishes only after preparation emits both lines for the same run", () => {
 		const root = fs.mkdtempSync(
 			path.join(os.tmpdir(), "byosan-publish-daily-test-"),
 		);
 		tempRoots.push(root);
 		writeByosanConfig(root);
 		const runner = recordingRunner((args, dir) => {
-			if (args[0] === "byosan:auto") return { status: 0, output: gateOutput() };
+			if (args[0] === "byosan:auto")
+				return { status: 0, output: preparedOutput() };
 			writeReceipt(dir);
 			return { status: 0, output: "" };
 		}, root);
@@ -129,43 +128,44 @@ describe("byosan daily publish gate", () => {
 		expect(readyRecord(root).status).toBe("PUBLISHED");
 	});
 
-	test("does not publish when a required gate evidence line is missing", async () => {
+	test("does not publish when a required preparation line is missing", async () => {
 		const root = await makeRoot();
 		const runner = recordingRunner(
 			() => ({
 				status: 0,
-				output: gateOutput().replace(/^PUBLISH_COMMAND=.*$/m, ""),
+				output: preparedOutput().replace(/^PUBLISH_COMMAND=.*$/m, ""),
 			}),
 			root,
 		);
 
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
-			"PREPARE_GATE_FAILED",
+			"PREPARE_FAILED",
 		);
 		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
-		expect(readyRecord(root).status).toBe("GATE_FAILED");
+		expect(readyRecord(root).status).toBe("PREPARE_FAILED");
 	});
 
-	test("does not publish when the release gate fails", async () => {
+	test("does not publish when preparation fails", async () => {
 		const root = await makeRoot();
 		const runner = recordingRunner(() => ({ status: 1, output: "" }), root);
 
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
-			"PREPARE_GATE_FAILED",
+			"PREPARE_FAILED",
 		);
 		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
 	});
 
-	test("re-prepares a same-date run after a recorded gate failure", async () => {
+	test("re-prepares a same-date run after a recorded prepare failure", async () => {
 		const root = await makeRoot();
 		fs.outputJsonSync(path.join(publishDir(root), "ready.json"), {
 			run_id: RUN_ID,
-			status: "GATE_FAILED",
+			status: "PREPARE_FAILED",
 			reason: "prepare_status=201",
 			recorded_at: NOW_JST_NEXT_DAY.toISOString(),
 		});
 		const runner = recordingRunner((args, dir) => {
-			if (args[0] === "byosan:auto") return { status: 0, output: gateOutput() };
+			if (args[0] === "byosan:auto")
+				return { status: 0, output: preparedOutput() };
 			writeReceipt(dir);
 			return { status: 0, output: "" };
 		}, root);
@@ -179,21 +179,21 @@ describe("byosan daily publish gate", () => {
 		expect(readyRecord(root).status).toBe("PUBLISHED");
 	});
 
-	test("records the gate failure again when the same-date re-prepare fails", async () => {
+	test("records the prepare failure again when the same-date re-prepare fails", async () => {
 		const root = await makeRoot();
 		fs.outputJsonSync(path.join(publishDir(root), "ready.json"), {
 			run_id: RUN_ID,
-			status: "GATE_FAILED",
+			status: "PREPARE_FAILED",
 			reason: "prepare_status=201",
 			recorded_at: NOW_JST_NEXT_DAY.toISOString(),
 		});
 		const runner = recordingRunner(() => ({ status: 1, output: "" }), root);
 
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
-			"PREPARE_GATE_FAILED",
+			"PREPARE_FAILED",
 		);
 		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
-		expect(readyRecord(root).status).toBe("GATE_FAILED");
+		expect(readyRecord(root).status).toBe("PREPARE_FAILED");
 	});
 
 	test("blocks a same-date retry while a publish attempt is in flight or recorded as published", async () => {
@@ -202,11 +202,10 @@ describe("byosan daily publish gate", () => {
 			fs.outputJsonSync(path.join(publishDir(root), "ready.json"), {
 				run_id: RUN_ID,
 				status,
-				artifact_sha256: ARTIFACT_SHA,
 				recorded_at: NOW_JST_NEXT_DAY.toISOString(),
 			});
 			const runner = recordingRunner(
-				() => ({ status: 0, output: gateOutput() }),
+				() => ({ status: 0, output: preparedOutput() }),
 				root,
 			);
 
@@ -220,7 +219,7 @@ describe("byosan daily publish gate", () => {
 	test("holds publication without calling publish when publish_approved is false", async () => {
 		const root = await makeRoot();
 		const runner = recordingRunner(
-			() => ({ status: 0, output: gateOutput() }),
+			() => ({ status: 0, output: preparedOutput() }),
 			root,
 		);
 
@@ -237,7 +236,7 @@ describe("byosan daily publish gate", () => {
 		const runner = recordingRunner(
 			(args) =>
 				args[0] === "byosan:auto"
-					? { status: 0, output: gateOutput() }
+					? { status: 0, output: preparedOutput() }
 					: { status: 0, output: "" },
 			root,
 		);
@@ -251,7 +250,7 @@ describe("byosan daily publish gate", () => {
 	test("does not prepare or publish dates before the resume date", async () => {
 		const root = await makeRoot();
 		const runner = recordingRunner(
-			() => ({ status: 0, output: gateOutput() }),
+			() => ({ status: 0, output: preparedOutput() }),
 			root,
 		);
 

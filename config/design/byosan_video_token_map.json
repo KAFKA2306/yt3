@@ -12,8 +12,8 @@
 		"colors.success": "color.light.success",
 		"landscape.outer_frame.color": "color.light.border",
 		"landscape.caption_band.color": "color.light.surface",
-		"landscape.section_label.color": "color.light.primary",
-		"landscape.source.color": "color.light.mutedForeground",
+		"landscape.section_label.color": "color.light.foreground",
+		"landscape.source.color": "color.light.foreground",
 		"landscape.subtitle.color": "color.light.foreground",
 		"landscape.subtitle.outline_color": "color.light.surface",
 		"landscape.stat_cards.fill": "color.light.surface",
@@ -57,8 +57,8 @@
 			"reason": "クリーム面はライトでは白の面（surface）で代替する"
 		},
 		"colors.accent_secondary": {
-			"token": "color.light.foreground",
-			"reason": "ライト配色に第2アクセントが無いため、話者「つむぎ」の識別色を前景色で代替する"
+			"token": "color.light.secondary",
+			"reason": "話者「つむぎ」の識別色は KAFKA SIGNAL の Secondary を使う"
 		},
 		"colors.background_alt": {
 			"token": "color.light.canvas",
@@ -81,7 +81,8 @@
 			"reason": "影を使わない（shadowOpacity 0）。スキーマ互換のためキャンバス色を置き、描画には使わない"
 		},
 		"colors.accent_pink": {
-			"reason": "byosan 描画では未使用。ライトに対応トークンが無く、スキーマ互換のため旧値のまま残す"
+			"token": "color.light.accent",
+			"reason": "KAFKA SIGNAL の Accent を使う"
 		},
 		"landscape.background.stops.0": {
 			"token": "color.light.canvas",

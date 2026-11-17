@@ -48,13 +48,12 @@ See [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md).
 ## Production
 
 ```bash
-task loop
-task run                       # 秒算マネー by default
+task loop                       # 秒算マネー日次公開 + 人類観測所
+task run                       # 秒算マネーの日次制作・公開
 PROFILE=humanity task run      # 人類観測所
-task byosan:publish-daily      # 準備ゲート経由の日次公開（publish_approved が true のときのみ公開）
 ```
 
-`task run` resolves the workflow bucket and environment from `YOUTUBE_PROFILES`; it does not maintain a second profile-to-config mapping. 夜話アーカイブ uses the shared release and publication path with `PROFILE=yawa`; it does not use `src/index.ts`.
+`task run` sends the default `byosan` profile through its daily producer and publisher; `PROFILE=humanity` uses `src/index.ts` and the Humanity workflow. 夜話アーカイブ uses its separate ASMR production path.
 
 Use explicit run IDs when resuming or publishing. Publication never infers an unrelated latest run.
 

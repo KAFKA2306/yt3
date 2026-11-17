@@ -19,6 +19,7 @@
 			"!**/*.log",
 			"!**/logs",
 			"!**/node_modules",
+			"!**/.claude/settings.local.json",
 			"!vendor",
 			"!**/.venv",
 			"!**/.artifacts",

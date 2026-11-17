@@ -30,7 +30,12 @@ function resolveRunId(bucket: string): string {
 
 async function main() {
 	const requestedProfile =
-		process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "byosan";
+		process.env.YOUTUBE_CHANNEL_PROFILE?.trim() || "humanity";
+	if (requestedProfile === "byosan") {
+		throw new Error(
+			"PROFILE=byosan uses task byosan:publish-daily or task byosan:prepare, not src/index.ts",
+		);
+	}
 	if (requestedProfile === "yawa") {
 		throw new Error("PROFILE=yawa uses the ASMR workflow, not src/index.ts");
 	}
@@ -49,7 +54,6 @@ async function main() {
 			`Starting AI YouTuber Pipeline (RunID: ${runId})`,
 		);
 		const missionFile = process.env.MISSION_FILE;
-		const { runSequentialWorkflow } = await import("./workflow.js");
 		const { runHumanityObservatoryWorkflow } = await import(
 			"./humanity_observatory_workflow.js"
 		);
@@ -59,10 +63,10 @@ async function main() {
 			bucket,
 			mission_file: missionFile,
 		};
-		const finalState =
-			bucket === "humanity_observatory"
-				? await runHumanityObservatoryWorkflow(store, initialState)
-				: await runSequentialWorkflow(store, initialState);
+		const finalState = await runHumanityObservatoryWorkflow(
+			store,
+			initialState,
+		);
 
 		const finalTitle = finalState.metadata?.title || "Unknown Title";
 		const publishStatePath = path.join(store.runDir, "publish", "state.json");

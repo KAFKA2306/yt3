@@ -1,4 +1,4 @@
-# ADR-0046: Irodori-TTS v4.1 のローカル導入（sandbox）
+# ADR-0046: Irodori-TTS v4.1 のローカル導入と声リファレンス作成フロー
 
 ## Status
 
@@ -15,6 +15,26 @@ ADR-0004 の方針（`sandbox/Irodori-TTS` に導入し、`src/` には入れな
 - 本番の音声合成は `scripts/yawa_irodori.py` が Irodori-TTS のランタイムを呼び、作品中の音声を一度のモデル読込で生成する。チェックアウト、チェックポイント、キャッシュ、デバイスは `config/yawa/runtime.yaml` に指定する。対象ホストでは Irodori-TTS 側で `uv sync --frozen --extra cu128` を実行する。
 - 参照の有無、演技、任意の発話秒数は作品の台本から渡す。台詞とキャプションはチェックポイントのトークナイザーと上限で検証する。
 - カバーは作品固有の指示を `codex-imagegen` に渡す。準備と公開は既存の `task yawa:prepare` と `task publish` を使う。
+
+## 手動の声リファレンス作成フロー
+
+Muse からローカル生成環境を使った試行で得た、Yawa 向けの手動手順を記録する。これは現在の `task yawa:daily` の実装変更ではない。
+
+1. `Aratako/Irodori-TTS-v4.1-Small` を `--no-ref` で使い、anime 系の caption と複数の seed で候補を作る。採用する caption は実際に使った全文を記録する。今回共有されたのは caption の傾向までで、再現用の全文は未共有。
+2. 候補を聴き比べて選ぶ。270〜280 Hz 帯はオーナー個人の好みの目安として扱い、合否条件にはしない。サ行などの歯擦音と息のようなノイズも確認する。
+3. 選んだ候補の原音を残したまま、別コピーにディエッサーを適用する。処理後も聴き直し、歯擦音が弱まりつつ発音の明瞭さが保たれているものを reference にする。プラグイン名、バージョン、設定値を記録する。共有された試行では特定の処理設定までは確認できていない。
+4. その reference を使って本番テキストを Large checkpoint で生成する。caption は reference の声質と矛盾させず、演技やスタイルの指定に使う。Irodori-TTS は reference waveform と caption の両方を受け取れる。
+5. 再現用に model ID と revision、caption、seed、reference の SHA-256、原音と処理済み音声の対応、ディエッサー設定、本番生成の seed と model ID を run の記録に残す。音声ファイル自体は既存の run 成果物の扱いに従い、Git には追加しない。
+
+公式の Large checkpoint は `Aratako/Irodori-TTS-v4-Large` という ID で、v4.1-Small とは別のモデル名である。このリポジトリの `irodori-v4-large` も同 ID を指定している。「Large 4.1」がこの v4-Large を指すかは未確認のため、記録には通称でなく model ID を使う。Large は T5Gemma 2 encoder を含み Gemma Terms の対象なので、利用時は公式 terms と prohibited-use policy に従い、本人の明示的な同意なしに個人の声を模倣せず、誤認させる合成音声に使わない。
+
+参照: [v4.1-Small model card](https://huggingface.co/Aratako/Irodori-TTS-v4.1-Small)、[v4-Large model card](https://huggingface.co/Aratako/Irodori-TTS-v4-Large)、[Irodori-TTS parameter guide](https://github.com/Aratako/Irodori-TTS/blob/main/docs/parameters.md)、[Gemma Terms of Use](https://ai.google.dev/gemma/terms)、[Gemma Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy)。
+
+## 日次自動フローとの境界
+
+- 現在の `config/yawa/daily.yaml` は `irodori-v4.1-small` を既定にし、reference 候補を 3 つ生成する。候補は ASR 類似度で自動選択され、日次生成では同じ設定済み backend が使われる。
+- 日次フローには人による候補の聴き比べ、ディエッサー処理、処理済み reference の指定はまだ組み込まれていない。上の手動手順を実施した run を、日次フローで再現済みとは扱わない。
+- 2026-11-11 に `phasefield-audio/Irodori-TTS-v4.1-Anime` revision `6b259f5baa5e236b3d14cbd1f8555ca87d92b530` と `Aratako/Irodori-TTS-v4-Large-Quantized` revision `bdef9592db4426bd1c99ccdf0cfc3a213223fb61` の重み・tokenizer等を `HF_HOME` に取得した。これらは実験候補で、日次 backend は引き続き `irodori-v4.1-small`。音声推論は未実施。確認時のGPU空きVRAMは1,476 MiBで、日次preflightの6,000 MiBを下回っていたため、推論可否・速度・音質は未検証。Largeを既定backendへ変更しない。
 
 ## Related
 

@@ -7,7 +7,7 @@
 		"test": "bun test",
 		"lint": "bun node_modules/@biomejs/biome/bin/biome check .",
 		"format": "bun node_modules/@biomejs/biome/bin/biome format --write src tests",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "bun node_modules/typescript/lib/tsc.js --noEmit",
 		"check:merge:fast": "bun run lint && bun run typecheck && bun src/scripts/audit_publish_routing.ts",
 		"check:merge": "bun run check:merge:fast && SKIP_LLM=true DRY_RUN=true bun run test"
 	},

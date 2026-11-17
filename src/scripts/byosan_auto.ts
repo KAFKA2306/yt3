@@ -4,8 +4,8 @@ import fs from "fs-extra";
 import { z } from "zod";
 import { loadConfig, ROOT } from "../io/core.js";
 import {
-	type GateEvidence,
-	parseGateEvidence,
+	type PreparedRun,
+	parsePreparedRun,
 	type TaskResult,
 	type TaskRunner,
 } from "./byosan_publish_daily.js";
@@ -38,7 +38,7 @@ const RepairAttemptSchema = z.object({
 });
 
 export type AutoAction =
-	| { kind: "PUBLISH_READY"; evidence: GateEvidence }
+	| { kind: "PUBLISH_READY"; evidence: PreparedRun }
 	| { kind: "REPAIR" }
 	| { kind: "EXHAUSTED" };
 
@@ -50,7 +50,7 @@ export function decideAfterPrepare(
 	failureSymptom?: string,
 ): AutoAction {
 	const evidence =
-		prepared.status === 0 ? parseGateEvidence(prepared.output, runId) : null;
+		prepared.status === 0 ? parsePreparedRun(prepared.output, runId) : null;
 	if (evidence) return { kind: "PUBLISH_READY", evidence };
 	if (failureSymptom?.includes("CLAUDE_EXEC_FAILED"))
 		return { kind: "EXHAUSTED" };

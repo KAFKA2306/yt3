@@ -140,9 +140,9 @@ export class VisualDirector extends BaseAgent {
 		);
 		const composerConfig = { ...this.videoComposer.config };
 		if ((options.bucket || this.store.domainId) === "humanity_observatory") {
-			composerConfig.background_color = "#FFFDF8";
+			composerConfig.background_color = "#F7F5EF";
 		} else if (options.style === "quiet_observation") {
-			composerConfig.background_color = "#0A0A12";
+			composerConfig.background_color = "#17233F";
 		}
 		const dynamicComposer = new VideoComposer(composerConfig);
 		await dynamicComposer.compose(

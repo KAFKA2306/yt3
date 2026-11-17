@@ -28,14 +28,14 @@ identity:
       - wilson_95_percent_interval
     acceptance_threshold: null
 palette:
-  background: "#10172A"
-  surface: "#1B2640"
-  text_primary: "#F4F7FC"
-  accent_primary: "#77E0C0"
-  accent_secondary: "#FFC857"
-  danger: "#FF6B6B"
-  coin: "#F6C453"
-  tether: "#A78BFA"
+  background: "#F7F5EF"
+  surface: "#FFFFFF"
+  text_primary: "#17233F"
+  accent_primary: "#7BA7E1"
+  accent_secondary: "#B8A7E6"
+  danger: "#B91C1C"
+  coin: "#FFD8A8"
+  tether: "#A8D5BA"
 visual_vocabulary:
   - id: coin-rain
     metaphor: 配当がコインになって降り、箱からあふれる

@@ -18,7 +18,6 @@ import {
 } from "../domain/byosan/feature_draft.js";
 import {
 	ByosanFeatureDraftSchema,
-	isBlockingFeatureIssue,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import { planSpeechParts } from "../domain/byosan/production_audit.js";
@@ -132,9 +131,7 @@ function inputFor(packet: Packet) {
 
 function check(packet: Packet, trial: z.infer<typeof Trial>) {
 	const input = inputFor(packet);
-	const issues = featureDraftIssues(trial.draft, input).filter((issue) =>
-		isBlockingFeatureIssue(issue),
-	);
+	const issues = featureDraftIssues(trial.draft, input);
 	for (const claim of trial.draft.claims) {
 		for (const sourceId of claim.sourceIds) {
 			if (

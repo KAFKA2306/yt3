@@ -1,0 +1,178 @@
+{
+	"schema_version": "byosan_fact_sheet_v1",
+	"company": "Moderna（NASDAQ: MRNA）の2026年第3四半期決算と、インフルエンザワクチンの承認",
+	"subject": "米バイオ医薬品企業Modernaが2026年11月6日に発表した第3四半期決算を、前の年の動きと並べて見る。順に、1. 前年: 2025年通期の売上は19億ドルで、2024年から40%減り、純損失は28億ドルだった、2. 今回: 2026年第3四半期の売上は13.13億ドルで前年同期比29%増、純利益は1.62億ドルと黒字になった。会社は2026年通期の売上の伸びの見通しを、これまでの最大10%から15〜25%へ引き上げた、3. 手元資金: 2026年9月末の現金と投資は80億ドルで、年末は81億〜83億ドルの見通し、4. 製品: 2026年8月5日にFDAが、mRNAのインフルエンザワクチンmFLUSIVAを50歳以上の成人向けに初めて承認した。65歳以上は、免疫反応に基づく迅速承認で、臨床上の効果は市販後の試験で確認する条件が付く、5. 開発: Merckと共同で開発するがんワクチン候補intismeranの第3相試験INTerpath-001で、再発または死亡のリスクが42%下がったと会社が発表した。数字は会社自身の発表で、第三者が確認した値ではなく、将来の見通しは確定ではない点を必ず添える。株価と時価総額、新型コロナワクチンの規制の経緯は扱わない。",
+	"released": "2026-11-07",
+	"source_documents": [
+		{
+			"url": "https://www.sec.gov/Archives/edgar/data/0001682852/000168285226000194/exhibit9912026q3pressrelea.htm",
+			"title": "Moderna Reports Third Quarter 2026 Financial Results and Provides Business Updates",
+			"issuer": "Moderna（SEC提出資料）",
+			"published": "2026-11-06"
+		},
+		{
+			"url": "https://www.biospace.com/press-releases/moderna-reports-fourth-quarter-and-fiscal-year-2025-financial-results-and-provides-business-updates",
+			"title": "Moderna Reports Fourth Quarter and Fiscal Year 2025 Financial Results and Provides Business Updates",
+			"issuer": "Moderna（ACCESS Newswire配信）",
+			"published": "2026-02-13"
+		},
+		{
+			"url": "https://www.biospace.com/press-releases/moderna-receives-u-s-fda-approval-for-influenza-vaccine-mflusiva",
+			"title": "Moderna Receives U.S. FDA Approval for Influenza Vaccine mFLUSIVA",
+			"issuer": "Moderna（ACCESS Newswire配信）",
+			"published": "2026-08-05"
+		}
+	],
+	"facts": [
+		{
+			"id": "fy2025_revenue_usd_oku",
+			"label": "Modernaの2025年通期の売上",
+			"value": 19,
+			"unit": "億ドル",
+			"period": "2025年通期",
+			"basis": "actual",
+			"source_url": "https://www.biospace.com/press-releases/moderna-reports-fourth-quarter-and-fiscal-year-2025-financial-results-and-provides-business-updates",
+			"status": "CONFIRMED",
+			"note": "会社の発表は1.9 billion dollars。売上の大半は新型コロナワクチン"
+		},
+		{
+			"id": "fy2025_revenue_change_pct",
+			"label": "2025年通期の売上の前年からの変化",
+			"value": -40,
+			"unit": "%",
+			"period": "2025年通期（2024年比）",
+			"basis": "actual",
+			"source_url": "https://www.biospace.com/press-releases/moderna-reports-fourth-quarter-and-fiscal-year-2025-financial-results-and-provides-business-updates",
+			"status": "CONFIRMED"
+		},
+		{
+			"id": "fy2025_net_loss_usd_oku",
+			"label": "2025年通期の純損失",
+			"value": 28,
+			"unit": "億ドル",
+			"period": "2025年通期",
+			"basis": "actual",
+			"source_url": "https://www.biospace.com/press-releases/moderna-reports-fourth-quarter-and-fiscal-year-2025-financial-results-and-provides-business-updates",
+			"status": "CONFIRMED",
+			"note": "2024年通期の純損失は36億ドル"
+		},
+		{
+			"id": "q3_2026_revenue_usd_oku",
+			"label": "2026年第3四半期の売上",
+			"value": 13.13,
+			"unit": "億ドル",
+			"period": "2026年7〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001682852/000168285226000194/exhibit9912026q3pressrelea.htm",
+			"status": "CONFIRMED",
+			"note": "会社は、増収の主な要因を海外での新型コロナワクチンの売上増と説明している。製品別の内訳は発表に載っていない"
+		},
+		{
+			"id": "q3_2026_revenue_growth_pct",
+			"label": "2026年第3四半期の売上の前年同期からの伸び",
+			"value": 29,
+			"unit": "%",
+			"period": "2026年7〜9月（前年同期比）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001682852/000168285226000194/exhibit9912026q3pressrelea.htm",
+			"status": "CONFIRMED",
+			"note": "前年同期の売上は10.16億ドル"
+		},
+		{
+			"id": "q3_2026_net_income_usd_oku",
+			"label": "2026年第3四半期の純利益（GAAP）",
+			"value": 1.62,
+			"unit": "億ドル",
+			"period": "2026年7〜9月",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001682852/000168285226000194/exhibit9912026q3pressrelea.htm",
+			"status": "CONFIRMED",
+			"note": "前年同期は2.00億ドルの純損失。営業利益は1.30億ドル"
+		},
+		{
+			"id": "guidance_2026_growth_low_pct",
+			"label": "2026年通期の売上の伸びの見通し（下限）",
+			"value": 15,
+			"unit": "%",
+			"period": "2026年通期",
+			"basis": "forecast",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001682852/000168285226000194/exhibit9912026q3pressrelea.htm",
+			"status": "CONFIRMED",
+			"note": "会社の見通しで、確定ではない。2026年2月の時点では最大10%の伸びを見込んでいた"
+		},
+		{
+			"id": "guidance_2026_growth_high_pct",
+			"label": "2026年通期の売上の伸びの見通し（上限）",
+			"value": 25,
+			"unit": "%",
+			"period": "2026年通期",
+			"basis": "forecast",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001682852/000168285226000194/exhibit9912026q3pressrelea.htm",
+			"status": "CONFIRMED",
+			"note": "会社の見通しで、確定ではない"
+		},
+		{
+			"id": "cash_sep2026_usd_oku",
+			"label": "現金、現金同等物と投資（2026年9月末）",
+			"value": 80,
+			"unit": "億ドル",
+			"period": "2026年9月30日時点",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001682852/000168285226000194/exhibit9912026q3pressrelea.htm",
+			"status": "CONFIRMED",
+			"note": "2025年末は81億ドル。2026年末は約81億〜83億ドルを見込む（会社の見通し）"
+		},
+		{
+			"id": "mflusiva_phase3_adults",
+			"label": "mFLUSIVAの主要な第3相試験の参加者数",
+			"value": 40805,
+			"unit": "人",
+			"period": "承認時（2026年8月5日）の発表",
+			"basis": "actual",
+			"source_url": "https://www.biospace.com/press-releases/moderna-receives-u-s-fda-approval-for-influenza-vaccine-mflusiva",
+			"status": "CONFIRMED",
+			"note": "50歳以上の成人、11か国。FDAは50歳以上の成人向けに承認した。65歳以上は、2,992人を対象にした免疫反応の試験に基づく迅速承認で、臨床上の効果は市販後の試験で確認する条件が付く。供給は2026〜2027年の呼吸器感染症の季節に間に合わせる見込み"
+		},
+		{
+			"id": "intismeran_risk_reduction_pct",
+			"label": "intismeranとKEYTRUDAの併用での再発または死亡のリスクの低下",
+			"value": 42,
+			"unit": "%",
+			"period": "第3相試験INTerpath-001（2026年10月のESMOで発表）",
+			"basis": "actual",
+			"source_url": "https://www.sec.gov/Archives/edgar/data/0001682852/000168285226000194/exhibit9912026q3pressrelea.htm",
+			"status": "CONFIRMED",
+			"note": "KEYTRUDA単独との比較で、ハザード比0.58。ModernaとMerckの発表による会社の数字で、査読済みの論文や第三者の確認は未確認"
+		}
+	],
+	"unverified": [
+		{
+			"id": "market_cap",
+			"label": "時価総額",
+			"text": "2026年11月の時価総額は約1,020億ドル",
+			"status": "UNVERIFIED",
+			"note": "検索で見つかった数字は約906億ドル、約575億ドル、約236億ドルと割れていて、信頼できる一つの数字を確認できなかった。動画では使わない"
+		},
+		{
+			"id": "spikevax_approval_date",
+			"label": "SPIKEVAXのFDA正式承認の時期",
+			"text": "貼られた資料は、2021年6月に正式承認と書いている",
+			"status": "UNVERIFIED",
+			"note": "検索の結果、FDAの正式承認は2022年1月31日で、貼られた資料の記述は誤りとみられる。動画では扱わない"
+		},
+		{
+			"id": "pasted_report_other_numbers",
+			"label": "貼られた概況の他の数字",
+			"text": "2023年の売上59億ドル、EUのRSVワクチン最大2,400万回分の契約、日本政府向け3,000万回分の供給、mRESVIAやmNEXSPIKEの承認の時期など",
+			"status": "UNVERIFIED",
+			"note": "一次資料を確認していない。動画では使わない"
+		},
+		{
+			"id": "stock_reaction",
+			"label": "決算後の株価の反応",
+			"text": "2026年11月6日の決算発表後の株価の動き",
+			"status": "UNVERIFIED",
+			"note": "確認できる終値の記録を見つけられなかった"
+		}
+	]
+}

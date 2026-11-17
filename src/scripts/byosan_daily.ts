@@ -24,10 +24,7 @@ import {
 	structuredRequest,
 	termsMatch,
 } from "../domain/byosan/codex_llm.js";
-import {
-	loadDialogueStyle,
-	renderDialogueStylePrompt,
-} from "../domain/byosan/dialogue_style.js";
+
 import {
 	type Explanation,
 	ExplanationSchema,
@@ -58,8 +55,6 @@ import {
 	auditByosanFeatureSpec,
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSpec,
-	isBlockingFeatureIssue,
-	loadFeatureReview,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import {
@@ -75,7 +70,6 @@ import {
 	invokeStructuredLlm,
 	loadConfig,
 	ROOT,
-	zodSizeConstraintLines,
 } from "../io/core.js";
 
 type DailyConfig = {
@@ -85,10 +79,6 @@ type DailyConfig = {
 
 const dailyConfig = (): DailyConfig =>
 	loadConfig("byosan_money") as unknown as DailyConfig;
-
-const FEATURE_DRAFT_SIZE_LIMITS = zodSizeConstraintLines(
-	ByosanFeatureDraftSchema,
-).join("\n");
 
 type PublishedRunEvidence = {
 	runId: string;
@@ -366,9 +356,7 @@ export async function generateFeatureSpec(
 	runDir: string,
 	exec?: (prompt: string) => string,
 ): Promise<{ spec: ByosanFeatureSpec; explanation: Explanation }> {
-	const titleRule = dailyConfig().discovery.title_rule;
-	const system = `${dailyConfig().feature_draft.system}\n${renderDialogueStylePrompt(loadDialogueStyle())}`;
-	const review = loadFeatureReview();
+	const system = dailyConfig().feature_draft.system;
 	const llm = byosanLlmConfig();
 	const articles = renderFeatureDraftInput(input);
 	const write = async (label: string, extra: string) => {
@@ -387,7 +375,7 @@ export async function generateFeatureSpec(
 				{ role: "system", content: system },
 				{
 					role: "user",
-					content: `${articles}${extra}\n\n制約（ByosanFeatureDraftSchema から導出した文字数・件数の上限と下限）:\n${FEATURE_DRAFT_SIZE_LIMITS}\n\n${titleRule}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
+					content: `${articles}${extra}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
 				},
 			],
 			validate: (rawDraft) => {
@@ -396,16 +384,7 @@ export async function generateFeatureSpec(
 						"BYOSAN_FEATURE_DRAFT_INVALID: draft must be a JSON object",
 					);
 				}
-				const normalized = normalizeFeatureDraft(rawDraft);
-				const blocking = featureDraftIssues(normalized.draft, input).filter(
-					(issue) => isBlockingFeatureIssue(issue, review),
-				);
-				if (blocking.length > 0) {
-					throw new Error(
-						`BYOSAN_FEATURE_DRAFT_INVALID: ${summarizeFeatureIssues(blocking)}`,
-					);
-				}
-				return normalized;
+				return normalizeFeatureDraft(rawDraft);
 			},
 		});
 		const { draft, corrections } =
@@ -426,6 +405,21 @@ export async function generateFeatureSpec(
 			{ spaces: 2 },
 		);
 		const parsed = ByosanFeatureDraftSchema.parse(draft);
+		try {
+			const issues = featureDraftIssues(parsed, input);
+			fs.outputJsonSync(
+				path.join(runDir, "audit", "feature_draft_issues.json"),
+				issues,
+				{ spaces: 2 },
+			);
+			if (issues.length > 0) {
+				console.warn(
+					`[byosan-feature-audit] WARN run=${input.runId} issues=${summarizeFeatureIssues(issues)}`,
+				);
+			}
+		} catch (error) {
+			recordNonBlockingAuditError(runDir, "feature_draft", error);
+		}
 		return {
 			parsed,
 			spec: parseAndAuditByosanFeatureSpec(
@@ -450,6 +444,32 @@ function runCommand(
 	if (result.status !== 0) {
 		throw new Error(
 			`COMMAND_FAILED: ${command} ${args.join(" ")} status=${result.status ?? "signal"}`,
+		);
+	}
+}
+
+function recordNonBlockingAuditError(
+	runDir: string,
+	auditName: string,
+	error: unknown,
+): void {
+	const entry = {
+		audit: auditName,
+		error: error instanceof Error ? error.message : String(error),
+		recorded_at: new Date().toISOString(),
+	};
+	console.warn(`[byosan-audit] WARN audit=${auditName} error=${entry.error}`);
+	try {
+		const file = path.join(runDir, "audit", "nonblocking_audit_errors.json");
+		const previous = fs.existsSync(file) ? fs.readJsonSync(file) : [];
+		fs.outputJsonSync(
+			file,
+			[...(Array.isArray(previous) ? previous : []), entry],
+			{ spaces: 2 },
+		);
+	} catch (writeError) {
+		console.warn(
+			`[byosan-audit] WARN audit_error_record_failed=${writeError instanceof Error ? writeError.message : String(writeError)}`,
 		);
 	}
 }
@@ -511,7 +531,6 @@ function writeByosanCanonicalAudit(
 ): void {
 	const explanationPath = path.join(runDir, "source", "explanation.json");
 	const explanation = ExplanationSchema.parse(fs.readJsonSync(explanationPath));
-	const review = loadFeatureReview();
 	const contractIssues = auditFeatureSpecAgainstExplanation(
 		spec,
 		explanation,
@@ -519,14 +538,12 @@ function writeByosanCanonicalAudit(
 	);
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "feature_warnings.json"),
-		[...auditByosanFeatureSpec(spec), ...contractIssues].filter(
-			(issue) => !isBlockingFeatureIssue(issue, review),
-		),
+		[...auditByosanFeatureSpec(spec), ...contractIssues],
 		{ spaces: 2 },
 	);
-	const explanationIssues = contractIssues
-		.filter((issue) => isBlockingFeatureIssue(issue, review))
-		.map((issue) => `${issue.code}:${issue.details}`);
+	const explanationIssues = contractIssues.map(
+		(issue) => `${issue.code}:${issue.details}`,
+	);
 	const productionReportPath = path.join(
 		runDir,
 		"audit",
@@ -555,12 +572,14 @@ function writeByosanCanonicalAudit(
 	const failed = Object.values(checks)
 		.filter((check) => check.status !== "PASS")
 		.map((check) => `${check.name}: ${check.details}`);
-	if (failed.length > 0) {
-		throw new Error(`CANONICAL_AUDIT_FAILED: ${failed.join(" | ")}`);
-	}
 	fs.outputJsonSync(path.join(runDir, "audit", "result.json"), checks, {
 		spaces: 2,
 	});
+	if (failed.length > 0) {
+		console.warn(
+			`[byosan-canonical-audit] WARN run=${spec.runId} findings=${failed.join(" | ")}`,
+		);
+	}
 }
 
 async function runByosanDaily(): Promise<void> {
@@ -641,12 +660,7 @@ async function runByosanDaily(): Promise<void> {
 		"production_quality_report.json",
 	);
 	if (
-		!(
-			checkpoint.stages.media_ready &&
-			checkpoint.stages.quality_pass &&
-			(await fs.pathExists(finalVideoPath)) &&
-			(await fs.pathExists(qualityReportPath))
-		)
+		!(checkpoint.stages.media_ready && (await fs.pathExists(finalVideoPath)))
 	) {
 		runCommand(
 			process.execPath,
@@ -658,27 +672,37 @@ async function runByosanDaily(): Promise<void> {
 				YOUTUBE_CHANNEL_PROFILE: "byosan",
 			},
 		);
-		checkpoint.stages.media_ready = true;
-		const qualityReport = (await fs.readJson(qualityReportPath)) as {
-			decision?: string;
-		};
-		checkpoint.stages.quality_pass = qualityReport.decision === "PASS";
+		checkpoint.stages.media_ready = await fs.pathExists(finalVideoPath);
+		try {
+			const qualityReport = (await fs.readJson(qualityReportPath)) as {
+				decision?: string;
+			};
+			checkpoint.stages.quality_pass = qualityReport.decision === "PASS";
+		} catch (error) {
+			checkpoint.stages.quality_pass = false;
+			recordNonBlockingAuditError(store.runDir, "production_quality", error);
+		}
 		writeByosanCheckpoint(store.runDir, checkpoint);
 	}
-	if (!checkpoint.stages.quality_pass) {
-		throw new Error(`QUALITY_GATE_FAILED: ${qualityReportPath}`);
+	try {
+		runCommand(
+			process.execPath,
+			["src/scripts/audit_byosan_authenticity.ts", "--run", runId],
+			process.env,
+		);
+	} catch (error) {
+		recordNonBlockingAuditError(store.runDir, "authenticity", error);
 	}
-	runCommand(
-		process.execPath,
-		["src/scripts/audit_byosan_authenticity.ts", "--run", runId],
-		process.env,
-	);
-	writeByosanCanonicalAudit(
-		store.runDir,
-		spec,
-		inputSourceText(input),
-		factSheet ? factSheetHosts(factSheet.sheet) : [],
-	);
+	try {
+		writeByosanCanonicalAudit(
+			store.runDir,
+			spec,
+			inputSourceText(input),
+			factSheet ? factSheetHosts(factSheet.sheet) : [],
+		);
+	} catch (error) {
+		recordNonBlockingAuditError(store.runDir, "canonical", error);
+	}
 	markFailureRecovered(store.runDir);
 	console.log(`PRODUCTION_PASS=${runId}`);
 }

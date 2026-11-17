@@ -59,6 +59,46 @@ function segmentSeriesKind(
 	return verified ? "actual" : "estimate";
 }
 
+function numericMagnitude(value: string): number | null {
+	const match = value
+		.normalize("NFKC")
+		.match(/[+\-−]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/u);
+	if (!match) return null;
+	const number = Number(match[0].replaceAll(",", "").replace("−", "-"));
+	return Number.isFinite(number) ? number : null;
+}
+
+function figureForStat(
+	stat: ByosanRenderedStat,
+	explanation: SceneExplanation,
+): SceneExplanation["figures"][number] | undefined {
+	const magnitude = numericMagnitude(stat.value);
+	if (magnitude === null) return undefined;
+	const candidates = explanation.figures.filter(
+		(figure) => numericMagnitude(figure.value) === magnitude,
+	);
+	if (candidates.length === 1) return candidates[0];
+	const hints = `${stat.label}${stat.detail}`
+		.normalize("NFKC")
+		.replace(/\s+/gu, "");
+	const ranked = candidates
+		.map((figure) => ({
+			figure,
+			score:
+				Number(
+					hints.includes(figure.period.normalize("NFKC").replace(/\s+/gu, "")),
+				) *
+					2 +
+				Number(
+					hints.includes(figure.metric.normalize("NFKC").replace(/\s+/gu, "")),
+				),
+		}))
+		.sort((left, right) => right.score - left.score);
+	if (!ranked[0] || ranked[0].score === 0) return undefined;
+	if (ranked[1]?.score === ranked[0].score) return undefined;
+	return ranked[0].figure;
+}
+
 function statRef(
 	source: SceneSource,
 	ref: Extract<ByosanSceneValueRef, { source: "stat" }>,
@@ -78,11 +118,12 @@ function resolveValue(
 ): ResolvedValue {
 	if (ref.source === "stat") {
 		const { segment, stat } = statRef(source, ref);
+		const figure = figureForStat(stat, explanation);
 		return {
 			display: stat.value,
 			detail: stat.detail,
 			seriesName: segment.subheadline,
-			kind: segmentSeriesKind(source, segment),
+			kind: figure?.kind ?? segmentSeriesKind(source, segment),
 		};
 	}
 	const figure = explanation.figures[ref.figureIndex];

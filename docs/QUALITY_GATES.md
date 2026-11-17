@@ -55,7 +55,7 @@ Every test file under `tests/` runs in `check:merge`. These areas were reviewed 
 
 ## Publication
 
-`task publish PROFILE=<profile> -- <run-id> [video-path]` checks that the run bucket matches the profile and that no unresolved remote upload intent exists, verifies the authenticated channel, then records canonical publication evidence and remote read-back state. There is no separate release gate; the product release gate and factual-integrity attestation gate were removed on 2026-11-08 by owner instruction.
+`task publish PROFILE=<profile> -- <run-id> [video-path]` checks that the run bucket matches the profile and that no unresolved remote upload intent exists, verifies the authenticated channel, then records canonical publication evidence and remote read-back state. There is no separate release gate: the product release gate (`task release:check`, `product_release_gate.ts`) and the factual-integrity attestation gate were removed on 2026-11-08 by owner instruction.
 
 For Byosan, feature, production, authenticity, canonical, and daily audit findings are recorded for review and do not gate `task byosan:publish-daily`. Repository CI runs on pushes and pull requests; it is not part of the scheduled publication path.
 

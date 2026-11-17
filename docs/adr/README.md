@@ -26,7 +26,7 @@
 - `0042-destructive-command-harness.md`: 破壊的コマンドの安全ハーネス
 - `0043-byosan-money-zero-trust-source-policy.md`: 秒算マネーのZero-Trust情報源ポリシー
 - `0045-humanity-music-video-release-gate.md`: 人類観測所の音楽動画の公開ゲート
-- `0046-irodori-tts-v4-1-checkpoint-setup.md`: Irodori-TTS v4.1 のローカル導入（sandbox）
+- `0046-irodori-tts-v4-1-checkpoint-setup.md`: Irodori-TTS v4.1 のローカル導入と声リファレンス作成フロー
 - `0047-zero-trust-artifact-attestation-and-provenance-chain.md`: Artifact attestation と provenance chain
 
 ## Rule

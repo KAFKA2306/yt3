@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
+import { getByosanVisualSystem } from "../design/kafka_visual_system.js";
 import { type ChartSpec, getByosanChartTheme } from "./charts.js";
 import type { ByosanSceneRender } from "./scene_render.js";
 
@@ -23,12 +24,63 @@ export type OpenMontageConfig = {
 
 type Cut = Record<string, unknown>;
 
+const DESIGN = getByosanVisualSystem();
+
+function byosanThemeConfig(): Record<string, unknown> {
+	const { colors, typography } = DESIGN;
+	return {
+		primaryColor: colors.brand_blue,
+		accentColor: colors.accent_primary,
+		backgroundColor: colors.background,
+		surfaceColor: colors.surface,
+		textColor: colors.text_primary,
+		mutedTextColor: colors.text_muted,
+		headingFont: typography.display,
+		bodyFont: typography.body,
+		monoFont: typography.numeric,
+		chartColors: [
+			colors.brand_blue,
+			colors.accent_primary,
+			colors.accent_secondary,
+			colors.warning,
+			colors.success,
+			colors.alert,
+		],
+		captionHighlightColor: colors.accent_primary,
+		captionBackgroundColor: "rgba(255, 255, 255, 0.9)",
+	};
+}
+
 function chartCut(chart: ChartSpec, title: string): Cut {
 	if (chart.kind === "bignumber") {
 		return {
 			type: "stat_card",
 			stat: `${chart.displayNumber ?? chart.value}${chart.unit}`,
 			subtitle: chart.label,
+			backgroundColor: DESIGN.colors.text_primary,
+		};
+	}
+	if (
+		chart.kind !== "line" &&
+		chart.series.some((series) => series.values.some((value) => value < 0))
+	) {
+		const labels = getByosanChartTheme().kind_labels;
+		return {
+			type: "callout",
+			callout_type: "info",
+			title,
+			text: chart.categories
+				.map((category, index) => {
+					const values = chart.series.flatMap((series) => {
+						const value = series.values[index];
+						if (value === undefined) return [];
+						return [
+							`${category}：${series.displayValues?.[index] ?? `${value}${chart.unit}`}（${labels[series.kind]}）`,
+						];
+					});
+					return values.join("／");
+				})
+				.join("\n"),
 		};
 	}
 	const labels = getByosanChartTheme().kind_labels;
@@ -56,6 +108,7 @@ function cutFor(segment: OpenMontageSegment): Cut {
 				type: "stat_card",
 				stat: first.value,
 				subtitle: `${first.label} ${first.detail}`,
+				backgroundColor: DESIGN.colors.text_primary,
 			};
 		}
 		if (render.stats.length === 2 && first && second) {
@@ -82,13 +135,43 @@ function cutFor(segment: OpenMontageSegment): Cut {
 }
 
 export function openMontageCuts(segments: OpenMontageSegment[]): Cut[] {
-	return segments.map((segment) => ({
-		id: `scene-${segment.index}`,
-		source: "",
-		in_seconds: segment.start,
-		out_seconds: segment.start + segment.duration,
-		...cutFor(segment),
-	}));
+	const cuts: Cut[] = [];
+	for (const segment of segments) {
+		const outSeconds = segment.start + segment.duration;
+		if (segment.render.kind === "none") {
+			const previous = cuts.at(-1);
+			if (previous) previous.out_seconds = outSeconds;
+			continue;
+		}
+		const next: Cut = {
+			id: `scene-${segment.index}`,
+			source: "",
+			in_seconds: segment.start,
+			out_seconds: outSeconds,
+			...cutFor(segment),
+		};
+		const previous = cuts.at(-1);
+		if (previous && sameCutContent(previous, next)) {
+			previous.out_seconds = outSeconds;
+			continue;
+		}
+		cuts.push(next);
+	}
+	return cuts;
+}
+
+function sameCutContent(a: Cut, b: Cut): boolean {
+	if (a.type === "hero_title" && b.type === "text_card" && a.text === b.text) {
+		return true;
+	}
+	const visual = (cut: Cut): string => {
+		const content = { ...cut };
+		delete content.id;
+		delete content.in_seconds;
+		delete content.out_seconds;
+		return JSON.stringify(content);
+	};
+	return visual(a) === visual(b);
 }
 
 export function renderOpenMontage(
@@ -102,6 +185,7 @@ export function renderOpenMontage(
 		overlays: [],
 		captions: [],
 		audio: {},
+		themeConfig: byosanThemeConfig(),
 	});
 	const result = spawnSync(
 		"npx",

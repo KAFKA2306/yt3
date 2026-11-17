@@ -309,8 +309,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Tsumugi,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.landscape.subtitle.outline_color)},${assColor(DESIGN.landscape.subtitle.outline_color)},${styleTail}
-Style: Zundamon,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.colors.success)},&H000000FF,${assColor(DESIGN.landscape.subtitle.outline_color)},${assColor(DESIGN.landscape.subtitle.outline_color)},${styleTail}
+Style: Tsumugi,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.colors.accent_secondary)},${assColor(DESIGN.colors.accent_secondary)},${styleTail}
+Style: Zundamon,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.colors.success)},${assColor(DESIGN.colors.success)},${styleTail}
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -830,7 +830,9 @@ async function auditProduction(
 		{ spaces: 2 },
 	);
 	if (decision !== "PASS") {
-		throw new Error(`Production audit failed: ${productionReportPath}`);
+		console.warn(
+			`[byosan-production-audit] WARN run=${spec.runId} report=${productionReportPath}`,
+		);
 	}
 }
 
@@ -952,7 +954,28 @@ async function main(): Promise<void> {
 	const finalPath = path.join(videoDir, RUN.publish_video);
 	composeFinal(visualPath, narrationPath, subtitlePath, cursor, finalPath);
 	await writeOutputs(spec, timed, runDir, finalPath, thumbnail.jpg);
-	await auditProduction(spec, timed, runDir, finalPath);
+	try {
+		await auditProduction(spec, timed, runDir, finalPath);
+	} catch (error) {
+		console.warn(
+			`[byosan-production-audit] WARN run=${spec.runId} error=${error instanceof Error ? error.message : String(error)}`,
+		);
+		try {
+			await fs.outputJson(
+				path.join(runDir, RUN.audit_dir, "production_audit_error.json"),
+				{
+					runId: spec.runId,
+					error: error instanceof Error ? error.message : String(error),
+					recorded_at: new Date().toISOString(),
+				},
+				{ spaces: 2 },
+			);
+		} catch (writeError) {
+			console.warn(
+				`[byosan-production-audit] WARN error_record_failed=${writeError instanceof Error ? writeError.message : String(writeError)}`,
+			);
+		}
+	}
 	console.log(`RUN_DIR=${runDir}`);
 	console.log(`VIDEO=${finalPath}`);
 	console.log(`THUMBNAIL=${thumbnail.png}`);

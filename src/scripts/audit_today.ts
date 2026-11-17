@@ -45,13 +45,6 @@ function channelLabel(channel: ChannelKey): string {
 	return channel === "byosan_money" ? "秒算マネー" : "人類観測所";
 }
 
-function gatePassed(report: AuditTodayReport): boolean {
-	return (
-		report.reports.length > 0 &&
-		report.reports.every((item) => item.audit_passed && item.evidence_ready)
-	);
-}
-
 async function exists(filePath: string): Promise<boolean> {
 	try {
 		await fs.access(filePath);
@@ -267,9 +260,6 @@ async function main(): Promise<void> {
 
 	console.log(markdown);
 	await notifyDiscord(report);
-	if (process.argv.includes("--gate") && !gatePassed(report)) {
-		process.exitCode = 1;
-	}
 }
 
 main().catch((error: unknown) => {

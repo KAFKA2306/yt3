@@ -208,6 +208,20 @@ describe("fact sheet input: source material and checks", () => {
 		expect(body).toContain("銀行業");
 	});
 
+	test("a year is never given a thousands separator", () => {
+		const { sheet } = loadFactSheet(FIXTURE);
+		const first = sheet.facts[0];
+		if (!first) throw new Error("fixture has no facts");
+		const body = factSheetArticles({
+			...sheet,
+			facts: [{ ...first, value: 2028, unit: "年以降" }],
+		})
+			.map((a) => a.body)
+			.join("\n");
+		expect(body).toContain("2028年以降");
+		expect(body).not.toContain("2,028");
+	});
+
 	test("the unverified full-year forecast wording never reaches the script input", () => {
 		const { sheet } = loadFactSheet(FIXTURE);
 		const body = factSheetArticles(sheet)

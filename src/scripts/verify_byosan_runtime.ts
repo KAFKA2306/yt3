@@ -69,14 +69,7 @@ function writeReport(
 	const requiredSteps =
 		params.mode === "smoke"
 			? ["active_probe_runtime"]
-			: [
-					"preflight",
-					"active_probe_runtime",
-					"daily_prepare",
-					"daily_release_gate",
-					"digest_build",
-					"digest_release_gate",
-				];
+			: ["preflight", "active_probe_runtime", "daily_prepare", "digest_build"];
 	const requiredStatuses = requiredSteps.map(
 		(step) => params.steps[step]?.status ?? "UNVERIFIED",
 	);
@@ -330,22 +323,6 @@ async function main(): Promise<void> {
 		throw new Error(`BYOSAN_RUNTIME_DAILY_PREPARE_FAILED: ${reportPath}`);
 	}
 
-	appendStep(
-		reportPath,
-		params,
-		"daily_release_gate",
-		runBunStep(
-			["src/scripts/check_product_release.ts", dailyRunId],
-			{ ...env, RUN_ID: dailyRunId },
-			`Release gate passed for ${dailyRunId}.`,
-			[path.join(ROOT, "runs", dailyRunId, "audit")],
-		),
-	);
-	if (params.steps.daily_release_gate?.status !== "PASS") {
-		writeReport(reportPath, params);
-		throw new Error(`BYOSAN_RUNTIME_DAILY_RELEASE_FAILED: ${reportPath}`);
-	}
-
 	const digestRunId =
 		period === "week"
 			? `byosan_money/${date}-weekly-digest`
@@ -365,18 +342,6 @@ async function main(): Promise<void> {
 		writeReport(reportPath, params);
 		throw new Error(`BYOSAN_RUNTIME_DIGEST_BUILD_FAILED: ${reportPath}`);
 	}
-
-	appendStep(
-		reportPath,
-		params,
-		"digest_release_gate",
-		runBunStep(
-			["src/scripts/check_product_release.ts", digestRunId],
-			{ ...env, RUN_ID: digestRunId },
-			`Release gate passed for ${digestRunId}.`,
-			[path.join(ROOT, "runs", digestRunId, "audit")],
-		),
-	);
 
 	if (process.env.WITH_ANALYTICS === "true") {
 		appendStep(
