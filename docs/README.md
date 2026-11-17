@@ -4,12 +4,12 @@ This directory contains maintained operational standards and architecture decisi
 
 ## Operations
 
-- [`QUALITY_GATES.md`](./QUALITY_GATES.md): ownership of lint, typecheck, tests, hooks, and CI gates
+- [`QUALITY_GATES.md`](./QUALITY_GATES.md): ownership of lint, typecheck, tests, and CI gates
 
 ## Data Model
 
 - [`standard/star-schema-standard.md`](./standard/star-schema-standard.md): fact and dimension tables by grain, and the migration plan
-- [`standard/ledger-standard.md`](./standard/ledger-standard.md): append-only records of what happened, and where each ledger lives
+- [`standard/ledger-standard.md`](./standard/ledger-standard.md): record locations, grain, and schema owners
 
 ## Standards
 

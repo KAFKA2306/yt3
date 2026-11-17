@@ -21,3 +21,4 @@ Rules:
 | [superseded/agy_100x_viewer_loop_audit.md](./superseded/agy_100x_viewer_loop_audit.md) | Git history (one-off agy work order, no executable reference) | 2026-10-25 |
 | [superseded/audit_log_llm.txt](./superseded/audit_log_llm.txt) | Git history (one-off audit prompt, no executable reference) | 2026-10-25 |
 | [superseded/media_aesthetics_SKILL.md](./superseded/media_aesthetics_SKILL.md) | config/design (canonical design tokens; the skill's subtitle font and safe-area values are not in config) | 2026-10-25 |
+| [superseded/ledger-standard.md](./superseded/ledger-standard.md) | [standard/ledger-standard.md](../standard/ledger-standard.md) (current record index; this copy preserves the previous policy and event notes) | 2026-11-18 |

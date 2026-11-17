@@ -2,7 +2,6 @@ import subprocess
 
 PYTHON_FILES = (
     "scripts/check_python.py",
-    "hooks",
     "sbg-nav-audit/scripts",
     "src/scripts/voice_forensic_audit.py",
     "src/scripts/byosan_voice_register.py",
