@@ -821,6 +821,15 @@ function renderVideo(
 		return output;
 	}
 	const move = draft.production.motion;
+	const waveHeight = Math.max(64, Math.floor(height / 12) * 2);
+	const waveTop = Math.floor((height - waveHeight) / 4) * 2;
+	const waveRate = Math.max(8, Math.floor(fps / 2));
+	const waveformFilter = [
+		`[0:a]showwaves=s=${width}x${waveHeight}:mode=cline:rate=${waveRate}:colors=0x76838a`,
+		`pad=${width}:${height}:0:${waveTop}:color=black`,
+		`fps=${fps}`,
+		"format=yuv420p[v]",
+	].join(",");
 	const motionFilter = move
 		? (() => {
 				const frames = Math.max(1, Math.ceil(audioSeconds * fps));
@@ -858,7 +867,7 @@ function renderVideo(
 					"-i",
 					audio,
 					"-filter_complex",
-					`[0:a]showwaves=s=${width}x${height}:mode=cline:rate=${fps}:colors=0x85c7ff,format=yuv420p[v]`,
+					waveformFilter,
 					"-map",
 					"[v]",
 					"-map",
