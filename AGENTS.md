@@ -43,6 +43,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - Merge a PR with `gh pr merge --merge` when exact-head CI passes. Do not squash or rebase.
 - Close an Issue only after its fix is merged to `main` and the acceptance evidence is recorded in it.
 - **One-branch rule (owner mandate, 2026-11-07, binding):** `main` is the only branch. Commit and push to `main` directly. Do not create feature, subagent, or `env-refresh/*` branches. A branch that already exists must be folded into `main` and deleted once its work is merged; deleting a branch whose work is not merged still needs the owner's instruction.
+- **Worktree rule (owner mandate, 2026-11-18):** Do not create Git worktrees. Review and integrate changes from existing worktrees into `main` before retiring them, and preserve their ignored or untracked user state outside the worktree.
 - Keep Issues few. Delete a branch, local and remote, once its PR is merged. Fold Issues that overlap into one, and close an Issue that no longer applies with the reason recorded in it. Open a new Issue only for work that no open Issue covers.
 - Not covered, and requiring the owner's explicit instruction: force push, deleting a branch whose work is not merged, deletion of run data or published videos, billing, and handling of secrets or contact details.
 

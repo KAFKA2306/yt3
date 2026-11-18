@@ -122,7 +122,6 @@ Local service availability is environment-dependent; documentation is not runtim
 src/          workflow, audit, release, publish, and operations
 config/       domain and channel configuration
 runs/         runtime state and evidence
-audits/       repository-level verification evidence
 artifacts/    generated/supporting artifacts
 db/           cross-run data
 docs/         maintained standards and ADRs

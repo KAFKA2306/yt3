@@ -1,6 +1,6 @@
 # Docs Index
 
-This directory contains maintained operational standards and architecture decisions for YT3. Runtime state and generated evidence belong under `runs/`, `audits/`, `artifacts/`, and `logs/`.
+This directory contains maintained operational standards and architecture decisions for YT3. Runtime state and generated evidence belong under `runs/`, `artifacts/`, and `logs/`.
 
 ## Operations
 
