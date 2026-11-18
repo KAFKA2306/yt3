@@ -579,8 +579,8 @@ function prepareBinaural(sourceId: string, date: string, slot: string): void {
 				run_id: runId,
 				bucket: config.run.bucket,
 				status: "READY",
-				video_path: videoPath,
-				thumbnail_path: thumbnailPath,
+				video_path: path.join(dir, config.pv.file),
+				thumbnail_path: path.join(dir, config.thumbnail.file),
 				contains_synthetic_media: true,
 				metadata: {
 					title,
