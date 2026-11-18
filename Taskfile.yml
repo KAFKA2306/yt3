@@ -51,6 +51,26 @@ tasks:
       - task publish PROFILE=humanity -- humanity_observatory/music-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
       - bun src/scripts/humanity_music.ts youtube-playlist {{.DATE}} {{.SLOT}}
 
+  humanity:music-binaural-prepare:
+    desc: "Create a headphone binaural derivative of an existing Humanity song (SOURCE=<generation-id>, DATE=YYYY-MM-DD, SLOT=<alnum>)"
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' || ! printf '%s' "{{.SLOT}}" | grep -Eq '^[A-Za-z0-9]+$' || [ -z "{{.SOURCE}}" ]; then
+          echo "SOURCE, DATE=YYYY-MM-DD, and SLOT=<alnum> are required" >&2
+          exit 2
+        fi
+      - bun src/scripts/humanity_music.ts prepare-binaural {{.SOURCE}} {{.DATE}} {{.SLOT}}
+      - |
+        echo "PUBLISH_READY_RUN=humanity_observatory/music-{{.DATE}}-{{.SLOT}}"
+        echo "PUBLISH_COMMAND=task publish PROFILE=humanity -- humanity_observatory/music-{{.DATE}}-{{.SLOT}}"
+
+  humanity:music-binaural-daily:
+    desc: "Prepare, publish, and add a headphone binaural music video to the YouTube playlist (SOURCE=<generation-id>, DATE=YYYY-MM-DD, SLOT=<alnum>)"
+    cmds:
+      - task humanity:music-binaural-prepare SOURCE={{.SOURCE}} DATE={{.DATE}} SLOT={{.SLOT}}
+      - task publish PROFILE=humanity -- humanity_observatory/music-{{.DATE}}-{{.SLOT}}
+      - bun src/scripts/humanity_music.ts youtube-playlist {{.DATE}} {{.SLOT}}
+
   yawa:prepare:
     desc: "Prepare one 夜話アーカイブ ASMR episode without publishing (DATE=YYYY-MM-DD required; SLOT=<alnum> optional for a second episode on the same date)"
     cmds:

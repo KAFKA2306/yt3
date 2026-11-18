@@ -13,7 +13,6 @@ import {
 	playlistText,
 	publishedSeconds,
 	rankedSongs,
-	rarestCell,
 	scoresOf,
 	YOUTUBE_PLAYLIST_URL,
 	YOUTUBE_WATCH_URL,
@@ -30,10 +29,9 @@ const config = loadMusicConfig(ROOT);
 const outputDir = path.join(ROOT, config.output_dir);
 const ledgerPath = path.join(outputDir, "ledger.jsonl");
 const DraftSchema = z.object({
-	title: z.string(),
-	scene: z.string(),
-	style_tail: z.string(),
-	sections: z.array(z.array(z.string())),
+	title: z.string().min(1),
+	style: z.string().min(1),
+	lyrics: z.string().min(1),
 });
 
 function readLedger(): LedgerRow[] {
@@ -140,40 +138,29 @@ function preflight(): void {
 
 async function generate(brief?: string): Promise<GenerationRow> {
 	preflight();
-	const past = generations(readLedger());
-	const cell = rarestCell(readLedger(), config.axes, Math.random);
 	const draft = await invokeStructuredLlm({
 		schema: DraftSchema,
 		name: "humanity_music_draft",
 		llmOptions: {
 			domainId: "humanity_observatory",
 			temperature: config.temperature,
-			extra: { tools: [{ googleSearchRetrieval: {} }] },
-		},
-		validate: (value) => {
-			if (
-				value.sections.length !== config.structure.length ||
-				value.sections.some(
-					(lines) => lines.length !== config.lines_per_section,
-				)
-			)
-				throw new Error("sections do not match the configured structure");
-			return value;
 		},
 		messages: () => [
 			{
 				role: "system",
-				content: `あなたは人類観測所の作詞家です。${brief ? "指定された企画を題材にしてください。" : config.trend_rule} ${config.lyrics_rule} sectionsは${config.structure.join("、")}の順に${config.structure.length}個、各${config.lines_per_section}行。sceneには曲の題材を表す絵の場面を日本語で1文で書く。style_tailには曲調を英語で短く書く。`,
+				content: `あなたは人類観測所の作詞家・作曲家です。${brief ? "渡された企画を手掛かりにし、" : "今回の歌の核を自分で見つけ、"}その歌に固有の世界と感情を、言葉と音楽を合わせて作ります。人間への温かい関心を保ち、題材、人物、関係、視点、展開、語調、尺、歌詞の形は今回に合わせて自由に選びます。
+
+言葉と旋律の響きや歌い心地を考えます。世界観の入口、物語の作り方、語彙、反復、韻、比喩、感情の見せ方は固定しません。今回に合う表現だけを選び、不要な説明や決まり文句を避けます。
+
+ユーザーはDECO*27の「ラブパラ」の世界観づくりと歌詞づくりを好みます。曲の核から世界と言葉を一緒に組み立てる発想を参考にし、特定曲の歌詞、語句、人物、場面、筋書きは借りません。
+
+ユーザーはIMOJISTのチャンネル（https://www.youtube.com/@IMOJIST）の曲調と音作りを好みます。その好みを参考にできる場面では活かしつつ、特定の曲やチャンネルの型に固定しません。曲に合う音楽方向、テンポ、編曲、音色、歌声を自分で設計し、既存曲の旋律や固有のフレーズを写しません。
+
+歌詞は新しく書き、既存の歌詞や固有の言い回しは流用しません。titleは曲名、styleはこの曲に合わせた音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文です。`,
 			},
 			{
 				role: "user",
-				content: JSON.stringify({
-					...cell,
-					...(brief ? { brief } : {}),
-					today: getCurrentDateString(),
-					past_titles: past.map((row) => row.title),
-					past_scenes: past.map((row) => row.cell.scene),
-				}),
+				content: JSON.stringify(brief ? { brief } : {}),
 			},
 		],
 	});
@@ -187,10 +174,8 @@ async function generate(brief?: string): Promise<GenerationRow> {
 	if (brief) fs.writeJsonSync(path.join(runDir, "brief.json"), { brief });
 	fs.writeJsonSync(requestPath, {
 		id,
-		style: `${fillTemplate(config.style_template, cell)}, ${draft.style_tail}`,
-		lyrics: config.structure
-			.map((tag, i) => `[${tag}]\n${draft.sections[i]?.join("\n")}`)
-			.join("\n\n"),
+		style: draft.style,
+		lyrics: draft.lyrics.trim(),
 		cot: "full",
 		seed,
 	});
@@ -233,7 +218,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		kind: "generation",
 		id,
 		at: new Date().toISOString(),
-		cell: { ...cell, scene: draft.scene },
+		cell: { direction: draft.style },
 		title: draft.title,
 		seed,
 		audio: path.join(songDir, "audio.flac"),
@@ -261,32 +246,16 @@ function report(): void {
 	const rows = readLedger();
 	const scores = scoresOf(rows);
 	const songs = generations(rows);
-	const byAxis = Object.fromEntries(
-		Object.keys(config.axes).map((axis) => {
-			const groups = new Map<string, number[]>();
-			for (const song of songs) {
-				const score = scores.get(song.id);
-				const value = song.cell[axis];
-				if (score !== undefined && value)
-					groups.set(value, [...(groups.get(value) ?? []), score]);
-			}
-			return [
-				axis,
-				Object.fromEntries(
-					[...groups].map(([value, list]) => [
-						value,
-						{
-							n: list.length,
-							mean: list.reduce((a, b) => a + b, 0) / list.length,
-						},
-					]),
-				),
-			];
-		}),
-	);
 	console.log(
 		JSON.stringify(
-			{ songs: songs.length, rated: scores.size, by_axis: byAxis },
+			{
+				songs: songs.length,
+				rated: scores.size,
+				average_rating: scores.size
+					? [...scores.values()].reduce((sum, score) => sum + score, 0) /
+						scores.size
+					: null,
+			},
 			null,
 			2,
 		),
@@ -316,6 +285,46 @@ function probeSeconds(file: string): number {
 			file,
 		]).trim(),
 	);
+}
+
+function probeAudio(file: string): {
+	sample_rate: number;
+	channels: number;
+	channel_layout?: string;
+	seconds: number;
+} {
+	const data = JSON.parse(
+		run([
+			"ffprobe",
+			"-v",
+			"error",
+			"-select_streams",
+			"a:0",
+			"-show_entries",
+			"stream=sample_rate,channels,channel_layout",
+			"-show_entries",
+			"format=duration",
+			"-of",
+			"json",
+			file,
+		]),
+	) as {
+		streams?: Array<{
+			sample_rate?: string;
+			channels?: number;
+			channel_layout?: string;
+		}>;
+		format?: { duration?: string };
+	};
+	const stream = data.streams?.[0];
+	if (!stream?.sample_rate || !stream.channels || !data.format?.duration)
+		throw new Error(`audio metadata is missing: ${file}`);
+	return {
+		sample_rate: Number(stream.sample_rate),
+		channels: stream.channels,
+		channel_layout: stream.channel_layout,
+		seconds: Number(data.format.duration),
+	};
 }
 
 function songOfRun(dir: string): GenerationRow | undefined {
@@ -431,6 +440,201 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			),
 		}),
 	);
+}
+
+function prepareBinaural(sourceId: string, date: string, slot: string): void {
+	if (
+		!sourceId ||
+		!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+		!/^[A-Za-z0-9]+$/.test(slot)
+	)
+		throw new Error("SOURCE and alphanumeric SLOT are required");
+	const source = generations(readLedger()).find((row) => row.id === sourceId);
+	if (!source) throw new Error(`unknown source song id: ${sourceId}`);
+	if (source.truncated) throw new Error("source song is truncated");
+	if (!fs.existsSync(source.audio))
+		throw new Error(`source audio is missing: ${source.audio}`);
+	const sourceHash = sha256File(source.audio);
+	if (sourceHash !== source.audio_sha256)
+		throw new Error("source audio hash differs from the generation ledger");
+	if (!fs.existsSync(config.spatial.checkpoint_dir))
+		throw new Error("Stereo2Spatial checkpoint is missing");
+	if (!Bun.which("uv") || !Bun.which("ffmpeg") || !Bun.which("ffprobe"))
+		throw new Error("uv, ffmpeg and ffprobe must be available on PATH");
+	const { dir, runId } = runPaths(date, slot);
+	if (fs.existsSync(dir))
+		throw new Error(`binaural run already exists: ${runId}`);
+	const sourceAudio = probeAudio(source.audio);
+	if (sourceAudio.channels !== 2)
+		throw new Error("Stereo2Spatial requires a stereo source audio file");
+	const requestPath = path.join(
+		path.dirname(path.dirname(source.audio)),
+		"request.json",
+	);
+	const request = fs.readJsonSync(requestPath) as { lyrics?: string };
+	if (!request.lyrics) throw new Error("source song lyrics are missing");
+	const stageDir = fs.mkdtempSync(
+		path.join(path.dirname(dir), `.music-${date}-${slot}-`),
+	);
+	try {
+		const lyricsPath = path.join(stageDir, "lyrics.txt");
+		fs.writeFileSync(lyricsPath, request.lyrics);
+		const outputAudio = path.join(stageDir, "binaural.wav");
+		const reportPath = path.join(stageDir, "spatial-report.json");
+		run(
+			[
+				"uv",
+				"run",
+				"--project",
+				"tools/spatial-audio",
+				"--locked",
+				"--offline",
+				"stereo2spatial-infer",
+				"--checkpoint",
+				config.spatial.checkpoint_dir,
+				"--input-audio",
+				source.audio,
+				"--output-audio",
+				outputAudio,
+				"--device",
+				config.spatial.device,
+				"--report-json",
+				reportPath,
+			],
+			{ cwd: ROOT },
+		);
+		const binauralAudio = probeAudio(outputAudio);
+		if (
+			binauralAudio.sample_rate !== config.spatial.output_sample_rate ||
+			binauralAudio.channels !== 2
+		)
+			throw new Error("Stereo2Spatial did not create 48 kHz two-channel audio");
+		if (
+			Math.abs(binauralAudio.seconds - sourceAudio.seconds) >
+			config.audit.duration_tolerance_seconds
+		)
+			throw new Error("binaural audio duration differs from the source");
+		fs.writeJsonSync(
+			path.join(stageDir, "song.json"),
+			{ id: source.id },
+			{ spaces: 2 },
+		);
+		fs.writeJsonSync(
+			path.join(stageDir, "spatial.json"),
+			{
+				source_generation_id: source.id,
+				source_audio_sha256: sourceHash,
+				lyrics_sha256: sha256File(lyricsPath),
+				model_id: config.spatial.model_id,
+				model_revision: config.spatial.model_revision,
+				repository: config.spatial.repository,
+				repo_commit: config.spatial.repo_commit,
+				device: config.spatial.device,
+				output_audio_sha256: sha256File(outputAudio),
+				output_audio: binauralAudio,
+				manual_listening: "UNVERIFIED",
+			},
+			{ spaces: 2 },
+		);
+		const videoPath = path.join(stageDir, config.pv.file);
+		const pvRecordPath = path.join(stageDir, config.pv.record);
+		run(
+			[
+				"uv",
+				"run",
+				"--group",
+				"pv",
+				"python",
+				"scripts/humanity_pv.py",
+				outputAudio,
+				lyricsPath,
+				stageDir,
+			],
+			{ cwd: ROOT },
+		);
+		if (!fs.existsSync(pvRecordPath))
+			throw new Error("JIZURA render did not write its PV record");
+		const thumbnailPath = path.join(stageDir, config.thumbnail.file);
+		run([
+			"ffmpeg",
+			"-y",
+			"-loglevel",
+			"error",
+			"-ss",
+			String(config.thumbnail.at_seconds),
+			"-i",
+			videoPath,
+			"-frames:v",
+			"1",
+			"-vf",
+			`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
+			"-q:v",
+			String(config.thumbnail.quality),
+			thumbnailPath,
+		]);
+		const title = `${source.title} [バイノーラル版]${config.metadata.title_suffix}`;
+		fs.writeJsonSync(
+			path.join(stageDir, "state.json"),
+			{
+				run_id: runId,
+				bucket: config.run.bucket,
+				status: "READY",
+				video_path: videoPath,
+				thumbnail_path: thumbnailPath,
+				contains_synthetic_media: true,
+				metadata: {
+					title,
+					thumbnail_title: title,
+					description: `${fillTemplate(config.metadata.description, {
+						...source.cell,
+						title,
+						lyrics: request.lyrics,
+						ai_disclosure: config.metadata.ai_disclosure,
+						credit: `${config.metadata.credit} / Spatial audio: Stereo2Spatial`,
+					})}\n\nヘッドホン向けのバイノーラル版です。`,
+					tags: config.metadata.tags,
+				},
+			},
+			{ spaces: 2 },
+		);
+		fs.outputJsonSync(
+			path.join(stageDir, "audit", "spatial-audio.json"),
+			{
+				checks: {
+					source_audio_matches_ledger: sourceHash === source.audio_sha256,
+					binaural_audio_is_48k_stereo:
+						binauralAudio.sample_rate === config.spatial.output_sample_rate &&
+						binauralAudio.channels === 2,
+					duration_matches_source:
+						Math.abs(binauralAudio.seconds - sourceAudio.seconds) <=
+						config.audit.duration_tolerance_seconds,
+					video_matches_audio:
+						Math.abs(probeSeconds(videoPath) - binauralAudio.seconds) <=
+						config.audit.duration_tolerance_seconds,
+				},
+				manual_listening: "UNVERIFIED",
+				model: {
+					id: config.spatial.model_id,
+					revision: config.spatial.model_revision,
+					repository_commit: config.spatial.repo_commit,
+					device: config.spatial.device,
+				},
+			},
+			{ spaces: 2 },
+		);
+		if (fs.existsSync(dir))
+			throw new Error(`binaural run was created concurrently: ${runId}`);
+		fs.renameSync(stageDir, dir);
+		console.log(
+			JSON.stringify({
+				run_id: runId,
+				source: source.id,
+				binaural_audio: binauralAudio,
+			}),
+		);
+	} finally {
+		if (fs.existsSync(stageDir)) fs.removeSync(stageDir);
+	}
 }
 
 async function youtubePlaylist(date: string, slot?: string): Promise<void> {
@@ -575,9 +779,11 @@ else if (command === "full")
 			: 1,
 	);
 else if (command === "prepare") await prepare(rest[0] ?? "", rest[1]);
+else if (command === "prepare-binaural")
+	prepareBinaural(rest[0] ?? "", rest[1] ?? "", rest[2] ?? "");
 else if (command === "youtube-playlist")
 	await youtubePlaylist(rest[0] ?? "", rest[1]);
 else
 	throw new Error(
-		"usage: generate | rate <id> <score> [note] | report | playlist | preflight | full | prepare <date> [slot] | youtube-playlist <date> [slot]",
+		"usage: generate | rate <id> <score> [note] | report | playlist | preflight | full | prepare <date> [slot] | prepare-binaural <source-id> <date> <slot> | youtube-playlist <date> [slot]",
 	);

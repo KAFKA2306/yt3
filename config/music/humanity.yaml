@@ -3,15 +3,22 @@ yue:
   hf_home: /home/kafka/.cache/hf-kafka
   python: .venv/bin/python
   script: skills/yue2-music/scripts/run_yue2.py
-  device: cpu
+  device: cuda
   memory_budget_gib: 12
   license_file: /home/kafka/YuE/MODEL_LICENSE
   license_clause: Individual creators and output monetization
   min_free_vram_mib: 9000
   min_free_ram_mib: 10000
   snapshot_dir: /home/kafka/.cache/hf-kafka/hub/models--m-a-p--YuE2-3B/snapshots
+spatial:
+  repository: https://github.com/francislabountyjr/stereo2spatial
+  repo_commit: ad3c5bd519c6ff0ccfa979ef3d8230040956d0b5
+  model_id: francislabounty/stereo2spatial-v2-binaural
+  model_revision: 3abccfcac141c1effd3e260e43cd8814ae864efc
+  checkpoint_dir: /home/kafka/.cache/hf-kafka/stereo2spatial-v2-binaural/3abccfcac141c1effd3e260e43cd8814ae864efc
+  device: cuda
+  output_sample_rate: 48000
 output_dir: runs/humanity_music
-style_template: "{genre}, {tempo}, {key}, {lead}, {rhythm}, {vocal}"
 temperature: 0.9
 playlist:
   file: playlist.m3u8
@@ -20,27 +27,6 @@ playlist:
 rating:
   min: 1
   max: 5
-axes:
-  genre: [Japanese technopop, electro house, electropop, future pop, dance pop, eurobeat influenced rave pop, eurobeat]
-  tempo: ["120 BPM", "124 BPM", "126 BPM", "128 BPM", "130 BPM", "136 BPM", "146 BPM", "156 BPM", "160 BPM"]
-  key: [C major, A minor, D major, F# minor, E minor, G major, Eb major]
-  lead: [detuned supersaw lead, bright saw arpeggios, staccato synth stabs, punchy FM bass lead, glassy digital bell lead, bright saw lead with brass stabs]
-  rhythm: [sidechained pumping bass with four on the floor kick, filter sweeps with crisp digital hi-hats, sidechained chords with tight kick, glitchy percussion with rolling bass, sequenced octave bass with tight drums, staccato gated synth pluck arpeggios]
-  vocal: [cute bright synthetic female vocal, robotic autotuned female vocal, vocoder female vocal, bright pitch-corrected female vocal, processed female vocal with unison doubling, stuttered vocal chops female]
-  narrator: [一人称, 二人称, 三人称, 複数の声, 人ではないものの声]
-  time: [一瞬, 数分, 一日, 数日, 一季節, 一年, 一生]
-  expression: [会話, 独白, 手紙, 問いかけ, 列挙, 実況, 回想]
-structure: [Verse, Pre-Chorus, Chorus, Verse, Pre-Chorus, Chorus, Bridge, Chorus]
-lines_per_section: 4
-trend_rule: 作詞の前にウェブ検索で、今日の日本で話題の出来事・流行語・ヒット作・SNSの空気を調べる。その中から、生活、人間関係、社会、技術、自然などの分野が過去の曲と偏らないものを1つ選び、題材の核にする。固有名詞は使わず、他者の作品の歌詞も使わない。その題材のそばで暮らす人の、1場面を書く。
-lyrics_rule: >-
-  語り手の人称、時間の長さ、表現の形式は、渡されたnarrator、time、expressionの値に従う。
-  視点、場所、出来事、話の流れ、結末は、それぞれ曲ごとに別々に選ぶ。
-  題材、中心となる物、主要な語彙、決まり文句は、past_scenesとpast_titlesにある過去の曲と重ならないようにする。
-  感情は、曲ごとに選び、肯定的なものに限らず、怒り、無関心、葛藤、諦めなども選べる。
-  抽象的な感情の説明に頼らず、具体的な出来事、行動、会話、感覚から歌詞を組み立てる。
-  既存曲の歌詞や固有の言い回しは流用せず、自然な日本語で書く。
-  ChorusとPre-Chorusは、曲中で毎回同じ歌詞にする。VerseとBridgeは、内容を展開させる。
 run:
   bucket: humanity_observatory
   name_prefix: music-
@@ -66,14 +52,14 @@ audit:
   max_song_attempts: 3
 metadata:
   title_suffix: " | 人類観測所の音楽"
-  tags: [YuE2, AI音楽, テクノポップ, 人類観測所]
-  description: "{title}\n\n場面: {scene}\n\n{lyrics}\n\n{ai_disclosure}\n{credit}"
+  tags: [YuE2, AI音楽, 人類観測所]
+  description: "{title}\n\n{lyrics}\n\n{ai_disclosure}\n{credit}"
   credit: "Music: YuE2-3B (m-a-p) #YuE2 / Video: JIZURA (852wa, MIT) lyric motion"
   ai_disclosure: この曲の音楽、歌詞、映像はAIで生成しています。
 rights_declaration: 個人の立場の運営者として、歌詞は当該 run で新規に生成し、第三者の歌詞と音源を使っていない。
 youtube_playlist:
   title: 人類観測所の音楽
-  description: 人類の不器用さを愛おしむ曲を、少しずつ増やしています。すべてAIで生成しています。
+  description: 人の営みやそのそばの景色を、曲ごとの世界から描く音楽です。
   privacy: public
   ready_attempts: 20
   ready_interval_ms: 6000

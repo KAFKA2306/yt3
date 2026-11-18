@@ -1,0 +1,12 @@
+[project]
+name = "yt3-spatial-audio"
+version = "0.1.0"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "stereo2spatial @ git+https://github.com/francislabountyjr/stereo2spatial.git@ad3c5bd519c6ff0ccfa979ef3d8230040956d0b5",
+  "torch==2.15.0",
+  "torchaudio @ https://download-r2.pytorch.org/whl/cu132/torchaudio-2.11.1%2Bcu132-py3-none-manylinux_2_28_x86_64.whl",
+]
+
+[tool.uv]
+package = false

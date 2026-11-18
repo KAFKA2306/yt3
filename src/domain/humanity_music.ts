@@ -18,8 +18,16 @@ export const ConfigSchema = z.object({
 		min_free_ram_mib: z.number(),
 		snapshot_dir: z.string(),
 	}),
+	spatial: z.object({
+		repository: z.string(),
+		repo_commit: z.string(),
+		model_id: z.string(),
+		model_revision: z.string(),
+		checkpoint_dir: z.string(),
+		device: z.enum(["cpu", "cuda"]),
+		output_sample_rate: z.number().int().positive(),
+	}),
 	output_dir: z.string(),
-	style_template: z.string(),
 	temperature: z.number(),
 	playlist: z.object({
 		file: z.string(),
@@ -27,11 +35,6 @@ export const ConfigSchema = z.object({
 		bitrate: z.string(),
 	}),
 	rating: z.object({ min: z.number(), max: z.number() }),
-	trend_rule: z.string(),
-	axes: z.record(z.string(), z.array(z.string())),
-	structure: z.array(z.string()),
-	lines_per_section: z.number(),
-	lyrics_rule: z.string(),
 	run: z.object({ bucket: z.string(), name_prefix: z.string() }),
 	pv: z.object({
 		chrome: z.string(),
@@ -168,24 +171,6 @@ export function playlistText(
 		path.relative(outputDir, path.join(path.dirname(song.audio), audioFile)),
 	]);
 	return `#EXTM3U\n${lines.join("\n")}\n`;
-}
-
-export function rarestCell(
-	rows: LedgerRow[],
-	axes: Record<string, string[]>,
-	random: () => number,
-): Record<string, string> {
-	const cells = generations(rows).map((row) => row.cell);
-	return Object.fromEntries(
-		Object.entries(axes).map(([axis, values]) => {
-			const counts = values.map(
-				(value) => cells.filter((cell) => cell[axis] === value).length,
-			);
-			const min = Math.min(...counts);
-			const rarest = values.filter((_, i) => counts[i] === min);
-			return [axis, rarest[Math.floor(random() * rarest.length)] as string];
-		}),
-	);
 }
 
 export function fillTemplate(

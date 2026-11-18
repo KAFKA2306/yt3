@@ -140,6 +140,11 @@ providers:
     start_hour: 7
     user: "kafka"
 
+daily_publish:
+  timezone: "Asia/Tokyo"
+  resume_date: "2026-11-18"
+  publish_approved: true
+
 dashboard:
   port: 3000
 

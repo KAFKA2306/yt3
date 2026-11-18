@@ -210,7 +210,7 @@ function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 		"あなたは夜話アーカイブの制作AIです。次のYAMLは目的と参考情報です。",
 		JSON.stringify(config.creative),
 		"固有の魅力を持つ成人人物の日本語音声作品を創作してください。状況、人物、形式、尺、声、演技、画風は作品ごとに決め、既成の型を前提にしません。",
-		"声の好みは参考で条件ではありません。voices.captionに質感、各performance.actingに演技を書き、reference_textは必要な声だけに任意で付けてcaptionと整合させます。",
+		"声の好みは聴き心地の参考です。今回の人物に合う声優像を新たに設計し、好みの音域・共鳴・息・話速・甘さを固定値にせず、別作品のcaptionや音声参照をそのまま引き継ぎません。作品内では人物の声を保ちながら、場面ごとのactingで自然に表情を変えます。voices.captionに質感を書き、reference_textは必要な声だけに任意で付けてcaptionと整合させます。",
 		"使えるツール: " +
 			JSON.stringify({
 				tts: tools.tts,
@@ -232,7 +232,7 @@ function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 			),
 		"先にタイトル案だけを見て内容・聴く価値・曖昧さを批判し、その指摘を台本と照合して改題します。専門用語、作業報告調、発見の見えにくさ、長すぎる説明を見直します。",
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
-		"JSONのみ。title、voices[{id,caption,reference_text?}]、production{tts_backend,image_tool?,video?,cover_size?,thumbnail_size?,mix?,motion?}を含めます。cover_promptとthumbnail_promptは任意です。performances/chaptersは任意で単独・併用可。各performanceのtextは必須、acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
+		"JSONのみ。title、voices[{id,caption,reference_text?}]、production{tts_backend,image_tool?,video?,cover_size?,thumbnail_size?,mix?,motion?}を含めます。cover_promptとthumbnail_promptは任意です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
 	].join("\n");
 }
 

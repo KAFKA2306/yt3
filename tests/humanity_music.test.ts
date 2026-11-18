@@ -13,7 +13,7 @@ const song = (id: string, at: string, seconds = 180): GenerationRow => ({
 	kind: "generation",
 	id,
 	at,
-	cell: { time: "夜", season: "春の雨" },
+	cell: { direction: "A song-specific sound selected for its own idea" },
 	title: id,
 	seed: 7,
 	audio: `/x/${id}/song/audio.flac`,
@@ -32,15 +32,6 @@ const passing = (): MusicAuditInput => ({
 	pv: { tool: "jizura", jizura_version: "0.10.1", sha256: "cc" },
 	videoSha256: "cc",
 	lyricsGenerated: true,
-});
-
-describe("humanity music style", () => {
-	test("every style_template placeholder names an axis", () => {
-		const placeholders = [...config.style_template.matchAll(/\{(\w+)\}/g)].map(
-			(match) => match[1] as string,
-		);
-		expect(placeholders.every((key) => key in config.axes)).toBe(true);
-	});
 });
 
 describe("humanity music ledger", () => {
