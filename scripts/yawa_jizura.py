@@ -293,8 +293,12 @@ def render(args: argparse.Namespace) -> dict[str, Any]:
             expected_height,
         ):
             raise RuntimeError("JIZURA export dimensions do not match the selected project")
-        if abs(raw_info["seconds"] - audio_info["seconds"]) > max(0.1, 2 / float(runtime["video"]["fps"])):
-            raise RuntimeError(f"JIZURA export is {raw_info['seconds']:.3f}s; audio is {audio_info['seconds']:.3f}s")
+        duration_tolerance = max(0.1, 2 / float(runtime["video"]["fps"]))
+        if raw_info["seconds"] + duration_tolerance < audio_info["seconds"]:
+            raise RuntimeError(
+                f"JIZURA export is shorter ({raw_info['seconds']:.3f}s) than source audio "
+                f"({audio_info['seconds']:.3f}s)"
+            )
 
         subprocess.run(
             [
@@ -349,6 +353,7 @@ def render(args: argparse.Namespace) -> dict[str, Any]:
             "video_sha256": sha256(output),
             "subtitle_count": subtitle_count,
             "subtitle_timing_seconds": round(subtitle_duration, 3),
+            "jizura_export_seconds": round(raw_info["seconds"], 3),
             "video_seconds": round(final_info["seconds"], 3),
             "width": final_info["width"],
             "height": final_info["height"],
