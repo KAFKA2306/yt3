@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
@@ -68,6 +69,10 @@ function writeTextAtomic(file: string, value: string): void {
 	const temp = `${file}.${process.pid}.tmp`;
 	fs.writeFileSync(temp, value);
 	fs.renameSync(temp, file);
+}
+
+function fileHash(file: string): string {
+	return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 }
 
 function probeSeconds(file: string): number {
@@ -186,6 +191,15 @@ function preflight(
 		Bun.which("ffmpeg") ? "" : "ffmpeg is not on PATH",
 		Bun.which("ffprobe") ? "" : "ffprobe is not on PATH",
 		Bun.which("uv") ? "" : "uv is not on PATH",
+		fs.existsSync(path.join(ROOT, config.jizura.html))
+			? ""
+			: "vendored JIZURA is missing",
+		fs.existsSync(path.join(ROOT, config.jizura.version_file))
+			? ""
+			: "JIZURA version file is missing",
+		fs.existsSync(config.jizura.chrome)
+			? ""
+			: "Chrome is required for JIZURA MP4 export",
 		tools.tts.length > 0
 			? ""
 			: "no configured Irodori environment is available",
@@ -215,10 +229,11 @@ function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 			JSON.stringify({
 				tts: tools.tts,
 				images: imageTools,
-				video: ["ffmpeg"],
+				video: ["JIZURA"],
 			}),
-		"音声を先に完成させます。画像生成は任意の添え物です。YAWA_GENERATE_IMAGES=1のときだけ画像ツールを使えます。通常は画像生成を省き、音声波形の動画を作って公開準備を優先します。画像が生成できない場合も公開準備を続けます。video.width/heightは偶数で選び、mixとmotionは必要な場合のみ指定します。",
-		"画像を使う場合は作品固有のcover_promptとthumbnail_promptを指定します。共通の画風・色・構図は追加しません。対応サイズ: " +
+		`動画は必ずJIZURAで制作し、各performanceの台詞を実際の音声時刻に合わせた字幕として使います。JIZURAの見た目は作品ごとに選びます。任意のproduction.jizura_themeには次の値を指定できます: lyricpv, kinetic, wa, horror, pop, ballad。未指定ならJIZURAのおまかせを使います。FFmpegは元音声の合成と最終エンコードだけに使います。`,
+		"音声を先に完成させます。画像生成は任意の添え物です。YAWA_GENERATE_IMAGES=1のときだけサムネイル画像を生成し、画像が作れなくてもJIZURA動画を制作して公開準備を続けます。mixは必要な場合のみ指定します。video.width/heightはJIZURAが対応する比率（16:9、9:16、4:3、3:4、1:1、4:5、21:9）にします。",
+		"サムネイル画像を使う場合は作品固有のthumbnail_promptを指定します。共通の画風・色・構図は追加しません。対応サイズ: " +
 			JSON.stringify(
 				Object.fromEntries(
 					imageTools.map((id) => [
@@ -232,7 +247,7 @@ function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 			),
 		"先にタイトル案だけを見て内容・聴く価値・曖昧さを批判し、その指摘を台本と照合して改題します。専門用語、作業報告調、発見の見えにくさ、長すぎる説明を見直します。",
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
-		"JSONのみ。title、voices[{id,caption,reference_text?}]、production{tts_backend,image_tool?,video?,cover_size?,thumbnail_size?,mix?,motion?}を含めます。cover_promptとthumbnail_promptは任意です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
+		"JSONのみ。title、voices[{id,caption,reference_text?}]、production{tts_backend,image_tool?,video?,jizura_theme?,thumbnail_size?,mix?}を含めます。thumbnail_promptは任意です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
 	].join("\n");
 }
 
@@ -669,18 +684,14 @@ function renderImages(
 	draft: ScriptDraft,
 	dir: string,
 ): {
-	cover?: string;
 	thumbnail?: string;
 } {
-	const cover = path.join(dir, "cover.png");
 	const thumbnailSource = path.join(dir, "thumbnail_source.png");
 	const thumbnail = path.join(dir, config.thumbnail.file);
 	const toolId = draft.production.image_tool;
 	const imageSettings = toolId ? config.image_tools[toolId] : undefined;
 	const enabled = process.env.YAWA_GENERATE_IMAGES === "1";
-	const requested = Boolean(
-		enabled && toolId && (draft.cover_prompt || draft.thumbnail_prompt),
-	);
+	const requested = Boolean(enabled && toolId && draft.thumbnail_prompt);
 	const errors: string[] = [];
 	const readable = (file: string) => {
 		try {
@@ -689,36 +700,23 @@ function renderImages(
 			return false;
 		}
 	};
-	const existing = {
-		...(readable(cover) ? { cover } : {}),
-		...(readable(thumbnail) ? { thumbnail } : {}),
-	};
+	const existing = readable(thumbnail) ? { thumbnail } : {};
 	if (!enabled) return record(existing, "YAWA_GENERATE_IMAGES is not enabled");
 	if (!requested)
 		return record(existing, "no image tool or image prompt selected");
 	if (requested && (!imageSettings || !Bun.which(imageSettings.command))) {
 		errors.push(`image tool unavailable: ${toolId}`);
-	} else if (requested && imageSettings && toolId) {
-		for (const item of [
-			{
-				prompt: draft.cover_prompt,
-				target: cover,
-				size: draft.production.cover_size ?? imageSettings.size,
-				stage: "cover-generation",
-			},
-			{
-				prompt: draft.thumbnail_prompt,
-				target: thumbnailSource,
-				size: draft.production.thumbnail_size ?? imageSettings.size,
-				stage: "thumbnail-generation",
-			},
-		]) {
-			if (!item.prompt) continue;
-			try {
-				generateImage(toolId, item.prompt, item.size, item.target, item.stage);
-			} catch (error) {
-				errors.push(error instanceof Error ? error.message : String(error));
-			}
+	} else if (requested && imageSettings && toolId && draft.thumbnail_prompt) {
+		try {
+			generateImage(
+				toolId,
+				draft.thumbnail_prompt,
+				draft.production.thumbnail_size ?? imageSettings.size,
+				thumbnailSource,
+				"thumbnail-generation",
+			);
+		} catch (error) {
+			errors.push(error instanceof Error ? error.message : String(error));
 		}
 		if (readable(thumbnailSource)) {
 			if (!readable(thumbnail)) {
@@ -754,24 +752,20 @@ function renderImages(
 						"generated thumbnail dimensions differ from runtime settings",
 					);
 				} else {
-					return record({ cover, thumbnail });
+					return record({ thumbnail });
 				}
 			}
 		}
 	}
 	return record({
-		...(readable(cover) ? { cover } : {}),
 		...(readable(thumbnail) ? { thumbnail } : {}),
 	});
 
-	function record(
-		outputs: { cover?: string; thumbnail?: string },
-		reason?: string,
-	) {
+	function record(outputs: { thumbnail?: string }, reason?: string) {
 		const status = !requested
 			? "omitted"
 			: errors.length
-				? outputs.cover || outputs.thumbnail
+				? outputs.thumbnail
 					? "partial"
 					: "failed"
 				: "complete";
@@ -796,17 +790,32 @@ function renderImages(
 	}
 }
 
-function renderVideo(
-	draft: ScriptDraft,
-	audio: string,
-	cover: string | undefined,
-	dir: string,
-): string {
+function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
 	const output = path.join(dir, config.video.file);
 	const audioSeconds = probeSeconds(audio);
 	const { width, height } = draft.production.video ?? config.video;
-	const { fps } = config.video;
+	const record = path.join(dir, `${path.parse(output).name}.jizura.json`);
+	const audioHash = fileHash(audio);
 	if (fs.existsSync(output)) {
+		if (!fs.existsSync(record))
+			throw new StepFailure(
+				"video-render",
+				"existing video has no JIZURA provenance; use a fresh run ID",
+			);
+		const provenance = fs.readJsonSync(record) as {
+			tool?: string;
+			source_audio_sha256?: string;
+			video_sha256?: string;
+		};
+		if (
+			provenance.tool !== "JIZURA" ||
+			provenance.source_audio_sha256 !== audioHash ||
+			provenance.video_sha256 !== fileHash(output)
+		)
+			throw new StepFailure(
+				"video-render",
+				"existing JIZURA video provenance does not match its audio or file",
+			);
 		const existing = probeVideo(output);
 		if (
 			Math.abs(existing.seconds - audioSeconds) >
@@ -820,95 +829,50 @@ function renderVideo(
 			);
 		return output;
 	}
-	const move = draft.production.motion;
-	const waveHeight = Math.max(64, Math.floor(height / 12) * 2);
-	const waveTop = Math.floor((height - waveHeight) / 4) * 2;
-	const waveRate = Math.max(8, Math.floor(fps / 2));
-	const waveformFilter = [
-		`[0:a]showwaves=s=${width}x${waveHeight}:mode=cline:rate=${waveRate}:colors=0x76838a`,
-		`pad=${width}:${height}:0:${waveTop}:color=black`,
-		`fps=${fps}`,
-		"format=yuv420p[v]",
-	].join(",");
-	const motionFilter = move
-		? (() => {
-				const frames = Math.max(1, Math.ceil(audioSeconds * fps));
-				const interpolate = (start: number, end: number) =>
-					`(${start}+(${end}-${start})*on/${frames})`;
-				return `zoompan=z='${interpolate(move.zoom_start, move.zoom_end)}':x='(iw-iw/zoom)*${interpolate(move.x_start, move.x_end)}':y='(ih-ih/zoom)*${interpolate(move.y_start, move.y_end)}':d=1:s=${width}x${height}:fps=${fps}`;
-			})()
-		: undefined;
-	const filter = [
-		`scale=${width * 2}:${height * 2}:force_original_aspect_ratio=increase`,
-		`crop=${width * 2}:${height * 2}`,
-		...(motionFilter ? [motionFilter] : [`scale=${width}:${height}`]),
-		"format=yuv420p",
-	].join(",");
-	const temp = path.join(dir, `.video.${process.pid}.tmp.mp4`);
-	try {
-		const input = cover
-			? [
-					"-loop",
-					"1",
-					"-framerate",
-					String(fps),
-					"-i",
-					cover,
-					"-i",
-					audio,
-					"-vf",
-					filter,
-					"-map",
-					"0:v:0",
-					"-map",
-					"1:a:0",
-				]
-			: [
-					"-i",
-					audio,
-					"-filter_complex",
-					waveformFilter,
-					"-map",
-					"[v]",
-					"-map",
-					"0:a:0",
-				];
-		run("video-render", [
-			"ffmpeg",
-			"-y",
-			"-loglevel",
-			"error",
-			...input,
-			"-t",
-			String(audioSeconds),
-			"-c:v",
-			"libx264",
-			"-crf",
-			String(config.video.crf),
-			"-c:a",
-			"aac",
-			"-b:a",
-			config.video.audio_bitrate,
-			"-shortest",
-			"-movflags",
-			"+faststart",
-			temp,
-		]);
-		const rendered = probeVideo(temp);
-		if (
-			Math.abs(rendered.seconds - audioSeconds) >
-				config.audit.duration_tolerance_seconds ||
-			rendered.width !== width ||
-			rendered.height !== height
-		)
-			throw new StepFailure(
-				"video-check",
-				`video ${rendered.width}x${rendered.height} ${rendered.seconds.toFixed(2)}s differs from expected output`,
-			);
-		fs.renameSync(temp, output);
-	} finally {
-		if (fs.existsSync(temp)) fs.removeSync(temp);
-	}
+	run("video-render", [
+		"uv",
+		"run",
+		"--frozen",
+		"--group",
+		"pv",
+		"python",
+		"scripts/yawa_jizura.py",
+		"--audio",
+		audio,
+		"--script",
+		path.join(dir, "script.json"),
+		"--tts-dir",
+		path.join(dir, "tts"),
+		"--output",
+		output,
+	]);
+	if (!fs.existsSync(record))
+		throw new StepFailure("video-render", "JIZURA provenance was not recorded");
+	const provenance = fs.readJsonSync(record) as {
+		tool?: string;
+		source_audio_sha256?: string;
+		video_sha256?: string;
+	};
+	if (
+		provenance.tool !== "JIZURA" ||
+		provenance.source_audio_sha256 !== audioHash ||
+		provenance.video_sha256 !== fileHash(output)
+	)
+		throw new StepFailure(
+			"video-render",
+			"JIZURA provenance does not match its audio or file",
+		);
+	const rendered = probeVideo(output);
+	if (
+		Math.abs(rendered.seconds - audioSeconds) >
+			config.audit.duration_tolerance_seconds ||
+		rendered.width !== width ||
+		rendered.height !== height
+	)
+		throw new StepFailure(
+			"video-check",
+			`video ${rendered.width}x${rendered.height} ${rendered.seconds.toFixed(2)}s differs from expected output`,
+		);
 	return output;
 }
 
@@ -976,7 +940,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 		stage = "image-production";
 		const images = renderImages(draft, dir);
 		stage = "video-render";
-		const video = renderVideo(draft, audio, images.cover, dir);
+		const video = renderVideo(draft, audio, dir);
 		const audioSeconds = probeSeconds(audio);
 		const videoSeconds = probeVideo(video).seconds;
 		const title = buildTitle(draft);

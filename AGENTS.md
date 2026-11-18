@@ -67,6 +67,12 @@ Each episode chooses its own opening, pacing, shape, and ending. Do not require 
 
 Feature, production, and authenticity findings remain available as diagnostics. They inform review but do not prescribe a recurring style or block daily publication.
 
+## Yawa video visuals
+
+Every Yawa video is rendered through the vendored JIZURA. FFmpeg may mux the original audio and encode the final file.
+
+Use timestamped episode dialogue as JIZURA subtitles, and let each episode choose its visual direction.
+
 ## Evidence and credentials
 
 - Repository checks prove only the revision they executed. Product, runtime, and publication states need direct evidence; unchecked layers stay UNVERIFIED.

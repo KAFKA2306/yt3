@@ -46,8 +46,13 @@ const RuntimeSchema = z
 			width: z.number().int().positive(),
 			height: z.number().int().positive(),
 			fps: z.number().positive(),
-			crf: z.number().int().min(0).max(51),
 			audio_bitrate: z.string().min(1),
+		}),
+		jizura: z.object({
+			html: z.string().min(1),
+			version_file: z.string().min(1),
+			chrome: z.string().min(1),
+			export_timeout_ms: z.number().int().positive(),
 		}),
 		thumbnail: z.object({
 			file: z.string().min(1),
@@ -81,21 +86,13 @@ const VoiceSchema = z
 	})
 	.passthrough();
 
-const MotionSchema = z
-	.object({
-		zoom_start: z.number().min(1),
-		zoom_end: z.number().min(1),
-		x_start: z.number().min(0).max(1),
-		x_end: z.number().min(0).max(1),
-		y_start: z.number().min(0).max(1),
-		y_end: z.number().min(0).max(1),
-	})
-	.passthrough();
-
 const ProductionSchema = z
 	.object({
 		tts_backend: z.string().min(1),
 		image_tool: z.string().min(1).optional(),
+		jizura_theme: z
+			.enum(["lyricpv", "kinetic", "wa", "horror", "pop", "ballad"])
+			.optional(),
 		mix: z
 			.object({
 				target_lufs: z.number().finite(),
@@ -119,9 +116,7 @@ const ProductionSchema = z
 			})
 			.passthrough()
 			.optional(),
-		cover_size: z.string().min(1).optional(),
 		thumbnail_size: z.string().min(1).optional(),
-		motion: MotionSchema.optional(),
 	})
 	.passthrough();
 
@@ -143,7 +138,6 @@ const DraftShape = z
 			)
 			.min(1)
 			.optional(),
-		cover_prompt: z.string().min(1).optional(),
 		thumbnail_prompt: z.string().min(1).optional(),
 		production: ProductionSchema,
 	})
