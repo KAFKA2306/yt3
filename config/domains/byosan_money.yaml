@@ -443,7 +443,7 @@ feature_production:
     h264_profile: "high"
     pixel_format: "yuv420p"
     color_standard: "bt709"
-    encoder_probe_source: "color=c=black:s=64x64:d=0.05"
+    encoder_probe_source: "color=c=black:s=1280x720:d=0.05"
     nvenc:
       codec: "h264_nvenc"
       args: ["-preset", "p5", "-rc", "vbr", "-cq", "15", "-b:v", "16M", "-maxrate", "24M", "-bufsize", "32M"]
