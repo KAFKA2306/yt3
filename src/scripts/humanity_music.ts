@@ -90,7 +90,7 @@ function ensureStoryWorld(): {
 	return { world, generation };
 }
 
-function previousStories(worldHash: string): PreviousStory[] {
+function previousStories(): PreviousStory[] {
 	if (!fs.existsSync(outputDir)) return [];
 	return fs
 		.readdirSync(outputDir, { withFileTypes: true })
@@ -102,7 +102,6 @@ function previousStories(worldHash: string): PreviousStory[] {
 		.filter(({ file }) => fs.existsSync(file))
 		.map(({ id, file }) => {
 			const record = fs.readJsonSync(file) as Record<string, unknown>;
-			if (record.world_bible_sha256 !== worldHash) return null;
 			return {
 				id,
 				title: z.string().parse(record.title),
@@ -111,7 +110,6 @@ function previousStories(worldHash: string): PreviousStory[] {
 				relationship: z.string().parse(record.relationship),
 			};
 		})
-		.filter((record): record is PreviousStory => record !== null)
 		.sort((a, b) => b.id.localeCompare(a.id))
 		.slice(0, 8)
 		.reverse();
@@ -239,13 +237,15 @@ async function generate(brief?: string): Promise<GenerationRow> {
 	preflight();
 	const worldRecord = ensureStoryWorld();
 	const worldHash = sha256File(worldPath);
-	const previous = previousStories(worldHash);
+	const previous = previousStories();
 	const context = {
 		brief: brief ?? null,
 		mission:
 			"毎曲に伝えたいコンセプトと物語を持たせ、共通の世界と人物関係が曲をまたいで育つ音楽レーベルを作る。各曲は初聴きでも単独で楽しめる。",
 		preferences:
 			"HoneyWorksに感じる、人物と関係が初聴きでも分かる明快さと、出来事が歌を通して進むストーリー性。IMOJISTの曲調と音作り。いずれも固有表現を借りず、人類観測所の世界に合う形へ発展させる。",
+		history_use:
+			"previous_storiesは過去作品であり、重複を避けるための参考です。現在のworldが正本です。過去作品の人物設定や世界設定が現在と異なる場合、古い設定を引き継がず、題材・出来事・小道具・感情の流れの反復を避けてください。",
 		world: worldRecord.world,
 		previous_stories: previous,
 	};
