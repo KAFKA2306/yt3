@@ -101,8 +101,6 @@ task improve:report
 
 `publish:visibility-audit` is the single operator read-back for current YouTube visibility. It is non-mutating unless repair mode is explicitly enabled.
 
-`SCOPE=source` is the repository invariant; `SCOPE=runtime` checks historical production cleanup. Runtime cleanup is not a PR merge blocker.
-
 ## Other operator surfaces
 
 ```bash
