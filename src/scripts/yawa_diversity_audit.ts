@@ -142,7 +142,7 @@ try {
 			"codex",
 			"exec",
 			"-m",
-			loadYawaConfig(ROOT).script.model,
+			loadYawaConfig(ROOT).audit.model,
 			"--sandbox",
 			"read-only",
 			"--skip-git-repo-check",

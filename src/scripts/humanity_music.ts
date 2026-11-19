@@ -3,9 +3,20 @@ import fs from "fs-extra";
 import { google } from "googleapis";
 import { z } from "zod";
 import {
+	TitleFitSchema,
+	TitleProposalSchema,
+	TitleReviewSchema,
+	titleFitPrompt,
+	titleOnlyPrompt,
+	titleProposalPrompt,
+} from "../domain/creative_authoring.js";
+import {
 	fillTemplate,
 	type GenerationRow,
 	generations,
+	HumanityJizuraPlanRecordSchema,
+	HumanityJizuraPlanSchema,
+	HumanityStoryWorldSchema,
 	type LedgerRow,
 	loadMusicConfig,
 	musicAudit,
@@ -23,16 +34,88 @@ import {
 	createYouTubeOAuthClient,
 	YOUTUBE_PROFILES,
 } from "../domain/youtube_profiles.js";
-import { getCurrentDateString, invokeStructuredLlm, ROOT } from "../io/core.js";
+import {
+	AGY_CREATIVE_MODEL,
+	type AgyReceipt,
+	invokeAgyStructured,
+} from "../io/agy.js";
+import { getCurrentDateString, ROOT } from "../io/core.js";
 
 const config = loadMusicConfig(ROOT);
 const outputDir = path.join(ROOT, config.output_dir);
+const worldPath = path.join(ROOT, "docs/humanity/story-world.json");
 const ledgerPath = path.join(outputDir, "ledger.jsonl");
 const DraftSchema = z.object({
 	title: z.string().min(1),
+	concept: z.string().min(1),
+	story: z.string().min(1),
+	relationship: z.string().min(1),
 	style: z.string().min(1),
 	lyrics: z.string().min(1),
+	jizura: HumanityJizuraPlanSchema,
 });
+
+type PreviousStory = {
+	id: string;
+	title: string;
+	concept: string;
+	story: string;
+	relationship: string;
+};
+
+function ensureStoryWorld(): {
+	world: z.infer<typeof HumanityStoryWorldSchema>;
+	generation: { receipt: AgyReceipt } | null;
+} {
+	if (fs.existsSync(worldPath)) {
+		return {
+			world: HumanityStoryWorldSchema.parse(fs.readJsonSync(worldPath)),
+			generation: null,
+		};
+	}
+	const generation = invokeAgyStructured({
+		name: "humanity_story_world",
+		schema: HumanityStoryWorldSchema,
+		prompt: [
+			"雨晴はうの人類観測所のため、今後の複数曲が共有できる、独自の物語世界と人間関係の基盤を設計してください。",
+			"指定された構造化出力スキーマの全項目を満たすJSONオブジェクトだけを返してください。",
+			"聴き手が人物と関係をすぐ理解できる明快さ、歌ごとのコンセプトと出来事のつながりを大切にします。HoneyWorksに感じる人物関係の分かりやすさや物語性は好みの方向として参考にしますが、歌詞、人物、筋書き、固有表現、音楽、見せ方を模倣しません。",
+			"人間への温かな関心を保ち、複数の人物と関係が自然につながり、恋愛だけに限らず多様な曲を生める世界にしてください。各曲は初めて聴いても単独で楽しめ、後の曲で関係が少しずつ深まる余地を残します。",
+			"共有世界は曲の発想を助ける背景であり、毎曲に同じ天気、出来事の大きさ、視点、構成、季節進行、小道具を要求しません。細かな設定を増やし過ぎず、世界の核、場所、人物の個性、関係の接点、変化の余白を短く具体的に決めます。既存曲を下敷きにしません。",
+		].join("\n"),
+	});
+	const world = HumanityStoryWorldSchema.parse(generation.value);
+	fs.ensureDirSync(path.dirname(worldPath));
+	fs.writeJsonSync(worldPath, world, { spaces: 2 });
+	return { world, generation };
+}
+
+function previousStories(worldHash: string): PreviousStory[] {
+	if (!fs.existsSync(outputDir)) return [];
+	return fs
+		.readdirSync(outputDir, { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => ({
+			id: entry.name,
+			file: path.join(outputDir, entry.name, "creative_authoring.json"),
+		}))
+		.filter(({ file }) => fs.existsSync(file))
+		.map(({ id, file }) => {
+			const record = fs.readJsonSync(file) as Record<string, unknown>;
+			if (record.world_bible_sha256 !== worldHash) return null;
+			return {
+				id,
+				title: z.string().parse(record.title),
+				concept: z.string().parse(record.concept),
+				story: z.string().parse(record.story),
+				relationship: z.string().parse(record.relationship),
+			};
+		})
+		.filter((record): record is PreviousStory => record !== null)
+		.sort((a, b) => b.id.localeCompare(a.id))
+		.slice(0, 8)
+		.reverse();
+}
 
 function readLedger(): LedgerRow[] {
 	return fs.existsSync(ledgerPath)
@@ -72,6 +155,24 @@ function run(
 	return `${result.stdout.toString()}${result.stderr.toString()}`;
 }
 
+function loadJizuraPlan(generationDir: string, generationId: string): string {
+	const planPath = path.join(generationDir, "jizura.json");
+	const plan = HumanityJizuraPlanRecordSchema.parse(fs.readJsonSync(planPath));
+	if (plan.generation_id !== generationId)
+		throw new Error("JIZURA plan belongs to a different music generation");
+	const authoring = fs.readJsonSync(
+		path.join(generationDir, "creative_authoring.json"),
+	) as { jizura_plan?: { path?: string; sha256?: string } };
+	if (
+		authoring.jizura_plan?.path !== "jizura.json" ||
+		authoring.jizura_plan.sha256 !== sha256File(planPath)
+	)
+		throw new Error(
+			"JIZURA plan reference or hash does not match its canonical record",
+		);
+	return planPath;
+}
+
 function preflight(): void {
 	const freeVram =
 		config.yue.device === "cuda"
@@ -100,9 +201,7 @@ function preflight(): void {
 		config.yue.device !== "cpu" || freeRam >= config.yue.min_free_ram_mib
 			? ""
 			: `free RAM ${freeRam} MiB < ${config.yue.min_free_ram_mib} MiB for CPU generation`,
-		Bun.spawnSync(["codex", "login", "status"]).exitCode === 0
-			? ""
-			: "codex is not logged in",
+		Bun.which("agy") ? "" : "agy CLI is not on PATH",
 		fs.existsSync(config.pv.chrome) ? "" : "pv chrome is missing",
 		fs.existsSync(path.join(ROOT, config.pv.jizura_html))
 			? ""
@@ -138,46 +237,116 @@ function preflight(): void {
 
 async function generate(brief?: string): Promise<GenerationRow> {
 	preflight();
-	const draft = await invokeStructuredLlm({
-		schema: DraftSchema,
-		name: "humanity_music_draft",
-		llmOptions: {
-			domainId: "humanity_observatory",
-			temperature: config.temperature,
-		},
-		messages: () => [
-			{
-				role: "system",
-				content: `あなたは人類観測所の作詞家・作曲家です。${brief ? "渡された企画を手掛かりにし、" : "今回の歌の核を自分で見つけ、"}その歌に固有の世界と感情を、言葉と音楽を合わせて作ります。人間への温かい関心を保ち、題材、人物、関係、視点、展開、語調、尺、歌詞の形は今回に合わせて自由に選びます。
-
-言葉と旋律の響きや歌い心地を考えます。世界観の入口、物語の作り方、語彙、反復、韻、比喩、感情の見せ方は固定しません。今回に合う表現だけを選び、不要な説明や決まり文句を避けます。
-
-ユーザーはDECO*27の「ラブパラ」の世界観づくりと歌詞づくりを好みます。曲の核から世界と言葉を一緒に組み立てる発想を参考にし、特定曲の歌詞、語句、人物、場面、筋書きは借りません。
-
-ユーザーはIMOJISTのチャンネル（https://www.youtube.com/@IMOJIST）の曲調と音作りを好みます。その好みを参考にできる場面では活かしつつ、特定の曲やチャンネルの型に固定しません。曲に合う音楽方向、テンポ、編曲、音色、歌声を自分で設計し、既存曲の旋律や固有のフレーズを写しません。
-
-歌詞は新しく書き、既存の歌詞や固有の言い回しは流用しません。titleは曲名、styleはこの曲に合わせた音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文です。`,
-			},
-			{
-				role: "user",
-				content: JSON.stringify(brief ? { brief } : {}),
-			},
-		],
+	const worldRecord = ensureStoryWorld();
+	const worldHash = sha256File(worldPath);
+	const previous = previousStories(worldHash);
+	const context = {
+		brief: brief ?? null,
+		mission:
+			"毎曲に伝えたいコンセプトと物語を持たせ、共通の世界と人物関係が曲をまたいで育つ音楽レーベルを作る。各曲は初聴きでも単独で楽しめる。",
+		preferences:
+			"HoneyWorksに感じる、人物と関係が初聴きでも分かる明快さと、出来事が歌を通して進むストーリー性。IMOJISTの曲調と音作り。いずれも固有表現を借りず、人類観測所の世界に合う形へ発展させる。",
+		world: worldRecord.world,
+		previous_stories: previous,
+	};
+	const titleProposal = invokeAgyStructured({
+		name: "humanity_title_proposal",
+		schema: TitleProposalSchema,
+		prompt: titleProposalPrompt({ brand: "雨晴はうの人類観測所", context }),
 	});
+	const titleReview = invokeAgyStructured({
+		name: "humanity_title_review",
+		schema: TitleReviewSchema,
+		prompt: titleOnlyPrompt({
+			brand: "雨晴はうの人類観測所",
+			title: titleProposal.value.title,
+		}),
+	});
+	const authored = invokeAgyStructured({
+		name: "humanity_song_draft",
+		schema: DraftSchema,
+		prompt: [
+			"あなたは人類観測所の作詞家・作曲家です。今回の歌が伝えるコンセプト、人物の関係、出来事、感情の変化をひとつの体験として作り、歌詞と音楽を一緒に設計してください。",
+			"共有世界と過去の曲を踏まえ、人物や関係が曲をまたいで育つ余地を作ります。初めて聴く人にも、誰が誰に何を望み、何が変わったかが伝わることを大切にします。毎曲の天気、出来事の大きさ、視点、構成、季節進行、小道具を固定せず、今回の核に合う語り方を選びます。",
+			"HoneyWorksに感じる人物関係の明快さとストーリー性、IMOJISTの曲調と音作りを好みの参考にします。既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは借りず、今回に合う音楽方向、テンポ、編曲、音色、歌声を設計してください。",
+			"歌詞は新しく書きます。titleは曲名、conceptは一文で伝わる今回の核、storyは出来事と感情の変化、relationshipは共有世界との接点、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文です。jizuraはJIZURAで歌詞を物語に沿って見せる計画にします。",
+			`選んだタイトル: ${titleProposal.value.title}`,
+			`タイトルだけの批評: ${JSON.stringify(titleReview.value)}`,
+			"このタイトルの約束に沿う曲を作り、titleには選んだタイトルをそのまま入れてください。",
+			"JIZURAテーマは、利用可能な lyricpv, kinetic, wa, horror, pop, ballad の中から歌の物語と音に最も合うものを選びます。unifyは反復する言葉やイメージを映像でも結び付けたい場合、typesetは歌詞の読みやすさを整えたい場合に選びます。paletteは物語の象徴をアクセントで感じさせる3色の6桁HEX値です。JIZURAのテーマ既定色を土台にし、アクセント色と色ずれ効果の2色へ実際に適用します。",
+			`企画の手掛かり: ${JSON.stringify(context)}`,
+		].join("\n\n"),
+	});
+	const draft = authored.value;
+	const titleFit = invokeAgyStructured({
+		name: "humanity_title_body_review",
+		schema: TitleFitSchema,
+		prompt: titleFitPrompt({
+			brand: "雨晴はうの人類観測所",
+			initialTitle: titleProposal.value.title,
+			titleReview: titleReview.value,
+			body: `完成稿のタイトル: ${draft.title}\nコンセプト: ${draft.concept}\n物語: ${draft.story}\n人物関係: ${draft.relationship}\n音楽方向: ${draft.style}\n\n完成歌詞:\n${draft.lyrics}`,
+		}),
+	});
+	draft.title = titleFit.value.title;
 	const stamp = new Date().toISOString().replaceAll(/[-:.]/g, "").slice(0, 15);
 	const id = `${getCurrentDateString()}-${stamp}`;
-	const seed = Math.floor(Math.random() * 2 ** 31);
+	const musicSeed = Math.floor(Math.random() * 2 ** 31);
+	const jizuraSeed = Math.floor(Math.random() * 2 ** 31);
 	const runDir = path.join(outputDir, id);
 	const songDir = path.join(runDir, "song");
 	const requestPath = path.join(runDir, "request.json");
 	fs.ensureDirSync(runDir);
+	const jizuraPlanPath = path.join(runDir, "jizura.json");
+	const jizuraPlan = HumanityJizuraPlanRecordSchema.parse({
+		...draft.jizura,
+		version: 1,
+		generation_id: id,
+		title: draft.title,
+		seed: jizuraSeed,
+	});
+	fs.writeJsonSync(jizuraPlanPath, jizuraPlan, { spaces: 2 });
+	fs.writeJsonSync(path.join(runDir, "creative_authoring.json"), {
+		model: AGY_CREATIVE_MODEL,
+		world_bible: worldRecord.world,
+		world_bible_sha256: worldHash,
+		world_bible_generation: worldRecord.generation
+			? {
+					usage: worldRecord.generation.receipt.usage,
+					conversation_id: worldRecord.generation.receipt.conversation_id,
+				}
+			: null,
+		previous_stories: previous,
+		concept: draft.concept,
+		story: draft.story,
+		relationship: draft.relationship,
+		jizura_plan: {
+			path: "jizura.json",
+			sha256: sha256File(jizuraPlanPath),
+			model: AGY_CREATIVE_MODEL,
+			conversation_id: authored.receipt.conversation_id,
+			usage: authored.receipt.usage,
+		},
+		title: draft.title,
+		title_proposal: titleProposal.value,
+		title_proposal_usage: titleProposal.receipt.usage,
+		title_proposal_conversation: titleProposal.receipt.conversation_id,
+		title_review: titleReview.value,
+		title_review_usage: titleReview.receipt.usage,
+		title_review_conversation: titleReview.receipt.conversation_id,
+		authoring_usage: authored.receipt.usage,
+		authoring_conversation: authored.receipt.conversation_id,
+		title_fit: titleFit.value,
+		title_fit_usage: titleFit.receipt.usage,
+		title_fit_conversation: titleFit.receipt.conversation_id,
+	});
 	if (brief) fs.writeJsonSync(path.join(runDir, "brief.json"), { brief });
 	fs.writeJsonSync(requestPath, {
 		id,
 		style: draft.style,
 		lyrics: draft.lyrics.trim(),
 		cot: "full",
-		seed,
+		seed: musicSeed,
 	});
 	run(
 		[
@@ -220,7 +389,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		at: new Date().toISOString(),
 		cell: { direction: draft.style },
 		title: draft.title,
-		seed,
+		seed: musicSeed,
 		audio: path.join(songDir, "audio.flac"),
 		audio_sha256: sha256File(path.join(songDir, "audio.flac")),
 		seconds: result.audio_seconds,
@@ -335,7 +504,6 @@ function songOfRun(dir: string): GenerationRow | undefined {
 
 async function prepare(date: string, slot?: string): Promise<void> {
 	const { dir, runId } = runPaths(date, slot);
-	preflight();
 	fs.ensureDirSync(dir);
 	const songRef = path.join(dir, "song.json");
 	const brief = process.env.HUMANITY_BRIEF?.trim() || undefined;
@@ -343,9 +511,9 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	if (!song) throw new Error("song.json refers to an unknown song");
 	fs.writeJsonSync(songRef, { id: song.id });
 	const songDir = path.dirname(song.audio);
-	const request = fs.readJsonSync(
-		path.join(path.dirname(songDir), "request.json"),
-	);
+	const generationDir = path.dirname(songDir);
+	const request = fs.readJsonSync(path.join(generationDir, "request.json"));
+	const visualPlanPath = loadJizuraPlan(generationDir, request.id);
 	const lyricsPath = path.join(dir, "lyrics.txt");
 	fs.writeFileSync(lyricsPath, request.lyrics);
 	if (brief) {
@@ -366,10 +534,12 @@ async function prepare(date: string, slot?: string): Promise<void> {
 				"scripts/humanity_pv.py",
 				song.audio,
 				lyricsPath,
+				visualPlanPath,
 				dir,
 			],
 			{ cwd: ROOT },
 		);
+	const videoAudio = probeAudio(videoPath);
 	const thumbnailPath = path.join(dir, config.thumbnail.file);
 	if (!fs.existsSync(thumbnailPath))
 		run([
@@ -420,6 +590,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			requestSeed: request.seed,
 			song,
 			actualAudioSha256: sha256File(song.audio),
+			videoAudio,
 			videoSeconds: probeSeconds(videoPath),
 			licenseText: fs.readFileSync(config.yue.license_file, "utf-8"),
 			pv: fs.readJsonSync(pvRecordPath),
@@ -471,8 +642,16 @@ function prepareBinaural(sourceId: string, date: string, slot: string): void {
 		path.dirname(path.dirname(source.audio)),
 		"request.json",
 	);
-	const request = fs.readJsonSync(requestPath) as { lyrics?: string };
+	const request = fs.readJsonSync(requestPath) as {
+		id?: string;
+		lyrics?: string;
+	};
 	if (!request.lyrics) throw new Error("source song lyrics are missing");
+	if (request.id !== source.id)
+		throw new Error(
+			"source song request ID differs from its generation ledger ID",
+		);
+	const visualPlanPath = loadJizuraPlan(path.dirname(requestPath), source.id);
 	const stageDir = fs.mkdtempSync(
 		path.join(path.dirname(dir), `.music-${date}-${slot}-`),
 	);
@@ -548,6 +727,7 @@ function prepareBinaural(sourceId: string, date: string, slot: string): void {
 				"scripts/humanity_pv.py",
 				outputAudio,
 				lyricsPath,
+				visualPlanPath,
 				stageDir,
 			],
 			{ cwd: ROOT },

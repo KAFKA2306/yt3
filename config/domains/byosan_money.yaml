@@ -247,19 +247,7 @@ llm:
   claude: {command: "claude", model: "claude-haiku-5-5", stage_models: {byosan_feature_draft: "claude-sonnet-5-5"}, workdir_prefix: "byosan-claude-", strip_env: ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"]}
   fallback_backend: "claude"
   backends:
-    feature: "codex"
     digest: "claude"
-    panel: "claude"
-  panel:
-    candidates: 3
-    candidate_instruction: "[題材の指定] 記事一覧から、視聴者の財布や資産に直接触れる有力な題材を、{index}番目に有力なものとして選びます（1番目と別の題材にします）。"
-    review_system: "あなたは次の5人の視聴者です。それぞれの人物になりきって、下の台本を最後まで読み、面白さを1〜5の整数で採点し、最も直してほしい点を1つだけ書いてください。reviews には5人全員を persona（人物名）、score、fix の順で入れます。"
-    personas:
-      - { name: "34歳会社員", description: "つみたてNISAを始めたばかりの初心者。投資用語はまだ分からない。" }
-      - { name: "52歳パート主婦", description: "毎日の買い物と家計のやりくりが関心事。難しい話は苦手。" }
-      - { name: "21歳大学生", description: "一人暮らしで、仕送りとアルバイトで暮らす。お金に余裕がない。" }
-      - { name: "67歳退職者", description: "年金暮らし。物価と預金の目減りが気になる。" }
-      - { name: "41歳個人投資家", description: "株や投資信託を持っている。数字の根拠と限界を重視する。" }
   json_only_instruction: "最終応答は JSON 値だけにしてください。説明文、Markdown、コードフェンスは付けず、入力に書かれた証拠だけを根拠にしてください。"
 
 sec:
@@ -279,26 +267,6 @@ sec:
     - { label: "希薄化後EPS", tags: ["EarningsPerShareDiluted"] }
     - { label: "設備投資（有形固定資産の取得支出）", tags: ["PaymentsToAcquirePropertyPlantAndEquipment"] }
     - { label: "現金及び現金同等物", tags: ["CashAndCashEquivalentsAtCarryingValue"] }
-
-repair:
-  sandbox: "workspace-write"
-  writable_paths:
-    - "config/"
-    - "src/domain/byosan/"
-    - "src/scripts/byosan_daily.ts"
-  acceptance:
-    - "bunx tsc --noEmit -p ."
-    - "bun test"
-  prompt: |
-    あなたは秒算マネーの日次パイプラインの保守担当です。以下の [FAILURE_TRACE] は、日次 run が停止した失敗の分類・段階・証拠です。
-    証拠から根本原因を特定し、持ち主のソースを直してください。出力ファイルや run ディレクトリを手で書き換えて成功に見せること、フォールバックで成功を装うこと、try/catch・リトライ・コメントを足すことは禁止です。
-    変更してよいのは [WRITABLE_PATHS] のファイルとディレクトリだけです。それ以外は編集しないでください。
-    公開（publish）、git の commit・push・merge・branch 操作、ファイルや run の削除、秘密情報（.env、認証情報、トークン）の読み書きは行わないでください。
-    修正後に [ACCEPTANCE] のコマンドをすべて実行し、すべて成功したら止まってください。成功しない場合は、失敗しているコマンドと原因を報告して止まってください。
-    最後に、根本原因、変更したファイル、受け入れコマンドの結果を簡潔に報告してください。
-
-auto:
-  max_prepare_attempts: 3
 
 source_policy:
   schema_version: "byosan_money_source_policy_v1"

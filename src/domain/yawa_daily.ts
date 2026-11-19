@@ -15,10 +15,6 @@ const RuntimeSchema = z
 			bucket: z.string().min(1),
 			name_prefix: z.string().min(1),
 		}),
-		script: z.object({
-			model: z.string().min(1),
-			sandbox: z.literal("read-only"),
-		}),
 		tts: z.object({
 			backend: z.string().min(1),
 			device: z.enum(["cpu", "cuda"]),
@@ -64,7 +60,10 @@ const RuntimeSchema = z
 			ai_disclosure: z.string().min(1),
 			rights_declaration: z.string().min(1),
 		}),
-		audit: z.object({ duration_tolerance_seconds: z.number().nonnegative() }),
+		audit: z.object({
+			duration_tolerance_seconds: z.number().nonnegative(),
+			model: z.string().min(1),
+		}),
 	})
 	.passthrough();
 

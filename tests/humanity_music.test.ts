@@ -27,6 +27,7 @@ const passing = (): MusicAuditInput => ({
 	requestSeed: 7,
 	song: song("a", "2026-10-20T00:00:00Z"),
 	actualAudioSha256: "aa",
+	videoAudio: { sample_rate: 48000, channels: 2 },
 	videoSeconds: 180,
 	licenseText: `x ${config.yue.license_clause} y`,
 	pv: { tool: "jizura", jizura_version: "0.10.1", sha256: "cc" },

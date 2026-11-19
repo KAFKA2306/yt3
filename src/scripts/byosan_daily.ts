@@ -14,17 +14,9 @@ import {
 import {
 	type ByosanFailureClassification,
 	byosanFailureClassification,
-	byosanLlmConfig,
-	codexLlmLogPath,
-	type ExecBackend,
 	failureSignalLines,
-	invokeCodexStructured,
-	llmBackend,
-	type StructuredCall,
-	structuredRequest,
 	termsMatch,
 } from "../domain/byosan/codex_llm.js";
-
 import {
 	type Explanation,
 	ExplanationSchema,
@@ -45,7 +37,6 @@ import {
 	featureDraftIssues,
 	inputSourceText,
 	isJson,
-	type Json,
 	normalizeFeatureDraft,
 	prepareFeatureDraftInput,
 	renderFeatureDraftInput,
@@ -65,9 +56,17 @@ import {
 import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
 import { loadPublishedByosanSourceUrls } from "../domain/byosan/published_sources.js";
 import {
+	TitleFitSchema,
+	TitleProposalSchema,
+	TitleReviewSchema,
+	titleFitPrompt,
+	titleOnlyPrompt,
+	titleProposalPrompt,
+} from "../domain/creative_authoring.js";
+import { AGY_CREATIVE_MODEL, invokeAgyStructured } from "../io/agy.js";
+import {
 	AssetStore,
 	getRunIdDateString,
-	invokeStructuredLlm,
 	loadConfig,
 	ROOT,
 } from "../io/core.js";
@@ -351,83 +350,120 @@ export function findPublishedByosanRunForDate(
 	return null;
 }
 
-export async function generateFeatureSpec(
+export function generateFeatureSpec(
 	input: FeatureDraftInput,
 	runDir: string,
-	exec?: (prompt: string) => string,
-): Promise<{ spec: ByosanFeatureSpec; explanation: Explanation }> {
+): { spec: ByosanFeatureSpec; explanation: Explanation } {
 	const system = dailyConfig().feature_draft.system;
-	const llm = byosanLlmConfig();
 	const articles = renderFeatureDraftInput(input);
-	const write = async (label: string, extra: string) => {
-		const request = structuredRequest({
-			maxAttempts: llm.max_attempts,
-			schema: z.unknown(),
-			providerSchema: ByosanFeatureDraftSchema,
-			name: "byosan_feature_draft",
-			exec,
-			evidencePath: path.join(
-				runDir,
-				"audit",
-				`structured_feature_attempts_${label}.json`,
-			),
-			messages: (attempt, lastValidationError) => [
-				{ role: "system", content: system },
-				{
-					role: "user",
-					content: `${articles}${extra}\n\nattempt=${attempt}\n前回の検証エラー: ${lastValidationError ?? "なし"}`,
-				},
-			],
-			validate: (rawDraft) => {
-				if (!isJson(rawDraft)) {
-					throw new Error(
-						"BYOSAN_FEATURE_DRAFT_INVALID: draft must be a JSON object",
-					);
-				}
-				return normalizeFeatureDraft(rawDraft);
+	const titleProposal = invokeAgyStructured({
+		name: "byosan_title_proposal",
+		schema: TitleProposalSchema,
+		prompt: titleProposalPrompt({
+			brand: "秒算マネー",
+			context: {
+				subject: input.subject ?? null,
+				today: input.today.map(({ title, issuer, published }) => ({
+					title,
+					issuer,
+					published,
+				})),
+				baseline: input.baseline.map(({ title, issuer, published }) => ({
+					title,
+					issuer,
+					published,
+				})),
 			},
-		});
-		const { draft, corrections } =
-			llmBackend(llm, "feature") !== "gemini"
-				? await invokeCodexStructured({
-						llm,
-						logPath: codexLlmLogPath(runDir),
-						backend: llmBackend(llm, "feature") as ExecBackend,
-						...request,
-					})
-				: await invokeStructuredLlm({
-						...request,
-						llmOptions: { temperature: 0.28, sessionId: runDir },
-					});
+		}),
+	});
+	const titleReview = invokeAgyStructured({
+		name: "byosan_title_review",
+		schema: TitleReviewSchema,
+		prompt: titleOnlyPrompt({
+			brand: "秒算マネー",
+			title: titleProposal.value.title,
+		}),
+	});
+	const authored = invokeAgyStructured({
+		name: "byosan_feature_draft",
+		schema: z.unknown(),
+		jsonSchema: ByosanFeatureDraftSchema,
+		prompt: [
+			system,
+			`採用タイトル: ${titleProposal.value.title}`,
+			`本文前のタイトル批評: ${JSON.stringify(titleReview.value)}`,
+			"titleには採用タイトルをそのまま使います。本文は記事本文と入力済み根拠から作ってください。数値、出典、対象、期間、定義、実績・推計・見通しを入力記事に合わせます。記事が支えない因果、数字、家庭への換算は加えません。",
+			articles,
+		].join("\n\n"),
+	});
+	if (!isJson(authored.value))
+		throw new Error(
+			"BYOSAN_FEATURE_DRAFT_INVALID: draft must be a JSON object",
+		);
+	const normalized = normalizeFeatureDraft(authored.value);
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "feature_corrections.json"),
+		normalized.corrections,
+		{ spaces: 2 },
+	);
+	let parsed = ByosanFeatureDraftSchema.parse(normalized.draft);
+	const titleFit = invokeAgyStructured({
+		name: "byosan_title_body_review",
+		schema: TitleFitSchema,
+		prompt: titleFitPrompt({
+			brand: "秒算マネー",
+			initialTitle: titleProposal.value.title,
+			titleReview: titleReview.value,
+			body: JSON.stringify({
+				initial_title: parsed.title,
+				angle: parsed.angle,
+				explanation: parsed.explanation,
+				claims: parsed.claims,
+				segments: parsed.segments.map(({ headline, subheadline, text }) => ({
+					headline,
+					subheadline,
+					text,
+				})),
+			}),
+		}),
+	});
+	parsed = { ...parsed, title: titleFit.value.title };
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "creative_authoring.json"),
+		{
+			model: AGY_CREATIVE_MODEL,
+			title_proposal: titleProposal.value,
+			title_proposal_usage: titleProposal.receipt.usage,
+			title_proposal_conversation: titleProposal.receipt.conversation_id,
+			title_review: titleReview.value,
+			title_review_usage: titleReview.receipt.usage,
+			title_review_conversation: titleReview.receipt.conversation_id,
+			authoring_usage: authored.receipt.usage,
+			authoring_conversation: authored.receipt.conversation_id,
+			title_fit: titleFit.value,
+			title_fit_usage: titleFit.receipt.usage,
+			title_fit_conversation: titleFit.receipt.conversation_id,
+		},
+		{ spaces: 2 },
+	);
+	try {
+		const issues = featureDraftIssues(parsed, input);
 		fs.outputJsonSync(
-			path.join(runDir, "audit", `feature_corrections_${label}.json`),
-			corrections,
+			path.join(runDir, "audit", "feature_draft_issues.json"),
+			issues,
 			{ spaces: 2 },
 		);
-		const parsed = ByosanFeatureDraftSchema.parse(draft);
-		try {
-			const issues = featureDraftIssues(parsed, input);
-			fs.outputJsonSync(
-				path.join(runDir, "audit", "feature_draft_issues.json"),
-				issues,
-				{ spaces: 2 },
+		if (issues.length > 0) {
+			console.warn(
+				`[byosan-feature-audit] WARN run=${input.runId} issues=${summarizeFeatureIssues(issues)}`,
 			);
-			if (issues.length > 0) {
-				console.warn(
-					`[byosan-feature-audit] WARN run=${input.runId} issues=${summarizeFeatureIssues(issues)}`,
-				);
-			}
-		} catch (error) {
-			recordNonBlockingAuditError(runDir, "feature_draft", error);
 		}
-		return {
-			parsed,
-			spec: parseAndAuditByosanFeatureSpec(
-				buildFeatureSpecInput(parsed, input),
-			),
-		};
-	};
-	const { parsed, spec } = await write("1_1", "");
+	} catch (error) {
+		recordNonBlockingAuditError(runDir, "feature_draft", error);
+	}
+	const spec = parseAndAuditByosanFeatureSpec(
+		buildFeatureSpecInput(parsed, input),
+	);
 	return { spec, explanation: parsed.explanation };
 }
 
@@ -640,7 +676,7 @@ async function runByosanDaily(): Promise<void> {
 	if (checkpoint.stages.spec_ready && (await fs.pathExists(specPath))) {
 		spec = parseAndAuditByosanFeatureSpec(await fs.readJson(specPath));
 	} else {
-		const generated = await generateFeatureSpec(input, store.runDir);
+		const generated = generateFeatureSpec(input, store.runDir);
 		spec = generated.spec;
 		await fs.outputJson(explanationPath, generated.explanation, { spaces: 2 });
 		await fs.outputJson(specPath, spec, { spaces: 2 });

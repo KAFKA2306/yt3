@@ -4,6 +4,54 @@ import * as yaml from "js-yaml";
 import { z } from "zod";
 import type { AuditCheck } from "./types.js";
 
+export const HumanityStoryWorldSchema = z.object({
+	series_title: z.string().min(1),
+	premise: z.string().min(1),
+	setting: z.string().min(1),
+	characters: z
+		.array(
+			z.object({
+				id: z.string().min(1),
+				name: z.string().min(1),
+				identity: z.string().min(1),
+			}),
+		)
+		.min(2),
+	relationships: z
+		.array(
+			z.object({
+				people: z.array(z.string().min(1)).min(2),
+				connection: z.string().min(1),
+				open_question: z.string().min(1),
+			}),
+		)
+		.min(1),
+	continuity: z.string().min(1),
+});
+export type HumanityStoryWorld = z.infer<typeof HumanityStoryWorldSchema>;
+
+export const HumanityJizuraPlanSchema = z.object({
+	theme_id: z.enum(["lyricpv", "kinetic", "wa", "horror", "pop", "ballad"]),
+	unify: z.boolean(),
+	typeset: z.boolean(),
+	palette: z.object({
+		accent: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+		ghost_a: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+		ghost_b: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+	}),
+	rationale: z.string().min(1),
+});
+export type HumanityJizuraPlan = z.infer<typeof HumanityJizuraPlanSchema>;
+export const HumanityJizuraPlanRecordSchema = HumanityJizuraPlanSchema.extend({
+	version: z.literal(1),
+	generation_id: z.string().min(1),
+	title: z.string().min(1),
+	seed: z.number().int().nonnegative(),
+});
+export type HumanityJizuraPlanRecord = z.infer<
+	typeof HumanityJizuraPlanRecordSchema
+>;
+
 export const ConfigSchema = z.object({
 	yue: z.object({
 		dir: z.string(),
@@ -28,7 +76,6 @@ export const ConfigSchema = z.object({
 		output_sample_rate: z.number().int().positive(),
 	}),
 	output_dir: z.string(),
-	temperature: z.number(),
 	playlist: z.object({
 		file: z.string(),
 		audio_file: z.string(),
@@ -41,7 +88,6 @@ export const ConfigSchema = z.object({
 		jizura_html: z.string(),
 		jizura_version: z.string(),
 		whisper_model: z.string(),
-		load_ms: z.number(),
 		export_timeout_ms: z.number(),
 		crf: z.number(),
 		audio_bitrate: z.string(),
@@ -193,6 +239,7 @@ export type MusicAuditInput = {
 	requestSeed: number | undefined;
 	song: GenerationRow;
 	actualAudioSha256: string;
+	videoAudio: { sample_rate: number; channels: number };
 	videoSeconds: number;
 	licenseText: string;
 	pv: { tool?: string; jizura_version?: string; sha256?: string } | undefined;
@@ -233,6 +280,10 @@ export function musicAudit(
 		input.actualAudioSha256 === song.audio_sha256
 			? ""
 			: "audio sha256 differs from ledger",
+		input.videoAudio.sample_rate === 48000
+			? ""
+			: "video audio sample rate is not 48 kHz",
+		input.videoAudio.channels === 2 ? "" : "video audio is not stereo",
 		result.truncated && Object.values(result.truncated).some(Boolean)
 			? "generation truncated"
 			: "",
@@ -260,7 +311,7 @@ export function musicAudit(
 		),
 		music_integrity: check(
 			"music_integrity",
-			"Audio hash, completeness and video duration",
+			"Audio hash, stereo audio stream, completeness and video duration",
 			integrity.filter(Boolean),
 		),
 		visual_provenance: check(

@@ -3,6 +3,15 @@ import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 import {
+	TitleFitSchema,
+	TitleProposalSchema,
+	type TitleReview,
+	TitleReviewSchema,
+	titleFitPrompt,
+	titleOnlyPrompt,
+	titleProposalPrompt,
+} from "../domain/creative_authoring.js";
+import {
 	assertUnprivileged,
 	buildDescription,
 	buildTags,
@@ -13,7 +22,6 @@ import {
 	irodoriCall,
 	loadYawaConfig,
 	type Performance,
-	parseYawaJson,
 	preparationAction,
 	type ScriptDraft,
 	ScriptDraftSchema,
@@ -21,6 +29,7 @@ import {
 	validateDraft,
 	yawaAudit,
 } from "../domain/yawa_daily.js";
+import { AGY_CREATIVE_MODEL, invokeAgyStructured } from "../io/agy.js";
 import { ROOT } from "../io/core.js";
 
 const config = loadYawaConfig(ROOT);
@@ -181,13 +190,7 @@ function preflight(
 ): void {
 	assertUnprivileged(process.getuid?.(), [config.tts.hf_home, bucket]);
 	const failures = [
-		Bun.which("codex") ? "" : "codex is not on PATH",
-		Bun.spawnSync(["codex", "login", "status"], {
-			stdout: "ignore",
-			stderr: "ignore",
-		}).exitCode === 0
-			? ""
-			: "codex is not logged in",
+		Bun.which("agy") ? "" : "agy CLI is not on PATH",
 		Bun.which("ffmpeg") ? "" : "ffmpeg is not on PATH",
 		Bun.which("ffprobe") ? "" : "ffprobe is not on PATH",
 		Bun.which("uv") ? "" : "uv is not on PATH",
@@ -217,7 +220,11 @@ function requestedDevice(): Device {
 	return value;
 }
 
-function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
+function scriptPrompt(
+	tools: { tts: string[]; images: string[] },
+	selectedTitle: string,
+	titleReview: TitleReview,
+): string {
 	const imageTools =
 		process.env.YAWA_GENERATE_IMAGES === "1" ? tools.images : [];
 	return [
@@ -245,7 +252,9 @@ function scriptPrompt(tools: { tts: string[]; images: string[] }): string {
 					]),
 				),
 			),
-		"先にタイトル案だけを見て内容・聴く価値・曖昧さを批判し、その指摘を台本と照合して改題します。専門用語、作業報告調、発見の見えにくさ、長すぎる説明を見直します。",
+		`採用タイトル: ${selectedTitle}`,
+		`本文前のタイトル批評: ${JSON.stringify(titleReview)}`,
+		"titleには採用タイトルをそのまま使い、そのタイトルが予告する場面と人物の魅力を台本で実現してください。完成後、別工程で台本と照合して必要に応じて改題します。",
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
 		"JSONのみ。title、voices[{id,caption,reference_text?}]、production{tts_backend,image_tool?,video?,jizura_theme?,thumbnail_size?,mix?}を含めます。thumbnail_promptは任意です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
 	].join("\n");
@@ -390,32 +399,56 @@ function generateScript(
 	if (existed) {
 		draft = ScriptDraftSchema.parse(fs.readJsonSync(file));
 	} else {
-		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "yawa-script-"));
-		try {
-			const answer = path.join(tempDir, "answer.json");
-			run(
-				"script-generation",
-				[
-					"codex",
-					"exec",
-					"-m",
-					config.script.model,
-					"--sandbox",
-					config.script.sandbox,
-					"--skip-git-repo-check",
-					"--ephemeral",
-					"-o",
-					answer,
-					scriptPrompt(tools),
-				],
-				{ cwd: tempDir },
-			);
-			draft = ScriptDraftSchema.parse(
-				parseYawaJson(fs.readFileSync(answer, "utf8")),
-			);
-		} finally {
-			fs.removeSync(tempDir);
-		}
+		const titleProposal = invokeAgyStructured({
+			name: "yawa_title_proposal",
+			schema: TitleProposalSchema,
+			prompt: titleProposalPrompt({
+				brand: "夜話アーカイブ ASMR",
+				context: config.creative,
+			}),
+		});
+		const titleReview = invokeAgyStructured({
+			name: "yawa_title_review",
+			schema: TitleReviewSchema,
+			prompt: titleOnlyPrompt({
+				brand: "夜話アーカイブ ASMR",
+				title: titleProposal.value.title,
+			}),
+		});
+		const authored = invokeAgyStructured({
+			name: "yawa_script",
+			schema: ScriptDraftSchema,
+			prompt: scriptPrompt(tools, titleProposal.value.title, titleReview.value),
+		});
+		draft = authored.value;
+		const body = flattenPerformances(draft)
+			.map((item, index) => `${index + 1}. ${item.text}`)
+			.join("\n");
+		const titleFit = invokeAgyStructured({
+			name: "yawa_title_body_review",
+			schema: TitleFitSchema,
+			prompt: titleFitPrompt({
+				brand: "夜話アーカイブ ASMR",
+				initialTitle: titleProposal.value.title,
+				titleReview: titleReview.value,
+				body: `台本中のタイトル: ${draft.title}\n\n${body}`,
+			}),
+		});
+		draft.title = titleFit.value.title;
+		writeJsonAtomic(path.join(dir, "creative_authoring.json"), {
+			model: AGY_CREATIVE_MODEL,
+			title_proposal: titleProposal.value,
+			title_proposal_usage: titleProposal.receipt.usage,
+			title_proposal_conversation: titleProposal.receipt.conversation_id,
+			title_review: titleReview.value,
+			title_review_usage: titleReview.receipt.usage,
+			title_review_conversation: titleReview.receipt.conversation_id,
+			authoring_usage: authored.receipt.usage,
+			authoring_conversation: authored.receipt.conversation_id,
+			title_fit: titleFit.value,
+			title_fit_usage: titleFit.receipt.usage,
+			title_fit_conversation: titleFit.receipt.conversation_id,
+		});
 	}
 	const failures = validateDraft(draft, config, tools);
 	if (failures.length)

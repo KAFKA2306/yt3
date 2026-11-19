@@ -16,7 +16,6 @@ Keep each product's config, media, credentials, receipts, and publication state 
 
 - `task setup`, `task check:merge:fast`, `task check:merge`
 - `task byosan:prepare DATE=YYYY-MM-DD`: research, produce, and audit without publishing
-- `task byosan:auto DATE=YYYY-MM-DD`: prepare with repair attempts, stopping before publish
 - `task byosan:publish-daily`: prepare and publish the current Tokyo date through the Byosan daily path
 - `task publish PROFILE=<profile> -- <run-id>`
 - `task yawa:daily DATE=YYYY-MM-DD`, `task yawa:metadata RUN=<run-id>`
@@ -47,13 +46,19 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - Keep Issues few. Delete a branch, local and remote, once its PR is merged. Fold Issues that overlap into one, and close an Issue that no longer applies with the reason recorded in it. Open a new Issue only for work that no open Issue covers.
 - Not covered, and requiring the owner's explicit instruction: force push, deleting a branch whose work is not merged, deletion of run data or published videos, billing, and handling of secrets or contact details.
 
+## Creative authoring
+
+Yawa, Humanity, and Byosan create new work through `src/io/agy.ts` with `gemini-4-neon-high`. Before drafting, AGY reviews a proposed title without the completed text; after drafting, AGY compares that critique with the work and keeps or changes the title. Each product keeps its own brief and output format. Research, audio/image generation, JIZURA, editing, and the canonical publication entries remain product-owned.
+
+Humanity grows one shared story world from `docs/humanity/story-world.json`; songs keep a clear standalone concept while developing its relationships. Its JIZURA lyric video uses a Neon-selected built-in theme and keeps the rendered project beside the video.
+
 ## Byosan prompt and constraint policy
 
 Current Claude models follow prompts closely, so over-specified prompts and stacked checks degrade output. Prompts state the goal and the facts that must hold, not the method. Byosan feature, production, and authenticity audits are recorded for review and do not stop a daily run. Runtime failures that prevent preparation or upload still surface as errors.
 
-The byosan topic and script come from one LLM call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. Feature, source, and published-source audit findings are saved with the run as diagnostics; structured output and schema parsing still provide the data needed to render.
+Byosan title ideation uses article headlines and the supplied subject. The feature draft is one AGY call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage. A final title review compares the title critique with the completed feature. Feature, source, and published-source audit findings are saved with the run as diagnostics; structured output and schema parsing still provide the data needed to render.
 
-LLM backends are set per stage in `llm.backends` (`gemini`, `codex`, `claude`). When `codex` hits a usage or rate limit, the same call is redone on `llm.fallback_backend` within the same run and the switch is recorded as a `fallback` event in `audit/llm_calls.jsonl`; a limit on `claude` fails the run explicitly. The deterministic script checks are identical for every backend. Script generation produces one draft and runs the deterministic checks; persona panel review is not part of daily production. Daily publication is mandatory.
+The remaining Byosan digest uses `llm.backends.digest` (`gemini`, `codex`, or `claude`). When Codex hits a usage or rate limit there, the same digest call is redone on `llm.fallback_backend` within the run and the switch is recorded in `audit/llm_calls.jsonl`; a limit on Claude fails explicitly. Daily feature creation uses AGY and has no alternate creative backend. Daily publication is mandatory.
 
 ## Byosan visuals and titles
 
@@ -79,7 +84,7 @@ Use timestamped episode dialogue as JIZURA subtitles, and let each episode choos
 - Use [the repository record index](docs/standard/ledger-standard.md) to find record locations, grains, and schema owners; the actual contracts remain with their writers and readers.
 - Every factual claim the user makes is checked each time by web search against official sources before it is used in a decision, document, or config. Unverified claims are labeled UNVERIFIED, never adopted as fact.
 - Dependencies, runtimes, CLIs, models, and model IDs are kept at their latest released version, confirmed against the official release notes. An upgrade lands only after `task check:merge` passes.
-- The default Codex model is GPT-6.1 Terra at `medium` reasoning effort (owner-designated 2026-10-27; official valid efforts: none, low, medium, high, xhigh, max). The byosan setting is `llm.codex` in `config/domains/byosan_money.yaml`, the yawa setting is `script.model` in `config/yawa/daily.yaml`. A call moves to another model only with recorded evidence that Terra's output fails its checks. Image generation keeps `gpt-image-2`.
+- Remaining Codex calls use GPT-6.1 Terra at `medium` reasoning effort (owner-designated 2026-10-27; official valid efforts: none, low, medium, high, xhigh, max); Byosan's setting is `llm.codex` in `config/domains/byosan_money.yaml`. Creative authoring follows the AGY standard above. Image generation keeps `gpt-image-2`.
 - Do not fill in missing inputs or failures with fallback output that looks like success.
 - Execution runs as the `kafka` account, never as root or with `sudo`.
 - Do not read out or display `.env` files, tokens, OAuth credentials, or contact details. Scripts check only whether a value is present. An empty value must not overwrite a non-empty one.

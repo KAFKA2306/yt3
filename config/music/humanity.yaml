@@ -19,7 +19,6 @@ spatial:
   device: cuda
   output_sample_rate: 48000
 output_dir: runs/humanity_music
-temperature: 0.9
 playlist:
   file: playlist.m3u8
   audio_file: audio.mp3
@@ -35,7 +34,6 @@ pv:
   jizura_html: vendor/jizura/index.html
   jizura_version: vendor/jizura/VERSION
   whisper_model: large-v3
-  load_ms: 8000
   export_timeout_ms: 1500000
   crf: 28
   audio_bitrate: 256k

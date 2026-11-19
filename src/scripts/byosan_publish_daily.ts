@@ -86,7 +86,7 @@ function prepareRun(
 	runId: string,
 	file: string,
 ): ReadyRecord {
-	const prepared = deps.runTask(["byosan:auto", `DATE=${date}`]);
+	const prepared = deps.runTask(["byosan:prepare", `DATE=${date}`]);
 	const evidence =
 		prepared.status === 0 ? parsePreparedRun(prepared.output, runId) : null;
 	const recordedAt = deps.now.toISOString();

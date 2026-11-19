@@ -5,10 +5,8 @@ import fs from "fs-extra";
 import {
 	assertByosanRetryAllowed,
 	findPublishedByosanRunForDate,
-	generateFeatureSpec,
 	recordByosanFailure,
 } from "../src/scripts/byosan_daily.js";
-import { fixtureDraft, fixtureInput } from "./fixtures/byosan_draft.js";
 
 const tempRoots: string[] = [];
 
@@ -83,26 +81,6 @@ describe("byosan daily duplicate-publication gate", () => {
 			verified: true,
 			videoId: "video123",
 		});
-	});
-});
-
-describe("byosan feature generation", () => {
-	test("generates one validated draft without a panel review", async () => {
-		const runDir = await makeRunDir();
-		const prompts: string[] = [];
-		const result = await generateFeatureSpec(
-			fixtureInput(),
-			runDir,
-			(prompt) => {
-				prompts.push(prompt);
-				return JSON.stringify(fixtureDraft());
-			},
-		);
-		expect(result.spec.segments.length).toBeGreaterThan(0);
-		expect(prompts).toHaveLength(1);
-		expect(await fs.pathExists(path.join(runDir, "audit", "panel.json"))).toBe(
-			false,
-		);
 	});
 });
 

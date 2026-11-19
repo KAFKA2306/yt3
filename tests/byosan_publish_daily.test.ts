@@ -30,7 +30,7 @@ async function makeRoot(): Promise<string> {
 function writeByosanConfig(root: string): void {
 	fs.outputFileSync(
 		path.join(root, "config/domains/byosan_money.yaml"),
-		"prompts:\n  research: {}\ndiscovery: {}\nexplain: {}\nrepair: {}\nllm: {}\n",
+		"prompts:\n  research: {}\ndiscovery: {}\nexplain: {}\nllm: {}\n",
 	);
 }
 
@@ -113,7 +113,7 @@ describe("byosan daily publish", () => {
 		tempRoots.push(root);
 		writeByosanConfig(root);
 		const runner = recordingRunner((args, dir) => {
-			if (args[0] === "byosan:auto")
+			if (args[0] === "byosan:prepare")
 				return { status: 0, output: preparedOutput() };
 			writeReceipt(dir);
 			return { status: 0, output: "" };
@@ -122,7 +122,7 @@ describe("byosan daily publish", () => {
 		runByosanPublishDaily(deps(root, runner.runTask));
 
 		expect(runner.calls).toEqual([
-			["byosan:auto", "DATE=2026-10-13"],
+			["byosan:prepare", "DATE=2026-10-13"],
 			["publish", "PROFILE=byosan", "--", RUN_ID],
 		]);
 		expect(readyRecord(root).status).toBe("PUBLISHED");
@@ -141,7 +141,7 @@ describe("byosan daily publish", () => {
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
 			"PREPARE_FAILED",
 		);
-		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
+		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
 		expect(readyRecord(root).status).toBe("PREPARE_FAILED");
 	});
 
@@ -152,7 +152,7 @@ describe("byosan daily publish", () => {
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
 			"PREPARE_FAILED",
 		);
-		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
+		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
 	});
 
 	test("re-prepares a same-date run after a recorded prepare failure", async () => {
@@ -164,7 +164,7 @@ describe("byosan daily publish", () => {
 			recorded_at: NOW_JST_NEXT_DAY.toISOString(),
 		});
 		const runner = recordingRunner((args, dir) => {
-			if (args[0] === "byosan:auto")
+			if (args[0] === "byosan:prepare")
 				return { status: 0, output: preparedOutput() };
 			writeReceipt(dir);
 			return { status: 0, output: "" };
@@ -173,7 +173,7 @@ describe("byosan daily publish", () => {
 		runByosanPublishDaily(deps(root, runner.runTask));
 
 		expect(runner.calls).toEqual([
-			["byosan:auto", "DATE=2026-10-13"],
+			["byosan:prepare", "DATE=2026-10-13"],
 			["publish", "PROFILE=byosan", "--", RUN_ID],
 		]);
 		expect(readyRecord(root).status).toBe("PUBLISHED");
@@ -192,7 +192,7 @@ describe("byosan daily publish", () => {
 		expect(() => runByosanPublishDaily(deps(root, runner.runTask))).toThrow(
 			"PREPARE_FAILED",
 		);
-		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
+		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
 		expect(readyRecord(root).status).toBe("PREPARE_FAILED");
 	});
 
@@ -227,7 +227,7 @@ describe("byosan daily publish", () => {
 			deps(root, runner.runTask, { publishApproved: false }),
 		);
 
-		expect(runner.calls).toEqual([["byosan:auto", "DATE=2026-10-13"]]);
+		expect(runner.calls).toEqual([["byosan:prepare", "DATE=2026-10-13"]]);
 		expect(readyRecord(root).status).toBe("READY");
 	});
 
@@ -235,7 +235,7 @@ describe("byosan daily publish", () => {
 		const root = await makeRoot();
 		const runner = recordingRunner(
 			(args) =>
-				args[0] === "byosan:auto"
+				args[0] === "byosan:prepare"
 					? { status: 0, output: preparedOutput() }
 					: { status: 0, output: "" },
 			root,

@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
@@ -34,7 +33,7 @@ type CodexMessage = { role: "system" | "user"; content: string };
 
 export type ExecBackend = "codex" | "claude";
 export type LlmBackend = "gemini" | ExecBackend;
-type LlmStage = "feature" | "digest" | "panel";
+type LlmStage = "digest";
 export type ByosanLlmConfig = CodexLlmConfig & {
 	backends: Record<LlmStage, LlmBackend>;
 };
