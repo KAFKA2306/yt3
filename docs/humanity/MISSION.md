@@ -1,3 +1,20 @@
+---
+type: "policy"
+title: "雨晴はうの人類観測所 Mission"
+description: "「晴れ待ち坂」物語音楽レーベルの編集目的、曲名・ジャケット・週3本頻度・収益化 KPI。"
+tags:
+  - yt3/mission
+  - yt3/humanity
+  - yt3/strategy
+aliases:
+  - "人類観測所方針"
+  - "晴れ待ち坂ミッション"
+  - "humanity-mission"
+generated:
+  by: "antigravity/gemini-4-neon-high"
+  at: "2026-11-20T00:25:00Z"
+---
+
 # MISSION.md | 雨晴はうの人類観測所
 
 > **「晴れ待ち坂」に生きる人々の不器用な本音を、雨晴はうが観測し一曲の物語として残す AI 音楽レーベル。**
@@ -5,7 +22,7 @@
 - Product: `humanity`
 - Version: 2.0
 - Updated: 2026-11-20
-- Scope: 編集目的、レーベル構造、聴き手への約束、曲名・映像・頻度方針、成果指標。公開許可と正準コマンドは `AGENTS.md`、人格の核は `SOUL.md` に従う。
+- Scope: 編集目的、レーベル構造、聴き手への約束、曲名・映像・頻度方針、成果指標。公開許可と正準コマンドは `AGENTS.md`、人格の核は [SOUL.md](SOUL.md) に従う。
 
 ## 1. 存在理由とレーベル構造
 
@@ -16,7 +33,7 @@
 
 ## 2. 聴き手への約束
 
-- **一曲で刺さり、続けて聴くほど深まる**: 初聴きでも曲単体で状況と感情が伝わり、同時に [story-world.json](./story-world.json) の人物関係が少しずつ動く物語体験を届ける。
+- **一曲で刺さり、続けて聴くほど深まる**: 初聴きでも曲単体で状況と感情が伝わり、同時に [story-world.json](story-world.json) の人物関係が少しずつ動く物語体験を届ける。
 - **量産BGMではなく「記憶に残る一曲」**: 1日複数曲の機械量産（旧2時間プレイリスト早増やし方針）を廃止する。週3本（火・木・土 20:00 JST）のペースに絞り、1曲ごとの完成度、曲名の記憶度、ビジュアル、物語の余白を磨く。
 - **音楽と映像の一体感**: HoneyWorks の初聴きで追える関係性・ストーリー性、DECO*27 の世界観と言葉の結び付き、IMOJIST の音作りを好みの指針としつつ、既存作品の固有表現は一切借りずに独自の楽曲を作る。
 
@@ -30,18 +47,18 @@
 
 - **再現可能な技術品質**: 音声ハッシュ一致、途切れなし、48kHz ステレオ、映像と音声の長さ一致、YuE2 モデルライセンス（個人クリエイター収益化条項）の記録を維持する（`music_integrity` / `music_provenance` / `visual_provenance` / `music_rights`）。
 - **権利と透明性**: 歌詞は毎曲新規生成し、第三者の歌詞・音源を使わない。AI 生成開示と YouTube の合成メディア設定（`containsSyntheticMedia: true`）を常に付与する。
-- オーナー指示（2026-11-08）に従い、旧リリースゲート（ADR 0045）は廃止済み。品質・権利・表現の責任は制作工程が担う。
+- オーナー指示（2026-11-08）に従い、旧リリースゲート（ADR 0045）および [旧編集監査基準書](../standard/humanity-observatory-audit-standard.md) の CQO 承認ゲートは廃止済み。品質・権利・表現の責任は制作工程が担う。
 
 ## 5. 成功指標（YPP・視聴者獲得）
 
 - **収益化マイルストーン**: YouTube パートナープログラム本収益化（登録者1,000人・直近365日の長尺再生4,000時間、または Shorts 1,000万再生）と Inauthentic Content 判定の回避。
-- **先行 KPI**: サムネイル CTR、楽曲完聴率、高評価率、再生リスト経由の連続視聴・リピート率、1曲あたり登録増。
-- **データ還流**: `task analytics:refresh` で収集した YouTube Analytics と聴取評価（ledger rating）を突き合わせ、聴き手に刺さった曲調・関係性・ビジュアルへ注力する。
+- **先行 KPI**: サムネイル CTR、楽曲完聴率、高評価率、再生リスト経由の連続視聴・リピート率、1曲あたり登録増。指標の定義と算出正本は [Star Schema & dbt Standard](../standard/star-schema-standard.md) および `analytics/models/marts/mart_channel_growth_kpi.sql` に置く。
+- **データ還流**: `task analytics:refresh` と `task analytics:build` で更新した YouTube Analytics と聴取評価（ledger rating）を突き合わせ、聴き手に刺さった曲調・関係性・ビジュアルへ注力する。
 
 ## 6. 責務分離
 
 - `AGENTS.md`: 正準コマンド、公開権限、共通規約。
-- `docs/humanity/SOUL.md`: 温度・倫理・世界観の核。
-- `docs/humanity/story-world.json`: 「晴れ待ち坂」の舞台・人物・関係の正本。
-- `docs/humanity/songwriting.md`: 作詞・作曲・タイトル・JIZURA・ジャケット制作の具体方針。
+- [SOUL.md](SOUL.md): 温度・倫理・世界観の核。
+- [story-world.json](story-world.json): 「晴れ待ち坂」の舞台・人物・関係の正本。
+- [songwriting.md](songwriting.md): 作詞・作曲・タイトル・JIZURA・ジャケット制作の具体方針。
 - `config/music/humanity.yaml`: モデル、JIZURA、サムネイル、メタデータ、再生リスト設定。

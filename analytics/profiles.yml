@@ -1,0 +1,13 @@
+yt3_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('YT3_ANALYTICS_DUCKDB', 'data/analytics/yt3_analytics.duckdb') }}"
+      extensions:
+        - sqlite
+      attach:
+        - path: "{{ env_var('YT3_EVOLUTION_DB', 'db/evolution.db') }}"
+          alias: yt3_raw
+          type: sqlite
+          read_only: true

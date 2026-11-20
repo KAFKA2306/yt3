@@ -1,3 +1,18 @@
+---
+type: "policy"
+title: "YT3 Quality Gates"
+description: "リポジトリ受入（check:merge）・プロダクト準備・外部公開検証の境界とツール所有権の規約。"
+tags:
+  - yt3/standard
+  - yt3/operations
+aliases:
+  - "品質ゲート規約"
+  - "quality-gates"
+generated:
+  by: "antigravity/gemini-4-neon-high"
+  at: "2026-11-20T00:25:00Z"
+---
+
 # YT3 quality gates
 
 YT3 keeps three verdicts separate:

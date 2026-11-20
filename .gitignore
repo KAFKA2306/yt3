@@ -7,15 +7,17 @@ __pycache__/
 
 # Environment
 .env
-IDENTITY.md
-SOUL.md
-USER.md
 *.env
 secret/
 config/.env.*
 !config/.env.example
 !config/.env.byosan.example
 !config/.env.yawa.example
+
+# dbt & local analytical build outputs
+analytics/target/
+analytics/logs/
+data/analytics/
 
 # Logs & Runtime
 *.log

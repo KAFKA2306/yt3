@@ -1,3 +1,21 @@
+---
+type: "policy"
+title: "旧 Humanity Observatory 編集監査基準書"
+description: "旧ニュース観測トーク・CQO承認ゲート時代の監査基準書（廃止済み・後継は humanity/MISSION.md）。"
+status: "deprecated"
+superseded_by: "/humanity/MISSION.md"
+tags:
+  - yt3/standard
+  - yt3/humanity
+  - yt3/deprecated
+generated:
+  by: "antigravity/gemini-4-neon-high"
+  at: "2026-11-20T00:25:00Z"
+---
+
+> [!WARNING]
+> **廃止済み（Deprecated）**: 本書は旧ニュース観測トーク動画および CQO 最終公開承認ゲート前提の規格です。2026-11-08 のリリースゲート廃止および 2026-11-20 の「晴れ待ち坂」物語音楽レーベル化に伴い廃止されました。現行の正本は [雨晴はうの人類観測所 Mission](../humanity/MISSION.md) と [SOUL](../humanity/SOUL.md) を参照してください。
+
 # 編集監査基準書: Humanity Observatory System 運用規格
 
 ## 1. 監査の目的と戦略的背景

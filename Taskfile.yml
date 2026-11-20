@@ -189,6 +189,12 @@ tasks:
     desc: "Refresh authorized YouTube Analytics and purge data past the 30-day authorization boundary"
     cmds: ["bun src/scripts/refresh_youtube_analytics.ts"]
 
+  analytics:build:
+    desc: "Build and test the dbt analytical star schema and channel growth KPI marts over db/evolution.db"
+    cmds:
+      - mkdir -p data/analytics
+      - uvx --from dbt-core --with dbt-duckdb dbt build --project-dir analytics --profiles-dir analytics
+
   analytics:reach:setup:
     desc: "Create or verify the YouTube Reporting API channel-reach job (PROFILE=byosan|yawa|humanity; creates remote job state when missing)"
     cmds:

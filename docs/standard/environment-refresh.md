@@ -1,3 +1,17 @@
+---
+type: "policy"
+title: "Environment Refresh Standard"
+description: "開発環境を1時間ごとに測定・更新・ロールバックする自律ループの規約と台帳契約。"
+tags:
+  - yt3/standard
+  - yt3/operations
+aliases:
+  - "env-refresh"
+generated:
+  by: "antigravity/gemini-4-neon-high"
+  at: "2026-11-20T00:25:00Z"
+---
+
 # Environment Refresh
 
 The autonomous loop that keeps this workstation's development environment current, measured, and reversible. One cycle runs per hour via `systemd/yt3-env-refresh.timer`, which calls `task env:refresh` (`scripts/env_refresh.sh`).

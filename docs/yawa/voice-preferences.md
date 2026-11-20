@@ -1,3 +1,17 @@
+---
+type: "reference"
+title: "夜話アーカイブ 声の嗜好と演技基準"
+description: "固定キャスト運用における聴き心地・演技の基準と息音演出の制約。"
+tags:
+  - yt3/yawa
+  - yt3/voice
+aliases:
+  - "yawa-voice-preferences"
+generated:
+  by: "antigravity/gemini-4-neon-high"
+  at: "2026-11-20T00:25:00Z"
+---
+
 # Yawa voice preference
 
 2026-11-17 公開作（[https://youtu.be/0xLQdAiJYnQ](https://youtu.be/0xLQdAiJYnQ)）でオーナーが選出した 4 箇所の台詞は、夜話アーカイブ全体が目指す「聴き心地の基準」を示す。
@@ -10,6 +24,6 @@
 
 ## 固定キャスト運用との統合
 
-- キャストは [characters.json](./characters.json) の 3 名（`haruka` / `shizuku` / `nao`）を正本とし、キャラクターごとに専用参照音声（`data/state/yawa/references/<character_id>.wav`）を永続利用して、エピソードをまたぐ声の一貫性を保つ。
+- キャストは [characters.json](characters.json) の 3 名（`haruka` / `shizuku` / `nao`）を正本とし、キャラクターごとに専用参照音声（`data/state/yawa/references/<character_id>.wav`）を永続利用して、エピソードをまたぐ声の一貫性を保つ。方針全体は [夜話アーカイブ Mission](MISSION.md) を参照。
 - 一方で、同じキャスト内でもエピソードや場面ごとに `acting` で自然な感情の変化（軽快さ、照れ、落ち着き、安堵など）を作る。
 - F0・共鳴・話速などの音響数値で合否を決めず、実際の聴取と YouTube 視聴者データで改善する。

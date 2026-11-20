@@ -1,3 +1,19 @@
+---
+type: "policy"
+title: "秒算マネー Mission"
+description: "世界の企業・AI・マクロ経済の「数字の裏にある構造」を一次資料と歴史比較で届ける2レーン方針と収益化 KPI。"
+tags:
+  - yt3/mission
+  - yt3/byosan
+  - yt3/strategy
+aliases:
+  - "秒算マネー方針"
+  - "byosan-mission"
+generated:
+  by: "antigravity/gemini-4-neon-high"
+  at: "2026-11-20T00:25:00Z"
+---
+
 # MISSION.md | 秒算マネー
 
 > **世界の企業・AI・マクロ経済の「数字の裏にある構造」を、一次資料と歴史比較で腑に落とす。**
@@ -38,5 +54,5 @@
 ## 5. 成功指標（YPP・視聴者獲得）
 
 - **収益化マイルストーン**: YouTube パートナープログラム本収益化（登録者1,000人・直近365日の長尺再生4,000時間）と広告適合（緑アイコン）の維持。
-- **先行 KPI**: サムネイル CTR、冒頭30秒維持率、平均視聴維持率、1動画あたり登録増。
-- **データ還流**: `task analytics:refresh` で取得した `db/evolution.db` と `data/memory/byosan_money/performance_summary.json` を定期的に確認し、伸びた題材・尺・パッケージを次の企画設計へ生かす。単一の数値だけで作品を自動却下しない。
+- **先行 KPI**: サムネイル CTR、冒頭30秒維持率、平均視聴維持率、1動画あたり登録増。指標の定義と算出正本は [Star Schema & dbt Standard](../standard/star-schema-standard.md) および `analytics/models/marts/mart_channel_growth_kpi.sql` に置く。
+- **データ還流**: `task analytics:refresh` と `task analytics:build` で更新した実績および `data/memory/byosan_money/performance_summary.json` を定期的に確認し、伸びた題材・尺・パッケージを次の企画設計へ生かす。単一の数値だけで作品を自動却下しない。
