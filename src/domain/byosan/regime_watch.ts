@@ -120,10 +120,153 @@ export function shouldTriggerRegimeVideo(
 	return lastTriggeredDate !== evaluation.trading_date;
 }
 
+export type RegimeCatalyst = {
+	title: string;
+	url: string;
+	issuer: string;
+	published: string;
+	matched_keywords: string[];
+	score: number;
+};
+
+export const REGIME_CATALYST_FEEDS = [
+	{
+		issuer: "Yahoo Finance (Markets & SOX)",
+		url: "https://feeds.finance.yahoo.com/rss/2.0/headline?s=%5EGSPC,%5ESOX,NVDA&region=US&lang=en-US",
+	},
+	{
+		issuer: "CNBC Markets & Policy",
+		url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114",
+	},
+	{
+		issuer: "Federal Reserve",
+		url: "https://www.federalreserve.gov/feeds/press_all.xml",
+	},
+	{
+		issuer: "The White House",
+		url: "https://www.whitehouse.gov/news/feed/",
+	},
+] as const;
+
+const CATALYST_KEYWORDS: Array<{ term: string; weight: number }> = [
+	{ term: "data center", weight: 4 },
+	{ term: "datacenter", weight: 4 },
+	{ term: "tremendous tax", weight: 5 },
+	{ term: "tariff", weight: 4 },
+	{ term: "tax", weight: 3 },
+	{ term: "semiconductor", weight: 4 },
+	{ term: "chip", weight: 3 },
+	{ term: "export control", weight: 4 },
+	{ term: "power grid", weight: 4 },
+	{ term: "electricity", weight: 3 },
+	{ term: "energy", weight: 2 },
+	{ term: "regulation", weight: 3 },
+	{ term: "antitrust", weight: 3 },
+	{ term: "fed", weight: 3 },
+	{ term: "federal reserve", weight: 4 },
+	{ term: "rate", weight: 2 },
+	{ term: "yield", weight: 3 },
+	{ term: "treasury", weight: 3 },
+	{ term: "capex", weight: 4 },
+	{ term: "ai", weight: 2 },
+	{ term: "nvidia", weight: 3 },
+	{ term: "trump", weight: 3 },
+	{ term: "congress", weight: 3 },
+	{ term: "senate", weight: 3 },
+	{ term: "china", weight: 3 },
+	{ term: "selloff", weight: 3 },
+	{ term: "plunge", weight: 3 },
+	{ term: "vix", weight: 3 },
+];
+
+function decodeXmlEntities(text: string): string {
+	return text
+		.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+		.replace(/&amp;/g, "&")
+		.replace(/&lt;/g, "<")
+		.replace(/&gt;/g, ">")
+		.replace(/&quot;/g, '"')
+		.replace(/&apos;/g, "'")
+		.replace(/&#39;/g, "'")
+		.replace(/&#x27;/g, "'")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+export function parseRssItems(
+	xml: string,
+	issuer: string,
+): Array<{ title: string; url: string; issuer: string; published: string }> {
+	const items: Array<{
+		title: string;
+		url: string;
+		issuer: string;
+		published: string;
+	}> = [];
+	const itemBlocks = xml.match(/<item[\s\S]*?<\/item>/gi) ?? [];
+	for (const block of itemBlocks) {
+		const titleMatch = block.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+		const linkMatch = block.match(/<link[^>]*>([\s\S]*?)<\/link>/i);
+		const pubMatch = block.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i);
+		const title = titleMatch?.[1] ? decodeXmlEntities(titleMatch[1]) : "";
+		const url = linkMatch?.[1] ? decodeXmlEntities(linkMatch[1]) : "";
+		const rawDate = pubMatch?.[1] ? decodeXmlEntities(pubMatch[1]) : "";
+		if (!title || !url?.startsWith("http")) continue;
+		let published = new Date().toISOString().slice(0, 10);
+		if (rawDate) {
+			const parsed = Date.parse(rawDate);
+			if (!Number.isNaN(parsed)) {
+				published = new Date(parsed).toISOString().slice(0, 10);
+			}
+		}
+		items.push({ title, url, issuer, published });
+	}
+	return items;
+}
+
+export function scoreCatalystHeadlines(
+	items: Array<{
+		title: string;
+		url: string;
+		issuer: string;
+		published: string;
+	}>,
+	limit = 8,
+): RegimeCatalyst[] {
+	const seen = new Set<string>();
+	const scored: RegimeCatalyst[] = [];
+	for (const item of items) {
+		const key = item.url.trim();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		const lower = item.title.toLowerCase();
+		const matched: string[] = [];
+		let score = 0;
+		for (const kw of CATALYST_KEYWORDS) {
+			const re = new RegExp(`\\b${kw.term.replace(/\s+/g, "\\s+")}\\b`, "i");
+			if (re.test(lower)) {
+				matched.push(kw.term);
+				score += kw.weight;
+			}
+		}
+		if (
+			item.issuer === "The White House" ||
+			item.issuer === "Federal Reserve"
+		) {
+			score += 2;
+		}
+		if (score >= 3) {
+			scored.push({ ...item, matched_keywords: matched, score });
+		}
+	}
+	return scored.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
 export function buildRegimeFactSheet(
 	evaluation: RegimeEvaluation,
 	options?: {
 		subject?: string;
+		catalysts?: RegimeCatalyst[];
 		extraSourceDocs?: FactSheet["source_documents"];
 	},
 ): FactSheet {
@@ -132,6 +275,12 @@ export function buildRegimeFactSheet(
 		title: `${q.label} (${q.symbol}) Market Close ${q.trading_date}`,
 		issuer: "Yahoo Finance Market Data",
 		published: q.trading_date,
+	}));
+	const catalystDocs = (options?.catalysts ?? []).map((c) => ({
+		url: c.url,
+		title: c.title,
+		issuer: c.issuer,
+		published: c.published,
 	}));
 	const facts: FactSheet["facts"] = [];
 	for (const q of evaluation.quotes) {
@@ -163,14 +312,26 @@ export function buildRegimeFactSheet(
 		});
 	}
 
+	const topCatalystSummary =
+		options?.catalysts && options.catalysts.length > 0
+			? `（一次材料：${options.catalysts
+					.slice(0, 2)
+					.map((c) => c.title)
+					.join(" / ")}）`
+			: "";
+
 	return {
 		schema_version: FACT_SHEET_SCHEMA_VERSION,
 		company: "US Market & Semiconductor Regime Shift",
 		subject:
 			options?.subject ??
-			`米国市場レジーム転換（${evaluation.trading_date}）：${evaluation.triggers.map((t) => t.label).join("・")}の急変が示す市場構造`,
+			`米国市場レジーム転換（${evaluation.trading_date}）：${evaluation.triggers.map((t) => t.label).join("・")}の急変と政策・構造的ボトルネック${topCatalystSummary}`,
 		released: evaluation.trading_date,
-		source_documents: [...symbolDocs, ...(options?.extraSourceDocs ?? [])],
+		source_documents: [
+			...symbolDocs,
+			...catalystDocs,
+			...(options?.extraSourceDocs ?? []),
+		],
 		facts,
 		unverified: [],
 	};

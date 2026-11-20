@@ -5,7 +5,11 @@ import {
 	buildRegimeFactSheet,
 	evaluateRegimeSignals,
 	type MarketQuote,
+	parseRssItems,
+	REGIME_CATALYST_FEEDS,
 	REGIME_SYMBOLS,
+	type RegimeCatalyst,
+	scoreCatalystHeadlines,
 	shouldTriggerRegimeVideo,
 } from "../domain/byosan/regime_watch.js";
 import { ROOT } from "../io/core.js";
@@ -63,6 +67,31 @@ async function fetchQuote(
 	};
 }
 
+async function fetchPrimaryCatalysts(): Promise<RegimeCatalyst[]> {
+	const rawItems: Array<{
+		title: string;
+		url: string;
+		issuer: string;
+		published: string;
+	}> = [];
+	await Promise.all(
+		REGIME_CATALYST_FEEDS.map(async (feed) => {
+			try {
+				const res = await fetch(feed.url, {
+					headers: { "User-Agent": "yt3-byosan-regime-watch/1.0" },
+					signal: AbortSignal.timeout(8_000),
+				});
+				if (!res.ok) return;
+				const xml = await res.text();
+				rawItems.push(...parseRssItems(xml, feed.issuer));
+			} catch {
+				// Non-fatal: individual feed outage must not block regime detection.
+			}
+		}),
+	);
+	return scoreCatalystHeadlines(rawItems, 8);
+}
+
 async function main() {
 	const args = process.argv.slice(2);
 	const trigger = args.includes("--trigger");
@@ -83,6 +112,8 @@ async function main() {
 	}
 
 	const evaluation = evaluateRegimeSignals(quotes);
+	const catalysts =
+		evaluation.regime !== "normal" ? await fetchPrimaryCatalysts() : [];
 	const statePath = path.join(
 		ROOT,
 		"data",
@@ -110,9 +141,13 @@ async function main() {
 			`regime_fact_sheet_${evaluation.trading_date}.json`,
 		);
 		fs.ensureDirSync(path.dirname(factSheetPath));
-		fs.writeJsonSync(factSheetPath, buildRegimeFactSheet(evaluation), {
-			spaces: 2,
-		});
+		fs.writeJsonSync(
+			factSheetPath,
+			buildRegimeFactSheet(evaluation, { catalysts }),
+			{
+				spaces: 2,
+			},
+		);
 		const tokyoDate = new Intl.DateTimeFormat("sv-SE", {
 			timeZone: "Asia/Tokyo",
 			year: "numeric",
@@ -155,6 +190,7 @@ async function main() {
 		regime: evaluation.regime,
 		triggers: evaluation.triggers,
 		quotes: evaluation.quotes,
+		catalysts,
 		fetch_errors: fetchErrors,
 		triggered_now: willTrigger,
 		trigger_exit_code: triggerExitCode,
@@ -177,6 +213,9 @@ async function main() {
 		}
 		for (const t of evaluation.triggers) {
 			console.log(`  ! TRIGGER: ${t.reason}`);
+		}
+		for (const c of catalysts.slice(0, 4)) {
+			console.log(`  * CATALYST [${c.issuer}] (score=${c.score}): ${c.title}`);
 		}
 	}
 }
