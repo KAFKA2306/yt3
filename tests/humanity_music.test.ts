@@ -83,3 +83,13 @@ describe("humanity music audit", () => {
 		);
 	});
 });
+
+describe("humanity narrative label config", () => {
+	test("configures jacket thumbnail generation and story description fields", () => {
+		expect(config.thumbnail.image_tool?.command).toBe("codex-imagegen");
+		expect(config.metadata.title_suffix).toContain("晴れ待ち坂");
+		expect(config.metadata.description).toContain("{concept}");
+		expect(config.metadata.description).toContain("{story}");
+		expect(config.metadata.description).toContain("{characters}");
+	});
+});

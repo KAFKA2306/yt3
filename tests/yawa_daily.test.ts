@@ -3,11 +3,14 @@ import {
 	assertUnprivileged,
 	buildDescription,
 	capabilities,
+	castReferencePath,
 	flattenPerformances,
 	irodoriCall,
+	loadYawaCast,
 	loadYawaConfig,
 	preparationAction,
 	ScriptDraftSchema,
+	shouldGenerateYawaImages,
 	validateDraft,
 	yawaAudit,
 } from "../src/domain/yawa_daily.js";
@@ -159,4 +162,38 @@ test("metadata retains factual disclosures without fixed creative title or lead"
 	expect(text).toContain(config.metadata.ai_disclosure);
 	expect(text).toContain(config.metadata.rights_declaration);
 	expect(text).not.toContain("再生時間:");
+});
+
+describe("Yawa fixed cast and thumbnail defaults", () => {
+	test("loads the canonical 3-character cast roster with visual and voice identities", () => {
+		const cast = loadYawaCast(process.cwd());
+		expect(cast.characters.map((c) => c.id)).toEqual([
+			"haruka",
+			"shizuku",
+			"nao",
+		]);
+		for (const c of cast.characters) {
+			expect(c.visual_identity.length).toBeGreaterThan(20);
+			expect(c.voice_caption.length).toBeGreaterThan(10);
+			expect(c.episode_genres.length).toBeGreaterThanOrEqual(2);
+		}
+	});
+
+	test("resolves safe persistent per-character reference paths", () => {
+		expect(castReferencePath("/repo", "haruka")).toBe(
+			"/repo/data/state/yawa/references/haruka.wav",
+		);
+		expect(() => castReferencePath("/repo", "../escape")).toThrow(
+			"invalid yawa character id",
+		);
+	});
+
+	test("enables character thumbnail generation by default unless explicitly disabled", () => {
+		expect(shouldGenerateYawaImages({})).toBe(true);
+		expect(shouldGenerateYawaImages({ YAWA_GENERATE_IMAGES: "1" })).toBe(true);
+		expect(shouldGenerateYawaImages({ YAWA_GENERATE_IMAGES: "0" })).toBe(false);
+		expect(shouldGenerateYawaImages({ YAWA_GENERATE_IMAGES: "false" })).toBe(
+			false,
+		);
+	});
 });

@@ -8,7 +8,7 @@
 - `yawa`: 夜話アーカイブ ASMR
 - `humanity`: 雨晴はうの人類観測所
 
-`humanity` has `docs/humanity/MISSION.md` (editorial direction) and `docs/humanity/SOUL.md` (character); `byosan` has `docs/byosan/MISSION.md`.
+`humanity` has `docs/humanity/MISSION.md` (narrative music label direction), `docs/humanity/SOUL.md` (character), and `docs/humanity/story-world.json`; `byosan` has `docs/byosan/MISSION.md` (2-lane financial/tech structure analysis); `yawa` has `docs/yawa/MISSION.md` (all-ages fixed-cast situation-voice theater) and `docs/yawa/characters.json`. All three products prioritize YouTube audience growth, advertiser-friendly monetization (YPP), and avoiding mass-produced/inauthentic repetition.
 
 Keep each product's config, media, credentials, receipts, and publication state separate. Work on one product must not change another product's files, configuration, timers, or GPU assumptions.
 

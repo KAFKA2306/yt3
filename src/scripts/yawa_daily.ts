@@ -17,24 +17,81 @@ import {
 	buildTags,
 	buildTitle,
 	capabilities,
+	castReferencePath,
 	flattenPerformances,
 	type IrodoriCall,
 	irodoriCall,
+	loadYawaCast,
 	loadYawaConfig,
 	type Performance,
 	preparationAction,
 	type ScriptDraft,
 	ScriptDraftSchema,
+	shouldGenerateYawaImages,
 	type VoiceDesign,
 	validateDraft,
+	type YawaCast,
+	type YawaCharacter,
 	yawaAudit,
 } from "../domain/yawa_daily.js";
 import { AGY_CREATIVE_MODEL, invokeAgyStructured } from "../io/agy.js";
 import { ROOT } from "../io/core.js";
 
 const config = loadYawaConfig(ROOT);
+const cast: YawaCast = loadYawaCast(ROOT);
+const castById = new Map<string, YawaCharacter>(
+	cast.characters.map((character) => [character.id, character]),
+);
 const bucket = path.join(ROOT, "runs", config.run.bucket);
 type Device = "cpu" | "cuda";
+
+type RecentYawaEpisode = {
+	run: string;
+	title: string;
+	voices: string[];
+};
+
+function recentYawaEpisodes(currentDir: string): RecentYawaEpisode[] {
+	if (!fs.existsSync(bucket)) return [];
+	const currentName = path.basename(currentDir);
+	return fs
+		.readdirSync(bucket, { withFileTypes: true })
+		.filter((entry) => entry.isDirectory() && entry.name !== currentName)
+		.map((entry) => ({
+			run: entry.name,
+			file: path.join(bucket, entry.name, "script.json"),
+		}))
+		.filter(({ file }) => fs.existsSync(file))
+		.sort((a, b) => b.run.localeCompare(a.run))
+		.slice(0, 6)
+		.flatMap(({ run, file }) => {
+			try {
+				const raw = fs.readJsonSync(file) as {
+					title?: string;
+					voices?: Array<{ id?: string; character_id?: string }>;
+				};
+				if (!raw.title) return [];
+				return [
+					{
+						run,
+						title: raw.title,
+						voices: (raw.voices ?? [])
+							.map((v) => v.character_id || v.id || "")
+							.filter(Boolean),
+					},
+				];
+			} catch {
+				return [];
+			}
+		});
+}
+
+function resolveCastCharacter(voice: VoiceDesign): YawaCharacter | undefined {
+	return (
+		(voice.character_id ? castById.get(voice.character_id) : undefined) ??
+		castById.get(voice.id)
+	);
+}
 
 class StepFailure extends Error {
 	constructor(
@@ -224,15 +281,19 @@ function scriptPrompt(
 	tools: { tts: string[]; images: string[] },
 	selectedTitle: string,
 	titleReview: TitleReview,
+	recent: RecentYawaEpisode[],
 ): string {
-	const imageTools =
-		process.env.YAWA_GENERATE_IMAGES === "1" ? tools.images : [];
+	const imageTools = shouldGenerateYawaImages() ? tools.images : [];
 	return [
-		"あなたは夜話アーカイブの制作AIです。次のYAMLは目的と参考情報です。",
+		"あなたは夜話アーカイブの制作AIです。次のYAMLは目的・広告適合・固定キャスト方針です。",
 		JSON.stringify(config.creative),
-		"固有の魅力を持つ成人人物の日本語音声作品を創作してください。状況、人物、形式、尺、声、演技、画風は作品ごとに決め、既成の型を前提にしません。",
-		"声の好みは聴き心地の参考です。今回の人物に合う声優像を新たに設計し、好みの音域・共鳴・息・話速・甘さを固定値にせず、別作品のcaptionや音声参照をそのまま引き継ぎません。愛情や親密さがある関係では、その気持ちを声色自体の温かさ・柔らかさ・語尾の優しさにも反映します。作品内では人物の声を保ちながら、場面ごとのactingで自然に表情を変えます。voices.captionに質感を書き、reference_textは必要な声だけに任意で付けてcaptionと整合させます。",
-		"句末に長く伸びる吸気・吐息や擦れた息音を加えません。親密さは声色の温度や柔らかさ、声の距離・間・反応で表し、reference_textも息音を誇張しません。台本やactingに息を吹きかける、吸い込む、吐き出す音を演技効果として書きません。通常の発音や自然な息継ぎは保ち、独立した息音として強調しません。",
+		"固定キャスト正本（docs/yawa/characters.json）:",
+		JSON.stringify(cast),
+		"直近の公開・制作履歴（同じキャストや「終電後・深夜に弱音をこぼす」展開の連続を避けること）:",
+		JSON.stringify(recent),
+		"固定キャスト（haruka / shizuku / nao）から主役を1名選び（必要なら2名掛け合いも可）、全年齢・YouTube広告適合（緑アイコン）で何度も聴きたくなる日本語シチュエーションボイスを創作してください。登場人物は成人。目標尺は8〜15分程度を目安に、情景・掛け合い・心の動きをしっかり描きます。",
+		"選んだキャストのidをvoices[].idおよびvoices[].character_idに指定し、voices[].captionにはキャスト正本のvoice_captionを土台にしつつ今回の雰囲気に整えてください。reference_textはキャスト正本のreference_textをそのまま使います。場面ごとの感情の変化はperformances[].actingで自然に付けます。",
+		"句末に長く伸びる吸気・吐息や擦れた息音を加えません。親密さは声色の温度や柔らかさ、声の距離・間・反応で表し、reference_textも息音を誇張しません。息を吹きかける・吸い込む・吐き出す演出、性的興奮を目的とする描写・喘ぎ・過度な密着ロールプレイ、18+系スラングや誤認ワード（添い寝・耳舐め等）は台本・タイトル・説明文・タグに一切書きません。",
 		"使えるツール: " +
 			JSON.stringify({
 				tts: tools.tts,
@@ -240,24 +301,25 @@ function scriptPrompt(
 				video: ["JIZURA"],
 			}),
 		`動画は必ずJIZURAで制作し、各performanceの台詞を実際の音声時刻に合わせた字幕として使います。JIZURAの見た目は作品ごとに選びます。任意のproduction.jizura_themeには次の値を指定できます: lyricpv, kinetic, wa, horror, pop, ballad。未指定ならJIZURAのおまかせを使います。FFmpegは元音声の合成と最終エンコードだけに使います。`,
-		"音声を先に完成させます。画像生成は任意の添え物です。YAWA_GENERATE_IMAGES=1のときだけサムネイル画像を生成し、画像が作れなくてもJIZURA動画を制作して公開準備を続けます。mixは必要な場合のみ指定します。video.width/heightはJIZURAが対応する比率（16:9、9:16、4:3、3:4、1:1、4:5、21:9）にします。",
-		"サムネイル画像を使う場合は作品固有のthumbnail_promptを指定します。共通の画風・色・構図は追加しません。対応サイズ: " +
-			JSON.stringify(
-				Object.fromEntries(
-					imageTools.map((id) => [
-						id,
-						{
-							default: config.image_tools[id]?.size,
-							choices: config.image_tools[id]?.sizes,
-						},
-					]),
-				),
-			),
+		imageTools.length > 0
+			? `サムネイル画像はクリック率を高める重要要素です。production.image_toolに "${imageTools[0]}" を指定し、選んだキャストのvisual_identityをベースに今回の場面・表情・照明を描く英語のthumbnail_prompt（文字・ロゴなし）を必ず作成してください。対応サイズ: ` +
+				JSON.stringify(
+					Object.fromEntries(
+						imageTools.map((id) => [
+							id,
+							{
+								default: config.image_tools[id]?.size,
+								choices: config.image_tools[id]?.sizes,
+							},
+						]),
+					),
+				)
+			: "画像生成は今回無効です。thumbnail_promptは省略してJIZURA動画を制作します。",
 		`採用タイトル: ${selectedTitle}`,
 		`本文前のタイトル批評: ${JSON.stringify(titleReview)}`,
 		"titleには採用タイトルをそのまま使い、そのタイトルが予告する場面と人物の魅力を台本で実現してください。完成後、別工程で台本と照合して必要に応じて改題します。",
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
-		"JSONのみ。title、voices[{id,caption,reference_text?}]、production{tts_backend,image_tool?,video?,jizura_theme?,thumbnail_size?,mix?}を含めます。thumbnail_promptは任意です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
+		"JSONのみ。title、voices[{id,character_id?,caption,reference_text?}]、production{tts_backend,image_tool?,video?,jizura_theme?,thumbnail_size?,mix?}を含めます。thumbnail_promptは画像ツール利用時に必須です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
 	].join("\n");
 }
 
@@ -400,12 +462,25 @@ function generateScript(
 	if (existed) {
 		draft = ScriptDraftSchema.parse(fs.readJsonSync(file));
 	} else {
+		const recent = recentYawaEpisodes(dir);
+		const titleRules =
+			"固定キャスト（日向はるか / 白瀬しずく / 月島なお）の誰との・どんな心地よい／楽しい時間かが一目で伝わる自然な日本語タイトル（45文字以内目安）にする。直近作品と同じキャスト・同じ『終電・深夜の寝かしつけ』表現の反復を避け、全年齢・広告適合（緑アイコン）に反する性的連想ワード（添い寝・耳舐め・18+系等）を入れない。";
 		const titleProposal = invokeAgyStructured({
 			name: "yawa_title_proposal",
 			schema: TitleProposalSchema,
 			prompt: titleProposalPrompt({
 				brand: "夜話アーカイブ ASMR",
-				context: config.creative,
+				rules: titleRules,
+				context: {
+					creative: config.creative,
+					cast: cast.characters.map(({ id, name, role, episode_genres }) => ({
+						id,
+						name,
+						role,
+						episode_genres,
+					})),
+					recent_episodes: recent,
+				},
 			}),
 		});
 		const titleReview = invokeAgyStructured({
@@ -414,12 +489,18 @@ function generateScript(
 			prompt: titleOnlyPrompt({
 				brand: "夜話アーカイブ ASMR",
 				title: titleProposal.value.title,
+				rules: titleRules,
 			}),
 		});
 		const authored = invokeAgyStructured({
 			name: "yawa_script",
 			schema: ScriptDraftSchema,
-			prompt: scriptPrompt(tools, titleProposal.value.title, titleReview.value),
+			prompt: scriptPrompt(
+				tools,
+				titleProposal.value.title,
+				titleReview.value,
+				recent,
+			),
 		});
 		draft = authored.value;
 		const body = flattenPerformances(draft)
@@ -430,6 +511,7 @@ function generateScript(
 			schema: TitleFitSchema,
 			prompt: titleFitPrompt({
 				brand: "夜話アーカイブ ASMR",
+				rules: titleRules,
 				initialTitle: titleProposal.value.title,
 				titleReview: titleReview.value,
 				body: `台本中のタイトル: ${draft.title}\n\n${body}`,
@@ -547,6 +629,24 @@ function generateReference(
 	device: Device,
 	dir: string,
 ): string | undefined {
+	const character = resolveCastCharacter(voice);
+	if (character) {
+		const persistentRef = castReferencePath(ROOT, character.id);
+		fs.ensureDirSync(path.dirname(persistentRef));
+		if (!fs.existsSync(persistentRef)) {
+			const refCall = irodoriCall(config, {
+				backendId: draft.production.tts_backend,
+				text: character.reference_text,
+				caption: character.voice_caption,
+				outputWav: persistentRef,
+				device,
+			});
+			writeAudioCall(`cast-reference:${character.id}`, refCall, persistentRef);
+		} else {
+			assertPlayable(persistentRef);
+		}
+		return persistentRef;
+	}
 	if (!voice.reference_text) return undefined;
 	const refsDir = path.join(dir, "tts", "references");
 	fs.ensureDirSync(refsDir);
@@ -722,9 +822,11 @@ function renderImages(
 } {
 	const thumbnailSource = path.join(dir, "thumbnail_source.png");
 	const thumbnail = path.join(dir, config.thumbnail.file);
-	const toolId = draft.production.image_tool;
+	const toolId =
+		draft.production.image_tool ??
+		(draft.thumbnail_prompt ? Object.keys(config.image_tools)[0] : undefined);
 	const imageSettings = toolId ? config.image_tools[toolId] : undefined;
-	const enabled = process.env.YAWA_GENERATE_IMAGES === "1";
+	const enabled = shouldGenerateYawaImages();
 	const requested = Boolean(enabled && toolId && draft.thumbnail_prompt);
 	const errors: string[] = [];
 	const readable = (file: string) => {
@@ -735,7 +837,8 @@ function renderImages(
 		}
 	};
 	const existing = readable(thumbnail) ? { thumbnail } : {};
-	if (!enabled) return record(existing, "YAWA_GENERATE_IMAGES is not enabled");
+	if (!enabled)
+		return record(existing, "YAWA_GENERATE_IMAGES disabled by environment");
 	if (!requested)
 		return record(existing, "no image tool or image prompt selected");
 	if (requested && (!imageSettings || !Bun.which(imageSettings.command))) {

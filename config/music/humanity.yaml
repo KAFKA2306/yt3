@@ -45,20 +45,22 @@ thumbnail:
   height: 720
   quality: 3
   at_seconds: 17
+  image_tool:
+    command: codex-imagegen
+    size: 1536x1024
 audit:
   duration_tolerance_seconds: 1.5
   max_song_attempts: 3
 metadata:
-  title_suffix: " | 人類観測所の音楽"
-  tags: [YuE2, AI音楽, 人類観測所]
-  description: "{title}\n\n{lyrics}\n\n{ai_disclosure}\n{credit}"
+  title_suffix: " | 晴れ待ち坂・人類観測所"
+  tags: [晴れ待ち坂, 雨晴はうの人類観測所, 物語音楽, AI音楽, YuE2]
+  description: "{title}\n\n{concept}\n{story}\n登場人物: {characters}\n\n{lyrics}\n\n{ai_disclosure}\n{credit}"
   credit: "Music: YuE2-3B (m-a-p) #YuE2 / Video: JIZURA (852wa, MIT) lyric motion"
-  ai_disclosure: この曲の音楽、歌詞、映像はAIで生成しています。
+  ai_disclosure: この曲の音楽、歌詞、映像、サムネイルはAIで生成しています。
 rights_declaration: 個人の立場の運営者として、歌詞は当該 run で新規に生成し、第三者の歌詞と音源を使っていない。
 youtube_playlist:
-  title: 人類観測所の音楽
-  description: 人の営みやそのそばの景色を、曲ごとの世界から描く音楽です。
+  title: 晴れ待ち坂 | 人類観測所の音楽
+  description: 海と線路を見下ろす「晴れ待ち坂」で、雨晴はうが観測した人々の不器用な本音を届ける物語音楽レーベル。
   privacy: public
   ready_attempts: 20
   ready_interval_ms: 6000
-  target_minutes: 120

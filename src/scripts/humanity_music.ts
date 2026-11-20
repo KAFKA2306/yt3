@@ -22,7 +22,6 @@ import {
 	musicAudit,
 	parseLedger,
 	playlistText,
-	publishedSeconds,
 	rankedSongs,
 	scoresOf,
 	YOUTUBE_PLAYLIST_URL,
@@ -50,8 +49,10 @@ const DraftSchema = z.object({
 	concept: z.string().min(1),
 	story: z.string().min(1),
 	relationship: z.string().min(1),
+	featured_characters: z.array(z.string().min(1)).min(1),
 	style: z.string().min(1),
 	lyrics: z.string().min(1),
+	thumbnail_prompt: z.string().min(1),
 	jizura: HumanityJizuraPlanSchema,
 });
 
@@ -241,18 +242,24 @@ async function generate(brief?: string): Promise<GenerationRow> {
 	const context = {
 		brief: brief ?? null,
 		mission:
-			"毎曲に伝えたいコンセプトと物語を持たせ、共通の世界と人物関係が曲をまたいで育つ音楽レーベルを作る。各曲は初聴きでも単独で楽しめる。",
+			"「晴れ待ち坂」に生きる人々の不器用な本音を、雨晴はうが観測し一曲の物語として残すAI音楽レーベル。雨晴はうはレーベルの記録係・キュレーターであり、各曲は主人公・視点に合うボーカルと音作りで届ける。初聴きで単体でも刺さり、続けて聴くほど人物関係が深まる一曲を作る。",
 		preferences:
-			"HoneyWorksに感じる、人物と関係が初聴きでも分かる明快さと、出来事が歌を通して進むストーリー性。IMOJISTの曲調と音作り。いずれも固有表現を借りず、人類観測所の世界に合う形へ発展させる。",
+			"HoneyWorksに感じる人物関係の明快さとストーリー性、DECO*27に感じる世界観と言葉の結び付き、IMOJISTの曲調と音作り。いずれも固有表現を借りず、晴れ待ち坂オリジナルの音楽として表現する。",
 		history_use:
-			"previous_storiesは過去作品であり、重複を避けるための参考です。現在のworldが正本です。過去作品の人物設定や世界設定が現在と異なる場合、古い設定を引き継がず、題材・出来事・小道具・感情の流れの反復を避けてください。",
+			"previous_storiesは過去作品であり、重複を避けるための参考です。現在のworldが正本です。過去作品と同じ題材・小道具・感情の流れを反復せず、大きな関係性の結末を一曲で急いで消費し尽くさないでください。",
 		world: worldRecord.world,
 		previous_stories: previous,
 	};
+	const titleRules =
+		"3〜15文字前後の短く口ずさみやすい日本語の曲名にする（例: 『余白のさみしい』『外れたチェーン』）。ラノベのあらすじ説明のような長い文章や、登場人物・状況の説明を曲名に入れない。物語の説明は概要欄に書く。";
 	const titleProposal = invokeAgyStructured({
 		name: "humanity_title_proposal",
 		schema: TitleProposalSchema,
-		prompt: titleProposalPrompt({ brand: "雨晴はうの人類観測所", context }),
+		prompt: titleProposalPrompt({
+			brand: "雨晴はうの人類観測所",
+			rules: titleRules,
+			context,
+		}),
 	});
 	const titleReview = invokeAgyStructured({
 		name: "humanity_title_review",
@@ -260,16 +267,17 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		prompt: titleOnlyPrompt({
 			brand: "雨晴はうの人類観測所",
 			title: titleProposal.value.title,
+			rules: titleRules,
 		}),
 	});
 	const authored = invokeAgyStructured({
 		name: "humanity_song_draft",
 		schema: DraftSchema,
 		prompt: [
-			"あなたは人類観測所の作詞家・作曲家です。今回の歌が伝えるコンセプト、人物の関係、出来事、感情の変化をひとつの体験として作り、歌詞と音楽を一緒に設計してください。",
-			"共有世界と過去の曲を踏まえ、人物や関係が曲をまたいで育つ余地を作ります。初めて聴く人にも、誰が誰に何を望み、何が変わったかが伝わることを大切にします。毎曲の天気、出来事の大きさ、視点、構成、季節進行、小道具を固定せず、今回の核に合う語り方を選びます。",
-			"HoneyWorksに感じる人物関係の明快さとストーリー性、IMOJISTの曲調と音作りを好みの参考にします。既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは借りず、今回に合う音楽方向、テンポ、編曲、音色、歌声を設計してください。",
-			"歌詞は新しく書きます。titleは曲名、conceptは一文で伝わる今回の核、storyは出来事と感情の変化、relationshipは共有世界との接点、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文です。jizuraはJIZURAで歌詞を物語に沿って見せる計画にします。",
+			"あなたは「雨晴はうの人類観測所（晴れ待ち坂）」の作詞家・作曲家です。今回の歌が伝えるコンセプト、人物の関係、出来事、感情の変化をひとつの体験として作り、歌詞と音楽とジャケット情景を一緒に設計してください。",
+			"雨晴はうは全曲を単一の声で歌う歌手ではなくレーベルの観測者・記録係です。今回の主人公・視点・感情に合うボーカル、テンポ、編曲、音色を自由に設計します。共有世界と過去の曲を踏まえ、初めて聴く人にも誰が何を望み何が変わったかが伝わる一曲にしてください。",
+			"HoneyWorksに感じる人物関係の明快さとストーリー性、DECO*27に感じる世界観と言葉の結び付き、IMOJISTの曲調と音作りを好みの参考にします。既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは一切借りません。",
+			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の出来事と感情の変化、relationshipは共有世界との接点、featured_charactersは登場人物名の配列（例: ['日向 湊', '白石 ことは']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（晴れ待ち坂の情景と登場人物の空気を統一感のあるアニメ水彩調で描く・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を物語に沿って見せる計画にします。",
 			`選んだタイトル: ${titleProposal.value.title}`,
 			`タイトルだけの批評: ${JSON.stringify(titleReview.value)}`,
 			"このタイトルの約束に沿う曲を作り、titleには選んだタイトルをそのまま入れてください。",
@@ -283,9 +291,10 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		schema: TitleFitSchema,
 		prompt: titleFitPrompt({
 			brand: "雨晴はうの人類観測所",
+			rules: titleRules,
 			initialTitle: titleProposal.value.title,
 			titleReview: titleReview.value,
-			body: `完成稿のタイトル: ${draft.title}\nコンセプト: ${draft.concept}\n物語: ${draft.story}\n人物関係: ${draft.relationship}\n音楽方向: ${draft.style}\n\n完成歌詞:\n${draft.lyrics}`,
+			body: `完成稿のタイトル: ${draft.title}\nコンセプト: ${draft.concept}\n物語: ${draft.story}\n人物関係: ${draft.relationship}\n登場人物: ${draft.featured_characters.join("・")}\n音楽方向: ${draft.style}\n\n完成歌詞:\n${draft.lyrics}`,
 		}),
 	});
 	draft.title = titleFit.value.title;
@@ -320,6 +329,8 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		concept: draft.concept,
 		story: draft.story,
 		relationship: draft.relationship,
+		featured_characters: draft.featured_characters,
+		thumbnail_prompt: draft.thumbnail_prompt,
 		jizura_plan: {
 			path: "jizura.json",
 			sha256: sha256File(jizuraPlanPath),
@@ -540,26 +551,93 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			{ cwd: ROOT },
 		);
 	const videoAudio = probeAudio(videoPath);
+	const authoringPath = path.join(generationDir, "creative_authoring.json");
+	const authoring = fs.existsSync(authoringPath)
+		? (fs.readJsonSync(authoringPath) as {
+				concept?: string;
+				story?: string;
+				featured_characters?: string[];
+				thumbnail_prompt?: string;
+			})
+		: {};
 	const thumbnailPath = path.join(dir, config.thumbnail.file);
-	if (!fs.existsSync(thumbnailPath))
-		run([
-			"ffmpeg",
-			"-y",
-			"-loglevel",
-			"error",
-			"-ss",
-			String(config.thumbnail.at_seconds),
-			"-i",
-			videoPath,
-			"-frames:v",
-			"1",
-			"-vf",
-			`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
-			"-q:v",
-			String(config.thumbnail.quality),
-			thumbnailPath,
-		]);
+	if (!fs.existsSync(thumbnailPath)) {
+		const imageTool = config.thumbnail.image_tool;
+		const generatedArt =
+			imageTool && authoring.thumbnail_prompt && Bun.which(imageTool.command);
+		if (generatedArt && imageTool && authoring.thumbnail_prompt) {
+			const artSource = path.join(dir, "thumbnail_source.png");
+			run([
+				imageTool.command,
+				authoring.thumbnail_prompt,
+				artSource,
+				"--size",
+				imageTool.size,
+			]);
+			run([
+				"ffmpeg",
+				"-y",
+				"-loglevel",
+				"error",
+				"-i",
+				artSource,
+				"-vf",
+				`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
+				"-q:v",
+				String(config.thumbnail.quality),
+				thumbnailPath,
+			]);
+			fs.writeJsonSync(
+				path.join(dir, "thumbnail.json"),
+				{
+					source: "image_tool",
+					tool: imageTool.command,
+					size: imageTool.size,
+					prompt: authoring.thumbnail_prompt,
+					sha256: sha256File(thumbnailPath),
+				},
+				{ spaces: 2 },
+			);
+		} else {
+			run([
+				"ffmpeg",
+				"-y",
+				"-loglevel",
+				"error",
+				"-ss",
+				String(config.thumbnail.at_seconds),
+				"-i",
+				videoPath,
+				"-frames:v",
+				"1",
+				"-vf",
+				`scale=${config.thumbnail.width}:${config.thumbnail.height}:force_original_aspect_ratio=increase,crop=${config.thumbnail.width}:${config.thumbnail.height}`,
+				"-q:v",
+				String(config.thumbnail.quality),
+				thumbnailPath,
+			]);
+			fs.writeJsonSync(
+				path.join(dir, "thumbnail.json"),
+				{
+					source: "video_frame",
+					at_seconds: config.thumbnail.at_seconds,
+					sha256: sha256File(thumbnailPath),
+				},
+				{ spaces: 2 },
+			);
+		}
+	}
 	const title = `${song.title}${config.metadata.title_suffix}`;
+	const description = fillTemplate(config.metadata.description, {
+		...song.cell,
+		title,
+		concept: authoring.concept ?? "",
+		story: authoring.story ?? "",
+		characters: authoring.featured_characters?.join("・") ?? "雨晴 はう",
+		lyrics: request.lyrics,
+		ai_disclosure: config.metadata.ai_disclosure,
+		credit: config.metadata.credit,
+	}).replaceAll(/\n{3,}/g, "\n\n");
 	fs.writeJsonSync(
 		path.join(dir, "state.json"),
 		{
@@ -572,13 +650,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			metadata: {
 				title,
 				thumbnail_title: title,
-				description: fillTemplate(config.metadata.description, {
-					...song.cell,
-					title,
-					lyrics: request.lyrics,
-					ai_disclosure: config.metadata.ai_disclosure,
-					credit: config.metadata.credit,
-				}),
+				description,
 				tags: config.metadata.tags,
 			},
 		},
@@ -951,13 +1023,6 @@ else if (command === "rate")
 else if (command === "report") report();
 else if (command === "playlist") writePlaylist();
 else if (command === "preflight") preflight();
-else if (command === "full")
-	process.exit(
-		publishedSeconds(readLedger()) >=
-			config.youtube_playlist.target_minutes * 60
-			? 0
-			: 1,
-	);
 else if (command === "prepare") await prepare(rest[0] ?? "", rest[1]);
 else if (command === "prepare-binaural")
 	prepareBinaural(rest[0] ?? "", rest[1] ?? "", rest[2] ?? "");
@@ -965,5 +1030,5 @@ else if (command === "youtube-playlist")
 	await youtubePlaylist(rest[0] ?? "", rest[1]);
 else
 	throw new Error(
-		"usage: generate | rate <id> <score> [note] | report | playlist | preflight | full | prepare <date> [slot] | prepare-binaural <source-id> <date> <slot> | youtube-playlist <date> [slot]",
+		"usage: generate | rate <id> <score> [note] | report | playlist | preflight | prepare <date> [slot] | prepare-binaural <source-id> <date> <slot> | youtube-playlist <date> [slot]",
 	);

@@ -100,6 +100,12 @@ export const ConfigSchema = z.object({
 		height: z.number(),
 		quality: z.number(),
 		at_seconds: z.number(),
+		image_tool: z
+			.object({
+				command: z.string().min(1),
+				size: z.string().min(1),
+			})
+			.optional(),
 	}),
 	audit: z.object({
 		duration_tolerance_seconds: z.number(),
@@ -118,7 +124,6 @@ export const ConfigSchema = z.object({
 		privacy: z.enum(["public", "unlisted", "private"]),
 		ready_attempts: z.number(),
 		ready_interval_ms: z.number(),
-		target_minutes: z.number(),
 	}),
 });
 export type MusicConfig = z.infer<typeof ConfigSchema>;

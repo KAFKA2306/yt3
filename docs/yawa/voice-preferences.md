@@ -1,7 +1,15 @@
 # Yawa voice preference
 
-The user selected four spoken moments from [the 17 November 2026 episode](https://youtu.be/0xLQdAiJYnQ). In the saved production, the moments belong to one character and one caption; the acting changes between an apology, a lightly embarrassed question, a quieter invitation, and a calm expression of relief. This is evidence about the user's preferred listening experience, not four separate voice identities.
+2026-11-17 公開作（[https://youtu.be/0xLQdAiJYnQ](https://youtu.be/0xLQdAiJYnQ)）でオーナーが選出した 4 箇所の台詞は、夜話アーカイブ全体が目指す「聴き心地の基準」を示す。
 
-Use the preference as a starting point: conversational closeness, soft but clear delivery, light animation with a familiar listener, and emotional movement that reaches the line ending. Each new episode designs a voice profile for its character. Do not copy the prior caption or reuse its reference audio as the new character's voice; keep one character consistent within the episode and let other characters and episodes sound distinct.
+## 演技と聴き心地の基準
 
-The selected moments have different pitches and intensity because their lines and acting differ. Acoustic measurements are observations of those performances, not acceptance ranges. Do not set a target F0, resonance value, breath amount, speaking speed, or sweetness score. Judge the generated result by listening and the user's feedback.
+- 会話として自然な近さ、柔らかな明瞭さ、親しい相手に向ける軽やかさ、語尾まで届く感情の動きを重視する。
+- 愛情や親密さがある場面では、声色そのものの温かさと柔らかさ、声の距離・間・反応で表現する。
+- 長く伸びる吸気や吐息、擦れた息音を句末の癖として加えない。息を吹きかける・吸い込む・吐き出す演出は台本にも `acting` にも書かない。
+
+## 固定キャスト運用との統合
+
+- キャストは [characters.json](./characters.json) の 3 名（`haruka` / `shizuku` / `nao`）を正本とし、キャラクターごとに専用参照音声（`data/state/yawa/references/<character_id>.wav`）を永続利用して、エピソードをまたぐ声の一貫性を保つ。
+- 一方で、同じキャスト内でもエピソードや場面ごとに `acting` で自然な感情の変化（軽快さ、照れ、落ち着き、安堵など）を作る。
+- F0・共鳴・話速などの音響数値で合否を決めず、実際の聴取と YouTube 視聴者データで改善する。

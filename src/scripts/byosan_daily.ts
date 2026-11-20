@@ -356,12 +356,17 @@ export function generateFeatureSpec(
 ): { spec: ByosanFeatureSpec; explanation: Explanation } {
 	const system = dailyConfig().feature_draft.system;
 	const articles = renderFeatureDraftInput(input);
+	const lane = input.subject ? "deep_dive_feature" : "daily_selected_news";
+	const titleRules =
+		"日本語の個人投資家・テック層がクリックしたくなる具体性（大型企業・AI/半導体・マクロ・市場構造・数字の対比や常識とのズレ）を先頭に置く。日次ニュースで複数記事がある場合は、マイナー企業の小粒な業績記事より市場全体や注目企業・産業構造に関わる記事を優先する。投資助言や煽り（爆益・暴落確定・今すぐ買え）は禁止。";
 	const titleProposal = invokeAgyStructured({
 		name: "byosan_title_proposal",
 		schema: TitleProposalSchema,
 		prompt: titleProposalPrompt({
 			brand: "秒算マネー",
+			rules: titleRules,
 			context: {
+				lane,
 				subject: input.subject ?? null,
 				today: input.today.map(({ title, issuer, published }) => ({
 					title,
@@ -382,6 +387,7 @@ export function generateFeatureSpec(
 		prompt: titleOnlyPrompt({
 			brand: "秒算マネー",
 			title: titleProposal.value.title,
+			rules: titleRules,
 		}),
 	});
 	const authored = invokeAgyStructured({
@@ -412,6 +418,7 @@ export function generateFeatureSpec(
 		schema: TitleFitSchema,
 		prompt: titleFitPrompt({
 			brand: "秒算マネー",
+			rules: titleRules,
 			initialTitle: titleProposal.value.title,
 			titleReview: titleReview.value,
 			body: JSON.stringify({

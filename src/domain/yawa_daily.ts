@@ -9,6 +9,47 @@ export const YAWA_RUN_NAME = /^yawa-\d{4}-\d{2}-\d{2}(-[a-z0-9]+)?$/;
 
 const CreativeSchema = z.record(z.string(), z.unknown());
 
+export const YawaCharacterSchema = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1),
+	age_note: z.string().min(1),
+	role: z.string().min(1),
+	personality: z.string().min(1),
+	listener_relationship: z.string().min(1),
+	voice_caption: z.string().min(1),
+	reference_text: z.string().min(1),
+	visual_identity: z.string().min(1),
+	episode_genres: z.array(z.string().min(1)).min(1),
+});
+export type YawaCharacter = z.infer<typeof YawaCharacterSchema>;
+
+export const YawaCastSchema = z.object({
+	schema_version: z.literal("yawa_cast_v1"),
+	series_title: z.string().min(1),
+	policy: z.string().min(1),
+	characters: z.array(YawaCharacterSchema).min(2),
+});
+export type YawaCast = z.infer<typeof YawaCastSchema>;
+
+export function loadYawaCast(root: string): YawaCast {
+	return YawaCastSchema.parse(
+		fs.readJsonSync(path.join(root, "docs/yawa/characters.json")),
+	);
+}
+
+export function castReferencePath(root: string, characterId: string): string {
+	if (!/^[a-z0-9_-]+$/i.test(characterId))
+		throw new Error(`invalid yawa character id '${characterId}'`);
+	return path.join(root, "data/state/yawa/references", `${characterId}.wav`);
+}
+
+export function shouldGenerateYawaImages(
+	env: NodeJS.ProcessEnv = process.env,
+): boolean {
+	const value = env.YAWA_GENERATE_IMAGES?.trim().toLowerCase();
+	return value !== "0" && value !== "false" && value !== "off";
+}
+
 const RuntimeSchema = z
 	.object({
 		run: z.object({
@@ -80,6 +121,7 @@ const PerformanceSchema = z
 const VoiceSchema = z
 	.object({
 		id: z.string().min(1),
+		character_id: z.string().min(1).optional(),
 		caption: z.string().min(1),
 		reference_text: z.string().min(1).optional(),
 	})

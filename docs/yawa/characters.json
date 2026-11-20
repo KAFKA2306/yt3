@@ -1,0 +1,55 @@
+{
+	"schema_version": "yawa_cast_v1",
+	"series_title": "夜話アーカイブ 看板キャスト",
+	"policy": "全登場人物は成人。全年齢・YouTube広告適合（緑アイコン）の親密さ・会話劇・癒やしを守る。キャストごとに専用参照音声と一貫したビジュアルを維持する。",
+	"characters": [
+		{
+			"id": "haruka",
+			"name": "日向 はるか",
+			"age_note": "24歳・成人",
+			"role": "距離の近い幼なじみ・同じ会社の同期",
+			"personality": "明るくてテンポが良く、少し負けず嫌いで照れ屋。冗談を言い合える気安さがありつつ、ふとした瞬間に相手を気づかう優しさが顔を出す。",
+			"listener_relationship": "遠慮なくツッコミ合える気心の知れた相手。二人でいると自然体になれる距離感。",
+			"voice_caption": "20代前半の日本人女性。明るく柔らかな中音域で滑舌がはっきりしており、親しい相手と話すような軽やかなテンポと温かみがある。語尾に自然な笑顔や照れが乗る、耳当たりのよい会話声。",
+			"reference_text": "ねえ、ちょっと待ってよ。さっきから笑ってばっかりじゃない。まあ、あなたが楽しそうなら今日は許してあげるけどさ、帰りに温かいココアおごってよね。",
+			"visual_identity": "Anime illustration style, warm atmospheric lighting, young adult Japanese woman in her mid-20s with shoulder-length warm chestnut brown hair slightly tucked behind one ear, lively amber-brown eyes, relaxed cozy sweater or casual cardigan, expressive friendly smile, clean cel-shaded anime key visual aesthetic, no text.",
+			"episode_genres": [
+				"仕事帰りや休日の軽快な掛け合い・日常コメディ",
+				"ボードゲーム・映画鑑賞・料理などの共同作業とちょっとした勝負",
+				"ふとした瞬間の素直な本音と温かな労い"
+			]
+		},
+		{
+			"id": "shizuku",
+			"name": "白瀬 しずく",
+			"age_note": "27歳・成人",
+			"role": "少し不器用で世話焼きな職場の先輩",
+			"personality": "普段はきっちりしていて頼りになるが、実は面倒見が良すぎて放っておけない性格。褒められると少し照れて言葉が詰まる。",
+			"listener_relationship": "信頼している後輩・相棒。仕事モードが解けた夕方や休日にだけ、少し肩の力を抜いた素の表情を見せる。",
+			"voice_caption": "20代後半の日本人女性。落ち着いた中低音に柔らかな透明感があり、丁寧さと親しみが同居する声。少し照れたときに声色がふっと温かくなり、語尾に相手を思いやる優しさが残る。",
+			"reference_text": "お疲れさま。ほら、まだ片付け残ってるのに無理しなくていいから。温かいお茶いれたし、十分だけ座って息抜きしよう？　たまには先輩の言うことも聞いてよね。",
+			"visual_identity": "Anime illustration style, soft evening indoor lighting, Japanese woman in her late 20s with neat dark navy-black hair tied loosely in a low ponytail with soft side bangs, calm slate-blue eyes, smart-casual knitwear or blazer draped over shoulders, gentle slightly shy smile, refined anime visual novel aesthetic, no text.",
+			"episode_genres": [
+				"残業や一区切り後のほっとする労い・お茶時間",
+				"少し不器用な世話焼きと、逆に気遣われて照れる掛け合い",
+				"休日ランチや買い物・ちょっとした寄り道の会話劇"
+			]
+		},
+		{
+			"id": "nao",
+			"name": "月島 なお",
+			"age_note": "29歳・成人",
+			"role": "夜だけ開く静かな古本喫茶の店主",
+			"personality": "穏やかで観察眼が鋭く、少しユーモアのある聞き役。相手を急かさず、本の話や街の小さな不思議を静かに語ってくれる。",
+			"listener_relationship": "店の常連客。どんな日でも変わらず迎えてくれて、話したいときも黙っていたいときも心地よく過ごせる居場所の主。",
+			"voice_caption": "20代後半から30代手前の日本人女性。穏やかで丸みのある落ち着いた声質。ささやきすぎず明瞭で、ゆっくりとした間と安心感のある抑揚で語りかける、深夜ラジオのように聴き心地のよい声。",
+			"reference_text": "いらっしゃい、今夜は少し冷えるね。いつもの席、空けておいたよ。急いで話さなくてもいいから、まずは湯気が落ち着くまでゆっくりしていって。",
+			"visual_identity": "Anime illustration style, warm amber lamp light in a cozy vintage book cafe, Japanese woman in her late 20s with soft wavy dark brown bob hair, round thin-rimmed glasses, warm hazel eyes, dark forest-green apron over a cream blouse, calm welcoming smile, painterly anime background art, no text.",
+			"episode_genres": [
+				"雨宿りや仕事帰りの静かな雑談・カウンター越しの会話",
+				"古い本や手紙、街の小さな謎をめぐる穏やかな夜話",
+				"珈琲・紅茶の淹れ方や季節の音を楽しむリラックス回"
+			]
+		}
+	]
+}
