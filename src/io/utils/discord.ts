@@ -9,6 +9,7 @@ import crypto from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import { ROOT } from "../core.js";
+import { loadEnvFile } from "./env.js";
 import { AgentLogger } from "./logger.js";
 
 export const ALERT_TYPES = [
@@ -218,6 +219,7 @@ function canSendDiscordNotification(
 export async function postDiscordWebhook(
 	webhookUrl: string,
 	body: unknown,
+	expectedContent?: string,
 ): Promise<string | undefined> {
 	if (Date.now() < rateLimitedUntil) {
 		AgentLogger.warn(
@@ -268,8 +270,68 @@ export async function postDiscordWebhook(
 		);
 		return undefined;
 	}
+	if (expectedContent) {
+		const message = (await back.json()) as { content?: string };
+		if (!message.content?.includes(expectedContent)) {
+			AgentLogger.error(
+				"DISCORD",
+				"ALERT",
+				"READBACK_MISMATCH",
+				"Discord message read-back did not contain the expected content",
+			);
+			return undefined;
+		}
+	}
 	AgentLogger.info("DISCORD", "ALERT", "DELIVERED", `message ${sent.id}`);
 	return sent.id;
+}
+
+function configuredWebhookUrl(): string | undefined {
+	loadEnvFile(path.join(ROOT, ".env"));
+	return process.env.DISCORD_WEBHOOK_URL?.trim() || undefined;
+}
+
+export function assertPublishedUrlSharingConfigured(): void {
+	if (!configuredWebhookUrl()) {
+		throw new Error(
+			"YouTube publication is blocked: configure DISCORD_WEBHOOK_URL locally in the repository root .env so each published video URL can be shared.",
+		);
+	}
+}
+
+export async function sendPublishedUrlNotice(notice: {
+	runId: string;
+	title: string;
+	channelTitle?: string;
+	videoId: string;
+}): Promise<string> {
+	const webhookUrl = configuredWebhookUrl();
+	if (!webhookUrl) {
+		throw new Error(
+			"Discord URL sharing is unavailable: DISCORD_WEBHOOK_URL is not configured locally.",
+		);
+	}
+	const url = `https://www.youtube.com/watch?v=${notice.videoId}`;
+	const content = `🎬 **${notice.title}**${notice.channelTitle ? `\n${notice.channelTitle}` : ""}\n${url}\nRun: \`${notice.runId}\``;
+	let messageId: string | undefined;
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		messageId = await postDiscordWebhook(
+			webhookUrl,
+			{ content, allowed_mentions: { parse: [] } },
+			url,
+		);
+		if (messageId) break;
+
+		const retryDelayMs = rateLimitedUntil - Date.now();
+		if (attempt === 2 || retryDelayMs <= 0 || retryDelayMs > 30_000) break;
+		await new Promise((resolve) => setTimeout(resolve, retryDelayMs + 50));
+	}
+	if (!messageId) {
+		throw new Error(
+			`Discord did not confirm the published URL for run ${notice.runId}`,
+		);
+	}
+	return messageId;
 }
 
 /**

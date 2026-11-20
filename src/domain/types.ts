@@ -103,6 +103,7 @@ export const PublishResultsSchema = z.object({
 			video_id: z.string().optional(),
 			channel_id: z.string().optional(),
 			channel_title: z.string().optional(),
+			discord_url_message_id: z.string().optional(),
 			privacy_status: z.string().optional(),
 			published_at: z.string().optional(),
 			receipt_status: z.enum(["VERIFIED"]).optional(),

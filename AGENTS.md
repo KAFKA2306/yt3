@@ -33,6 +33,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - Standing authorization: daily publication of `yawa`, `byosan`, and `humanity` through their canonical Taskfile entries. Manual `yawa` publication outside the daily path is not covered. `yawa` metadata changes go only through `task yawa:metadata`.
 - Missing credentials (for example `config/.env.yawa`) stop the run and are reported as blocked; agents do not create or fetch them.
 - Publication is VERIFIED only after remote receipt and read-back.
+- Every verified YouTube publication shares its direct URL through `DISCORD_WEBHOOK_URL` and confirms the Discord message by read-back. This URL delivery bypasses general notification quotas; YouTube publication is blocked before upload when the webhook is not configured locally in the repository root `.env`.
 
 ## Autonomous operations
 

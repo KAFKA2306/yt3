@@ -3,7 +3,11 @@ import fs from "fs-extra";
 import { google } from "googleapis";
 import { TwitterApi } from "twitter-api-v2";
 import { type AssetStore, BaseAgent, RunStage } from "../../io/core.js";
-import { sendAlert } from "../../io/utils/discord.js";
+import {
+	assertPublishedUrlSharingConfigured,
+	sendAlert,
+	sendPublishedUrlNotice,
+} from "../../io/utils/discord.js";
 import { ensureYouTubeVideoVisibility } from "../../io/utils/youtube_visibility.js";
 import {
 	asDancerPublicationState,
@@ -34,7 +38,6 @@ type PublishNotice = {
 	title: string;
 	channelTitle?: string;
 	videoId?: string;
-	privacyStatus?: string;
 };
 
 export async function notifyPublishEvent(
@@ -42,29 +45,25 @@ export async function notifyPublishEvent(
 	event: "start" | "complete",
 	notice: PublishNotice,
 	send: typeof sendAlert = sendAlert,
-): Promise<void> {
+): Promise<string | undefined> {
 	if (event === "start") {
-		if (!settings.publish_start) return;
+		if (!settings.publish_start) return undefined;
 		await send("Publish started on YouTube", "publish_start", {
 			title: notice.title,
 			runId: notice.runId,
 			state: "PUBLISH_STARTED",
 		});
-		return;
+		return undefined;
 	}
-	if (!settings.publish_complete) return;
-	await send(
-		`✅ **Successfully uploaded** video to ${notice.channelTitle}!`,
-		"publish",
-		{
-			title: notice.title,
-			videoId: notice.videoId,
-			url: `https://www.youtube.com/watch?v=${notice.videoId}`,
-			privacy_status: notice.privacyStatus,
-			runId: notice.runId,
-			state: "PUBLISHED",
-		},
-	);
+	if (!notice.videoId) {
+		throw new Error("Published YouTube video is missing its verified video ID");
+	}
+	return await sendPublishedUrlNotice({
+		title: notice.title,
+		channelTitle: notice.channelTitle,
+		videoId: notice.videoId,
+		runId: notice.runId,
+	});
 }
 
 export class PublishAgent extends BaseAgent {
@@ -82,6 +81,7 @@ export class PublishAgent extends BaseAgent {
 			validateCredentials(enabledProviders);
 		}
 		if (enabledProviders.youtube) {
+			assertPublishedUrlSharingConfigured();
 			const profileName = process.env.YOUTUBE_CHANNEL_PROFILE?.trim();
 			if (!profileName) {
 				throw new Error(
@@ -115,12 +115,37 @@ export class PublishAgent extends BaseAgent {
 				publishVideoPath,
 			});
 			if (results.youtube?.status === "uploaded") {
-				await notifyPublishEvent(ytStep.discord_notifications, "complete", {
-					...notice,
-					channelTitle: results.youtube.channel_title,
-					videoId: results.youtube.video_id,
-					privacyStatus: results.youtube.privacy_status,
-				});
+				const videoId = results.youtube.video_id;
+				if (!videoId) {
+					throw new Error(
+						"Published YouTube video is missing its verified video ID",
+					);
+				}
+				const receiptPath = path.join(
+					this.store.runDir,
+					"publish",
+					"receipt.json",
+				);
+				const previousReceipt = fs.existsSync(receiptPath)
+					? (fs.readJsonSync(receiptPath) as {
+							youtube?: {
+								video_id?: string;
+								discord_url_message_id?: string;
+							};
+						})
+					: undefined;
+				const previousYoutubeReceipt = previousReceipt?.youtube;
+				const previousMessageId =
+					previousYoutubeReceipt?.video_id === videoId
+						? previousYoutubeReceipt?.discord_url_message_id
+						: undefined;
+				results.youtube.discord_url_message_id =
+					previousMessageId ||
+					(await notifyPublishEvent(ytStep.discord_notifications, "complete", {
+						...notice,
+						channelTitle: results.youtube.channel_title,
+						videoId,
+					}));
 			}
 		}
 		const twStep = this.config.steps.twitter;

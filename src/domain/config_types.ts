@@ -170,7 +170,6 @@ export interface AppConfig {
 			default_visibility: string;
 			discord_notifications: {
 				publish_start: boolean;
-				publish_complete: boolean;
 			};
 		};
 		twitter?: { enabled: boolean };
