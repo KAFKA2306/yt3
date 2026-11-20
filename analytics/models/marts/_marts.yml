@@ -72,3 +72,5 @@ models:
         tests: [not_null]
       - name: total_watch_time_hours_first_7d
         tests: [not_null]
+      - name: playlist_views_first_7d
+        tests: [not_null]

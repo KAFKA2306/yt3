@@ -195,6 +195,26 @@ tasks:
       - mkdir -p data/analytics
       - uvx --from dbt-core --with dbt-duckdb dbt build --project-dir analytics --profiles-dir analytics
 
+  bench:byosan:
+    desc: "Run Layer 1 deterministic benchmark on recent 秒算マネー runs (CLI_ARGS: [--limit=5] [--run=<name>] [--json] [--with-lexicon] [--strict])"
+    cmds: ["bun src/scripts/benchmark_channel.ts byosan {{.CLI_ARGS}}"]
+
+  bench:yawa:
+    desc: "Run Layer 1 deterministic benchmark on recent 夜話アーカイブ runs (CLI_ARGS: [--limit=5] [--run=<name>] [--json] [--with-lexicon] [--strict])"
+    cmds: ["bun src/scripts/benchmark_channel.ts yawa {{.CLI_ARGS}}"]
+
+  bench:humanity:
+    desc: "Run Layer 1 deterministic benchmark on recent 雨晴はうの人類観測所 runs (CLI_ARGS: [--limit=5] [--run=<name>] [--json] [--with-lexicon] [--strict])"
+    cmds: ["bun src/scripts/benchmark_channel.ts humanity {{.CLI_ARGS}}"]
+
+  bench:all:
+    desc: "Run Layer 1 deterministic benchmarks across all 3 channels (CLI_ARGS: [--limit=5] [--json] [--with-lexicon] [--strict])"
+    cmds: ["bun src/scripts/benchmark_channel.ts all {{.CLI_ARGS}}"]
+
+  bench:judge:
+    desc: "Run Layer 2 independent blind model judge (CLI_ARGS: single|compare <byosan|yawa|humanity> <run> [candidate-run] [--model=...])"
+    cmds: ["bun src/scripts/benchmark_judge.ts {{.CLI_ARGS}}"]
+
   analytics:reach:setup:
     desc: "Create or verify the YouTube Reporting API channel-reach job (PROFILE=byosan|yawa|humanity; creates remote job state when missing)"
     cmds:

@@ -5,6 +5,7 @@ import fs from "fs-extra";
 import { z } from "zod";
 
 export const AGY_CREATIVE_MODEL = "gemini-4-neon-high";
+export const AGY_JUDGE_MODEL = "gemini-4-argon-high";
 
 type AgyEnvelope = {
 	status: string;
@@ -21,16 +22,53 @@ type AgyEnvelope = {
 	};
 };
 
-export type AgyReceipt = Pick<AgyEnvelope, "conversation_id" | "usage"> & {
-	model: typeof AGY_CREATIVE_MODEL;
+type AgyStreamEvent = {
+	event?: string;
+	result?: AgyEnvelope;
 };
+
+export type AgyReceipt = Pick<AgyEnvelope, "conversation_id" | "usage"> & {
+	model: string;
+};
+
+export function buildAgyStreamInput(prompt: string): string {
+	return `${JSON.stringify({
+		event: "user",
+		message: { content: prompt },
+	})}\n`;
+}
+
+export function parseAgyStreamResult(stdout: string): AgyEnvelope {
+	let terminal: AgyEnvelope | undefined;
+	for (const rawLine of stdout.split(/\r?\n/)) {
+		const line = rawLine.trim();
+		if (!line.startsWith("{")) continue;
+		let parsed: AgyStreamEvent;
+		try {
+			parsed = JSON.parse(line) as AgyStreamEvent;
+		} catch {
+			continue;
+		}
+		if (parsed.event === "result" && parsed.result) {
+			terminal = parsed.result;
+		}
+	}
+	if (!terminal) {
+		throw new Error(
+			`AGY stream-json output did not contain a terminal result event: ${stdout.trim().slice(-600)}`,
+		);
+	}
+	return terminal;
+}
 
 export function invokeAgyStructured<T>(input: {
 	name: string;
 	prompt: string;
 	schema: z.ZodType<T>;
 	jsonSchema?: z.ZodType;
+	model?: string;
 }): { value: T; receipt: AgyReceipt } {
+	const model = input.model ?? AGY_CREATIVE_MODEL;
 	const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "yt3-agy-"));
 	try {
 		const prompt = [
@@ -44,12 +82,12 @@ export function invokeAgyStructured<T>(input: {
 		const result = spawnSync(
 			"agy",
 			[
-				"-p",
-				prompt,
-				"--model",
-				AGY_CREATIVE_MODEL,
+				"--input-format",
+				"stream-json",
 				"--output-format",
-				"json",
+				"stream-json",
+				"--model",
+				model,
 				"--json-schema",
 				schemaPath,
 				"--print-timeout",
@@ -58,6 +96,7 @@ export function invokeAgyStructured<T>(input: {
 			],
 			{
 				cwd: tempDir,
+				input: buildAgyStreamInput(prompt),
 				encoding: "utf8",
 				timeout: 21 * 60 * 1000,
 				maxBuffer: 64 * 1024 * 1024,
@@ -69,7 +108,7 @@ export function invokeAgyStructured<T>(input: {
 				`AGY ${input.name} exited ${result.status ?? "without an exit code"}: ${result.stderr.trim().slice(-2000)}`,
 			);
 		}
-		const envelope = JSON.parse(result.stdout) as AgyEnvelope;
+		const envelope = parseAgyStreamResult(result.stdout);
 		if (envelope.status !== "SUCCESS") {
 			throw new Error(
 				`AGY ${input.name} status=${envelope.status}: ${(envelope.error ?? result.stderr).trim().slice(-2000)}`,
@@ -86,7 +125,7 @@ export function invokeAgyStructured<T>(input: {
 		return {
 			value: input.schema.parse(envelope.structured_output),
 			receipt: {
-				model: AGY_CREATIVE_MODEL,
+				model,
 				conversation_id: envelope.conversation_id,
 				usage: envelope.usage,
 			},

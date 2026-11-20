@@ -15,6 +15,7 @@ This directory is the YT3 OKF v0.3 knowledge bundle (also usable as an Obsidian 
 
 ## Operations & Quality Gates
 
+- [`standard/benchmark-standard.md`](./standard/benchmark-standard.md): 3-layer channel evaluation (deterministic L1, independent blind judge L2, dbt outcome L3)
 - [`QUALITY_GATES.md`](./QUALITY_GATES.md): ownership of lint, typecheck, tests, and CI gates
 - [`standard/environment-refresh.md`](./standard/environment-refresh.md): hourly environment refresh loop
 

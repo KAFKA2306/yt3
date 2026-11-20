@@ -8,3 +8,4 @@
 - `standard/star-schema-standard.md` のリンク切れ（`ontology-standard.md`）を解消し、実装した dbt プロジェクト（`analytics/`）の `sources`・`staging`・`marts`・データテストと接続。
 - `standard/ledger-standard.md` に新設の固定キャスト正本（`docs/yawa/characters.json`）、永続参照音声（`data/state/yawa/references/`）、共有世界正本（`docs/humanity/story-world.json`）、および dbt マートを追加。
 - `.gitignore` から旧ルート雛形用の `SOUL.md` 指定を外し、`docs/humanity/SOUL.md` を Git 追跡対象へ復帰。
+- 3チャンネルの3層評価正本 `standard/benchmark-standard.md` を新設し、`task bench:*`（決定論 L1）、`task bench:judge`（独立ブラインド採点 L2）、および dbt マート `mart_channel_growth_kpi` の `playlist_views_share_first_7d`（L3）を追加。

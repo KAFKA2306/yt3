@@ -23,6 +23,34 @@ reach as (
         end as impression_weighted_ctr
     from {{ ref('fact_reach_daily') }}
     group by channel_id
+),
+traffic_7d as (
+    select
+        channel_id,
+        sum(views) as total_traffic_views_first_7d,
+        sum(
+            case
+                when upper(traffic_source_type) in ('PLAYLIST', 'PLAYLIST_PAGE')
+                then views
+                else 0
+            end
+        ) as playlist_views_first_7d,
+        case
+            when sum(views) > 0
+            then cast(
+                sum(
+                    case
+                        when upper(traffic_source_type) in ('PLAYLIST', 'PLAYLIST_PAGE')
+                        then views
+                        else 0
+                    end
+                ) as double
+            ) / sum(views)
+            else null
+        end as playlist_views_share_first_7d
+    from {{ ref('stg_youtube_traffic_sources') }}
+    where age_window = 'first_7d'
+    group by channel_id
 )
 select
     c.profile,
@@ -40,10 +68,14 @@ select
     p.avg_like_rate_first_7d,
     p.net_subscribers_first_7d,
     coalesce(r.total_thumbnail_impressions, 0) as total_thumbnail_impressions,
-    r.impression_weighted_ctr
+    r.impression_weighted_ctr,
+    coalesce(t.playlist_views_first_7d, 0) as playlist_views_first_7d,
+    t.playlist_views_share_first_7d
 from {{ ref('dim_channel') }} as c
 left join perf_7d as p
     on c.channel_id = p.channel_id
 left join reach as r
     on c.channel_id = r.channel_id
+left join traffic_7d as t
+    on c.channel_id = t.channel_id
 order by c.profile
