@@ -12,3 +12,4 @@
 - Kafstyler 常駐エージェント規約を YT3 に実装し、`standard/resident-agent-standard.md`、`src/domain/resident/ledgers.ts`、`src/scripts/resident_agent.ts`、`systemd/yt3-resident-agent.{service,timer}` を追加、`yt3-env-refresh` の作業パスと `yt3-yawa-validate.timer` の曜日整合を修正。
 - ユーザ操作が必須な項目を一元管理する OKF v0.3 台帳 `standard/owner-action-ledger.md` と `task resident:ledger` を新設。
 - 追加料金ゼロの実疎通確認済みモデル配分（`config/model_routing.yaml`, `standard/model-routing-standard.md`）と RTX 3060 12GB 共通 GPU 排他ロック（`~/.cache/yt3-gpu.lock`）を `yt3-yawa-daily.service` / `yt3-humanity-music.service` に導入し、Claude サブスク決済待ちを `OA-005` に追記。
+- プロジェクト非固有のホスト設備・GPU節約規約・全CLIモデル配分・共通スキル（`imozuru`/`yomiyasu`/`kafstyler 0.7.2`）をユーザー全体正本（`~/.gemini/config/workstation.md`, `~/.gemini/config/AGENTS.md`）へ移行し、`standard/model-routing-standard.md` を YT3 固有ルートのみへ整理。
