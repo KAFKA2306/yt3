@@ -10,3 +10,4 @@
 - `.gitignore` から旧ルート雛形用の `SOUL.md` 指定を外し、`docs/humanity/SOUL.md` を Git 追跡対象へ復帰。
 - 3チャンネルの3層評価正本 `standard/benchmark-standard.md` を新設し、`task bench:*`（決定論 L1）、`task bench:judge`（独立ブラインド採点 L2）、および dbt マート `mart_channel_growth_kpi` の `playlist_views_share_first_7d`（L3）を追加。
 - Kafstyler 常駐エージェント規約を YT3 に実装し、`standard/resident-agent-standard.md`、`src/domain/resident/ledgers.ts`、`src/scripts/resident_agent.ts`、`systemd/yt3-resident-agent.{service,timer}` を追加、`yt3-env-refresh` の作業パスと `yt3-yawa-validate.timer` の曜日整合を修正。
+- ユーザ操作が必須な項目を一元管理する OKF v0.3 台帳 `standard/owner-action-ledger.md` と `task resident:ledger` を新設。

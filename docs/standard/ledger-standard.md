@@ -50,6 +50,7 @@ Find every canonical record, master file, and analytical schema owner here. Prod
 | YouTube analytics (raw) | Video × age window, traffic source, or channel × date × video | `db/evolution.db` | `db/schema.sql` & `src/scripts/refresh_youtube_analytics.ts` |
 | YouTube analytics (marts) | Channel, video × window, and channel × date × video | `data/analytics/yt3_analytics.duckdb` (local, rebuilt by `task analytics:build`) | dbt project in `analytics/` ([Star Schema & dbt Standard](star-schema-standard.md)) |
 | Resident work & question ledgers | One ongoing work item (`work_id`) / one deduplicated owner question (`target` × `decision_topic`) | `data/state/resident/work_ledger.json`, `data/state/resident/question_ledger.json` (local) | `WorkLedgerSchema` / `QuestionLedgerSchema` in `src/domain/resident/ledgers.ts` ([Resident Agent Standard](resident-agent-standard.md)) |
+| Owner action ledger | One owner-required action (`target` × `decision_topic`, no secrets) | [Owner Action Ledger](owner-action-ledger.md) (tracked OKF v0.3 Vault ledger) | Synced view via `task resident:ledger` ([Resident Agent Standard](resident-agent-standard.md)) |
 
 ## How to use the records
 

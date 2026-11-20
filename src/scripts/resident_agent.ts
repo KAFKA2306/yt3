@@ -14,6 +14,7 @@ import {
 	ensureLedgers,
 	executeWorkCycle,
 	type ResidentStep,
+	renderOwnerActionLedgerMarkdown,
 	resolveHumanQuestionObsolete,
 	resolveResidentPaths,
 	saveQuestionLedger,
@@ -387,6 +388,15 @@ function main() {
 		showQuestions();
 		return;
 	}
+	if (cmd === "ledger") {
+		const paths = resolveResidentPaths(ROOT);
+		const { questionLedger } = ensureLedgers(paths);
+		console.log(renderOwnerActionLedgerMarkdown(questionLedger));
+		console.log(
+			"\nCanonical Vault Ledger: docs/standard/owner-action-ledger.md",
+		);
+		return;
+	}
 	if (cmd === "answer") {
 		const [questionId, answerRef, ...summaryParts] = rest;
 		if (!questionId || !answerRef || summaryParts.length === 0) {
@@ -399,7 +409,7 @@ function main() {
 		return;
 	}
 	console.error(
-		"usage: resident_agent.ts <tick [--trigger=...] | status | questions | answer <id> <ref> <summary>>",
+		"usage: resident_agent.ts <tick [--trigger=...] | status | questions | ledger | answer <id> <ref> <summary>>",
 	);
 	process.exit(2);
 }

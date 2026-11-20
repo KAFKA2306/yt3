@@ -633,3 +633,51 @@ export function executeWorkCycle(
 		lock.release();
 	}
 }
+
+export function renderOwnerActionLedgerMarkdown(
+	ledger: QuestionLedger,
+	options?: { generatedAt?: string },
+): string {
+	const at = options?.generatedAt ?? new Date().toISOString();
+	const escapeCell = (text: string) =>
+		text.replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim();
+	const open = ledger.questions.filter((q) => q.status === "open");
+	const closed = ledger.questions.filter((q) => q.status !== "open");
+
+	const lines: string[] = [
+		`# Live Resident Owner Action Ledger (${at})`,
+		"",
+		`Source: \`data/state/resident/question_ledger.json\` (open=${open.length}, closed=${closed.length})`,
+		"",
+		"## Open Owner Actions",
+		"",
+		"| Question ID | Target | Topic | Question | Blocked Step | Resume Condition |",
+		"| --- | --- | --- | --- | --- | --- |",
+	];
+	if (open.length === 0) {
+		lines.push(
+			"| — | — | — | 現在ユーザ操作待ちの自動検知項目はありません | — | — |",
+		);
+	} else {
+		for (const q of open) {
+			lines.push(
+				`| \`${escapeCell(q.question_id)}\` | \`${escapeCell(q.target)}\` | \`${escapeCell(q.decision_topic)}\` | ${escapeCell(q.question)} | \`${escapeCell(q.blocked_step)}\` | ${escapeCell(q.resume_condition)} |`,
+			);
+		}
+	}
+	if (closed.length > 0) {
+		lines.push(
+			"",
+			"## Answered / Resolved",
+			"",
+			"| Question ID | Status | Target | Answer / Resolution | Updated At |",
+			"| --- | --- | --- | --- | --- |",
+		);
+		for (const q of closed) {
+			lines.push(
+				`| \`${escapeCell(q.question_id)}\` | \`${q.status}\` | \`${escapeCell(q.target)}\` | ${escapeCell(q.answer_summary ?? q.answer_ref ?? "resolved")} | \`${q.updated_at}\` |`,
+			);
+		}
+	}
+	return lines.join("\n");
+}

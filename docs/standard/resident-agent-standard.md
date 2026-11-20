@@ -40,11 +40,12 @@ generated:
   - 状態遷移: `accepted` → `running` → `verified` / `waiting_human` / `failed` / `aborted`。
   - 再開カーソル: `completed_steps`, `next_step`, `last_verified_ref`, `external_write_keys`（外部書き込みの `dispatched` と read-back 後の `verified` を分離）。
   - 単一書き込みロック: `data/state/resident/agent.lock`（排他作成 `wx` + PID 生存確認）により同時書き込みを 1 件以下に制限する。
-- **人間の回答を待つ質問台帳（`data/state/resident/question_ledger.json`）**:
+- **人間の回答を待つ質問台帳（`data/state/resident/question_ledger.json`）** と **ユーザ操作必須台帳（[Owner Action Ledger](owner-action-ledger.md)）**:
   - すべての自律実行の着手時に必ず開く（未作成なら質問 0 件で作成）。
   - `(target, decision_topic)` で一意化し、再実行しても同一質問を重複登録しない。
   - 状態: `open` / `answered` / `resolved_obsolete`。
   - **非ブロッキング進行**: `open` な質問に依存する工程のみ `waiting_human` で保留し、独立した工程（L1 ベンチマーク・dbt 同期など）は確認を挟まず自律で完了させる。
+  - ユーザ本人が操作する項目は、Obsidian Vault 上の [Owner Action Ledger](owner-action-ledger.md)（および `task resident:ledger`）で一元管理する。
 - **追記専用イベントログ（`logs/resident-agent.jsonl`）**: 起動・ロック競合スキップ・外部突合再開・完了・中止を JSONL で記録する。
 
 ## 3. 操作コマンド

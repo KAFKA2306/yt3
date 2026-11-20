@@ -227,6 +227,10 @@ tasks:
     desc: "List pending and answered owner questions in the resident agent question ledger"
     cmds: ["bun src/scripts/resident_agent.ts questions"]
 
+  resident:ledger:
+    desc: "Render the live owner-required action ledger as Markdown and point to docs/standard/owner-action-ledger.md"
+    cmds: ["bun src/scripts/resident_agent.ts ledger"]
+
   resident:answer:
     desc: "Record an owner answer in the question ledger so the next resident tick resumes blocked steps (CLI_ARGS: <question_id> <answer_ref> <summary>)"
     cmds: ["bun src/scripts/resident_agent.ts answer {{.CLI_ARGS}}"]

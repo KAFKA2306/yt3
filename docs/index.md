@@ -24,6 +24,7 @@ Obsidian Vault および OKF v0.3 準拠の知識正本目次。各チャンネ�
 - [Star Schema & dbt Standard](standard/star-schema-standard.md) - `db/evolution.db` から `analytics/` dbt プロジェクトへ至る Raw → Staging → Marts 設計、粒度、KPI 定義、検証手順。
 - [YT3 Channel Benchmark Standard](standard/benchmark-standard.md) - 3チャンネルの3層評価（機械照合・独立ブラインド採点・dbt実績）と合格条件・反例・コマンドの正本。
 - [YT3 Resident Agent Standard](standard/resident-agent-standard.md) - 作業台帳・質問台帳・単一書き込みロック・冪等再開・systemd 常駐の運用正本。
+- [Owner Action Ledger（ユーザ操作必須台帳）](standard/owner-action-ledger.md) - エージェント権限外のためユーザ本人の操作・判断・認証が必須な項目を一元管理する台帳。
 - [YT3 Quality Gates](QUALITY_GATES.md) - リポジトリ受入（`check:merge`）・プロダクト準備・外部公開検証の境界とツール所有権。
 - [Environment Refresh Standard](standard/environment-refresh.md) - 開発環境を1時間ごとに測定・更新・ロールバックする自律ループの規約と台帳。
 

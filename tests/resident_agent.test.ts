@@ -8,6 +8,7 @@ import {
 	ensureLedgers,
 	executeWorkCycle,
 	type ResidentStep,
+	renderOwnerActionLedgerMarkdown,
 	resolveResidentPaths,
 	saveQuestionLedger,
 } from "../src/domain/resident/ledgers.js";
@@ -375,5 +376,13 @@ describe("Kafstyler resident agent ledgers, resumability, and idempotency", () =
 			expect(res.open_questions.length).toBe(1);
 		}
 		expect(independentRuns).toBe(6);
+
+		const { questionLedger } = ensureLedgers(paths);
+		const md = renderOwnerActionLedgerMarkdown(questionLedger, {
+			generatedAt: "2026-11-20T01:00:00Z",
+		});
+		expect(md).toContain("open=1, closed=0");
+		expect(md).toContain("gcp:659942893881");
+		expect(md).toContain("Enable API?");
 	});
 });
