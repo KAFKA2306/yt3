@@ -4,7 +4,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
 
-export const AGY_CREATIVE_MODEL = "gemini-4-neon-high";
+export const AGY_DEFAULT_MODEL = "gemini-4-hydrogen-medium";
 export const AGY_JUDGE_MODEL = "gemini-4-argon-high";
 
 type AgyEnvelope = {
@@ -28,6 +28,7 @@ type AgyStreamEvent = {
 };
 
 export type AgyReceipt = Pick<AgyEnvelope, "conversation_id" | "usage"> & {
+	provider: "agy";
 	model: string;
 };
 
@@ -68,7 +69,7 @@ export function invokeAgyStructured<T>(input: {
 	jsonSchema?: z.ZodType;
 	model?: string;
 }): { value: T; receipt: AgyReceipt } {
-	const model = input.model ?? AGY_CREATIVE_MODEL;
+	const model = input.model ?? AGY_DEFAULT_MODEL;
 	const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "yt3-agy-"));
 	try {
 		const prompt = [
@@ -125,6 +126,7 @@ export function invokeAgyStructured<T>(input: {
 		return {
 			value: input.schema.parse(envelope.structured_output),
 			receipt: {
+				provider: "agy",
 				model,
 				conversation_id: envelope.conversation_id,
 				usage: envelope.usage,

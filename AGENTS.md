@@ -48,7 +48,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 
 ## Creative authoring
 
-Yawa, Humanity, and Byosan create new work through `src/io/agy.ts` with `gemini-4-neon-high`. Before drafting, AGY reviews a proposed title without the completed text; after drafting, AGY compares that critique with the work and keeps or changes the title. Each product keeps its own brief and output format. Research, audio/image generation, JIZURA, editing, and the canonical publication entries remain product-owned.
+Yawa, Humanity, and Byosan create new work through the shared model router in `src/io/creative.ts`. Its routes are configured in `config/creative_authoring.yaml`: bounded title proposals and reviews use `codex exec` with GPT-6 Luna at low reasoning effort; full story, script, song, and feature drafts use AGY Gemini 4 Hydrogen at medium effort. Neon is an optional model choice, not a production requirement. The router records the provider and model with each run and fails explicitly when the selected route is unavailable; it does not silently retry through a different provider or API billing path. Before drafting, the title route reviews a proposed title without the completed text; after drafting, it compares that critique with the work and keeps or changes the title. Each product keeps its own brief and output format. Research, audio/image generation, JIZURA, editing, and the canonical publication entries remain product-owned.
 
 Humanity grows one shared story world from `docs/humanity/story-world.json`; songs keep a clear standalone concept while developing its relationships. Its JIZURA lyric video uses a Neon-selected built-in theme and keeps the rendered project beside the video.
 
@@ -84,7 +84,7 @@ Use timestamped episode dialogue as JIZURA subtitles, and let each episode choos
 - Use [the repository record index](docs/standard/ledger-standard.md) to find record locations, grains, and schema owners; the actual contracts remain with their writers and readers.
 - Every factual claim the user makes is checked each time by web search against official sources before it is used in a decision, document, or config. Unverified claims are labeled UNVERIFIED, never adopted as fact.
 - Dependencies, runtimes, CLIs, models, and model IDs are kept at their latest released version, confirmed against the official release notes. An upgrade lands only after `task check:merge` passes.
-- Remaining Codex calls use GPT-6.1 Terra at `medium` reasoning effort (owner-designated 2026-10-27; official valid efforts: none, low, medium, high, xhigh, max); Byosan's setting is `llm.codex` in `config/domains/byosan_money.yaml`. Creative authoring follows the AGY standard above. Image generation keeps `gpt-image-2`.
+- Non-creative Byosan Codex calls keep GPT-6.1 Terra at `medium` reasoning effort in `llm.codex` in `config/domains/byosan_money.yaml`. Creative title calls use the shared route above. Image generation keeps `gpt-image-2`.
 - Do not fill in missing inputs or failures with fallback output that looks like success.
 - Execution runs as the `kafka` account, never as root or with `sudo`.
 - Do not read out or display `.env` files, tokens, OAuth credentials, or contact details. Scripts check only whether a value is present. An empty value must not overwrite a non-empty one.

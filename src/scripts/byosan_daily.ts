@@ -63,13 +63,13 @@ import {
 	titleOnlyPrompt,
 	titleProposalPrompt,
 } from "../domain/creative_authoring.js";
-import { AGY_CREATIVE_MODEL, invokeAgyStructured } from "../io/agy.js";
 import {
 	AssetStore,
 	getRunIdDateString,
 	loadConfig,
 	ROOT,
 } from "../io/core.js";
+import { invokeCreativeStructured } from "../io/creative.js";
 
 type DailyConfig = {
 	discovery: DiscoveryConfig & { repeat_window_days: number };
@@ -359,8 +359,9 @@ export function generateFeatureSpec(
 	const lane = input.subject ? "deep_dive_feature" : "daily_selected_news";
 	const titleRules =
 		"日本語の個人投資家・テック層がクリックしたくなる具体性（大型企業・AI/半導体・マクロ・市場構造・数字の対比や常識とのズレ）を先頭に置く。日次ニュースで複数記事がある場合は、マイナー企業の小粒な業績記事より市場全体や注目企業・産業構造に関わる記事を優先する。投資助言や煽り（爆益・暴落確定・今すぐ買え）は禁止。";
-	const titleProposal = invokeAgyStructured({
+	const titleProposal = invokeCreativeStructured({
 		name: "byosan_title_proposal",
+		kind: "title",
 		schema: TitleProposalSchema,
 		prompt: titleProposalPrompt({
 			brand: "秒算マネー",
@@ -381,8 +382,9 @@ export function generateFeatureSpec(
 			},
 		}),
 	});
-	const titleReview = invokeAgyStructured({
+	const titleReview = invokeCreativeStructured({
 		name: "byosan_title_review",
+		kind: "title",
 		schema: TitleReviewSchema,
 		prompt: titleOnlyPrompt({
 			brand: "秒算マネー",
@@ -390,8 +392,9 @@ export function generateFeatureSpec(
 			rules: titleRules,
 		}),
 	});
-	const authored = invokeAgyStructured({
+	const authored = invokeCreativeStructured({
 		name: "byosan_feature_draft",
+		kind: "draft",
 		schema: z.unknown(),
 		jsonSchema: ByosanFeatureDraftSchema,
 		prompt: [
@@ -413,8 +416,9 @@ export function generateFeatureSpec(
 		{ spaces: 2 },
 	);
 	let parsed = ByosanFeatureDraftSchema.parse(normalized.draft);
-	const titleFit = invokeAgyStructured({
+	const titleFit = invokeCreativeStructured({
 		name: "byosan_title_body_review",
+		kind: "title",
 		schema: TitleFitSchema,
 		prompt: titleFitPrompt({
 			brand: "秒算マネー",
@@ -438,7 +442,12 @@ export function generateFeatureSpec(
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "creative_authoring.json"),
 		{
-			model: AGY_CREATIVE_MODEL,
+			model_routes: {
+				title_proposal: titleProposal.receipt,
+				title_review: titleReview.receipt,
+				draft: authored.receipt,
+				title_fit: titleFit.receipt,
+			},
 			title_proposal: titleProposal.value,
 			title_proposal_usage: titleProposal.receipt.usage,
 			title_proposal_conversation: titleProposal.receipt.conversation_id,

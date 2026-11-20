@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
-	AGY_CREATIVE_MODEL,
+	AGY_DEFAULT_MODEL,
 	AGY_JUDGE_MODEL,
 	buildAgyStreamInput,
 	parseAgyStreamResult,
@@ -51,8 +51,8 @@ describe("agy stream-json transport", () => {
 		).toThrow(/terminal result event/);
 	});
 
-	it("keeps creative author model and independent judge model distinct", () => {
-		expect(AGY_CREATIVE_MODEL).toBe("gemini-4-neon-high");
-		expect(AGY_JUDGE_MODEL).not.toBe(AGY_CREATIVE_MODEL);
+	it("keeps the default author model and independent judge model distinct", () => {
+		expect(AGY_DEFAULT_MODEL).toBe("gemini-4-hydrogen-medium");
+		expect(AGY_JUDGE_MODEL).not.toBe(AGY_DEFAULT_MODEL);
 	});
 });

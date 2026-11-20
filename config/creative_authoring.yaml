@@ -1,0 +1,8 @@
+routes:
+  title:
+    provider: codex
+    model: gpt-6-luna
+    reasoning_effort: low
+  draft:
+    provider: agy
+    model: gemini-4-hydrogen-medium

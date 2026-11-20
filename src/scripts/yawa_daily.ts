@@ -34,8 +34,8 @@ import {
 	type YawaCharacter,
 	yawaAudit,
 } from "../domain/yawa_daily.js";
-import { AGY_CREATIVE_MODEL, invokeAgyStructured } from "../io/agy.js";
 import { ROOT } from "../io/core.js";
+import { invokeCreativeStructured } from "../io/creative.js";
 
 const config = loadYawaConfig(ROOT);
 const cast: YawaCast = loadYawaCast(ROOT);
@@ -465,8 +465,9 @@ function generateScript(
 		const recent = recentYawaEpisodes(dir);
 		const titleRules =
 			"固定キャスト（日向はるか / 白瀬しずく / 月島なお）の誰との・どんな心地よい／楽しい時間かが一目で伝わる自然な日本語タイトル（45文字以内目安）にする。直近作品と同じキャスト・同じ『終電・深夜の寝かしつけ』表現の反復を避け、全年齢・広告適合（緑アイコン）に反する性的連想ワード（添い寝・耳舐め・18+系等）を入れない。";
-		const titleProposal = invokeAgyStructured({
+		const titleProposal = invokeCreativeStructured({
 			name: "yawa_title_proposal",
+			kind: "title",
 			schema: TitleProposalSchema,
 			prompt: titleProposalPrompt({
 				brand: "夜話アーカイブ ASMR",
@@ -483,8 +484,9 @@ function generateScript(
 				},
 			}),
 		});
-		const titleReview = invokeAgyStructured({
+		const titleReview = invokeCreativeStructured({
 			name: "yawa_title_review",
+			kind: "title",
 			schema: TitleReviewSchema,
 			prompt: titleOnlyPrompt({
 				brand: "夜話アーカイブ ASMR",
@@ -492,8 +494,9 @@ function generateScript(
 				rules: titleRules,
 			}),
 		});
-		const authored = invokeAgyStructured({
+		const authored = invokeCreativeStructured({
 			name: "yawa_script",
+			kind: "draft",
 			schema: ScriptDraftSchema,
 			prompt: scriptPrompt(
 				tools,
@@ -506,8 +509,9 @@ function generateScript(
 		const body = flattenPerformances(draft)
 			.map((item, index) => `${index + 1}. ${item.text}`)
 			.join("\n");
-		const titleFit = invokeAgyStructured({
+		const titleFit = invokeCreativeStructured({
 			name: "yawa_title_body_review",
+			kind: "title",
 			schema: TitleFitSchema,
 			prompt: titleFitPrompt({
 				brand: "夜話アーカイブ ASMR",
@@ -519,7 +523,12 @@ function generateScript(
 		});
 		draft.title = titleFit.value.title;
 		writeJsonAtomic(path.join(dir, "creative_authoring.json"), {
-			model: AGY_CREATIVE_MODEL,
+			model_routes: {
+				title_proposal: titleProposal.receipt,
+				title_review: titleReview.receipt,
+				draft: authored.receipt,
+				title_fit: titleFit.receipt,
+			},
 			title_proposal: titleProposal.value,
 			title_proposal_usage: titleProposal.receipt.usage,
 			title_proposal_conversation: titleProposal.receipt.conversation_id,

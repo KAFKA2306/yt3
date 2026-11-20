@@ -33,12 +33,11 @@ import {
 	createYouTubeOAuthClient,
 	YOUTUBE_PROFILES,
 } from "../domain/youtube_profiles.js";
-import {
-	AGY_CREATIVE_MODEL,
-	type AgyReceipt,
-	invokeAgyStructured,
-} from "../io/agy.js";
 import { getCurrentDateString, ROOT } from "../io/core.js";
+import {
+	type CreativeReceipt,
+	invokeCreativeStructured,
+} from "../io/creative.js";
 
 const config = loadMusicConfig(ROOT);
 const outputDir = path.join(ROOT, config.output_dir);
@@ -66,7 +65,7 @@ type PreviousStory = {
 
 function ensureStoryWorld(): {
 	world: z.infer<typeof HumanityStoryWorldSchema>;
-	generation: { receipt: AgyReceipt } | null;
+	generation: { receipt: CreativeReceipt } | null;
 } {
 	if (fs.existsSync(worldPath)) {
 		return {
@@ -74,8 +73,9 @@ function ensureStoryWorld(): {
 			generation: null,
 		};
 	}
-	const generation = invokeAgyStructured({
+	const generation = invokeCreativeStructured({
 		name: "humanity_story_world",
+		kind: "draft",
 		schema: HumanityStoryWorldSchema,
 		prompt: [
 			"雨晴はうの人類観測所のため、今後の複数曲が共有できる、独自の物語世界と人間関係の基盤を設計してください。",
@@ -252,8 +252,9 @@ async function generate(brief?: string): Promise<GenerationRow> {
 	};
 	const titleRules =
 		"3〜15文字前後の短く口ずさみやすい日本語の曲名にする（例: 『余白のさみしい』『外れたチェーン』）。ラノベのあらすじ説明のような長い文章や、登場人物・状況の説明を曲名に入れない。物語の説明は概要欄に書く。";
-	const titleProposal = invokeAgyStructured({
+	const titleProposal = invokeCreativeStructured({
 		name: "humanity_title_proposal",
+		kind: "title",
 		schema: TitleProposalSchema,
 		prompt: titleProposalPrompt({
 			brand: "雨晴はうの人類観測所",
@@ -261,8 +262,9 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			context,
 		}),
 	});
-	const titleReview = invokeAgyStructured({
+	const titleReview = invokeCreativeStructured({
 		name: "humanity_title_review",
+		kind: "title",
 		schema: TitleReviewSchema,
 		prompt: titleOnlyPrompt({
 			brand: "雨晴はうの人類観測所",
@@ -270,8 +272,9 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			rules: titleRules,
 		}),
 	});
-	const authored = invokeAgyStructured({
+	const authored = invokeCreativeStructured({
 		name: "humanity_song_draft",
+		kind: "draft",
 		schema: DraftSchema,
 		prompt: [
 			"あなたは「雨晴はうの人類観測所（晴れ待ち坂）」の作詞家・作曲家です。今回の歌が伝えるコンセプト、人物の関係、出来事、感情の変化をひとつの体験として作り、歌詞と音楽とジャケット情景を一緒に設計してください。",
@@ -286,8 +289,9 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		].join("\n\n"),
 	});
 	const draft = authored.value;
-	const titleFit = invokeAgyStructured({
+	const titleFit = invokeCreativeStructured({
 		name: "humanity_title_body_review",
+		kind: "title",
 		schema: TitleFitSchema,
 		prompt: titleFitPrompt({
 			brand: "雨晴はうの人類観測所",
@@ -316,7 +320,13 @@ async function generate(brief?: string): Promise<GenerationRow> {
 	});
 	fs.writeJsonSync(jizuraPlanPath, jizuraPlan, { spaces: 2 });
 	fs.writeJsonSync(path.join(runDir, "creative_authoring.json"), {
-		model: AGY_CREATIVE_MODEL,
+		model_routes: {
+			world_bible: worldRecord.generation?.receipt ?? null,
+			title_proposal: titleProposal.receipt,
+			title_review: titleReview.receipt,
+			draft: authored.receipt,
+			title_fit: titleFit.receipt,
+		},
 		world_bible: worldRecord.world,
 		world_bible_sha256: worldHash,
 		world_bible_generation: worldRecord.generation
@@ -334,7 +344,8 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		jizura_plan: {
 			path: "jizura.json",
 			sha256: sha256File(jizuraPlanPath),
-			model: AGY_CREATIVE_MODEL,
+			provider: authored.receipt.provider,
+			model: authored.receipt.model,
 			conversation_id: authored.receipt.conversation_id,
 			usage: authored.receipt.usage,
 		},
