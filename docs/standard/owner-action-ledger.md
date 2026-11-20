@@ -29,16 +29,15 @@ generated:
 | Action ID | Linked Question ID | 対象 (`target`) | 種別 | 状態 | 必要なユーザ操作 | 停止中の工程 | 再開・解消条件 | 確認コマンド |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `OA-001` | `q-gcp-659942893881-enable-youtube-analytics-api-380ae07d` | `gcp:659942893881` | 外部API権限 | `open` | Google Cloud Console でプロジェクト `659942893881` の **YouTube Analytics API** (`youtubeanalytics.googleapis.com`) を有効化する | Layer 3 実績データ取得（`verify_youtube_analytics_api_live_data`） | 有効化後 `task analytics:refresh` が成功し、`db/evolution.db` の `youtube_analytics` に 1 件以上入ると自動解消 | `task analytics:refresh && task analytics:build` |
-| `OA-002` | `q-systemd-yt3-discord-service-rotate-discord-token-091c28ea` | `systemd:yt3-discord.service` | 秘密情報・認証 | `open` | [discord-operations](../../.agents/skills/discord-operations/SKILL.md) の手順で有効な `DISCORD_TOKEN` を設定し、`yt3-discord.service` を再起動する（現在終了コード `78/CONFIG` で停止中） | Discord Bot 常駐監視（`verify_discord_bot_service`） | `systemctl --user is-active yt3-discord.service` が `active` になると自動解消 | `systemctl --user status yt3-discord.service --no-pager` |
 | `OA-003` | `manual:l2-judge-calibration` | `yt3:benchmark-l2` | 人手校正 | `open` | 新方針で生成されたランが各チャンネル 3〜5 本たまった段階で実視聴・実聴取し、良例／悪例ラベルを与えて Layer 2 採点（`task bench:judge`）の一致率を校正する | Layer 2 採点の校正ステータス（現在 `UNCALIBRATED`）および音声・歌唱の知覚品質（`UNVERIFIED`） | 校正セットで人手判定とモデル判定の一致率を記録し、`benchmark-standard.md` へ反映 | `task bench:all -- --limit=5 --with-lexicon` |
 | `OA-004` | `manual:okf-human-verified` | `docs:okf-bundle` | 人手承認 | `open` | [docs/index.md](../index.md) 配下の OKF v0.3 知識文書（16 概念）を確認し、確定した文書へ `verified: [{ by: "human:<id>", at: "<ISO8601>" }]` を記録する | OKF 信頼度層（現在すべて `unverified`） | オーナー確認後に該当 Markdown の `verified` を更新 | `task resident:status` |
-| `OA-005` | `manual:claude-subscription-billing` | `cli:claude` | 課金・認証 | `open` | `https://claude.ai/settings/billing` で Claude サブスクリプション決済を更新する（現在 `payment is past due` により `claude` CLI 全モデルと `yt3-env-refresh.timer` が実行不可） | `claude` CLI 経路（Opus 5.5 / Fable 5.2 / `yt3-env-refresh`） | `env -u ANTHROPIC_API_KEY claude -p "OK" --model claude-haiku-5-5` が成功すること | `env -u ANTHROPIC_API_KEY claude -p "OK" --model claude-haiku-5-5 --no-session-persistence` |
 
 ## 完了・解消済み履歴（`done` / `obsolete`）
 
 | Action ID | 対象 | 最終状態 | 完了日 | 根拠・確認結果 |
 | --- | --- | --- | --- | --- |
-| — | （現在 0 件） | — | — | — |
+| `OA-002` | `systemd:yt3-discord.service` | `obsolete` | 2026-11-20 | 日次 Discord 通知は `.env` の `DISCORD_WEBHOOK_URL` 経由で稼働しており、スタンドアロン Bot は不要のため自動解消。 |
+| `OA-005` | `cli:claude` | `obsolete` | 2026-11-20 | 現在 Claude は未使用のため `yt3-env-refresh.timer` を無効化し、監視対象から除外。 |
 
 ## 運用手順
 

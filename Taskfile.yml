@@ -320,10 +320,10 @@ tasks:
       - systemctl --user list-timers yt3-env-refresh.timer --no-pager
 
   systemd:install:
-    desc: "Sync YT3 user systemd services and timers (byosan, yawa, humanity, analytics, resident, env-refresh) and reload"
+    desc: "Sync YT3 user systemd services and timers (byosan, yawa, humanity, analytics, resident) and reload"
     cmds:
       - mkdir -p "$HOME/.config/systemd/user"
-      - cp systemd/yt3-byosan-daily.service systemd/yt3-byosan-daily.timer systemd/yt3-yawa-daily.service systemd/yt3-yawa-daily.timer systemd/yt3-yawa-validate.service systemd/yt3-yawa-validate.timer systemd/yt3-humanity-music.service systemd/yt3-humanity-music.timer systemd/yt3-analytics-refresh.service systemd/yt3-analytics-refresh.timer systemd/yt3-resident-agent.service systemd/yt3-resident-agent.timer systemd/yt3-env-refresh.service systemd/yt3-env-refresh.timer "$HOME/.config/systemd/user/"
+      - cp systemd/yt3-byosan-daily.service systemd/yt3-byosan-daily.timer systemd/yt3-yawa-daily.service systemd/yt3-yawa-daily.timer systemd/yt3-yawa-validate.service systemd/yt3-yawa-validate.timer systemd/yt3-humanity-music.service systemd/yt3-humanity-music.timer systemd/yt3-analytics-refresh.service systemd/yt3-analytics-refresh.timer systemd/yt3-resident-agent.service systemd/yt3-resident-agent.timer "$HOME/.config/systemd/user/"
       - systemctl --user daemon-reload
-      - systemctl --user enable --now yt3-byosan-daily.timer yt3-yawa-daily.timer yt3-yawa-validate.timer yt3-humanity-music.timer yt3-analytics-refresh.timer yt3-resident-agent.timer yt3-env-refresh.timer
+      - systemctl --user enable --now yt3-byosan-daily.timer yt3-yawa-daily.timer yt3-yawa-validate.timer yt3-humanity-music.timer yt3-analytics-refresh.timer yt3-resident-agent.timer
       - systemctl --user list-timers 'yt3*' --no-pager

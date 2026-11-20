@@ -93,39 +93,52 @@ function queryEvolutionAnalyticsRowCount(): number {
 	return Number(proc.stdout.trim()) || 0;
 }
 
-function inspectSystemdUnitState(unit: string): {
-	active: string;
-	sub: string;
-	exitStatus: string;
-} {
-	const proc = spawnSync(
-		"systemctl",
-		[
-			"--user",
-			"show",
-			unit,
-			"-p",
-			"ActiveState",
-			"-p",
-			"SubState",
-			"-p",
-			"ExecMainStatus",
-		],
-		{ encoding: "utf8" },
-	);
-	if (proc.status !== 0) {
-		return { active: "unknown", sub: "unknown", exitStatus: "unknown" };
+function hasDiscordWebhookConfigured(): boolean {
+	const envPath = path.join(ROOT, ".env");
+	if (!fs.existsSync(envPath)) return false;
+	const text = fs.readFileSync(envPath, "utf8");
+	return /^DISCORD_WEBHOOK_URL=\S+/m.test(text);
+}
+
+function currentTokyoDate(): string {
+	const fmt = new Intl.DateTimeFormat("sv-SE", {
+		timeZone: "Asia/Tokyo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	});
+	return fmt.format(new Date());
+}
+
+function hasVerifiedRunToday(
+	product: BenchmarkProduct,
+	today: string,
+): boolean {
+	const bucketDir = path.join(ROOT, "runs", BUCKET_BY_PRODUCT[product]);
+	if (!fs.existsSync(bucketDir)) return false;
+	const prefix =
+		product === "byosan"
+			? `${today}-`
+			: product === "yawa"
+				? `yawa-${today}`
+				: `music-${today}`;
+	for (const entry of fs.readdirSync(bucketDir, { withFileTypes: true })) {
+		if (!entry.isDirectory() || !entry.name.startsWith(prefix)) continue;
+		const pubStatePath = path.join(
+			bucketDir,
+			entry.name,
+			"publish",
+			"state.json",
+		);
+		if (!fs.existsSync(pubStatePath)) continue;
+		try {
+			const state = fs.readJsonSync(pubStatePath) as { phase?: string };
+			if (state.phase === "VERIFIED") return true;
+		} catch {
+			// ignore unreadable state
+		}
 	}
-	const map = new Map<string, string>();
-	for (const line of proc.stdout.split(/\r?\n/)) {
-		const idx = line.indexOf("=");
-		if (idx > 0) map.set(line.slice(0, idx), line.slice(idx + 1));
-	}
-	return {
-		active: map.get("ActiveState") ?? "unknown",
-		sub: map.get("SubState") ?? "unknown",
-		exitStatus: map.get("ExecMainStatus") ?? "unknown",
-	};
+	return false;
 }
 
 function runTick(options?: {
@@ -338,44 +351,63 @@ function runTick(options?: {
 			},
 		},
 		{
-			id: "verify_discord_bot_service",
+			id: "verify_discord_webhook_and_daily_recovery",
 			run: ({ questionLedger }) => {
-				const unit = inspectSystemdUnitState("yt3-discord.service");
-				if (unit.active === "active") {
-					resolveHumanQuestionObsolete(
-						questionLedger,
-						"systemd:yt3-discord.service",
-						"rotate_discord_token",
-						"yt3-discord.service is now active",
-					);
+				// Auto-resolve obsolete standalone bot question: daily URL notifications use DISCORD_WEBHOOK_URL
+				resolveHumanQuestionObsolete(
+					questionLedger,
+					"systemd:yt3-discord.service",
+					"rotate_discord_token",
+					"Daily Discord notifications use DISCORD_WEBHOOK_URL webhook; standalone bot is not required",
+				);
+				if (!hasDiscordWebhookConfigured()) {
 					return {
-						status: "verified",
-						ref: "systemd:yt3-discord.service(active)",
+						status: "failed",
+						error: "DISCORD_WEBHOOK_URL is missing in repository root .env",
 					};
 				}
-				if (unit.exitStatus === "78") {
+				const today = currentTokyoDate();
+				const byosanVerified = hasVerifiedRunToday("byosan", today);
+				const recoveryStatePath = path.join(
+					paths.stateDir,
+					"recovery_state.json",
+				);
+				const recoveryState = fs.existsSync(recoveryStatePath)
+					? (fs.readJsonSync(recoveryStatePath) as Record<string, number>)
+					: {};
+				const byosanKey = `byosan:${today}`;
+				const byosanAttempts = recoveryState[byosanKey] ?? 0;
+
+				// Bounded auto-recovery: if Byosan has 0 VERIFIED runs today past 08:00 JST and <1 recovery attempt today, recover once
+				const tokyoHour = Number(
+					new Intl.DateTimeFormat("en-GB", {
+						timeZone: "Asia/Tokyo",
+						hour: "2-digit",
+						hour12: false,
+					}).format(new Date()),
+				);
+				if (!byosanVerified && tokyoHour >= 8 && byosanAttempts < 1) {
+					recoveryState[byosanKey] = byosanAttempts + 1;
+					fs.writeJsonSync(recoveryStatePath, recoveryState, { spaces: 2 });
+					const proc = spawnSync("task", ["byosan:publish-daily"], {
+						cwd: ROOT,
+						encoding: "utf8",
+						timeout: 45 * 60 * 1000,
+					});
+					if (proc.status !== 0) {
+						return {
+							status: "failed",
+							error: `Auto-recovery byosan:publish-daily failed (exit ${proc.status})`,
+						};
+					}
 					return {
-						status: "needs_human",
-						question: {
-							target: "systemd:yt3-discord.service",
-							decision_topic: "rotate_discord_token",
-							question:
-								"yt3-discord.service が終了コード 78（認証設定エラー）で停止しています。DISCORD_TOKEN を更新してサービスを再開しますか？",
-							respondent: "owner",
-							rationale:
-								"AGENTS.md の規約により秘密情報（DISCORD_TOKEN）の取得・更新はオーナー権限のみ許可されているため。",
-							alternatives_checked: [
-								"systemd ジャーナル確認（status=78/CONFIG で意図的に自動再起動抑止）",
-							],
-							blocked_step: "verify_discord_bot_service",
-							resume_condition:
-								"有効な DISCORD_TOKEN を設定して systemctl --user restart yt3-discord.service が active になること",
-						},
+						status: "verified",
+						ref: `recovered:byosan:${today}`,
 					};
 				}
 				return {
 					status: "verified",
-					ref: `systemd:yt3-discord.service(${unit.active}/${unit.sub})`,
+					ref: `webhook=configured,byosan_verified_today=${byosanVerified}`,
 				};
 			},
 		},
