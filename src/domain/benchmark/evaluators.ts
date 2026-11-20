@@ -839,6 +839,11 @@ export const CHANNEL_JUDGE_RUBRICS: Record<
 > = {
 	byosan: [
 		{
+			id: "regime_shift_and_verification_split",
+			question:
+				"価格・指数・一次資料で確認できた事実（レジーム変化）と、SNSやタイムライン上の未確認主張（UNVERIFIED）を明確に仕分け、未確認の噂を事実として断定していないか。",
+		},
+		{
 			id: "structural_clarity",
 			question:
 				"単なるニュースの読み上げではなく、一次資料の数字の背景にある構造や因果が一般の投資家・ビジネス層に腑に落ちる形で説明されているか。",
