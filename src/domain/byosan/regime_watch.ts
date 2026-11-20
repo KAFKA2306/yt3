@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FACT_SHEET_SCHEMA_VERSION, type FactSheet } from "./fact_sheet.js";
 
 export const MarketQuoteSchema = z.object({
 	symbol: z.string(),
@@ -117,4 +118,60 @@ export function shouldTriggerRegimeVideo(
 ): boolean {
 	if (evaluation.regime !== "regime_shift") return false;
 	return lastTriggeredDate !== evaluation.trading_date;
+}
+
+export function buildRegimeFactSheet(
+	evaluation: RegimeEvaluation,
+	options?: {
+		subject?: string;
+		extraSourceDocs?: FactSheet["source_documents"];
+	},
+): FactSheet {
+	const symbolDocs = evaluation.quotes.map((q) => ({
+		url: `https://finance.yahoo.com/quote/${encodeURIComponent(q.symbol)}/`,
+		title: `${q.label} (${q.symbol}) Market Close ${q.trading_date}`,
+		issuer: "Yahoo Finance Market Data",
+		published: q.trading_date,
+	}));
+	const facts: FactSheet["facts"] = [];
+	for (const q of evaluation.quotes) {
+		const slug = q.symbol
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "_")
+			.replace(/^_+|_+$/g, "");
+		const sourceUrl = `https://finance.yahoo.com/quote/${encodeURIComponent(q.symbol)}/`;
+		facts.push({
+			id: `${slug}_close`,
+			label: `${q.label} 終値`,
+			value: q.close,
+			unit: q.symbol === "^VIX" ? "pt" : "index",
+			period: q.trading_date,
+			basis: "actual",
+			source_url: sourceUrl,
+			status: "CONFIRMED",
+			note: `前日終値 ${q.prev_close} から ${q.change_pct >= 0 ? "+" : ""}${q.change_pct}%`,
+		});
+		facts.push({
+			id: `${slug}_change_pct`,
+			label: `${q.label} 前日比騰落率`,
+			value: q.change_pct,
+			unit: "%",
+			period: q.trading_date,
+			basis: "actual",
+			source_url: sourceUrl,
+			status: "CONFIRMED",
+		});
+	}
+
+	return {
+		schema_version: FACT_SHEET_SCHEMA_VERSION,
+		company: "US Market & Semiconductor Regime Shift",
+		subject:
+			options?.subject ??
+			`米国市場レジーム転換（${evaluation.trading_date}）：${evaluation.triggers.map((t) => t.label).join("・")}の急変が示す市場構造`,
+		released: evaluation.trading_date,
+		source_documents: [...symbolDocs, ...(options?.extraSourceDocs ?? [])],
+		facts,
+		unverified: [],
+	};
 }

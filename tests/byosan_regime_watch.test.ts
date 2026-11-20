@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import { parseFactSheet } from "../src/domain/byosan/fact_sheet.js";
 import {
+	buildRegimeFactSheet,
 	evaluateRegimeSignals,
 	type MarketQuote,
 	shouldTriggerRegimeVideo,
@@ -80,5 +82,9 @@ describe("Byosan 0-token market regime watch", () => {
 		expect(shouldTriggerRegimeVideo(ev, null)).toBe(true);
 		// Same trading date already triggered -> must not duplicate
 		expect(shouldTriggerRegimeVideo(ev, "2026-11-20")).toBe(false);
+
+		const sheet = buildRegimeFactSheet(ev);
+		expect(() => parseFactSheet(sheet)).not.toThrow();
+		expect(sheet.facts.length).toBe(8);
 	});
 });

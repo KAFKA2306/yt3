@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
 import {
+	buildRegimeFactSheet,
 	evaluateRegimeSignals,
 	type MarketQuote,
 	REGIME_SYMBOLS,
@@ -101,12 +102,48 @@ async function main() {
 	let lastTriggeredDate = prevState.last_triggered_date ?? null;
 
 	if (willTrigger) {
-		const proc = spawnSync("task", ["byosan:publish-daily"], {
-			cwd: ROOT,
-			encoding: "utf8",
-			timeout: 45 * 60 * 1000,
+		const factSheetPath = path.join(
+			ROOT,
+			"data",
+			"state",
+			"byosan",
+			`regime_fact_sheet_${evaluation.trading_date}.json`,
+		);
+		fs.ensureDirSync(path.dirname(factSheetPath));
+		fs.writeJsonSync(factSheetPath, buildRegimeFactSheet(evaluation), {
+			spaces: 2,
 		});
-		triggerExitCode = proc.status ?? 1;
+		const tokyoDate = new Intl.DateTimeFormat("sv-SE", {
+			timeZone: "Asia/Tokyo",
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		}).format(new Date());
+		const runId = `byosan_money/${tokyoDate}-daily-regime`;
+		const prep = spawnSync(
+			"task",
+			["byosan:prepare", `DATE=${tokyoDate}`, `FACT_SHEET=${factSheetPath}`],
+			{
+				cwd: ROOT,
+				env: { ...process.env, BYOSAN_SUFFIX: "-regime" },
+				encoding: "utf8",
+				timeout: 45 * 60 * 1000,
+			},
+		);
+		if (prep.status === 0) {
+			const pub = spawnSync(
+				"task",
+				["publish", "PROFILE=byosan", "--", runId],
+				{
+					cwd: ROOT,
+					encoding: "utf8",
+					timeout: 15 * 60 * 1000,
+				},
+			);
+			triggerExitCode = pub.status ?? 1;
+		} else {
+			triggerExitCode = prep.status ?? 1;
+		}
 		if (triggerExitCode === 0) {
 			lastTriggeredDate = evaluation.trading_date;
 		}
