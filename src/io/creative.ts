@@ -67,11 +67,10 @@ function invokeCodexStructured<T>(
 } {
 	const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "yt3-codex-creative-"));
 	try {
-		const schemaPath = path.join(tempDir, "schema.json");
 		const outputPath = path.join(tempDir, "last-message.json");
 		const schema = z.toJSONSchema(input.jsonSchema ?? input.schema);
 		delete schema.$schema;
-		fs.writeJsonSync(schemaPath, schema);
+		const jsonSchema = JSON.stringify(schema);
 		const result = spawnSync(
 			"codex",
 			[
@@ -87,8 +86,6 @@ function invokeCodexStructured<T>(
 				"--ephemeral",
 				"--skip-git-repo-check",
 				"--ignore-user-config",
-				"--output-schema",
-				schemaPath,
 				"-o",
 				outputPath,
 				"-",
@@ -97,7 +94,8 @@ function invokeCodexStructured<T>(
 				cwd: tempDir,
 				input: [
 					input.prompt,
-					"最終応答は指定スキーマに適合するJSONだけにしてください。",
+					"最終応答は次のJSON Schemaに適合するJSONだけにしてください。全必須項目を含め、任意項目はスキーマどおりに扱います。",
+					`[JSON_SCHEMA]\n${jsonSchema}`,
 				].join("\n\n"),
 				encoding: "utf8",
 				timeout: 21 * 60 * 1000,
