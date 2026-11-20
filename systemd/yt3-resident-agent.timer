@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly Timer for YT3 Resident Agent Autonomous Ops Tick
+
+[Timer]
+OnCalendar=*-*-* *:05:00
+Persistent=true
+Unit=yt3-resident-agent.service
+
+[Install]
+WantedBy=timers.target

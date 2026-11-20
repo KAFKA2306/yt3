@@ -27,6 +27,7 @@ Find every canonical record, master file, and analytical schema owner here. Prod
 | LLM calls | One emitted event for a provider call (start, end, validation, or fallback) | `<run>/audit/llm_calls.jsonl` | `CodexLogRecord` and writer in `src/domain/byosan/codex_llm.ts` |
 | Humanity music | One generation, rating, playlist, or publication event | `runs/humanity_music/ledger.jsonl` | `LedgerRowSchema` in `src/domain/humanity_music.ts`; writer in `src/scripts/humanity_music.ts` |
 | Environment refresh | One refresh event | `logs/environment-refresh.jsonl` (local) | `scripts/env_refresh.sh`; event contract in [Environment Refresh Standard](environment-refresh.md) |
+| Resident agent events | One resident-agent tick or state transition | `logs/resident-agent.jsonl` (local) | `src/domain/resident/ledgers.ts`; contract in [Resident Agent Standard](resident-agent-standard.md) |
 
 ## Master data & creative canons
 
@@ -48,6 +49,7 @@ Find every canonical record, master file, and analytical schema owner here. Prod
 | Agent activity | One agent log entry | `logs/agent_activity.jsonl` (local) | `AgentLogEntry` and writer in `src/io/utils/logger.ts` |
 | YouTube analytics (raw) | Video × age window, traffic source, or channel × date × video | `db/evolution.db` | `db/schema.sql` & `src/scripts/refresh_youtube_analytics.ts` |
 | YouTube analytics (marts) | Channel, video × window, and channel × date × video | `data/analytics/yt3_analytics.duckdb` (local, rebuilt by `task analytics:build`) | dbt project in `analytics/` ([Star Schema & dbt Standard](star-schema-standard.md)) |
+| Resident work & question ledgers | One ongoing work item (`work_id`) / one deduplicated owner question (`target` × `decision_topic`) | `data/state/resident/work_ledger.json`, `data/state/resident/question_ledger.json` (local) | `WorkLedgerSchema` / `QuestionLedgerSchema` in `src/domain/resident/ledgers.ts` ([Resident Agent Standard](resident-agent-standard.md)) |
 
 ## How to use the records
 

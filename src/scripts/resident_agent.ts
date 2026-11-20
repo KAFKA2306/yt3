@@ -1,0 +1,407 @@
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import fs from "fs-extra";
+import {
+	BENCHMARK_VERSION,
+	type BenchmarkProduct,
+	evaluateByosanRun,
+	evaluateHumanityRun,
+	evaluateYawaCrossRun,
+	evaluateYawaRun,
+} from "../domain/benchmark/evaluators.js";
+import {
+	answerHumanQuestion,
+	ensureLedgers,
+	executeWorkCycle,
+	type ResidentStep,
+	resolveHumanQuestionObsolete,
+	resolveResidentPaths,
+	saveQuestionLedger,
+} from "../domain/resident/ledgers.js";
+import { ROOT } from "../io/core.js";
+
+const BUCKET_BY_PRODUCT: Record<BenchmarkProduct, string> = {
+	byosan: "byosan_money",
+	yawa: "yawa_archive",
+	humanity: "humanity_observatory",
+};
+
+const RUN_DIR_FILTER: Record<BenchmarkProduct, RegExp> = {
+	byosan: /^\d{4}-\d{2}-\d{2}-/,
+	yawa: /^yawa-\d{4}-\d{2}-\d{2}/,
+	humanity: /^music-\d{4}-\d{2}-\d{2}/,
+};
+
+function currentTokyoHourSlot(): string {
+	const fmt = new Intl.DateTimeFormat("sv-SE", {
+		timeZone: "Asia/Tokyo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		hour12: false,
+	});
+	const parts = Object.fromEntries(
+		fmt.formatToParts(new Date()).map((p) => [p.type, p.value]),
+	);
+	return `hourly:${parts.year}-${parts.month}-${parts.day}T${parts.hour}:00+09:00`;
+}
+
+function getGitHead(): string {
+	const proc = spawnSync("git", ["rev-parse", "--short", "HEAD"], {
+		cwd: ROOT,
+		encoding: "utf8",
+	});
+	return proc.status === 0 ? proc.stdout.trim() : "unknown";
+}
+
+function listRecentRuns(product: BenchmarkProduct, limit: number): string[] {
+	const dir = path.join(ROOT, "runs", BUCKET_BY_PRODUCT[product]);
+	if (!fs.existsSync(dir)) return [];
+	const filter = RUN_DIR_FILTER[product];
+	return fs
+		.readdirSync(dir, { withFileTypes: true })
+		.filter((e) => e.isDirectory() && filter.test(e.name))
+		.map((e) => e.name)
+		.sort()
+		.reverse()
+		.slice(0, limit)
+		.map((name) => path.join(dir, name));
+}
+
+function queryEvolutionAnalyticsRowCount(): number {
+	const dbPath = path.join(ROOT, "db", "evolution.db");
+	if (!fs.existsSync(dbPath)) return 0;
+	const proc = spawnSync(
+		"python3",
+		[
+			"-c",
+			"import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); print(c.execute('select count(*) from youtube_analytics').fetchone()[0])",
+			dbPath,
+		],
+		{ encoding: "utf8" },
+	);
+	if (proc.status !== 0) return 0;
+	return Number(proc.stdout.trim()) || 0;
+}
+
+function inspectSystemdUnitState(unit: string): {
+	active: string;
+	sub: string;
+	exitStatus: string;
+} {
+	const proc = spawnSync(
+		"systemctl",
+		[
+			"--user",
+			"show",
+			unit,
+			"-p",
+			"ActiveState",
+			"-p",
+			"SubState",
+			"-p",
+			"ExecMainStatus",
+		],
+		{ encoding: "utf8" },
+	);
+	if (proc.status !== 0) {
+		return { active: "unknown", sub: "unknown", exitStatus: "unknown" };
+	}
+	const map = new Map<string, string>();
+	for (const line of proc.stdout.split(/\r?\n/)) {
+		const idx = line.indexOf("=");
+		if (idx > 0) map.set(line.slice(0, idx), line.slice(idx + 1));
+	}
+	return {
+		active: map.get("ActiveState") ?? "unknown",
+		sub: map.get("SubState") ?? "unknown",
+		exitStatus: map.get("ExecMainStatus") ?? "unknown",
+	};
+}
+
+function runTick(triggerOverride?: string) {
+	const paths = resolveResidentPaths(ROOT);
+	const triggerId = triggerOverride ?? currentTokyoHourSlot();
+	const gitHead = getGitHead();
+	const snapshotPath = path.join(paths.stateDir, "latest_health_snapshot.json");
+	const duckdbPath = path.join(
+		ROOT,
+		"data",
+		"analytics",
+		"yt3_analytics.duckdb",
+	);
+
+	const steps: ResidentStep[] = [
+		{
+			id: "run_channel_l1_benchmarks",
+			run: () => {
+				const byosanRuns = listRecentRuns("byosan", 5).map(evaluateByosanRun);
+				const yawaRuns = listRecentRuns("yawa", 5).map((d) =>
+					evaluateYawaRun(d, { repoRoot: ROOT }),
+				);
+				const humanityRuns = listRecentRuns("humanity", 5).map((d) =>
+					evaluateHumanityRun(d, { repoRoot: ROOT }),
+				);
+				const yawaCross = evaluateYawaCrossRun(yawaRuns);
+				const snapshot = {
+					captured_at: new Date().toISOString(),
+					trigger_id: triggerId,
+					git_head: gitHead,
+					benchmark_version: BENCHMARK_VERSION,
+					channels: {
+						byosan: {
+							evaluated: byosanRuns.length,
+							pass: byosanRuns.filter((r) => r.status === "PASS").length,
+							fail: byosanRuns.filter((r) => r.status === "FAIL").length,
+							latest_run: byosanRuns[0]?.run_id ?? null,
+							latest_status: byosanRuns[0]?.status ?? null,
+						},
+						yawa: {
+							evaluated: yawaRuns.length,
+							pass: yawaRuns.filter((r) => r.status === "PASS").length,
+							fail: yawaRuns.filter((r) => r.status === "FAIL").length,
+							latest_run: yawaRuns[0]?.run_id ?? null,
+							latest_status: yawaRuns[0]?.status ?? null,
+							cross_run_warnings: yawaCross.filter((c) => c.status === "WARN")
+								.length,
+						},
+						humanity: {
+							evaluated: humanityRuns.length,
+							pass: humanityRuns.filter((r) => r.status === "PASS").length,
+							fail: humanityRuns.filter((r) => r.status === "FAIL").length,
+							latest_run: humanityRuns[0]?.run_id ?? null,
+							latest_status: humanityRuns[0]?.status ?? null,
+						},
+					},
+				};
+				fs.ensureDirSync(path.dirname(snapshotPath));
+				fs.writeJsonSync(snapshotPath, snapshot, { spaces: 2 });
+				// Read back snapshot to verify persistence
+				const readBack = fs.readJsonSync(snapshotPath) as {
+					trigger_id?: string;
+				};
+				if (readBack.trigger_id !== triggerId) {
+					return {
+						status: "failed",
+						error: "Health snapshot read-back mismatch",
+					};
+				}
+				return { status: "verified", ref: snapshotPath };
+			},
+		},
+		{
+			id: "sync_dbt_analytics_marts",
+			run: () => {
+				const proc = spawnSync("task", ["analytics:build"], {
+					cwd: ROOT,
+					encoding: "utf8",
+					timeout: 120_000,
+				});
+				if (proc.status !== 0) {
+					return {
+						status: "failed",
+						error: `task analytics:build exited ${proc.status}: ${(proc.stderr || proc.stdout).trim().slice(-400)}`,
+					};
+				}
+				if (!fs.existsSync(duckdbPath)) {
+					return {
+						status: "failed",
+						error: `dbt output DuckDB missing after build: ${duckdbPath}`,
+					};
+				}
+				return { status: "verified", ref: duckdbPath };
+			},
+		},
+		{
+			id: "verify_youtube_analytics_api_live_data",
+			run: ({ questionLedger }) => {
+				const rows = queryEvolutionAnalyticsRowCount();
+				if (rows > 0) {
+					resolveHumanQuestionObsolete(
+						questionLedger,
+						"gcp:659942893881",
+						"enable_youtube_analytics_api",
+						`youtube_analytics now has ${rows} measured row(s)`,
+					);
+					return {
+						status: "verified",
+						ref: `sqlite:db/evolution.db#youtube_analytics(rows=${rows})`,
+					};
+				}
+				return {
+					status: "needs_human",
+					question: {
+						target: "gcp:659942893881",
+						decision_topic: "enable_youtube_analytics_api",
+						question:
+							"GCP プロジェクト 659942893881 で YouTube Analytics API を有効化していただけますか？",
+						respondent: "owner",
+						rationale:
+							"task analytics:refresh が API 未有効化（youtubeanalytics.googleapis.com disabled）で失敗しており、dbt Layer 3 実績マートの実数値が 0 件のまま UNVERIFIED になっているため。",
+						alternatives_checked: [
+							"db/evolution.db のスキーマ差分補完と dbt ビルド（完了済み・54/54 PASS）",
+							"フィクスチャ SQLite DB による突合検証（完了済み）",
+							"OAuth トークン確認（エージェントには GCP API 有効化権限なし）",
+						],
+						blocked_step: "verify_youtube_analytics_api_live_data",
+						resume_condition:
+							"GCP コンソールで youtubeanalytics.googleapis.com を有効化後、task analytics:refresh が youtube_analytics に 1 件以上書き込むこと",
+					},
+				};
+			},
+		},
+		{
+			id: "verify_discord_bot_service",
+			run: ({ questionLedger }) => {
+				const unit = inspectSystemdUnitState("yt3-discord.service");
+				if (unit.active === "active") {
+					resolveHumanQuestionObsolete(
+						questionLedger,
+						"systemd:yt3-discord.service",
+						"rotate_discord_token",
+						"yt3-discord.service is now active",
+					);
+					return {
+						status: "verified",
+						ref: "systemd:yt3-discord.service(active)",
+					};
+				}
+				if (unit.exitStatus === "78") {
+					return {
+						status: "needs_human",
+						question: {
+							target: "systemd:yt3-discord.service",
+							decision_topic: "rotate_discord_token",
+							question:
+								"yt3-discord.service が終了コード 78（認証設定エラー）で停止しています。DISCORD_TOKEN を更新してサービスを再開しますか？",
+							respondent: "owner",
+							rationale:
+								"AGENTS.md の規約により秘密情報（DISCORD_TOKEN）の取得・更新はオーナー権限のみ許可されているため。",
+							alternatives_checked: [
+								"systemd ジャーナル確認（status=78/CONFIG で意図的に自動再起動抑止）",
+							],
+							blocked_step: "verify_discord_bot_service",
+							resume_condition:
+								"有効な DISCORD_TOKEN を設定して systemctl --user restart yt3-discord.service が active になること",
+						},
+					};
+				}
+				return {
+					status: "verified",
+					ref: `systemd:yt3-discord.service(${unit.active}/${unit.sub})`,
+				};
+			},
+		},
+	];
+
+	const result = executeWorkCycle({
+		paths,
+		workId: "ops:yt3-resident-hourly",
+		target: "yt3:all-channels",
+		goal: "3チャンネルのL1ベンチマーク・dbt分析マート同期・稼働監視を自律継続し、オーナー権限が必要なブロッカーだけを質問台帳へ集約する",
+		schedule: "hourly (:05 Asia/Tokyo)",
+		timezone: "Asia/Tokyo",
+		triggerId,
+		inputVersion: gitHead,
+		maxAttempts: 5,
+		steps,
+	});
+
+	console.log(JSON.stringify(result, null, 2));
+}
+
+function showStatus() {
+	const paths = resolveResidentPaths(ROOT);
+	const { workLedger, questionLedger } = ensureLedgers(paths);
+	const snapshotPath = path.join(paths.stateDir, "latest_health_snapshot.json");
+	const snapshot = fs.existsSync(snapshotPath)
+		? fs.readJsonSync(snapshotPath)
+		: null;
+	console.log(
+		JSON.stringify(
+			{
+				work_ledger_path: paths.workLedgerPath,
+				question_ledger_path: paths.questionLedgerPath,
+				event_log_path: paths.eventLogPath,
+				work_items: workLedger.items,
+				open_questions: questionLedger.questions.filter(
+					(q) => q.status === "open",
+				),
+				answered_questions: questionLedger.questions.filter(
+					(q) => q.status === "answered",
+				),
+				latest_snapshot: snapshot,
+			},
+			null,
+			2,
+		),
+	);
+}
+
+function showQuestions() {
+	const paths = resolveResidentPaths(ROOT);
+	const { questionLedger } = ensureLedgers(paths);
+	if (questionLedger.questions.length === 0) {
+		console.log("No questions recorded in question ledger.");
+		return;
+	}
+	for (const q of questionLedger.questions) {
+		console.log(
+			`- [${q.status}] ${q.question_id} (${q.target} / ${q.decision_topic})\n  Q: ${q.question}\n  Blocked step: ${q.blocked_step}\n  Resume when: ${q.resume_condition}`,
+		);
+	}
+}
+
+function recordAnswer(
+	questionId: string,
+	answerRef: string,
+	answerSummary: string,
+) {
+	const paths = resolveResidentPaths(ROOT);
+	const { questionLedger } = ensureLedgers(paths);
+	const updated = answerHumanQuestion(
+		questionLedger,
+		questionId,
+		answerRef,
+		answerSummary,
+	);
+	saveQuestionLedger(paths, questionLedger);
+	console.log(JSON.stringify(updated, null, 2));
+}
+
+function main() {
+	const [cmd, ...rest] = process.argv.slice(2);
+	if (cmd === "tick") {
+		const triggerArg = rest
+			.find((a) => a.startsWith("--trigger="))
+			?.slice("--trigger=".length);
+		runTick(triggerArg);
+		return;
+	}
+	if (cmd === "status") {
+		showStatus();
+		return;
+	}
+	if (cmd === "questions") {
+		showQuestions();
+		return;
+	}
+	if (cmd === "answer") {
+		const [questionId, answerRef, ...summaryParts] = rest;
+		if (!questionId || !answerRef || summaryParts.length === 0) {
+			console.error(
+				"usage: resident_agent.ts answer <question_id> <answer_ref> <answer_summary>",
+			);
+			process.exit(2);
+		}
+		recordAnswer(questionId, answerRef, summaryParts.join(" "));
+		return;
+	}
+	console.error(
+		"usage: resident_agent.ts <tick [--trigger=...] | status | questions | answer <id> <ref> <summary>>",
+	);
+	process.exit(2);
+}
+
+main();

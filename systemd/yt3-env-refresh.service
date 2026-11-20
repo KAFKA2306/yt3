@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/kafka/projects/yt3
+WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
 ExecStart=/home/kafka/.local/bin/task env:refresh
-Environment=PATH=/home/kafka/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
 TimeoutStartSec=55min

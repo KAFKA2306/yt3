@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly REPO=/home/kafka/projects/yt3
+readonly REPO=/home/kafka/2511youtuber/v3/yt3
 readonly CLAUDE_BIN=/home/kafka/.local/bin/claude
 readonly MODEL="${ENV_REFRESH_MODEL:-haiku}"
 readonly BUDGET_USD="${ENV_REFRESH_BUDGET_USD:-1}"
@@ -11,9 +11,8 @@ readonly PROMPT='Read docs/standard/environment-refresh.md and run exactly one r
 readonly ALLOWED=(
   Read Grep Glob Edit Write WebFetch WebSearch
   'Bash(git status:*)' 'Bash(git diff:*)' 'Bash(git log:*)' 'Bash(git rev-parse:*)'
-  'Bash(git switch:*)' 'Bash(git checkout:*)' 'Bash(git branch:*)'
-  'Bash(git add:*)' 'Bash(git commit:*)' 'Bash(git push -u origin:*)' 'Bash(git push origin:*)'
-  'Bash(task env:*)' 'Bash(task lint)' 'Bash(task test)' 'Bash(task check:merge:fast)'
+  'Bash(git add:*)' 'Bash(git commit:*)' 'Bash(git push origin main)'
+  'Bash(task env:*)' 'Bash(task lint)' 'Bash(task test)' 'Bash(task check:merge:fast)' 'Bash(task bench:*)' 'Bash(task resident:*)'
   'Bash(npm:*)' 'Bash(npx:*)' 'Bash(uv:*)' 'Bash(bun:*)'
   'Bash(gh api:*)' 'Bash(gh release:*)' 'Bash(gh search:*)'
   'Bash(curl:*)' 'Bash(systemctl --user:*)' 'Bash(claude plugin:*)' 'Bash(claude mcp:*)'
