@@ -33,6 +33,19 @@ export type CreativeReceipt =
 	  };
 
 function routeFor(kind: CreativeKind): ModelRoute {
+	const override =
+		process.env[`YT3_CREATIVE_${kind.toUpperCase()}_ROUTE`]?.trim();
+	if (override) {
+		const [provider, model, reasoningEffort, ...extra] = override.split(":");
+		if (extra.length > 0) {
+			throw new Error(`Invalid creative route override for ${kind}`);
+		}
+		return ModelRouteSchema.parse(
+			provider === "agy"
+				? { provider, model }
+				: { provider, model, reasoning_effort: reasoningEffort },
+		);
+	}
 	const file = path.join(ROOT, "config/creative_authoring.yaml");
 	const config = CreativeConfigSchema.parse(
 		yaml.load(fs.readFileSync(file, "utf8")),
