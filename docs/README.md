@@ -18,6 +18,7 @@ This directory is the YT3 OKF v0.3 knowledge bundle (also usable as an Obsidian 
 - [`standard/benchmark-standard.md`](./standard/benchmark-standard.md): 3-layer channel evaluation (deterministic L1, independent blind judge L2, dbt outcome L3)
 - [`standard/resident-agent-standard.md`](./standard/resident-agent-standard.md): always-on resident agent (work ledger, human question ledger, single-writer lock, systemd timers)
 - [`standard/owner-action-ledger.md`](./standard/owner-action-ledger.md): canonical ledger of owner-required manual actions (no secrets stored)
+- [`standard/model-routing-standard.md`](./standard/model-routing-standard.md): zero-extra-cost model routing (`config/model_routing.yaml`) and RTX 3060 12GB GPU conservation rules
 - [`QUALITY_GATES.md`](./QUALITY_GATES.md): ownership of lint, typecheck, tests, and CI gates
 - [`standard/environment-refresh.md`](./standard/environment-refresh.md): hourly environment refresh loop
 

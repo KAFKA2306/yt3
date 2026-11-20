@@ -1,0 +1,117 @@
+# YT3 Zero-Extra-Cost & GPU-Conserving Model Routing Catalog
+# Verified live against local CLIs (agy 1.5.13, codex-cli 0.164.0, claude 2.1.328) on 2026-11-20.
+schema_version: 1
+updated_at: "2026-11-20"
+
+gpu_policy:
+  device: "NVIDIA GeForce RTX 3060"
+  vram_gb: 12
+  resident_gpu_daemons: forbidden
+  execution_mode: oneshot_load_and_release
+  shared_lock_file: "~/.cache/yt3-gpu.lock"
+  text_tasks_vram_mb: 0
+
+routes:
+  creative_draft_flagship:
+    provider: agy
+    model: gemini-4-neon-medium
+    vram_mb: 0
+    extra_cost: 0
+    status: verified_live
+    use_for: "High-stakes creative drafts when explicitly selected (scripts, lyrics, features)"
+
+  creative_draft_worker:
+    provider: agy
+    model: gemini-4-hydrogen-medium
+    vram_mb: 0
+    extra_cost: 0
+    status: verified_live
+    use_for: "Default creative drafts (config/creative_authoring.yaml), routine worker tasks, summaries"
+
+  fast_title_and_lightweight_ops:
+    provider: codex
+    model: gpt-6-luna
+    reasoning_effort: low
+    vram_mb: 0
+    extra_cost: 0
+    status: verified_live
+    use_for: "Title proposals/reviews (config/creative_authoring.yaml), fast classification, lightweight coding"
+
+  structured_analysis_and_coding:
+    provider: codex
+    model: gpt-6.1-terra
+    reasoning_effort: medium
+    vram_mb: 0
+    extra_cost: 0
+    status: verified_live
+    use_for: "Non-creative Byosan Codex calls (AGENTS.md), medium-complexity coding"
+
+  independent_benchmark_judge:
+    provider: agy
+    model: gemini-4-argon-high
+    vram_mb: 0
+    extra_cost: 0
+    status: verified_live
+    use_for: "Layer 2 blind benchmark judging (task bench:judge), distinct from creative author models"
+
+  local_music_generation:
+    provider: local_gpu
+    model: yue2
+    gpu_exclusive: true
+    extra_cost: 0
+    status: verified_live
+    use_for: "Humanity Observatory song generation (oneshot under shared GPU lock)"
+
+  local_voice_acting_tts:
+    provider: local_gpu
+    model: irodori_tts
+    gpu_exclusive: true
+    extra_cost: 0
+    status: verified_live
+    use_for: "Yawa Archive fixed-cast TTS (oneshot under shared GPU lock)"
+
+  local_cpu_tts:
+    provider: local_cpu
+    model: voicevox_nemo
+    vram_mb: 0
+    extra_cost: 0
+    status: verified_live
+    use_for: "Byosan narration (CPU container on port 50121, 0 VRAM)"
+
+unavailable_or_unverified_candidates:
+  gpt-6.2-sol:
+    provider: codex
+    status: blocked_account_unsupported
+    note: "Codex ChatGPT subscription returned 400 model_not_found on 2026-11-20"
+  gpt-6.2-astra:
+    provider: codex
+    status: blocked_account_unsupported
+    note: "Codex ChatGPT subscription returned 400 model_not_found on 2026-11-20"
+  claude-opus-5-5:
+    provider: claude_or_agy
+    status: blocked_billing_or_quota
+    note: "Claude Code subscription billing past due (OA-005); AGY Claude quota 429"
+  claude-fable-5-2:
+    provider: claude
+    status: blocked_billing
+    note: "Claude Code subscription billing past due (OA-005)"
+  moss-image-5b:
+    provider: local_gpu
+    status: open_weight_candidate_not_benchmarked
+    note: "5B open-weight image model; must run oneshot under shared GPU lock after benchmark comparison vs gpt-image-2"
+  drama3-35b-moe:
+    provider: local_gpu
+    status: open_weight_vram_unverified
+    note: "35B MoE TTS; RTX 3060 12GB VRAM fit UNVERIFIED"
+  minimax-h3:
+    provider: local_gpu
+    status: open_weight_vram_unverified
+    note: "Open-weight video/image; RTX 3060 12GB VRAM fit UNVERIFIED"
+  qwen3.8-flash-next:
+    provider: local_gpu
+    status: deferred_to_save_vram
+    note: "Deferred to keep 12GB VRAM 100% free for YuE2/Irodori; use 0-VRAM Hydrogen/6-Luna instead"
+  p-h3:
+    provider: unknown
+    status: unverified
+    note: "No official release specification confirmed"
