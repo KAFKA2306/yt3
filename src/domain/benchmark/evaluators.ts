@@ -873,6 +873,11 @@ export const CHANNEL_JUDGE_RUBRICS: Record<
 	],
 	humanity: [
 		{
+			id: "singable_hook_and_freshness",
+			question:
+				"説明的な散文エッセイではなく、サビに声に出したくなるフック・リズムがあり、「少し・静か・そっと・余白・決めない」系の微温テンプレの焼き直しになっていないか。",
+		},
+		{
 			id: "standalone_emotional_hook",
 			question:
 				"初聴きでも一曲だけで情景と感情の動きがくっきり浮かび、ありふれた汎用BGM歌詞に埋もれていないか。",

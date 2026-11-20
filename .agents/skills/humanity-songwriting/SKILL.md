@@ -9,11 +9,14 @@ Read `docs/humanity/MISSION.md`, `docs/humanity/SOUL.md`, and `docs/humanity/son
 
 Start from `docs/humanity/story-world.json`, the shared world and relationship canon for the「晴れ待ち坂」label. Treat 雨晴はう as the observatory curator/recorder rather than forcing a single voice on every track; let each song's vocal color and arrangement match its protagonist and emotional turn.
 
-Give every song:
-1. A **short, memorable Japanese song title (around 3–15 characters)** — never a long light-novel synopsis. Put the story premise, featured characters, and emotional context in the YouTube description instead.
-2. A clear standalone concept and concrete emotional turn listeners can follow on first hearing, while gradually advancing the shared world without burning through major relationship arcs in one track.
-3. A cohesive「晴れ待ち坂」jacket thumbnail prompt (illustration without text) alongside a JIZURA kinetic lyric-PV plan (`theme_id`, `unify`, `typeset`, 3-color accent palette) matching the song's sound and mood.
+## Core Reconceptualized Lyric Rules (2026-11-21)
 
-HoneyWorks (clear character relationships and storytelling), DECO*27 (wordplay and worldbuilding cohesion), and [IMOJIST](https://www.youtube.com/@IMOJIST) (sound design and musical direction) are preference signals only. Never reuse lyrics, distinctive phrases, characters, plots, melodies, or signature presentation.
+1. **Singable hook over explanatory prose**: Put a sharp, memorable ~10-char killer hook at the start or end of the chorus. Cut blog-essay connectives (`〜はずで`, `〜けれど`, `〜みたいに`) and abstract filler (`余白`, `答え`, `名前`); build rhythm with verbs, spoken lines, onomatopoeia, rhyme, and contrast in line length across `[verse]` / `[pre-chorus]` / `[chorus]`.
+2. **Rotate distinct emotional modes**: Break out of lukewarm evening melancholy and habitual softeners (`少し`, `静か`, `そっと`, `不器用`, `まま`, `決めない`). Deliberately vary emotional polarity per song (speed/impulse, sharp irony/bluff, brisk comedy/banter, urgent regret, late-night confession, explosive release).
+3. **One sharp concrete anchor, not a scenery checklist**: Use at most 0–1 recurring world props (`海と線路`, `ガラス張りの小屋`, `黒板`, `黄色い傘`) per song; anchor the song in one fresh concrete object or gesture unique to that track.
+4. **Short memorable title (3–15 chars)**: Never write a light-novel synopsis title. Place the story premise, featured characters, and emotional context in the YouTube description instead.
+5. **Cohesive jacket + JIZURA plan**: Pair a text-free「晴れ待ち坂」jacket thumbnail prompt with a JIZURA kinetic lyric-PV plan (`theme_id`, `unify`, `typeset`, 3-color accent palette) matching the song's energy.
 
-Evaluate songs by listening and reviewing real audience metrics (CTR, completion, likes, playlist continuation) rather than numeric gates or fixed checklists. Note that YuE2 generates lyrics and music together, so do not claim it preserves an existing melody during lyric revision.
+HoneyWorks (dramatic relationships and range), DECO*27 (wordplay, edge, hook craft), and [IMOJIST](https://www.youtube.com/@IMOJIST) (sound design and musical direction) are preference signals only. Never reuse lyrics, distinctive phrases, characters, plots, melodies, or signature presentation.
+
+Evaluate songs via `task bench:humanity`, `task lexicon:report -- humanity`, blind comparison (`task bench:judge`), listening, and audience metrics (CTR, completion, likes, playlist continuation) rather than numeric auto-rejection gates. Note that YuE2 generates lyrics and music together, so do not claim it preserves an existing melody during lyric revision.
