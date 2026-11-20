@@ -9,4 +9,5 @@ TimeoutStartSec=10m
 WorkingDirectory=/home/kafka/2511youtuber/v3/yt3
 Environment=PATH=/home/kafka/.local/bin:/home/kafka/.bun/bin:/snap/bin:/usr/lib/wsl/lib:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/home/kafka
+Environment=RESIDENT_ENABLE_ADVISORY=1
 ExecStart=/usr/bin/bash -c 'exec >> logs/resident_systemd.log 2>&1; task resident:tick'

@@ -6,7 +6,10 @@ description: "YT3 の3チャンネル（秒算マネー・夜話アーカイブ�
 
 # YT3 Knowledge Base
 
-Obsidian Vault および OKF v0.3 準拠の知識正本目次。各チャンネルの編集方針、キャラクター・世界観の正本、データ台帳、dbt 分析モデル（`analytics/`）へたどれます。
+YT3 は **3 つの YouTube チャンネル（秒算マネー・夜話アーカイブ・雨晴はうの人類観測所）の視聴者獲得と YPP 収益化** を目的に、制作・公開・3 層評価・dbt 分析・常駐運用を一気通貫で回すプロジェクトの OKF v0.3 / Obsidian Vault 正本目次です。
+
+- **普段の入口**: `task bench:all`（3 チャンネル L1 診断）、`task resident:status` / `task resident:ledger`（常駐稼働・オーナー操作待ち確認）、`task analytics:build`（dbt 実績マート更新）。
+- **プロジェクト非固有の設備・GPU 節約規約・共通ハーネス**: ユーザー全体正本（`~/.gemini/config/workstation.md`, `~/.gemini/config/AGENTS.md`）を参照。
 
 ## チャンネル Mission・制作方針
 

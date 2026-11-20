@@ -3093,7 +3093,7 @@ No markdown or raw tags, only valid JSON.`;
 			);
 
 		const services = [
-			"yt3-automation.timer",
+			"yt3-resident-agent.timer",
 			"yt3-aim.service",
 			...(hasDiscordBotToken ? ["yt3-discord.service"] : []),
 		];

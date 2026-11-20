@@ -13,3 +13,4 @@
 - ユーザ操作が必須な項目を一元管理する OKF v0.3 台帳 `standard/owner-action-ledger.md` と `task resident:ledger` を新設。
 - 追加料金ゼロの実疎通確認済みモデル配分（`config/model_routing.yaml`, `standard/model-routing-standard.md`）と RTX 3060 12GB 共通 GPU 排他ロック（`~/.cache/yt3-gpu.lock`）を `yt3-yawa-daily.service` / `yt3-humanity-music.service` に導入し、Claude サブスク決済待ちを `OA-005` に追記。
 - プロジェクト非固有のホスト設備・GPU節約規約・全CLIモデル配分・共通スキル（`imozuru`/`yomiyasu`/`kafstyler 0.7.2`）をユーザー全体正本（`~/.gemini/config/workstation.md`, `~/.gemini/config/AGENTS.md`）へ移行し、`standard/model-routing-standard.md` を YT3 固有ルートのみへ整理。
+- `kafstyler 0.7.2`（`decommission` / `canonicalize` / `reconceptualize`）に従い、未使用の旧資産（`src/domain/humanity_audit/`, `systemd/yt3-automation.{service,timer}`, `src/io/utils/infra/setup_systemd.ts`）を削除、`config/model_routing.yaml` を YT3 固有 v2 スキーマへ簡素化し、`docs/index.md` と `standard/resident-agent-standard.md` に継続運用の合格条件（一周期・運用全体）を明文化。

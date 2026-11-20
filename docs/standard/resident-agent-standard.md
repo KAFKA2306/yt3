@@ -16,7 +16,12 @@ generated:
 
 # YT3 Resident Agent Standard
 
-端末を閉じたあとも継続稼働する常駐エージェント（`systemd --user` + `Linger=yes`）の実行入口、台帳契約、中断からの再開、および人間の回答待ちの扱いを定める。
+端末を閉じたあとも継続稼働する常駐エージェント（`systemd --user` + `Linger=yes`）の実行入口、台帳契約、中断からの再開、および人間の回答待ちの扱いを定める（`kafstyler 0.7.2`: `reconceptualize` / `canonicalize` / `autocatalyze` / `adjudicate` / `decommission` 準拠）。
+
+## 0. 継続運用の合格条件（`reconceptualize`）
+
+- **一周期の成果**: 毎時 `:05` JST の tick で ① 3 チャンネル直近ランの L1 ベンチマーク・偏り検知（0 トークン決定論）を実行してスナップショット（`data/state/resident/latest_health_snapshot.json`）を read-back 確認し、② `db/evolution.db` に変化がある時だけ dbt 実績マートを再構築し、③ **新しい異常・偏り差分（`anomaly_fingerprint` 変化）が発生した時だけ**最小差分 JSON を `gemini-4-hydrogen-medium` へ渡して方針・設計刷新案を `data/state/resident/advisories.jsonl` に記録し、④ オーナー権限が必要なブロッカーだけを [Owner Action Ledger](owner-action-ledger.md) / `question_ledger.json` へ重複なしで残す（差分なし・異常なし時は **LLM 消費 0 トークン**）。
+- **運用全体**: 7 本のユーザータイマーが継続稼働し、同一イベント再送や途中中断からの再開で完了済み工程・外部書き込みを二重実行せず、GPU 専有ジョブ（`yawa` / `humanity`）は共通 `flock`（`~/.cache/yt3-gpu.lock`）で RTX 3060 12GB の競合を起こさない。
 
 ## 1. 実行入口と常駐スケジュール（Asia/Tokyo）
 

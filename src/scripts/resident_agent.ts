@@ -19,6 +19,13 @@ import {
 	resolveResidentPaths,
 	saveQuestionLedger,
 } from "../domain/resident/ledgers.js";
+import {
+	buildCompactAdvisoryPrompt,
+	decideTokenMinimalActions,
+	detectAnomaliesAndBias,
+	SupervisorAdvisorySchema,
+} from "../domain/resident/supervisor.js";
+import { AGY_DEFAULT_MODEL, invokeAgyStructured } from "../io/agy.js";
 import { ROOT } from "../io/core.js";
 
 const BUCKET_BY_PRODUCT: Record<BenchmarkProduct, string> = {
@@ -121,11 +128,17 @@ function inspectSystemdUnitState(unit: string): {
 	};
 }
 
-function runTick(triggerOverride?: string) {
+function runTick(options?: {
+	triggerOverride?: string;
+	enableAdvisory?: boolean;
+}) {
 	const paths = resolveResidentPaths(ROOT);
-	const triggerId = triggerOverride ?? currentTokyoHourSlot();
+	const triggerId = options?.triggerOverride ?? currentTokyoHourSlot();
+	const enableAdvisory =
+		options?.enableAdvisory ?? process.env.RESIDENT_ENABLE_ADVISORY === "1";
 	const gitHead = getGitHead();
 	const snapshotPath = path.join(paths.stateDir, "latest_health_snapshot.json");
+	const advisoriesPath = path.join(paths.stateDir, "advisories.jsonl");
 	const duckdbPath = path.join(
 		ROOT,
 		"data",
@@ -133,23 +146,89 @@ function runTick(triggerOverride?: string) {
 		"yt3_analytics.duckdb",
 	);
 
+	const prevSnapshot = fs.existsSync(snapshotPath)
+		? (fs.readJsonSync(snapshotPath) as {
+				state_fingerprint?: string;
+				anomaly_fingerprint?: string;
+				advised_anomaly_fingerprint?: string;
+				analytics_rows?: number;
+			})
+		: null;
+
+	const byosanRuns = listRecentRuns("byosan", 5).map(evaluateByosanRun);
+	const yawaRuns = listRecentRuns("yawa", 5).map((d) =>
+		evaluateYawaRun(d, { repoRoot: ROOT }),
+	);
+	const humanityRuns = listRecentRuns("humanity", 5).map((d) =>
+		evaluateHumanityRun(d, { repoRoot: ROOT }),
+	);
+	const yawaCross = evaluateYawaCrossRun(yawaRuns);
+	const analyticsRows = queryEvolutionAnalyticsRowCount();
+
+	const detected = detectAnomaliesAndBias({
+		byosanRuns,
+		yawaRuns,
+		humanityRuns,
+		yawaCrossChecks: yawaCross,
+		analyticsRows,
+	});
+	const decision = decideTokenMinimalActions({
+		previousStateFingerprint: prevSnapshot?.state_fingerprint ?? null,
+		previousAnomalyFingerprint:
+			prevSnapshot?.advised_anomaly_fingerprint ?? null,
+		previousAnalyticsRows: prevSnapshot?.analytics_rows ?? null,
+		currentStateFingerprint: detected.state_fingerprint,
+		currentAnomalyFingerprint: detected.anomaly_fingerprint,
+		currentAnalyticsRows: analyticsRows,
+		anomalies: detected.anomalies,
+		duckdbExists: fs.existsSync(duckdbPath),
+	});
+
 	const steps: ResidentStep[] = [
 		{
 			id: "run_channel_l1_benchmarks",
 			run: () => {
-				const byosanRuns = listRecentRuns("byosan", 5).map(evaluateByosanRun);
-				const yawaRuns = listRecentRuns("yawa", 5).map((d) =>
-					evaluateYawaRun(d, { repoRoot: ROOT }),
-				);
-				const humanityRuns = listRecentRuns("humanity", 5).map((d) =>
-					evaluateHumanityRun(d, { repoRoot: ROOT }),
-				);
-				const yawaCross = evaluateYawaCrossRun(yawaRuns);
+				let advisedFingerprint =
+					prevSnapshot?.advised_anomaly_fingerprint ?? null;
+				let llmTokensUsed = 0;
+
+				if (enableAdvisory && decision.advisory_needed) {
+					const { value, receipt } = invokeAgyStructured({
+						name: "resident-supervisor-advisory",
+						prompt: buildCompactAdvisoryPrompt(decision.anomalies),
+						schema: SupervisorAdvisorySchema,
+						model: AGY_DEFAULT_MODEL,
+					});
+					llmTokensUsed = receipt.usage?.total_tokens ?? 0;
+					advisedFingerprint = decision.anomaly_fingerprint;
+					fs.ensureDirSync(path.dirname(advisoriesPath));
+					fs.appendFileSync(
+						advisoriesPath,
+						`${JSON.stringify({
+							at: new Date().toISOString(),
+							trigger_id: triggerId,
+							anomaly_fingerprint: decision.anomaly_fingerprint,
+							model: receipt.model,
+							total_tokens: llmTokensUsed,
+							anomalies: decision.anomalies,
+							advisory: value,
+						})}\n`,
+						"utf8",
+					);
+				}
+
 				const snapshot = {
 					captured_at: new Date().toISOString(),
 					trigger_id: triggerId,
 					git_head: gitHead,
 					benchmark_version: BENCHMARK_VERSION,
+					state_fingerprint: decision.state_fingerprint,
+					anomaly_fingerprint: decision.anomaly_fingerprint,
+					advised_anomaly_fingerprint: advisedFingerprint,
+					analytics_rows: analyticsRows,
+					llm_tokens_used: llmTokensUsed,
+					anomalies_detected: decision.anomalies.length,
+					anomalies: decision.anomalies,
 					channels: {
 						byosan: {
 							evaluated: byosanRuns.length,
@@ -194,6 +273,12 @@ function runTick(triggerOverride?: string) {
 		{
 			id: "sync_dbt_analytics_marts",
 			run: () => {
+				if (!decision.dbt_needed) {
+					return {
+						status: "verified",
+						ref: `${duckdbPath}#unchanged(rows=${analyticsRows})`,
+					};
+				}
 				const proc = spawnSync("task", ["analytics:build"], {
 					cwd: ROOT,
 					encoding: "utf8",
@@ -377,7 +462,28 @@ function main() {
 		const triggerArg = rest
 			.find((a) => a.startsWith("--trigger="))
 			?.slice("--trigger=".length);
-		runTick(triggerArg);
+		const enableAdvisory = rest.includes("--advisory")
+			? true
+			: rest.includes("--no-advisory")
+				? false
+				: undefined;
+		runTick({ triggerOverride: triggerArg, enableAdvisory });
+		return;
+	}
+	if (cmd === "advisories") {
+		const paths = resolveResidentPaths(ROOT);
+		const advisoriesPath = path.join(paths.stateDir, "advisories.jsonl");
+		if (!fs.existsSync(advisoriesPath)) {
+			console.log("No supervisor advisories recorded yet.");
+			return;
+		}
+		const lines = fs
+			.readFileSync(advisoriesPath, "utf8")
+			.trim()
+			.split(/\r?\n/)
+			.filter(Boolean)
+			.slice(-5);
+		for (const line of lines) console.log(line);
 		return;
 	}
 	if (cmd === "status") {

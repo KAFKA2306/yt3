@@ -12,6 +12,11 @@ import {
 	resolveResidentPaths,
 	saveQuestionLedger,
 } from "../src/domain/resident/ledgers.js";
+import {
+	buildCompactAdvisoryPrompt,
+	decideTokenMinimalActions,
+	detectAnomaliesAndBias,
+} from "../src/domain/resident/supervisor.js";
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "yt3-resident-test-"));
 
@@ -384,5 +389,77 @@ describe("Kafstyler resident agent ledgers, resumability, and idempotency", () =
 		expect(md).toContain("open=1, closed=0");
 		expect(md).toContain("gcp:659942893881");
 		expect(md).toContain("Enable API?");
+	});
+
+	it("7. token-minimizing supervisor skips LLM and dbt when state/anomaly fingerprint is unchanged, and builds compact delta only on new anomalies", () => {
+		const detected = detectAnomaliesAndBias({
+			byosanRuns: [
+				{
+					product: "byosan",
+					run_id: "byosan_money/2026-11-20-daily-1904",
+					run_dir: "/tmp/r1",
+					status: "FAIL",
+					critical_failures: 1,
+					warnings: 0,
+					checks: [
+						{
+							id: "pipeline_completed",
+							layer: "L1_DETERMINISTIC",
+							status: "FAIL",
+							severity: "critical",
+							message: "delayRender timeout at frame 5254",
+						},
+					],
+					metrics: {},
+				},
+			],
+			yawaRuns: [],
+			humanityRuns: [],
+			yawaCrossChecks: [
+				{
+					id: "no_late_night_care_convergence",
+					layer: "L1_DETERMINISTIC",
+					status: "WARN",
+					severity: "warning",
+					message: "3 consecutive late-night tropes",
+				},
+			],
+			analyticsRows: 0,
+		});
+
+		expect(detected.anomalies.length).toBe(2);
+
+		// First sighting of anomaly: advisory_needed = true
+		const first = decideTokenMinimalActions({
+			previousStateFingerprint: null,
+			previousAnomalyFingerprint: null,
+			previousAnalyticsRows: 0,
+			currentStateFingerprint: detected.state_fingerprint,
+			currentAnomalyFingerprint: detected.anomaly_fingerprint,
+			currentAnalyticsRows: 0,
+			anomalies: detected.anomalies,
+			duckdbExists: true,
+		});
+		expect(first.dbt_needed).toBe(false);
+		expect(first.advisory_needed).toBe(true);
+
+		// Same ongoing anomaly on next hourly tick: advisory_needed = false (0 tokens!)
+		const repeat = decideTokenMinimalActions({
+			previousStateFingerprint: detected.state_fingerprint,
+			previousAnomalyFingerprint: detected.anomaly_fingerprint,
+			previousAnalyticsRows: 0,
+			currentStateFingerprint: detected.state_fingerprint,
+			currentAnomalyFingerprint: detected.anomaly_fingerprint,
+			currentAnalyticsRows: 0,
+			anomalies: detected.anomalies,
+			duckdbExists: true,
+		});
+		expect(repeat.dbt_needed).toBe(false);
+		expect(repeat.advisory_needed).toBe(false);
+
+		const prompt = buildCompactAdvisoryPrompt(detected.anomalies);
+		expect(prompt.length).toBeLessThan(800);
+		expect(prompt).toContain("byosan:pipeline_completed");
+		expect(prompt).toContain("yawa:bias:no_late_night_care_convergence");
 	});
 });
