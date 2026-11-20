@@ -143,6 +143,10 @@ tasks:
     deps: [sync:deps]
     cmds: ["bun src/scripts/byosan_publish_daily.ts"]
 
+  byosan:regime-watch:
+    desc: "0-token US-close market regime gauge check (S&P500/Nasdaq/SOX/VIX/Nikkei); pass -- --trigger to auto-launch byosan:publish-daily on regime_shift"
+    cmds: ["bun src/scripts/byosan_regime_watch.ts {{.CLI_ARGS}}"]
+
   publish:
     desc: "Publish to YouTube (PROFILE=byosan|yawa|humanity; required)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}"]
@@ -320,10 +324,10 @@ tasks:
       - systemctl --user list-timers yt3-env-refresh.timer --no-pager
 
   systemd:install:
-    desc: "Sync YT3 user systemd services and timers (byosan, yawa, humanity, analytics, resident) and reload"
+    desc: "Sync YT3 user systemd services and timers (byosan, byosan-regime, yawa, humanity, analytics, resident) and reload"
     cmds:
       - mkdir -p "$HOME/.config/systemd/user"
-      - cp systemd/yt3-byosan-daily.service systemd/yt3-byosan-daily.timer systemd/yt3-yawa-daily.service systemd/yt3-yawa-daily.timer systemd/yt3-yawa-validate.service systemd/yt3-yawa-validate.timer systemd/yt3-humanity-music.service systemd/yt3-humanity-music.timer systemd/yt3-analytics-refresh.service systemd/yt3-analytics-refresh.timer systemd/yt3-resident-agent.service systemd/yt3-resident-agent.timer "$HOME/.config/systemd/user/"
+      - cp systemd/yt3-byosan-daily.service systemd/yt3-byosan-daily.timer systemd/yt3-byosan-regime-watch.service systemd/yt3-byosan-regime-watch.timer systemd/yt3-yawa-daily.service systemd/yt3-yawa-daily.timer systemd/yt3-yawa-validate.service systemd/yt3-yawa-validate.timer systemd/yt3-humanity-music.service systemd/yt3-humanity-music.timer systemd/yt3-analytics-refresh.service systemd/yt3-analytics-refresh.timer systemd/yt3-resident-agent.service systemd/yt3-resident-agent.timer "$HOME/.config/systemd/user/"
       - systemctl --user daemon-reload
-      - systemctl --user enable --now yt3-byosan-daily.timer yt3-yawa-daily.timer yt3-yawa-validate.timer yt3-humanity-music.timer yt3-analytics-refresh.timer yt3-resident-agent.timer
+      - systemctl --user enable --now yt3-byosan-daily.timer yt3-byosan-regime-watch.timer yt3-yawa-daily.timer yt3-yawa-validate.timer yt3-humanity-music.timer yt3-analytics-refresh.timer yt3-resident-agent.timer
       - systemctl --user list-timers 'yt3*' --no-pager

@@ -378,7 +378,14 @@ function runTick(options?: {
 				const byosanKey = `byosan:${today}`;
 				const byosanAttempts = recoveryState[byosanKey] ?? 0;
 
-				// Bounded auto-recovery: if Byosan has 0 VERIFIED runs today past 08:00 JST and <1 recovery attempt today, recover once
+				// Bounded auto-recovery: only on scheduled Byosan days (Mon/Wed/Fri) past 08:00 JST if 0 VERIFIED runs today
+				const tokyoWeekday = new Intl.DateTimeFormat("en-US", {
+					timeZone: "Asia/Tokyo",
+					weekday: "short",
+				}).format(new Date());
+				const isByosanScheduledDay = ["Mon", "Wed", "Fri"].includes(
+					tokyoWeekday,
+				);
 				const tokyoHour = Number(
 					new Intl.DateTimeFormat("en-GB", {
 						timeZone: "Asia/Tokyo",
@@ -386,7 +393,12 @@ function runTick(options?: {
 						hour12: false,
 					}).format(new Date()),
 				);
-				if (!byosanVerified && tokyoHour >= 8 && byosanAttempts < 1) {
+				if (
+					isByosanScheduledDay &&
+					!byosanVerified &&
+					tokyoHour >= 8 &&
+					byosanAttempts < 1
+				) {
 					recoveryState[byosanKey] = byosanAttempts + 1;
 					fs.writeJsonSync(recoveryStatePath, recoveryState, { spaces: 2 });
 					const proc = spawnSync("task", ["byosan:publish-daily"], {
