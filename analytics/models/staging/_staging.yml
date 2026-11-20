@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: stg_youtube_analytics
+    description: "Normalized per-video YouTube Analytics measurements preserving (video_id, age_window) grain."
+    columns:
+      - name: video_window_key
+        tests: [unique, not_null]
+      - name: video_id
+        tests: [not_null]
+      - name: age_window
+        tests: [not_null]
+      - name: channel_id
+        tests: [not_null]
+      - name: views
+        tests: [not_null]
+
+  - name: stg_youtube_reach_daily
+    description: "Normalized daily thumbnail reach measurements preserving (channel_id, report_date, video_id) grain."
+    columns:
+      - name: reach_daily_key
+        tests: [unique, not_null]
+      - name: channel_id
+        tests: [not_null]
+      - name: report_date
+        tests: [not_null]
+      - name: video_id
+        tests: [not_null]
+      - name: thumbnail_impressions
+        tests: [not_null]
+      - name: thumbnail_impressions_ctr
+        tests: [not_null]
+
+  - name: stg_youtube_traffic_sources
+    description: "Normalized per-video traffic-source metrics preserving (video_id, age_window, traffic_source_type) grain."
+    columns:
+      - name: traffic_source_key
+        tests: [unique, not_null]
+      - name: video_id
+        tests: [not_null]
+      - name: age_window
+        tests: [not_null]
+      - name: traffic_source_type
+        tests: [not_null]

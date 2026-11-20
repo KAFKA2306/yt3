@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: dim_channel
+    description: "Canonical 3-channel dimension synchronized with src/domain/youtube_profiles.ts."
+    columns:
+      - name: profile
+        tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["byosan", "yawa", "humanity"]
+      - name: channel_id
+        tests: [unique, not_null]
+      - name: bucket
+        tests: [unique, not_null]
+      - name: target_weekly_uploads
+        tests: [not_null]
+
+  - name: fact_video_performance
+    description: "Per-video performance fact table at (video_id, age_window) grain."
+    columns:
+      - name: video_window_key
+        tests: [unique, not_null]
+      - name: channel_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_channel')
+                field: channel_id
+      - name: views
+        tests: [not_null]
+
+  - name: fact_reach_daily
+    description: "Daily thumbnail impressions and CTR fact table at (channel_id, report_date, video_id) grain."
+    columns:
+      - name: reach_daily_key
+        tests: [unique, not_null]
+      - name: channel_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_channel')
+                field: channel_id
+      - name: thumbnail_impressions
+        tests: [not_null]
+
+  - name: mart_channel_growth_kpi
+    description: "Channel-level YPP and leading KPI rollup at 1 row per channel profile."
+    columns:
+      - name: profile
+        tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["byosan", "yawa", "humanity"]
+      - name: channel_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_channel')
+                field: channel_id
+      - name: measured_video_count
+        tests: [not_null]
+      - name: total_views_first_7d
+        tests: [not_null]
+      - name: total_watch_time_hours_first_7d
+        tests: [not_null]

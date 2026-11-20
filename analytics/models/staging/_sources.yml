@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: yt3_raw
+    description: "Read-only SQLite raw tables in db/evolution.db populated by YouTube Analytics and Reporting API ingestion."
+    database: yt3_raw
+    schema: main
+    tables:
+      - name: youtube_analytics
+        description: "Per-video YouTube Analytics metrics by (video_id, age_window)."
+      - name: youtube_analytics_traffic_sources
+        description: "Per-video traffic-source metrics by (video_id, age_window, traffic_source_type)."
+      - name: youtube_analytics_reach_daily
+        description: "Daily thumbnail impressions and CTR by (channel_id, report_date, video_id)."
+      - name: youtube_analytics_reach_reports
+        description: "YouTube Reporting API download receipts by report_id."

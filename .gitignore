@@ -17,6 +17,7 @@ config/.env.*
 # dbt & local analytical build outputs
 analytics/target/
 analytics/logs/
+analytics/.user.yml
 data/analytics/
 
 # Logs & Runtime
@@ -36,6 +37,7 @@ db/*.db-wal
 # Media & Assets
 assets/
 models/
+!analytics/models/
 *.mp4
 *.wav
 *.png

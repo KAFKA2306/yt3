@@ -1,0 +1,22 @@
+select
+    cast(video_id as varchar) as video_id,
+    cast(age_window as varchar) as age_window,
+    cast(video_id as varchar) || '::' || cast(age_window as varchar) as video_window_key,
+    cast(episode_id as varchar) as episode_id,
+    cast(channel_id as varchar) as channel_id,
+    cast(views as bigint) as views,
+    cast(engaged_views as bigint) as engaged_views,
+    cast(watch_time_minutes as double) as watch_time_minutes,
+    cast(average_view_duration_seconds as double) as average_view_duration_seconds,
+    cast(average_view_percentage as double) as average_view_percentage,
+    cast(likes as bigint) as likes,
+    cast(comments as bigint) as comments,
+    cast(shares as bigint) as shares,
+    cast(subscribers_gained as bigint) as subscribers_gained,
+    cast(subscribers_lost as bigint) as subscribers_lost,
+    cast(first_3s_audience_watch_ratio as double) as first_3s_audience_watch_ratio,
+    cast(card_impressions as bigint) as card_impressions,
+    cast(card_clicks as bigint) as card_clicks,
+    cast(card_click_rate as double) as card_click_rate,
+    cast(recorded_at as varchar) as recorded_at
+from {{ source('yt3_raw', 'youtube_analytics') }}
