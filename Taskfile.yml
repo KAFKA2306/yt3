@@ -52,12 +52,12 @@ tasks:
       - bun src/scripts/humanity_music.ts youtube-playlist {{.DATE}} {{.SLOT}}
 
   humanity:bpm:
-    desc: "Measure BPM, 4-on-the-floor regularity, and suggested use-case playlist (0 tokens)"
+    desc: "Measure BPM and rhythm characteristics; playlist fit is decided separately (0 tokens)"
     cmds:
       - bun src/scripts/measure_bpm.ts {{.CLI_ARGS}}
 
   humanity:playlists:sync:
-    desc: "Classify all verified public Humanity music videos by 0-token BPM + metadata and sync to YouTube use-case playlists (--apply to write)"
+    desc: "Update Humanity playlist descriptions and add explicitly assigned public songs (--apply to write; historic memberships stay in place)"
     cmds:
       - bun src/scripts/humanity_backfill_playlists.ts {{.CLI_ARGS}}
 
@@ -113,6 +113,11 @@ tasks:
     cmds:
       - bun src/scripts/yawa_metadata.ts {{.RUN}}
 
+  yawa:playlists:sync:
+    desc: "Sync verified public Yawa episodes into character and chronological series playlists (--apply to write; --verify-only for remote read-back)"
+    cmds:
+      - bun src/scripts/yawa_playlists_sync.ts {{.CLI_ARGS}}
+
   byosan:metadata:
     desc: "Rewrite the description (chapters and primary sources) of one published 秒算マネー video from its run, then read back and record it (RUN=byosan_money/YYYY-MM-DD-slot; -- --dry prints the description without writing; -- --title=TEXT also sets the title)"
     cmds:
@@ -128,6 +133,7 @@ tasks:
     cmds:
       - task yawa:prepare DATE={{.DATE}} SLOT={{.SLOT}}
       - task publish PROFILE=yawa -- yawa_archive/yawa-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
+      - task yawa:playlists:sync -- --apply
 
   byosan:daily:
     desc: "Research, produce, and audit one 秒算マネー feature without publishing"

@@ -20,6 +20,7 @@ import {
 	type LedgerRow,
 	loadMusicConfig,
 	musicAudit,
+	parseHumanityUseCases,
 	parseLedger,
 	playlistText,
 	rankedSongs,
@@ -42,6 +43,11 @@ const ledgerPath = path.join(outputDir, "ledger.jsonl");
 const DraftSchema = z.object({
 	title: z.string().min(1),
 	use_case: HumanityUseCaseIdSchema,
+	secondary_use_cases: z
+		.array(HumanityUseCaseIdSchema)
+		.max(1)
+		.optional()
+		.default([]),
 	concept: z.string().min(1),
 	story: z.string().min(1),
 	relationship: z.string().min(1),
@@ -248,7 +254,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			"雨晴はうは全曲を単一の声で歌う歌手ではなくチャンネルのキュレーターです。今回の曲のテーマ・用途・感情に合うボーカル、テンポ、編曲、音色を自由に設計します。特定の架空の町や固定の登場人物設定に縛られず、初めて聴く人にも一曲単体で強く刺さる作品にしてください。",
 			"聴き手の感情やテンションを明確に動かすことを大切にします。具体的な場面やリズム感のある言葉選びで、口ずさみたくなるサビを作ってください。",
 			"既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは一切借りません。",
-			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、use_caseは4つの用途（q1_action_boost / q2_focus_boost / q3_daily_flow / q4_night_reset）から最も合う1つ、conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を曲のビートに沿って見せる計画にします。",
+			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、use_caseは4つの聴き手の場面（q1_action_boost / q2_focus_boost / q3_daily_flow / q4_night_reset）から最も合う主用途を1つ、secondary_use_casesは別の場面にもはっきり合う場合だけ最大1つ選び、なければ空配列にします。BPMだけで用途を決めず、曲のコンセプト・歌詞・完成音源がその場面に合うかで選びます。conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を曲のビートに沿って見せる計画にします。",
 			`選んだタイトル: ${titleProposal.value.title}`,
 			`タイトルだけの批評: ${JSON.stringify(titleReview.value)}`,
 			"このタイトルの約束に沿う曲を作り、titleには選んだタイトルをそのまま入れてください。",
@@ -296,6 +302,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		},
 		previous_stories: previous,
 		use_case: draft.use_case,
+		secondary_use_cases: draft.secondary_use_cases,
 		concept: draft.concept,
 		story: draft.story,
 		relationship: draft.relationship,
@@ -969,15 +976,11 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 		);
 	if (!(await listItems()).includes(videoId))
 		throw new Error(`playlist read-back does not contain ${videoId}`);
-	let useCasePlaylistUrl: string | null = null;
+	const useCasePlaylistUrls: Partial<Record<string, string>> = {};
 	const creativePath = path.join(outputDir, song.id, "creative_authoring.json");
 	if (fs.existsSync(creativePath)) {
-		const parsedUseCase = HumanityUseCaseIdSchema.safeParse(
-			(fs.readJsonSync(creativePath) as { use_case?: unknown }).use_case,
-		);
-		if (parsedUseCase.success) {
-			const ucId = parsedUseCase.data;
-			const ucMeta = config.use_case_playlists[ucId];
+		const useCases = parseHumanityUseCases(fs.readJsonSync(creativePath));
+		if (useCases.length > 0) {
 			const ucStatePath = path.join(
 				ROOT,
 				"data",
@@ -988,37 +991,57 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 			const ucState: Record<string, string> = fs.existsSync(ucStatePath)
 				? (fs.readJsonSync(ucStatePath) as Record<string, string>)
 				: {};
-			let ucPlaylistId = ucState[ucId];
-			if (!ucPlaylistId) {
-				const created = await youtube.playlists.insert({
-					part: ["snippet", "status"],
-					requestBody: {
-						snippet: {
-							title: ucMeta.title,
-							description: ucMeta.description,
+			for (const ucId of useCases) {
+				const ucMeta = config.use_case_playlists[ucId];
+				let ucPlaylistId = ucState[ucId];
+				if (!ucPlaylistId) {
+					const created = await youtube.playlists.insert({
+						part: ["snippet", "status"],
+						requestBody: {
+							snippet: {
+								title: ucMeta.title,
+								description: ucMeta.description,
+							},
+							status: { privacyStatus: config.youtube_playlist.privacy },
 						},
-						status: { privacyStatus: config.youtube_playlist.privacy },
-					},
-				});
-				if (created.data.id) {
-					ucPlaylistId = created.data.id;
-					ucState[ucId] = ucPlaylistId;
-					fs.ensureDirSync(path.dirname(ucStatePath));
-					fs.writeJsonSync(ucStatePath, ucState, { spaces: 2 });
+					});
+					if (created.data.id) {
+						ucPlaylistId = created.data.id;
+						ucState[ucId] = ucPlaylistId;
+						fs.ensureDirSync(path.dirname(ucStatePath));
+						fs.writeJsonSync(ucStatePath, ucState, { spaces: 2 });
+					}
+				} else {
+					await youtube.playlists.update({
+						part: ["snippet"],
+						requestBody: {
+							id: ucPlaylistId,
+							snippet: { title: ucMeta.title, description: ucMeta.description },
+						},
+					});
 				}
-			}
-			if (ucPlaylistId) {
-				await youtube.playlistItems.insert({
-					part: ["snippet"],
-					requestBody: {
-						snippet: {
-							playlistId: ucPlaylistId,
-							position: 0,
-							resourceId: { kind: "youtube#video", videoId },
-						},
-					},
-				});
-				useCasePlaylistUrl = `${YOUTUBE_PLAYLIST_URL}${ucPlaylistId}`;
+				if (ucPlaylistId) {
+					const existing = await youtube.playlistItems.list({
+						part: ["contentDetails"],
+						playlistId: ucPlaylistId,
+						maxResults: 50,
+					});
+					const alreadyPresent = (existing.data.items ?? []).some(
+						(item) => item.contentDetails?.videoId === videoId,
+					);
+					if (!alreadyPresent)
+						await youtube.playlistItems.insert({
+							part: ["snippet"],
+							requestBody: {
+								snippet: {
+									playlistId: ucPlaylistId,
+									position: 0,
+									resourceId: { kind: "youtube#video", videoId },
+								},
+							},
+						});
+					useCasePlaylistUrls[ucId] = `${YOUTUBE_PLAYLIST_URL}${ucPlaylistId}`;
+				}
 			}
 		}
 	}
@@ -1040,7 +1063,7 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 		JSON.stringify({
 			video_url: videoUrl,
 			playlist_url: playlistUrl,
-			use_case_playlist_url: useCasePlaylistUrl,
+			use_case_playlist_urls: useCasePlaylistUrls,
 		}),
 	);
 }

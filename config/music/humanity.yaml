@@ -66,18 +66,18 @@ youtube_playlist:
   ready_interval_ms: 6000
 use_case_playlists:
   q1_action_boost:
-    title: "家事・運動・ドライブ覚醒BGM | 雨晴はうの人類観測所"
-    description: "【行動×上げる】家事・掃除・皿洗い・食後の眠気飛ばし・筋トレ・ドライブを加速するハイテンション覚醒プレイリスト（BPM 140〜175）。"
-    sound_hint: "BPM 140-175, high-energy super eurobeat, heavy-bass EDM, or driving rock with catchy hook"
+    title: "家事・運動・ドライブで動き出す | 雨晴はうの人類観測所"
+    description: "家事や運動、ドライブを始めたいときに。勢いのあるリズムと印象的なフックで、体を動かすきっかけになるオリジナル曲を集めています。"
+    sound_hint: "A clear forward pulse, lively energy, and a memorable hook that makes movement feel inviting; choose tempo and genre for the song, not a fixed BPM range."
   q2_focus_boost:
-    title: "作業・勉強・勝負前の集中ブーストBGM | 雨晴はうの人類観測所"
-    description: "【思考×上げる】PC作業・勉強・コーディング・締切前・朝イチの立ち上げに集中を加速するプレイリスト（BPM 110〜135）。"
-    sound_hint: "BPM 110-135, tight groove synthwave, electro, or crisp rhythmic pop for deep focus"
+    title: "作業・勉強に集中して続ける | 雨晴はうの人類観測所"
+    description: "作業や勉強に気持ちを切り替えたいときに。一定のグルーヴや推進力が、ひとつのことを続ける時間に寄り添うオリジナル曲を集めています。"
+    sound_hint: "A steady groove and clear forward motion suited to returning attention to one task; judge the finished song's vocal and arrangement fit, not BPM alone."
   q3_daily_flow:
-    title: "散歩・支度・日常を心地よく流すBGM | 雨晴はうの人類観測所"
-    description: "【行動×整える】朝の支度・散歩・通勤通学・料理・休日の移動を心地よく彩るプレイリスト（BPM 95〜115）。"
-    sound_hint: "BPM 95-115, breezy city pop, acoustic groove, or bright feel-good pop"
+    title: "支度・散歩・移動のペースに乗る | 雨晴はうの人類観測所"
+    description: "朝の支度や散歩、通勤通学など、いつもの時間を自分のペースで過ごしたいときに。軽やかに流れるオリジナル曲を集めています。"
+    sound_hint: "An easy, buoyant groove for everyday movement; prefer a natural fit with the scene over a fixed tempo or genre."
   q4_night_reset:
-    title: "夜更け・休憩・感情リセットBGM | 雨晴はうの人類観測所"
-    description: "【思考/感情×整える】一日の終わり・就寝前・雨の夜・ひとりで浸るクールダウン用プレイリスト（BPM 65〜95）。"
-    sound_hint: "BPM 65-95, piano ballad, ambient pop, or gentle acoustic with spacious warmth"
+    title: "夜・休憩に気持ちをほどく | 雨晴はうの人類観測所"
+    description: "一日の終わりや休憩に、気持ちをゆるめたいときに。静けさや余韻のあるオリジナル曲を集めています。"
+    sound_hint: "Room for reflection and emotional release through tone, space, and phrasing; tempo and genre follow each song's own concept."

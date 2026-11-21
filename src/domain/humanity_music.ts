@@ -12,6 +12,22 @@ export const HumanityUseCaseIdSchema = z.enum([
 ]);
 export type HumanityUseCaseId = z.infer<typeof HumanityUseCaseIdSchema>;
 
+export function parseHumanityUseCases(value: unknown): HumanityUseCaseId[] {
+	const parsed = z
+		.object({
+			use_case: HumanityUseCaseIdSchema,
+			secondary_use_cases: z.array(HumanityUseCaseIdSchema).max(1).optional(),
+		})
+		.safeParse(value);
+	if (!parsed.success) return [];
+	return [
+		...new Set([
+			parsed.data.use_case,
+			...(parsed.data.secondary_use_cases ?? []),
+		]),
+	];
+}
+
 export const HumanityJizuraPlanSchema = z.object({
 	theme_id: z.enum(["lyricpv", "kinetic", "wa", "horror", "pop", "ballad"]),
 	unify: z.boolean(),

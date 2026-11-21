@@ -1153,6 +1153,12 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			run_id: `${config.run.bucket}/${name}`,
 			bucket: config.run.bucket,
 			status: "READY",
+			...(process.env.YAWA_SERIES?.trim()
+				? {
+						series_id: process.env.YAWA_SERIES.trim(),
+						series_episode: Number(process.env.YAWA_EPISODE || "1"),
+					}
+				: {}),
 			video_path: video,
 			...(images.thumbnail ? { thumbnail_path: images.thumbnail } : {}),
 			contains_synthetic_media: true,

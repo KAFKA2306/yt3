@@ -1,7 +1,6 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
-import type { HumanityUseCaseId } from "../domain/humanity_music.js";
 
 const SAMPLE_RATE = 8000;
 const HOP_SIZE = 160; // 20ms frames -> 50 Hz envelope
@@ -14,7 +13,6 @@ export type BpmMeasurement = {
 	four_on_the_floor_score: number;
 	is_four_on_the_floor: boolean;
 	rms_db: number;
-	suggested_use_case: HumanityUseCaseId;
 };
 
 function decodeLowEndMonoPcm(filePath: string): Float32Array {
@@ -134,17 +132,6 @@ export function measureAudioBpm(filePath: string): BpmMeasurement {
 	);
 	const isFourOnTheFloor = fourOnTheFloorScore >= 0.45 && bpm >= 110;
 
-	let suggestedUseCase: HumanityUseCaseId;
-	if (bpm >= 140) {
-		suggestedUseCase = "q1_action_boost";
-	} else if (bpm >= 110) {
-		suggestedUseCase = isFourOnTheFloor ? "q2_focus_boost" : "q3_daily_flow";
-	} else if (bpm >= 95) {
-		suggestedUseCase = "q3_daily_flow";
-	} else {
-		suggestedUseCase = "q4_night_reset";
-	}
-
 	return {
 		file: path.resolve(filePath),
 		duration_seconds: Number(durationSeconds.toFixed(2)),
@@ -152,7 +139,6 @@ export function measureAudioBpm(filePath: string): BpmMeasurement {
 		four_on_the_floor_score: fourOnTheFloorScore,
 		is_four_on_the_floor: isFourOnTheFloor,
 		rms_db: rmsDb,
-		suggested_use_case: suggestedUseCase,
 	};
 }
 

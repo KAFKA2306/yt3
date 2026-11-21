@@ -1,10 +1,11 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
+import * as yaml from "js-yaml";
 import {
 	type HumanityUseCaseId,
-	HumanityUseCaseIdSchema,
 	loadMusicConfig,
+	parseHumanityUseCases,
 	YOUTUBE_PLAYLIST_URL,
 } from "../domain/humanity_music.js";
 import {
@@ -19,12 +20,12 @@ type ClassificationRow = {
 	run_id: string;
 	video_id: string;
 	title: string;
+	use_cases: HumanityUseCaseId[];
+	use_case_reason: string;
 	bpm: number;
 	four_on_the_floor_score: number;
 	is_four_on_the_floor: boolean;
 	rms_db: number;
-	use_case: HumanityUseCaseId;
-	reason: string;
 };
 
 const ALL_USE_CASES: HumanityUseCaseId[] = [
@@ -33,55 +34,6 @@ const ALL_USE_CASES: HumanityUseCaseId[] = [
 	"q3_daily_flow",
 	"q4_night_reset",
 ];
-
-function classifyTrackUseCase(params: {
-	explicitUseCase?: unknown;
-	title: string;
-	description: string;
-	bpm: number;
-	isFourOnTheFloor: boolean;
-}): { use_case: HumanityUseCaseId; reason: string } {
-	const parsed = HumanityUseCaseIdSchema.safeParse(params.explicitUseCase);
-	if (parsed.success) {
-		return { use_case: parsed.data, reason: "explicit_use_case" };
-	}
-	const text = `${params.title}\n${params.description}`.toLowerCase();
-	const hasActionCue =
-		/ユーロビート|eurobeat|edm|覚醒|爆速|家事|ドライブ|筋トレ|疾走|ハイテンション/.test(
-			text,
-		);
-	const hasNightCue =
-		/夜更け|深夜|眠|バラード|ballad|ピアノ|静か|雨の夜|クールダウン|リセット|子守/.test(
-			text,
-		);
-	const hasFocusCue =
-		/集中|作業|勉強|スイッチ|ブースト|シンセ|エレクトロ|synthwave|electro|focus/.test(
-			text,
-		);
-
-	if (params.bpm >= 140 || (hasActionCue && params.bpm >= 130)) {
-		return {
-			use_case: "q1_action_boost",
-			reason: `bpm=${params.bpm}${hasActionCue ? "+action_cue" : ""}`,
-		};
-	}
-	if (params.bpm <= 95 || (hasNightCue && params.bpm < 110)) {
-		return {
-			use_case: "q4_night_reset",
-			reason: `bpm=${params.bpm}${hasNightCue ? "+night_cue" : ""}`,
-		};
-	}
-	if (params.bpm >= 110 && (params.isFourOnTheFloor || hasFocusCue)) {
-		return {
-			use_case: "q2_focus_boost",
-			reason: `bpm=${params.bpm}+4otf=${params.isFourOnTheFloor}`,
-		};
-	}
-	return {
-		use_case: "q3_daily_flow",
-		reason: `bpm=${params.bpm}+daily_flow`,
-	};
-}
 
 async function listPlaylistVideoIds(
 	youtube: ReturnType<typeof google.youtube>,
@@ -105,53 +57,45 @@ async function listPlaylistVideoIds(
 	return ids;
 }
 
-async function reorderPlaylistNewestFirst(
+async function listPlaylistVideoIdsUntilIncluded(
 	youtube: ReturnType<typeof google.youtube>,
 	playlistId: string,
-	newestFirstVideoIds: string[],
-): Promise<number> {
-	const itemByVideoId = new Map<string, string>();
-	let pageToken: string | undefined;
-	do {
-		const page = await youtube.playlistItems.list({
-			part: ["id", "contentDetails"],
-			playlistId,
-			maxResults: 50,
-			pageToken,
-		});
-		for (const item of page.data.items ?? []) {
-			const vid = item.contentDetails?.videoId;
-			if (vid && item.id) itemByVideoId.set(vid, item.id);
-		}
-		pageToken = page.data.nextPageToken ?? undefined;
-	} while (pageToken);
-
-	let updated = 0;
-	for (let pos = 0; pos < newestFirstVideoIds.length; pos++) {
-		const vid = newestFirstVideoIds[pos];
-		if (!vid) continue;
-		const itemId = itemByVideoId.get(vid);
-		if (!itemId) continue;
-		await youtube.playlistItems.update({
-			part: ["snippet"],
-			requestBody: {
-				id: itemId,
-				snippet: {
-					playlistId,
-					position: pos,
-					resourceId: { kind: "youtube#video", videoId: vid },
-				},
-			},
-		});
-		updated++;
+	expectedIds: Set<string>,
+): Promise<Set<string>> {
+	let ids = new Set<string>();
+	for (let attempt = 0; attempt < 5; attempt++) {
+		ids = await listPlaylistVideoIds(youtube, playlistId);
+		if ([...expectedIds].every((id) => ids.has(id))) return ids;
+		if (attempt < 4)
+			await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
 	}
-	return updated;
+	return ids;
 }
 
 async function main() {
-	const apply = process.argv.includes("--apply");
-	const reorderNewestFirst = process.argv.includes("--reorder-newest-first");
+	const args = process.argv.slice(2);
+	const apply = args.includes("--apply");
+	const unexpectedArgs = args.filter((arg) => arg !== "--apply");
+	if (unexpectedArgs.length > 0)
+		throw new Error(`unexpected arguments: ${unexpectedArgs.join(" ")}`);
 	const config = loadMusicConfig(ROOT);
+	let youtube: ReturnType<typeof google.youtube> | undefined;
+	if (apply) {
+		const domain = yaml.load(
+			fs.readFileSync(
+				path.join(ROOT, "config", "domains", "humanity_observatory.yaml"),
+				"utf8",
+			),
+		) as { daily_publish?: { publish_approved?: boolean } };
+		if (domain.daily_publish?.publish_approved !== true)
+			throw new Error(
+				"Humanity playlist writes require daily_publish.publish_approved=true",
+			);
+		const profile = YOUTUBE_PROFILES.humanity;
+		const { auth } = await createYouTubeOAuthClient(profile.profileName);
+		await assertYouTubeChannelMatchesProfile(auth, profile);
+		youtube = google.youtube({ version: "v3", auth });
+	}
 	const runsRoot = path.join(ROOT, "runs", "humanity_observatory");
 	const stateDir = path.join(ROOT, "data", "state", "humanity");
 	const ucStatePath = path.join(stateDir, "use_case_playlists.json");
@@ -190,13 +134,12 @@ async function main() {
 		const statePath = path.join(dir, "state.json");
 		const state = fs.existsSync(statePath)
 			? (fs.readJsonSync(statePath) as {
-					metadata?: { title?: string; description?: string };
+					metadata?: { title?: string };
 				})
 			: {};
 		const title = state.metadata?.title ?? name;
-		const description = state.metadata?.description ?? "";
 
-		let explicitUseCase: unknown;
+		let authoring: unknown;
 		const songPath = path.join(dir, "song.json");
 		if (fs.existsSync(songPath)) {
 			const songId = (fs.readJsonSync(songPath) as { id?: string }).id;
@@ -208,32 +151,26 @@ async function main() {
 					"creative_authoring.json",
 				);
 				if (fs.existsSync(creativePath)) {
-					explicitUseCase = (
-						fs.readJsonSync(creativePath) as { use_case?: unknown }
-					).use_case;
+					authoring = fs.readJsonSync(creativePath);
 				}
 			}
 		}
 
 		try {
 			const bpmInfo = measureAudioBpm(videoPath);
-			const classified = classifyTrackUseCase({
-				explicitUseCase,
-				title,
-				description,
-				bpm: bpmInfo.bpm,
-				isFourOnTheFloor: bpmInfo.is_four_on_the_floor,
-			});
+			const useCases = parseHumanityUseCases(authoring);
 			rows.push({
 				run_id: `humanity_observatory/${name}`,
 				video_id: pub.video_id,
 				title,
+				use_cases: useCases,
+				use_case_reason: useCases.length
+					? "creative_authoring"
+					: "no_explicit_use_case",
 				bpm: bpmInfo.bpm,
 				four_on_the_floor_score: bpmInfo.four_on_the_floor_score,
 				is_four_on_the_floor: bpmInfo.is_four_on_the_floor,
 				rms_db: bpmInfo.rms_db,
-				use_case: classified.use_case,
-				reason: classified.reason,
 			});
 		} catch (err) {
 			console.error(
@@ -248,7 +185,9 @@ async function main() {
 		q3_daily_flow: 0,
 		q4_night_reset: 0,
 	};
-	for (const r of rows) counts[r.use_case]++;
+	for (const row of rows)
+		for (const useCase of row.use_cases) counts[useCase]++;
+	const unassigned = rows.filter((row) => row.use_cases.length === 0).length;
 
 	fs.writeJsonSync(
 		manifestPath,
@@ -256,29 +195,27 @@ async function main() {
 			generated_at: new Date().toISOString(),
 			total_public_music_videos: rows.length,
 			counts,
+			unassigned,
 			rows,
 		},
 		{ spaces: 2 },
 	);
 
 	console.log(
-		`[humanity:playlists:sync] classified=${rows.length} counts=${JSON.stringify(counts)} apply=${apply}`,
+		`[humanity:playlists:sync] public=${rows.length} assigned=${rows.length - unassigned} unassigned=${unassigned} memberships=${JSON.stringify(counts)} apply=${apply}`,
 	);
 
-	if (!apply && !reorderNewestFirst) return;
-
-	const profile = YOUTUBE_PROFILES.humanity;
-	const { auth } = await createYouTubeOAuthClient(profile.profileName);
-	await assertYouTubeChannelMatchesProfile(auth, profile);
-	const youtube = google.youtube({ version: "v3", auth });
+	if (!apply) return;
+	if (!youtube)
+		throw new Error("Humanity YouTube client was not initialized for apply");
 
 	const ucState: Record<string, string> = fs.existsSync(ucStatePath)
 		? (fs.readJsonSync(ucStatePath) as Record<string, string>)
 		: {};
 
 	for (const ucId of ALL_USE_CASES) {
+		const meta = config.use_case_playlists[ucId];
 		if (!ucState[ucId]) {
-			const meta = config.use_case_playlists[ucId];
 			const created = await youtube.playlists.insert({
 				part: ["snippet", "status"],
 				requestBody: {
@@ -297,56 +234,60 @@ async function main() {
 			console.log(
 				`[created] ${ucId} => ${YOUTUBE_PLAYLIST_URL}${created.data.id}`,
 			);
+		} else {
+			await youtube.playlists.update({
+				part: ["snippet"],
+				requestBody: {
+					id: ucState[ucId],
+					snippet: { title: meta.title, description: meta.description },
+				},
+			});
+			console.log(`[updated] ${ucId} metadata`);
 		}
+
+		const playlist = await youtube.playlists.list({
+			part: ["snippet", "status"],
+			id: [ucState[ucId]],
+		});
+		const observed = playlist.data.items?.[0];
+		if (
+			observed?.snippet?.title !== meta.title ||
+			observed.snippet.description !== meta.description ||
+			observed.status?.privacyStatus !== config.youtube_playlist.privacy
+		)
+			throw new Error(`${ucId}: playlist metadata read-back did not match`);
 	}
 
 	const existingByUc = new Map<HumanityUseCaseId, Set<string>>();
 	for (const ucId of ALL_USE_CASES) {
 		const pid = ucState[ucId];
-		if (!pid) continue;
-		existingByUc.set(ucId, await listPlaylistVideoIds(youtube, pid));
+		if (pid) existingByUc.set(ucId, await listPlaylistVideoIds(youtube, pid));
 	}
 
 	let inserted = 0;
 	let skipped = 0;
 	if (apply) {
 		for (const row of rows) {
-			const pid = ucState[row.use_case];
-			if (!pid) continue;
-			const existing = existingByUc.get(row.use_case);
-			if (existing?.has(row.video_id)) {
-				skipped++;
-				continue;
-			}
-			await youtube.playlistItems.insert({
-				part: ["snippet"],
-				requestBody: {
-					snippet: {
-						playlistId: pid,
-						position: 0,
-						resourceId: { kind: "youtube#video", videoId: row.video_id },
+			for (const ucId of row.use_cases) {
+				const pid = ucState[ucId];
+				const existing = existingByUc.get(ucId);
+				if (!pid || existing?.has(row.video_id)) {
+					skipped++;
+					continue;
+				}
+				await youtube.playlistItems.insert({
+					part: ["snippet"],
+					requestBody: {
+						snippet: {
+							playlistId: pid,
+							position: 0,
+							resourceId: { kind: "youtube#video", videoId: row.video_id },
+						},
 					},
-				},
-			});
-			existing?.add(row.video_id);
-			inserted++;
-		}
-	}
-
-	const reorderedCounts: Record<string, number> = {};
-	if (reorderNewestFirst) {
-		for (const ucId of ALL_USE_CASES) {
-			const pid = ucState[ucId];
-			if (!pid) continue;
-			const newestFirstIds = rows
-				.filter((r) => r.use_case === ucId)
-				.reverse()
-				.map((r) => r.video_id);
-			reorderedCounts[ucId] = await reorderPlaylistNewestFirst(
-				youtube,
-				pid,
-				newestFirstIds,
-			);
+				});
+				existing?.add(row.video_id);
+				inserted++;
+			}
 		}
 	}
 
@@ -360,14 +301,37 @@ async function main() {
 				total_classified: rows.length,
 				inserted,
 				skipped_already_present: skipped,
-				reordered_newest_first: reorderedCounts,
 				counts,
+				unassigned,
 				playlists: urls,
 			},
 			null,
 			2,
 		),
 	);
+
+	for (const ucId of ALL_USE_CASES) {
+		const expected = new Set(
+			rows
+				.filter((row) => row.use_cases.includes(ucId))
+				.map((row) => row.video_id),
+		);
+		if (expected.size === 0) continue;
+		const playlistId = ucState[ucId];
+		if (!playlistId)
+			throw new Error(`${ucId}: playlist ID is missing from saved state`);
+		const observed = await listPlaylistVideoIdsUntilIncluded(
+			youtube,
+			playlistId,
+			expected,
+		);
+		const missing = [...expected].filter((videoId) => !observed.has(videoId));
+		if (missing.length > 0)
+			throw new Error(
+				`${ucId}: playlist read-back is missing ${missing.length} explicitly assigned video(s)`,
+			);
+		console.log(`[verified] ${ucId} explicit_memberships=${expected.size}`);
+	}
 }
 
 main();

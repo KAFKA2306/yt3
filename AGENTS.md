@@ -18,7 +18,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - `task byosan:prepare DATE=YYYY-MM-DD`: research, produce, and audit without publishing
 - `task byosan:publish-daily`: prepare and publish the current Tokyo date through the Byosan daily path
 - `task publish PROFILE=<profile> -- <run-id>`
-- `task yawa:daily DATE=YYYY-MM-DD`, `task yawa:metadata RUN=<run-id>`
+- `task yawa:daily DATE=YYYY-MM-DD`, `task yawa:metadata RUN=<run-id>`, `task yawa:playlists:sync [-- --apply|--verify-only]`
 - `task humanity:music-daily DATE=YYYY-MM-DD`
 
 ## Publication

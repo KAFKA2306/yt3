@@ -12,6 +12,8 @@ const CreativeSchema = z.record(z.string(), z.unknown());
 export const YawaCharacterSchema = z.object({
 	id: z.string().min(1),
 	name: z.string().min(1),
+	playlist_title: z.string().min(1),
+	playlist_description: z.string().min(1),
 	age_note: z.string().min(1),
 	role: z.string().min(1),
 	personality: z.string().min(1),
