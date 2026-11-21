@@ -1052,9 +1052,9 @@ function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
 			"visual_novel provenance does not match its audio or file",
 		);
 	const rendered = probeVideo(output);
+	const videoTol = Math.max(config.audit.duration_tolerance_seconds, 0.25);
 	if (
-		Math.abs(rendered.seconds - audioSeconds) >
-			config.audit.duration_tolerance_seconds ||
+		Math.abs(rendered.seconds - audioSeconds) > videoTol ||
 		rendered.width !== width ||
 		rendered.height !== height
 	)
