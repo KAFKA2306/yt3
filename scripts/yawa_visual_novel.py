@@ -275,12 +275,23 @@ def main() -> None:
         total_assigned = 0.0
 
         for idx, perf in enumerate(performances):
-            wav_path = tts_dir / f"line_{idx:03d}.wav"
+            one_based = idx + 1
+            wav_path = tts_dir / f"performance_{one_based:05d}.wav"
+            if not wav_path.exists():
+                wav_path = tts_dir / f"line_{idx:03d}.wav"
             if not wav_path.exists():
                 wav_path = tts_dir / f"{idx:03d}.wav"
-            dur = probe_duration(wav_path) if wav_path.exists() else 4.0
-            pause = float(perf.get("pause_after_seconds", 0.4) or 0.4)
-            seg_dur = max(0.5, dur + pause)
+            if not wav_path.exists():
+                raise FileNotFoundError(
+                    f"Missing TTS audio for performance {one_based} in {tts_dir}"
+                )
+            dur = probe_duration(wav_path)
+            pause_wav = tts_dir / f"pause_{one_based:05d}.wav"
+            if pause_wav.exists():
+                pause = probe_duration(pause_wav)
+            else:
+                pause = float(perf.get("pause_after_seconds", 0.4) or 0.4)
+            seg_dur = max(0.1, dur + pause)
 
             vid = str(perf.get("voice_id", ""))
             vinfo = voices.get(vid, {})
