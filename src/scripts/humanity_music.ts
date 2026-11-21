@@ -953,6 +953,7 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 			requestBody: {
 				snippet: {
 					playlistId,
+					position: 0,
 					resourceId: { kind: "youtube#video", videoId },
 				},
 			},
@@ -1012,6 +1013,7 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 					requestBody: {
 						snippet: {
 							playlistId: ucPlaylistId,
+							position: 0,
 							resourceId: { kind: "youtube#video", videoId },
 						},
 					},

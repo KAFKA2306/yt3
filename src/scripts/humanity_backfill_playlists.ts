@@ -7,12 +7,12 @@ import {
 	loadMusicConfig,
 	YOUTUBE_PLAYLIST_URL,
 } from "../domain/humanity_music.js";
-import { ROOT } from "../io/core.js";
 import {
 	assertYouTubeChannelMatchesProfile,
 	createYouTubeOAuthClient,
 	YOUTUBE_PROFILES,
 } from "../domain/youtube_profiles.js";
+import { ROOT } from "../io/core.js";
 import { measureAudioBpm } from "./measure_bpm.js";
 
 type ClassificationRow = {
@@ -105,8 +105,52 @@ async function listPlaylistVideoIds(
 	return ids;
 }
 
+async function reorderPlaylistNewestFirst(
+	youtube: ReturnType<typeof google.youtube>,
+	playlistId: string,
+	newestFirstVideoIds: string[],
+): Promise<number> {
+	const itemByVideoId = new Map<string, string>();
+	let pageToken: string | undefined;
+	do {
+		const page = await youtube.playlistItems.list({
+			part: ["id", "contentDetails"],
+			playlistId,
+			maxResults: 50,
+			pageToken,
+		});
+		for (const item of page.data.items ?? []) {
+			const vid = item.contentDetails?.videoId;
+			if (vid && item.id) itemByVideoId.set(vid, item.id);
+		}
+		pageToken = page.data.nextPageToken ?? undefined;
+	} while (pageToken);
+
+	let updated = 0;
+	for (let pos = 0; pos < newestFirstVideoIds.length; pos++) {
+		const vid = newestFirstVideoIds[pos];
+		if (!vid) continue;
+		const itemId = itemByVideoId.get(vid);
+		if (!itemId) continue;
+		await youtube.playlistItems.update({
+			part: ["snippet"],
+			requestBody: {
+				id: itemId,
+				snippet: {
+					playlistId,
+					position: pos,
+					resourceId: { kind: "youtube#video", videoId: vid },
+				},
+			},
+		});
+		updated++;
+	}
+	return updated;
+}
+
 async function main() {
 	const apply = process.argv.includes("--apply");
+	const reorderNewestFirst = process.argv.includes("--reorder-newest-first");
 	const config = loadMusicConfig(ROOT);
 	const runsRoot = path.join(ROOT, "runs", "humanity_observatory");
 	const stateDir = path.join(ROOT, "data", "state", "humanity");
@@ -221,7 +265,7 @@ async function main() {
 		`[humanity:playlists:sync] classified=${rows.length} counts=${JSON.stringify(counts)} apply=${apply}`,
 	);
 
-	if (!apply) return;
+	if (!apply && !reorderNewestFirst) return;
 
 	const profile = YOUTUBE_PROFILES.humanity;
 	const { auth } = await createYouTubeOAuthClient(profile.profileName);
@@ -265,25 +309,45 @@ async function main() {
 
 	let inserted = 0;
 	let skipped = 0;
-	for (const row of rows) {
-		const pid = ucState[row.use_case];
-		if (!pid) continue;
-		const existing = existingByUc.get(row.use_case);
-		if (existing?.has(row.video_id)) {
-			skipped++;
-			continue;
-		}
-		await youtube.playlistItems.insert({
-			part: ["snippet"],
-			requestBody: {
-				snippet: {
-					playlistId: pid,
-					resourceId: { kind: "youtube#video", videoId: row.video_id },
+	if (apply) {
+		for (const row of rows) {
+			const pid = ucState[row.use_case];
+			if (!pid) continue;
+			const existing = existingByUc.get(row.use_case);
+			if (existing?.has(row.video_id)) {
+				skipped++;
+				continue;
+			}
+			await youtube.playlistItems.insert({
+				part: ["snippet"],
+				requestBody: {
+					snippet: {
+						playlistId: pid,
+						position: 0,
+						resourceId: { kind: "youtube#video", videoId: row.video_id },
+					},
 				},
-			},
-		});
-		existing?.add(row.video_id);
-		inserted++;
+			});
+			existing?.add(row.video_id);
+			inserted++;
+		}
+	}
+
+	const reorderedCounts: Record<string, number> = {};
+	if (reorderNewestFirst) {
+		for (const ucId of ALL_USE_CASES) {
+			const pid = ucState[ucId];
+			if (!pid) continue;
+			const newestFirstIds = rows
+				.filter((r) => r.use_case === ucId)
+				.reverse()
+				.map((r) => r.video_id);
+			reorderedCounts[ucId] = await reorderPlaylistNewestFirst(
+				youtube,
+				pid,
+				newestFirstIds,
+			);
+		}
 	}
 
 	const urls: Record<string, string> = {};
@@ -296,6 +360,7 @@ async function main() {
 				total_classified: rows.length,
 				inserted,
 				skipped_already_present: skipped,
+				reordered_newest_first: reorderedCounts,
 				counts,
 				playlists: urls,
 			},
