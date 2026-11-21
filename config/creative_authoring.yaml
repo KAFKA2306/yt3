@@ -4,13 +4,13 @@ routes:
     model: gpt-6-luna
     reasoning_effort: low
   draft:
-    provider: agy
-    model: gemini-4-hydrogen-medium
+    provider: codex
+    model: gpt-6-luna
+    reasoning_effort: medium
 fallbacks:
   title:
     - provider: agy
       model: gemini-4-hydrogen-medium
   draft:
-    - provider: codex
-      model: gpt-6-luna
-      reasoning_effort: medium
+    - provider: agy
+      model: gemini-4-hydrogen-medium

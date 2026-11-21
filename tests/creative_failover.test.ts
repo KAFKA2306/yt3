@@ -10,8 +10,8 @@ describe("creative cross-provider automatic routing", () => {
 
 		const draftChain = routeChainFor("draft");
 		expect(draftChain.length).toBe(2);
-		expect(draftChain[0]?.provider).toBe("agy");
-		expect(draftChain[1]?.provider).toBe("codex");
+		expect(draftChain[0]?.provider).toBe("codex");
+		expect(draftChain[1]?.provider).toBe("agy");
 	});
 
 	test("detects quota/rate-limit/capacity/outage errors for failover", () => {
