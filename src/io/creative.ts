@@ -18,11 +18,22 @@ const ModelRouteSchema = z.discriminatedUnion("provider", [
 
 const CreativeConfigSchema = z.object({
 	routes: z.object({ title: ModelRouteSchema, draft: ModelRouteSchema }),
+	fallbacks: z
+		.object({
+			title: z.array(ModelRouteSchema).default([]),
+			draft: z.array(ModelRouteSchema).default([]),
+		})
+		.optional(),
 });
 
-type ModelRoute = z.infer<typeof ModelRouteSchema>;
+export type ModelRoute = z.infer<typeof ModelRouteSchema>;
 export type CreativeKind = "title" | "draft";
-export type CreativeReceipt =
+export type CreativeFailoverAttempt = {
+	provider: string;
+	model: string;
+	error: string;
+};
+export type CreativeReceipt = (
 	| AgyReceipt
 	| {
 			provider: "codex";
@@ -30,9 +41,31 @@ export type CreativeReceipt =
 			reasoning_effort: string;
 			conversation_id?: undefined;
 			usage?: undefined;
-	  };
+	  }
+) & {
+	failover_attempts?: CreativeFailoverAttempt[];
+};
 
-function routeFor(kind: CreativeKind): ModelRoute {
+function routeKey(route: ModelRoute): string {
+	return route.provider === "agy"
+		? `agy:${route.model}`
+		: `codex:${route.model}:${route.reasoning_effort}`;
+}
+
+export function routeChainFor(kind: CreativeKind): ModelRoute[] {
+	const file = path.join(ROOT, "config/creative_authoring.yaml");
+	const config = CreativeConfigSchema.parse(
+		yaml.load(fs.readFileSync(file, "utf8")),
+	);
+	const chain: ModelRoute[] = [];
+	const seen = new Set<string>();
+	const pushUnique = (r: ModelRoute) => {
+		const k = routeKey(r);
+		if (seen.has(k)) return;
+		seen.add(k);
+		chain.push(r);
+	};
+
 	const override =
 		process.env[`YT3_CREATIVE_${kind.toUpperCase()}_ROUTE`]?.trim();
 	if (override) {
@@ -40,17 +73,28 @@ function routeFor(kind: CreativeKind): ModelRoute {
 		if (extra.length > 0) {
 			throw new Error(`Invalid creative route override for ${kind}`);
 		}
-		return ModelRouteSchema.parse(
-			provider === "agy"
-				? { provider, model }
-				: { provider, model, reasoning_effort: reasoningEffort },
+		pushUnique(
+			ModelRouteSchema.parse(
+				provider === "agy"
+					? { provider, model }
+					: { provider, model, reasoning_effort: reasoningEffort },
+			),
 		);
 	}
-	const file = path.join(ROOT, "config/creative_authoring.yaml");
-	const config = CreativeConfigSchema.parse(
-		yaml.load(fs.readFileSync(file, "utf8")),
+	pushUnique(config.routes[kind]);
+	if (process.env.YT3_CREATIVE_NO_FALLBACK !== "1") {
+		for (const fb of config.fallbacks?.[kind] ?? []) {
+			pushUnique(fb);
+		}
+	}
+	return chain;
+}
+
+export function isFailoverEligibleError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error ?? "");
+	return /429|rate.?limit|quota|capacity|exhausted|overloaded|usage.?limit|temporar|timeout|timed.?out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|502|503|504|ENOENT|exited\s+\d+|empty response|did not write its final response/i.test(
+		message,
 	);
-	return config.routes[kind];
 }
 
 function invokeCodexStructured<T>(
@@ -140,16 +184,46 @@ export function invokeCreativeStructured<T>(input: {
 	schema: z.ZodType<T>;
 	jsonSchema?: z.ZodType;
 }): { value: T; receipt: CreativeReceipt } {
-	const route = routeFor(input.kind);
-	if (route.provider === "codex") {
-		return invokeCodexStructured(input, route);
+	const routes = routeChainFor(input.kind);
+	const failures: CreativeFailoverAttempt[] = [];
+	let lastError: unknown;
+
+	for (let i = 0; i < routes.length; i++) {
+		const route = routes[i];
+		if (!route) continue;
+		try {
+			const res =
+				route.provider === "codex"
+					? invokeCodexStructured(input, route)
+					: invokeAgyStructured({
+							name: input.name,
+							prompt: input.prompt,
+							schema: input.schema,
+							jsonSchema: input.jsonSchema,
+							model: route.model,
+						});
+			if (failures.length > 0) {
+				res.receipt = { ...res.receipt, failover_attempts: failures };
+			}
+			return res;
+		} catch (error) {
+			lastError = error;
+			const msg = error instanceof Error ? error.message : String(error);
+			const next = routes[i + 1];
+			if (!next || !isFailoverEligibleError(error)) {
+				throw error;
+			}
+			failures.push({
+				provider: route.provider,
+				model: route.model,
+				error: msg.slice(0, 300),
+			});
+			console.warn(
+				`[CREATIVE:FAILOVER] name=${input.name} from=${routeKey(route)} to=${routeKey(next)} reason=${msg.slice(0, 180)}`,
+			);
+		}
 	}
-	const result = invokeAgyStructured({
-		name: input.name,
-		prompt: input.prompt,
-		schema: input.schema,
-		jsonSchema: input.jsonSchema,
-		model: route.model,
-	});
-	return result;
+	throw lastError instanceof Error
+		? lastError
+		: new Error(`All creative routes failed for ${input.name}`);
 }
