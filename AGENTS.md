@@ -76,9 +76,7 @@ Feature, production, and authenticity findings remain available as diagnostics. 
 
 ## Yawa video visuals
 
-Every Yawa video is rendered through the vendored JIZURA. FFmpeg may mux the original audio and encode the final file.
-
-Use timestamped episode dialogue as JIZURA subtitles, and let each episode choose its visual direction.
+Every Yawa video is rendered through `scripts/yawa_visual_novel.py` (warm cinematic anime visual novel style: persistent fixed-cast standing portraits in `data/state/yawa/portraits/<character_id>/{neutral,smile,shy}.png` with expression switching, episode background, nameplate, and timestamped Japanese dialogue window). FFmpeg muxes the original audio and encodes the final 1080p MP4.
 
 ## Evidence and credentials
 

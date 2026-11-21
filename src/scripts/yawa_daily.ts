@@ -940,13 +940,13 @@ function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
 	const output = path.join(dir, config.video.file);
 	const audioSeconds = probeSeconds(audio);
 	const { width, height } = draft.production.video ?? config.video;
-	const record = path.join(dir, `${path.parse(output).name}.jizura.json`);
+	const record = path.join(dir, `${path.parse(output).name}.visual_novel.json`);
 	const audioHash = fileHash(audio);
 	if (fs.existsSync(output)) {
 		if (!fs.existsSync(record))
 			throw new StepFailure(
 				"video-render",
-				"existing video has no JIZURA provenance; use a fresh run ID",
+				"existing video has no visual_novel provenance; use a fresh run ID",
 			);
 		const provenance = fs.readJsonSync(record) as {
 			tool?: string;
@@ -954,13 +954,13 @@ function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
 			video_sha256?: string;
 		};
 		if (
-			provenance.tool !== "JIZURA" ||
+			provenance.tool !== "yawa_visual_novel" ||
 			provenance.source_audio_sha256 !== audioHash ||
 			provenance.video_sha256 !== fileHash(output)
 		)
 			throw new StepFailure(
 				"video-render",
-				"existing JIZURA video provenance does not match its audio or file",
+				"existing visual_novel video provenance does not match its audio or file",
 			);
 		const existing = probeVideo(output);
 		if (
@@ -976,13 +976,8 @@ function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
 		return output;
 	}
 	run("video-render", [
-		"uv",
-		"run",
-		"--frozen",
-		"--group",
-		"pv",
-		"python",
-		"scripts/yawa_jizura.py",
+		"python3",
+		"scripts/yawa_visual_novel.py",
 		"--audio",
 		audio,
 		"--script",
@@ -993,20 +988,23 @@ function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
 		output,
 	]);
 	if (!fs.existsSync(record))
-		throw new StepFailure("video-render", "JIZURA provenance was not recorded");
+		throw new StepFailure(
+			"video-render",
+			"visual_novel provenance was not recorded",
+		);
 	const provenance = fs.readJsonSync(record) as {
 		tool?: string;
 		source_audio_sha256?: string;
 		video_sha256?: string;
 	};
 	if (
-		provenance.tool !== "JIZURA" ||
+		provenance.tool !== "yawa_visual_novel" ||
 		provenance.source_audio_sha256 !== audioHash ||
 		provenance.video_sha256 !== fileHash(output)
 	)
 		throw new StepFailure(
 			"video-render",
-			"JIZURA provenance does not match its audio or file",
+			"visual_novel provenance does not match its audio or file",
 		);
 	const rendered = probeVideo(output);
 	if (
