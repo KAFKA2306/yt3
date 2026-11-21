@@ -36,7 +36,6 @@ Find every canonical record, master file, and analytical schema owner here. Prod
 | YouTube channel profiles | One channel profile (`byosan`, `yawa`, `humanity`) | `src/domain/youtube_profiles.ts` & `analytics/seeds/channel_profiles.csv` | `YOUTUBE_PROFILES` (`src/domain/youtube_profiles.ts`) |
 | Yawa fixed cast | One adult cast member (`haruka`, `shizuku`, `nao`) | `docs/yawa/characters.json` | `YawaCastSchema` in `src/domain/yawa_daily.ts` |
 | Yawa cast voice references | One persistent reference WAV per cast ID | `data/state/yawa/references/<character_id>.wav` (local) | `castReferencePath` in `src/domain/yawa_daily.ts` |
-| Humanity story world | One shared world (`晴れ待ち坂`) with characters and relationships | `docs/humanity/story-world.json` | `HumanityStoryWorldSchema` in `src/domain/humanity_music.ts` |
 | Byosan discovery sources | One vetted external news/filing source | `config/sources/byosan_discovery_sources.json` | `DiscoverySourcesSchema` in `src/domain/byosan/discovery_sources.ts` |
 | Visual design tokens | One shared light palette & layout token set | `config/design/foundation.tokens.json` | Synced via `bun src/scripts/sync_video_design.ts` |
 

@@ -6,7 +6,7 @@ This directory is the YT3 OKF v0.3 knowledge bundle (also usable as an Obsidian 
 
 - [`byosan/MISSION.md`](./byosan/MISSION.md): 秒算マネー（2-lane financial/tech structure analysis）
 - [`yawa/MISSION.md`](./yawa/MISSION.md) & [`yawa/characters.json`](./yawa/characters.json): 夜話アーカイブ ASMR（fixed 3-character cast, all-ages advertiser-friendly）
-- [`humanity/MISSION.md`](./humanity/MISSION.md), [`humanity/SOUL.md`](./humanity/SOUL.md), [`humanity/songwriting.md`](./humanity/songwriting.md), [`humanity/story-world.json`](./humanity/story-world.json): 雨晴はうの人類観測所（晴れ待ち坂 narrative music label）
+- [`humanity/MISSION.md`](./humanity/MISSION.md), [`humanity/SOUL.md`](./humanity/SOUL.md), [`humanity/songwriting.md`](./humanity/songwriting.md): 雨晴はうの人類観測所（オリジナル AI 音楽チャンネル）
 
 ## Data Model & dbt Analytics
 

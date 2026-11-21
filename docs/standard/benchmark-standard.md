@@ -73,7 +73,7 @@ generated:
 ### 2.3 `humanity`（雨晴はうの人類観測所）
 
 - **入口・コマンド**: `task bench:humanity`（任意で `-- --limit=5 --with-lexicon`）
-- **参照方針**: [雨晴はうの人類観測所 Mission](../humanity/MISSION.md), [作詞と物語づくり](../humanity/songwriting.md), [共有世界正本](../humanity/story-world.json)
+- **参照方針**: [雨晴はうの人類観測所 Mission](../humanity/MISSION.md), [作詞と制作指針](../humanity/songwriting.md)
 
 | ID | 層 | 重大度 | 合格条件 | 既知の失敗例（反例） |
 | --- | --- | --- | --- | --- |
@@ -81,10 +81,10 @@ generated:
 | `synthetic_media_disclosed` | L1 | critical | `state.json` の `contains_synthetic_media === true` | 合成メディア開示フラグ欠落 |
 | `short_memorable_title` | L1 | critical | 接尾辞（`\| 人類観測所の音楽`）を除いた曲名が 3〜15 文字 | 39 文字のラノベあらすじ風タイトル（旧ラン実例） |
 | `jacket_thumbnail_present` | L1 | critical | 曲固有ジャケット `thumbnail.jpg` が 1KB 以上で存在 | サムネ未生成または 0 バイト |
-| `story_world_reference` | L1 | warning | 概要欄 40 文字以上かつ「晴れ待ち坂」または登場人物の言及あり | 概要欄が空・世界観説明なし |
+| `description_context_present` | L1 | warning | 概要欄 40 文字以上 | 概要欄が空・短すぎる |
 | `publish_integrity` | L1 | critical（公開時） | `publish/state.json` が `VERIFIED` かつ `public` | 非公開・未確認のまま放置 |
 | `lexicon_diversity` | L1（横断） | warning | 歌詞の `pairwise Jaccard max <= 0.55` | 過去曲と酷似した定型歌詞の量産 |
-| L2 ルーブリック | L2 | 比較 | `standalone_emotional_hook` / `memorable_short_title_fit` / `story_world_cohesion` | 汎用BGM歌詞・あらすじ曲名（メロディ品質は聴取担当として未確認明記） |
+| L2 ルーブリック | L2 | 比較 | `standalone_emotional_hook` / `memorable_short_title_fit` / `standalone_concept_and_mood` | 汎用BGM歌詞・あらすじ曲名（メロディ品質は聴取担当として未確認明記） |
 | L3 実績 | L3 | 観測 | `mart_channel_growth_kpi` の CTR・完聴率・高評価率・`playlist_views_share_first_7d`・登録純増＋聴取 rating | 1 曲切りで再生リスト連続視聴につながらない |
 
 ## 3. 実行コマンド一覧
