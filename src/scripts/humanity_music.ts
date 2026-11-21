@@ -214,7 +214,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		preferences:
 			"口ずさみやすいサビのフック、聴き手のテンションや感情を明確に動かす音作り。既存作品の歌詞・旋律・固有表現は一切借りず、完全オリジナルとして表現する。",
 		history_use:
-			"previous_storiesは過去作品であり、重複を避けるための参考です。過去作品と同じ題材・小道具・感情の流れを反復しないでください。",
+			"previous_storiesは過去作品であり、重複を避けるための参考です。毎日新しいコンセプトで届けるため、直近の過去作品とはジャンル・テンポ・用途（家事/作業/ドライブ/夜更け/感情など）・モチーフを明確に変え、同じ題材・小道具・感情の流れを反復しないでください。",
 		previous_stories: previous,
 	};
 	const titleRules =

@@ -1,7 +1,7 @@
 ---
 type: "policy"
 title: "雨晴はうの人類観測所 Mission"
-description: "雨晴はうの人類観測所オリジナル音楽チャンネルの編集目的、曲名・ジャケット・週3本頻度・収益化 KPI。"
+description: "雨晴はうの人類観測所オリジナル音楽チャンネルの編集目的、毎日新しいコンセプトの曲づくり・ジャケット・収益化 KPI。"
 tags:
   - yt3/mission
   - yt3/humanity
