@@ -489,27 +489,52 @@ function writeAnalyticsRecord(db: Database, record: AnalyticsRecord) {
 }
 
 async function main() {
-	console.log("=== YouTube Analytics ingestion (raw API metrics only) ===");
+	const force = process.argv.includes("--force");
+	console.log(
+		`=== YouTube Analytics ingestion (raw API metrics only, force=${force}) ===`,
+	);
 	const videos = discoverVideos();
 	if (videos.length === 0) {
 		console.log("No published videos found in runs directory.");
 		return;
 	}
 	const db = new Database(DB_FILE);
+	const hasCachedWindow = db.prepare(
+		"SELECT 1 FROM youtube_analytics WHERE video_id = ? AND age_window = ? LIMIT 1",
+	);
+	const authCache = new Map<
+		string,
+		Awaited<ReturnType<typeof createYouTubeOAuthClient>>
+	>();
 	let failures = 0;
+	let fetchedWindows = 0;
+	let cachedWindowsSkipped = 0;
 	try {
 		for (const video of videos) {
 			const windows = eligibleWindows(video.publishedAt);
 			if (windows.length === 0) continue;
+			if (video.bucket === "daily_pulse") {
+				continue;
+			}
+			const pendingWindows = force
+				? windows
+				: windows.filter((w) => !hasCachedWindow.get(video.videoId, w.name));
+			cachedWindowsSkipped += windows.length - pendingWindows.length;
+			if (pendingWindows.length === 0) continue;
 			try {
 				const profile = getAnalyticsProfileForBucket(video.bucket);
 				if (profile === null) {
 					console.info(
-						`[SKIP_UNCONFIGURED] ${video.runId}: pulse_nlm has no authorized YouTube Analytics profile`,
+						`[SKIP_UNCONFIGURED] ${video.runId}: ${video.bucket} has no authorized YouTube Analytics profile`,
 					);
 					continue;
 				}
-				const { auth } = await createYouTubeOAuthClient(profile.profileName);
+				let authEntry = authCache.get(profile.profileName);
+				if (!authEntry) {
+					authEntry = await createYouTubeOAuthClient(profile.profileName);
+					authCache.set(profile.profileName, authEntry);
+				}
+				const { auth } = authEntry;
 				if (video.channelId !== profile.expectedChannelId) {
 					throw new Error(
 						`Receipt channel mismatch for ${video.videoId}: expected ${profile.expectedChannelId}, got ${video.channelId}`,
@@ -530,7 +555,7 @@ async function main() {
 					);
 					continue;
 				}
-				for (const window of windows) {
+				for (const window of pendingWindows) {
 					const result = await fetchAnalytics(
 						auth,
 						profile.expectedChannelId,
@@ -542,6 +567,7 @@ async function main() {
 					);
 					saveAnalyticsRecord(db, result);
 					saveTrafficSourceSnapshot(db, result.trafficSourceSnapshot);
+					fetchedWindows += 1;
 					console.log(
 						`[SUCCESS] ${video.videoId} ${window.name}: ${result.views} views, ${result.engaged_views} engaged views, ${result.trafficSourceSnapshot.rows.length} traffic sources`,
 					);
@@ -556,6 +582,9 @@ async function main() {
 	} finally {
 		db.close();
 	}
+	console.log(
+		`=== YouTube Analytics summary: fetched=${fetchedWindows} cached_skipped=${cachedWindowsSkipped} failures=${failures} ===`,
+	);
 	if (failures > 0) {
 		throw new Error(
 			`YouTube Analytics ingestion failed for ${failures} video(s); successful videos were processed independently`,
