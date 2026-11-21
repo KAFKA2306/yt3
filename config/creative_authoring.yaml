@@ -12,5 +12,5 @@ fallbacks:
       model: gemini-4-hydrogen-medium
   draft:
     - provider: codex
-      model: gpt-6.1-terra
+      model: gpt-6-luna
       reasoning_effort: medium
