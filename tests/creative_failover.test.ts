@@ -4,14 +4,14 @@ import { isFailoverEligibleError, routeChainFor } from "../src/io/creative.js";
 describe("creative cross-provider automatic routing", () => {
 	test("builds ordered zero-cost failover chains across codex and agy", () => {
 		const titleChain = routeChainFor("title");
-		expect(titleChain.length).toBeGreaterThanOrEqual(2);
+		expect(titleChain.length).toBe(2);
 		expect(titleChain[0]?.provider).toBe("codex");
-		expect(titleChain.some((r) => r.provider === "agy")).toBe(true);
+		expect(titleChain[1]?.provider).toBe("agy");
 
 		const draftChain = routeChainFor("draft");
-		expect(draftChain.length).toBeGreaterThanOrEqual(3);
+		expect(draftChain.length).toBe(2);
 		expect(draftChain[0]?.provider).toBe("agy");
-		expect(draftChain.some((r) => r.provider === "codex")).toBe(true);
+		expect(draftChain[1]?.provider).toBe("codex");
 	});
 
 	test("detects quota/rate-limit/capacity/outage errors for failover", () => {

@@ -10,15 +10,7 @@ fallbacks:
   title:
     - provider: agy
       model: gemini-4-hydrogen-medium
-    - provider: codex
-      model: gpt-6.1-terra
-      reasoning_effort: low
   draft:
     - provider: codex
       model: gpt-6.1-terra
-      reasoning_effort: medium
-    - provider: agy
-      model: gemini-4-argon-high
-    - provider: codex
-      model: gpt-6-luna
       reasoning_effort: medium
