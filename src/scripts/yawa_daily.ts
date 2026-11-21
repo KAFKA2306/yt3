@@ -30,6 +30,7 @@ import {
 	shouldGenerateYawaImages,
 	type VoiceDesign,
 	validateDraft,
+	validateYawaTitleIntegrity,
 	type YawaCast,
 	type YawaCharacter,
 	yawaAudit,
@@ -250,16 +251,11 @@ function preflight(
 		Bun.which("agy") ? "" : "agy CLI is not on PATH",
 		Bun.which("ffmpeg") ? "" : "ffmpeg is not on PATH",
 		Bun.which("ffprobe") ? "" : "ffprobe is not on PATH",
+		Bun.which("python3") ? "" : "python3 is not on PATH",
 		Bun.which("uv") ? "" : "uv is not on PATH",
-		fs.existsSync(path.join(ROOT, config.jizura.html))
+		fs.existsSync(path.join(ROOT, "scripts", "yawa_visual_novel.py"))
 			? ""
-			: "vendored JIZURA is missing",
-		fs.existsSync(path.join(ROOT, config.jizura.version_file))
-			? ""
-			: "JIZURA version file is missing",
-		fs.existsSync(config.jizura.chrome)
-			? ""
-			: "Chrome is required for JIZURA MP4 export",
+			: "scripts/yawa_visual_novel.py is missing",
 		tools.tts.length > 0
 			? ""
 			: "no configured Irodori environment is available",
@@ -277,57 +273,84 @@ function requestedDevice(): Device {
 	return value;
 }
 
+type SeriesEpisodeSpec = {
+	seriesTitle: string;
+	premise: string;
+	totalEpisodes: number;
+	episode: number;
+	title: string;
+	cast: string[];
+	setting: string;
+	summary: string;
+	continuityHook: string;
+};
+
+function loadActiveSeriesEpisode(): SeriesEpisodeSpec | null {
+	const seriesId = process.env.YAWA_SERIES?.trim() || "";
+	if (!seriesId) return null;
+	const seriesPath = path.join(
+		ROOT,
+		"docs",
+		"yawa",
+		"series",
+		`${seriesId}.json`,
+	);
+	if (!fs.existsSync(seriesPath)) {
+		throw new StepFailure("script", `Unknown YAWA_SERIES: ${seriesId}`);
+	}
+	const seriesDoc = fs.readJsonSync(seriesPath) as {
+		title: string;
+		premise: string;
+		total_episodes: number;
+		episodes: Array<{
+			episode: number;
+			title: string;
+			cast: string[];
+			setting: string;
+			summary: string;
+			continuity_hook: string;
+		}>;
+	};
+	const epNum = Number(process.env.YAWA_EPISODE || "1");
+	const ep = seriesDoc.episodes.find((e) => e.episode === epNum);
+	if (!ep) {
+		throw new StepFailure(
+			"script",
+			`Episode ${epNum} not found in series ${seriesId}`,
+		);
+	}
+	return {
+		seriesTitle: seriesDoc.title,
+		premise: seriesDoc.premise,
+		totalEpisodes: seriesDoc.total_episodes,
+		episode: ep.episode,
+		title: ep.title,
+		cast: ep.cast,
+		setting: ep.setting,
+		summary: ep.summary,
+		continuityHook: ep.continuity_hook,
+	};
+}
+
 function scriptPrompt(
 	tools: { tts: string[]; images: string[] },
 	selectedTitle: string,
-	titleReview: TitleReview,
+	titleReview: TitleReview | null,
 	recent: RecentYawaEpisode[],
+	seriesEp: SeriesEpisodeSpec | null,
 ): string {
 	const imageTools = shouldGenerateYawaImages() ? tools.images : [];
-	const seriesId = process.env.YAWA_SERIES?.trim() || "";
-	let seriesPromptBlock = "";
-	if (seriesId) {
-		const seriesPath = path.join(
-			ROOT,
-			"docs",
-			"yawa",
-			"series",
-			`${seriesId}.json`,
-		);
-		if (!fs.existsSync(seriesPath)) {
-			throw new StepFailure("script", `Unknown YAWA_SERIES: ${seriesId}`);
-		}
-		const seriesDoc = fs.readJsonSync(seriesPath) as {
-			title: string;
-			premise: string;
-			total_episodes: number;
-			episodes: Array<{
-				episode: number;
-				title: string;
-				cast: string[];
-				setting: string;
-				summary: string;
-				continuity_hook: string;
-			}>;
-		};
-		const epNum = Number(process.env.YAWA_EPISODE || "1");
-		const ep = seriesDoc.episodes.find((e) => e.episode === epNum);
-		if (!ep) {
-			throw new StepFailure(
-				"script",
-				`Episode ${epNum} not found in series ${seriesId}`,
-			);
-		}
-		seriesPromptBlock = [
-			`【長編連作シリーズ指定】シリーズ名: ${seriesDoc.title}（全${seriesDoc.total_episodes}話中 第${ep.episode}話）`,
-			`シリーズ全体前提: ${seriesDoc.premise}`,
-			`今回の指定タイトル（このまま使うこと）: ${ep.title}`,
-			`今回の担当キャストid（このキャストを主役にする）: ${ep.cast.join(", ")}`,
-			`舞台: ${ep.setting}`,
-			`今回のあらすじ: ${ep.summary}`,
-			`次回への引き・繋がり: ${ep.continuity_hook}`,
-		].join("\n");
-	}
+	const seriesPromptBlock = seriesEp
+		? [
+				`【長編連作シリーズ指定（最優先・厳守）】シリーズ名: ${seriesEp.seriesTitle}（全${seriesEp.totalEpisodes}話中 第${seriesEp.episode}話）`,
+				`シリーズ全体前提: ${seriesEp.premise}`,
+				`今回の確定タイトル（一字一句このまま使うこと）: ${seriesEp.title}`,
+				`今回の担当キャストid（必ずこのキャストだけで構成すること）: ${seriesEp.cast.join(", ")}`,
+				`舞台: ${seriesEp.setting}`,
+				`今回のあらすじ: ${seriesEp.summary}`,
+				`次回への引き・繋がり: ${seriesEp.continuityHook}`,
+			].join("\n")
+		: "";
 	return [
 		"あなたは夜話アーカイブの制作AIです。次のYAMLは目的・広告適合・固定キャスト方針です。",
 		JSON.stringify(config.creative),
@@ -343,11 +366,11 @@ function scriptPrompt(
 			JSON.stringify({
 				tts: tools.tts,
 				images: imageTools,
-				video: ["JIZURA"],
+				video: ["yawa_visual_novel"],
 			}),
-		`動画は必ずJIZURAで制作し、各performanceの台詞を実際の音声時刻に合わせた字幕として使います。JIZURAの見た目は作品ごとに選びます。任意のproduction.jizura_themeには次の値を指定できます: lyricpv, kinetic, wa, horror, pop, ballad。未指定ならJIZURAのおまかせを使います。FFmpegは元音声の合成と最終エンコードだけに使います。`,
+		"動画は暖色アニメ調ビジュアルノベル（scripts/yawa_visual_novel.py：固定キャスト立ち絵・3表情切替・音声同期字幕）で自動描画されます。各performanceのtextとactingがそのまま字幕と表情切替に使われます。",
 		imageTools.length > 0
-			? `サムネイル画像はクリック率を高める重要要素です。production.image_toolに "${imageTools[0]}" を指定し、選んだキャストのvisual_identityをベースに今回の場面・表情・照明を描く英語のthumbnail_prompt（文字・ロゴなし）を必ず作成してください。対応サイズ: ` +
+			? `背景兼サムネイル画像はクリック率と没入感を高める重要要素です。production.image_toolに "${imageTools[0]}" を指定し、選んだキャストのvisual_identityと今回の場面・照明を描く英語のthumbnail_prompt（文字・ロゴなし）を必ず作成してください。対応サイズ: ` +
 				JSON.stringify(
 					Object.fromEntries(
 						imageTools.map((id) => [
@@ -359,12 +382,14 @@ function scriptPrompt(
 						]),
 					),
 				)
-			: "画像生成は今回無効です。thumbnail_promptは省略してJIZURA動画を制作します。",
+			: "画像生成は今回無効です。thumbnail_promptは省略してビジュアルノベル動画を制作します。",
 		`採用タイトル: ${selectedTitle}`,
-		`本文前のタイトル批評: ${JSON.stringify(titleReview)}`,
-		"titleには採用タイトルをそのまま使い、そのタイトルが予告する場面と人物の魅力を台本で実現してください。完成後、別工程で台本と照合して必要に応じて改題します。",
+		...(titleReview
+			? [`本文前のタイトル批評: ${JSON.stringify(titleReview)}`]
+			: []),
+		"titleには採用タイトルをそのまま使い、そのタイトルが予告する場面と人物の魅力を台本で実現してください。",
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
-		"JSONのみ。title、voices[{id,character_id?,caption,reference_text?}]、production{tts_backend,image_tool?,video?,jizura_theme?,thumbnail_size?,mix?}を含めます。thumbnail_promptは画像ツール利用時に必須です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
+		"JSONのみ。title、voices[{id,character_id?,caption,reference_text?}]、production{tts_backend,image_tool?,video?,thumbnail_size?,mix?}を含めます。thumbnail_promptは画像ツール利用時に必須です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
 	].join("\n");
 }
 
@@ -508,85 +533,138 @@ function generateScript(
 		draft = ScriptDraftSchema.parse(fs.readJsonSync(file));
 	} else {
 		const recent = recentYawaEpisodes(dir);
+		const seriesEp = loadActiveSeriesEpisode();
 		const titleRules =
 			"固定キャスト（日向はるか / 白瀬しずく / 月島なお）の誰との・どんな心地よい／楽しい時間かが一目で伝わる自然な日本語タイトル（45文字以内目安）にする。直近作品と同じキャスト・同じ『終電・深夜の寝かしつけ』表現の反復を避け、全年齢・広告適合（緑アイコン）に反する性的連想ワード（添い寝・耳舐め・18+系等）を入れない。";
-		const titleProposal = invokeCreativeStructured({
-			name: "yawa_title_proposal",
-			kind: "title",
-			schema: TitleProposalSchema,
-			prompt: titleProposalPrompt({
-				brand: "夜話アーカイブ ASMR",
-				rules: titleRules,
-				context: {
-					creative: config.creative,
-					cast: cast.characters.map(({ id, name, role, episode_genres }) => ({
-						id,
-						name,
-						role,
-						episode_genres,
-					})),
-					recent_episodes: recent,
+		if (seriesEp) {
+			const authored = invokeCreativeStructured({
+				name: "yawa_script",
+				kind: "draft",
+				schema: ScriptDraftSchema,
+				prompt: scriptPrompt(tools, seriesEp.title, null, recent, seriesEp),
+			});
+			draft = authored.value;
+			draft.title = seriesEp.title;
+			writeJsonAtomic(path.join(dir, "creative_authoring.json"), {
+				model_routes: { draft: authored.receipt },
+				series_locked_title: seriesEp.title,
+				series_locked_cast: seriesEp.cast,
+				authoring_usage: authored.receipt.usage,
+				authoring_conversation: authored.receipt.conversation_id,
+			});
+		} else {
+			const titleProposal = invokeCreativeStructured({
+				name: "yawa_title_proposal",
+				kind: "title",
+				schema: TitleProposalSchema,
+				prompt: titleProposalPrompt({
+					brand: "夜話アーカイブ ASMR",
+					rules: titleRules,
+					context: {
+						creative: config.creative,
+						cast: cast.characters.map(({ id, name, role, episode_genres }) => ({
+							id,
+							name,
+							role,
+							episode_genres,
+						})),
+						recent_episodes: recent,
+					},
+				}),
+			});
+			const titleReview = invokeCreativeStructured({
+				name: "yawa_title_review",
+				kind: "title",
+				schema: TitleReviewSchema,
+				prompt: titleOnlyPrompt({
+					brand: "夜話アーカイブ ASMR",
+					title: titleProposal.value.title,
+					rules: titleRules,
+				}),
+			});
+			const authored = invokeCreativeStructured({
+				name: "yawa_script",
+				kind: "draft",
+				schema: ScriptDraftSchema,
+				prompt: scriptPrompt(
+					tools,
+					titleProposal.value.title,
+					titleReview.value,
+					recent,
+					null,
+				),
+			});
+			draft = authored.value;
+			const activeVoiceCastIds = draft.voices.map(
+				(v) => v.character_id || v.id,
+			);
+			const body = flattenPerformances(draft)
+				.map((item, index) => `${index + 1}. ${item.text}`)
+				.join("\n");
+			const titleFit = invokeCreativeStructured({
+				name: "yawa_title_body_review",
+				kind: "title",
+				schema: TitleFitSchema,
+				prompt: titleFitPrompt({
+					brand: "夜話アーカイブ ASMR",
+					rules: titleRules,
+					initialTitle: titleProposal.value.title,
+					titleReview: titleReview.value,
+					body: `台本中のタイトル: ${draft.title}\n出演キャスト: ${activeVoiceCastIds.join(", ")}\n\n${body}`,
+				}),
+			});
+			const candidateTitle = titleFit.value.title;
+			const candidateErrors = validateYawaTitleIntegrity(
+				candidateTitle,
+				activeVoiceCastIds,
+				cast,
+			);
+			if (candidateErrors.length === 0) {
+				draft.title = candidateTitle;
+			} else {
+				const fallbackErrors = validateYawaTitleIntegrity(
+					draft.title,
+					activeVoiceCastIds,
+					cast,
+				);
+				if (fallbackErrors.length > 0) {
+					throw new StepFailure(
+						"title-validation",
+						`Invalid title after review (${candidateErrors.join("; ")}); draft title also invalid (${fallbackErrors.join("; ")})`,
+					);
+				}
+				console.warn(
+					`[yawa] rejected title_fit "${candidateTitle}" (${candidateErrors.join("; ")}); kept valid draft title "${draft.title}"`,
+				);
+			}
+			writeJsonAtomic(path.join(dir, "creative_authoring.json"), {
+				model_routes: {
+					title_proposal: titleProposal.receipt,
+					title_review: titleReview.receipt,
+					draft: authored.receipt,
+					title_fit: titleFit.receipt,
 				},
-			}),
-		});
-		const titleReview = invokeCreativeStructured({
-			name: "yawa_title_review",
-			kind: "title",
-			schema: TitleReviewSchema,
-			prompt: titleOnlyPrompt({
-				brand: "夜話アーカイブ ASMR",
-				title: titleProposal.value.title,
-				rules: titleRules,
-			}),
-		});
-		const authored = invokeCreativeStructured({
-			name: "yawa_script",
-			kind: "draft",
-			schema: ScriptDraftSchema,
-			prompt: scriptPrompt(
-				tools,
-				titleProposal.value.title,
-				titleReview.value,
-				recent,
-			),
-		});
-		draft = authored.value;
-		const body = flattenPerformances(draft)
-			.map((item, index) => `${index + 1}. ${item.text}`)
-			.join("\n");
-		const titleFit = invokeCreativeStructured({
-			name: "yawa_title_body_review",
-			kind: "title",
-			schema: TitleFitSchema,
-			prompt: titleFitPrompt({
-				brand: "夜話アーカイブ ASMR",
-				rules: titleRules,
-				initialTitle: titleProposal.value.title,
-				titleReview: titleReview.value,
-				body: `台本中のタイトル: ${draft.title}\n\n${body}`,
-			}),
-		});
-		draft.title = titleFit.value.title;
-		writeJsonAtomic(path.join(dir, "creative_authoring.json"), {
-			model_routes: {
-				title_proposal: titleProposal.receipt,
-				title_review: titleReview.receipt,
-				draft: authored.receipt,
-				title_fit: titleFit.receipt,
-			},
-			title_proposal: titleProposal.value,
-			title_proposal_usage: titleProposal.receipt.usage,
-			title_proposal_conversation: titleProposal.receipt.conversation_id,
-			title_review: titleReview.value,
-			title_review_usage: titleReview.receipt.usage,
-			title_review_conversation: titleReview.receipt.conversation_id,
-			authoring_usage: authored.receipt.usage,
-			authoring_conversation: authored.receipt.conversation_id,
-			title_fit: titleFit.value,
-			title_fit_usage: titleFit.receipt.usage,
-			title_fit_conversation: titleFit.receipt.conversation_id,
-		});
+				title_proposal: titleProposal.value,
+				title_proposal_usage: titleProposal.receipt.usage,
+				title_proposal_conversation: titleProposal.receipt.conversation_id,
+				title_review: titleReview.value,
+				title_review_usage: titleReview.receipt.usage,
+				title_review_conversation: titleReview.receipt.conversation_id,
+				authoring_usage: authored.receipt.usage,
+				authoring_conversation: authored.receipt.conversation_id,
+				title_fit: titleFit.value,
+				title_fit_usage: titleFit.receipt.usage,
+				title_fit_conversation: titleFit.receipt.conversation_id,
+			});
+		}
 	}
+	const titleErrors = validateYawaTitleIntegrity(
+		draft.title,
+		draft.voices.map((v) => v.character_id || v.id),
+		cast,
+	);
+	if (titleErrors.length)
+		throw new StepFailure("title-validation", titleErrors.join("; "));
 	const failures = validateDraft(draft, config, tools);
 	if (failures.length)
 		throw new StepFailure("script-validation", failures.join("; "));
@@ -981,10 +1059,9 @@ function renderImages(
 	}
 }
 
-function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
+function renderVideo(_draft: ScriptDraft, audio: string, dir: string): string {
 	const output = path.join(dir, config.video.file);
 	const audioSeconds = probeSeconds(audio);
-	const { width, height } = draft.production.video ?? config.video;
 	const record = path.join(dir, `${path.parse(output).name}.visual_novel.json`);
 	const audioHash = fileHash(audio);
 	if (fs.existsSync(output)) {

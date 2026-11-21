@@ -12,6 +12,7 @@ import {
 	ScriptDraftSchema,
 	shouldGenerateYawaImages,
 	validateDraft,
+	validateYawaTitleIntegrity,
 	yawaAudit,
 } from "../src/domain/yawa_daily.js";
 
@@ -195,5 +196,41 @@ describe("Yawa fixed cast and thumbnail defaults", () => {
 		expect(shouldGenerateYawaImages({ YAWA_GENERATE_IMAGES: "false" })).toBe(
 			false,
 		);
+	});
+
+	test("rejects meta-commentary titles and wrong-cast titles (adjudicate counterexamples)", () => {
+		const cast = loadYawaCast(process.cwd());
+		expect(
+			validateYawaTitleIntegrity("Title Review Completed", ["nao"], cast)
+				.length,
+		).toBeGreaterThan(0);
+		expect(
+			validateYawaTitleIntegrity(
+				"月島なおと味わう珈琲と、三枚目のしおりに宿る記憶",
+				["shizuku"],
+				cast,
+			).length,
+		).toBeGreaterThan(0);
+		expect(
+			validateYawaTitleIntegrity(
+				"白瀬しずく先輩と迎える、古本喫茶『夜話』の夜明け",
+				["nao"],
+				cast,
+			).length,
+		).toBeGreaterThan(0);
+		expect(
+			validateYawaTitleIntegrity(
+				"夜話の欠けたしおり 第一話：雨の夜の珈琲と、宛名のない押し花",
+				["nao"],
+				cast,
+			),
+		).toEqual([]);
+		expect(
+			validateYawaTitleIntegrity(
+				"日向はるかと白瀬しずく、街灯の下の待ち合わせ",
+				["haruka", "shizuku"],
+				cast,
+			),
+		).toEqual([]);
 	});
 });

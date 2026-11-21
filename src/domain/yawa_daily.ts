@@ -87,12 +87,6 @@ const RuntimeSchema = z
 			fps: z.number().positive(),
 			audio_bitrate: z.string().min(1),
 		}),
-		jizura: z.object({
-			html: z.string().min(1),
-			version_file: z.string().min(1),
-			chrome: z.string().min(1),
-			export_timeout_ms: z.number().int().positive(),
-		}),
 		thumbnail: z.object({
 			file: z.string().min(1),
 			width: z.number().int().positive(),
@@ -133,9 +127,6 @@ const ProductionSchema = z
 	.object({
 		tts_backend: z.string().min(1),
 		image_tool: z.string().min(1).optional(),
-		jizura_theme: z
-			.enum(["lyricpv", "kinetic", "wa", "horror", "pop", "ballad"])
-			.optional(),
 		mix: z
 			.object({
 				target_lufs: z.number().finite(),
@@ -418,6 +409,45 @@ export function yawaAudit(
 
 export function buildTitle(draft: Pick<ScriptMeta, "title">): string {
 	return draft.title;
+}
+
+const META_TITLE_PATTERN =
+	/\b(title\s+review|review\s+completed|draft\s+title|untitled|placeholder)\b/i;
+
+export function validateYawaTitleIntegrity(
+	title: string,
+	activeCastIds: string[],
+	cast: YawaCast,
+): string[] {
+	const trimmed = title.trim();
+	const errors: string[] = [];
+	if (!trimmed) {
+		return ["title is empty"];
+	}
+	if (META_TITLE_PATTERN.test(trimmed)) {
+		errors.push(`title looks like model meta-commentary: "${trimmed}"`);
+	}
+	if (!/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(trimmed)) {
+		errors.push(`title must contain Japanese characters: "${trimmed}"`);
+	}
+	const activeSet = new Set(activeCastIds);
+	for (const char of cast.characters) {
+		if (activeSet.has(char.id)) continue;
+		const tokens = char.name
+			.split(/\s+/)
+			.map((t) => t.trim())
+			.filter((t) => t.length >= 2);
+		const fullNoSpace = char.name.replace(/\s+/g, "");
+		const mentioned = [fullNoSpace, ...tokens].find((tok) =>
+			trimmed.includes(tok),
+		);
+		if (mentioned) {
+			errors.push(
+				`title mentions cast "${char.name}" (${mentioned}) who is not in active voices [${[...activeSet].join(", ")}]`,
+			);
+		}
+	}
+	return errors;
 }
 
 export function buildDescription(

@@ -8,7 +8,6 @@ tts:
 image_tools:
   codex-imagegen: {command: codex-imagegen, size: 1536x1024, sizes: [1024x1024, 1536x1024, 1024x1536, 1280x640, 3840x2160]}
 video: {file: video.mp4, width: 1920, height: 1080, fps: 24, audio_bitrate: 192k}
-jizura: {html: vendor/jizura/index.html, version_file: vendor/jizura/VERSION, chrome: /usr/bin/google-chrome, export_timeout_ms: 1500000}
 thumbnail: {file: thumbnail.jpg, width: 1280, height: 720, quality: 3}
 metadata: {ai_disclosure: この作品の台本・音声・画像はAIで生成しています。, rights_declaration: 台本・音声・画像は本作品用に生成しています。}
 audit: {duration_tolerance_seconds: 1.5, model: gpt-6.1-terra}

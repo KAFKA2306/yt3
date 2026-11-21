@@ -24,7 +24,6 @@ import {
 	getAnalyticsProfileForBucket,
 } from "../domain/youtube_profiles.js";
 
-const ROOT = process.cwd();
 const DB_FILE = "db/evolution.db";
 const METRICS = [
 	"views",
@@ -170,11 +169,25 @@ export function discoverVideos(baseDir = process.cwd()): PublishedVideo[] {
 	return videos;
 }
 
-async function verifyAuthorizationAndVideo(
+export function chunkArray<T>(items: T[], size: number): T[][] {
+	const chunks: T[][] = [];
+	for (let i = 0; i < items.length; i += size) {
+		chunks.push(items.slice(i, i + size));
+	}
+	return chunks;
+}
+
+export function isYouTubeQuotaExceededError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error ?? "");
+	return /quotaExceeded|exceeded your .*quota|dailyLimitExceeded/i.test(
+		message,
+	);
+}
+
+async function verifyChannelOnce(
 	auth: InstanceType<typeof google.auth.OAuth2>,
 	expectedChannelId: string,
-	videoId: string,
-): Promise<{ exists: boolean; durationSeconds: number | null }> {
+): Promise<void> {
 	const youtube = google.youtube({ version: "v3", auth });
 	const channels = await youtube.channels.list({
 		mine: true,
@@ -187,17 +200,36 @@ async function verifyAuthorizationAndVideo(
 			`Analytics authorization channel mismatch: expected ${expectedChannelId}, got ${actualChannelId || "missing"}`,
 		);
 	}
-	const videos = await youtube.videos.list({
-		part: ["id", "status", "contentDetails"],
-		id: [videoId],
-	});
-	const video = videos.data.items?.[0];
-	return {
-		exists: Boolean(video),
-		durationSeconds: parseYouTubeDurationSeconds(
-			video?.contentDetails?.duration,
-		),
-	};
+}
+
+async function fetchVideoMetadataBatch(
+	auth: InstanceType<typeof google.auth.OAuth2>,
+	videoIds: string[],
+): Promise<Map<string, { exists: boolean; durationSeconds: number | null }>> {
+	const youtube = google.youtube({ version: "v3", auth });
+	const out = new Map<
+		string,
+		{ exists: boolean; durationSeconds: number | null }
+	>();
+	for (const id of videoIds) {
+		out.set(id, { exists: false, durationSeconds: null });
+	}
+	for (const batch of chunkArray(videoIds, 50)) {
+		const res = await youtube.videos.list({
+			part: ["id", "status", "contentDetails"],
+			id: batch,
+		});
+		for (const item of res.data.items ?? []) {
+			if (!item.id) continue;
+			out.set(item.id, {
+				exists: true,
+				durationSeconds: parseYouTubeDurationSeconds(
+					item.contentDetails?.duration,
+				),
+			});
+		}
+	}
+	return out;
 }
 
 async function fetchAnalytics(
@@ -507,83 +539,133 @@ async function main() {
 		Awaited<ReturnType<typeof createYouTubeOAuthClient>>
 	>();
 	let failures = 0;
+	let quotaDeferred = 0;
 	let fetchedWindows = 0;
 	let cachedWindowsSkipped = 0;
 	try {
+		type PendingItem = {
+			video: PublishedVideo;
+			pendingWindows: ReturnType<typeof eligibleWindows>;
+			profile: NonNullable<ReturnType<typeof getAnalyticsProfileForBucket>>;
+		};
+		const byProfile = new Map<string, PendingItem[]>();
+
 		for (const video of videos) {
 			const windows = eligibleWindows(video.publishedAt);
 			if (windows.length === 0) continue;
-			if (video.bucket === "daily_pulse") {
-				continue;
-			}
+			if (video.bucket === "daily_pulse") continue;
 			const pendingWindows = force
 				? windows
 				: windows.filter((w) => !hasCachedWindow.get(video.videoId, w.name));
 			cachedWindowsSkipped += windows.length - pendingWindows.length;
 			if (pendingWindows.length === 0) continue;
+			const profile = getAnalyticsProfileForBucket(video.bucket);
+			if (profile === null) {
+				console.info(
+					`[SKIP_UNCONFIGURED] ${video.runId}: ${video.bucket} has no authorized YouTube Analytics profile`,
+				);
+				continue;
+			}
+			const list = byProfile.get(profile.profileName) ?? [];
+			list.push({ video, pendingWindows, profile });
+			byProfile.set(profile.profileName, list);
+		}
+
+		for (const [profileName, items] of byProfile.entries()) {
+			const firstProfile = items[0]?.profile;
+			if (!firstProfile) continue;
+			let authEntry = authCache.get(profileName);
+			if (!authEntry) {
+				authEntry = await createYouTubeOAuthClient(profileName);
+				authCache.set(profileName, authEntry);
+			}
+			const { auth } = authEntry;
+
+			let metadataById: Map<
+				string,
+				{ exists: boolean; durationSeconds: number | null }
+			>;
 			try {
-				const profile = getAnalyticsProfileForBucket(video.bucket);
-				if (profile === null) {
-					console.info(
-						`[SKIP_UNCONFIGURED] ${video.runId}: ${video.bucket} has no authorized YouTube Analytics profile`,
-					);
-					continue;
-				}
-				let authEntry = authCache.get(profile.profileName);
-				if (!authEntry) {
-					authEntry = await createYouTubeOAuthClient(profile.profileName);
-					authCache.set(profile.profileName, authEntry);
-				}
-				const { auth } = authEntry;
-				if (video.channelId !== profile.expectedChannelId) {
-					throw new Error(
-						`Receipt channel mismatch for ${video.videoId}: expected ${profile.expectedChannelId}, got ${video.channelId}`,
-					);
-				}
-				const videoMetadata = await verifyAuthorizationAndVideo(
-					auth,
-					profile.expectedChannelId,
-					video.videoId,
-				);
-				if (!videoMetadata.exists) {
-					db.prepare("DELETE FROM youtube_analytics WHERE video_id = ?").run(
-						video.videoId,
-					);
-					fs.removeSync(path.join(video.runDir, "analytics"));
-					console.warn(
-						`Deleted stale analytics because video no longer exists: ${video.videoId}`,
-					);
-					continue;
-				}
-				for (const window of pendingWindows) {
-					const result = await fetchAnalytics(
-						auth,
-						profile.expectedChannelId,
-						video.videoId,
-						video.runId,
-						window,
-						video.runDir,
-						videoMetadata.durationSeconds,
-					);
-					saveAnalyticsRecord(db, result);
-					saveTrafficSourceSnapshot(db, result.trafficSourceSnapshot);
-					fetchedWindows += 1;
-					console.log(
-						`[SUCCESS] ${video.videoId} ${window.name}: ${result.views} views, ${result.engaged_views} engaged views, ${result.trafficSourceSnapshot.rows.length} traffic sources`,
-					);
-				}
+				await verifyChannelOnce(auth, firstProfile.expectedChannelId);
+				const uniqueIds = [...new Set(items.map((i) => i.video.videoId))];
+				metadataById = await fetchVideoMetadataBatch(auth, uniqueIds);
 			} catch (error) {
-				failures += 1;
+				if (isYouTubeQuotaExceededError(error)) {
+					quotaDeferred += items.length;
+					console.warn(
+						`[QUOTA_DEFERRED] profile=${profileName} deferred_videos=${items.length} reason=${(error as Error).message}`,
+					);
+					continue;
+				}
+				failures += items.length;
 				console.error(
-					`[FAIL_CLOSED] ${video.videoId} (bucket=${video.bucket}): ${(error as Error).message}`,
+					`[FAIL_CLOSED] profile=${profileName}: ${(error as Error).message}`,
 				);
+				continue;
+			}
+
+			for (let idx = 0; idx < items.length; idx++) {
+				const item = items[idx];
+				if (!item) continue;
+				const { video, pendingWindows, profile } = item;
+				try {
+					if (video.channelId !== profile.expectedChannelId) {
+						throw new Error(
+							`Receipt channel mismatch for ${video.videoId}: expected ${profile.expectedChannelId}, got ${video.channelId}`,
+						);
+					}
+					const videoMetadata = metadataById.get(video.videoId) ?? {
+						exists: false,
+						durationSeconds: null,
+					};
+					if (!videoMetadata.exists) {
+						db.prepare("DELETE FROM youtube_analytics WHERE video_id = ?").run(
+							video.videoId,
+						);
+						fs.removeSync(path.join(video.runDir, "analytics"));
+						console.warn(
+							`Deleted stale analytics because video no longer exists: ${video.videoId}`,
+						);
+						continue;
+					}
+					for (const window of pendingWindows) {
+						const result = await fetchAnalytics(
+							auth,
+							profile.expectedChannelId,
+							video.videoId,
+							video.runId,
+							window,
+							video.runDir,
+							videoMetadata.durationSeconds,
+						);
+						saveAnalyticsRecord(db, result);
+						saveTrafficSourceSnapshot(db, result.trafficSourceSnapshot);
+						fetchedWindows += 1;
+						console.log(
+							`[SUCCESS] ${video.videoId} ${window.name}: ${result.views} views, ${result.engaged_views} engaged views, ${result.trafficSourceSnapshot.rows.length} traffic sources`,
+						);
+					}
+				} catch (error) {
+					if (isYouTubeQuotaExceededError(error)) {
+						const remaining = items.length - idx;
+						quotaDeferred += remaining;
+						console.warn(
+							`[QUOTA_DEFERRED] profile=${profileName} stopped early with ${remaining} video(s) remaining`,
+						);
+						break;
+					}
+					failures += 1;
+					console.error(
+						`[FAIL_CLOSED] ${video.videoId} (bucket=${video.bucket}): ${(error as Error).message}`,
+					);
+				}
 			}
 		}
 	} finally {
 		db.close();
 	}
 	console.log(
-		`=== YouTube Analytics summary: fetched=${fetchedWindows} cached_skipped=${cachedWindowsSkipped} failures=${failures} ===`,
+		`=== YouTube Analytics summary: fetched=${fetchedWindows} cached_skipped=${cachedWindowsSkipped} quota_deferred=${quotaDeferred} failures=${failures} ===`,
 	);
 	if (failures > 0) {
 		throw new Error(
