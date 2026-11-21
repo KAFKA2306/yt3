@@ -371,6 +371,8 @@ def main() -> None:
             "-b:a",
             "192k",
             "-shortest",
+            "-t",
+            f"{audio_duration:.3f}",
             "-movflags",
             "+faststart",
             str(output_path),
