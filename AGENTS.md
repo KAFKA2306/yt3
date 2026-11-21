@@ -8,7 +8,7 @@
 - `yawa`: 夜話アーカイブ ASMR
 - `humanity`: 雨晴はうの人類観測所
 
-`humanity` has `docs/humanity/MISSION.md` (narrative music label direction), `docs/humanity/SOUL.md` (character), and `docs/humanity/story-world.json`; `byosan` has `docs/byosan/MISSION.md` (2-lane financial/tech structure analysis); `yawa` has `docs/yawa/MISSION.md` (all-ages fixed-cast situation-voice theater) and `docs/yawa/characters.json`. All three products prioritize YouTube audience growth, advertiser-friendly monetization (YPP), and avoiding mass-produced/inauthentic repetition.
+`humanity` has `docs/humanity/MISSION.md` (original music channel direction) and `docs/humanity/SOUL.md` (character); `byosan` has `docs/byosan/MISSION.md` (2-lane financial/tech structure analysis); `yawa` has `docs/yawa/MISSION.md` (all-ages fixed-cast situation-voice theater) and `docs/yawa/characters.json`. All three products prioritize YouTube audience growth, advertiser-friendly monetization (YPP), and avoiding mass-produced/inauthentic repetition.
 
 Keep each product's config, media, credentials, receipts, and publication state separate. Work on one product must not change another product's files, configuration, timers, or GPU assumptions.
 
@@ -51,7 +51,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 
 Yawa, Humanity, and Byosan create new work through the shared model router in `src/io/creative.ts`. Its defaults are configured in `config/creative_authoring.yaml`: bounded title proposals and reviews use `codex exec` with GPT-6 Luna at low reasoning effort; full story, script, song, and feature drafts use AGY Gemini 4 Hydrogen at medium effort. For a deliberate one-run override, set `YT3_CREATIVE_TITLE_ROUTE=codex:<model>:<effort>` / `YT3_CREATIVE_DRAFT_ROUTE=codex:<model>:<effort>`, or use `agy:<model>`; the selected provider and model are recorded with each run. Neon is an optional model choice, not a production requirement. The router fails explicitly when the selected route is unavailable and does not silently retry through a different provider or API billing path. Before drafting, the title route reviews a proposed title without the completed text; after drafting, it compares that critique with the work and keeps or changes the title. Each product keeps its own brief and output format. Research, audio/image generation, JIZURA, editing, and the canonical publication entries remain product-owned.
 
-Humanity grows one shared story world from `docs/humanity/story-world.json`; songs keep a clear standalone concept while developing its relationships. Let listeners feel a specific emotional change through the characters' choices, silences, and concrete details, while varying how each song reaches that feeling. Its JIZURA lyric video uses a route-selected built-in theme and keeps the rendered project beside the video.
+Humanity creates standalone original songs without a fixed fictional town/story-world canon; each song chooses its own genre, mood, vocal color, and concrete details to move the listener. Its JIZURA lyric video uses a route-selected built-in theme and keeps the rendered project beside the video.
 
 ## Byosan prompt and constraint policy
 

@@ -126,26 +126,6 @@ export function extractHumanityBaseTitle(rawTitle: string): string {
 		.trim();
 }
 
-function loadStoryWorldKeywords(repoRoot: string): string[] {
-	const file = path.join(repoRoot, "docs", "humanity", "story-world.json");
-	const data = readJsonSafe(file);
-	const keywords = new Set<string>(["晴れ待ち坂", "人類観測所", "測候所"]);
-	if (data && Array.isArray(data.characters)) {
-		for (const item of data.characters) {
-			if (typeof item === "object" && item !== null && "name" in item) {
-				const name = String((item as { name: unknown }).name).trim();
-				if (name) {
-					keywords.add(name);
-					for (const part of name.split(/\s+/)) {
-						if (part.length >= 2) keywords.add(part);
-					}
-				}
-			}
-		}
-	}
-	return [...keywords];
-}
-
 function findThumbnailInfo(
 	runDir: string,
 	candidates: string[],
@@ -610,11 +590,8 @@ export function evaluateYawaCrossRun(
 
 export function evaluateHumanityRun(
 	runDir: string,
-	options?: { storyWorldKeywords?: string[]; repoRoot?: string },
+	_options?: { repoRoot?: string },
 ): RunBenchmarkResult {
-	const repoRoot = options?.repoRoot ?? process.cwd();
-	const storyKeywords =
-		options?.storyWorldKeywords ?? loadStoryWorldKeywords(repoRoot);
 	const runName = path.basename(runDir);
 	const runId = `humanity_observatory/${runName}`;
 	const checks: BenchmarkCheck[] = [];
@@ -706,19 +683,15 @@ export function evaluateHumanityRun(
 
 	const description =
 		typeof metadata?.description === "string" ? metadata.description : "";
-	const matchedStoryTerms = storyKeywords.filter((kw) =>
-		description.includes(kw),
-	);
-	const storyOk =
-		description.trim().length >= 40 && matchedStoryTerms.length > 0;
+	const descriptionOk = description.trim().length >= 40;
 	checks.push({
-		id: "story_world_reference",
+		id: "description_context_present",
 		layer: "L1_DETERMINISTIC",
-		status: storyOk ? "PASS" : "WARN",
+		status: descriptionOk ? "PASS" : "WARN",
 		severity: "warning",
-		message: storyOk
-			? `Story-world context present (${matchedStoryTerms.slice(0, 4).join(", ")})`
-			: "Description lacks story-world setting or character references",
+		message: descriptionOk
+			? `Description context present (${description.trim().length} chars)`
+			: "Description is too short (< 40 chars)",
 	});
 
 	if (publishState) {
@@ -756,7 +729,7 @@ export function evaluateHumanityRun(
 			base_title: baseTitle || null,
 			base_title_chars: baseTitleChars,
 			thumbnail_bytes: thumb.sizeBytes,
-			story_world_terms_matched: matchedStoryTerms.length,
+			description_chars: description.trim().length,
 			published: publishState?.phase === "VERIFIED",
 		},
 	};
@@ -893,9 +866,9 @@ export const CHANNEL_JUDGE_RUBRICS: Record<
 				"曲名が3〜15文字前後で口ずさみやすく、あらすじ説明にならず、歌詞の核と響き合っているか。",
 		},
 		{
-			id: "story_world_cohesion",
+			id: "standalone_concept_and_mood",
 			question:
-				"「晴れ待ち坂」の舞台・人物関係と矛盾せず、概要欄で世界観や背景が自然に補足されているか。",
+				"曲単体のコンセプト・歌詞・サウンド・概要欄が一貫しており、聴き手の感情や用途（作業・覚醒・浸りなど）にまっすぐ届いているか。",
 		},
 	],
 };

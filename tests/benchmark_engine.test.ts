@@ -168,7 +168,7 @@ describe("Yawa deterministic benchmark (positive + counterexamples)", () => {
 });
 
 describe("Humanity deterministic benchmark (positive + counterexamples)", () => {
-	it("passes a short-titled story-world song with jacket and synthetic disclosure", () => {
+	it("passes a short-titled original song with jacket and synthetic disclosure", () => {
 		const dir = path.join(tmpRoot, "music-2026-11-20-pass");
 		makeThumb(path.join(dir, "thumbnail.jpg"));
 		fs.outputJsonSync(path.join(dir, "audit", "result.json"), {
@@ -181,9 +181,9 @@ describe("Humanity deterministic benchmark (positive + counterexamples)", () => 
 			contains_synthetic_media: true,
 			thumbnail_path: path.join(dir, "thumbnail.jpg"),
 			metadata: {
-				title: "外れたチェーン | 人類観測所の音楽",
+				title: "外れたチェーン | 雨晴はうの人類観測所",
 				description:
-					"晴れ待ち坂の中腹にある人類観測所で、雨晴はうが見届けた佐伯蓮と日向湊の自転車修理の午後を描いたオリジナル楽曲です。",
+					"雨晴はうの人類観測所が制作した、疾走感あふれるオリジナル楽曲とリリックビデオです。作業やドライブの気分を上げる一曲。",
 			},
 		});
 		fs.outputJsonSync(path.join(dir, "publish", "state.json"), {

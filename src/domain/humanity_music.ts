@@ -4,32 +4,6 @@ import * as yaml from "js-yaml";
 import { z } from "zod";
 import type { AuditCheck } from "./types.js";
 
-export const HumanityStoryWorldSchema = z.object({
-	series_title: z.string().min(1),
-	premise: z.string().min(1),
-	setting: z.string().min(1),
-	characters: z
-		.array(
-			z.object({
-				id: z.string().min(1),
-				name: z.string().min(1),
-				identity: z.string().min(1),
-			}),
-		)
-		.min(2),
-	relationships: z
-		.array(
-			z.object({
-				people: z.array(z.string().min(1)).min(2),
-				connection: z.string().min(1),
-				open_question: z.string().min(1),
-			}),
-		)
-		.min(1),
-	continuity: z.string().min(1),
-});
-export type HumanityStoryWorld = z.infer<typeof HumanityStoryWorldSchema>;
-
 export const HumanityJizuraPlanSchema = z.object({
 	theme_id: z.enum(["lyricpv", "kinetic", "wa", "horror", "pop", "ballad"]),
 	unify: z.boolean(),

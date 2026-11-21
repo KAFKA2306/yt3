@@ -16,7 +16,6 @@ import {
 	generations,
 	HumanityJizuraPlanRecordSchema,
 	HumanityJizuraPlanSchema,
-	HumanityStoryWorldSchema,
 	type LedgerRow,
 	loadMusicConfig,
 	musicAudit,
@@ -41,7 +40,6 @@ import {
 
 const config = loadMusicConfig(ROOT);
 const outputDir = path.join(ROOT, config.output_dir);
-const worldPath = path.join(ROOT, "docs/humanity/story-world.json");
 const ledgerPath = path.join(outputDir, "ledger.jsonl");
 const DraftSchema = z.object({
 	title: z.string().min(1),
@@ -62,34 +60,6 @@ type PreviousStory = {
 	story: string;
 	relationship: string;
 };
-
-function ensureStoryWorld(): {
-	world: z.infer<typeof HumanityStoryWorldSchema>;
-	generation: { receipt: CreativeReceipt } | null;
-} {
-	if (fs.existsSync(worldPath)) {
-		return {
-			world: HumanityStoryWorldSchema.parse(fs.readJsonSync(worldPath)),
-			generation: null,
-		};
-	}
-	const generation = invokeCreativeStructured({
-		name: "humanity_story_world",
-		kind: "draft",
-		schema: HumanityStoryWorldSchema,
-		prompt: [
-			"雨晴はうの人類観測所のため、今後の複数曲が共有できる、独自の物語世界と人間関係の基盤を設計してください。",
-			"指定された構造化出力スキーマの全項目を満たすJSONオブジェクトだけを返してください。",
-			"聴き手が人物と関係をすぐ理解できる明快さ、歌ごとのコンセプトと出来事のつながりを大切にします。HoneyWorksに感じる人物関係の分かりやすさや物語性は好みの方向として参考にしますが、歌詞、人物、筋書き、固有表現、音楽、見せ方を模倣しません。",
-			"人間への温かな関心を保ち、複数の人物と関係が自然につながり、恋愛だけに限らず多様な曲を生める世界にしてください。各曲は初めて聴いても単独で楽しめ、後の曲で関係が少しずつ深まる余地を残します。",
-			"共有世界は曲の発想を助ける背景であり、毎曲に同じ天気、出来事の大きさ、視点、構成、季節進行、小道具を要求しません。細かな設定を増やし過ぎず、世界の核、場所、人物の個性、関係の接点、変化の余白を短く具体的に決めます。既存曲を下敷きにしません。",
-		].join("\n"),
-	});
-	const world = HumanityStoryWorldSchema.parse(generation.value);
-	fs.ensureDirSync(path.dirname(worldPath));
-	fs.writeJsonSync(worldPath, world, { spaces: 2 });
-	return { world, generation };
-}
 
 function previousStories(): PreviousStory[] {
 	if (!fs.existsSync(outputDir)) return [];
@@ -236,18 +206,15 @@ function preflight(): void {
 
 async function generate(brief?: string): Promise<GenerationRow> {
 	preflight();
-	const worldRecord = ensureStoryWorld();
-	const worldHash = sha256File(worldPath);
 	const previous = previousStories();
 	const context = {
 		brief: brief ?? null,
 		mission:
-			"「晴れ待ち坂」に生きる人々の不器用な本音を、雨晴はうが観測し一曲の物語として残すAI音楽レーベル。雨晴はうはレーベルの記録係・キュレーターであり、各曲は主人公・視点に合うボーカルと音作りで届ける。初聴きで単体でも刺さり、続けて聴くほど人物関係が深まる一曲を作る。",
+			"雨晴はうの人類観測所が制作するオリジナルAI音楽チャンネル。固定の舞台設定に縛られず、曲ごとのコンセプト・用途（作業・家事・ドライブ・夜更けなど）と感情に最も合うボーカル・ジャンル・音作りで、初聴きで単体でも刺さる一曲を作る。",
 		preferences:
-			"HoneyWorksに感じる人物関係の明快さとストーリー性、DECO*27に感じる世界観と言葉の結び付き、IMOJISTの曲調と音作り。いずれも固有表現を借りず、晴れ待ち坂オリジナルの音楽として表現する。",
+			"口ずさみやすいサビのフック、聴き手のテンションや感情を明確に動かす音作り。既存作品の歌詞・旋律・固有表現は一切借りず、完全オリジナルとして表現する。",
 		history_use:
-			"previous_storiesは過去作品であり、重複を避けるための参考です。現在のworldが正本です。過去作品と同じ題材・小道具・感情の流れを反復せず、大きな関係性の結末を一曲で急いで消費し尽くさないでください。",
-		world: worldRecord.world,
+			"previous_storiesは過去作品であり、重複を避けるための参考です。過去作品と同じ題材・小道具・感情の流れを反復しないでください。",
 		previous_stories: previous,
 	};
 	const titleRules =
@@ -277,11 +244,11 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		kind: "draft",
 		schema: DraftSchema,
 		prompt: [
-			"あなたは「雨晴はうの人類観測所（晴れ待ち坂）」の作詞家・作曲家です。今回の歌が伝えるコンセプト、人物の関係、出来事、感情の変化をひとつの体験として作り、歌詞と音楽とジャケット情景を一緒に設計してください。",
-			"雨晴はうは全曲を単一の声で歌う歌手ではなくレーベルの観測者・記録係です。今回の主人公・視点・感情に合うボーカル、テンポ、編曲、音色を自由に設計します。共有世界と過去の曲を踏まえ、初めて聴く人にも誰が何を望み何が変わったかが伝わる一曲にしてください。",
-			"聴き手の感情を動かすことを大切にします。気持ちを名指しするだけでなく、人物が隠す本音、具体的な選択や沈黙、何気ない物や習慣の意味が変わる瞬間を通して、誰が何を大切にし、何がその人に懸かっているかを伝えてください。悲劇や泣かせの決め台詞に頼らず、感情の起伏と結末は今回の曲の核から選び、毎回同じ展開にしないでください。",
-			"HoneyWorksに感じる人物関係の明快さとストーリー性、DECO*27に感じる世界観と言葉の結び付き、IMOJISTの曲調と音作りを好みの参考にします。既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは一切借りません。",
-			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の出来事と感情の変化、relationshipは共有世界との接点、featured_charactersは登場人物名の配列（例: ['日向 湊', '白石 ことは']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（晴れ待ち坂の情景と登場人物の空気を統一感のあるアニメ水彩調で描く・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を物語に沿って見せる計画にします。",
+			"あなたは「雨晴はうの人類観測所」の作詞家・作曲家です。今回の歌が伝えるコンセプト、感情の動き、聴き手の体験をひとつにまとめ、歌詞と音楽とジャケット情景を一緒に設計してください。",
+			"雨晴はうは全曲を単一の声で歌う歌手ではなくチャンネルのキュレーターです。今回の曲のテーマ・用途・感情に合うボーカル、テンポ、編曲、音色を自由に設計します。特定の架空の町や固定の登場人物設定に縛られず、初めて聴く人にも一曲単体で強く刺さる作品にしてください。",
+			"聴き手の感情やテンションを明確に動かすことを大切にします。具体的な場面やリズム感のある言葉選びで、口ずさみたくなるサビを作ってください。",
+			"既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは一切借りません。",
+			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を曲のビートに沿って見せる計画にします。",
 			`選んだタイトル: ${titleProposal.value.title}`,
 			`タイトルだけの批評: ${JSON.stringify(titleReview.value)}`,
 			"このタイトルの約束に沿う曲を作り、titleには選んだタイトルをそのまま入れてください。",
@@ -322,20 +289,11 @@ async function generate(brief?: string): Promise<GenerationRow> {
 	fs.writeJsonSync(jizuraPlanPath, jizuraPlan, { spaces: 2 });
 	fs.writeJsonSync(path.join(runDir, "creative_authoring.json"), {
 		model_routes: {
-			world_bible: worldRecord.generation?.receipt ?? null,
 			title_proposal: titleProposal.receipt,
 			title_review: titleReview.receipt,
 			draft: authored.receipt,
 			title_fit: titleFit.receipt,
 		},
-		world_bible: worldRecord.world,
-		world_bible_sha256: worldHash,
-		world_bible_generation: worldRecord.generation
-			? {
-					usage: worldRecord.generation.receipt.usage,
-					conversation_id: worldRecord.generation.receipt.conversation_id,
-				}
-			: null,
 		previous_stories: previous,
 		concept: draft.concept,
 		story: draft.story,
