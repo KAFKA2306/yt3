@@ -56,6 +56,11 @@ tasks:
     cmds:
       - bun src/scripts/measure_bpm.ts {{.CLI_ARGS}}
 
+  humanity:playlists:sync:
+    desc: "Classify all verified public Humanity music videos by 0-token BPM + metadata and sync to YouTube use-case playlists (--apply to write)"
+    cmds:
+      - bun src/scripts/humanity_backfill_playlists.ts {{.CLI_ARGS}}
+
   humanity:music-binaural-prepare:
     desc: "Create a headphone binaural derivative of an existing Humanity song (SOURCE=<generation-id>, DATE=YYYY-MM-DD, SLOT=<alnum>)"
     cmds:
