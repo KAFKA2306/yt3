@@ -16,6 +16,7 @@ import {
 	generations,
 	HumanityJizuraPlanRecordSchema,
 	HumanityJizuraPlanSchema,
+	HumanityUseCaseIdSchema,
 	type LedgerRow,
 	loadMusicConfig,
 	musicAudit,
@@ -43,6 +44,7 @@ const outputDir = path.join(ROOT, config.output_dir);
 const ledgerPath = path.join(outputDir, "ledger.jsonl");
 const DraftSchema = z.object({
 	title: z.string().min(1),
+	use_case: HumanityUseCaseIdSchema,
 	concept: z.string().min(1),
 	story: z.string().min(1),
 	relationship: z.string().min(1),
@@ -215,6 +217,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			"口ずさみやすいサビのフック、聴き手のテンションや感情を明確に動かす音作り。既存作品の歌詞・旋律・固有表現は一切借りず、完全オリジナルとして表現する。",
 		history_use:
 			"previous_storiesは過去作品であり、重複を避けるための参考です。毎日新しいコンセプトで届けるため、直近の過去作品とはジャンル・テンポ・用途（家事/作業/ドライブ/夜更け/感情など）・モチーフを明確に変え、同じ題材・小道具・感情の流れを反復しないでください。",
+		use_case_playlists: config.use_case_playlists,
 		previous_stories: previous,
 	};
 	const titleRules =
@@ -248,7 +251,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			"雨晴はうは全曲を単一の声で歌う歌手ではなくチャンネルのキュレーターです。今回の曲のテーマ・用途・感情に合うボーカル、テンポ、編曲、音色を自由に設計します。特定の架空の町や固定の登場人物設定に縛られず、初めて聴く人にも一曲単体で強く刺さる作品にしてください。",
 			"聴き手の感情やテンションを明確に動かすことを大切にします。具体的な場面やリズム感のある言葉選びで、口ずさみたくなるサビを作ってください。",
 			"既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは一切借りません。",
-			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を曲のビートに沿って見せる計画にします。",
+			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、use_caseは4象限MECE用途（q1_action_boost / q2_focus_boost / q3_daily_flow / q4_night_reset）から最も合う1つ、conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を曲のビートに沿って見せる計画にします。",
 			`選んだタイトル: ${titleProposal.value.title}`,
 			`タイトルだけの批評: ${JSON.stringify(titleReview.value)}`,
 			"このタイトルの約束に沿う曲を作り、titleには選んだタイトルをそのまま入れてください。",
@@ -295,6 +298,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			title_fit: titleFit.receipt,
 		},
 		previous_stories: previous,
+		use_case: draft.use_case,
 		concept: draft.concept,
 		story: draft.story,
 		relationship: draft.relationship,
@@ -967,6 +971,58 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 		);
 	if (!(await listItems()).includes(videoId))
 		throw new Error(`playlist read-back does not contain ${videoId}`);
+	let useCasePlaylistUrl: string | null = null;
+	const creativePath = path.join(outputDir, song.id, "creative_authoring.json");
+	if (fs.existsSync(creativePath)) {
+		const parsedUseCase = HumanityUseCaseIdSchema.safeParse(
+			(fs.readJsonSync(creativePath) as { use_case?: unknown }).use_case,
+		);
+		if (parsedUseCase.success) {
+			const ucId = parsedUseCase.data;
+			const ucMeta = config.use_case_playlists[ucId];
+			const ucStatePath = path.join(
+				ROOT,
+				"data",
+				"state",
+				"humanity",
+				"use_case_playlists.json",
+			);
+			const ucState: Record<string, string> = fs.existsSync(ucStatePath)
+				? (fs.readJsonSync(ucStatePath) as Record<string, string>)
+				: {};
+			let ucPlaylistId = ucState[ucId];
+			if (!ucPlaylistId) {
+				const created = await youtube.playlists.insert({
+					part: ["snippet", "status"],
+					requestBody: {
+						snippet: {
+							title: ucMeta.title,
+							description: ucMeta.description,
+						},
+						status: { privacyStatus: config.youtube_playlist.privacy },
+					},
+				});
+				if (created.data.id) {
+					ucPlaylistId = created.data.id;
+					ucState[ucId] = ucPlaylistId;
+					fs.ensureDirSync(path.dirname(ucStatePath));
+					fs.writeJsonSync(ucStatePath, ucState, { spaces: 2 });
+				}
+			}
+			if (ucPlaylistId) {
+				await youtube.playlistItems.insert({
+					part: ["snippet"],
+					requestBody: {
+						snippet: {
+							playlistId: ucPlaylistId,
+							resourceId: { kind: "youtube#video", videoId },
+						},
+					},
+				});
+				useCasePlaylistUrl = `${YOUTUBE_PLAYLIST_URL}${ucPlaylistId}`;
+			}
+		}
+	}
 	const videoUrl = `${YOUTUBE_WATCH_URL}${videoId}`;
 	if (
 		!readLedger().some(
@@ -982,7 +1038,11 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 			playlist_url: playlistUrl,
 		});
 	console.log(
-		JSON.stringify({ video_url: videoUrl, playlist_url: playlistUrl }),
+		JSON.stringify({
+			video_url: videoUrl,
+			playlist_url: playlistUrl,
+			use_case_playlist_url: useCasePlaylistUrl,
+		}),
 	);
 }
 

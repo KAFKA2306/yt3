@@ -91,5 +91,11 @@ describe("humanity narrative label config", () => {
 		expect(config.metadata.description).toContain("{concept}");
 		expect(config.metadata.description).toContain("{story}");
 		expect(config.metadata.description).toContain("{characters}");
+		expect(Object.keys(config.use_case_playlists).sort()).toEqual([
+			"q1_action_boost",
+			"q2_focus_boost",
+			"q3_daily_flow",
+			"q4_night_reset",
+		]);
 	});
 });

@@ -4,6 +4,14 @@ import * as yaml from "js-yaml";
 import { z } from "zod";
 import type { AuditCheck } from "./types.js";
 
+export const HumanityUseCaseIdSchema = z.enum([
+	"q1_action_boost",
+	"q2_focus_boost",
+	"q3_daily_flow",
+	"q4_night_reset",
+]);
+export type HumanityUseCaseId = z.infer<typeof HumanityUseCaseIdSchema>;
+
 export const HumanityJizuraPlanSchema = z.object({
 	theme_id: z.enum(["lyricpv", "kinetic", "wa", "horror", "pop", "ballad"]),
 	unify: z.boolean(),
@@ -99,6 +107,14 @@ export const ConfigSchema = z.object({
 		ready_attempts: z.number(),
 		ready_interval_ms: z.number(),
 	}),
+	use_case_playlists: z.record(
+		HumanityUseCaseIdSchema,
+		z.object({
+			title: z.string(),
+			description: z.string(),
+			sound_hint: z.string(),
+		}),
+	),
 });
 export type MusicConfig = z.infer<typeof ConfigSchema>;
 

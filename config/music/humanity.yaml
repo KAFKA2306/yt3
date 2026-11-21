@@ -64,3 +64,20 @@ youtube_playlist:
   privacy: public
   ready_attempts: 20
   ready_interval_ms: 6000
+use_case_playlists:
+  q1_action_boost:
+    title: "家事・運動・ドライブ覚醒BGM | 雨晴はうの人類観測所"
+    description: "【行動×上げる】家事・掃除・皿洗い・食後の眠気飛ばし・筋トレ・ドライブを加速するハイテンション覚醒プレイリスト（BPM 140〜175）。"
+    sound_hint: "BPM 140-175, high-energy super eurobeat, heavy-bass EDM, or driving rock with catchy hook"
+  q2_focus_boost:
+    title: "作業・勉強・勝負前の集中ブーストBGM | 雨晴はうの人類観測所"
+    description: "【思考×上げる】PC作業・勉強・コーディング・締切前・朝イチの立ち上げに集中を加速するプレイリスト（BPM 110〜135）。"
+    sound_hint: "BPM 110-135, tight groove synthwave, electro, or crisp rhythmic pop for deep focus"
+  q3_daily_flow:
+    title: "散歩・支度・日常を心地よく流すBGM | 雨晴はうの人類観測所"
+    description: "【行動×整える】朝の支度・散歩・通勤通学・料理・休日の移動を心地よく彩るプレイリスト（BPM 95〜115）。"
+    sound_hint: "BPM 95-115, breezy city pop, acoustic groove, or bright feel-good pop"
+  q4_night_reset:
+    title: "夜更け・休憩・感情リセットBGM | 雨晴はうの人類観測所"
+    description: "【思考/感情×整える】一日の終わり・就寝前・雨の夜・ひとりで浸るクールダウン用プレイリスト（BPM 65〜95）。"
+    sound_hint: "BPM 65-95, piano ballad, ambient pop, or gentle acoustic with spacious warmth"
