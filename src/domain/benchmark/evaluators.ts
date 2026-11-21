@@ -187,6 +187,13 @@ export function evaluateByosanRun(runDir: string): RunBenchmarkResult {
 		});
 	}
 
+	const DIAGNOSTIC_BYOSAN_AUDITS = new Set([
+		"factual_integrity",
+		"authenticity",
+		"feature_audit",
+		"production_audit",
+		"canonical_audit",
+	]);
 	if (auditResult) {
 		const failedKeys = Object.entries(auditResult)
 			.filter(([, val]) => {
@@ -198,13 +205,25 @@ export function evaluateByosanRun(runDir: string): RunBenchmarkResult {
 			})
 			.map(([k]) => k);
 		const authFailed = authenticity !== null && authenticity.status !== "PASS";
-		if (failedKeys.length > 0 || authFailed) {
+		const allFailed = [...failedKeys, ...(authFailed ? ["authenticity"] : [])];
+		const blockingFailed = allFailed.filter(
+			(k) => !DIAGNOSTIC_BYOSAN_AUDITS.has(k),
+		);
+		if (blockingFailed.length > 0) {
 			checks.push({
 				id: "existing_audits_pass",
 				layer: "L1_DETERMINISTIC",
 				status: "FAIL",
 				severity: "critical",
-				message: `Audit failures: ${[...failedKeys, ...(authFailed ? ["authenticity"] : [])].join(", ")}`,
+				message: `Audit failures: ${blockingFailed.join(", ")}`,
+			});
+		} else if (allFailed.length > 0) {
+			checks.push({
+				id: "existing_audits_pass",
+				layer: "L1_DETERMINISTIC",
+				status: "WARN",
+				severity: "warning",
+				message: `Diagnostic audit findings (non-blocking per AGENTS.md): ${allFailed.join(", ")}`,
 			});
 		} else {
 			checks.push({
