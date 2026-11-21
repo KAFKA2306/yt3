@@ -332,11 +332,11 @@ def main() -> None:
             concat_lines.append(f"file '{frame_file}'")
             concat_lines.append(f"duration {audio_duration:.3f}")
         else:
-            # Repeat last frame per ffmpeg concat demuxer requirement
+            # Repeat last frame with enough duration so -t audio_duration clamps cleanly
             last_file = tmp_dir / f"frame_{len(performances) - 1:04d}.png"
-            if audio_duration > total_assigned:
-                concat_lines.append(f"file '{last_file}'")
-                concat_lines.append(f"duration {(audio_duration - total_assigned):.3f}")
+            tail_dur = max(1.0, (audio_duration - total_assigned) + 2.0)
+            concat_lines.append(f"file '{last_file}'")
+            concat_lines.append(f"duration {tail_dur:.3f}")
             concat_lines.append(f"file '{last_file}'")
 
         concat_path = tmp_dir / "concat.txt"
@@ -370,7 +370,6 @@ def main() -> None:
             "aac",
             "-b:a",
             "192k",
-            "-shortest",
             "-t",
             f"{audio_duration:.3f}",
             "-movflags",
