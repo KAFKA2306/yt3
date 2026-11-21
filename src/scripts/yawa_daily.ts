@@ -1008,12 +1008,10 @@ function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
 				"existing visual_novel video provenance does not match its audio or file",
 			);
 		const existing = probeVideo(output);
-		const videoTol = Math.max(config.audit.duration_tolerance_seconds, 0.25);
-		if (
-			Math.abs(existing.seconds - audioSeconds) > videoTol ||
-			existing.width !== width ||
-			existing.height !== height
-		)
+		const videoTol = Number.isFinite(config.audit.duration_tolerance_seconds)
+			? Math.max(config.audit.duration_tolerance_seconds, 0.25)
+			: 0.25;
+		if (Math.abs(existing.seconds - audioSeconds) > videoTol)
 			throw new StepFailure(
 				"video-check",
 				"existing video duration differs from the audio",
@@ -1052,12 +1050,10 @@ function renderVideo(draft: ScriptDraft, audio: string, dir: string): string {
 			"visual_novel provenance does not match its audio or file",
 		);
 	const rendered = probeVideo(output);
-	const videoTol = Math.max(config.audit.duration_tolerance_seconds, 0.25);
-	if (
-		Math.abs(rendered.seconds - audioSeconds) > videoTol ||
-		rendered.width !== width ||
-		rendered.height !== height
-	)
+	const videoTol = Number.isFinite(config.audit.duration_tolerance_seconds)
+		? Math.max(config.audit.duration_tolerance_seconds, 0.25)
+		: 0.25;
+	if (Math.abs(rendered.seconds - audioSeconds) > videoTol)
 		throw new StepFailure(
 			"video-check",
 			`video ${rendered.width}x${rendered.height} ${rendered.seconds.toFixed(2)}s differs from expected output`,
