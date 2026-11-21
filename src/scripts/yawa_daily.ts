@@ -284,6 +284,50 @@ function scriptPrompt(
 	recent: RecentYawaEpisode[],
 ): string {
 	const imageTools = shouldGenerateYawaImages() ? tools.images : [];
+	const seriesId = process.env.YAWA_SERIES?.trim() || "";
+	let seriesPromptBlock = "";
+	if (seriesId) {
+		const seriesPath = path.join(
+			ROOT,
+			"docs",
+			"yawa",
+			"series",
+			`${seriesId}.json`,
+		);
+		if (!fs.existsSync(seriesPath)) {
+			throw new StepFailure("script", `Unknown YAWA_SERIES: ${seriesId}`);
+		}
+		const seriesDoc = fs.readJsonSync(seriesPath) as {
+			title: string;
+			premise: string;
+			total_episodes: number;
+			episodes: Array<{
+				episode: number;
+				title: string;
+				cast: string[];
+				setting: string;
+				summary: string;
+				continuity_hook: string;
+			}>;
+		};
+		const epNum = Number(process.env.YAWA_EPISODE || "1");
+		const ep = seriesDoc.episodes.find((e) => e.episode === epNum);
+		if (!ep) {
+			throw new StepFailure(
+				"script",
+				`Episode ${epNum} not found in series ${seriesId}`,
+			);
+		}
+		seriesPromptBlock = [
+			`【長編連作シリーズ指定】シリーズ名: ${seriesDoc.title}（全${seriesDoc.total_episodes}話中 第${ep.episode}話）`,
+			`シリーズ全体前提: ${seriesDoc.premise}`,
+			`今回の指定タイトル（このまま使うこと）: ${ep.title}`,
+			`今回の担当キャストid（このキャストを主役にする）: ${ep.cast.join(", ")}`,
+			`舞台: ${ep.setting}`,
+			`今回のあらすじ: ${ep.summary}`,
+			`次回への引き・繋がり: ${ep.continuity_hook}`,
+		].join("\n");
+	}
 	return [
 		"あなたは夜話アーカイブの制作AIです。次のYAMLは目的・広告適合・固定キャスト方針です。",
 		JSON.stringify(config.creative),
@@ -292,6 +336,7 @@ function scriptPrompt(
 		"直近の公開・制作履歴（同じキャストや「終電後・深夜に弱音をこぼす」展開の連続を避けること）:",
 		JSON.stringify(recent),
 		"固定キャスト（haruka / shizuku / nao）から主役を1名選び（必要なら2名掛け合いも可）、全年齢・YouTube広告適合（緑アイコン）で何度も聴きたくなる日本語シチュエーションボイスを創作してください。舞台は「夜だけ開く少し不思議な古本喫茶『夜話』がある同じ街」。3人は同じ街で暮らしており、日常の延長に少しだけ幻想的な要素（不思議な古本・街の小さな噂・時を忘れる夜の空気）が混じる、温かく落ち着いた物語にします。登場人物は成人。目標尺は8〜15分程度を目安に、情景・掛け合い・心の動きをしっかり描きます。",
+		seriesPromptBlock,
 		"選んだキャストのidをvoices[].idおよびvoices[].character_idに指定し、voices[].captionにはキャスト正本のvoice_captionを土台にしつつ今回の雰囲気に整えてください。reference_textはキャスト正本のreference_textをそのまま使います。場面ごとの感情の変化はperformances[].actingで自然に付けます。",
 		"句末に長く伸びる吸気・吐息や擦れた息音を加えません。親密さは声色の温度や柔らかさ、声の距離・間・反応で表し、reference_textも息音を誇張しません。息を吹きかける・吸い込む・吐き出す演出、性的興奮を目的とする描写・喘ぎ・過度な密着ロールプレイ、18+系スラングや誤認ワード（添い寝・耳舐め等）は台本・タイトル・説明文・タグに一切書きません。",
 		"使えるツール: " +
