@@ -34,10 +34,7 @@ import {
 	YOUTUBE_PROFILES,
 } from "../domain/youtube_profiles.js";
 import { getCurrentDateString, ROOT } from "../io/core.js";
-import {
-	type CreativeReceipt,
-	invokeCreativeStructured,
-} from "../io/creative.js";
+import { invokeCreativeStructured } from "../io/creative.js";
 
 const config = loadMusicConfig(ROOT);
 const outputDir = path.join(ROOT, config.output_dir);
@@ -251,7 +248,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			"雨晴はうは全曲を単一の声で歌う歌手ではなくチャンネルのキュレーターです。今回の曲のテーマ・用途・感情に合うボーカル、テンポ、編曲、音色を自由に設計します。特定の架空の町や固定の登場人物設定に縛られず、初めて聴く人にも一曲単体で強く刺さる作品にしてください。",
 			"聴き手の感情やテンションを明確に動かすことを大切にします。具体的な場面やリズム感のある言葉選びで、口ずさみたくなるサビを作ってください。",
 			"既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは一切借りません。",
-			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、use_caseは4象限MECE用途（q1_action_boost / q2_focus_boost / q3_daily_flow / q4_night_reset）から最も合う1つ、conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を曲のビートに沿って見せる計画にします。",
+			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、use_caseは4つの用途（q1_action_boost / q2_focus_boost / q3_daily_flow / q4_night_reset）から最も合う1つ、conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を曲のビートに沿って見せる計画にします。",
 			`選んだタイトル: ${titleProposal.value.title}`,
 			`タイトルだけの批評: ${JSON.stringify(titleReview.value)}`,
 			"このタイトルの約束に沿う曲を作り、titleには選んだタイトルをそのまま入れてください。",

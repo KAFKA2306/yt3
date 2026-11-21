@@ -51,6 +51,11 @@ tasks:
       - task publish PROFILE=humanity -- humanity_observatory/music-{{.DATE}}{{if .SLOT}}-{{.SLOT}}{{end}}
       - bun src/scripts/humanity_music.ts youtube-playlist {{.DATE}} {{.SLOT}}
 
+  humanity:bpm:
+    desc: "Measure BPM, 4-on-the-floor regularity, and suggested use-case playlist (0 tokens)"
+    cmds:
+      - bun src/scripts/measure_bpm.ts {{.CLI_ARGS}}
+
   humanity:music-binaural-prepare:
     desc: "Create a headphone binaural derivative of an existing Humanity song (SOURCE=<generation-id>, DATE=YYYY-MM-DD, SLOT=<alnum>)"
     cmds:
