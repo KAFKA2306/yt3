@@ -191,7 +191,7 @@ def main() -> None:
             speaker_kv_scale=None,
             speaker_kv_min_t=None,
             speaker_kv_max_layers=None,
-            speaker_uncond_mode="zero",
+            speaker_uncond_mode="mask",
             seed=None,
             t_schedule_mode="linear",
             sway_coeff=-1.0,

@@ -235,12 +235,22 @@ describe("Yawa fixed cast and thumbnail defaults", () => {
 		).toEqual([]);
 	});
 
-	test("strips stage/narration tags like 【語り】 before TTS synthesis", () => {
+	test("strips stage/narration tags like 【語り】 before TTS synthesis and accepts structured narration kind", () => {
 		expect(
 			sanitizeSpokenText("【語り】街が眠りから覚めるには、まだ少し早い時刻。"),
 		).toBe("街が眠りから覚めるには、まだ少し早い時刻。");
 		expect(
 			sanitizeSpokenText("[SE:雨音] 「またあとで読もう」って思ったんだね。"),
 		).toBe("「またあとで読もう」って思ったんだね。");
+		const narDraft = draft({
+			performances: [
+				{
+					voice_id: "worker",
+					kind: "narration",
+					text: "街が眠りから覚めるには、まだ少し早い時刻。",
+				},
+			],
+		});
+		expect(narDraft.performances?.[0]?.kind).toBe("narration");
 	});
 });

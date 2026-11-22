@@ -368,7 +368,7 @@ function scriptPrompt(
 				images: imageTools,
 				video: ["yawa_visual_novel"],
 			}),
-		"動画は暖色アニメ調ビジュアルノベル（scripts/yawa_visual_novel.py：固定キャスト立ち絵・3表情切替・音声同期字幕）で自動描画されます。各performanceのtextとactingがそのまま字幕と表情切替に使われます。performances[].textには【語り】【ナレーション】【キャラ名】などのト書き・見出しタグを絶対に書かず、キャラクター本人がそのまま話す自然な台詞だけを書いてください。",
+		'動画は暖色アニメ調ビジュアルノベル（scripts/yawa_visual_novel.py：固定キャスト立ち絵・3表情切替・音声同期字幕）で自動描画されます。各performanceのtextとactingが字幕と表情切替に使われ、地の文・ナレーションを入れる行は kind: "narration" を指定します（名前欄は自動で切り替わります）。',
 		imageTools.length > 0
 			? `背景兼サムネイル画像はクリック率と没入感を高める重要要素です。production.image_toolに "${imageTools[0]}" を指定し、選んだキャストのvisual_identityと今回の場面・照明を描く英語のthumbnail_prompt（文字・ロゴなし）を必ず作成してください。対応サイズ: ` +
 				JSON.stringify(
@@ -389,7 +389,7 @@ function scriptPrompt(
 			: []),
 		"titleには採用タイトルをそのまま使い、そのタイトルが予告する場面と人物の魅力を台本で実現してください。",
 		"YouTube技術上限: title 100文字、description 5000 UTF-8 bytes、tags合計500文字。title/descriptionに < > は使えません。",
-		"JSONのみ。title、voices[{id,character_id?,caption,reference_text?}]、production{tts_backend,image_tool?,video?,thumbnail_size?,mix?}を含めます。thumbnail_promptは画像ツール利用時に必須です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。",
+		'JSONのみ。title、voices[{id,character_id?,caption,reference_text?}]、production{tts_backend,image_tool?,video?,thumbnail_size?,mix?}を含めます。thumbnail_promptは画像ツール利用時に必須です。performances/chaptersは任意で単独・併用可。各performanceにはtextとvoice_idが必須です。voice_idは必ずvoices内のidをそのまま指定します。kind("dialogue"|"narration")/acting/pause_after_seconds/duration_scaleとdescription/tagsは任意です。',
 	].join("\n");
 }
 

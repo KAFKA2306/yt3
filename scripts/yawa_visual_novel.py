@@ -362,9 +362,13 @@ def main() -> None:
             default_speaker = cast_names.get(char_id, char_id)
             acting = str(perf.get("acting", ""))
             raw_text = str(perf.get("text", ""))
-            speaker, text, is_narration = parse_speaker_and_text(
+            explicit_narration = str(perf.get("kind", "")).lower() == "narration"
+            speaker, text, tag_narration = parse_speaker_and_text(
                 raw_text, default_speaker, cast_names
             )
+            is_narration = explicit_narration or tag_narration
+            if is_narration:
+                speaker = ""
             expr = "neutral" if is_narration else choose_expression(acting, text)
 
             key = (char_id, expr)

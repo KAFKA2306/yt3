@@ -107,6 +107,7 @@ const RuntimeSchema = z
 const PerformanceSchema = z
 	.object({
 		voice_id: z.string().min(1),
+		kind: z.enum(["dialogue", "narration"]).optional(),
 		text: z.string().min(1),
 		acting: z.string().optional(),
 		duration_scale: z.number().finite().positive().optional(),
