@@ -407,6 +407,14 @@ export function yawaAudit(
 	};
 }
 
+export function sanitizeSpokenText(text: string): string {
+	return text
+		.replace(/【[^】]{1,24}】/g, " ")
+		.replace(/\[[^\]]{1,24}\]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 export function buildTitle(draft: Pick<ScriptMeta, "title">): string {
 	return draft.title;
 }

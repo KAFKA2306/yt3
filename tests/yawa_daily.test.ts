@@ -10,6 +10,7 @@ import {
 	loadYawaConfig,
 	preparationAction,
 	ScriptDraftSchema,
+	sanitizeSpokenText,
 	shouldGenerateYawaImages,
 	validateDraft,
 	validateYawaTitleIntegrity,
@@ -232,5 +233,14 @@ describe("Yawa fixed cast and thumbnail defaults", () => {
 				cast,
 			),
 		).toEqual([]);
+	});
+
+	test("strips stage/narration tags like 【語り】 before TTS synthesis", () => {
+		expect(
+			sanitizeSpokenText("【語り】街が眠りから覚めるには、まだ少し早い時刻。"),
+		).toBe("街が眠りから覚めるには、まだ少し早い時刻。");
+		expect(
+			sanitizeSpokenText("[SE:雨音] 「またあとで読もう」って思ったんだね。"),
+		).toBe("「またあとで読もう」って思ったんだね。");
 	});
 });

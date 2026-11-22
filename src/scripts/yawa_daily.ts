@@ -27,6 +27,7 @@ import {
 	preparationAction,
 	type ScriptDraft,
 	ScriptDraftSchema,
+	sanitizeSpokenText,
 	shouldGenerateYawaImages,
 	type VoiceDesign,
 	validateDraft,
@@ -727,33 +728,6 @@ function voiceMap(draft: ScriptDraft): Map<string, VoiceDesign> {
 	return new Map(draft.voices.map((voice) => [voice.id, voice]));
 }
 
-function callForPerformance(
-	draft: ScriptDraft,
-	performance: Performance,
-	output: string,
-	device: Device,
-	ref?: string,
-): IrodoriCall {
-	const voice = voiceMap(draft).get(performance.voice_id);
-	if (!voice)
-		throw new StepFailure(
-			"voice-resolution",
-			`unknown voice '${performance.voice_id}'`,
-		);
-	const caption = [voice.caption, performance.acting]
-		.filter(Boolean)
-		.join("\n");
-	return irodoriCall(config, {
-		backendId: draft.production.tts_backend,
-		text: performance.text,
-		caption,
-		referenceWav: ref,
-		durationScale: performance.duration_scale,
-		outputWav: output,
-		device,
-	});
-}
-
 function generateReference(
 	draft: ScriptDraft,
 	voice: VoiceDesign,
@@ -812,49 +786,86 @@ function renderAudio(draft: ScriptDraft, dir: string, device: Device): string {
 		);
 	});
 	const performances = flattenPerformances(draft);
+	const backend = config.tts.backends[draft.production.tts_backend];
+	if (!backend) {
+		throw new StepFailure(
+			"tts-batch",
+			`unknown TTS backend '${draft.production.tts_backend}'`,
+		);
+	}
+	const batchItems: Array<{
+		text: string;
+		caption: string;
+		reference_wav?: string;
+		duration_scale?: number;
+		output_wav: string;
+	}> = [];
+	const batchPauses: Array<{ output_wav: string; seconds: number }> = [];
 	const files: string[] = [];
+
 	performances.forEach((performance, index) => {
 		const basename = `performance_${String(index + 1).padStart(5, "0")}.wav`;
 		const output = path.join(ttsDir, basename);
-		const call = callForPerformance(
-			draft,
-			performance,
-			output,
-			device,
-			references.get(performance.voice_id),
-		);
-		writeAudioCall(`tts:${index + 1}`, call, output);
+		const voice = voiceMap(draft).get(performance.voice_id);
+		if (!voice)
+			throw new StepFailure(
+				"voice-resolution",
+				`unknown voice '${performance.voice_id}'`,
+			);
+		const spokenText = sanitizeSpokenText(performance.text);
+		if (!spokenText) {
+			throw new StepFailure(
+				"tts-input-check",
+				`performance ${index + 1} has no spoken text after removing stage tags`,
+			);
+		}
+		const caption = [voice.caption, performance.acting]
+			.filter(Boolean)
+			.join("\n");
+		batchItems.push({
+			text: spokenText,
+			caption,
+			reference_wav: references.get(performance.voice_id),
+			duration_scale: performance.duration_scale,
+			output_wav: output,
+		});
 		files.push(concatEntry(output));
 		if ((performance.pause_after_seconds ?? 0) > 0) {
 			const pause = path.join(
 				ttsDir,
 				`pause_${String(index + 1).padStart(5, "0")}.wav`,
 			);
-			if (!fs.existsSync(pause)) {
-				const temp = `${pause}.${process.pid}.tmp.wav`;
-				try {
-					run(`pause:${index + 1}`, [
-						"ffmpeg",
-						"-y",
-						"-loglevel",
-						"error",
-						"-f",
-						"lavfi",
-						"-i",
-						"anullsrc=r=48000:cl=mono",
-						"-t",
-						String(performance.pause_after_seconds),
-						temp,
-					]);
-					assertPlayable(temp);
-					fs.renameSync(temp, pause);
-				} finally {
-					if (fs.existsSync(temp)) fs.removeSync(temp);
-				}
-			} else assertPlayable(pause);
+			batchPauses.push({
+				output_wav: pause,
+				seconds: performance.pause_after_seconds ?? 0,
+			});
 			files.push(concatEntry(pause));
 		}
 	});
+
+	const manifestPath = path.join(ttsDir, "batch_manifest.json");
+	writeJsonAtomic(manifestPath, {
+		hf_checkpoint: backend.checkpoint,
+		codec_repo: backend.codec,
+		num_steps: backend.steps,
+		device,
+		items: batchItems,
+		pauses: batchPauses,
+	});
+	run(
+		"tts-batch",
+		[
+			"uv",
+			"run",
+			"--frozen",
+			"python",
+			path.join(ROOT, "scripts", "yawa_tts_batch.py"),
+			manifestPath,
+		],
+		{ cwd: backend.dir, env: { HF_HOME: config.tts.hf_home } },
+	);
+	for (const item of batchItems) assertPlayable(item.output_wav);
+	for (const pause of batchPauses) assertPlayable(pause.output_wav);
 	const list = path.join(ttsDir, "concat.txt");
 	writeTextAtomic(list, `${files.join("\n")}\n`);
 	const raw = path.join(ttsDir, "joined.wav");
