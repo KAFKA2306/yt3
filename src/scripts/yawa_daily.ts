@@ -368,7 +368,7 @@ function scriptPrompt(
 				images: imageTools,
 				video: ["yawa_visual_novel"],
 			}),
-		"動画は暖色アニメ調ビジュアルノベル（scripts/yawa_visual_novel.py：固定キャスト立ち絵・3表情切替・音声同期字幕）で自動描画されます。各performanceのtextとactingがそのまま字幕と表情切替に使われます。",
+		"動画は暖色アニメ調ビジュアルノベル（scripts/yawa_visual_novel.py：固定キャスト立ち絵・3表情切替・音声同期字幕）で自動描画されます。各performanceのtextとactingがそのまま字幕と表情切替に使われます。performances[].textには【語り】【ナレーション】【キャラ名】などのト書き・見出しタグを絶対に書かず、キャラクター本人がそのまま話す自然な台詞だけを書いてください。",
 		imageTools.length > 0
 			? `背景兼サムネイル画像はクリック率と没入感を高める重要要素です。production.image_toolに "${imageTools[0]}" を指定し、選んだキャストのvisual_identityと今回の場面・照明を描く英語のthumbnail_prompt（文字・ロゴなし）を必ず作成してください。対応サイズ: ` +
 				JSON.stringify(

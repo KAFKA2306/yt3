@@ -86,30 +86,86 @@ def choose_expression(acting: str, text: str) -> str:
     return "neutral"
 
 
-def wrap_japanese(text: str, font: ImageFont.FreeTypeFont, max_width: int, max_lines: int = 3) -> list[str]:
+KINSOKU_LINE_START = set("、。，．！？…ー」』）】・:;!?.,")
+NARRATION_TAGS = {"語り", "ナレーション", "ナレーター", "モノローグ", "地の文"}
+BRACKET_SPEAKER_RE = re.compile(r"^\s*【([^】]{1,16})】\s*")
+
+
+def parse_speaker_and_text(
+    raw_text: str,
+    default_speaker: str,
+    cast_names: dict[str, str],
+) -> tuple[str, str, bool]:
+    """Resolve display speaker & cleaned text. Strips leading 【語り】 narration tags cleanly."""
+    clean = re.sub(r"\s+", " ", raw_text).strip()
+    m = BRACKET_SPEAKER_RE.match(clean)
+    if not m:
+        return default_speaker, clean, False
+    tag = m.group(1).strip()
+    body = clean[m.end() :].strip()
+    if tag in NARRATION_TAGS:
+        return "", body, True
+    # Match explicit cast name if present
+    tag_no_space = tag.replace(" ", "").replace("\u3000", "")
+    for name in cast_names.values():
+        name_no_space = name.replace(" ", "").replace("\u3000", "")
+        parts = [p for p in name.split() if len(p) >= 2]
+        if tag_no_space == name_no_space or any(tag_no_space == p for p in parts):
+            return name, body, False
+    return tag, body, False
+
+
+def wrap_japanese(
+    text: str,
+    font: ImageFont.FreeTypeFont,
+    max_width: int,
+    max_lines: int = 4,
+) -> tuple[list[str], bool]:
+    """Wrap Japanese text cleanly with line-start kinsoku; returns (lines, truncated)."""
     clean = re.sub(r"\s+", " ", text).strip()
     if not clean:
-        return []
+        return [], False
     lines: list[str] = []
     cur = ""
-    for ch in clean:
+    idx = 0
+    n = len(clean)
+    while idx < n:
+        ch = clean[idx]
         test = cur + ch
         bbox = font.getbbox(test)
-        if bbox[2] - bbox[0] <= max_width:
+        if bbox[2] - bbox[0] <= max_width or not cur:
             cur = test
+            idx += 1
         else:
-            if cur:
-                lines.append(cur)
-            cur = ch
-            if len(lines) >= max_lines - 1:
+            # Avoid starting next line with Japanese punctuation (kinsoku)
+            if ch in KINSOKU_LINE_START and len(cur) > 1:
+                cur += ch
+                idx += 1
+            lines.append(cur)
+            cur = ""
+            if len(lines) >= max_lines:
                 break
-    if cur:
+    if cur and len(lines) < max_lines:
         lines.append(cur)
-    # Append remaining chars truncated with ellipsis if needed
-    used = sum(len(l) for l in lines)
-    if used < len(clean) and lines:
-        lines[-1] = lines[-1][:-1] + "…"
-    return lines[:max_lines]
+    truncated = idx < n
+    if truncated and lines:
+        lines[-1] = lines[-1].rstrip("、。 ")[:-1] + "…"
+    return lines, truncated
+
+
+def fit_dialogue_lines(
+    text: str,
+    max_width: int,
+) -> tuple[ImageFont.FreeTypeFont, list[str], int]:
+    """Pick the largest readable serif font (40 -> 35 -> 30px) that fits without truncation."""
+    for size, line_h, max_lines in [(40, 56, 3), (35, 48, 4), (30, 42, 4)]:
+        font = pick_font(FONT_SERIF_CANDIDATES, size)
+        lines, truncated = wrap_japanese(text, font, max_width, max_lines=max_lines)
+        if not truncated:
+            return font, lines, line_h
+    font = pick_font(FONT_SERIF_CANDIDATES, 30)
+    lines, _ = wrap_japanese(text, font, max_width, max_lines=4)
+    return font, lines, 42
 
 
 def load_cast_names() -> dict[str, str]:
@@ -130,8 +186,9 @@ def build_background(bg_path: Path | None, width: int, height: int) -> Image.Ima
         left = (nw - width) // 2
         top = (nh - height) // 2
         bg = bg.crop((left, top, left + width, top + height))
-        bg = bg.filter(ImageFilter.GaussianBlur(radius=3.0))
-        bg = ImageEnhance.Brightness(bg).enhance(0.68)
+        # Strong atmospheric bokeh blur prevents thumbnail character from ghosting behind standing sprite
+        bg = bg.filter(ImageFilter.GaussianBlur(radius=14.0))
+        bg = ImageEnhance.Brightness(bg).enhance(0.54)
     else:
         bg = Image.new("RGB", (width, height), (20, 22, 34))
 
@@ -223,14 +280,17 @@ def render_frame(
             fill=(252, 238, 210, 255),
         )
 
-    # Dialogue text
+    # Dialogue text (auto-fit font so lines are never prematurely truncated)
     max_text_w = (width - box_margin_x * 2) - 104
-    lines = wrap_japanese(text, font_body, max_text_w, max_lines=3)
-    ty = box_top + 46
+    fit_font, lines, line_h = fit_dialogue_lines(text, max_text_w)
+    total_text_h = len(lines) * line_h
+    box_inner_top = box_top + 30
+    box_inner_h = (box_bottom - box_inner_top) - 18
+    ty = box_inner_top + max(0, (box_inner_h - total_text_h) // 2)
     for line in lines:
-        draw.text((box_margin_x + 54, ty + 2), line, font=font_body, fill=(0, 0, 0, 160))
-        draw.text((box_margin_x + 52, ty), line, font=font_body, fill=(250, 248, 242, 255))
-        ty += 62
+        draw.text((box_margin_x + 54, ty + 2), line, font=fit_font, fill=(0, 0, 0, 160))
+        draw.text((box_margin_x + 52, ty), line, font=fit_font, fill=(250, 248, 242, 255))
+        ty += line_h
 
     return canvas.convert("RGB")
 
@@ -299,10 +359,13 @@ def main() -> None:
             vid = str(perf.get("voice_id", ""))
             vinfo = voices.get(vid, {})
             char_id = str(vinfo.get("character_id") or vid)
-            speaker = cast_names.get(char_id, char_id)
+            default_speaker = cast_names.get(char_id, char_id)
             acting = str(perf.get("acting", ""))
-            text = str(perf.get("text", ""))
-            expr = choose_expression(acting, text)
+            raw_text = str(perf.get("text", ""))
+            speaker, text, is_narration = parse_speaker_and_text(
+                raw_text, default_speaker, cast_names
+            )
+            expr = "neutral" if is_narration else choose_expression(acting, text)
 
             key = (char_id, expr)
             if key not in portrait_cache:
