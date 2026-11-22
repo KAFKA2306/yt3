@@ -922,24 +922,18 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 			playlist_id: playlistId,
 			playlist_url: playlistUrl,
 		});
-	const listItems = async (): Promise<string[]> => {
-		const ids: string[] = [];
-		let pageToken: string | undefined;
-		do {
-			const page = await youtube.playlistItems.list({
-				part: ["contentDetails"],
-				playlistId,
-				maxResults: 50,
-				pageToken,
-			});
-			ids.push(
-				...(page.data.items ?? []).flatMap((item) =>
-					item.contentDetails?.videoId ? [item.contentDetails.videoId] : [],
-				),
-			);
-			pageToken = page.data.nextPageToken ?? undefined;
-		} while (pageToken);
-		return ids;
+	const playlistContainsVideo = async (
+		targetPlaylistId: string,
+	): Promise<boolean> => {
+		const page = await youtube.playlistItems.list({
+			part: ["contentDetails"],
+			playlistId: targetPlaylistId,
+			videoId,
+			maxResults: 1,
+		});
+		return (page.data.items ?? []).some(
+			(item) => item.contentDetails?.videoId === videoId,
+		);
 	};
 	for (
 		let attempt = 0;
@@ -954,7 +948,7 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 			setTimeout(resolve, config.youtube_playlist.ready_interval_ms),
 		);
 	}
-	if (!(await listItems()).includes(videoId))
+	if (!(await playlistContainsVideo(playlistId)))
 		await youtube.playlistItems.insert({
 			part: ["snippet"],
 			requestBody: {
@@ -965,16 +959,18 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 				},
 			},
 		});
+	let verifiedInMainPlaylist = await playlistContainsVideo(playlistId);
 	for (
 		let attempt = 0;
-		attempt < config.youtube_playlist.ready_attempts &&
-		!(await listItems()).includes(videoId);
+		attempt < config.youtube_playlist.ready_attempts && !verifiedInMainPlaylist;
 		attempt++
-	)
+	) {
 		await new Promise((resolve) =>
 			setTimeout(resolve, config.youtube_playlist.ready_interval_ms),
 		);
-	if (!(await listItems()).includes(videoId))
+		verifiedInMainPlaylist = await playlistContainsVideo(playlistId);
+	}
+	if (!verifiedInMainPlaylist)
 		throw new Error(`playlist read-back does not contain ${videoId}`);
 	const useCasePlaylistUrls: Partial<Record<string, string>> = {};
 	const creativePath = path.join(outputDir, song.id, "creative_authoring.json");
@@ -1011,24 +1007,9 @@ async function youtubePlaylist(date: string, slot?: string): Promise<void> {
 						fs.ensureDirSync(path.dirname(ucStatePath));
 						fs.writeJsonSync(ucStatePath, ucState, { spaces: 2 });
 					}
-				} else {
-					await youtube.playlists.update({
-						part: ["snippet"],
-						requestBody: {
-							id: ucPlaylistId,
-							snippet: { title: ucMeta.title, description: ucMeta.description },
-						},
-					});
 				}
 				if (ucPlaylistId) {
-					const existing = await youtube.playlistItems.list({
-						part: ["contentDetails"],
-						playlistId: ucPlaylistId,
-						maxResults: 50,
-					});
-					const alreadyPresent = (existing.data.items ?? []).some(
-						(item) => item.contentDetails?.videoId === videoId,
-					);
+					const alreadyPresent = await playlistContainsVideo(ucPlaylistId);
 					if (!alreadyPresent)
 						await youtube.playlistItems.insert({
 							part: ["snippet"],

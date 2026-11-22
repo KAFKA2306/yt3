@@ -1,3 +1,4 @@
+import { Database } from "bun:sqlite";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
@@ -63,6 +64,21 @@ function getGitHead(): string {
 	return proc.status === 0 ? proc.stdout.trim() : "unknown";
 }
 
+const IN_PROGRESS_GRACE_MS = 45 * 60 * 1000;
+
+export function isRunInProgress(runDir: string, nowMs = Date.now()): boolean {
+	if (fs.existsSync(path.join(runDir, ".prepare.lock"))) return true;
+	const hasAudit = fs.existsSync(path.join(runDir, "audit", "result.json"));
+	const hasFailure = fs.existsSync(path.join(runDir, "failure.json"));
+	if (hasAudit || hasFailure) return false;
+	try {
+		const stat = fs.statSync(runDir);
+		return nowMs - stat.mtimeMs < IN_PROGRESS_GRACE_MS;
+	} catch {
+		return false;
+	}
+}
+
 function listRecentRuns(product: BenchmarkProduct, limit: number): string[] {
 	const dir = path.join(ROOT, "runs", BUCKET_BY_PRODUCT[product]);
 	if (!fs.existsSync(dir)) return [];
@@ -73,24 +89,26 @@ function listRecentRuns(product: BenchmarkProduct, limit: number): string[] {
 		.map((e) => e.name)
 		.sort()
 		.reverse()
-		.slice(0, limit)
-		.map((name) => path.join(dir, name));
+		.map((name) => path.join(dir, name))
+		.filter((runDir) => !isRunInProgress(runDir))
+		.slice(0, limit);
 }
 
 function queryEvolutionAnalyticsRowCount(): number {
 	const dbPath = path.join(ROOT, "db", "evolution.db");
 	if (!fs.existsSync(dbPath)) return 0;
-	const proc = spawnSync(
-		"python3",
-		[
-			"-c",
-			"import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); print(c.execute('select count(*) from youtube_analytics').fetchone()[0])",
-			dbPath,
-		],
-		{ encoding: "utf8" },
-	);
-	if (proc.status !== 0) return 0;
-	return Number(proc.stdout.trim()) || 0;
+	let db: Database | null = null;
+	try {
+		db = new Database(dbPath, { readonly: true });
+		const row = db
+			.query("SELECT count(*) AS cnt FROM youtube_analytics")
+			.get() as { cnt?: number } | null;
+		return Number(row?.cnt ?? 0);
+	} catch {
+		return 0;
+	} finally {
+		db?.close();
+	}
 }
 
 function hasDiscordWebhookConfigured(): boolean {
@@ -315,7 +333,7 @@ function runTick(options?: {
 		{
 			id: "verify_youtube_analytics_api_live_data",
 			run: ({ questionLedger }) => {
-				const rows = queryEvolutionAnalyticsRowCount();
+				const rows = analyticsRows;
 				if (rows > 0) {
 					resolveHumanQuestionObsolete(
 						questionLedger,
@@ -564,4 +582,6 @@ function main() {
 	process.exit(2);
 }
 
-main();
+if (import.meta.main) {
+	main();
+}

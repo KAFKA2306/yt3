@@ -12,6 +12,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
+import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -61,24 +62,19 @@ def probe_duration(path: Path) -> float:
 
 
 def key_out_green(img: Image.Image) -> Image.Image:
-    """Remove solid chroma-green (#00FF00) background cleanly with soft edge feathering."""
-    rgba = img.convert("RGBA")
-    px = rgba.load()
-    w, h = rgba.size
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = px[x, y]
-            # Chroma green dominance check
-            max_rb = max(r, b)
-            green_diff = g - max_rb
-            if g > 110 and green_diff > 45:
-                px[x, y] = (r, g, b, 0)
-            elif g > 90 and green_diff > 20:
-                # Soft anti-aliased edge despill
-                alpha = max(0, min(255, int(255 * (1.0 - (green_diff - 20) / 25.0))))
-                new_g = min(g, max_rb + 12)
-                px[x, y] = (r, new_g, b, alpha)
-    return rgba
+    """Remove solid chroma-green (#00FF00) background cleanly with vectorized NumPy despill."""
+    arr = np.array(img.convert("RGBA"), dtype=np.int16)
+    r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+    max_rb = np.maximum(r, b)
+    green_diff = g - max_rb
+    hard = (g > 110) & (green_diff > 45)
+    soft = (~hard) & (g > 90) & (green_diff > 20)
+    arr[hard, 3] = 0
+    if np.any(soft):
+        alpha = np.clip((255.0 * (1.0 - (green_diff[soft] - 20.0) / 25.0)).astype(np.int16), 0, 255)
+        arr[soft, 3] = alpha
+        arr[soft, 1] = np.minimum(g[soft], max_rb[soft] + 12)
+    return Image.fromarray(arr.astype(np.uint8))
 
 
 def choose_expression(acting: str, text: str) -> str:
@@ -150,8 +146,15 @@ def load_portrait(char_id: str, expression: str, target_h: int) -> Image.Image |
         PORTRAITS_ROOT / char_id / "neutral.png",
     ]:
         if cand.exists():
-            raw = Image.open(cand)
-            keyed = key_out_green(raw)
+            cache_path = cand.with_name(f"{cand.stem}.keyed.png")
+            if cache_path.exists() and cache_path.stat().st_mtime >= cand.stat().st_mtime:
+                keyed = Image.open(cache_path).convert("RGBA")
+            else:
+                keyed = key_out_green(Image.open(cand))
+                try:
+                    keyed.save(cache_path, "PNG")
+                except OSError:
+                    pass
             w, h = keyed.size
             scale = target_h / h
             return keyed.resize((int(w * scale), target_h), Image.Resampling.LANCZOS)
@@ -359,11 +362,15 @@ def main() -> None:
             "-c:v",
             "libx264",
             "-preset",
-            "fast",
+            "veryfast",
+            "-tune",
+            "stillimage",
             "-crf",
-            "20",
+            "22",
+            "-g",
+            "150",
             "-r",
-            "24",
+            "5",
             "-pix_fmt",
             "yuv420p",
             "-c:a",

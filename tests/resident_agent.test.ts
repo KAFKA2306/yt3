@@ -17,6 +17,7 @@ import {
 	decideTokenMinimalActions,
 	detectAnomaliesAndBias,
 } from "../src/domain/resident/supervisor.js";
+import { isRunInProgress } from "../src/scripts/resident_agent.js";
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "yt3-resident-test-"));
 
@@ -459,7 +460,27 @@ describe("Kafstyler resident agent ledgers, resumability, and idempotency", () =
 
 		const prompt = buildCompactAdvisoryPrompt(detected.anomalies);
 		expect(prompt.length).toBeLessThan(800);
-		expect(prompt).toContain("byosan:pipeline_completed");
+		expect(prompt.includes("byosan:pipeline_completed")).toBe(true);
 		expect(prompt).toContain("yawa:bias:no_late_night_care_convergence");
+	});
+
+	it("8. skips actively building runs to eliminate false-positive LLM advisory spend", () => {
+		const lockDir = path.join(tmpRoot, "run-with-lock");
+		fs.outputFileSync(path.join(lockDir, ".prepare.lock"), "{}");
+		expect(isRunInProgress(lockDir)).toBe(true);
+
+		const freshDir = path.join(tmpRoot, "run-fresh-no-audit");
+		fs.ensureDirSync(freshDir);
+		expect(isRunInProgress(freshDir, Date.now())).toBe(true);
+		// Stale (>45 min) incomplete run IS surfaced as a real failure
+		expect(isRunInProgress(freshDir, Date.now() + 60 * 60 * 1000)).toBe(false);
+
+		const completedDir = path.join(tmpRoot, "run-with-audit");
+		fs.outputJsonSync(path.join(completedDir, "audit", "result.json"), {});
+		expect(isRunInProgress(completedDir)).toBe(false);
+
+		const failedDir = path.join(tmpRoot, "run-with-failure");
+		fs.outputJsonSync(path.join(failedDir, "failure.json"), { error: "boom" });
+		expect(isRunInProgress(failedDir)).toBe(false);
 	});
 });
