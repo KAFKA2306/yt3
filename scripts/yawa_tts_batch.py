@@ -16,6 +16,8 @@ import time
 import wave
 from pathlib import Path
 
+sys.path.insert(0, os.getcwd())
+
 import torch
 import torchaudio
 from irodori_tts.inference_runtime import (

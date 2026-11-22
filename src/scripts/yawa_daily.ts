@@ -23,7 +23,6 @@ import {
 	irodoriCall,
 	loadYawaCast,
 	loadYawaConfig,
-	type Performance,
 	preparationAction,
 	type ScriptDraft,
 	ScriptDraftSchema,
