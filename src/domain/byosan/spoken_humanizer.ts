@@ -6,6 +6,7 @@ import {
 import { ByosanFeatureDraftSchema } from "./feature_spec.js";
 
 const HumanizedStatSchema = z.object({
+	source_index: z.number().int().nonnegative(),
 	label: z.string().min(1).max(24),
 	detail: z.string().min(1),
 });
@@ -301,14 +302,17 @@ export function humanizeByosanDraft(
 			"結びは最初の話題に答える具体的な事実か、予定されている日付・出来事を言い切って終えます。『今回見えたのは』『手掛かりになります』『今後を見守る必要があります』のような報告書調のまとめは使いません。",
 			"数字を新しく足さず、原因と結果の向きを変えないでください。検証済みclaims・出典・詳しい限界は内部記録に残り、視聴者向け説明欄には出典リンクだけを残します。一般的な投資免責文や制作上の言い訳は台詞にも説明欄にも入れません。",
 			"description_leadは短い紹介文、description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、検証手順、限界の列挙は入れません。",
-			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返し、そのfact_idsは空配列にします。残す各セグメントには、その枠に渡されたclaim_idsから今回の台詞で使うIDだけをfact_idsに入れます。claim IDは台詞全体で一度しか使わず、同じ事実を別のセグメントで言い直しません。別の枠にある事実を移して使いません。残すセグメントのheadlineとsubheadlineは短い自然な見出しにし、statsは入力と同じ数だけlabelとdetailを書き直してください。数値value、話者、順序、図、出典、検証用のclaimは変更しません。thumbnail_titleとthumbnailの全項目も自然な短い日本語に整えます。",
+			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返し、そのfact_idsは空配列にします。残す各セグメントには、その枠に渡されたclaim_idsから今回の台詞で使うIDだけをfact_idsに入れます。claim IDは台詞全体で一度しか使わず、同じ事実を別のセグメントで言い直しません。別の枠にある事実を移して使いません。残すセグメントのheadlineとsubheadlineは短い自然な見出しにします。statsは必要な項目だけ残し、各項目に元のstat_valuesのindexをsource_indexとして付け、元の順序を守ります。元の数値valueはプログラムが保持するため、labelやdetailにそのstatと無関係な数字を混ぜません。話者、順序、図、出典、検証用のclaimは変更しません。thumbnail_titleとthumbnailの全項目も自然な短い日本語に整えます。",
 			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
 			`[SEGMENT_SLOTS_AND_EVIDENCE]\n${JSON.stringify(
 				draft.segments.map((segment, index) => ({
 					index,
 					speaker: segment.speaker,
 					claim_ids: segment.claimIds ?? [],
-					stat_values: segment.stats.map(({ value }) => value),
+					stat_values: segment.stats.map(({ value }, statIndex) => ({
+						index: statIndex,
+						value,
+					})),
 				})),
 			)}`,
 		].join("\n\n"),
@@ -412,18 +416,30 @@ export function humanizeByosanDraft(
 		if (!edit.headline.trim() || !edit.subheadline.trim()) {
 			throw new Error(`BYOSAN_HUMANIZER_EMPTY_VISUAL_COPY: segment=${index}`);
 		}
-		if (edit.stats.length !== segment.stats.length) {
-			throw new Error(
-				`BYOSAN_HUMANIZER_STAT_COUNT: segment=${index} expected=${segment.stats.length} actual=${edit.stats.length}`,
-			);
+		if (segment.stats.length > 0 && edit.stats.length === 0) {
+			throw new Error(`BYOSAN_HUMANIZER_STATS_REQUIRED: segment=${index}`);
 		}
-		const stats = segment.stats.map((stat, statIndex) => {
-			const visualStat = edit.stats[statIndex];
-			if (!visualStat) {
+		const seenStatIndexes = new Set<number>();
+		let previousStatIndex = -1;
+		const stats = edit.stats.map((visualStat) => {
+			const { source_index: statIndex } = visualStat;
+			const stat = segment.stats[statIndex];
+			if (!stat || seenStatIndexes.has(statIndex)) {
 				throw new Error(
 					`BYOSAN_HUMANIZER_STAT_INDEX: segment=${index} stat=${statIndex}`,
 				);
 			}
+			if (statIndex <= previousStatIndex) {
+				throw new Error(
+					`BYOSAN_HUMANIZER_STAT_ORDER: segment=${index} stat=${statIndex}`,
+				);
+			}
+			seenStatIndexes.add(statIndex);
+			previousStatIndex = statIndex;
+			assertNoNewNumbers(stat, {
+				label: visualStat.label,
+				detail: visualStat.detail,
+			});
 			return {
 				...stat,
 				label: visualStat.label.trim(),
