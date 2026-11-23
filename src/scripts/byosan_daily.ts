@@ -451,6 +451,8 @@ export function generateFeatureSpec(
 			{
 				story_spine: humanized.storySpine,
 				removed_segment_indexes: humanized.removedSegmentIndexes,
+				thumbnail_title: humanized.thumbnailTitle,
+				thumbnail: humanized.thumbnail,
 				edits: humanized.edits,
 				model_route: humanized.receipt,
 			},

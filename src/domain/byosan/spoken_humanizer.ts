@@ -5,14 +5,34 @@ import {
 } from "../../io/creative.js";
 import { ByosanFeatureDraftSchema } from "./feature_spec.js";
 
+const HumanizedStatSchema = z.object({
+	label: z.string().min(1).max(24),
+	detail: z.string().min(1),
+});
+
 const HumanizedSegmentSchema = z.object({
 	index: z.number().int().nonnegative(),
 	keep: z.boolean(),
 	text: z.string(),
+	headline: z.string(),
+	subheadline: z.string(),
+	stats: z.array(HumanizedStatSchema).max(3),
+});
+
+const HumanizedThumbnailSchema = z.object({
+	eyebrow: z.string().min(2).max(18),
+	lead: z.string().min(1).max(8),
+	accent: z.string().min(1).max(10),
+	reaction: z.string().min(1).max(4),
+	second_line: z.string().min(2).max(12),
+	callout_top: z.string().min(2).max(22),
+	callout_bottom: z.string().min(2).max(18),
 });
 
 const HumanizerResponseSchema = z.object({
 	title: z.string().min(1).max(100),
+	thumbnail_title: z.string().min(1).max(100),
+	thumbnail: HumanizedThumbnailSchema,
 	story_spine: z.string().min(1).max(200),
 	description_lead: z.string().min(1).max(350),
 	description_bullets: z.array(z.string().min(1).max(160)).min(1).max(3),
@@ -25,7 +45,27 @@ export type HumanizedFeatureDraft = {
 	draft: FeatureDraft;
 	storySpine: string;
 	removedSegmentIndexes: number[];
-	edits: Array<{ index: number; keep: boolean; before: string; after: string }>;
+	edits: Array<{
+		index: number;
+		keep: boolean;
+		before: string;
+		after: string;
+		visualBefore: {
+			headline: string;
+			subheadline: string;
+			stats: Array<{ label: string; detail: string }>;
+		};
+		visualAfter: {
+			headline: string;
+			subheadline: string;
+			stats: Array<{ label: string; detail: string }>;
+		} | null;
+	}>;
+	thumbnailTitle: { before: string; after: string };
+	thumbnail: {
+		before: FeatureDraft["thumbnail"];
+		after: FeatureDraft["thumbnail"];
+	};
 	receipt: CreativeReceipt;
 };
 
@@ -117,6 +157,10 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 		"abstract_or_template_phrase_in_narration",
 	],
 	[
+		/(?:確認できる事実から|記事本文に.{0,20}(?:ない|記載)|数字の意味を検証|資料に.{0,16}(?:ない|記載)|AI需要続く[?？])/u,
+		"editorial_note_or_teaser_in_public_copy",
+	],
+	[
 		/(?:能力を増やす計画|供給能力の拡大).{0,24}需要.{0,32}(?:決めるわけではありません|保証しません|証明しません|分かりません|読めません)/u,
 		"repeated_demand_caveat_in_narration",
 	],
@@ -149,8 +193,9 @@ export function humanizeByosanDraft(
 		kind: "draft",
 		schema: HumanizerResponseSchema,
 		prompt: [
-			"秒算マネーの日本語YouTube台本を、友人に話すような自然な日本語に編集してください。調査結果の報告ではなく、視聴者が出来事を一度でつかめる短い話にします。",
+			"秒算マネーの日本語YouTube動画を、タイトル、サムネイル、台詞、画面の見出し・小見出し・数値カード・説明欄まで、友人に話すような自然な日本語に仕上げてください。調査結果の報告ではなく、視聴者が出来事を一度でつかめる短い話にします。",
 			"titleは企業名と具体的な変化を中心に、自然な見出しにします。『AI供給網』『好決算の先で広がる動き』のような抽象的なまとめや、需要への注意書きをタイトルにしません。",
+			"画面に出るheadline、subheadline、statsのlabelとdetail、thumbnailの各文言も視聴者向けの文章です。『まずは確認できる事実から』『記事本文に金額の記載はない』『数字の意味を検証』など、編集メモ・調査上の制限・免責文を画面に出しません。数値カードのdetailは、何の数字かを短く補う事実にします。",
 			"最初は具体的な出来事から入ります。『見えない動きがあります』『まず目を引くのは』『では、いつでしょうか』のような前置きや、答えを引き延ばす問いかけは使いません。story_spineは話の中心を一文で言い切ります。",
 			"似た説明は一つにまとめ、出典や資料の読み上げ、調査手順、データの有無、一般論の注意書きは削除します。会社名は話に必要なものだけ残し、残す各文には具体的な主語と動詞を置きます。抽象的な一文を埋め草として足さず、事実が少なければ短く終えます。",
 			"『記事では』『資料によると』『発表によれば』『報告書には』のように、何かを読んで報告する形で話しません。出典元ではなく、企業や工場、製品を主語にして事実を話します。",
@@ -160,8 +205,8 @@ export function humanizeByosanDraft(
 			"結びは最初の話題に答える具体的な事実か、予定されている日付・出来事を言い切って終えます。『今回見えたのは』『手掛かりになります』『今後を見守る必要があります』のような報告書調のまとめは使いません。",
 			"数字を新しく足さず、原因と結果の向きを変えないでください。検証済みclaims・出典・詳しい限界は内部記録に残り、視聴者向け説明欄には出典リンクだけを残します。一般的な投資免責文や制作上の言い訳は台詞にも説明欄にも入れません。",
 			"description_leadは短い紹介文、description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、検証手順、限界の列挙は入れません。",
-			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返し、話者、順序、図、数値カード、出典データは別工程で保持します。",
-			`[TITLE]\n${draft.title}\n\n[ANGLE]\n${draft.angle}`,
+			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返します。残すセグメントのheadlineとsubheadlineは短い自然な見出しにし、statsは入力と同じ数だけlabelとdetailを書き直してください。数値value、話者、順序、図、出典、検証用のclaimは変更しません。thumbnail_titleとthumbnailの全項目も自然な短い日本語に整えます。",
+			`[TITLE]\n${draft.title}\n\n[THUMBNAIL_TITLE]\n${draft.thumbnailTitle}\n\n[THUMBNAIL_COPY]\n${JSON.stringify(draft.thumbnail)}\n\n[ANGLE]\n${draft.angle}`,
 			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
 			`[SEGMENTS]\n${JSON.stringify(
 				draft.segments.map((segment, index) => ({
@@ -169,6 +214,7 @@ export function humanizeByosanDraft(
 					speaker: segment.speaker,
 					section: segment.section,
 					headline: segment.headline,
+					subheadline: segment.subheadline,
 					claim_ids: segment.claimIds ?? [],
 					stats: segment.stats,
 					text: segment.text,
@@ -200,11 +246,27 @@ export function humanizeByosanDraft(
 	const editLog = draft.segments.map((segment, index) => {
 		const edit = editsByIndex.get(index);
 		if (!edit) throw new Error(`BYOSAN_HUMANIZER_SEGMENT_INDEX: ${index}`);
+		const visualAfter = edit.keep
+			? {
+					headline: edit.headline.trim(),
+					subheadline: edit.subheadline.trim(),
+					stats: edit.stats.map(({ label, detail }) => ({
+						label: label.trim(),
+						detail: detail.trim(),
+					})),
+				}
+			: null;
 		return {
 			index,
 			keep: edit.keep,
 			before: segment.text,
 			after: edit.keep ? edit.text.trim() : "",
+			visualBefore: {
+				headline: segment.headline,
+				subheadline: segment.subheadline,
+				stats: segment.stats.map(({ label, detail }) => ({ label, detail })),
+			},
+			visualAfter,
 		};
 	});
 	const segments = draft.segments.flatMap((segment, index) => {
@@ -216,7 +278,36 @@ export function humanizeByosanDraft(
 		}
 		const text = edit.text.trim();
 		if (!text) throw new Error(`BYOSAN_HUMANIZER_EMPTY_TEXT: segment=${index}`);
-		return [{ ...segment, text }];
+		if (!edit.headline.trim() || !edit.subheadline.trim()) {
+			throw new Error(`BYOSAN_HUMANIZER_EMPTY_VISUAL_COPY: segment=${index}`);
+		}
+		if (edit.stats.length !== segment.stats.length) {
+			throw new Error(
+				`BYOSAN_HUMANIZER_STAT_COUNT: segment=${index} expected=${segment.stats.length} actual=${edit.stats.length}`,
+			);
+		}
+		const stats = segment.stats.map((stat, statIndex) => {
+			const visualStat = edit.stats[statIndex];
+			if (!visualStat) {
+				throw new Error(
+					`BYOSAN_HUMANIZER_STAT_INDEX: segment=${index} stat=${statIndex}`,
+				);
+			}
+			return {
+				...stat,
+				label: visualStat.label.trim(),
+				detail: visualStat.detail.trim(),
+			};
+		});
+		return [
+			{
+				...segment,
+				text,
+				headline: edit.headline.trim(),
+				subheadline: edit.subheadline.trim(),
+				stats,
+			},
+		];
 	});
 	const minimumSegments = Math.min(2, draft.segments.length);
 	const maximumSegments = Math.min(
@@ -233,26 +324,65 @@ export function humanizeByosanDraft(
 			`BYOSAN_HUMANIZER_TOO_MANY_SEGMENTS: source=${draft.segments.length} maximum=${maximumSegments} actual=${segments.length} kept=${JSON.stringify(segments.map(({ text }) => text.slice(0, 120)))}`,
 		);
 	}
+	const thumbnail = {
+		eyebrow: response.value.thumbnail.eyebrow.trim(),
+		lead: response.value.thumbnail.lead.trim(),
+		accent: response.value.thumbnail.accent.trim(),
+		reaction: response.value.thumbnail.reaction.trim(),
+		secondLine: response.value.thumbnail.second_line.trim(),
+		calloutTop: response.value.thumbnail.callout_top.trim(),
+		calloutBottom: response.value.thumbnail.callout_bottom.trim(),
+	};
 	assertSpeakableLines([
 		{ index: -4, text: response.value.title },
+		{ index: -5, text: response.value.thumbnail_title },
+		{ index: -6, text: thumbnail.eyebrow },
+		{ index: -7, text: thumbnail.lead },
+		{ index: -8, text: thumbnail.accent },
+		{ index: -9, text: thumbnail.reaction },
+		{ index: -10, text: thumbnail.secondLine },
+		{ index: -11, text: thumbnail.calloutTop },
+		{ index: -12, text: thumbnail.calloutBottom },
 		{ index: -1, text: response.value.description_lead },
 		...response.value.description_bullets.map((text, index) => ({
 			index: -2 - index,
 			text,
 		})),
-		...segments.map((segment, index) => ({ index, text: segment.text })),
+		...segments.flatMap((segment, index) => [
+			{ index, text: segment.text },
+			{ index: 100 + index, text: segment.headline },
+			{ index: 200 + index, text: segment.subheadline },
+			...segment.stats.flatMap((stat, statIndex) => [
+				{ index: 300 + index * 10 + statIndex, text: stat.label },
+				{ index: 400 + index * 10 + statIndex, text: stat.detail },
+			]),
+		]),
 	]);
 	// A fact can move when sections merge; compare numbers against the whole draft.
 	assertNoNewNumbers(draft, {
+		title: response.value.title,
+		thumbnail_title: response.value.thumbnail_title,
+		thumbnail,
 		story_spine: response.value.story_spine,
 		description_lead: response.value.description_lead,
 		description_bullets: response.value.description_bullets,
-		segments: segments.map(({ text }) => text),
+		segments: segments.map(({ text, headline, subheadline, stats }) => ({
+			text,
+			headline,
+			subheadline,
+			stats: stats.map(({ label, value, detail }) => ({
+				label,
+				value,
+				detail,
+			})),
+		})),
 	});
 
 	const editedDraft = ByosanFeatureDraftSchema.parse({
 		...draft,
 		title: response.value.title.trim(),
+		thumbnailTitle: response.value.thumbnail_title.trim(),
+		thumbnail,
 		descriptionLead: response.value.description_lead,
 		descriptionBullets: response.value.description_bullets,
 		segments,
@@ -262,6 +392,11 @@ export function humanizeByosanDraft(
 		storySpine: response.value.story_spine.trim(),
 		removedSegmentIndexes,
 		edits: editLog,
+		thumbnailTitle: {
+			before: draft.thumbnailTitle,
+			after: response.value.thumbnail_title.trim(),
+		},
+		thumbnail: { before: draft.thumbnail, after: thumbnail },
 		receipt: response.receipt,
 	};
 }
