@@ -291,6 +291,17 @@ function assertNoRepeatedNarrativeSegments(
 export function humanizeByosanDraft(
 	draft: FeatureDraft,
 ): HumanizedFeatureDraft {
+	const claimIdsByIndex = new Map<number, string[]>();
+	const assignedClaimIds = new Set<string>();
+	for (const [index, segment] of draft.segments.entries()) {
+		const claimIds: string[] = [];
+		for (const claimId of segment.claimIds ?? []) {
+			if (assignedClaimIds.has(claimId)) continue;
+			assignedClaimIds.add(claimId);
+			claimIds.push(claimId);
+		}
+		claimIdsByIndex.set(index, claimIds);
+	}
 	const response = invokeCreativeStructured({
 		name: "byosan_interactive_humanizer",
 		kind: "draft",
@@ -307,7 +318,7 @@ export function humanizeByosanDraft(
 				draft.segments.map((segment, index) => ({
 					index,
 					speaker: segment.speaker,
-					claim_ids: segment.claimIds ?? [],
+					claim_ids: claimIdsByIndex.get(index) ?? [],
 					stat_values: segment.stats.map(({ value }, statIndex) => ({
 						index: statIndex,
 						value,
@@ -339,9 +350,9 @@ export function humanizeByosanDraft(
 		humanizerClaimFacts(draft).map(({ id }) => id),
 	);
 	const allowedFactIdsByIndex = new Map(
-		draft.segments.map((segment, index) => [
+		draft.segments.map((_, index) => [
 			index,
-			new Set(segment.claimIds ?? []),
+			new Set(claimIdsByIndex.get(index) ?? []),
 		]),
 	);
 	const usedFactIds = new Set<string>();
