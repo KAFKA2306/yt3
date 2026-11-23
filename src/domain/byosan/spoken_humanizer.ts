@@ -219,16 +219,16 @@ export function humanizeByosanDraft(
 		return [{ ...segment, text }];
 	});
 	const minimumSegments = Math.min(3, draft.segments.length);
-	const maximumSegments = Math.max(
-		minimumSegments,
-		Math.floor(draft.segments.length * 0.75),
+	const maximumSegments = Math.min(
+		draft.segments.length,
+		Math.max(4, Math.floor(draft.segments.length * 0.75)),
 	);
 	if (segments.length < minimumSegments) {
 		throw new Error(`BYOSAN_HUMANIZER_TOO_FEW_SEGMENTS: ${segments.length}`);
 	}
 	if (segments.length > maximumSegments) {
 		throw new Error(
-			`BYOSAN_HUMANIZER_TOO_MANY_SEGMENTS: maximum=${maximumSegments} actual=${segments.length}`,
+			`BYOSAN_HUMANIZER_TOO_MANY_SEGMENTS: source=${draft.segments.length} maximum=${maximumSegments} actual=${segments.length} kept=${JSON.stringify(segments.map(({ text }) => text.slice(0, 120)))}`,
 		);
 	}
 	assertSpeakableLines([
