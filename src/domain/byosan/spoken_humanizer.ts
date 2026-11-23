@@ -222,6 +222,61 @@ function assertNoCompanyEnumeration(
 	}
 }
 
+const MIN_REPEATED_NARRATIVE_CHARACTERS = 20;
+
+function normalizedNarrativeText(value: string): string[] {
+	return Array.from(value.normalize("NFKC").replace(/[\s\p{P}\p{S}]/gu, ""));
+}
+
+function longestSharedNarrativePhrase(left: string, right: string): string {
+	const leftCharacters = normalizedNarrativeText(left);
+	const rightCharacters = normalizedNarrativeText(right);
+	let previous = Array.from({ length: rightCharacters.length + 1 }, () => 0);
+	let longestLength = 0;
+	let longestEnd = 0;
+
+	for (let leftIndex = 0; leftIndex < leftCharacters.length; leftIndex += 1) {
+		const current = Array.from({ length: rightCharacters.length + 1 }, () => 0);
+		for (
+			let rightIndex = 0;
+			rightIndex < rightCharacters.length;
+			rightIndex += 1
+		) {
+			if (leftCharacters[leftIndex] !== rightCharacters[rightIndex]) continue;
+			const length = (previous[rightIndex] ?? 0) + 1;
+			current[rightIndex + 1] = length;
+			if (length > longestLength) {
+				longestLength = length;
+				longestEnd = leftIndex + 1;
+			}
+		}
+		previous = current;
+	}
+
+	return leftCharacters.slice(longestEnd - longestLength, longestEnd).join("");
+}
+
+function assertNoRepeatedNarrativeSegments(
+	segments: Array<{ index: number; text: string }>,
+): void {
+	for (let left = 0; left < segments.length; left += 1) {
+		for (let right = left + 1; right < segments.length; right += 1) {
+			const leftSegment = segments[left];
+			const rightSegment = segments[right];
+			if (!leftSegment || !rightSegment) continue;
+			const repeated = longestSharedNarrativePhrase(
+				leftSegment.text,
+				rightSegment.text,
+			);
+			if (repeated.length >= MIN_REPEATED_NARRATIVE_CHARACTERS) {
+				throw new Error(
+					`BYOSAN_HUMANIZER_REPEATED_NARRATIVE: segments=${leftSegment.index},${rightSegment.index} shared=${JSON.stringify(repeated)}`,
+				);
+			}
+		}
+	}
+}
+
 export function humanizeByosanDraft(
 	draft: FeatureDraft,
 ): HumanizedFeatureDraft {
@@ -230,34 +285,28 @@ export function humanizeByosanDraft(
 		kind: "draft",
 		schema: HumanizerResponseSchema,
 		prompt: [
-			"秒算マネーの日本語YouTube動画を、タイトル、サムネイル、台詞、画面の見出し・小見出し・数値カード・説明欄まで、友人に話すような自然な日本語に仕上げてください。調査結果の報告ではなく、視聴者が出来事を一度でつかめる短い話にします。",
+			"秒算マネーの日本語YouTube動画を、検証済みの事実から新しく書き起こしてください。視聴者が冒頭で出来事をつかみ、最後まで見れば何が変わるのかを人に話せる短い話にします。入力した台詞や見出しはありません。調査結果を言い換えるのではなく、事実を選び直して自然な話に組み立てます。",
 			"titleは企業名と具体的な変化を中心に、自然な見出しにします。『AI供給網』『好決算の先で広がる動き』のような抽象的なまとめや、需要への注意書きをタイトルにしません。",
 			"画面に出るheadline、subheadline、statsのlabelとdetail、thumbnailの各文言も視聴者向けの文章です。『まずは確認できる事実から』『記事本文に金額の記載はない』『数字の意味を検証』など、編集メモ・調査上の制限・免責文を画面に出しません。数値カードのdetailは、何の数字かを短く補う事実にします。",
 			"最初は具体的な出来事から入ります。『見えない動きがあります』『まず目を引くのは』『では、いつでしょうか』のような前置きや、答えを引き延ばす問いかけは使いません。story_spineは話の中心を一文で言い切ります。",
-			"似た説明は一つにまとめ、出典や資料の読み上げ、調査手順、データの有無、一般論の注意書きは削除します。会社名は話に必要なものだけ残し、残す各文には具体的な主語と動詞を置きます。抽象的な一文を埋め草として足さず、事実が少なければ短く終えます。",
+			"出典や資料の読み上げ、調査手順、データの有無、一般論の注意書きは公開用の文章から削除します。会社名は話に必要なものだけ残し、残す各文には具体的な主語と動詞を置きます。抽象的な一文を埋め草として足さず、事実が少なければ短く終えます。",
 			"視聴者が覚える話は一つです。story_spineに直接必要な事実だけを残し、面白そうでも本筋を支えない別会社の統計や追加の調査結果は削ります。台詞で会社名を列挙せず、一つのセグメントに会社名を三社以上並べません。協業先の全社名は画面に任せ、台詞では中心となる一社の具体例を使います。",
 			"keep=trueは必ず2〜3セグメントだけにします。入力が7件あっても残すのは3件までです。冒頭の問い、中心となる具体例、対照となる結果から外れるセグメントはkeep=falseにしてください。",
-			"同じ会社名の一覧や同じ事実を別のセグメントでもう一度話しません。発表元や調査会社の名前は、予測を伝えるときに必要な一度だけにし、その後は何が変わるのかを話します。",
+			"同じ会社名の一覧や同じ事実を別のセグメントでもう一度話しません。最後のセグメントを冒頭のまとめ直しに使わず、まだ話していない具体的な事実で終えます。新しい事実が残っていなければ、まとめや注意書きを足さず、その手前で話を終えます。発表元や調査会社の名前は、予測を伝えるときに必要な一度だけにし、その後は何が変わるのかを話します。",
 			"『記事では』『資料によると』『発表によれば』『報告書には』のように、何かを読んで報告する形で話しません。出典元ではなく、企業や工場、製品を主語にして事実を話します。",
 			"短い文と少し長い文を混ぜて、音読したときに引っかからない言葉を選びます。『供給網』『供給を広げる動き』『生産量を目指す時期』『増産が形になる』のような抽象語や報告書調の言い回しを避け、誰が何をいつするのかをそのまま言います。",
-			"例：『追加の生産量を目指す時期は2028年第3四半期』ではなく、『基板の生産量を今の3.5倍超に増やす目標は、2028年第3四半期です』。『次に見えてくるのは、2027年後半に生産が始まるかどうか』ではなく、『Kinsusが生産を始める予定は2027年後半です』。",
 			"『記事本文に数字がない』『この資料からは言えない』『直接つながるとは言えない』『それだけでは分からない』は内部監査用で、公開台詞には入れません。計画や予測は事実として明確に言い、実績とは混同しません。計画の留保を一度伝えた後に、需要への注意や『次に見ること』を重ねません。",
 			"結びは最初の話題に答える具体的な事実か、予定されている日付・出来事を言い切って終えます。『今回見えたのは』『手掛かりになります』『今後を見守る必要があります』のような報告書調のまとめは使いません。",
 			"数字を新しく足さず、原因と結果の向きを変えないでください。検証済みclaims・出典・詳しい限界は内部記録に残り、視聴者向け説明欄には出典リンクだけを残します。一般的な投資免責文や制作上の言い訳は台詞にも説明欄にも入れません。",
 			"description_leadは短い紹介文、description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、検証手順、限界の列挙は入れません。",
 			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返します。残すセグメントのheadlineとsubheadlineは短い自然な見出しにし、statsは入力と同じ数だけlabelとdetailを書き直してください。数値value、話者、順序、図、出典、検証用のclaimは変更しません。thumbnail_titleとthumbnailの全項目も自然な短い日本語に整えます。",
-			`[TITLE]\n${draft.title}\n\n[THUMBNAIL_TITLE]\n${draft.thumbnailTitle}\n\n[THUMBNAIL_COPY]\n${JSON.stringify(draft.thumbnail)}\n\n[ANGLE]\n${draft.angle}`,
 			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
-			`[SEGMENTS]\n${JSON.stringify(
+			`[SEGMENT_SLOTS_AND_EVIDENCE]\n${JSON.stringify(
 				draft.segments.map((segment, index) => ({
 					index,
 					speaker: segment.speaker,
-					section: segment.section,
-					headline: segment.headline,
-					subheadline: segment.subheadline,
 					claim_ids: segment.claimIds ?? [],
-					stats: segment.stats,
-					text: segment.text,
+					stat_values: segment.stats.map(({ value }) => value),
 				})),
 			)}`,
 		].join("\n\n"),
@@ -396,6 +445,9 @@ export function humanizeByosanDraft(
 		]),
 	]);
 	assertNoCompanyEnumeration(
+		segments.map((segment, index) => ({ index, text: segment.text })),
+	);
+	assertNoRepeatedNarrativeSegments(
 		segments.map((segment, index) => ({ index, text: segment.text })),
 	);
 	// A fact can move when sections merge; compare numbers against the whole draft.
