@@ -60,6 +60,19 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 		"defensive_caveat_in_narration",
 	],
 	[/(?:投資助言|個別の売買を推奨)/u, "generic_disclaimer_in_narration"],
+	[
+		/(?:記事|本文|資料).{0,40}(?:載っていない|掲載されていない|記載されていない|書かれていない|ありません|ない)/u,
+		"source_limit_in_narration",
+	],
+	[
+		/(?:確認できるのは|分かるのは|わかるのは).{0,24}(?:だけ|まで)/u,
+		"evidence_boundary_in_narration",
+	],
+	[
+		/(?:それだけで|直接|単独で).{0,40}(?:分かりません|わかりません|示すものではありません|証明するものではありません|保証しません|確定しません)/u,
+		"defensive_caveat_in_narration",
+	],
+	[/(?:実績と取り違え|見通しを実績)/u, "repeated_warning_in_narration"],
 ];
 
 function assertSpeakableLines(
@@ -84,12 +97,14 @@ export function humanizeByosanDraft(
 		kind: "draft",
 		schema: HumanizerResponseSchema,
 		prompt: [
-			"秒算マネーの日本語YouTube台本を、耳で聞いて自然で、一本の話として追える原稿に編集してください。資料の説明ではなく、視聴者が市場で起きたことを理解できる語りが目的です。",
-			"話の芯を一文で定め、残す各セグメントをその芯へつないでください。別の仕組みを並べるだけの箇所、同じ注意書きの反復、出典や図の説明だけの箇所は keep=false にできます。順序を変えず、必要な原因と結果は残してください。",
-			"textは人が話す自然な日本語に直してください。「地図では」「資料で見ておこう」「同研究は」のように、画面や文書の説明を台詞にしないでください。専門用語は必要な場合だけ使い、その場で短く言い換えてください。",
-			"数字を新しく足さず、原因と結果の向きを変えないでください。検証済みclaimsとその出典・限界は入力データに残ります。視聴者が事実を誤解する場合だけ、該当箇所で短く自然に条件を添えてください。一般的な免責文や制作上の言い訳は台詞に入れないでください。",
+			"秒算マネーの日本語YouTube台本を、耳で聞いて自然で、一本の話として追える短い語りに編集してください。資料を説明する原稿ではなく、視聴者が『何が起きて、なぜ面白いのか』をつかめる話にします。",
+			"最初に一つの問いや意外な食い違いを立て、重要な出来事を見せ、最後に視聴者が持ち帰る一言へ着地させてください。story_spineは、その話を一文で言い切ります。",
+			"残すセグメントは3〜4個を目安にし、入力が多い場合は少なくとも4分の1を削ってください。似た説明は一つにまとめ、出典の読み上げ、データが載っていない説明、調査手順、一般論の注意書き、同じ留保の繰り返しは keep=false にします。会社名の列挙も避け、話に必要な具体例を一つだけ残してください。入力の順序は変えず、残す内容はstory_spineにつなげてください。",
+			"聞き手は賢い友人です。短い文と少し長い文を混ぜ、口に出して自然な日本語にします。「地図では」「資料で見ておこう」「同研究は」「記事本文には載っていない」「それだけでは分からない」「直接示すものではない」のように、画面・文書・確認作業・言い訳を台詞にしないでください。",
+			"一番伝えたい事実ははっきり言い、必要な留保はその事実の中に短く一度だけ添えます。『計画』や『予測』は事実の一部なので消さず、計画を実績のように言い換えないでください。それ以外の限界や、入力に数字がないという説明は、公開台詞から削除します。",
+			"数字を新しく足さず、原因と結果の向きを変えないでください。検証済みclaims・出典・詳しい限界は内部記録に残り、視聴者向け説明欄には出典リンクだけを残します。一般的な投資免責文や制作上の言い訳は台詞にも説明欄にも入れません。",
 			"description_leadは短い紹介文、description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、検証手順、限界の列挙は入れません。",
-			"入力と同じindexのセグメントを一つずつ返してください。話者、順序、図、数値カード、出典データは別工程で保持されます。",
+			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返し、話者、順序、図、数値カード、出典データは別工程で保持します。",
 			`[TITLE]\n${draft.title}\n\n[ANGLE]\n${draft.angle}`,
 			`[CLAIMS]\n${JSON.stringify(
 				draft.claims.map(
@@ -163,8 +178,18 @@ export function humanizeByosanDraft(
 		if (!text) throw new Error(`BYOSAN_HUMANIZER_EMPTY_TEXT: segment=${index}`);
 		return [{ ...segment, text }];
 	});
-	if (segments.length < Math.min(5, draft.segments.length)) {
+	const minimumSegments = Math.min(3, draft.segments.length);
+	const maximumSegments = Math.max(
+		minimumSegments,
+		Math.floor(draft.segments.length * 0.75),
+	);
+	if (segments.length < minimumSegments) {
 		throw new Error(`BYOSAN_HUMANIZER_TOO_FEW_SEGMENTS: ${segments.length}`);
+	}
+	if (segments.length > maximumSegments) {
+		throw new Error(
+			`BYOSAN_HUMANIZER_TOO_MANY_SEGMENTS: maximum=${maximumSegments} actual=${segments.length}`,
+		);
 	}
 	assertSpeakableLines([
 		{ index: -1, text: response.value.description_lead },
