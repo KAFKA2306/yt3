@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ByosanFeatureSource, ByosanFeatureSpec } from "./feature_spec.js";
+import { isInteractiveByosanRun } from "./run_mode.js";
 
 const nonEmptyString = z.string().min(1);
 
@@ -25,9 +26,17 @@ type ChapterSpan = { headline: string; duration: number };
 
 type Chapter = { start: number; title: string };
 
+type ByosanDescriptionFields =
+	| "runId"
+	| "descriptionLead"
+	| "descriptionBullets"
+	| "disclaimer"
+	| "sources"
+	| "claims";
+
 export type ByosanDescriptionInput = Pick<
 	ByosanFeatureSpec,
-	"descriptionLead" | "descriptionBullets" | "disclaimer" | "sources" | "claims"
+	ByosanDescriptionFields
 >;
 
 type ChapterDraft = { start: number; duration: number; title: string };
@@ -127,6 +136,7 @@ export function buildByosanDescription(
 	timeline: readonly ChapterSpan[],
 	config: ByosanChaptersConfig,
 ): string {
+	const compactInteractive = isInteractiveByosanRun(spec.runId);
 	const chapters = planByosanChapters(timeline, config)
 		.map(
 			(chapter) => `${formatChapterTimestamp(chapter.start)} ${chapter.title}`,
@@ -144,7 +154,9 @@ export function buildByosanDescription(
 	return [
 		spec.descriptionLead,
 		`${config.headings.key_points}\n${bullets}`,
-		`${config.headings.evidence}\n${evidenceLines(spec, config)}`,
+		...(compactInteractive
+			? []
+			: [`${config.headings.evidence}\n${evidenceLines(spec, config)}`]),
 		`${config.headings.chapters}\n${chapters}`,
 		...(primary.length > 0
 			? [`${config.headings.primary_sources}\n${sourceBlock(primary)}`]
@@ -152,6 +164,6 @@ export function buildByosanDescription(
 		...(reference.length > 0
 			? [`${config.headings.reference_sources}\n${sourceBlock(reference)}`]
 			: []),
-		`※${spec.disclaimer}`,
+		...(compactInteractive ? [] : [`※${spec.disclaimer}`]),
 	].join("\n\n");
 }

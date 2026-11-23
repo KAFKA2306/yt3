@@ -55,6 +55,8 @@ import {
 } from "../domain/byosan/feed_discovery.js";
 import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
 import { loadPublishedByosanSourceUrls } from "../domain/byosan/published_sources.js";
+import { isInteractiveByosanRun } from "../domain/byosan/run_mode.js";
+import { humanizeByosanDraft } from "../domain/byosan/spoken_humanizer.js";
 import {
 	TitleFitSchema,
 	TitleProposalSchema,
@@ -416,6 +418,22 @@ export function generateFeatureSpec(
 		{ spaces: 2 },
 	);
 	let parsed = ByosanFeatureDraftSchema.parse(normalized.draft);
+	const humanized = isInteractiveByosanRun(input.runId)
+		? humanizeByosanDraft(parsed)
+		: undefined;
+	if (humanized) {
+		parsed = humanized.draft;
+		fs.outputJsonSync(
+			path.join(runDir, "audit", "spoken_humanization.json"),
+			{
+				story_spine: humanized.storySpine,
+				removed_segment_indexes: humanized.removedSegmentIndexes,
+				edits: humanized.edits,
+				model_route: humanized.receipt,
+			},
+			{ spaces: 2 },
+		);
+	}
 	const titleFit = invokeCreativeStructured({
 		name: "byosan_title_body_review",
 		kind: "title",
@@ -446,8 +464,17 @@ export function generateFeatureSpec(
 				title_proposal: titleProposal.receipt,
 				title_review: titleReview.receipt,
 				draft: authored.receipt,
+				...(humanized ? { humanizer: humanized.receipt } : {}),
 				title_fit: titleFit.receipt,
 			},
+			...(humanized
+				? {
+						humanizer: {
+							story_spine: humanized.storySpine,
+							removed_segment_indexes: humanized.removedSegmentIndexes,
+						},
+					}
+				: {}),
 			title_proposal: titleProposal.value,
 			title_proposal_usage: titleProposal.receipt.usage,
 			title_proposal_conversation: titleProposal.receipt.conversation_id,

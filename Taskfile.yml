@@ -154,6 +154,24 @@ tasks:
         echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}"
         echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily${BYOSAN_SUFFIX}"
 
+  byosan:interactive:
+    desc: "Prepare one owner-directed 秒算マネー run with spoken-language editing (DATE=YYYY-MM-DD, SLOT=<lowercase-alphanumeric>, optional FACT_SHEET=...)"
+    deps: [sync:deps]
+    cmds:
+      - |
+        if ! printf '%s' "{{.DATE}}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+          echo "DATE=YYYY-MM-DD is required" >&2
+          exit 2
+        fi
+        if ! printf '%s' "{{.SLOT}}" | grep -Eq '^[a-z0-9]+$'; then
+          echo "SLOT=<lowercase-alphanumeric> is required" >&2
+          exit 2
+        fi
+      - BYOSAN_SUFFIX=-interactive-{{.SLOT}} BYOSAN_FACT_SHEET={{.FACT_SHEET}} BYOSAN_DATE={{.DATE}} task byosan:daily
+      - |
+        echo "PUBLISH_READY_RUN=byosan_money/{{.DATE}}-daily-interactive-{{.SLOT}}"
+        echo "PUBLISH_COMMAND=task publish PROFILE=byosan -- byosan_money/{{.DATE}}-daily-interactive-{{.SLOT}}"
+
   byosan:publish-daily:
     desc: "Prepare today's 秒算マネー run and publish it only when publish_approved (no backfill before resume_date)"
     deps: [sync:deps]

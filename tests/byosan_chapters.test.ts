@@ -173,6 +173,7 @@ describe("classifyByosanSources", () => {
 
 describe("buildByosanDescription", () => {
 	const input: ByosanDescriptionInput = {
+		runId: "byosan_money/2026-11-23-daily",
 		descriptionLead: "導入文です。",
 		descriptionBullets: ["要点1です。"],
 		disclaimer: "免責です。",
