@@ -436,7 +436,7 @@ export function humanizeByosanDraft(
 			}
 			seenStatIndexes.add(statIndex);
 			previousStatIndex = statIndex;
-			assertNoNewNumbers(stat, {
+			assertNoNewNumbers(segment, {
 				label: visualStat.label,
 				detail: visualStat.detail,
 			});
