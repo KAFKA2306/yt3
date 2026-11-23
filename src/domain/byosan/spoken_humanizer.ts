@@ -48,6 +48,33 @@ function assertNoNewNumbers(original: unknown, edited: unknown): void {
 	}
 }
 
+function humanizerClaimFacts(
+	draft: FeatureDraft,
+): Array<{ id: string; fact: string }> {
+	return draft.claims
+		.filter(
+			({ status, claim }) =>
+				status === "verified" &&
+				!/(?:記事|本文|資料).{0,32}(?:載っていない|記載されていない|確認できない|分からない|わからない)|限界|断定できない/u.test(
+					claim,
+				),
+		)
+		.map(({ id, claim }) => ({
+			id,
+			fact: claim
+				.replace(
+					/^[^。]{0,48}?(?:研究所|研究機関)(?:は|が|によると)[、，\s]*/u,
+					"",
+				)
+				.replace(
+					/^(?:記事|本文|資料|出典|レポート|報告書|論文|同研究所|この研究)(?:は|が|では|によると)[、，\s]*/u,
+					"",
+				)
+				.replace(/(?:と報告している|と説明している|と述べている)$/u, "")
+				.trim(),
+		}));
+}
+
 const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 	[/(?:地図|図|グラフ)では/u, "visual_label_in_narration"],
 	[/(?:資料|出典)で見(?:て|よう)|資料に戻って/u, "source_note_in_narration"],
@@ -80,6 +107,10 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 		/(?:資料|記事|本文|この情報).{0,40}(?:分かりません|わかりません|確認できません|言えません|断定できません)/u,
 		"source_limit_in_narration",
 	],
+	[
+		/(?:研究所|論文|報告書|レポート|資料|出典|記事)/u,
+		"source_name_in_narration",
+	],
 	[/(?:実績と取り違え|見通しを実績)/u, "repeated_warning_in_narration"],
 ];
 
@@ -108,23 +139,13 @@ export function humanizeByosanDraft(
 			"秒算マネーの日本語YouTube台本を、耳で聞いて自然で、一本の話として追える短い語りに編集してください。資料を説明する原稿ではなく、視聴者が『何が起きて、なぜ面白いのか』をつかめる話にします。",
 			"最初に一つの問いや意外な食い違いを立て、重要な出来事を見せ、最後に視聴者が持ち帰る一言へ着地させてください。story_spineは、その話を一文で言い切ります。",
 			"残すセグメントは3〜4個を目安にし、入力が多い場合は少なくとも4分の1を削ってください。似た説明は一つにまとめ、出典の読み上げ、データが載っていない説明、調査手順、一般論の注意書き、同じ留保の繰り返しは keep=false にします。会社名の列挙も避け、話に必要な具体例を一つだけ残してください。入力の順序は変えず、残す内容はstory_spineにつなげてください。",
-			"聞き手は賢い友人です。短い文と少し長い文を混ぜ、口に出して自然な日本語にします。出典名は概要欄に置き、台詞に「研究所は」「記事によると」「資料では」のような読み上げを入れません。確認された出来事を主語にして話してください。",
+			"聞き手は賢い友人です。短い文と少し長い文を混ぜ、口に出して自然な日本語にします。台詞には「研究所」「記事」「資料」「出典」「レポート」「論文」「報告書」を一度も書かず、発表元を話の主語にしません。発表元ではなく、起きた出来事を主語にしてください。悪い例は「研究所は需要が強いと説明しています」。良い例は「台湾の輸出受注が過去最高を更新しました」です。",
 			"「記事本文に数字がない」「この資料からは言えない」「直接つながるとは言えない」「それだけでは分からない」は内部監査用の説明で、公開台詞には入れません。事実の主語と動詞を自然に言い切ってください。『計画』や『予測』は事実の一部なので残し、計画を実績のように言い換えないでください。必要な留保はその事実の中に短く一度だけ添え、それ以外の限界は公開台詞から削除します。",
 			"数字を新しく足さず、原因と結果の向きを変えないでください。検証済みclaims・出典・詳しい限界は内部記録に残り、視聴者向け説明欄には出典リンクだけを残します。一般的な投資免責文や制作上の言い訳は台詞にも説明欄にも入れません。",
 			"description_leadは短い紹介文、description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、検証手順、限界の列挙は入れません。",
 			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返し、話者、順序、図、数値カード、出典データは別工程で保持します。",
 			`[TITLE]\n${draft.title}\n\n[ANGLE]\n${draft.angle}`,
-			`[CLAIMS]\n${JSON.stringify(
-				draft.claims.map(
-					({ id, claim, status, caveat, epistemicBoundary }) => ({
-						id,
-						claim,
-						status,
-						caveat,
-						epistemicBoundary,
-					}),
-				),
-			)}`,
+			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
 			`[SEGMENTS]\n${JSON.stringify(
 				draft.segments.map((segment, index) => ({
 					index,
@@ -167,13 +188,13 @@ export function humanizeByosanDraft(
 				{
 					text: segment.text,
 					stats: segment.stats,
-					verified_claims: draft.claims.map(
-						({ claim, caveat, epistemicBoundary }) => ({
+					verified_claims: draft.claims
+						.filter(({ status }) => status === "verified")
+						.map(({ claim, caveat, epistemicBoundary }) => ({
 							claim,
 							caveat,
 							epistemicBoundary,
-						}),
-					),
+						})),
 				},
 				edit.text,
 			);
