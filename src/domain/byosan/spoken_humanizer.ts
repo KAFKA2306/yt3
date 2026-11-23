@@ -199,22 +199,6 @@ export function humanizeByosanDraft(
 	const editLog = draft.segments.map((segment, index) => {
 		const edit = editsByIndex.get(index);
 		if (!edit) throw new Error(`BYOSAN_HUMANIZER_SEGMENT_INDEX: ${index}`);
-		if (edit.keep) {
-			assertNoNewNumbers(
-				{
-					text: segment.text,
-					stats: segment.stats,
-					verified_claims: draft.claims
-						.filter(({ status }) => status === "verified")
-						.map(({ claim, caveat, epistemicBoundary }) => ({
-							claim,
-							caveat,
-							epistemicBoundary,
-						})),
-				},
-				edit.text,
-			);
-		}
 		return {
 			index,
 			keep: edit.keep,
@@ -255,6 +239,7 @@ export function humanizeByosanDraft(
 		})),
 		...segments.map((segment, index) => ({ index, text: segment.text })),
 	]);
+	// A fact can move when sections merge; compare numbers against the whole draft.
 	assertNoNewNumbers(draft, {
 		story_spine: response.value.story_spine,
 		description_lead: response.value.description_lead,
