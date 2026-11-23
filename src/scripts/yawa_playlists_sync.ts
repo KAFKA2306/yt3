@@ -74,19 +74,156 @@ function readPlaylistItems(
 	})();
 }
 
+type PlaylistItemRecord = {
+	id: string;
+	videoId?: string;
+	resourceId?: { kind?: string | null; videoId?: string | null };
+};
+
 async function readPlaylistItemsUntilIncluded(
 	youtube: ReturnType<typeof google.youtube>,
 	playlistId: string,
 	expectedIds: string[],
+	requireOrder = false,
 ): Promise<string[]> {
 	let ids: string[] = [];
 	for (let attempt = 0; attempt < 5; attempt++) {
 		ids = await readPlaylistItems(youtube, playlistId);
-		if (expectedIds.every((id) => ids.includes(id))) return ids;
+		const included = expectedIds.every((id) => ids.includes(id));
+		const positions = expectedIds.map((id) => ids.indexOf(id));
+		const ordered = positions.every(
+			(position, index) =>
+				position >= 0 &&
+				(index === 0 || position > (positions[index - 1] ?? -1)),
+		);
+		if (included && (!requireOrder || ordered)) return ids;
 		if (attempt < 4)
 			await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
 	}
 	return ids;
+}
+
+async function readPlaylistItemRecords(
+	youtube: ReturnType<typeof google.youtube>,
+	playlistId: string,
+): Promise<PlaylistItemRecord[]> {
+	for (let attempt = 0; attempt < 5; attempt++) {
+		try {
+			const records: PlaylistItemRecord[] = [];
+			let pageToken: string | undefined;
+			do {
+				const page = await youtube.playlistItems.list({
+					part: ["snippet"],
+					playlistId,
+					maxResults: 50,
+					pageToken,
+				});
+				for (const item of page.data.items ?? []) {
+					if (!item.id) throw new Error("playlist item has no API id");
+					records.push({
+						id: item.id,
+						videoId: item.snippet?.resourceId?.videoId ?? undefined,
+						resourceId: item.snippet?.resourceId ?? undefined,
+					});
+				}
+				pageToken = page.data.nextPageToken ?? undefined;
+			} while (pageToken);
+			return records;
+		} catch (error) {
+			const status =
+				(error as { status?: number; code?: number }).status ??
+				(error as { code?: number }).code;
+			if (status !== 404 || attempt === 4) throw error;
+			await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+		}
+	}
+	throw new Error(`failed to read playlist items for ${playlistId}`);
+}
+
+async function reorderCanonicalItems(
+	youtube: ReturnType<typeof google.youtube>,
+	playlistId: string,
+	expectedIds: string[],
+	targetKey: string,
+): Promise<void> {
+	if (new Set(expectedIds).size !== expectedIds.length)
+		throw new Error(
+			`${targetKey}: canonical playlist contains duplicate video IDs`,
+		);
+	const expectedSet = new Set(expectedIds);
+	const items = await readPlaylistItemRecords(youtube, playlistId);
+	const itemsByVideoId = new Map<string, PlaylistItemRecord>();
+	for (const item of items) {
+		if (!item.videoId || !expectedSet.has(item.videoId)) continue;
+		if (itemsByVideoId.has(item.videoId))
+			throw new Error(
+				`${targetKey}: duplicate playlist item for ${item.videoId}`,
+			);
+		itemsByVideoId.set(item.videoId, item);
+	}
+	if (itemsByVideoId.size !== expectedIds.length)
+		throw new Error(
+			`${targetKey}: cannot safely reorder; canonical playlist items are missing`,
+		);
+
+	const desiredItems = [...items];
+	let expectedIndex = 0;
+	for (let position = 0; position < desiredItems.length; position++) {
+		const currentVideoId = desiredItems[position]?.videoId;
+		if (!currentVideoId || !expectedSet.has(currentVideoId)) continue;
+		const wantedVideoId = expectedIds[expectedIndex];
+		if (!wantedVideoId)
+			throw new Error(
+				`${targetKey}: canonical playlist item order is incomplete`,
+			);
+		expectedIndex++;
+		const wanted = itemsByVideoId.get(wantedVideoId);
+		if (!wanted)
+			throw new Error(`${targetKey}: canonical playlist item lookup failed`);
+		desiredItems[position] = wanted;
+	}
+	if (expectedIndex !== expectedIds.length)
+		throw new Error(
+			`${targetKey}: canonical playlist slots changed during reorder`,
+		);
+
+	const currentItems = [...items];
+	let movedItems = 0;
+	for (let position = 0; position < desiredItems.length; position++) {
+		const desired = desiredItems[position];
+		if (!desired)
+			throw new Error(
+				`${targetKey}: missing desired playlist item at ${position}`,
+			);
+		if (currentItems[position]?.id === desired.id) continue;
+		const from = currentItems.findIndex((item) => item.id === desired.id);
+		if (from < 0)
+			throw new Error(`${targetKey}: playlist item disappeared during reorder`);
+		const resourceId = desired.resourceId;
+		if (!resourceId?.kind || !resourceId.videoId)
+			throw new Error(`${targetKey}: playlist item lacks a video resource ID`);
+		await youtube.playlistItems.update({
+			part: ["snippet"],
+			requestBody: {
+				id: desired.id,
+				snippet: {
+					playlistId,
+					resourceId: {
+						kind: resourceId.kind,
+						videoId: resourceId.videoId,
+					},
+					position,
+				},
+			},
+		});
+		const [moved] = currentItems.splice(from, 1);
+		if (!moved)
+			throw new Error(`${targetKey}: playlist item move failed locally`);
+		currentItems.splice(position, 0, moved);
+		movedItems++;
+	}
+	if (movedItems > 0)
+		console.log(`[reordered] ${targetKey} moved_items=${movedItems}`);
 }
 
 async function main() {
@@ -322,6 +459,7 @@ async function main() {
 			fs.writeJsonSync(statePath, savedState, { spaces: 2 });
 		}
 
+		const expected = target.items.map((item) => item.video_id);
 		const currentIds = await readPlaylistItems(youtube, playlistId);
 		const insertOrder =
 			target.kind === "character" ? [...target.items].reverse() : target.items;
@@ -349,11 +487,29 @@ async function main() {
 			}
 		}
 
-		const expected = target.items.map((item) => item.video_id);
+		if (apply) {
+			const afterInsert = await readPlaylistItemsUntilIncluded(
+				youtube,
+				playlistId,
+				expected,
+			);
+			const expectedSet = new Set(expected);
+			const currentExpectedOrder = afterInsert.filter((id) =>
+				expectedSet.has(id),
+			);
+			if (currentExpectedOrder.length !== expected.length)
+				throw new Error(
+					`${target.key}: one or more public videos are missing after sync`,
+				);
+			if (currentExpectedOrder.some((id, index) => id !== expected[index]))
+				await reorderCanonicalItems(youtube, playlistId, expected, target.key);
+		}
+
 		const readBack = await readPlaylistItemsUntilIncluded(
 			youtube,
 			playlistId,
 			expected,
+			apply,
 		);
 		const positions = expected.map((id) => readBack.indexOf(id));
 		if (positions.some((position) => position < 0))
