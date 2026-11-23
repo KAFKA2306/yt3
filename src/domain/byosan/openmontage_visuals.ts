@@ -57,7 +57,7 @@ function chartCut(chart: ChartSpec, title: string): Cut {
 			type: "stat_card",
 			stat: `${chart.displayNumber ?? chart.value}${chart.unit}`,
 			subtitle: chart.label,
-			backgroundColor: DESIGN.colors.text_primary,
+			backgroundColor: DESIGN.colors.surface,
 		};
 	}
 	if (
@@ -108,7 +108,7 @@ function cutFor(segment: OpenMontageSegment): Cut {
 				type: "stat_card",
 				stat: first.value,
 				subtitle: `${first.label} ${first.detail}`,
-				backgroundColor: DESIGN.colors.text_primary,
+				backgroundColor: DESIGN.colors.surface,
 			};
 		}
 		if (render.stats.length === 2 && first && second) {

@@ -496,6 +496,8 @@ function composeFinal(
 			String(A.final_channels),
 			"-movflags",
 			"+faststart",
+			"-t",
+			duration.toFixed(3),
 			outputPath,
 		],
 		"compose final video",

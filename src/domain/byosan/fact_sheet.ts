@@ -192,9 +192,9 @@ const BASIS_LABEL: Record<FactSheetFact["basis"], string> = {
 };
 
 const formatValue = (value: number, unit: string): string =>
-	Number.isInteger(value) && !unit.startsWith("年")
-		? value.toLocaleString("en-US")
-		: String(value);
+	unit.startsWith("年")
+		? String(value)
+		: value.toLocaleString("en-US", { maximumFractionDigits: 20 });
 
 const renderFact = (fact: FactSheetFact): string =>
 	`- ${fact.label}: ${formatValue(fact.value, fact.unit)}${fact.unit}（${fact.period}・${BASIS_LABEL[fact.basis]}）${fact.note ? ` 概要欄用の限界（台詞には入れない）: ${fact.note}` : ""}`;
