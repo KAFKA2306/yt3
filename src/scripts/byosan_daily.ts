@@ -46,6 +46,7 @@ import {
 	auditByosanFeatureSpec,
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSpec,
+	ByosanThumbnailSchema,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import {
@@ -77,6 +78,12 @@ type DailyConfig = {
 	discovery: DiscoveryConfig & { repeat_window_days: number };
 	feature_draft: { system: string };
 };
+
+const InteractiveFeatureDraftInputSchema = ByosanFeatureDraftSchema.extend({
+	thumbnail: ByosanThumbnailSchema.extend({
+		secondLine: z.string().min(2).max(100),
+	}),
+});
 
 const dailyConfig = (): DailyConfig =>
 	loadConfig("byosan_money") as unknown as DailyConfig;
@@ -418,7 +425,10 @@ export function generateFeatureSpec(
 		normalized.corrections,
 		{ spaces: 2 },
 	);
-	let parsed = ByosanFeatureDraftSchema.parse(normalized.draft);
+	const parsedDraftSchema = isInteractiveByosanRun(input.runId)
+		? InteractiveFeatureDraftInputSchema
+		: ByosanFeatureDraftSchema;
+	let parsed = parsedDraftSchema.parse(normalized.draft);
 	const titleFit = invokeCreativeStructured({
 		name: "byosan_title_body_review",
 		kind: "title",
