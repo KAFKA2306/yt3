@@ -190,6 +190,8 @@ const NON_COMPANY_LATIN_TERMS = new Set([
 	"AI",
 	"CSP",
 	"CPUS",
+	"CPU",
+	"COWOS",
 	"GPU",
 	"NAND",
 	"NVL72",
@@ -214,7 +216,7 @@ function assertNoCompanyEnumeration(
 		);
 		if (names.size >= 4) {
 			throw new Error(
-				`BYOSAN_HUMANIZER_COMPANY_ENUMERATION: segment=${segment.index} names=${[...names].join(",")}`,
+				`BYOSAN_HUMANIZER_COMPANY_ENUMERATION: segment=${segment.index} names=${[...names].join(",")} text=${JSON.stringify(segment.text.slice(0, 180))}`,
 			);
 		}
 	}
