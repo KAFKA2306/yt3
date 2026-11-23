@@ -246,6 +246,34 @@ function assertSpecificPackaging(title: string): void {
 	}
 }
 
+function assertDistinctDatesStayDistinct(
+	claims: FeatureDraft["claims"],
+	angle: string,
+	publicCopy: string,
+): void {
+	const dates = new Set(
+		claims.flatMap(({ claim }) =>
+			[...claim.matchAll(/(20\d{2})[-年](\d{1,2})[-月](\d{1,2})日?/gu)].map(
+				([, year, month, day]) =>
+					`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+			),
+		),
+	);
+	if (dates.size > 1 && /(?:同じ日|同日|その日)/u.test(publicCopy)) {
+		throw new Error("BYOSAN_HUMANIZER_COLLAPSED_DISTINCT_DATES");
+	}
+	const requiredInterval = angle.match(
+		/(?:\d+日後|翌日|翌週|翌月|数日後)/u,
+	)?.[0];
+	if (
+		dates.size > 1 &&
+		requiredInterval &&
+		!publicCopy.normalize("NFKC").includes(requiredInterval.normalize("NFKC"))
+	) {
+		throw new Error("BYOSAN_HUMANIZER_DROPPED_NARRATIVE_INTERVAL");
+	}
+}
+
 const NON_COMPANY_LATIN_TERMS = new Set([
 	"ABF",
 	"AI",
@@ -360,7 +388,7 @@ export function humanizeByosanDraft(
 			"この動画を友人に話したくなる発見を一つ選びます。具体的な出来事から始め、事実の差や意外さを見せて、最後は登場人物がその場で気づいたように話します。説明文の要約や教訓で締めません。",
 			"台詞は声に出して自然な日本語にします。記事・資料の紹介、制作メモ、先生のようなまとめ、調査上の限界、一般的な免責文は公開文に書きません。『なんですね』『ということです』のように説明を言い換えて終える形も避けます。堅い用語を会話で使う言葉に直します。",
 			"話は2〜3セグメントにまとめ、各台詞は会話の役目を持たせます。出来事を出す、意外な点を見せる、具体的な規模を添える、の中から必要なものだけを使います。同じ事実を繰り返さず、最後は目の前の事実への自然なひと言で終えます。",
-			"titleとthumbnailは、確認済み事実の中で最も目を引く対比や変化を短く伝えます。会社名と一般的な話題名だけの見出しは避けます。数字はverified claimの表記を使い、増加率を倍率に計算し直しません。市場予想との比較が確認できない場合は『好決算』『上振れ』と評価しません。description_leadは動画の内容を一文で紹介し、description_bulletsは最大3点。出典名、調査手順、限界や言い訳を公開文に足しません。",
+			"titleとthumbnailは、確認済み事実の中で最も目を引く対比や変化を短く伝えます。会社名と一般的な話題名だけの見出しは避けます。数字はverified claimの表記を使い、増加率を倍率に計算し直しません。複数の日付が出る話では、同じ日に起きたようにまとめません。市場予想との比較が確認できない場合は『好決算』『上振れ』と評価しません。description_leadは動画の内容を一文で紹介し、description_bulletsは最大3点。出典名、調査手順、限界や言い訳を公開文に足しません。",
 			"入力と同じindexのセグメントを一つずつ返してください。残す台詞には、その枠のclaim_idsから今回使うfact_idsだけを入れ、同じclaim IDは全体で一度だけ使います。削る枠はkeep=false、fact_idsは空配列です。数値カードは必要な項目だけ残し、元のstat_valuesのindexをsource_indexとして指定し、順番を保ちます。",
 			"新しい数字や因果関係を足さず、話者、順序、図、出典、検証用claimを変えません。説明欄に出典リンク以外の注釈や制作上の言い訳を足しません。",
 			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
@@ -609,6 +637,7 @@ export function humanizeByosanDraft(
 	].join(" ");
 	assertNoUnsupportedEarningsPraise(draft.claims, publicCopy);
 	assertNoUnclaimedMultiple(draft.claims, publicCopy);
+	assertDistinctDatesStayDistinct(draft.claims, draft.angle, publicCopy);
 
 	const editedDraft = ByosanFeatureDraftSchema.parse({
 		...draft,
