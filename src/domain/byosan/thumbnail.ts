@@ -118,6 +118,39 @@ export function layoutThumbnailText(
 	);
 }
 
+type ThumbnailOutputConfig = ThumbnailConfig & {
+	jpeg_quality: number;
+	jpeg_chroma_subsampling: "4:2:0" | "4:4:4";
+};
+
+async function writeThumbnailRenditions(input: {
+	full: Buffer;
+	fullPath: string;
+	pngPath: string;
+	jpgPath: string;
+	thumbnailWidth: number;
+	thumbnailHeight: number;
+	pngCompression: number;
+	config: ThumbnailOutputConfig;
+}): Promise<void> {
+	await fs.writeFile(input.fullPath, input.full);
+	const resized = sharp(input.full).resize(
+		input.thumbnailWidth,
+		input.thumbnailHeight,
+	);
+	await resized
+		.clone()
+		.png({ compressionLevel: input.pngCompression })
+		.toFile(input.pngPath);
+	await resized
+		.clone()
+		.jpeg({
+			quality: input.config.jpeg_quality,
+			chromaSubsampling: input.config.jpeg_chroma_subsampling,
+		})
+		.toFile(input.jpgPath);
+}
+
 export async function composeThumbnail(input: {
 	artPath: string;
 	text: string;
@@ -217,20 +250,43 @@ export async function buildThumbnailFiles(input: {
 		halfWidthUnits: input.halfWidthUnits,
 		config: input.config,
 	});
-	await fs.writeFile(input.fullPath, full);
-	const resized = sharp(full).resize(
-		input.thumbnailWidth,
-		input.thumbnailHeight,
-	);
-	await resized
-		.clone()
-		.png({ compressionLevel: input.pngCompression })
-		.toFile(input.pngPath);
-	await resized
-		.clone()
-		.jpeg({
-			quality: input.config.jpeg_quality,
-			chromaSubsampling: input.config.jpeg_chroma_subsampling,
-		})
-		.toFile(input.jpgPath);
+	await writeThumbnailRenditions({ ...input, full });
+}
+
+export async function buildInteractiveThumbnailFiles(input: {
+	topic: string;
+	artPath: string;
+	refs: string[];
+	fullPath: string;
+	pngPath: string;
+	jpgPath: string;
+	width: number;
+	height: number;
+	thumbnailWidth: number;
+	thumbnailHeight: number;
+	pngCompression: number;
+	config: ThumbnailOutputConfig;
+}): Promise<void> {
+	const config: ThumbnailOutputConfig = {
+		...input.config,
+		imagegen: {
+			...input.config.imagegen,
+			prompt: [
+				"Create an image-only, full-bleed 16:9 YouTube thumbnail for this story: {topic}.",
+				"Turn the story into one striking scene that makes a viewer curious before reading the title. Make the main subject large, the action instantly legible on a phone, and the supplied character references expressive witnesses rather than labels.",
+				"Show the story's contrast through scale, distance, or action inside one seamless world. Keep compared subjects distinct; do not draw a causal arrow between them.",
+				"Use a light watercolor and impressionist look in the KAFKA SIGNAL pastel palette. Use bold silhouettes and a clear focal point, with detail kept away from the focal area.",
+				"Do not create a poster or infographic. No words, letters, numbers, logos, charts, panels, cards, arrow graphics, watermarks, borders, or reserved title area. The video title carries the facts; this image carries the moment.",
+			].join(" "),
+		},
+	};
+	if (!(await fs.pathExists(input.artPath))) {
+		await fs.ensureDir(path.dirname(input.artPath));
+		generateThumbnailArt(config, input.topic, input.refs, input.artPath);
+	}
+	const full = await sharp(await fs.readFile(input.artPath))
+		.resize(input.width, input.height, { fit: "cover", position: "centre" })
+		.png()
+		.toBuffer();
+	await writeThumbnailRenditions({ ...input, config, full });
 }
