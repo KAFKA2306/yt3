@@ -240,7 +240,7 @@ async function fetchAnalytics(
 	window: { name: AnalyticsWindow; startDate: string; endDate: string },
 	runDir: string,
 	durationSeconds: number | null,
-): Promise<AnalyticsFetchResult> {
+): Promise<AnalyticsFetchResult | null> {
 	const youtubeAnalytics = google.youtubeAnalytics({ version: "v2", auth });
 	const query = {
 		ids: `channel==${channelId}`,
@@ -330,10 +330,9 @@ async function fetchAnalytics(
 	});
 
 	const row = response.data.rows?.[0];
-	if (!row)
-		throw new Error(
-			`No analytics data returned for ${videoId} / ${window.name}`,
-		);
+	// The API omits rows when a query has no data. Keep the raw response above
+	// and recheck on a later refresh instead of inventing zero-valued metrics.
+	if (!row) return null;
 	return {
 		episode_id: runId,
 		video_id: videoId,
@@ -541,6 +540,7 @@ async function main() {
 	let failures = 0;
 	let quotaDeferred = 0;
 	let fetchedWindows = 0;
+	let noDataWindows = 0;
 	let cachedWindowsSkipped = 0;
 	try {
 		type PendingItem = {
@@ -638,6 +638,13 @@ async function main() {
 							video.runDir,
 							videoMetadata.durationSeconds,
 						);
+						if (result === null) {
+							noDataWindows += 1;
+							console.info(
+								`[NO_DATA] ${video.videoId} ${window.name}: YouTube Analytics returned no rows; raw response preserved for a later refresh`,
+							);
+							continue;
+						}
 						saveAnalyticsRecord(db, result);
 						saveTrafficSourceSnapshot(db, result.trafficSourceSnapshot);
 						fetchedWindows += 1;
@@ -665,7 +672,7 @@ async function main() {
 		db.close();
 	}
 	console.log(
-		`=== YouTube Analytics summary: fetched=${fetchedWindows} cached_skipped=${cachedWindowsSkipped} quota_deferred=${quotaDeferred} failures=${failures} ===`,
+		`=== YouTube Analytics summary: fetched=${fetchedWindows} no_data=${noDataWindows} cached_skipped=${cachedWindowsSkipped} quota_deferred=${quotaDeferred} failures=${failures} ===`,
 	);
 	if (failures > 0) {
 		throw new Error(
