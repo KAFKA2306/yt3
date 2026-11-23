@@ -13,6 +13,7 @@ const HumanizedStatSchema = z.object({
 const HumanizedSegmentSchema = z.object({
 	index: z.number().int().nonnegative(),
 	keep: z.boolean(),
+	fact_ids: z.array(z.string().min(1)).max(8),
 	text: z.string(),
 	headline: z.string(),
 	subheadline: z.string(),
@@ -48,6 +49,7 @@ export type HumanizedFeatureDraft = {
 	edits: Array<{
 		index: number;
 		keep: boolean;
+		factIds: string[];
 		before: string;
 		after: string;
 		visualBefore: {
@@ -299,7 +301,7 @@ export function humanizeByosanDraft(
 			"結びは最初の話題に答える具体的な事実か、予定されている日付・出来事を言い切って終えます。『今回見えたのは』『手掛かりになります』『今後を見守る必要があります』のような報告書調のまとめは使いません。",
 			"数字を新しく足さず、原因と結果の向きを変えないでください。検証済みclaims・出典・詳しい限界は内部記録に残り、視聴者向け説明欄には出典リンクだけを残します。一般的な投資免責文や制作上の言い訳は台詞にも説明欄にも入れません。",
 			"description_leadは短い紹介文、description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、検証手順、限界の列挙は入れません。",
-			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返します。残すセグメントのheadlineとsubheadlineは短い自然な見出しにし、statsは入力と同じ数だけlabelとdetailを書き直してください。数値value、話者、順序、図、出典、検証用のclaimは変更しません。thumbnail_titleとthumbnailの全項目も自然な短い日本語に整えます。",
+			"入力と同じindexのセグメントを一つずつ返してください。削るセグメントもkeep=falseとして返し、そのfact_idsは空配列にします。残す各セグメントには、その枠に渡されたclaim_idsから今回の台詞で使うIDだけをfact_idsに入れます。claim IDは台詞全体で一度しか使わず、同じ事実を別のセグメントで言い直しません。別の枠にある事実を移して使いません。残すセグメントのheadlineとsubheadlineは短い自然な見出しにし、statsは入力と同じ数だけlabelとdetailを書き直してください。数値value、話者、順序、図、出典、検証用のclaimは変更しません。thumbnail_titleとthumbnailの全項目も自然な短い日本語に整えます。",
 			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
 			`[SEGMENT_SLOTS_AND_EVIDENCE]\n${JSON.stringify(
 				draft.segments.map((segment, index) => ({
@@ -330,6 +332,45 @@ export function humanizeByosanDraft(
 	if (editsByIndex.size !== draft.segments.length) {
 		throw new Error("BYOSAN_HUMANIZER_SEGMENT_INDEX: missing index");
 	}
+	const verifiedFactIds = new Set(
+		humanizerClaimFacts(draft).map(({ id }) => id),
+	);
+	const allowedFactIdsByIndex = new Map(
+		draft.segments.map((segment, index) => [
+			index,
+			new Set(segment.claimIds ?? []),
+		]),
+	);
+	const usedFactIds = new Set<string>();
+	for (const edit of response.value.segments) {
+		if (!edit.keep) {
+			if (edit.fact_ids.length > 0) {
+				throw new Error(
+					`BYOSAN_HUMANIZER_REMOVED_FACT_IDS: segment=${edit.index} ids=${edit.fact_ids.join(",")}`,
+				);
+			}
+			continue;
+		}
+		if (edit.fact_ids.length === 0) {
+			throw new Error(
+				`BYOSAN_HUMANIZER_FACT_IDS_REQUIRED: segment=${edit.index}`,
+			);
+		}
+		const allowedFactIds = allowedFactIdsByIndex.get(edit.index);
+		for (const factId of edit.fact_ids) {
+			if (!verifiedFactIds.has(factId) || !allowedFactIds?.has(factId)) {
+				throw new Error(
+					`BYOSAN_HUMANIZER_UNASSIGNED_FACT_ID: segment=${edit.index} id=${factId}`,
+				);
+			}
+			if (usedFactIds.has(factId)) {
+				throw new Error(
+					`BYOSAN_HUMANIZER_REUSED_FACT_ID: segment=${edit.index} id=${factId}`,
+				);
+			}
+			usedFactIds.add(factId);
+		}
+	}
 
 	const removedSegmentIndexes: number[] = [];
 	const editLog = draft.segments.map((segment, index) => {
@@ -348,6 +389,7 @@ export function humanizeByosanDraft(
 		return {
 			index,
 			keep: edit.keep,
+			factIds: edit.fact_ids,
 			before: segment.text,
 			after: edit.keep ? edit.text.trim() : "",
 			visualBefore: {
@@ -391,6 +433,7 @@ export function humanizeByosanDraft(
 		return [
 			{
 				...segment,
+				claimIds: edit.fact_ids,
 				text,
 				headline: edit.headline.trim(),
 				subheadline: edit.subheadline.trim(),
