@@ -134,7 +134,6 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 		/(?:投資助言|個別の売買を推奨|情報提供を目的|投資判断は自己責任|免責事項)/u,
 		"generic_disclaimer_in_public_copy",
 	],
-	[/(?:その一方で|一方で)/u, "written_transition_in_public_copy"],
 	[/(?:構成対象|構成会社)/u, "formal_index_term_in_public_copy"],
 	[
 		/\d+(?:,\d{3})*(?:\.\d+)?十億(?:米)?ドル/u,
@@ -169,7 +168,7 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 		"abstract_or_template_phrase_in_narration",
 	],
 	[
-		/(?:確認できる事実から|記事本文に.{0,20}(?:ない|記載)|数字の意味を検証|資料に.{0,16}(?:ない|記載)|AI需要続く[?？])/u,
+		/(?:確認できる事実から|記事本文に.{0,20}(?:ない|記載)|数字の意味を検証|資料に.{0,16}(?:ない|記載)|AI需要続く[?？]|見えてくることがあります)/u,
 		"editorial_note_or_teaser_in_public_copy",
 	],
 	[
@@ -300,7 +299,7 @@ export function humanizeByosanDraft(
 			"検証済みの事実から、視聴者が見終わったあと人に説明できる発見を一つ作ります。記事の要約ではなく、友人に話すような自然な日本語で、具体的な出来事から入り、最後はその発見を一文で伝えてください。",
 			"書き言葉を読み上げる調子を避けます。『記事によると』『資料では』『構成対象』『今回見えたのは』のような報告書や制作メモの言葉、調査上の限界、一般的な免責文は公開台詞に出しません。会社や製品を主語にして、普段の会話で使う言葉と日本語として耳慣れた金額表記を選びます。",
 			"話の中心に必要な事実だけを選びます。具体的な出来事で始め、違いが伝わる事実を見せ、最後に何が分かるのかを一文で言います。数字を足すためだけの締めや、同じ内容の言い直しは要りません。話は2〜3セグメントにまとめます。",
-			"titleは企業名と具体的な変化を中心に短くします。headline、subheadline、stats、thumbnailも、見た瞬間に意味が伝わる短い言葉にします。description_leadは短い紹介文、description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、調査手順、限界の列挙は公開文に含めません。",
+			"titleは企業名と具体的な変化を中心に短くします。headline、subheadline、stats、thumbnailも、見た瞬間に意味が伝わる短い言葉にします。description_leadは動画の内容をそのまま紹介し、『見えてくることがあります』のような予告で引き延ばしません。description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、調査手順、限界の列挙は公開文に含めません。",
 			"入力と同じindexのセグメントを一つずつ返してください。残す台詞には、その枠のclaim_idsから今回使うfact_idsだけを入れ、同じclaim IDは全体で一度だけ使います。削る枠はkeep=false、fact_idsは空配列です。数値カードは必要な項目だけ残し、元のstat_valuesのindexをsource_indexとして指定し、順番を保ちます。",
 			"新しい数字や因果関係を足さず、話者、順序、図、出典、検証用claimを変えません。説明欄に出典リンク以外の注釈や制作上の言い訳を足しません。",
 			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
