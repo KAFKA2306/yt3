@@ -134,7 +134,7 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 		/(?:投資助言|個別の売買を推奨|情報提供を目的|投資判断は自己責任|免責事項)/u,
 		"generic_disclaimer_in_public_copy",
 	],
-	[/(?:その一方で|一方で)/u, "written_transition_in_narration"],
+	[/(?:その一方で|一方で)/u, "written_transition_in_public_copy"],
 	[/(?:構成対象|構成会社)/u, "formal_index_term_in_public_copy"],
 	[
 		/\d+(?:,\d{3})*(?:\.\d+)?十億(?:米)?ドル/u,

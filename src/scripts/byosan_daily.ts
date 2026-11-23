@@ -404,6 +404,7 @@ export function generateFeatureSpec(
 			`採用タイトル: ${titleProposal.value.title}`,
 			`本文前のタイトル批評: ${JSON.stringify(titleReview.value)}`,
 			"titleには採用タイトルをそのまま使います。本文は記事本文と入力済み根拠から作ってください。数値、出典、対象、期間、定義、実績・推計・見通しを入力記事に合わせます。記事が支えない因果、数字、家庭への換算は加えません。",
+			"thumbnailの各欄は短い見出しにし、スキーマの文字数上限を守ります。特にsecondLineは12文字以内です。",
 			articles,
 		].join("\n\n"),
 	});
