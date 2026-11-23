@@ -185,6 +185,41 @@ function assertSpeakableLines(
 	}
 }
 
+const NON_COMPANY_LATIN_TERMS = new Set([
+	"ABF",
+	"AI",
+	"CSP",
+	"CPUS",
+	"GPU",
+	"NAND",
+	"NVL72",
+	"QLC",
+	"SSD",
+	"USD",
+	"VERA",
+	"RUBIN",
+]);
+
+function assertNoCompanyEnumeration(
+	segments: Array<{ index: number; text: string }>,
+): void {
+	for (const segment of segments) {
+		const names = new Set(
+			[...segment.text.matchAll(/\b[A-Z][A-Za-z0-9-]{2,}\b/gu)]
+				.map(([token]) => token?.toUpperCase())
+				.filter(
+					(token): token is string =>
+						token !== undefined && !NON_COMPANY_LATIN_TERMS.has(token),
+				),
+		);
+		if (names.size >= 4) {
+			throw new Error(
+				`BYOSAN_HUMANIZER_COMPANY_ENUMERATION: segment=${segment.index} names=${[...names].join(",")}`,
+			);
+		}
+	}
+}
+
 export function humanizeByosanDraft(
 	draft: FeatureDraft,
 ): HumanizedFeatureDraft {
@@ -198,6 +233,8 @@ export function humanizeByosanDraft(
 			"画面に出るheadline、subheadline、statsのlabelとdetail、thumbnailの各文言も視聴者向けの文章です。『まずは確認できる事実から』『記事本文に金額の記載はない』『数字の意味を検証』など、編集メモ・調査上の制限・免責文を画面に出しません。数値カードのdetailは、何の数字かを短く補う事実にします。",
 			"最初は具体的な出来事から入ります。『見えない動きがあります』『まず目を引くのは』『では、いつでしょうか』のような前置きや、答えを引き延ばす問いかけは使いません。story_spineは話の中心を一文で言い切ります。",
 			"似た説明は一つにまとめ、出典や資料の読み上げ、調査手順、データの有無、一般論の注意書きは削除します。会社名は話に必要なものだけ残し、残す各文には具体的な主語と動詞を置きます。抽象的な一文を埋め草として足さず、事実が少なければ短く終えます。",
+			"視聴者が覚える話は一つです。story_spineに直接必要な事実だけを残し、面白そうでも本筋を支えない別会社の統計や追加の調査結果は削ります。台詞で会社名を列挙せず、一つのセグメントに会社名を三社以上並べません。協業先の全社名は画面に任せ、台詞では中心となる一社の具体例を使います。",
+			"同じ会社名の一覧や同じ事実を別のセグメントでもう一度話しません。発表元や調査会社の名前は、予測を伝えるときに必要な一度だけにし、その後は何が変わるのかを話します。",
 			"『記事では』『資料によると』『発表によれば』『報告書には』のように、何かを読んで報告する形で話しません。出典元ではなく、企業や工場、製品を主語にして事実を話します。",
 			"短い文と少し長い文を混ぜて、音読したときに引っかからない言葉を選びます。『供給網』『供給を広げる動き』『生産量を目指す時期』『増産が形になる』のような抽象語や報告書調の言い回しを避け、誰が何をいつするのかをそのまま言います。",
 			"例：『追加の生産量を目指す時期は2028年第3四半期』ではなく、『基板の生産量を今の3.5倍超に増やす目標は、2028年第3四半期です』。『次に見えてくるのは、2027年後半に生産が始まるかどうか』ではなく、『Kinsusが生産を始める予定は2027年後半です』。",
@@ -310,10 +347,7 @@ export function humanizeByosanDraft(
 		];
 	});
 	const minimumSegments = Math.min(2, draft.segments.length);
-	const maximumSegments = Math.min(
-		draft.segments.length,
-		Math.max(4, Math.floor(draft.segments.length * 0.75)),
-	);
+	const maximumSegments = Math.min(3, draft.segments.length);
 	if (segments.length < minimumSegments) {
 		throw new Error(
 			`BYOSAN_HUMANIZER_TOO_FEW_SEGMENTS: source=${draft.segments.length} minimum=${minimumSegments} actual=${segments.length} kept=${JSON.stringify(segments.map(({ text }) => text.slice(0, 120)))}`,
@@ -358,6 +392,9 @@ export function humanizeByosanDraft(
 			]),
 		]),
 	]);
+	assertNoCompanyEnumeration(
+		segments.map((segment, index) => ({ index, text: segment.text })),
+	);
 	// A fact can move when sections merge; compare numbers against the whole draft.
 	assertNoNewNumbers(draft, {
 		title: response.value.title,
