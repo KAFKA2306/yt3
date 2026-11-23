@@ -164,7 +164,17 @@ export function humanizeByosanDraft(
 		if (!edit) throw new Error(`BYOSAN_HUMANIZER_SEGMENT_INDEX: ${index}`);
 		if (edit.keep) {
 			assertNoNewNumbers(
-				{ text: segment.text, stats: segment.stats },
+				{
+					text: segment.text,
+					stats: segment.stats,
+					verified_claims: draft.claims.map(
+						({ claim, caveat, epistemicBoundary }) => ({
+							claim,
+							caveat,
+							epistemicBoundary,
+						}),
+					),
+				},
 				edit.text,
 			);
 		}
