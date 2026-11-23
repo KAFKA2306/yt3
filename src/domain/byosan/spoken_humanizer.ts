@@ -197,6 +197,10 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 		"report_like_wrapup_in_narration",
 	],
 	[
+		/(?:なんですね|なのですね|ということです|ことが分かります|ことがわかります|と言えます)[。！？!?]?$/u,
+		"report_like_final_sentence",
+	],
+	[
 		/(?:AI供給網|好決算.{0,12}見えない動きがあります|まず目を引くのは|AIを支える部材や製造工程|追加の生産量を目指す時期|増産が形になるのは|供給を広げる動きは|先の計画だけではありません|次に見えてくるのは|供給網の姿)/u,
 		"abstract_or_template_phrase_in_narration",
 	],
@@ -226,6 +230,19 @@ function assertSpeakableLines(
 				);
 			}
 		}
+	}
+}
+
+function assertSpecificPackaging(title: string): void {
+	const trimmedTitle = title.trim();
+	const genericTopicEnding =
+		/(?:売上(?:高)?|決算|株価|市場|新製品|発表|買収|値上がり|下落|ニュース)$/u;
+	const hasConcreteHook =
+		/\d|[?？]|(?:なぜ|どうして|どうなる|何が|どっち|それでも|なのに|ところが)/u.test(
+			trimmedTitle,
+		);
+	if (genericTopicEnding.test(trimmedTitle) && !hasConcreteHook) {
+		throw new Error("BYOSAN_HUMANIZER_GENERIC_PACKAGING_TITLE");
 	}
 }
 
@@ -340,10 +357,10 @@ export function humanizeByosanDraft(
 		kind: "draft",
 		schema: HumanizerResponseSchema,
 		prompt: [
-			"検証済みの事実から、視聴者が見終わったあと人に説明できる発見を一つ作ります。記事の要約ではなく、友人に話すような自然な日本語で、具体的な出来事から入り、最後はその発見を一文で伝えてください。",
-			"書き言葉を読み上げる調子を避けます。『記事によると』『資料では』『構成対象』『今回見えたのは』のような報告書や制作メモの言葉、調査上の限界、一般的な免責文は公開台詞に出しません。会社や製品を主語にして、普段の会話で使う言葉と日本語として耳慣れた金額表記を選びます。",
-			"話の中心に必要な事実だけを選びます。具体的な出来事で始め、違いが伝わる具体的な規模や期間を一つ示し、最後に何が分かるのかを一文で言います。抽象的な教訓や『〜しないといけない』という先生口調で締めず、見た事実から素直に結びます。数字を足すためだけの締めや同じ内容の言い直しは要りません。話は2〜3セグメントにまとめます。",
-			"titleは企業名と具体的な変化を中心に短くします。数字を置くときはverified claimの表記を使い、増加率を倍率に計算し直しません。市場予想との比較が確認できない場合は『好決算』『上振れ』と評価しません。headline、subheadline、stats、thumbnailも、見た瞬間に意味が伝わる短い言葉にします。description_leadは動画の内容をそのまま紹介し、『見えてくることがあります』のような予告で引き延ばしません。description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、調査手順、限界の列挙は公開文に含めません。",
+			"この動画を友人に話したくなる発見を一つ選びます。具体的な出来事から始め、事実の差や意外さを見せて、最後は登場人物がその場で気づいたように話します。説明文の要約や教訓で締めません。",
+			"台詞は声に出して自然な日本語にします。記事・資料の紹介、制作メモ、先生のようなまとめ、調査上の限界、一般的な免責文は公開文に書きません。『なんですね』『ということです』のように説明を言い換えて終える形も避けます。堅い用語を会話で使う言葉に直します。",
+			"話は2〜3セグメントにまとめ、各台詞は会話の役目を持たせます。出来事を出す、意外な点を見せる、具体的な規模を添える、の中から必要なものだけを使います。同じ事実を繰り返さず、最後は目の前の事実への自然なひと言で終えます。",
+			"titleとthumbnailは、確認済み事実の中で最も目を引く対比や変化を短く伝えます。会社名と一般的な話題名だけの見出しは避けます。数字はverified claimの表記を使い、増加率を倍率に計算し直しません。市場予想との比較が確認できない場合は『好決算』『上振れ』と評価しません。description_leadは動画の内容を一文で紹介し、description_bulletsは最大3点。出典名、調査手順、限界や言い訳を公開文に足しません。",
 			"入力と同じindexのセグメントを一つずつ返してください。残す台詞には、その枠のclaim_idsから今回使うfact_idsだけを入れ、同じclaim IDは全体で一度だけ使います。削る枠はkeep=false、fact_idsは空配列です。数値カードは必要な項目だけ残し、元のstat_valuesのindexをsource_indexとして指定し、順番を保ちます。",
 			"新しい数字や因果関係を足さず、話者、順序、図、出典、検証用claimを変えません。説明欄に出典リンク以外の注釈や制作上の言い訳を足しません。",
 			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
@@ -546,6 +563,8 @@ export function humanizeByosanDraft(
 			]),
 		]),
 	]);
+	assertSpecificPackaging(response.value.title);
+	assertSpecificPackaging(response.value.thumbnail_title);
 	assertNoCompanyEnumeration(
 		segments.map((segment, index) => ({ index, text: segment.text })),
 	);
