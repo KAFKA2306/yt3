@@ -92,6 +92,35 @@ function assertNoNewNumbers(original: unknown, edited: unknown): void {
 	}
 }
 
+function assertNoUnsupportedEarningsPraise(
+	claims: FeatureDraft["claims"],
+	publicCopy: string,
+): void {
+	const hasEstimateComparison = claims.some(({ claim }) =>
+		/(?:市場予想|アナリスト予想|コンセンサス|予想比|予想を上回)/u.test(claim),
+	);
+	if (
+		!hasEstimateComparison &&
+		/(?:好決算|好業績|予想を上回|予想超え|上振れ)/u.test(publicCopy)
+	) {
+		throw new Error("BYOSAN_HUMANIZER_UNSUPPORTED_EARNINGS_PRAISE");
+	}
+}
+
+function assertNoUnclaimedMultiple(
+	claims: FeatureDraft["claims"],
+	publicCopy: string,
+): void {
+	const multiple =
+		/(?:倍増|(?:\d+(?:\.\d+)?|[一二三四五六七八九十]+)倍(?:超|以上)?)/u;
+	if (
+		multiple.test(publicCopy) &&
+		!claims.some(({ claim }) => multiple.test(claim))
+	) {
+		throw new Error("BYOSAN_HUMANIZER_UNCLAIMED_MULTIPLE");
+	}
+}
+
 function humanizerClaimFacts(
 	draft: FeatureDraft,
 ): Array<{ id: string; fact: string }> {
@@ -133,6 +162,10 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 	[
 		/(?:投資助言|個別の売買を推奨|情報提供を目的|投資判断は自己責任|免責事項)/u,
 		"generic_disclaimer_in_public_copy",
+	],
+	[
+		/(?:しないといけない|しなければならない|する必要があります|する必要がある)/u,
+		"teacherly_instruction_in_public_copy",
 	],
 	[/(?:構成対象|構成会社)/u, "formal_index_term_in_public_copy"],
 	[
@@ -309,8 +342,8 @@ export function humanizeByosanDraft(
 		prompt: [
 			"検証済みの事実から、視聴者が見終わったあと人に説明できる発見を一つ作ります。記事の要約ではなく、友人に話すような自然な日本語で、具体的な出来事から入り、最後はその発見を一文で伝えてください。",
 			"書き言葉を読み上げる調子を避けます。『記事によると』『資料では』『構成対象』『今回見えたのは』のような報告書や制作メモの言葉、調査上の限界、一般的な免責文は公開台詞に出しません。会社や製品を主語にして、普段の会話で使う言葉と日本語として耳慣れた金額表記を選びます。",
-			"話の中心に必要な事実だけを選びます。具体的な出来事で始め、違いが伝わる事実を見せ、最後に何が分かるのかを一文で言います。数字を足すためだけの締めや、同じ内容の言い直しは要りません。話は2〜3セグメントにまとめます。",
-			"titleは企業名と具体的な変化を中心に短くします。headline、subheadline、stats、thumbnailも、見た瞬間に意味が伝わる短い言葉にします。description_leadは動画の内容をそのまま紹介し、『見えてくることがあります』のような予告で引き延ばしません。description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、調査手順、限界の列挙は公開文に含めません。",
+			"話の中心に必要な事実だけを選びます。具体的な出来事で始め、違いが伝わる具体的な規模や期間を一つ示し、最後に何が分かるのかを一文で言います。抽象的な教訓や『〜しないといけない』という先生口調で締めず、見た事実から素直に結びます。数字を足すためだけの締めや同じ内容の言い直しは要りません。話は2〜3セグメントにまとめます。",
+			"titleは企業名と具体的な変化を中心に短くします。数字を置くときはverified claimの表記を使い、増加率を倍率に計算し直しません。市場予想との比較が確認できない場合は『好決算』『上振れ』と評価しません。headline、subheadline、stats、thumbnailも、見た瞬間に意味が伝わる短い言葉にします。description_leadは動画の内容をそのまま紹介し、『見えてくることがあります』のような予告で引き延ばしません。description_bulletsは視聴者が得る内容を最大3点で書きます。出典名、調査手順、限界の列挙は公開文に含めません。",
 			"入力と同じindexのセグメントを一つずつ返してください。残す台詞には、その枠のclaim_idsから今回使うfact_idsだけを入れ、同じclaim IDは全体で一度だけ使います。削る枠はkeep=false、fact_idsは空配列です。数値カードは必要な項目だけ残し、元のstat_valuesのindexをsource_indexとして指定し、順番を保ちます。",
 			"新しい数字や因果関係を足さず、話者、順序、図、出典、検証用claimを変えません。説明欄に出典リンク以外の注釈や制作上の言い訳を足しません。",
 			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
@@ -538,6 +571,25 @@ export function humanizeByosanDraft(
 			})),
 		})),
 	});
+	const claimedNumbers = draft.claims.map(({ claim }) =>
+		claim.replaceAll("一日", "1日"),
+	);
+	const packagingCopy = {
+		title: response.value.title,
+		thumbnail_title: response.value.thumbnail_title,
+		thumbnail,
+	};
+	assertNoNewNumbers(claimedNumbers, packagingCopy);
+	const publicCopy = [
+		response.value.title,
+		response.value.thumbnail_title,
+		...Object.values(thumbnail),
+		response.value.description_lead,
+		...response.value.description_bullets,
+		...segments.map(({ text }) => text),
+	].join(" ");
+	assertNoUnsupportedEarningsPraise(draft.claims, publicCopy);
+	assertNoUnclaimedMultiple(draft.claims, publicCopy);
 
 	const editedDraft = ByosanFeatureDraftSchema.parse({
 		...draft,
