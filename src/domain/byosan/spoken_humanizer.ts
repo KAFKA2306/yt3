@@ -218,13 +218,15 @@ export function humanizeByosanDraft(
 		if (!text) throw new Error(`BYOSAN_HUMANIZER_EMPTY_TEXT: segment=${index}`);
 		return [{ ...segment, text }];
 	});
-	const minimumSegments = Math.min(3, draft.segments.length);
+	const minimumSegments = Math.min(2, draft.segments.length);
 	const maximumSegments = Math.min(
 		draft.segments.length,
 		Math.max(4, Math.floor(draft.segments.length * 0.75)),
 	);
 	if (segments.length < minimumSegments) {
-		throw new Error(`BYOSAN_HUMANIZER_TOO_FEW_SEGMENTS: ${segments.length}`);
+		throw new Error(
+			`BYOSAN_HUMANIZER_TOO_FEW_SEGMENTS: source=${draft.segments.length} minimum=${minimumSegments} actual=${segments.length} kept=${JSON.stringify(segments.map(({ text }) => text.slice(0, 120)))}`,
+		);
 	}
 	if (segments.length > maximumSegments) {
 		throw new Error(
