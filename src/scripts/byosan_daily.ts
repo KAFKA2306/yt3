@@ -418,22 +418,6 @@ export function generateFeatureSpec(
 		{ spaces: 2 },
 	);
 	let parsed = ByosanFeatureDraftSchema.parse(normalized.draft);
-	const humanized = isInteractiveByosanRun(input.runId)
-		? humanizeByosanDraft(parsed)
-		: undefined;
-	if (humanized) {
-		parsed = humanized.draft;
-		fs.outputJsonSync(
-			path.join(runDir, "audit", "spoken_humanization.json"),
-			{
-				story_spine: humanized.storySpine,
-				removed_segment_indexes: humanized.removedSegmentIndexes,
-				edits: humanized.edits,
-				model_route: humanized.receipt,
-			},
-			{ spaces: 2 },
-		);
-	}
 	const titleFit = invokeCreativeStructured({
 		name: "byosan_title_body_review",
 		kind: "title",
@@ -457,6 +441,22 @@ export function generateFeatureSpec(
 		}),
 	});
 	parsed = { ...parsed, title: titleFit.value.title };
+	const humanized = isInteractiveByosanRun(input.runId)
+		? humanizeByosanDraft(parsed)
+		: undefined;
+	if (humanized) {
+		parsed = humanized.draft;
+		fs.outputJsonSync(
+			path.join(runDir, "audit", "spoken_humanization.json"),
+			{
+				story_spine: humanized.storySpine,
+				removed_segment_indexes: humanized.removedSegmentIndexes,
+				edits: humanized.edits,
+				model_route: humanized.receipt,
+			},
+			{ spaces: 2 },
+		);
+	}
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "creative_authoring.json"),
 		{
