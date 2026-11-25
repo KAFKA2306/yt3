@@ -78,6 +78,6 @@ use_case_playlists:
     description: "朝の支度や散歩、通勤通学など、いつもの時間を自分のペースで過ごしたいときに。軽やかに流れるオリジナル曲を集めています。"
     sound_hint: "An easy, buoyant groove for everyday movement; prefer a natural fit with the scene over a fixed tempo or genre."
   q4_night_reset:
-    title: "夜・休憩に気持ちをほどく | 雨晴はうの人類観測所"
-    description: "一日の終わりや休憩に、気持ちをゆるめたいときに。静けさや余韻のあるオリジナル曲を集めています。"
+    title: "夜と休憩に聴く、癒やしの音楽 | 雨晴はうの人類観測所"
+    description: "眠る前やひと息つきたい時間に。歌と音の余韻に身をあずけて、今日の自分を責めずに休めるオリジナル曲を集めています。"
     sound_hint: "Room for reflection and emotional release through tone, space, and phrasing; tempo and genre follow each song's own concept."
