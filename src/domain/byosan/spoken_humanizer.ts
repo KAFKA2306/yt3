@@ -224,7 +224,7 @@ const META_SPEECH_PATTERNS: Array<[RegExp, string]> = [
 	[/(?:実績と取り違え|見通しを実績)/u, "repeated_warning_in_narration"],
 ];
 
-function assertSpeakableLines(
+export function assertSpeakableLines(
 	segments: Array<{ index: number; text: string }>,
 ): void {
 	for (const segment of segments) {
@@ -279,15 +279,17 @@ function assertDistinctDatesStayDistinct(
 	}
 }
 
-function requiredPackagedClaimIds(draft: FeatureDraft): string[] {
+function requiredPackagedClaimIds(
+	draft: Pick<FeatureDraft, "claims" | "packaging">,
+): string[] {
 	const packagedIds = new Set(draft.packaging?.claimIds ?? []);
 	return draft.claims.flatMap(({ id, status }) =>
 		id && status === "verified" && packagedIds.has(id) ? [id] : [],
 	);
 }
 
-function assertPackagedClaimsRetained(
-	draft: FeatureDraft,
+export function assertPackagedClaimsRetained(
+	draft: Pick<FeatureDraft, "claims" | "packaging">,
 	usedFactIds: ReadonlySet<string>,
 ): void {
 	const missing = requiredPackagedClaimIds(draft).filter(
@@ -300,7 +302,7 @@ function assertPackagedClaimsRetained(
 	}
 }
 
-function assertResolvedEnding(segments: Array<{ text: string }>): void {
+export function assertResolvedEnding(segments: Array<{ text: string }>): void {
 	const finalSegment = segments.at(-1)?.text.trim();
 	if (!finalSegment) throw new Error("BYOSAN_HUMANIZER_EMPTY_ENDING");
 	if (/[?？][」』）)]?$/u.test(finalSegment)) {
