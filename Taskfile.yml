@@ -57,7 +57,7 @@ tasks:
       - bun src/scripts/measure_bpm.ts {{.CLI_ARGS}}
 
   humanity:playlists:sync:
-    desc: "Update Humanity playlist descriptions and add explicitly assigned public songs (--apply to write; historic memberships stay in place)"
+    desc: "Update Humanity playlist descriptions and add explicitly assigned public songs (--apply; optionally scope with --use-case; historic memberships stay in place)"
     cmds:
       - bun src/scripts/humanity_backfill_playlists.ts {{.CLI_ARGS}}
 

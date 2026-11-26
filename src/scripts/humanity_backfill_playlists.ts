@@ -75,9 +75,20 @@ async function listPlaylistVideoIdsUntilIncluded(
 async function main() {
 	const args = process.argv.slice(2);
 	const apply = args.includes("--apply");
-	const unexpectedArgs = args.filter((arg) => arg !== "--apply");
-	if (unexpectedArgs.length > 0)
-		throw new Error(`unexpected arguments: ${unexpectedArgs.join(" ")}`);
+	let scopedUseCase: HumanityUseCaseId | undefined;
+	for (let index = 0; index < args.length; index++) {
+		const arg = args[index];
+		if (arg === "--apply") continue;
+		if (arg === "--use-case") {
+			const value = args[++index];
+			if (!value || !ALL_USE_CASES.includes(value as HumanityUseCaseId))
+				throw new Error("invalid --use-case: " + (value ?? "<missing>"));
+			scopedUseCase = value as HumanityUseCaseId;
+			continue;
+		}
+		throw new Error("unexpected argument: " + arg);
+	}
+	const useCasesToSync = scopedUseCase ? [scopedUseCase] : ALL_USE_CASES;
 	const config = loadMusicConfig(ROOT);
 	let youtube: ReturnType<typeof google.youtube> | undefined;
 	if (apply) {
@@ -213,7 +224,7 @@ async function main() {
 		? (fs.readJsonSync(ucStatePath) as Record<string, string>)
 		: {};
 
-	for (const ucId of ALL_USE_CASES) {
+	for (const ucId of useCasesToSync) {
 		const meta = config.use_case_playlists[ucId];
 		if (!ucState[ucId]) {
 			const created = await youtube.playlists.insert({
@@ -235,31 +246,73 @@ async function main() {
 				`[created] ${ucId} => ${YOUTUBE_PLAYLIST_URL}${created.data.id}`,
 			);
 		} else {
-			await youtube.playlists.update({
-				part: ["snippet"],
-				requestBody: {
-					id: ucState[ucId],
-					snippet: { title: meta.title, description: meta.description },
-				},
+			const currentPlaylist = await youtube.playlists.list({
+				part: ["snippet", "status"],
+				id: [ucState[ucId]],
 			});
-			console.log(`[updated] ${ucId} metadata`);
+			const current = currentPlaylist.data.items?.[0];
+			const currentMatches =
+				current?.snippet?.title === meta.title &&
+				current.snippet.description === meta.description &&
+				current.status?.privacyStatus === config.youtube_playlist.privacy;
+			if (!currentMatches) {
+				await youtube.playlists.update({
+					part: ["snippet"],
+					requestBody: {
+						id: ucState[ucId],
+						snippet: { title: meta.title, description: meta.description },
+					},
+				});
+				console.log("[updated] " + ucId + " metadata");
+			} else {
+				console.log("[unchanged] " + ucId + " metadata already matches");
+			}
 		}
 
-		const playlist = await youtube.playlists.list({
-			part: ["snippet", "status"],
-			id: [ucState[ucId]],
-		});
-		const observed = playlist.data.items?.[0];
+		let observed: {
+			snippet?: { title?: string | null; description?: string | null };
+			status?: { privacyStatus?: string | null };
+		} | undefined;
+		for (let attempt = 0; attempt < 5; attempt++) {
+			const playlist = await youtube.playlists.list({
+				part: ["snippet", "status"],
+				id: [ucState[ucId]],
+			});
+			observed = playlist.data.items?.[0];
+			if (
+				observed?.snippet?.title === meta.title &&
+				observed.snippet.description === meta.description &&
+				observed.status?.privacyStatus === config.youtube_playlist.privacy
+			)
+				break;
+			if (attempt < 4)
+				await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+		}
 		if (
 			observed?.snippet?.title !== meta.title ||
 			observed.snippet.description !== meta.description ||
 			observed.status?.privacyStatus !== config.youtube_playlist.privacy
 		)
-			throw new Error(`${ucId}: playlist metadata read-back did not match`);
+			throw new Error(
+				ucId + ": playlist metadata read-back did not match: " +
+					JSON.stringify({
+						expected: {
+							title: meta.title,
+							description: meta.description,
+							privacyStatus: config.youtube_playlist.privacy,
+						},
+						observed: {
+							title: observed?.snippet?.title,
+							description: observed?.snippet?.description,
+							privacyStatus: observed?.status?.privacyStatus,
+						},
+					}),
+			);
+		console.log("[verified] " + ucId + " metadata read-back");
 	}
 
 	const existingByUc = new Map<HumanityUseCaseId, Set<string>>();
-	for (const ucId of ALL_USE_CASES) {
+	for (const ucId of useCasesToSync) {
 		const pid = ucState[ucId];
 		if (pid) existingByUc.set(ucId, await listPlaylistVideoIds(youtube, pid));
 	}
@@ -269,6 +322,7 @@ async function main() {
 	if (apply) {
 		for (const row of rows) {
 			for (const ucId of row.use_cases) {
+				if (!useCasesToSync.includes(ucId)) continue;
 				const pid = ucState[ucId];
 				const existing = existingByUc.get(ucId);
 				if (!pid || existing?.has(row.video_id)) {
@@ -292,7 +346,7 @@ async function main() {
 	}
 
 	const urls: Record<string, string> = {};
-	for (const ucId of ALL_USE_CASES) {
+	for (const ucId of useCasesToSync) {
 		if (ucState[ucId]) urls[ucId] = `${YOUTUBE_PLAYLIST_URL}${ucState[ucId]}`;
 	}
 	console.log(
@@ -310,7 +364,7 @@ async function main() {
 		),
 	);
 
-	for (const ucId of ALL_USE_CASES) {
+	for (const ucId of useCasesToSync) {
 		const expected = new Set(
 			rows
 				.filter((row) => row.use_cases.includes(ucId))
