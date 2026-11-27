@@ -148,22 +148,24 @@ export const ConfigSchema = z.object({
 	}),
 	rating: z.object({ min: z.number(), max: z.number() }),
 	run: z.object({ bucket: z.string(), name_prefix: z.string() }),
-	pv: z.object({
-		chrome: z.string(),
-		jizura_html: z.string(),
-		jizura_version: z.string(),
-		theme_ids: z.array(z.string().min(1)).min(1),
-		style_ids: z.array(z.string().min(1)).min(1),
-		mood_ids: z.array(z.string().min(1)).min(1),
-		motif_layout_ids: z.array(z.string().min(1)).min(1),
-		arc_opening_window_seconds: z.number().positive(),
-		whisper_model: z.string(),
-		export_timeout_ms: z.number(),
-		crf: z.number(),
-		audio_bitrate: z.string(),
-		file: z.string(),
-		record: z.string(),
-	}),
+	pv: z
+		.object({
+			chrome: z.string().optional(),
+			jizura_html: z.string().optional(),
+			jizura_version: z.string().optional(),
+			theme_ids: z.array(z.string().min(1)).min(1).optional(),
+			style_ids: z.array(z.string().min(1)).min(1).optional(),
+			mood_ids: z.array(z.string().min(1)).min(1).optional(),
+			motif_layout_ids: z.array(z.string().min(1)).min(1).optional(),
+			arc_opening_window_seconds: z.number().positive().optional(),
+			whisper_model: z.string().optional(),
+			export_timeout_ms: z.number().optional(),
+			crf: z.number().optional(),
+			audio_bitrate: z.string().optional(),
+			file: z.string(),
+			record: z.string(),
+		})
+		.passthrough(),
 	thumbnail: z.object({
 		file: z.string(),
 		width: z.number(),
@@ -377,7 +379,7 @@ export function musicAudit(
 	];
 	const visual = [
 		pv?.tool ? "" : "video tool missing",
-		pv?.jizura_version ? "" : "JIZURA version missing",
+		pv?.tool !== "jizura" || pv.jizura_version ? "" : "JIZURA version missing",
 		pv?.sha256 && pv.sha256 === input.videoSha256
 			? ""
 			: "video sha256 mismatch",
@@ -399,7 +401,7 @@ export function musicAudit(
 		),
 		visual_provenance: check(
 			"visual_provenance",
-			"Video tool, JIZURA version and hash are recorded",
+			"Video tool and hash are recorded; renderer-specific version is checked when applicable",
 			visual.filter(Boolean),
 		),
 		music_rights: check(

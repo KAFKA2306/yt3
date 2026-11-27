@@ -253,13 +253,6 @@ function preflight(
 		Bun.which("ffprobe") ? "" : "ffprobe is not on PATH",
 		Bun.which("python3") ? "" : "python3 is not on PATH",
 		Bun.which("uv") ? "" : "uv is not on PATH",
-		fs.existsSync(path.join(ROOT, "scripts", "yawa_jizura.py"))
-			? ""
-			: "scripts/yawa_jizura.py is missing",
-		fs.existsSync(path.join(ROOT, "vendor", "jizura", "index.html")) &&
-		fs.existsSync(path.join(ROOT, "vendor", "jizura", "VERSION"))
-			? ""
-			: "pinned JIZURA runtime is incomplete",
 		tools.tts.length > 0
 			? ""
 			: "no configured Irodori environment is available",
@@ -371,9 +364,8 @@ function scriptPrompt(
 			JSON.stringify({
 				tts: tools.tts,
 				images: imageTools,
-				video: ["yawa_jizura"],
 			}),
-		"動画は固定キャストの声と台詞を主役に、scripts/yawa_jizura.py が pinned JIZURA で静かな夜の文字映像を作ります。冒頭30秒で場所と小さな感覚的な手掛かりを置き、会話の転換で画面をわずかに温めて余韻を保ちます。字幕を詰め込まず、音声・間・演技は変更しません。",
+		"動画では固定キャストの声と台詞を主役にします。冒頭30秒で場所と小さな感覚的な手掛かりを置き、会話の転換を画面にも反映し、その後は余韻を保ちます。字幕を詰め込まず、音声・間・演技は変更しません。映像の形式やレンダラーは作品に合うものを選んでください。",
 		imageTools.length > 0
 			? `背景兼サムネイル画像はクリック率と没入感を高める重要要素です。production.image_toolに "${imageTools[0]}" を指定し、選んだキャストのvisual_identityと今回の場面・照明を描く英語のthumbnail_prompt（文字・ロゴなし）を必ず作成してください。対応サイズ: ` +
 				JSON.stringify(
@@ -387,7 +379,7 @@ function scriptPrompt(
 						]),
 					),
 				)
-			: "画像生成は今回無効です。thumbnail_promptは省略し、動画は静かなJIZURA映像を制作します。",
+			: "画像生成は今回無効です。thumbnail_promptは省略します。",
 		`採用タイトル: ${selectedTitle}`,
 		...(titleReview
 			? [`本文前のタイトル批評: ${JSON.stringify(titleReview)}`]
@@ -1080,38 +1072,6 @@ function renderVideo(_draft: ScriptDraft, audio: string, dir: string): string {
 	const record = path.join(dir, `${path.parse(output).name}.jizura.json`);
 	const audioHash = fileHash(audio);
 	if (fs.existsSync(output)) {
-		if (!fs.existsSync(record))
-			throw new StepFailure(
-				"video-render",
-				"existing video has no JIZURA provenance; use a fresh run ID",
-			);
-		const provenance = fs.readJsonSync(record) as {
-			tool?: string;
-			jizura_version?: string;
-			jizura_sha256?: string;
-			source_audio_sha256?: string;
-			video_sha256?: string;
-			width?: number;
-			height?: number;
-			fps?: number;
-		};
-		if (
-			provenance.tool !== "jizura" ||
-			provenance.jizura_version !==
-				fs
-					.readFileSync(path.join(ROOT, "vendor", "jizura", "VERSION"), "utf-8")
-					.trim() ||
-			!provenance.jizura_sha256 ||
-			provenance.source_audio_sha256 !== audioHash ||
-			provenance.video_sha256 !== fileHash(output) ||
-			provenance.width !== 1920 ||
-			provenance.height !== 1080 ||
-			provenance.fps !== 24
-		)
-			throw new StepFailure(
-				"video-render",
-				"existing JIZURA video provenance does not match its audio or file",
-			);
 		const existing = probeVideo(output);
 		const videoTol = Number.isFinite(config.audit.duration_tolerance_seconds)
 			? Math.max(config.audit.duration_tolerance_seconds, 0.25)
@@ -1121,6 +1081,38 @@ function renderVideo(_draft: ScriptDraft, audio: string, dir: string): string {
 				"video-check",
 				"existing video duration differs from the audio",
 			);
+		if (fs.existsSync(record)) {
+			const provenance = fs.readJsonSync(record) as {
+				tool?: string;
+				jizura_version?: string;
+				jizura_sha256?: string;
+				source_audio_sha256?: string;
+				video_sha256?: string;
+				width?: number;
+				height?: number;
+				fps?: number;
+			};
+			if (
+				provenance.tool !== "jizura" ||
+				provenance.jizura_version !==
+					fs
+						.readFileSync(
+							path.join(ROOT, "vendor", "jizura", "VERSION"),
+							"utf-8",
+						)
+						.trim() ||
+				!provenance.jizura_sha256 ||
+				provenance.source_audio_sha256 !== audioHash ||
+				provenance.video_sha256 !== fileHash(output) ||
+				provenance.width !== 1920 ||
+				provenance.height !== 1080 ||
+				provenance.fps !== 24
+			)
+				throw new StepFailure(
+					"video-render",
+					"existing JIZURA provenance does not match its audio or file",
+				);
+		}
 		return output;
 	}
 	run("video-render", [

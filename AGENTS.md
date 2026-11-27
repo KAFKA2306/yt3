@@ -55,9 +55,9 @@ Keep each product's config, media, credentials, receipts, and publication state 
 
 ## Creative authoring
 
-Yawa, Humanity, and Byosan create new work through the shared model router in `src/io/creative.ts`. Its defaults and automatic cross-provider failover chains are configured in `config/creative_authoring.yaml`: `title` tries `codex:gpt-6-luna:low` then fails over to `agy:gemini-4-hydrogen-medium`; `draft` tries `codex:gpt-6-luna:medium` then fails over to `agy:gemini-4-hydrogen-medium` on quota/rate-limit/capacity/timeout errors (recording `failover_attempts` in the receipt). For a deliberate one-run override, set `YT3_CREATIVE_TITLE_ROUTE=codex:<model>:<effort>` / `YT3_CREATIVE_DRAFT_ROUTE=codex:<model>:<effort>`, or use `agy:<model>`. Each product keeps its own brief and output format. Research, audio/image generation, JIZURA, editing, and the canonical publication entries remain product-owned.
+Yawa, Humanity, and Byosan create new work through the shared model router in `src/io/creative.ts`. Its defaults and automatic cross-provider failover chains are configured in `config/creative_authoring.yaml`: `title` tries `codex:gpt-6-luna:low` then fails over to `agy:gemini-4-hydrogen-medium`; `draft` tries `codex:gpt-6-luna:medium` then fails over to `agy:gemini-4-hydrogen-medium` on quota/rate-limit/capacity/timeout errors (recording `failover_attempts` in the receipt). For a deliberate one-run override, set `YT3_CREATIVE_TITLE_ROUTE=codex:<model>:<effort>` / `YT3_CREATIVE_DRAFT_ROUTE=codex:<model>:<effort>`, or use `agy:<model>`. Each product keeps its own brief and output format. Research, audio/image generation, visual production, editing, and the canonical publication entries remain product-owned.
 
-Humanity creates standalone original songs without a fixed fictional town/story-world canon; each song chooses its own genre, mood, vocal color, and concrete details to move the listener. Its song-specific JIZURA plan names the opening hook, an early lyric clue, a recurring visual motif, and the lyric marker where that motif transforms at the emotional climax; it keeps the rendered project beside the video.
+Humanity creates standalone original songs without a fixed fictional town/story-world canon; each song chooses its own genre, mood, vocal color, and concrete details to move the listener. Its song-specific visual plan can name the opening hook, an early lyric clue, a recurring visual motif, and where that motif transforms at the emotional climax; keep project files beside the video when the chosen medium has them.
 
 ## Byosan prompt and constraint policy
 
@@ -73,7 +73,7 @@ The remaining Byosan digest uses `llm.backends.digest` (`gemini`, `codex`, or `c
 
 ## Byosan visuals and titles
 
-Every Byosan video uses the pinned local JIZURA renderer and FFmpeg mux. Routine and interactive runs build deterministic, audio-timed visual cues from the feature specification and TTS chunks; give the story pivot a clear layout or contrast change while keeping Japanese text legible in the light KAFKA SIGNAL palette. Scheduled Byosan thumbnails keep their episode-specific art and exact title overlay. Owner-directed interactive thumbnails use a separate textless story image: one full-bleed scene and a single readable visual tension, with no numbers, charts, cards, or brand overlay. The video title carries the facts; the image supplies the moment that makes a viewer curious.
+Byosan visuals follow the spoken feature. Routine and interactive runs build deterministic, audio-timed visual cues from the feature specification and TTS chunks; give the story pivot a clear layout or contrast change while keeping Japanese text legible in the light KAFKA SIGNAL palette. Choose the visual medium and renderer that best serve the story and viewer. Scheduled Byosan thumbnails keep their episode-specific art and exact title overlay. Owner-directed interactive thumbnails use a separate textless story image: one full-bleed scene and a single readable visual tension, with no numbers, charts, cards, or brand overlay. The video title carries the facts; the image supplies the moment that makes a viewer curious.
 
 The former 漫才 role contract was removed on 2026-11-07. Scripts may use either available character or both in the roles that suit the episode.
 
@@ -85,7 +85,7 @@ Feature, production, and authenticity findings remain available as diagnostics. 
 
 ## Shared video rendering
 
-Byosan, Yawa, and Humanity use the pinned local JIZURA 0.13.0 renderer for every video, with no alternate renderer or non-JIZURA fallback. Byosan cues follow its spoken feature; Yawa uses quiet, sparse dialogue cues over the original performance with a restrained emotional turn; Humanity authors a song-specific motif, early lyric clue, and climax transformation over the measured lyric timeline. Each channel keeps its own palette and pacing. FFmpeg muxes the unchanged source audio, and the run's provenance records identify the JIZURA project, source audio, and final video. Each run's `publish/state.json` is the canonical publication state.
+Visuals follow each channel's audience and story: Byosan cues follow its spoken feature; Yawa uses quiet, sparse dialogue cues over the original performance with a restrained emotional turn; Humanity can use a song-specific motif, early lyric clue, and climax transformation over the measured lyric timeline. Each channel keeps its own palette and pacing. Choose the renderer or medium that best serves the work, and record the tools and source assets actually used. FFmpeg may mux unchanged source audio where appropriate. Each run's `publish/state.json` is the canonical publication state.
 
 ## Evidence and credentials
 

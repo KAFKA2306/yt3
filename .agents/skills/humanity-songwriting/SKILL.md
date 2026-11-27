@@ -15,7 +15,7 @@ Treat 雨晴はう as the channel curator rather than forcing a single voice or 
 2. **Rotate distinct emotional modes**: Break out of lukewarm evening melancholy and habitual softeners (`少し`, `静か`, `そっと`, `不器用`, `まま`, `決めない`). Deliberately vary emotional polarity per song (speed/impulse, sharp irony/bluff, brisk comedy/banter, urgent regret, late-night confession, explosive release).
 3. **One sharp concrete anchor, not a scenery checklist**: Use at most 0–1 recurring world props (`海と線路`, `ガラス張りの小屋`, `黒板`, `黄色い傘`) per song; anchor the song in one fresh concrete object or gesture unique to that track.
 4. **Short memorable title (3–15 chars)**: Never write a light-novel synopsis title. Place the story premise, featured characters, and emotional context in the YouTube description instead.
-5. **Cohesive jacket + JIZURA plan**: Pair a text-free song-specific jacket thumbnail prompt with a JIZURA kinetic lyric-PV plan (`theme_id`, `unify`, `typeset`, 3-color accent palette) matching the song's energy.
+5. **Cohesive jacket + visual plan**: Pair a text-free song-specific jacket thumbnail prompt with a visual plan matching the song's energy. Choose a medium and renderer that fit the song; the current daily path can translate the plan into its JIZURA lyric-PV format.
 
 HoneyWorks (dramatic relationships and range), DECO*27 (wordplay, edge, hook craft), and [IMOJIST](https://www.youtube.com/@IMOJIST) (sound design and musical direction) are preference signals only. Never reuse lyrics, distinctive phrases, characters, plots, melodies, or signature presentation.
 

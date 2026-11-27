@@ -19,7 +19,7 @@ YT3 は **3 つの YouTube チャンネル（秒算マネー・夜話アーカ�
 - [夜話アーカイブ 制作方針の振り返り](yawa/production-retrospective.md) - 旧設計で表現が狭まった要因と現行方針へ切り替えた経緯の記録。
 - [雨晴はうの人類観測所 Mission](humanity/MISSION.md) - オリジナル AI 音楽チャンネルの編集目的、曲名・ジャケット・週3本頻度・収益化 KPI。
 - [雨晴はうの人類観測所 SOUL](humanity/SOUL.md) - 雨晴はうの人格・温度・音の手触り・倫理の核。
-- [人類観測所の作詞と制作指針](humanity/songwriting.md) - 短い曲名・概要欄・JIZURA 文字PV・ジャケット制作の手順。
+- [人類観測所の作詞と制作指針](humanity/songwriting.md) - 短い曲名・概要欄・曲に合う映像設計・ジャケット制作の手順。
 
 ## データ設計・運用基準
 

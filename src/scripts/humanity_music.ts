@@ -40,23 +40,26 @@ import { invokeCreativeStructured } from "../io/creative.js";
 const config = loadMusicConfig(ROOT);
 const outputDir = path.join(ROOT, config.output_dir);
 const ledgerPath = path.join(outputDir, "ledger.jsonl");
-const DraftSchema = z.object({
-	title: z.string().min(1),
-	use_case: HumanityUseCaseIdSchema,
-	secondary_use_cases: z
-		.array(HumanityUseCaseIdSchema)
-		.max(1)
-		.optional()
-		.default([]),
-	concept: z.string().min(1),
-	story: z.string().min(1),
-	relationship: z.string().min(1),
-	featured_characters: z.array(z.string().min(1)).min(1),
-	style: z.string().min(1),
-	lyrics: z.string().min(1),
-	thumbnail_prompt: z.string().min(1),
-	jizura: HumanityJizuraPlanSchema,
-});
+const DraftSchema = z
+	.object({
+		title: z.string().min(1),
+		use_case: HumanityUseCaseIdSchema,
+		secondary_use_cases: z
+			.array(HumanityUseCaseIdSchema)
+			.max(1)
+			.optional()
+			.default([]),
+		concept: z.string().min(1),
+		story: z.string().min(1),
+		relationship: z.string().min(1),
+		featured_characters: z.array(z.string().min(1)).min(1),
+		style: z.string().min(1),
+		lyrics: z.string().min(1),
+		thumbnail_prompt: z.string().min(1),
+		visual_direction: z.string().min(1),
+		jizura: HumanityJizuraPlanSchema.optional(),
+	})
+	.passthrough();
 
 type PreviousStory = {
 	id: string;
@@ -133,6 +136,13 @@ function loadJizuraPlan(generationDir: string, generationId: string): string {
 	const planPath = path.join(generationDir, "jizura.json");
 	const plan = HumanityJizuraPlanRecordSchema.parse(fs.readJsonSync(planPath));
 	if (
+		!config.pv.theme_ids ||
+		!config.pv.style_ids ||
+		!config.pv.mood_ids ||
+		!config.pv.motif_layout_ids
+	)
+		throw new Error("JIZURA renderer settings are incomplete for this run");
+	if (
 		!config.pv.theme_ids.includes(plan.theme_id) ||
 		!config.pv.style_ids.includes(plan.style_id) ||
 		!config.pv.mood_ids.includes(plan.mood_id) ||
@@ -185,10 +195,6 @@ function preflight(): void {
 			? ""
 			: `free RAM ${freeRam} MiB < ${config.yue.min_free_ram_mib} MiB for CPU generation`,
 		Bun.which("agy") ? "" : "agy CLI is not on PATH",
-		fs.existsSync(config.pv.chrome) ? "" : "pv chrome is missing",
-		fs.existsSync(path.join(ROOT, config.pv.jizura_html))
-			? ""
-			: "JIZURA html is missing",
 		Bun.which("uv") ? "" : "uv is not on PATH",
 		Bun.which("ffmpeg") ? "" : "ffmpeg is not on PATH",
 		fs.existsSync(path.join(config.yue.dir, config.yue.python))
@@ -263,11 +269,11 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			"雨晴はうは全曲を単一の声で歌う歌手ではなくチャンネルのキュレーターです。今回の曲のテーマ・用途・感情に合うボーカル、テンポ、編曲、音色を自由に設計します。特定の架空の町や固定の登場人物設定に縛られず、初めて聴く人にも一曲単体で強く刺さる作品にしてください。",
 			"聴き手の感情やテンションを明確に動かすことを大切にします。具体的な場面やリズム感のある言葉選びで、口ずさみたくなるサビを作ってください。",
 			"既存作品の歌詞、語句、人物、場面、筋書き、旋律、固有フレーズは一切借りません。",
-			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、use_caseは4つの聴き手の場面（q1_action_boost / q2_focus_boost / q3_daily_flow / q4_night_reset）から最も合う主用途を1つ、secondary_use_casesは別の場面にもはっきり合う場合だけ最大1つ選び、なければ空配列にします。BPMだけで用途を決めず、曲のコンセプト・歌詞・完成音源がその場面に合うかで選びます。conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、jizuraはJIZURAで歌詞を曲のビートに沿って見せる計画にします。",
+			"歌詞は新しく書きます。titleは3〜15文字前後の短い曲名、use_caseは4つの聴き手の場面（q1_action_boost / q2_focus_boost / q3_daily_flow / q4_night_reset）から最も合う主用途を1つ、secondary_use_casesは別の場面にもはっきり合う場合だけ最大1つ選び、なければ空配列にします。BPMだけで用途を決めず、曲のコンセプト・歌詞・完成音源がその場面に合うかで選びます。conceptは一文で伝わる今回の核、storyは概要欄に載せる2〜3文の曲の背景・聴きどころ、relationshipは曲の視点やテーマの軸、featured_charactersは視点やモチーフ名の配列（例: ['語り手']）、styleは音楽生成用の英語説明、lyricsは自由な行分けの歌詞全文、thumbnail_promptはYouTubeジャケットサムネイル用の英語画像生成プロンプト（曲の世界観とエネルギーに合う高品質なビジュアル・16:9・文字やロゴなし）、visual_directionは曲のためのレンダラー非依存の映像設計です。",
 			`選んだタイトル: ${titleProposal.value.title}`,
 			`タイトルだけの批評: ${JSON.stringify(titleReview.value)}`,
 			"このタイトルの約束に沿う曲を作り、titleには選んだタイトルをそのまま入れてください。",
-			"JIZURAはこの曲だけの映像設計です。jizura.theme_id、style_id、mood_id、paletteをこの曲の音楽と歌詞に合わせて選び、同じ既定スタイルへ固定しません。jizura.visual_arcにはopening_hook（歌い出しの歌詞断片）、motif（曲世界の具体物・色・光）、motif_layout_id（曲固有のモチーフを描くJIZURAレイアウトID。xcBrowser / xcPlayer / xcLoading / xcMapPin / xcSignpost / xcVending / xcFolder / xcScoreboard / xcWeather / xcBattery / xcPopups / xcIncoming / xcGauge / xcSheet / xcChipCard / xcPaperCup / xcTshirt / xcHandheld / xcBlackboard / xcTruck / xcPlate / xcDropdown / xcSelect / xcRadio / xcFloppy / xcMegaphone / xcBunting / xcDrawers / xcPoll / xcAwningから最適なものを選ぶ）、clue_lyric（冒頭30秒以内に実際に歌われる歌詞の一部）、climax_lyric（ブリッジまたは最後のサビにある実際の歌詞断片）、transformation（手掛かりがクライマックスでどう変わるか）を記します。断片はlyricsの行にそのまま含め、クライマックスは手掛かりを回収して感情を一段動かすものにします。映像もclue_lyric行にそのモチーフを小さく置き、climax_lyric行で同じモチーフを変化後の色とレイアウトで一度だけ大きく見せ、その後は変化後の状態を保ちます。jizura.climax_paletteには転換後のbgとaccentを6桁HEXで指定します。opening_hookと手掛かりは最初の30秒で伝わる具体的な一場面にし、説明文や抽象的な形容だけにしません。全曲共通の物語テンプレートは使いません。",
+			"visual_directionには冒頭のフック、30秒以内の具体的な手掛かり、曲固有の視覚モチーフ、ブリッジまたは最後のサビでの変化・回収を記します。実音源に合わせ、クライマックスで同じモチーフを変化させて感情を一段動かし、その後は変化後の状態を保ちます。曲ごとに形式と見せ方を選び、全曲共通の物語テンプレートは使いません。現行の日次経路のJIZURAレンダーに合わせる場合は、jizuraとしてtheme_id、style_id、mood_id、palette、motif_layout_id、visual_arc、climax_palette、rationaleを含む形式もあわせて作成します。",
 			`企画の手掛かり: ${JSON.stringify(context)}`,
 		].join("\n\n"),
 	});
@@ -294,14 +300,16 @@ async function generate(brief?: string): Promise<GenerationRow> {
 	const requestPath = path.join(runDir, "request.json");
 	fs.ensureDirSync(runDir);
 	const jizuraPlanPath = path.join(runDir, "jizura.json");
-	const jizuraPlan = HumanityJizuraPlanRecordSchema.parse({
-		...draft.jizura,
-		version: 1,
-		generation_id: id,
-		title: draft.title,
-		seed: jizuraSeed,
-	});
-	fs.writeJsonSync(jizuraPlanPath, jizuraPlan, { spaces: 2 });
+	const jizuraPlan = draft.jizura
+		? HumanityJizuraPlanRecordSchema.parse({
+				...draft.jizura,
+				version: 1,
+				generation_id: id,
+				title: draft.title,
+				seed: jizuraSeed,
+			})
+		: undefined;
+	if (jizuraPlan) fs.writeJsonSync(jizuraPlanPath, jizuraPlan, { spaces: 2 });
 	fs.writeJsonSync(path.join(runDir, "creative_authoring.json"), {
 		model_routes: {
 			title_proposal: titleProposal.receipt,
@@ -317,14 +325,19 @@ async function generate(brief?: string): Promise<GenerationRow> {
 		relationship: draft.relationship,
 		featured_characters: draft.featured_characters,
 		thumbnail_prompt: draft.thumbnail_prompt,
-		jizura_plan: {
-			path: "jizura.json",
-			sha256: sha256File(jizuraPlanPath),
-			provider: authored.receipt.provider,
-			model: authored.receipt.model,
-			conversation_id: authored.receipt.conversation_id,
-			usage: authored.receipt.usage,
-		},
+		visual_direction: draft.visual_direction,
+		...(jizuraPlan
+			? {
+					jizura_plan: {
+						path: "jizura.json",
+						sha256: sha256File(jizuraPlanPath),
+						provider: authored.receipt.provider,
+						model: authored.receipt.model,
+						conversation_id: authored.receipt.conversation_id,
+						usage: authored.receipt.usage,
+					},
+				}
+			: {}),
 		title: draft.title,
 		title_proposal: titleProposal.value,
 		title_proposal_usage: titleProposal.receipt.usage,
@@ -506,6 +519,15 @@ function renderJizura(
 	visualPlan: string,
 	outputDir: string,
 ): void {
+	if (
+		!config.pv.chrome ||
+		!config.pv.jizura_html ||
+		!config.pv.jizura_version ||
+		!fs.existsSync(config.pv.chrome) ||
+		!fs.existsSync(path.join(ROOT, config.pv.jizura_html)) ||
+		!fs.existsSync(path.join(ROOT, config.pv.jizura_version))
+	)
+		throw new Error("JIZURA renderer settings or runtime files are missing");
 	const recordPath = path.join(outputDir, config.pv.record);
 	const startedAt = Date.now();
 	run(

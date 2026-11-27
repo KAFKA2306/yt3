@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	ConfigSchema,
 	type GenerationRow,
 	HumanityJizuraPlanSchema,
 	loadMusicConfig,
@@ -31,7 +32,7 @@ const passing = (): MusicAuditInput => ({
 	videoAudio: { sample_rate: 48000, channels: 2 },
 	videoSeconds: 180,
 	licenseText: `x ${config.yue.license_clause} y`,
-	pv: { tool: "jizura", jizura_version: "0.13.0", sha256: "cc" },
+	pv: { tool: "remotion", sha256: "cc" },
 	videoSha256: "cc",
 	lyricsGenerated: true,
 });
@@ -83,9 +84,26 @@ describe("humanity music audit", () => {
 			"PASS",
 		);
 	});
+
+	test("accepts renderer-neutral provenance without a JIZURA version", () => {
+		const input = passing();
+		expect(musicAudit(input, config).visual_provenance?.status).toBe("PASS");
+	});
 });
 
 describe("humanity narrative label config", () => {
+	test("accepts a renderer config without JIZURA-only settings", () => {
+		const rendererNeutral = ConfigSchema.parse({
+			...config,
+			pv: {
+				file: config.pv.file,
+				record: config.pv.record,
+				renderer: "remotion",
+			},
+		});
+		expect(rendererNeutral.pv).toMatchObject({ renderer: "remotion" });
+	});
+
 	test("configures jacket thumbnail generation and story description fields", () => {
 		expect(config.thumbnail.image_tool?.command).toBe("codex-imagegen");
 		expect(config.metadata.title_suffix).toContain("雨晴はうの人類観測所");
