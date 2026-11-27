@@ -269,10 +269,12 @@ async function main() {
 			}
 		}
 
-		let observed: {
-			snippet?: { title?: string | null; description?: string | null };
-			status?: { privacyStatus?: string | null };
-		} | undefined;
+		let observed:
+			| {
+					snippet?: { title?: string | null; description?: string | null };
+					status?: { privacyStatus?: string | null };
+			  }
+			| undefined;
 		for (let attempt = 0; attempt < 5; attempt++) {
 			const playlist = await youtube.playlists.list({
 				part: ["snippet", "status"],
@@ -286,7 +288,9 @@ async function main() {
 			)
 				break;
 			if (attempt < 4)
-				await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+				await new Promise((resolve) =>
+					setTimeout(resolve, 1000 * 2 ** attempt),
+				);
 		}
 		if (
 			observed?.snippet?.title !== meta.title ||
@@ -294,7 +298,8 @@ async function main() {
 			observed.status?.privacyStatus !== config.youtube_playlist.privacy
 		)
 			throw new Error(
-				ucId + ": playlist metadata read-back did not match: " +
+				ucId +
+					": playlist metadata read-back did not match: " +
 					JSON.stringify({
 						expected: {
 							title: meta.title,

@@ -70,7 +70,7 @@ The remaining Byosan digest uses `llm.backends.digest` (`gemini`, `codex`, or `c
 
 ## Byosan visuals and titles
 
-Video visuals use the existing OpenMontage renderer and FFmpeg pipeline. Its visual scene types and available assets describe tool capabilities. Scheduled Byosan thumbnails keep their existing episode-specific art and exact title overlay. Owner-directed interactive thumbnails follow a separate story-image design: one full-bleed scene, a single readable visual tension, and no text, numbers, charts, cards, or brand overlay. The video title carries the facts; the image supplies the moment that makes a viewer curious. Keep the KAFKA SIGNAL light watercolor style and leave the scheduled path unchanged.
+Every Byosan video uses the pinned local JIZURA renderer and FFmpeg mux. Routine and interactive runs build deterministic, audio-timed visual cues from the feature specification and TTS chunks; give the story pivot a clear layout or contrast change while keeping Japanese text legible in the light KAFKA SIGNAL palette. Scheduled Byosan thumbnails keep their episode-specific art and exact title overlay. Owner-directed interactive thumbnails use a separate textless story image: one full-bleed scene and a single readable visual tension, with no numbers, charts, cards, or brand overlay. The video title carries the facts; the image supplies the moment that makes a viewer curious.
 
 The former 漫才 role contract was removed on 2026-11-07. Scripts may use either available character or both in the roles that suit the episode.
 

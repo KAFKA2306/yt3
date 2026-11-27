@@ -8,10 +8,6 @@ tasks:
       - uv sync --frozen
       - uv run --frozen python src/scripts/production_runtime_preflight.py --mode setup
 
-  setup:openmontage:
-    desc: "Clone OpenMontage outside the repository at the pinned ref and install its Remotion composer (the byosan visual renderer)"
-    cmds: ["bun src/scripts/setup_openmontage.ts"]
-
   lexicon:report:
     desc: "Report vocabulary distribution (MATTR, pairwise Jaccard, document frequency) of generated scripts (CLI_ARGS: humanity|yawa|byosan)"
     cmds: ["uv run --no-project scripts/lexicon_report.py {{.CLI_ARGS}}"]

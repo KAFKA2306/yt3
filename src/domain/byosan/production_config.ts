@@ -92,7 +92,6 @@ const FeatureProductionSchema = z.object({
 		audio_concat_list: nonEmptyString,
 		thumbnail_jpg: nonEmptyString,
 		visual_master: nonEmptyString,
-		openmontage_props: nonEmptyString,
 		video_concat_list: nonEmptyString,
 		publish_video: nonEmptyString,
 		audit_dir: nonEmptyString,
@@ -132,13 +131,6 @@ const FeatureProductionSchema = z.object({
 		bed_tones: z.array(BedToneSchema).length(2),
 	}),
 	video: z.object({
-		openmontage: z.object({
-			dir: nonEmptyString,
-			repo: nonEmptyString,
-			ref: nonEmptyString,
-			composition: nonEmptyString,
-			crf: positiveInteger,
-		}),
 		scale_flags: nonEmptyString,
 		gop: positiveInteger,
 		b_frames: nonNegativeNumber,

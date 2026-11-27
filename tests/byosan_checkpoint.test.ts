@@ -20,6 +20,9 @@ function makeFixture(): { root: string; runDir: string } {
 		"src/domain/byosan/feature_spec.ts",
 		"src/scripts/byosan_daily.ts",
 		"src/scripts/produce_byosan_feature.ts",
+		"scripts/byosan_jizura.py",
+		"vendor/jizura/index.html",
+		"vendor/jizura/VERSION",
 		"src/scripts/publish_youtube.ts",
 		"src/domain/publication_state.ts",
 	]) {
@@ -50,7 +53,6 @@ function readyCheckpoint(
 			spec_ready: true,
 			media_ready: true,
 			quality_pass: true,
-			publish_verified: true,
 		},
 		updated_at: new Date().toISOString(),
 	} as ByosanCheckpoint;
@@ -88,7 +90,6 @@ describe("Byosan checkpoint research fingerprint", () => {
 		expect(reconciled.stages.spec_ready).toBe(true);
 		expect(reconciled.stages.media_ready).toBe(false);
 		expect(reconciled.stages.quality_pass).toBe(false);
-		expect(reconciled.stages.publish_verified).toBe(false);
 	});
 
 	test("resets every stage when a research input changes", () => {
@@ -117,7 +118,6 @@ describe("Byosan checkpoint research fingerprint", () => {
 				spec_ready: false,
 				media_ready: false,
 				quality_pass: false,
-				publish_verified: false,
 			},
 		});
 		const reconciled = reconcileByosanCheckpoint(runDir, RUN_ID, root);

@@ -2,10 +2,6 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
-import {
-	reconcileByosanCheckpoint,
-	writeByosanCheckpoint,
-} from "../domain/byosan/checkpoint.js";
 import { loadConfig, ROOT } from "../io/core.js";
 import { findPublishedByosanRunForDate } from "./byosan_daily.js";
 
@@ -164,10 +160,6 @@ export function runByosanPublishDaily(deps: PublishDailyDeps): void {
 			`PUBLISH_EVIDENCE_INCOMPLETE: ${runId} ${evidence?.reason ?? "missing_receipt"}`,
 		);
 	}
-	const runDir = path.join(deps.root, "runs", runId);
-	const checkpoint = reconcileByosanCheckpoint(runDir, runId, deps.root);
-	checkpoint.stages.publish_verified = true;
-	writeByosanCheckpoint(runDir, checkpoint);
 	writeRecord(file, {
 		...record,
 		status: "PUBLISHED",

@@ -8,7 +8,6 @@ type ByosanCheckpointStages = {
 	spec_ready: boolean;
 	media_ready: boolean;
 	quality_pass: boolean;
-	publish_verified: boolean;
 };
 
 export type ByosanCheckpoint = {
@@ -18,7 +17,6 @@ export type ByosanCheckpoint = {
 		research: string;
 		spec: string;
 		media: string;
-		publish: string;
 	};
 	stages: ByosanCheckpointStages;
 	updated_at: string;
@@ -31,7 +29,6 @@ const EMPTY_STAGES: ByosanCheckpointStages = {
 	spec_ready: false,
 	media_ready: false,
 	quality_pass: false,
-	publish_verified: false,
 };
 
 const FINGERPRINT_PREFIX = "inputs_v3:";
@@ -55,10 +52,9 @@ const SOURCE_GROUPS = {
 		"src/domain/byosan/scene_svg.ts",
 		"src/domain/byosan/scene_spec.ts",
 		"src/domain/byosan/charts.ts",
-	],
-	publish: [
-		"src/scripts/publish_youtube.ts",
-		"src/domain/publication_state.ts",
+		"scripts/byosan_jizura.py",
+		"vendor/jizura/index.html",
+		"vendor/jizura/VERSION",
 	],
 } as const;
 
@@ -133,7 +129,6 @@ export function currentByosanFingerprints(
 		research: researchFingerprint(root, runDir),
 		spec: specFingerprint(root),
 		media: mediaFingerprint(root),
-		publish: hashFiles(root, SOURCE_GROUPS.publish),
 	};
 }
 
@@ -173,13 +168,22 @@ function specArtifactExists(runDir: string): boolean {
 	return fs.existsSync(path.join(runDir, "source", "feature_spec.json"));
 }
 
+function currentStages(stages: ByosanCheckpointStages): ByosanCheckpointStages {
+	return {
+		research_ready: stages.research_ready,
+		spec_ready: stages.spec_ready,
+		media_ready: stages.media_ready,
+		quality_pass: stages.quality_pass,
+	};
+}
+
 function legacyStages(
 	runDir: string,
 	stages: ByosanCheckpointStages,
 ): ByosanCheckpointStages {
 	const researchReady = researchArtifactCurrent(runDir);
 	return {
-		...stages,
+		...currentStages(stages),
 		research_ready: researchReady,
 		spec_ready: researchReady && specArtifactExists(runDir),
 	};
@@ -205,20 +209,16 @@ export function reconcileByosanCheckpoint(
 	const legacy = !previous.fingerprints.research.startsWith(FINGERPRINT_PREFIX);
 	const stages = legacy
 		? legacyStages(runDir, previous.stages)
-		: { ...previous.stages };
+		: currentStages(previous.stages);
 	if (!legacy && previous.fingerprints.research !== fingerprints.research) {
 		Object.assign(stages, EMPTY_STAGES);
 	} else if (!legacy && previous.fingerprints.spec !== fingerprints.spec) {
 		stages.spec_ready = false;
 		stages.media_ready = false;
 		stages.quality_pass = false;
-		stages.publish_verified = false;
 	} else if (previous.fingerprints.media !== fingerprints.media) {
 		stages.media_ready = false;
 		stages.quality_pass = false;
-		stages.publish_verified = false;
-	} else if (previous.fingerprints.publish !== fingerprints.publish) {
-		stages.publish_verified = false;
 	}
 	if (!legacy && previous.fingerprints.research === fingerprints.research) {
 		stages.research_ready =

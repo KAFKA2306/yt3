@@ -18,7 +18,6 @@ import {
 	matchFontFamily,
 	requiredFontFamilies,
 } from "../domain/byosan/fonts.js";
-import { renderOpenMontage } from "../domain/byosan/openmontage_visuals.js";
 import {
 	layoutCueSpans,
 	planSpeechParts,
@@ -55,6 +54,8 @@ type FeatureSegment = ByosanFeatureSegment;
 
 type TimedSegment = FeatureSegment & {
 	index: number;
+	sourceSegmentIndex: number;
+	partIndex: number;
 	duration: number;
 	start: number;
 	audioPath: string;
@@ -205,11 +206,29 @@ function run(command: string, args: string[], label: string): void {
 }
 
 function renderVisualMaster(
-	timed: TimedSegment[],
+	timelinePath: string,
+	narrationPath: string,
 	visualPath: string,
-	propsPath: string,
 ): void {
-	renderOpenMontage(F.video.openmontage, timed, propsPath, visualPath);
+	const started = performance.now();
+	run(
+		"uv",
+		[
+			"run",
+			"--offline",
+			"--group",
+			"pv",
+			"python",
+			"scripts/byosan_jizura.py",
+			narrationPath,
+			timelinePath,
+			visualPath,
+		],
+		"Byosan JIZURA render",
+	);
+	console.log(
+		`[byosan-stage] stage=jizura_scene_generation_and_export elapsed_s=${((performance.now() - started) / 1000).toFixed(2)}`,
+	);
 }
 
 async function buildThumbnail(
@@ -890,6 +909,7 @@ async function main(): Promise<void> {
 	);
 	const speechParts = planSpeechParts(spec.segments, speechPlan);
 	const timed: TimedSegment[] = [];
+	const ttsStarted = performance.now();
 	let cursor = 0;
 	for (let index = 0; index < speechParts.length; index++) {
 		const part = speechParts[index];
@@ -930,6 +950,8 @@ async function main(): Promise<void> {
 		timed.push({
 			...segment,
 			index,
+			sourceSegmentIndex: part.segmentIndex,
+			partIndex: part.partIndex,
 			duration,
 			start: cursor,
 			audioPath,
@@ -938,6 +960,9 @@ async function main(): Promise<void> {
 		});
 		cursor += duration;
 	}
+	console.log(
+		`[byosan-stage] stage=tts_synthesis elapsed_s=${((performance.now() - ttsStarted) / 1000).toFixed(2)} chunks=${timed.length}`,
+	);
 	await fs.outputJson(
 		path.join(audioDir, RUN.audio_manifest),
 		{
@@ -965,14 +990,139 @@ async function main(): Promise<void> {
 	const thumbnail = await buildThumbnail(spec, runDir);
 	const visualPath = path.join(videoDir, RUN.visual_master);
 	const narrationPath = path.join(audioDir, FILENAMES.audio_full);
-	renderVisualMaster(
-		timed,
-		visualPath,
-		path.join(videoDir, RUN.openmontage_props),
-	);
 	concatNarration(timed, narrationPath, runDir);
+	const pivotIndex = (() => {
+		const firstReveal = spec.segments.findIndex(
+			(segment) => segment.emotion === "reveal" || segment.emotion === "shock",
+		);
+		return firstReveal >= 0
+			? firstReveal
+			: Math.floor(spec.segments.length / 2);
+	})();
+	const lastPart = timed[timed.length - 1];
+	if (!lastPart) throw new Error("BYOSAN_JIZURA_TIMELINE_EMPTY");
+	const finalCueStart = Math.max(lastPart.start, cursor - 3.5);
+	const jizuraCues: Array<{
+		start: number;
+		duration: number;
+		headline: string;
+		stats: FeatureSegment["stats"];
+		cue: string;
+		source_index: number;
+		part_index: number;
+		part_count: number;
+		pivot: boolean;
+		beat_index: number;
+	}> = [];
+	const beatStep = 2.8;
+	let activePartIndex = 0;
+	let currentChunkIndex = -1;
+	let chunkBeatIndex = 0;
+	let pivotCueAdded = false;
+	for (let start = 0; start < finalCueStart; start += beatStep) {
+		while (
+			activePartIndex < timed.length - 1 &&
+			start >=
+				(timed[activePartIndex]?.start ?? 0) +
+					(timed[activePartIndex]?.duration ?? 0) -
+					0.001
+		) {
+			activePartIndex += 1;
+		}
+		const part = timed[activePartIndex];
+		if (!part) throw new Error("BYOSAN_JIZURA_TIMED_PART_MISSING");
+		const source = spec.segments[part.sourceSegmentIndex];
+		if (!source) {
+			throw new Error(
+				`BYOSAN_JIZURA_SOURCE_MISSING: segment ${part.sourceSegmentIndex}`,
+			);
+		}
+		if (currentChunkIndex !== part.index) {
+			currentChunkIndex = part.index;
+			chunkBeatIndex = 0;
+		}
+		const stat = source.stats[part.partIndex - 1];
+		const primaryCue =
+			part.partIndex === 0
+				? Array.from(source.headline).length <= 12 ||
+					part.sourceSegmentIndex === pivotIndex
+					? source.headline
+					: source.section
+				: stat && Array.from(stat.value).length <= 12
+					? stat.value
+					: source.section;
+		const variants = Array.from(
+			new Set(
+				[
+					primaryCue,
+					source.section,
+					source.headline,
+					source.subheadline,
+					...source.stats.map((item) => item.value),
+				].filter((value) => Array.from(value).length <= 12),
+			),
+		);
+		const pivot =
+			!pivotCueAdded &&
+			part.sourceSegmentIndex === pivotIndex &&
+			part.partIndex === 0;
+		jizuraCues.push({
+			start,
+			duration: Math.min(beatStep, finalCueStart - start),
+			headline: source.headline,
+			stats: source.stats,
+			cue: variants[chunkBeatIndex % variants.length] ?? source.section,
+			source_index: part.sourceSegmentIndex,
+			part_index: part.partIndex,
+			part_count: timed.filter(
+				(item) => item.sourceSegmentIndex === part.sourceSegmentIndex,
+			).length,
+			pivot,
+			beat_index: jizuraCues.length,
+		});
+		if (pivot) pivotCueAdded = true;
+		chunkBeatIndex += 1;
+	}
+	jizuraCues.push({
+		start: finalCueStart,
+		duration: cursor - finalCueStart,
+		headline: "予測・実績・見通しを分ける",
+		stats: [],
+		cue: "予測・実績・見通し",
+		source_index: spec.segments.length,
+		part_index: 0,
+		part_count: 1,
+		pivot: false,
+		beat_index: jizuraCues.length,
+	});
+	const timelinePivotIndex = jizuraCues.findIndex((segment) => segment.pivot);
+	if (timelinePivotIndex < 0) {
+		throw new Error("BYOSAN_JIZURA_PIVOT_CUE_MISSING");
+	}
+	const timelinePath = path.join(videoDir, "jizura_timeline.json");
+	await fs.outputJson(
+		timelinePath,
+		{
+			run_id: spec.runId,
+			title: spec.title,
+			visual_title: spec.segments[0]?.section ?? "秒算マネー",
+			seed: Number.parseInt(
+				createHash("sha256").update(spec.runId).digest("hex").slice(0, 8),
+				16,
+			),
+			pivot_index: timelinePivotIndex,
+			duration: cursor,
+			segments: jizuraCues,
+		},
+		{ spaces: 2 },
+	);
+	renderVisualMaster(timelinePath, narrationPath, visualPath);
 	const finalPath = path.join(videoDir, RUN.publish_video);
+	const muxStarted = performance.now();
 	composeFinal(visualPath, narrationPath, subtitlePath, cursor, finalPath);
+	console.log(
+		`[byosan-stage] stage=mux elapsed_s=${((performance.now() - muxStarted) / 1000).toFixed(2)}`,
+	);
 	await writeOutputs(spec, timed, runDir, finalPath, thumbnail.jpg);
 	try {
 		await auditProduction(spec, timed, runDir, finalPath);
