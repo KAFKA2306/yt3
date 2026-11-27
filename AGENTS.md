@@ -38,6 +38,7 @@ Keep each product's config, media, credentials, receipts, and publication state 
 - Owner instruction 2026-11-23: Interactive Byosan thumbnails use a textless story image. The title carries the verified facts; the image creates curiosity through one clear visual moment. Do not reuse a title overlay, metric card, chart, logo, or explanatory label in that image. Keep this separate from the scheduled thumbnail path.
 - Missing credentials (for example `config/.env.yawa`) stop the run and are reported as blocked; agents do not create or fetch them.
 - Publication is VERIFIED only after remote receipt and read-back.
+- Each run's `publish/state.json` is the canonical publication state; checkpoints and other records do not duplicate the publication result.
 - Every verified YouTube publication shares its direct URL through `DISCORD_WEBHOOK_URL` and confirms the Discord message by read-back. This URL delivery bypasses general notification quotas; YouTube publication is blocked before upload when the webhook is not configured locally in the repository root `.env`.
 
 ## Autonomous operations
@@ -56,13 +57,15 @@ Keep each product's config, media, credentials, receipts, and publication state 
 
 Yawa, Humanity, and Byosan create new work through the shared model router in `src/io/creative.ts`. Its defaults and automatic cross-provider failover chains are configured in `config/creative_authoring.yaml`: `title` tries `codex:gpt-6-luna:low` then fails over to `agy:gemini-4-hydrogen-medium`; `draft` tries `codex:gpt-6-luna:medium` then fails over to `agy:gemini-4-hydrogen-medium` on quota/rate-limit/capacity/timeout errors (recording `failover_attempts` in the receipt). For a deliberate one-run override, set `YT3_CREATIVE_TITLE_ROUTE=codex:<model>:<effort>` / `YT3_CREATIVE_DRAFT_ROUTE=codex:<model>:<effort>`, or use `agy:<model>`. Each product keeps its own brief and output format. Research, audio/image generation, JIZURA, editing, and the canonical publication entries remain product-owned.
 
-Humanity creates standalone original songs without a fixed fictional town/story-world canon; each song chooses its own genre, mood, vocal color, and concrete details to move the listener. Its JIZURA lyric video uses a route-selected built-in theme and keeps the rendered project beside the video.
+Humanity creates standalone original songs without a fixed fictional town/story-world canon; each song chooses its own genre, mood, vocal color, and concrete details to move the listener. Its song-specific JIZURA plan names the opening hook, an early lyric clue, a recurring visual motif, and the lyric marker where that motif transforms at the emotional climax; it keeps the rendered project beside the video.
 
 ## Byosan prompt and constraint policy
 
 Current Claude models follow prompts closely, so over-specified prompts and stacked checks degrade output. Prompts state the goal and the facts that must hold, not the method. Byosan feature, production, and authenticity audits are recorded for review and do not stop a daily run. Runtime failures that prevent preparation or upload still surface as errors.
 
 Byosan title ideation uses article headlines and the supplied subject. The feature draft is one logical call over the full bodies of the day's new articles and the FactSet baseline, with no intermediate summary stage, using the shared configured draft route. An owner-directed interactive run adds one spoken-humanization edit after that fact-grounded draft. A final title review compares the title critique with the edited feature. Feature, source, and published-source audit findings are saved with the run as diagnostics; structured output and schema parsing still provide the data needed to render.
+
+Scripts and narration across all three products stay focused on the listener's experience. Do not add generic caveats, excuses, evidence inventories, or footnotes as padding; include a qualification only when it changes the viewer's accurate understanding, and keep detailed evidence in the run record.
 
 Owner-directed interactive Byosan runs use a separate run ID suffix `-interactive-<slot>`. After the fact-grounded draft, the interactive path runs one spoken-humanization edit before title review and rendering. It can remove or rewrite narration but cannot change the claim ledger, sources, visual data, or existing numerical values; a non-spoken edit result fails before rendering. The public description omits the claim-by-claim evidence and generic disclaimer while preserving the primary and reference source links.
 
@@ -80,9 +83,9 @@ Each episode chooses its own opening, pacing, shape, and ending. Do not require 
 
 Feature, production, and authenticity findings remain available as diagnostics. They inform review but do not prescribe a recurring style or block daily publication.
 
-## Yawa video visuals
+## Shared video rendering
 
-Every Yawa video is rendered through `scripts/yawa_visual_novel.py` (warm cinematic anime visual novel style: persistent fixed-cast standing portraits in `data/state/yawa/portraits/<character_id>/{neutral,smile,shy}.png` with expression switching, episode background, nameplate, and timestamped Japanese dialogue window). FFmpeg muxes the original audio and encodes the final 1080p MP4.
+Byosan, Yawa, and Humanity use the pinned local JIZURA 0.13.0 renderer for every video, with no alternate renderer or non-JIZURA fallback. Byosan cues follow its spoken feature; Yawa uses quiet, sparse dialogue cues over the original performance with a restrained emotional turn; Humanity authors a song-specific motif, early lyric clue, and climax transformation over the measured lyric timeline. Each channel keeps its own palette and pacing. FFmpeg muxes the unchanged source audio, and the run's provenance records identify the JIZURA project, source audio, and final video. Each run's `publish/state.json` is the canonical publication state.
 
 ## Evidence and credentials
 

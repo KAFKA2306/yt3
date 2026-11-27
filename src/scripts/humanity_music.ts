@@ -132,6 +132,15 @@ function run(
 function loadJizuraPlan(generationDir: string, generationId: string): string {
 	const planPath = path.join(generationDir, "jizura.json");
 	const plan = HumanityJizuraPlanRecordSchema.parse(fs.readJsonSync(planPath));
+	if (
+		!config.pv.theme_ids.includes(plan.theme_id) ||
+		!config.pv.style_ids.includes(plan.style_id) ||
+		!config.pv.mood_ids.includes(plan.mood_id) ||
+		!config.pv.motif_layout_ids.includes(plan.visual_arc.motif_layout_id)
+	)
+		throw new Error(
+			"JIZURA plan uses a theme, style, mood, or motif outside the configured set",
+		);
 	if (plan.generation_id !== generationId)
 		throw new Error("JIZURA plan belongs to a different music generation");
 	const authoring = fs.readJsonSync(
@@ -258,7 +267,7 @@ async function generate(brief?: string): Promise<GenerationRow> {
 			`選んだタイトル: ${titleProposal.value.title}`,
 			`タイトルだけの批評: ${JSON.stringify(titleReview.value)}`,
 			"このタイトルの約束に沿う曲を作り、titleには選んだタイトルをそのまま入れてください。",
-			"JIZURAテーマは、利用可能な lyricpv, kinetic, wa, horror, pop, ballad の中から歌の物語と音に最も合うものを選びます。unifyは反復する言葉やイメージを映像でも結び付けたい場合、typesetは歌詞の読みやすさを整えたい場合に選びます。paletteは物語の象徴をアクセントで感じさせる3色の6桁HEX値です。JIZURAのテーマ既定色を土台にし、アクセント色と色ずれ効果の2色へ実際に適用します。",
+			"JIZURAはこの曲だけの映像設計です。jizura.theme_id、style_id、mood_id、paletteをこの曲の音楽と歌詞に合わせて選び、同じ既定スタイルへ固定しません。jizura.visual_arcにはopening_hook（歌い出しの歌詞断片）、motif（曲世界の具体物・色・光）、motif_layout_id（曲固有のモチーフを描くJIZURAレイアウトID。xcBrowser / xcPlayer / xcLoading / xcMapPin / xcSignpost / xcVending / xcFolder / xcScoreboard / xcWeather / xcBattery / xcPopups / xcIncoming / xcGauge / xcSheet / xcChipCard / xcPaperCup / xcTshirt / xcHandheld / xcBlackboard / xcTruck / xcPlate / xcDropdown / xcSelect / xcRadio / xcFloppy / xcMegaphone / xcBunting / xcDrawers / xcPoll / xcAwningから最適なものを選ぶ）、clue_lyric（冒頭30秒以内に実際に歌われる歌詞の一部）、climax_lyric（ブリッジまたは最後のサビにある実際の歌詞断片）、transformation（手掛かりがクライマックスでどう変わるか）を記します。断片はlyricsの行にそのまま含め、クライマックスは手掛かりを回収して感情を一段動かすものにします。映像もclue_lyric行にそのモチーフを小さく置き、climax_lyric行で同じモチーフを変化後の色とレイアウトで一度だけ大きく見せ、その後は変化後の状態を保ちます。jizura.climax_paletteには転換後のbgとaccentを6桁HEXで指定します。opening_hookと手掛かりは最初の30秒で伝わる具体的な一場面にし、説明文や抽象的な形容だけにしません。全曲共通の物語テンプレートは使いません。",
 			`企画の手掛かり: ${JSON.stringify(context)}`,
 		].join("\n\n"),
 	});
@@ -491,6 +500,47 @@ function songOfRun(dir: string): GenerationRow | undefined {
 	);
 }
 
+function renderJizura(
+	audio: string,
+	lyrics: string,
+	visualPlan: string,
+	outputDir: string,
+): void {
+	const recordPath = path.join(outputDir, config.pv.record);
+	const startedAt = Date.now();
+	run(
+		[
+			"uv",
+			"run",
+			"--group",
+			"pv",
+			"python",
+			"scripts/humanity_pv.py",
+			audio,
+			lyrics,
+			visualPlan,
+			outputDir,
+		],
+		{ cwd: ROOT },
+	);
+	if (!fs.existsSync(recordPath))
+		throw new Error("JIZURA render did not write its PV record");
+	const record = fs.readJsonSync(recordPath) as {
+		timings_ms?: Record<string, number>;
+	};
+	fs.writeJsonSync(
+		recordPath,
+		{
+			...record,
+			timings_ms: {
+				...record.timings_ms,
+				typescript_jizura_call: Date.now() - startedAt,
+			},
+		},
+		{ spaces: 2 },
+	);
+}
+
 async function prepare(date: string, slot?: string): Promise<void> {
 	const { dir, runId } = runPaths(date, slot);
 	fs.ensureDirSync(dir);
@@ -513,21 +563,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	const videoPath = path.join(dir, config.pv.file);
 	const pvRecordPath = path.join(dir, config.pv.record);
 	if (!fs.existsSync(pvRecordPath))
-		run(
-			[
-				"uv",
-				"run",
-				"--group",
-				"pv",
-				"python",
-				"scripts/humanity_pv.py",
-				song.audio,
-				lyricsPath,
-				visualPlanPath,
-				dir,
-			],
-			{ cwd: ROOT },
-		);
+		renderJizura(song.audio, lyricsPath, visualPlanPath, dir);
 	const videoAudio = probeAudio(videoPath);
 	const authoringPath = path.join(generationDir, "creative_authoring.json");
 	const authoring = fs.existsSync(authoringPath)
@@ -766,24 +802,7 @@ function prepareBinaural(sourceId: string, date: string, slot: string): void {
 			{ spaces: 2 },
 		);
 		const videoPath = path.join(stageDir, config.pv.file);
-		const pvRecordPath = path.join(stageDir, config.pv.record);
-		run(
-			[
-				"uv",
-				"run",
-				"--group",
-				"pv",
-				"python",
-				"scripts/humanity_pv.py",
-				outputAudio,
-				lyricsPath,
-				visualPlanPath,
-				stageDir,
-			],
-			{ cwd: ROOT },
-		);
-		if (!fs.existsSync(pvRecordPath))
-			throw new Error("JIZURA render did not write its PV record");
+		renderJizura(outputAudio, lyricsPath, visualPlanPath, stageDir);
 		const thumbnailPath = path.join(stageDir, config.thumbnail.file);
 		run([
 			"ffmpeg",

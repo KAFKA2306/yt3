@@ -74,13 +74,13 @@ async function main() {
 			const prompt =
 				expr.id === "neutral"
 					? [
-							"Japanese anime visual novel character standing sprite (tachie), waist-up portrait centered cleanly with headroom, facing viewer.",
+							"Japanese anime character standing portrait sprite, waist-up portrait centered cleanly with headroom, facing viewer.",
 							char.visual_identity,
 							`Expression: ${expr.prompt}.`,
 							"Warm cinematic anime illustration lighting, crisp clean linework, isolated on a completely flat uniform solid chroma-key green (#00FF00) background with no shadows on the background, no props outside body, no text, no watermark.",
 						].join(" ")
 					: [
-							"Edit only the facial expression of this exact anime visual novel character standing sprite.",
+							"Edit only the facial expression of this exact anime character standing portrait sprite.",
 							`New expression: ${expr.prompt}.`,
 							"Do not change hair, outfit, pose, camera framing, lighting, or the flat uniform solid #00FF00 green background. No text.",
 						].join(" ");

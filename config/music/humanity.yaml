@@ -33,6 +33,11 @@ pv:
   chrome: /usr/bin/google-chrome
   jizura_html: vendor/jizura/index.html
   jizura_version: vendor/jizura/VERSION
+  theme_ids: [lyricpv, kinetic, wa, horror, pop, ballad]
+  style_ids: [noir, crimson, caution, magenta, paper, hud, mint, specimen, transit, blueprint, rouge, mono]
+  mood_ids: [glitch, calm, pop, graphic, editorial, emotional, horror, chaos]
+  motif_layout_ids: [xcBrowser, xcPlayer, xcLoading, xcMapPin, xcSignpost, xcVending, xcFolder, xcScoreboard, xcWeather, xcBattery, xcPopups, xcIncoming, xcGauge, xcSheet, xcChipCard, xcPaperCup, xcTshirt, xcHandheld, xcBlackboard, xcTruck, xcPlate, xcDropdown, xcSelect, xcRadio, xcFloppy, xcMegaphone, xcBunting, xcDrawers, xcPoll, xcAwning]
+  arc_opening_window_seconds: 30
   whisper_model: large-v3
   export_timeout_ms: 1500000
   crf: 28

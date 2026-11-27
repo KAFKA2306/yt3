@@ -253,9 +253,13 @@ function preflight(
 		Bun.which("ffprobe") ? "" : "ffprobe is not on PATH",
 		Bun.which("python3") ? "" : "python3 is not on PATH",
 		Bun.which("uv") ? "" : "uv is not on PATH",
-		fs.existsSync(path.join(ROOT, "scripts", "yawa_visual_novel.py"))
+		fs.existsSync(path.join(ROOT, "scripts", "yawa_jizura.py"))
 			? ""
-			: "scripts/yawa_visual_novel.py is missing",
+			: "scripts/yawa_jizura.py is missing",
+		fs.existsSync(path.join(ROOT, "vendor", "jizura", "index.html")) &&
+		fs.existsSync(path.join(ROOT, "vendor", "jizura", "VERSION"))
+			? ""
+			: "pinned JIZURA runtime is incomplete",
 		tools.tts.length > 0
 			? ""
 			: "no configured Irodori environment is available",
@@ -359,6 +363,7 @@ function scriptPrompt(
 		"直近の公開・制作履歴（同じキャストや「終電後・深夜に弱音をこぼす」展開の連続を避けること）:",
 		JSON.stringify(recent),
 		"固定キャスト（haruka / shizuku / nao）から主役を1名選び（必要なら2名掛け合いも可）、全年齢・YouTube広告適合（緑アイコン）で何度も聴きたくなる日本語シチュエーションボイスを創作してください。舞台は「夜だけ開く少し不思議な古本喫茶『夜話』がある同じ街」。3人は同じ街で暮らしており、日常の延長に少しだけ幻想的な要素（不思議な古本・街の小さな噂・時を忘れる夜の空気）が混じる、温かく落ち着いた物語にします。登場人物は成人。目標尺は8〜15分程度を目安に、情景・掛け合い・心の動きをしっかり描きます。",
+		"最初の30秒で、聞き手がこの場所と声のそばに留まりたくなる感覚的な手掛かりを一つ置きます。湯気、紙の音、窓の明かりなど今回固有のものを静かに見せ、物語の終わりまでにその手掛かりが関係や気持ちの変化につながるようにします。説明のための台詞、前置き、足場のない謎、無理な引きや定型の癒やし言葉は足しません。会話の自然さ、声色、間を優先し、映像は静けさから転換時に少し温まり、その後は穏やかに留まります。",
 		seriesPromptBlock,
 		"選んだキャストのidをvoices[].idおよびvoices[].character_idに指定し、voices[].captionにはキャスト正本のvoice_captionを土台にしつつ今回の雰囲気に整えてください。reference_textはキャスト正本のreference_textをそのまま使います。場面ごとの感情の変化はperformances[].actingで自然に付けます。",
 		"句末に長く伸びる吸気・吐息や擦れた息音を加えません。親密さは声色の温度や柔らかさ、声の距離・間・反応で表し、reference_textも息音を誇張しません。息を吹きかける・吸い込む・吐き出す演出、性的興奮を目的とする描写・喘ぎ・過度な密着ロールプレイ、18+系スラングや誤認ワード（添い寝・耳舐め等）は台本・タイトル・説明文・タグに一切書きません。",
@@ -366,9 +371,9 @@ function scriptPrompt(
 			JSON.stringify({
 				tts: tools.tts,
 				images: imageTools,
-				video: ["yawa_visual_novel"],
+				video: ["yawa_jizura"],
 			}),
-		'動画は暖色アニメ調ビジュアルノベル（scripts/yawa_visual_novel.py：固定キャスト立ち絵・3表情切替・音声同期字幕）で自動描画されます。各performanceのtextとactingが字幕と表情切替に使われ、地の文・ナレーションを入れる行は kind: "narration" を指定します（名前欄は自動で切り替わります）。',
+		"動画は固定キャストの声と台詞を主役に、scripts/yawa_jizura.py が pinned JIZURA で静かな夜の文字映像を作ります。冒頭30秒で場所と小さな感覚的な手掛かりを置き、会話の転換で画面をわずかに温めて余韻を保ちます。字幕を詰め込まず、音声・間・演技は変更しません。",
 		imageTools.length > 0
 			? `背景兼サムネイル画像はクリック率と没入感を高める重要要素です。production.image_toolに "${imageTools[0]}" を指定し、選んだキャストのvisual_identityと今回の場面・照明を描く英語のthumbnail_prompt（文字・ロゴなし）を必ず作成してください。対応サイズ: ` +
 				JSON.stringify(
@@ -382,7 +387,7 @@ function scriptPrompt(
 						]),
 					),
 				)
-			: "画像生成は今回無効です。thumbnail_promptは省略してビジュアルノベル動画を制作します。",
+			: "画像生成は今回無効です。thumbnail_promptは省略し、動画は静かなJIZURA映像を制作します。",
 		`採用タイトル: ${selectedTitle}`,
 		...(titleReview
 			? [`本文前のタイトル批評: ${JSON.stringify(titleReview)}`]
@@ -1072,27 +1077,40 @@ function renderImages(
 function renderVideo(_draft: ScriptDraft, audio: string, dir: string): string {
 	const output = path.join(dir, config.video.file);
 	const audioSeconds = probeSeconds(audio);
-	const record = path.join(dir, `${path.parse(output).name}.visual_novel.json`);
+	const record = path.join(dir, `${path.parse(output).name}.jizura.json`);
 	const audioHash = fileHash(audio);
 	if (fs.existsSync(output)) {
 		if (!fs.existsSync(record))
 			throw new StepFailure(
 				"video-render",
-				"existing video has no visual_novel provenance; use a fresh run ID",
+				"existing video has no JIZURA provenance; use a fresh run ID",
 			);
 		const provenance = fs.readJsonSync(record) as {
 			tool?: string;
+			jizura_version?: string;
+			jizura_sha256?: string;
 			source_audio_sha256?: string;
 			video_sha256?: string;
+			width?: number;
+			height?: number;
+			fps?: number;
 		};
 		if (
-			provenance.tool !== "yawa_visual_novel" ||
+			provenance.tool !== "jizura" ||
+			provenance.jizura_version !==
+				fs
+					.readFileSync(path.join(ROOT, "vendor", "jizura", "VERSION"), "utf-8")
+					.trim() ||
+			!provenance.jizura_sha256 ||
 			provenance.source_audio_sha256 !== audioHash ||
-			provenance.video_sha256 !== fileHash(output)
+			provenance.video_sha256 !== fileHash(output) ||
+			provenance.width !== 1920 ||
+			provenance.height !== 1080 ||
+			provenance.fps !== 24
 		)
 			throw new StepFailure(
 				"video-render",
-				"existing visual_novel video provenance does not match its audio or file",
+				"existing JIZURA video provenance does not match its audio or file",
 			);
 		const existing = probeVideo(output);
 		const videoTol = Number.isFinite(config.audit.duration_tolerance_seconds)
@@ -1106,35 +1124,46 @@ function renderVideo(_draft: ScriptDraft, audio: string, dir: string): string {
 		return output;
 	}
 	run("video-render", [
-		"python3",
-		"scripts/yawa_visual_novel.py",
-		"--audio",
+		"uv",
+		"run",
+		"--frozen",
+		"--group",
+		"pv",
+		"python",
+		"scripts/yawa_jizura.py",
 		audio,
-		"--script",
 		path.join(dir, "script.json"),
-		"--tts-dir",
 		path.join(dir, "tts"),
-		"--output",
 		output,
 	]);
 	if (!fs.existsSync(record))
-		throw new StepFailure(
-			"video-render",
-			"visual_novel provenance was not recorded",
-		);
+		throw new StepFailure("video-render", "JIZURA provenance was not recorded");
 	const provenance = fs.readJsonSync(record) as {
 		tool?: string;
+		jizura_version?: string;
+		jizura_sha256?: string;
 		source_audio_sha256?: string;
 		video_sha256?: string;
+		width?: number;
+		height?: number;
+		fps?: number;
 	};
 	if (
-		provenance.tool !== "yawa_visual_novel" ||
+		provenance.tool !== "jizura" ||
+		provenance.jizura_version !==
+			fs
+				.readFileSync(path.join(ROOT, "vendor", "jizura", "VERSION"), "utf-8")
+				.trim() ||
+		!provenance.jizura_sha256 ||
 		provenance.source_audio_sha256 !== audioHash ||
-		provenance.video_sha256 !== fileHash(output)
+		provenance.video_sha256 !== fileHash(output) ||
+		provenance.width !== 1920 ||
+		provenance.height !== 1080 ||
+		provenance.fps !== 24
 	)
 		throw new StepFailure(
 			"video-render",
-			"visual_novel provenance does not match its audio or file",
+			"JIZURA provenance does not match its audio or file",
 		);
 	const rendered = probeVideo(output);
 	const videoTol = Number.isFinite(config.audit.duration_tolerance_seconds)

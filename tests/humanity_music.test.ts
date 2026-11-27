@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	type GenerationRow,
+	HumanityJizuraPlanSchema,
 	loadMusicConfig,
 	type MusicAuditInput,
 	musicAudit,
@@ -30,7 +31,7 @@ const passing = (): MusicAuditInput => ({
 	videoAudio: { sample_rate: 48000, channels: 2 },
 	videoSeconds: 180,
 	licenseText: `x ${config.yue.license_clause} y`,
-	pv: { tool: "jizura", jizura_version: "0.10.1", sha256: "cc" },
+	pv: { tool: "jizura", jizura_version: "0.13.0", sha256: "cc" },
 	videoSha256: "cc",
 	lyricsGenerated: true,
 });
@@ -97,5 +98,38 @@ describe("humanity narrative label config", () => {
 			"q3_daily_flow",
 			"q4_night_reset",
 		]);
+	});
+});
+
+describe("song-specific JIZURA arc", () => {
+	test("requires lyric-anchored clue and climax plus a transformation palette", () => {
+		const plan = {
+			theme_id: "pop",
+			style_id: "specimen",
+			mood_id: "calm",
+			unify: true,
+			typeset: true,
+			palette: { accent: "#F2A65A", ghost_a: "#8CC9D8", ghost_b: "#E3A0A9" },
+			visual_arc: {
+				opening_hook: "カーテンの端が",
+				motif: "朝の湯気とカップ",
+				motif_layout_id: "xcPaperCup",
+				clue_lyric: "湯を沸かす音",
+				climax_lyric: "今日のわたしが",
+				transformation: "湯気の向こうから朝の光が差す",
+			},
+			climax_palette: { bg: "#48343C", accent: "#F2B36D" },
+			rationale: "曲固有の湯気の手掛かりを最後のサビで光へ変える。",
+		};
+		expect(HumanityJizuraPlanSchema.parse(plan).visual_arc.climax_lyric).toBe(
+			"今日のわたしが",
+		);
+		expect(() =>
+			HumanityJizuraPlanSchema.parse({
+				...plan,
+				visual_arc: { ...plan.visual_arc, clue_lyric: "missing" },
+				climax_palette: { ...plan.climax_palette, bg: "not-a-color" },
+			}),
+		).toThrow();
 	});
 });
