@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ByosanActiveProbeEvidenceSchema } from "./active_probe.js";
 import { ExplanationSchema } from "./explanation.js";
 
 export const ByosanSourceTierSchema = z.enum([
@@ -10,21 +9,6 @@ export const ByosanSourceTierSchema = z.enum([
 	"L5",
 	"unknown",
 ]);
-
-const ByosanAdversarialEvidenceSchema = z.object({
-	id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
-	kind: z.enum([
-		"measurement_condition",
-		"counter_metric",
-		"third_party_disagreement",
-		"source_limitation",
-		"no_counter_evidence",
-	]),
-	targetClaim: z.string().min(1),
-	statement: z.string().min(1),
-	sourceIds: z.array(z.string().min(1)).min(1),
-	checkedSourceIds: z.array(z.string().min(1)).min(1),
-});
 
 export const ByosanProductionFormatSchema = z.enum([
 	"breaking",
@@ -114,11 +98,6 @@ export const ByosanFeatureClaimSchema = z.object({
 		"derived_with_caveat",
 		"analyst_estimate_not_company_non_gaap",
 	]),
-	assumptions: z.array(z.string().min(1)).optional(),
-	caveat: z.string().min(1).optional(),
-	confidence: z.number().min(0).max(1).optional(),
-	unresolvedMismatches: z.array(z.string().min(1)).optional(),
-	epistemicBoundary: z.string().min(1).optional(),
 });
 
 const ByosanPackagingSchema = z.object({
@@ -170,13 +149,10 @@ export const ByosanFeatureSpecSchema = z.object({
 	thumbnail: ByosanThumbnailSchema,
 	descriptionLead: z.string().min(1),
 	descriptionBullets: z.array(z.string().min(1)).min(1),
-	disclaimer: z.string().min(1),
 	hookPromises: z.array(z.string().min(1)).optional(),
 	production: ByosanProductionPlanSchema.optional(),
 	packaging: ByosanPackagingSchema.optional(),
 	narrative: ByosanNarrativeSchema.optional(),
-	adversarialEvidence: z.array(ByosanAdversarialEvidenceSchema).optional(),
-	activeProbes: z.array(ByosanActiveProbeEvidenceSchema).optional(),
 	noveltyQueries: z.array(z.string().min(1)).min(1),
 	tags: z.array(z.string().min(1).max(30)),
 	sources: z.array(ByosanFeatureSourceSchema).min(1),
@@ -202,8 +178,6 @@ export const ByosanFeatureDraftSchema = ByosanFeatureSpecSchema.omit({
 	sources: true,
 	production: true,
 	narrative: true,
-	adversarialEvidence: true,
-	activeProbes: true,
 	tags: true,
 }).extend({
 	tags: z.array(z.string().min(1).max(30)).optional(),
@@ -305,36 +279,6 @@ export function auditByosanFeatureSpec(
 		}
 	}
 	issues.push(...packagingIssues(spec));
-	if (spec.adversarialEvidence) {
-		const evidenceIds = new Set(
-			spec.adversarialEvidence.map((evidence) => evidence.id),
-		);
-		for (const evidence of spec.adversarialEvidence) {
-			const missing = [
-				...evidence.sourceIds,
-				...evidence.checkedSourceIds,
-			].filter((sourceId) => !sourceIds.has(sourceId));
-			if (missing.length > 0) {
-				issues.push({
-					code: "adversarial_evidence_source_missing",
-					details: `${evidence.id}: ${[...new Set(missing)].join(",")}`,
-					path: GLOBAL_ISSUE_PATH,
-				});
-			}
-		}
-		for (const [segmentIndex, segment] of spec.segments.entries()) {
-			const missingEvidenceIds = (segment.evidenceIds ?? []).filter(
-				(evidenceId) => !evidenceIds.has(evidenceId),
-			);
-			if (missingEvidenceIds.length > 0) {
-				issues.push({
-					code: "segment_adversarial_evidence_missing",
-					details: `${segment.headline}: ${missingEvidenceIds.join(",")}`,
-					path: segmentIssuePath(segmentIndex),
-				});
-			}
-		}
-	}
 	return issues;
 }
 

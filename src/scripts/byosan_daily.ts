@@ -43,10 +43,8 @@ import {
 	summarizeFeatureIssues,
 } from "../domain/byosan/feature_draft.js";
 import {
-	auditByosanFeatureSpec,
 	ByosanFeatureDraftSchema,
 	type ByosanFeatureSpec,
-	ByosanThumbnailSchema,
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import {
@@ -55,9 +53,15 @@ import {
 	writeDiscoveryEvidence,
 } from "../domain/byosan/feed_discovery.js";
 import { byosanFontconfigEnv } from "../domain/byosan/fonts.js";
-import { loadPublishedByosanSourceUrls } from "../domain/byosan/published_sources.js";
-import { isInteractiveByosanRun } from "../domain/byosan/run_mode.js";
-import { humanizeByosanDraft } from "../domain/byosan/spoken_humanizer.js";
+import {
+	loadPublishedByosanSourceUrls,
+	normalizedSourceUrl,
+} from "../domain/byosan/published_sources.js";
+import {
+	assertNoSourceNames,
+	assertSpeakableLines,
+	humanizeByosanDraft,
+} from "../domain/byosan/spoken_humanizer.js";
 import {
 	TitleFitSchema,
 	TitleProposalSchema,
@@ -79,11 +83,207 @@ type DailyConfig = {
 	feature_draft: { system: string };
 };
 
-const InteractiveFeatureDraftInputSchema = ByosanFeatureDraftSchema.extend({
-	thumbnail: ByosanThumbnailSchema.extend({
-		secondLine: z.string().min(2).max(100),
-	}),
+const StorySelectionSchema = z.object({
+	angle: z.string().min(1).max(220),
+	article_urls: z.array(z.string().url()).min(1).max(3),
+	hook: z.string().min(1).max(120),
+	answer: z.string().min(1).max(180),
+	early_clue: z.string().min(1).max(140),
+	payoff: z.string().min(1).max(180),
+	beats: z.array(z.string().min(1).max(180)).min(2).max(4),
 });
+
+type StorySelection = z.infer<typeof StorySelectionSchema>;
+
+export function byosanCandidateSlugKey(url: string): string | null {
+	try {
+		const parsed = new URL(url);
+		const slug = parsed.pathname
+			.split("/")
+			.filter(Boolean)
+			.at(-1)
+			?.toLowerCase()
+			.replace(/[^a-z0-9]/gu, "");
+		return slug ? `${parsed.origin}/${slug}` : null;
+	} catch {
+		return null;
+	}
+}
+
+export function selectionContainsSourceMismatch(
+	selection: StorySelection,
+): boolean {
+	const publicPlan = [
+		selection.angle,
+		selection.hook,
+		selection.answer,
+		selection.early_clue,
+		selection.payoff,
+		...selection.beats,
+	].join(" ");
+	return /(?:記事|本文|原文|出典|比較文|同じ指標).{0,80}(?:食い違|矛盾|二通り|不整合|誤記|誤植|異なる数値|違う数値)|(?:食い違|矛盾|二通り|不整合|誤記|誤植|異なる数値|違う数値).{0,80}(?:記事|本文|原文|出典|比較文|同じ指標)/u.test(
+		publicPlan,
+	);
+}
+
+export function hasConflictingCurrentGrowthRates(
+	article: Pick<FeatureDraftInput["today"][number], "body">,
+): boolean {
+	const current = /has increased to\s+([\d.]+)%\s+today/iu.exec(article.body);
+	const comparison =
+		/blended earnings growth rate for the other 493 S&P 500 companies for Q3 2026\s+\(([\d.]+)%\)/iu.exec(
+			article.body,
+		);
+	return Boolean(current && comparison && current[1] !== comparison[1]);
+}
+
+function isDryCalendarPreview(
+	article: FeatureDraftInput["today"][number],
+): boolean {
+	return /(?:economic week ahead|week ahead|projected to rise|予定|スケジュール|週間見通し|来週の予定|calendar)/iu.test(
+		article.title,
+	);
+}
+
+export function selectByosanStoryAngle(input: FeatureDraftInput): {
+	selection: StorySelection;
+	selectedInput: FeatureDraftInput;
+} {
+	const candidates = [...input.today, ...input.baseline];
+	const coherent = candidates.filter(
+		(article) => !hasConflictingCurrentGrowthRates(article),
+	);
+	if (candidates.length > 0 && coherent.length === 0) {
+		throw new Error("BYOSAN_NO_COHERENT_STORY_CANDIDATE");
+	}
+	const substantive = coherent.filter(
+		(article) => !isDryCalendarPreview(article),
+	);
+	const pool = substantive.length > 0 ? substantive : coherent;
+	const allowed = new Map(
+		pool.flatMap((article) => {
+			const key = normalizedSourceUrl(article.url);
+			return key === null ? [] : [[key, article] as const];
+		}),
+	);
+	const allowedBySlug = new Map<string, FeatureDraftInput["today"]>();
+	for (const article of pool) {
+		const key = byosanCandidateSlugKey(article.url);
+		if (!key) continue;
+		const matches = allowedBySlug.get(key) ?? [];
+		matches.push(article);
+		allowedBySlug.set(key, matches);
+	}
+	const requestSelection = (
+		selectionPool: FeatureDraftInput["today"],
+		rejectedAngle = "",
+	): StorySelection =>
+		invokeCreativeStructured({
+			name: "byosan_story_selection",
+			kind: "title",
+			schema: StorySelectionSchema,
+			prompt: [
+				"あなたは秒算マネーの企画編集者です。記事一覧から、最も視聴者の頭に残る一つの構造的な発見を選びます。",
+				"候補に驚くべき結果の逆転、需給の詰まり、評価と利益の乖離、意外な歴史的な仕組みが一つでもあれば、それを選びます。記事内の数字の誤記や矛盾、出典上の不整合そのものを動画の題材にしません。そうした候補は退け、数字と仕組みが一貫した別の逆説を選びます。雇用予測、経済カレンダー、来週の予定、一般的な発表記事は、実質的な逆説が候補にある日は必ず退けます。最新公開時刻を価値の基準にしません。",
+				"まず同じ市場・期間・母集団で直接比べられる事実の逆転を探します。マグニフィセント7の利益成長率が他の493社を下回る一方で指数全体の利益成長が上向く、または利益予想が強いのに株価評価が落ちるような比較は、候補にあれば優先します。PJMの肩季に電力価格が跳ねるような、数字で確認できる供給制約も優先候補です。異なる市場の記事を一つに束ねるのは、記事が共通の仕組みを明示している場合に限ります。米国企業決算と日本の家計資金移動を、利回りやリスク選好の仮説だけで因果的につなぎません。",
+				"比較に使う数字は、同じ指標・期間・定義で本文と照合します。同じ指標の数値が記事内で食い違う場合、その値を芯にした企画を選ばず、別記事の逆説を優先します。選んだangle、hook、answer、early_clue、payoff、beatsのどこにも、記事の誤記や食い違いを持ち込みません。",
+				"1〜3記事を選び、共通する問いをangleにまとめます。hookは冒頭10〜15秒で見せる具体的な逆説、answerはその場で出す短い答え、early_clueは冒頭に置き終盤で意味がつながる数字または細部、payoffは最後に解ける構造、beatsは問いから答え、具体例、比喩、回収へ進む順です。候補にない数字や因果を作らず、選んだ記事URLだけを返します。",
+				"angle、hook、answer、early_clue、payoff、beatsも公開脚本の設計です。記事の紹介や制作メモを入れず、注釈、否定形の予防線、言い訳、限界説明を書きません。「〜とは言えない」「〜とは限らない」「答えにならない」の形を避け、観測された数字と仕組みを短く言い切ります。事実の差を示す自然な対比は使えます。",
+				"answerは記事が示す主体の判断を直接書きます。『投資家は利益予想を楽観的すぎると警戒している』のように言い切り、『実現しないかもしれない』『可能性がある』などの仮定や予防線は入れません。",
+				rejectedAngle,
+				input.subject ? `依頼題材: ${input.subject}` : "",
+				`候補記事:\n${JSON.stringify(
+					selectionPool.map(({ title, url, issuer, published, body }) => ({
+						title,
+						url,
+						issuer,
+						published,
+						body: body.slice(0, 1800),
+					})),
+				)}`,
+			]
+				.filter(Boolean)
+				.join("\n\n"),
+		}).value;
+	let selection = requestSelection(pool);
+	if (selectionContainsSourceMismatch(selection)) {
+		const rejectedUrls = new Set(selection.article_urls);
+		const alternatePool = pool.filter(
+			(article) => !rejectedUrls.has(article.url),
+		);
+		if (alternatePool.length === 0) {
+			throw new Error("BYOSAN_STORY_SELECTION_ONLY_SOURCE_MISMATCH");
+		}
+		selection = requestSelection(
+			alternatePool,
+			`棄却した題材: ${selection.angle}。出典の数値不一致を動画の題材にしません。候補記事から、事実と仕組みが一貫した別の逆説を選んでください。`,
+		);
+		if (selectionContainsSourceMismatch(selection)) {
+			throw new Error("BYOSAN_STORY_SELECTION_SOURCE_MISMATCH_REPEATED");
+		}
+	}
+	const selectedByUrl = new Map<string, FeatureDraftInput["today"][number]>();
+	const unknownUrls: string[] = [];
+	for (const requestedUrl of selection.article_urls) {
+		let article: FeatureDraftInput["today"][number] | undefined;
+		try {
+			const exactKey = normalizedSourceUrl(requestedUrl);
+			if (exactKey) article = allowed.get(exactKey);
+		} catch {
+			article = undefined;
+		}
+		if (!article) {
+			const slugKey = byosanCandidateSlugKey(requestedUrl);
+			const matches = slugKey ? (allowedBySlug.get(slugKey) ?? []) : [];
+			if (matches.length === 1) article = matches[0];
+		}
+		if (!article) {
+			unknownUrls.push(requestedUrl);
+			continue;
+		}
+		selectedByUrl.set(article.url, article);
+	}
+	if (unknownUrls.length > 0) {
+		throw new Error(
+			`BYOSAN_STORY_SELECTION_UNKNOWN_SOURCE: ${unknownUrls.join(",")}`,
+		);
+	}
+	const selectedArticles = [...selectedByUrl.values()];
+	selection = {
+		...selection,
+		article_urls: selectedArticles.map((article) => article.url),
+	};
+	const storyLines = [
+		{ index: -1, text: selection.angle },
+		{ index: -2, text: selection.hook },
+		{ index: -3, text: selection.answer },
+		{ index: -4, text: selection.early_clue },
+		{ index: -5, text: selection.payoff },
+		...selection.beats.map((text, index) => ({ index, text })),
+	];
+	assertSpeakableLines(storyLines);
+	assertNoSourceNames(
+		storyLines,
+		selectedArticles.map(({ issuer }) => issuer),
+	);
+	const today = selectedArticles.filter((article) =>
+		input.today.some((candidate) => candidate.url === article.url),
+	);
+	if (today.length === 0) {
+		throw new Error("BYOSAN_STORY_SELECTION_REQUIRES_CURRENT_ARTICLE");
+	}
+	return {
+		selection,
+		selectedInput: {
+			...input,
+			today,
+			baseline: selectedArticles.filter((article) =>
+				input.baseline.some((candidate) => candidate.url === article.url),
+			),
+			subject: input.subject ?? selection.angle,
+		},
+	};
+}
 
 const dailyConfig = (): DailyConfig =>
 	loadConfig("byosan_money") as unknown as DailyConfig;
@@ -148,7 +348,7 @@ function failureStage(message: string): ByosanFailureStage {
 	}
 	if (/BYOSAN_FEATURE|feature spec|schema|zod|structured/i.test(message))
 		return "SPEC";
-	if (/BYOSAN_ANGLE|research|TrendScout/i.test(message)) return "RESEARCH";
+	if (/BYOSAN_ANGLE|research/i.test(message)) return "RESEARCH";
 	return "UNKNOWN";
 }
 
@@ -362,12 +562,19 @@ export function findPublishedByosanRunForDate(
 export function generateFeatureSpec(
 	input: FeatureDraftInput,
 	runDir: string,
-): { spec: ByosanFeatureSpec; explanation: Explanation } {
+): {
+	spec: ByosanFeatureSpec;
+	explanation: Explanation;
+	selectedInput: FeatureDraftInput;
+	storySelection: StorySelection;
+} {
 	const system = dailyConfig().feature_draft.system;
-	const articles = renderFeatureDraftInput(input);
+	const { selection: storySelection, selectedInput } =
+		selectByosanStoryAngle(input);
+	const articles = renderFeatureDraftInput(selectedInput);
 	const lane = input.subject ? "deep_dive_feature" : "daily_selected_news";
 	const titleRules =
-		"日本語の個人投資家・テック層がクリックしたくなる具体性（大型企業・AI/半導体・マクロ・市場構造・数字の対比や常識とのズレ）を先頭に置く。日次ニュースで複数記事がある場合は、マイナー企業の小粒な業績記事より市場全体や注目企業・産業構造に関わる記事を優先する。投資助言や煽り（爆益・暴落確定・今すぐ買え）は禁止。";
+		"視聴者が知りたい問いと意外な答えを短く結ぶ。対比か変化を一つ選び、具体的な数字・固有名詞を使う。数字と名称は選定記事本文で明記されたものだけを使います。採用した物語設計のangle・hook・answerを企画の芯として保ち、別の数字や逆説へすり替えません。挨拶、ニュース名の羅列、注釈、言い訳、予防線、免責、説明的な副題を入れず、実際の本文の魅力を約束する。売買推奨や爆益・暴落確定の煽りは書かない。";
 	const titleProposal = invokeCreativeStructured({
 		name: "byosan_title_proposal",
 		kind: "title",
@@ -378,16 +585,19 @@ export function generateFeatureSpec(
 			context: {
 				lane,
 				subject: input.subject ?? null,
-				today: input.today.map(({ title, issuer, published }) => ({
+				story: storySelection,
+				today: selectedInput.today.map(({ title, issuer, published }) => ({
 					title,
 					issuer,
 					published,
 				})),
-				baseline: input.baseline.map(({ title, issuer, published }) => ({
-					title,
-					issuer,
-					published,
-				})),
+				baseline: selectedInput.baseline.map(
+					({ title, issuer, published }) => ({
+						title,
+						issuer,
+						published,
+					}),
+				),
 			},
 		}),
 	});
@@ -410,7 +620,11 @@ export function generateFeatureSpec(
 			system,
 			`採用タイトル: ${titleProposal.value.title}`,
 			`本文前のタイトル批評: ${JSON.stringify(titleReview.value)}`,
-			"titleには採用タイトルをそのまま使います。本文は記事本文と入力済み根拠から作ってください。数値、出典、対象、期間、定義、実績・推計・見通しを入力記事に合わせます。記事が支えない因果、数字、家庭への換算は加えません。",
+			`採用した物語の設計: ${JSON.stringify(storySelection)}`,
+			"titleと物語の中心は選定済みのangle・hook・answerに合わせ、別の数字や逆説へすり替えません。最初の台詞はhookの逆説と答えから始め、2〜4回の問いと即答で数字・具体例を積み、比喩で仕組みを見せてearly_clueをpayoffに回収します。出典名はsourcesに置き、本文は発表主体と事実を自然な文で言い切ります。推計と実績と見通しは説明書きにせず、話の主語として正確に表します。",
+			"注釈、免責、言い訳、限界、予防線、根拠の列挙はsegments、title、thumbnail、descriptionのどこにも書きません。「だけではありません」「そのものではない」のような否定形の補足を使わず、比較と仕組みを短く述べます。事実の差を示す自然な対比は使えます。「ことがあります」のような曖昧な可能表現や、主体のない受け身の予測を使わず、日付や数値を示した観測事実を直接述べます。descriptionLeadは発見を伝える1〜2文、descriptionBulletsは短い要点を最大3件にします。出典リンクと章は後段で追加されます。",
+			"語りは春日部つむぎ一人。冒頭の挨拶や前置き、先生口調、定型のまとめ、同じ数字の繰り返し、問いを残したままの締めを削ります。",
+			"公開する全ての文言（segments[].text/headline/subheadline、thumbnail、descriptionLead/descriptionBullets、stats.label/detail）から、出典名、記事・資料・レポートへの言及、制作メモ、注釈、免責、言い訳を除きます。出典名はsourcesにだけ記録します。stats.detailも観測した事実を直接示し、「記事が『今週』とする週」のような出典の書きぶりを説明しません。本文は記事本文と入力済み根拠から作り、数値、対象、期間、定義、実績・推計・見通しを入力記事に合わせます。記事が支えない因果、数字、家庭への換算は加えません。explanation.figuresは数値で確認できる事実だけを記録し、valueの数字は引用文に必ず含めます。数値を含まない史実はclaimsとsegmentsで説明します。",
 			"thumbnailの各欄は短い見出しにし、スキーマの文字数上限を守ります。特にsecondLineは12文字以内です。",
 			articles,
 		].join("\n\n"),
@@ -425,10 +639,9 @@ export function generateFeatureSpec(
 		normalized.corrections,
 		{ spaces: 2 },
 	);
-	const parsedDraftSchema = isInteractiveByosanRun(input.runId)
-		? InteractiveFeatureDraftInputSchema
-		: ByosanFeatureDraftSchema;
-	let parsed = parsedDraftSchema.parse(normalized.draft);
+	let parsed = ByosanFeatureDraftSchema.parse(normalized.draft);
+	const humanized = humanizeByosanDraft(parsed);
+	parsed = humanized.draft;
 	const titleFit = invokeCreativeStructured({
 		name: "byosan_title_body_review",
 		kind: "title",
@@ -452,24 +665,20 @@ export function generateFeatureSpec(
 		}),
 	});
 	parsed = { ...parsed, title: titleFit.value.title };
-	const humanized = isInteractiveByosanRun(input.runId)
-		? humanizeByosanDraft(parsed)
-		: undefined;
-	if (humanized) {
-		parsed = humanized.draft;
-		fs.outputJsonSync(
-			path.join(runDir, "audit", "spoken_humanization.json"),
-			{
-				story_spine: humanized.storySpine,
-				removed_segment_indexes: humanized.removedSegmentIndexes,
-				thumbnail_title: humanized.thumbnailTitle,
-				thumbnail: humanized.thumbnail,
-				edits: humanized.edits,
-				model_route: humanized.receipt,
-			},
-			{ spaces: 2 },
-		);
-	}
+	assertSpeakableLines([{ index: -4, text: parsed.title }]);
+	assertNoSourceNames(
+		[{ index: -4, text: parsed.title }],
+		parsed.sources.map(({ name }) => name),
+	);
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "spoken_humanization.json"),
+		{
+			story_spine: humanized.storySpine,
+			edits: humanized.edits,
+			model_route: humanized.receipt,
+		},
+		{ spaces: 2 },
+	);
 	fs.outputJsonSync(
 		path.join(runDir, "audit", "creative_authoring.json"),
 		{
@@ -477,17 +686,12 @@ export function generateFeatureSpec(
 				title_proposal: titleProposal.receipt,
 				title_review: titleReview.receipt,
 				draft: authored.receipt,
-				...(humanized ? { humanizer: humanized.receipt } : {}),
+				humanizer: humanized.receipt,
 				title_fit: titleFit.receipt,
 			},
-			...(humanized
-				? {
-						humanizer: {
-							story_spine: humanized.storySpine,
-							removed_segment_indexes: humanized.removedSegmentIndexes,
-						},
-					}
-				: {}),
+			humanizer: {
+				story_spine: humanized.storySpine,
+			},
 			title_proposal: titleProposal.value,
 			title_proposal_usage: titleProposal.receipt.usage,
 			title_proposal_conversation: titleProposal.receipt.conversation_id,
@@ -503,7 +707,7 @@ export function generateFeatureSpec(
 		{ spaces: 2 },
 	);
 	try {
-		const issues = featureDraftIssues(parsed, input);
+		const issues = featureDraftIssues(parsed, selectedInput);
 		fs.outputJsonSync(
 			path.join(runDir, "audit", "feature_draft_issues.json"),
 			issues,
@@ -520,7 +724,17 @@ export function generateFeatureSpec(
 	const spec = parseAndAuditByosanFeatureSpec(
 		buildFeatureSpecInput(parsed, input),
 	);
-	return { spec, explanation: parsed.explanation };
+	fs.outputJsonSync(
+		path.join(runDir, "audit", "story_selection.json"),
+		storySelection,
+		{ spaces: 2 },
+	);
+	return {
+		spec,
+		explanation: parsed.explanation,
+		selectedInput,
+		storySelection,
+	};
 }
 
 function runCommand(
@@ -628,11 +842,6 @@ function writeByosanCanonicalAudit(
 		explanation,
 		sourceText,
 	);
-	fs.outputJsonSync(
-		path.join(runDir, "audit", "feature_warnings.json"),
-		[...auditByosanFeatureSpec(spec), ...contractIssues],
-		{ spaces: 2 },
-	);
 	const explanationIssues = contractIssues.map(
 		(issue) => `${issue.code}:${issue.details}`,
 	);
@@ -720,7 +929,7 @@ async function runByosanDaily(): Promise<void> {
 		discovery.repeat_window_days,
 	);
 	if (factSheet) assertFactSheetUnpublished(factSheet.sheet, publishedUrls);
-	const input = prepareFeatureDraftInput({
+	let input = prepareFeatureDraftInput({
 		runId,
 		asOf: date,
 		today: DraftArticlesSchema.parse(await fs.readJson(articlesPath)),
@@ -733,6 +942,7 @@ async function runByosanDaily(): Promise<void> {
 		spec = parseAndAuditByosanFeatureSpec(await fs.readJson(specPath));
 	} else {
 		const generated = generateFeatureSpec(input, store.runDir);
+		input = generated.selectedInput;
 		spec = generated.spec;
 		await fs.outputJson(explanationPath, generated.explanation, { spaces: 2 });
 		await fs.outputJson(specPath, spec, { spaces: 2 });

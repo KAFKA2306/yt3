@@ -4,40 +4,15 @@ import {
 	invokeCreativeStructured,
 } from "../../io/creative.js";
 import { ByosanFeatureDraftSchema } from "./feature_spec.js";
-
-const HumanizedStatSchema = z.object({
-	source_index: z.number().int().nonnegative(),
-	label: z.string().min(1).max(24),
-	detail: z.string().min(1),
-});
+import { canonicalNumberTokens } from "./number_canonicalization.js";
 
 const HumanizedSegmentSchema = z.object({
 	index: z.number().int().nonnegative(),
-	keep: z.boolean(),
-	fact_ids: z.array(z.string().min(1)).max(8),
 	text: z.string(),
-	headline: z.string(),
-	subheadline: z.string(),
-	stats: z.array(HumanizedStatSchema).max(3),
-});
-
-const HumanizedThumbnailSchema = z.object({
-	eyebrow: z.string().min(2).max(18),
-	lead: z.string().min(1).max(8),
-	accent: z.string().min(1).max(10),
-	reaction: z.string().min(1).max(4),
-	second_line: z.string().min(2).max(12),
-	callout_top: z.string().min(2).max(22),
-	callout_bottom: z.string().min(2).max(18),
 });
 
 const HumanizerResponseSchema = z.object({
-	title: z.string().min(1).max(100),
-	thumbnail_title: z.string().min(1).max(100),
-	thumbnail: HumanizedThumbnailSchema,
 	story_spine: z.string().min(1).max(200),
-	description_lead: z.string().min(1).max(350),
-	description_bullets: z.array(z.string().min(1).max(160)).min(1).max(3),
 	segments: z.array(HumanizedSegmentSchema).min(1),
 });
 
@@ -46,40 +21,18 @@ type FeatureDraft = z.infer<typeof ByosanFeatureDraftSchema>;
 export type HumanizedFeatureDraft = {
 	draft: FeatureDraft;
 	storySpine: string;
-	removedSegmentIndexes: number[];
 	edits: Array<{
 		index: number;
-		keep: boolean;
-		factIds: string[];
 		before: string;
 		after: string;
-		visualBefore: {
-			headline: string;
-			subheadline: string;
-			stats: Array<{ label: string; detail: string }>;
-		};
-		visualAfter: {
-			headline: string;
-			subheadline: string;
-			stats: Array<{ label: string; detail: string }>;
-		} | null;
 	}>;
-	thumbnailTitle: { before: string; after: string };
-	thumbnail: {
-		before: FeatureDraft["thumbnail"];
-		after: FeatureDraft["thumbnail"];
-	};
 	receipt: CreativeReceipt;
 };
 
 function numericValues(value: unknown): Set<string> {
 	const text =
 		typeof value === "string" ? value : (JSON.stringify(value) ?? "");
-	return new Set(
-		[...text.normalize("NFKC").matchAll(/\d+(?:,\d{3})*(?:\.\d+)?/gu)].map(
-			([token]) => Number(token?.replaceAll(",", "")).toString(),
-		),
-	);
+	return new Set(canonicalNumberTokens(text));
 }
 
 function assertNoNewNumbers(original: unknown, edited: unknown): void {
@@ -125,13 +78,7 @@ function humanizerClaimFacts(
 	draft: FeatureDraft,
 ): Array<{ id: string; fact: string }> {
 	return draft.claims
-		.filter(
-			({ status, claim }) =>
-				status === "verified" &&
-				!/(?:記事|本文|資料).{0,32}(?:載っていない|記載されていない|確認できない|分からない|わからない)|限界|断定できない/u.test(
-					claim,
-				),
-		)
+		.filter(({ status }) => status === "verified")
 		.map(({ id, claim }) => ({
 			id,
 			fact: claim
@@ -228,6 +175,15 @@ export function assertSpeakableLines(
 	segments: Array<{ index: number; text: string }>,
 ): void {
 	for (const segment of segments) {
+		if (
+			/(?:注釈|注記|根拠と限界|限界\s*[:：]|保証|かもしれない|可能性が(?:ある|あります|高い|低い)|ことが(?:あります|ある|ありました)|ことも(?:あります|ある|ありました)|見込まれ|予想されています|予測されています|と見られています|ではない|じゃありません|とは限らない|わけではない|とは別|そのものではない|意味しない|だけでは.{0,16}(?:答え|意味|証明|判断)|同一視できない|(?:答え|結果).{0,12}にならない|ではありません|予測.{0,12}実績.{0,5}(?:と区別|を区別)|(?:とは|と)言え(?:ない|ません)|断定でき(?:ない|ません)|一概に.{0,12}(?:言えない|言えません)|(?:記事|資料|本文).{0,24}(?:示していない|確認できない|支えない|記載されていない)|因果関係.{0,18}(?:結ばない|つなげない|支えない)|(?:対象と期間|改定値).{0,12}(?:区別|注意)|予測と実績は別|FRBの決定ではありません|投資判断は自己責任|免責事項)/u.test(
+				segment.text,
+			)
+		) {
+			throw new Error(
+				`BYOSAN_HUMANIZER_FOOTNOTE_OR_EXCUSE: segment=${segment.index} text=${JSON.stringify(segment.text.slice(0, 180))}`,
+			);
+		}
 		for (const [pattern, code] of META_SPEECH_PATTERNS) {
 			if (pattern.test(segment.text)) {
 				throw new Error(
@@ -238,16 +194,22 @@ export function assertSpeakableLines(
 	}
 }
 
-function assertSpecificPackaging(title: string): void {
-	const trimmedTitle = title.trim();
-	const genericTopicEnding =
-		/(?:売上(?:高)?|決算|株価|市場|新製品|発表|買収|値上がり|下落|ニュース)$/u;
-	const hasConcreteHook =
-		/\d|[?？]|(?:なぜ|どうして|どうなる|何が|どっち|それでも|なのに|ところが)/u.test(
-			trimmedTitle,
-		);
-	if (genericTopicEnding.test(trimmedTitle) && !hasConcreteHook) {
-		throw new Error("BYOSAN_HUMANIZER_GENERIC_PACKAGING_TITLE");
+export function assertNoSourceNames(
+	segments: Array<{ index: number; text: string }>,
+	sourceNames: string[],
+): void {
+	const markers = sourceNameMarkers(sourceNames);
+	for (const segment of segments) {
+		for (const marker of markers) {
+			const present = /^[A-Za-z]/u.test(marker)
+				? new RegExp(`\\b${marker}\\b`, "iu").test(segment.text)
+				: segment.text.includes(marker);
+			if (present) {
+				throw new Error(
+					`BYOSAN_HUMANIZER_SOURCE_NAME_IN_PUBLIC_COPY: segment=${segment.index} source=${marker} text=${JSON.stringify(segment.text.slice(0, 180))}`,
+				);
+			}
+		}
 	}
 }
 
@@ -279,29 +241,6 @@ function assertDistinctDatesStayDistinct(
 	}
 }
 
-function requiredPackagedClaimIds(
-	draft: Pick<FeatureDraft, "claims" | "packaging">,
-): string[] {
-	const packagedIds = new Set(draft.packaging?.claimIds ?? []);
-	return draft.claims.flatMap(({ id, status }) =>
-		id && status === "verified" && packagedIds.has(id) ? [id] : [],
-	);
-}
-
-export function assertPackagedClaimsRetained(
-	draft: Pick<FeatureDraft, "claims" | "packaging">,
-	usedFactIds: ReadonlySet<string>,
-): void {
-	const missing = requiredPackagedClaimIds(draft).filter(
-		(id) => !usedFactIds.has(id),
-	);
-	if (missing.length > 0) {
-		throw new Error(
-			`BYOSAN_HUMANIZER_DROPPED_PACKAGED_FACTS: ${missing.join(",")}`,
-		);
-	}
-}
-
 export function assertResolvedEnding(segments: Array<{ text: string }>): void {
 	const finalSegment = segments.at(-1)?.text.trim();
 	if (!finalSegment) throw new Error("BYOSAN_HUMANIZER_EMPTY_ENDING");
@@ -317,6 +256,7 @@ const NON_COMPANY_LATIN_TERMS = new Set([
 	"CPUS",
 	"CPU",
 	"COWOS",
+	"EPS",
 	"GPU",
 	"NAND",
 	"NVL72",
@@ -327,24 +267,41 @@ const NON_COMPANY_LATIN_TERMS = new Set([
 	"RUBIN",
 ]);
 
-function assertNoCompanyEnumeration(
-	segments: Array<{ index: number; text: string }>,
-): void {
-	for (const segment of segments) {
-		const names = new Set(
-			[...segment.text.matchAll(/\b[A-Z][A-Za-z0-9-]{2,}\b/gu)]
-				.map(([token]) => token?.toUpperCase())
-				.filter(
-					(token): token is string =>
-						token !== undefined && !NON_COMPANY_LATIN_TERMS.has(token),
-				),
+function sourceNameMarkers(sourceNames: string[]): string[] {
+	return [
+		...new Set(
+			sourceNames.flatMap((name) => {
+				const publisher =
+					name.split(/\s+[—–]\s+|\s*\|\s*|:\s+/u)[0]?.trim() ?? name;
+				return [
+					publisher,
+					...(publisher.match(/[A-Za-z][A-Za-z0-9-]{2,}/gu) ?? []).filter(
+						(marker) => !NON_COMPANY_LATIN_TERMS.has(marker.toUpperCase()),
+					),
+				];
+			}),
+		),
+	];
+}
+
+function stripSourceNames(text: string, sourceNames: string[]): string {
+	const markers = sourceNameMarkers(sourceNames).sort(
+		(left, right) => right.length - left.length,
+	);
+	let clean = text;
+	for (const marker of markers) {
+		const escaped = marker.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+		const boundary = /^[A-Za-z]/u.test(marker) ? `\\b${escaped}\\b` : escaped;
+		const attribution = new RegExp(
+			`${boundary}(?:\\s*(?:によると|によれば|による|では|から|への|の|は|が|で))?[、，,:：]?\\s*`,
+			"giu",
 		);
-		if (names.size >= 4) {
-			throw new Error(
-				`BYOSAN_HUMANIZER_COMPANY_ENUMERATION: segment=${segment.index} names=${[...names].join(",")} text=${JSON.stringify(segment.text.slice(0, 180))}`,
-			);
-		}
+		clean = clean.replace(attribution, " ");
 	}
+	return clean
+		.replace(/[ \t]{2,}/gu, " ")
+		.replace(/([。！？!?])\s+/gu, "$1")
+		.trim();
 }
 
 const MIN_REPEATED_NARRATIVE_CHARACTERS = 20;
@@ -405,38 +362,50 @@ function assertNoRepeatedNarrativeSegments(
 export function humanizeByosanDraft(
 	draft: FeatureDraft,
 ): HumanizedFeatureDraft {
-	const claimIdsByIndex = new Map<number, string[]>();
-	const assignedClaimIds = new Set<string>();
-	for (const [index, segment] of draft.segments.entries()) {
-		const claimIds: string[] = [];
-		for (const claimId of segment.claimIds ?? []) {
-			if (assignedClaimIds.has(claimId)) continue;
-			assignedClaimIds.add(claimId);
-			claimIds.push(claimId);
-		}
-		claimIdsByIndex.set(index, claimIds);
-	}
+	const sourceNames = draft.sources.map(({ name }) => name);
+	draft = {
+		...draft,
+		title: stripSourceNames(draft.title, sourceNames),
+		thumbnailTitle: stripSourceNames(draft.thumbnailTitle, sourceNames),
+		thumbnail: Object.fromEntries(
+			Object.entries(draft.thumbnail).map(([key, value]) => [
+				key,
+				stripSourceNames(value, sourceNames),
+			]),
+		) as FeatureDraft["thumbnail"],
+		descriptionLead: stripSourceNames(draft.descriptionLead, sourceNames),
+		descriptionBullets: draft.descriptionBullets.map((text) =>
+			stripSourceNames(text, sourceNames),
+		),
+		segments: draft.segments.map((segment) => ({
+			...segment,
+			headline: stripSourceNames(segment.headline, sourceNames),
+			subheadline: stripSourceNames(segment.subheadline, sourceNames),
+			text: stripSourceNames(segment.text, sourceNames),
+			stats: segment.stats.map((stat) => ({
+				...stat,
+				label: stripSourceNames(stat.label, sourceNames),
+				detail: stripSourceNames(stat.detail, sourceNames),
+			})),
+		})),
+	};
 	const response = invokeCreativeStructured({
-		name: "byosan_interactive_humanizer",
+		name: "byosan_spoken_humanizer",
 		kind: "draft",
 		schema: HumanizerResponseSchema,
 		prompt: [
-			"この動画を友人に話したくなる発見を一つ選びます。具体的な出来事から始め、事実の差や意外さを見せて、最後は登場人物がその場で気づいたように答えます。説明文の要約や教訓、未回答の疑問で締めません。",
-			"台詞は声に出して自然な日本語にします。話者名はspeaker欄にあるので台詞の本文には含めません。文は助詞を補って言い切り、見出しのような名詞句を読み上げません。記事・資料の紹介、制作メモ、先生のようなまとめ、調査上の限界、一般的な免責文は公開文に書きません。『なんですね』『ということです』のように説明を言い換えて終える形も避けます。堅い用語を会話で使う言葉に直します。",
-			"話は2〜3セグメントにまとめ、各台詞は会話の役目を持たせます。出来事を出す、意外な点を見せる、具体的な規模を添える、の中から必要なものだけを使います。同じ事実を繰り返さず、最後は目の前の事実への自然なひと言で終えます。",
-			"titleとthumbnailは、確認済み事実の中で最も目を引く対比や変化を短く伝えます。会社名と一般的な話題名だけの見出しは避けます。thumbnail.second_lineは12文字以内です。数字はverified claimの表記を使い、増加率を倍率に計算し直しません。複数の日付が出る話では、同じ日に起きたようにまとめません。市場予想との比較が確認できない場合は『好決算』『上振れ』と評価しません。description_leadは動画の内容を一文で紹介し、description_bulletsは最大3点。出典名、調査手順、限界や言い訳を公開文に足しません。",
-			"入力と同じindexのセグメントを一つずつ返してください。packagingに含まれるverified claimは、会話の中にすべて一度ずつ残します。fact_idsにはその枠のclaim_idsだけを指定し、同じIDを繰り返しません。削る枠はkeep=false、fact_idsは空配列です。数値カードは必要な項目だけ残し、元のstat_valuesのindexをsource_indexとして指定し、順番を保ちます。",
-			"新しい数字や因果関係を足さず、話者、順序、図、出典、検証用claimを変えません。説明欄に出典リンク以外の注釈や制作上の言い訳を足しません。",
-			`[VERIFIED_CORE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
-			`[SEGMENT_SLOTS_AND_EVIDENCE]\n${JSON.stringify(
+			"この動画を友人に話したくなる発見を一つ選びます。最初の一言で意外な出来事と答えを見せ、数字と具体例で仕組みを広げ、冒頭の手がかりを終盤で回収して最後に構造を一言で残します。説明文の要約や教訓、未回答の疑問で締めません。",
+			"全て春日部つむぎ一人の語りにします。台詞は声に出して自然な日本語にし、話者名を台詞本文に入れません。出典名や執筆者を語りで紹介せず、出典名はsourcesに任せます。文は助詞を補って言い切り、見出しのような名詞句を読み上げません。『記事は』『資料によると』『このレポートでは』のように記事や資料を台詞の主語にせず、そこに書かれた事実を直接述べます。制作メモ、先生のようなまとめ、注釈、免責、言い訳、限界の列挙を公開文に書きません。二つの結果の差は具体的に述べます。保証や否定形の予防線、根拠のない「かもしれない」「可能性がある」、否定形で補足する「だけではありません」は使いません。『ことがあります』のような曖昧な可能表現や、主体のない受け身の予測は使わず、日付や数値を示した観測事実を直接述べます。たとえば「今後2年も利益が伸びると予想されています」は「アナリストは今後2年も利益が伸びると見ています」のように、予想の主体を示す自然な文に直します。『なんですね』『ということです』のような説明の言い換えも避けます。堅い用語を会話の言葉に直します。",
+			"各セグメントに物語上の仕事を一つ持たせ、必要な事実だけを残します。問いにはすぐ答え、数字や具体例を続け、比喩で見える形にします。重複した事実と橋渡しを削り、結末では一つの構造か観測点を言い切ります。",
+			"この編集はsegments[].textの話し言葉だけを整えます。title、thumbnail、description、headline、subheadline、stats、出典、claim ledgerは変更しません。",
+			"入力と同じindexのセグメントを一つずつ返してください。セグメントを削除、追加、結合、分割、並べ替えせず、話し言葉だけを編集します。claimIdsは元のセグメントのまま維持されます。",
+			"新しい数字や因果関係を足さず、順序、出典、検証用claim、タイトル、サムネイル、概要欄を変えません。",
+			`[出典名（sources専用・台詞では使わない）]\n${JSON.stringify(sourceNameMarkers(sourceNames))}`,
+			`[VERIFIED_SOURCE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
+			`[SEGMENT_SLOTS]\n${JSON.stringify(
 				draft.segments.map((segment, index) => ({
 					index,
-					speaker: segment.speaker,
-					claim_ids: claimIdsByIndex.get(index) ?? [],
-					stat_values: segment.stats.map(({ value }, statIndex) => ({
-						index: statIndex,
-						value,
-					})),
+					text: segment.text,
 				})),
 			)}`,
 		].join("\n\n"),
@@ -460,162 +429,35 @@ export function humanizeByosanDraft(
 	if (editsByIndex.size !== draft.segments.length) {
 		throw new Error("BYOSAN_HUMANIZER_SEGMENT_INDEX: missing index");
 	}
-	const verifiedFactIds = new Set(
-		humanizerClaimFacts(draft).map(({ id }) => id),
-	);
-	const allowedFactIdsByIndex = new Map(
-		draft.segments.map((_, index) => [
-			index,
-			new Set(claimIdsByIndex.get(index) ?? []),
-		]),
-	);
-	const usedFactIds = new Set<string>();
-	for (const edit of response.value.segments) {
-		if (!edit.keep) {
-			if (edit.fact_ids.length > 0) {
-				throw new Error(
-					`BYOSAN_HUMANIZER_REMOVED_FACT_IDS: segment=${edit.index} ids=${edit.fact_ids.join(",")}`,
-				);
-			}
-			continue;
-		}
-		if (edit.fact_ids.length === 0) {
-			throw new Error(
-				`BYOSAN_HUMANIZER_FACT_IDS_REQUIRED: segment=${edit.index}`,
-			);
-		}
-		const allowedFactIds = allowedFactIdsByIndex.get(edit.index);
-		for (const factId of edit.fact_ids) {
-			if (!verifiedFactIds.has(factId) || !allowedFactIds?.has(factId)) {
-				throw new Error(
-					`BYOSAN_HUMANIZER_UNASSIGNED_FACT_ID: segment=${edit.index} id=${factId}`,
-				);
-			}
-			if (usedFactIds.has(factId)) {
-				throw new Error(
-					`BYOSAN_HUMANIZER_REUSED_FACT_ID: segment=${edit.index} id=${factId}`,
-				);
-			}
-			usedFactIds.add(factId);
-		}
-	}
-	assertPackagedClaimsRetained(draft, usedFactIds);
-
-	const removedSegmentIndexes: number[] = [];
 	const editLog = draft.segments.map((segment, index) => {
 		const edit = editsByIndex.get(index);
 		if (!edit) throw new Error(`BYOSAN_HUMANIZER_SEGMENT_INDEX: ${index}`);
-		const visualAfter = edit.keep
-			? {
-					headline: edit.headline.trim(),
-					subheadline: edit.subheadline.trim(),
-					stats: edit.stats.map(({ label, detail }) => ({
-						label: label.trim(),
-						detail: detail.trim(),
-					})),
-				}
-			: null;
 		return {
 			index,
-			keep: edit.keep,
-			factIds: edit.fact_ids,
 			before: segment.text,
-			after: edit.keep ? edit.text.trim() : "",
-			visualBefore: {
-				headline: segment.headline,
-				subheadline: segment.subheadline,
-				stats: segment.stats.map(({ label, detail }) => ({ label, detail })),
-			},
-			visualAfter,
+			after: edit.text.trim(),
 		};
 	});
-	const segments = draft.segments.flatMap((segment, index) => {
+	const segments = draft.segments.map((segment, index) => {
 		const edit = editsByIndex.get(index);
 		if (!edit) throw new Error(`BYOSAN_HUMANIZER_SEGMENT_INDEX: ${index}`);
-		if (!edit.keep) {
-			removedSegmentIndexes.push(index);
-			return [];
-		}
-		const text = edit.text.trim();
+		const text = stripSourceNames(edit.text.trim(), sourceNames);
 		if (!text) throw new Error(`BYOSAN_HUMANIZER_EMPTY_TEXT: segment=${index}`);
-		if (!edit.headline.trim() || !edit.subheadline.trim()) {
-			throw new Error(`BYOSAN_HUMANIZER_EMPTY_VISUAL_COPY: segment=${index}`);
-		}
-		if (segment.stats.length > 0 && edit.stats.length === 0) {
-			throw new Error(`BYOSAN_HUMANIZER_STATS_REQUIRED: segment=${index}`);
-		}
-		const seenStatIndexes = new Set<number>();
-		let previousStatIndex = -1;
-		const stats = edit.stats.map((visualStat) => {
-			const { source_index: statIndex } = visualStat;
-			const stat = segment.stats[statIndex];
-			if (!stat || seenStatIndexes.has(statIndex)) {
-				throw new Error(
-					`BYOSAN_HUMANIZER_STAT_INDEX: segment=${index} stat=${statIndex}`,
-				);
-			}
-			if (statIndex <= previousStatIndex) {
-				throw new Error(
-					`BYOSAN_HUMANIZER_STAT_ORDER: segment=${index} stat=${statIndex}`,
-				);
-			}
-			seenStatIndexes.add(statIndex);
-			previousStatIndex = statIndex;
-			assertNoNewNumbers(segment, {
-				label: visualStat.label,
-				detail: visualStat.detail,
-			});
-			return {
-				...stat,
-				label: visualStat.label.trim(),
-				detail: visualStat.detail.trim(),
-			};
-		});
-		return [
-			{
-				...segment,
-				claimIds: edit.fact_ids,
-				text,
-				headline: edit.headline.trim(),
-				subheadline: edit.subheadline.trim(),
-				stats,
-			},
-		];
+		return {
+			...segment,
+			speaker: "春日部つむぎ" as const,
+			text,
+		};
 	});
-	const minimumSegments = Math.min(2, draft.segments.length);
-	const maximumSegments = Math.min(3, draft.segments.length);
-	if (segments.length < minimumSegments) {
-		throw new Error(
-			`BYOSAN_HUMANIZER_TOO_FEW_SEGMENTS: source=${draft.segments.length} minimum=${minimumSegments} actual=${segments.length} kept=${JSON.stringify(segments.map(({ text }) => text.slice(0, 120)))}`,
-		);
-	}
-	if (segments.length > maximumSegments) {
-		throw new Error(
-			`BYOSAN_HUMANIZER_TOO_MANY_SEGMENTS: source=${draft.segments.length} maximum=${maximumSegments} actual=${segments.length} kept=${JSON.stringify(segments.map(({ text }) => text.slice(0, 120)))}`,
-		);
-	}
 	assertResolvedEnding(segments);
-	const thumbnail = {
-		eyebrow: response.value.thumbnail.eyebrow.trim(),
-		lead: response.value.thumbnail.lead.trim(),
-		accent: response.value.thumbnail.accent.trim(),
-		reaction: response.value.thumbnail.reaction.trim(),
-		secondLine: response.value.thumbnail.second_line.trim(),
-		calloutTop: response.value.thumbnail.callout_top.trim(),
-		calloutBottom: response.value.thumbnail.callout_bottom.trim(),
-	};
-	assertSpeakableLines([
-		{ index: -4, text: response.value.title },
-		{ index: -5, text: response.value.thumbnail_title },
-		{ index: -6, text: thumbnail.eyebrow },
-		{ index: -7, text: thumbnail.lead },
-		{ index: -8, text: thumbnail.accent },
-		{ index: -9, text: thumbnail.reaction },
-		{ index: -10, text: thumbnail.secondLine },
-		{ index: -11, text: thumbnail.calloutTop },
-		{ index: -12, text: thumbnail.calloutBottom },
-		{ index: -1, text: response.value.description_lead },
-		...response.value.description_bullets.map((text, index) => ({
+	const thumbnailCopy = Object.values(draft.thumbnail);
+	const publicLines = [
+		{ index: -13, text: response.value.story_spine },
+		{ index: -4, text: draft.title },
+		{ index: -5, text: draft.thumbnailTitle },
+		...thumbnailCopy.map((text, index) => ({ index: -6 - index, text })),
+		{ index: -1, text: draft.descriptionLead },
+		...draft.descriptionBullets.map((text, index) => ({
 			index: -2 - index,
 			text,
 		})),
@@ -628,49 +470,23 @@ export function humanizeByosanDraft(
 				{ index: 400 + index * 10 + statIndex, text: stat.detail },
 			]),
 		]),
-	]);
-	assertSpecificPackaging(response.value.title);
-	assertSpecificPackaging(response.value.thumbnail_title);
-	assertNoCompanyEnumeration(
-		segments.map((segment, index) => ({ index, text: segment.text })),
-	);
+	];
+	assertSpeakableLines(publicLines);
+	assertNoSourceNames(publicLines, sourceNames);
 	assertNoRepeatedNarrativeSegments(
 		segments.map((segment, index) => ({ index, text: segment.text })),
 	);
 	// A fact can move when sections merge; compare numbers against the whole draft.
 	assertNoNewNumbers(draft, {
-		title: response.value.title,
-		thumbnail_title: response.value.thumbnail_title,
-		thumbnail,
 		story_spine: response.value.story_spine,
-		description_lead: response.value.description_lead,
-		description_bullets: response.value.description_bullets,
-		segments: segments.map(({ text, headline, subheadline, stats }) => ({
-			text,
-			headline,
-			subheadline,
-			stats: stats.map(({ label, value, detail }) => ({
-				label,
-				value,
-				detail,
-			})),
-		})),
+		segments: segments.map(({ text }) => ({ text })),
 	});
-	const claimedNumbers = draft.claims.map(({ claim }) =>
-		claim.replaceAll("一日", "1日"),
-	);
-	const packagingCopy = {
-		title: response.value.title,
-		thumbnail_title: response.value.thumbnail_title,
-		thumbnail,
-	};
-	assertNoNewNumbers(claimedNumbers, packagingCopy);
 	const publicCopy = [
-		response.value.title,
-		response.value.thumbnail_title,
-		...Object.values(thumbnail),
-		response.value.description_lead,
-		...response.value.description_bullets,
+		draft.title,
+		draft.thumbnailTitle,
+		...thumbnailCopy,
+		draft.descriptionLead,
+		...draft.descriptionBullets,
 		...segments.map(({ text }) => text),
 	].join(" ");
 	assertNoUnsupportedEarningsPraise(draft.claims, publicCopy);
@@ -679,23 +495,13 @@ export function humanizeByosanDraft(
 
 	const editedDraft = ByosanFeatureDraftSchema.parse({
 		...draft,
-		title: response.value.title.trim(),
-		thumbnailTitle: response.value.thumbnail_title.trim(),
-		thumbnail,
-		descriptionLead: response.value.description_lead,
-		descriptionBullets: response.value.description_bullets,
+		angle: response.value.story_spine.trim(),
 		segments,
 	});
 	return {
 		draft: editedDraft,
 		storySpine: response.value.story_spine.trim(),
-		removedSegmentIndexes,
 		edits: editLog,
-		thumbnailTitle: {
-			before: draft.thumbnailTitle,
-			after: response.value.thumbnail_title.trim(),
-		},
-		thumbnail: { before: draft.thumbnail, after: thumbnail },
 		receipt: response.receipt,
 	};
 }

@@ -4,11 +4,69 @@ import path from "node:path";
 import fs from "fs-extra";
 import {
 	assertByosanRetryAllowed,
+	byosanCandidateSlugKey,
 	findPublishedByosanRunForDate,
+	hasConflictingCurrentGrowthRates,
 	recordByosanFailure,
+	selectionContainsSourceMismatch,
 } from "../src/scripts/byosan_daily.js";
 
 const tempRoots: string[] = [];
+
+describe("Byosan story selection", () => {
+	test("matches article URL punctuation variants without changing the source", () => {
+		expect(
+			byosanCandidateSlugKey(
+				"https://insight.factset.com/market-is-punishing-negative-eps-surprises-less-than-average-for-s-p-500-companies-for-q3",
+			),
+		).toBe(
+			byosanCandidateSlugKey(
+				"https://insight.factset.com/market-is-punishing-negative-eps-surprises-less-than-average-for-sp-500-companies-for-q3",
+			),
+		);
+	});
+
+	test("filters a source whose current and comparative growth rates conflict", () => {
+		expect(
+			hasConflictingCurrentGrowthRates({
+				body: "The blended earnings growth rate for the other 493 S&P 500 companies has increased to 34.7% today from 27.7% on September 30. Thus, the actual earnings growth rate for the Magnificent 7 is lower than the blended earnings growth rate for the other 493 S&P 500 companies for Q3 2026 (32.6%).",
+			}),
+		).toBe(true);
+		expect(
+			hasConflictingCurrentGrowthRates({
+				body: "The blended earnings growth rate for the other 493 S&P 500 companies has increased to 34.7% today from 27.7% on September 30. Thus, the actual earnings growth rate for the Magnificent 7 is lower than the blended earnings growth rate for the other 493 S&P 500 companies for Q3 2026 (34.7%).",
+			}),
+		).toBe(false);
+	});
+
+	test("rejects stories built around source number mismatches", () => {
+		expect(
+			selectionContainsSourceMismatch({
+				angle: "利益成長の逆転",
+				article_urls: ["https://example.com/article"],
+				hook: "見出しと比較文で数字が違う。",
+				answer: "記事の数値を照合する。",
+				early_clue: "記事には34.7%と32.6%の二通りで記載。",
+				payoff: "同じ指標に矛盾がある。",
+				beats: ["二つの値を並べる", "なぜ数字が食い違うかを見る"],
+			}),
+		).toBe(true);
+	});
+
+	test("keeps market structure paradoxes eligible", () => {
+		expect(
+			selectionContainsSourceMismatch({
+				angle: "EPSを上回った株の上昇が、小幅なミスより弱い。",
+				article_urls: ["https://example.com/article"],
+				hook: "好材料の日に株価が下がる。",
+				answer: "利益予想が上がっても評価倍率が下がる。",
+				early_clue: "上昇幅の中央値は0.4%。",
+				payoff: "投資家は利益ではなく評価を動かしている。",
+				beats: ["予想超えと株価反応を並べる", "評価倍率の動きを示す"],
+			}),
+		).toBe(false);
+	});
+});
 
 afterEach(async () => {
 	await Promise.all(tempRoots.splice(0).map((root) => fs.remove(root)));
@@ -89,9 +147,7 @@ describe("byosan failure retry limits", () => {
 		const runDir = await makeRunDir();
 		const trace = recordByosanFailure(
 			runDir,
-			new Error(
-				'[{"expected":"array","code":"invalid_type","path":["candidate","adversarialEvidence"],"message":"Invalid input: expected array, received undefined"}]',
-			),
+			new Error("BYOSAN_FEATURE_DRAFT_INVALID: malformed generated JSON"),
 			"head-a",
 		);
 		expect(trace.failure_class).toBe("PIPELINE_FAILURE");

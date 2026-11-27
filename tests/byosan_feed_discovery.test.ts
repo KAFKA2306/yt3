@@ -41,7 +41,6 @@ const NVDA_10Q = "0001045810-26-000075";
 const TSMC_6K = "0001046179-26-000728";
 const TEST_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "yt3-feed-discovery-"));
 const REGISTRY = path.relative(ROOT, path.join(TEST_DIR, "registry.json"));
-const BASELINE = path.relative(ROOT, path.join(TEST_DIR, "baseline.json"));
 
 function rssItem(title: string, link: string): string {
 	return `<item><title>${title}</title><link>${link}</link><pubDate>${PUB_DATE}</pubDate><description>summary</description></item>`;
@@ -277,6 +276,12 @@ async function discover(
 ): Promise<{
 	articles: { feed: string; title: string; url: string; body: string }[];
 	excluded: { feed: string; url: string; reason: string }[];
+	outcomes: {
+		feed: string;
+		status: string;
+		article_count: number;
+		detail?: string;
+	}[];
 }> {
 	const runDir = path.join(TEST_DIR, name);
 	await writeDiscoveryEvidence(cfg, runDir, NOW);
@@ -286,6 +291,9 @@ async function discover(
 		),
 		excluded: fs.readJsonSync(
 			path.join(runDir, "research", "discovery_excluded.json"),
+		),
+		outcomes: fs.readJsonSync(
+			path.join(runDir, "research", "discovery_outcomes.json"),
 		),
 	};
 }
@@ -324,16 +332,36 @@ describe("byosan feed discovery", () => {
 		).toBe(true);
 	});
 
-	test("does not hide unexpected discovery errors", async () => {
+	test("records parser failures and preserves the existing baseline", async () => {
 		const broken = async () => {
 			throw new Error("unexpected parser defect");
 		};
 		spyOn(globalThis, "fetch").mockImplementation(
 			broken as unknown as typeof fetch,
 		);
-		await expect(
-			discover(testConfig("defect.json", []), "defect-run"),
-		).rejects.toThrow("unexpected parser defect");
+		const config = testConfig("defect.json", [TOPIC_BASELINE]);
+		const previous = [
+			{ feed: "S002", title: "Healthy baseline", url: ARTICLE_URL },
+		];
+		fs.writeJsonSync(path.join(ROOT, config.baseline.path), previous);
+		await expect(discover(config, "defect-run")).rejects.toThrow(
+			"BYOSAN_ANGLE_STOP",
+		);
+		const outcomes = fs.readJsonSync(
+			path.join(TEST_DIR, "defect-run", "research", "discovery_outcomes.json"),
+		) as { feed: string; status: string }[];
+		expect(outcomes.some((outcome) => outcome.status === "parse_error")).toBe(
+			true,
+		);
+		expect(
+			outcomes.some(
+				(outcome) =>
+					outcome.feed === "baseline" && outcome.status === "parse_error",
+			),
+		).toBe(true);
+		expect(fs.readJsonSync(path.join(ROOT, config.baseline.path))).toEqual(
+			previous,
+		);
 	});
 
 	test("takes the article paragraphs as the body and excludes a page whose title does not match", async () => {
@@ -347,12 +375,31 @@ describe("byosan feed discovery", () => {
 		expect(excluded).toContainEqual({
 			feed: "S001",
 			url: MISMATCH_URL,
-			reason: `Error: TITLE_MISMATCH ${MISMATCH_URL}`,
+			reason: `PARSE_ERROR TITLE_MISMATCH ${MISMATCH_URL}`,
 		});
 	});
 
+	test("decodes numeric HTML entities in the article body", async () => {
+		const original = ROUTES[ARTICLE_URL];
+		ROUTES[ARTICLE_URL] = articlePage(
+			"S&amp;P 500 Earnings Season Update: October 23, 2026",
+			[`${LONG_1} Analysts&apos; estimates use &#x24;425 per share.`],
+		);
+		try {
+			const { articles } = await discover(
+				testConfig("entities.json", []),
+				"entities-run",
+			);
+			expect(
+				articles.find((article) => article.url === ARTICLE_URL)?.body,
+			).toBe(`${LONG_1} Analysts' estimates use $425 per share.`);
+		} finally {
+			ROUTES[ARTICLE_URL] = original ?? "";
+		}
+	});
+
 	test("builds the filing body from the XBRL quarter and excludes filings without XBRL facts", async () => {
-		const { articles, excluded } = await discover(
+		const { articles, excluded, outcomes } = await discover(
 			testConfig("sec.json", []),
 			"sec-run",
 		);
@@ -363,19 +410,18 @@ describe("byosan feed discovery", () => {
 		expect(excluded).toContainEqual({
 			feed: "S008",
 			url: `https://www.sec.gov/Archives/edgar/data/723125/${MICRON_8K.replaceAll("-", "")}/mu-20261022.htm`,
-			reason: `Error: XBRL_FACTS_NOT_FOUND ${MICRON_8K}`,
+			reason: `PARSE_ERROR XBRL_FACTS_NOT_FOUND ${MICRON_8K}`,
 		});
 		expect(excluded).toContainEqual({
 			feed: "S010",
 			url: `https://www.sec.gov/Archives/edgar/data/1046179/${TSMC_6K.replaceAll("-", "")}/tsm-monthend6k.htm`,
-			reason: `Error: XBRL_FACTS_NOT_FOUND ${TSMC_6K}`,
+			reason: `PARSE_ERROR XBRL_FACTS_NOT_FOUND ${TSMC_6K}`,
 		});
-		expect(
-			excluded.some(
-				(item) =>
-					item.feed === "S010" && item.reason.startsWith("NO_ITEMS_RETURNED"),
-			),
-		).toBe(true);
+		expect(outcomes.find((outcome) => outcome.feed === "S010")?.status).toBe(
+			"parse_error",
+		);
+		expect(outcomes.some((outcome) => outcome.status === "empty")).toBe(true);
+		expect(articles.length).toBeGreaterThan(0);
 	});
 
 	test("keeps one copy of each baseline article, drops articles outside the window, and fetches nothing twice", async () => {

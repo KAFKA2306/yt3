@@ -617,8 +617,7 @@ async function writeOutputs(
 		path.join(runDir, RUN.research),
 		{
 			as_of: spec.asOf,
-			method:
-				"Primary-source claim matrix with explicit derived-estimate caveats",
+			method: "Primary-source fact ledger with linked claims",
 			sources: spec.sources,
 			claims: spec.claims,
 			search_novelty_check: {

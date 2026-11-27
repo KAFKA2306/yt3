@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { ByosanFeatureSource, ByosanFeatureSpec } from "./feature_spec.js";
-import { isInteractiveByosanRun } from "./run_mode.js";
 
 const nonEmptyString = z.string().min(1);
 
@@ -8,15 +7,8 @@ export const ByosanChaptersConfigSchema = z.object({
 	min_chapter_seconds: z.number().positive(),
 	headings: z.object({
 		key_points: nonEmptyString,
-		evidence: nonEmptyString,
 		chapters: nonEmptyString,
-		primary_sources: nonEmptyString,
-		reference_sources: nonEmptyString,
-	}),
-	claim_status_labels: z.object({
-		verified: nonEmptyString,
-		derived_with_caveat: nonEmptyString,
-		analyst_estimate_not_company_non_gaap: nonEmptyString,
+		references: nonEmptyString,
 	}),
 });
 
@@ -27,12 +19,9 @@ type ChapterSpan = { headline: string; duration: number };
 type Chapter = { start: number; title: string };
 
 type ByosanDescriptionFields =
-	| "runId"
 	| "descriptionLead"
 	| "descriptionBullets"
-	| "disclaimer"
-	| "sources"
-	| "claims";
+	| "sources";
 
 export type ByosanDescriptionInput = Pick<
 	ByosanFeatureSpec,
@@ -102,50 +91,19 @@ export function planByosanChapters(
 	).map(({ start, title }) => ({ start, title }));
 }
 
-export function classifyByosanSources(
-	sources: readonly ByosanFeatureSource[],
-	claims: ByosanDescriptionInput["claims"],
-): { primary: ByosanFeatureSource[]; reference: ByosanFeatureSource[] } {
-	const cited = new Set(claims.flatMap((claim) => claim.sourceIds));
-	return {
-		primary: sources.filter((source) => cited.has(source.id)),
-		reference: sources.filter((source) => !cited.has(source.id)),
-	};
-}
-
-function evidenceLines(
-	spec: ByosanDescriptionInput,
-	config: ByosanChaptersConfig,
-): string {
-	const names = new Map(spec.sources.map((source) => [source.id, source.name]));
-	return spec.claims
-		.map((claim) => {
-			const cited = claim.sourceIds
-				.map((sourceId) => names.get(sourceId))
-				.filter((name): name is string => name !== undefined);
-			const limits = [claim.caveat, claim.epistemicBoundary]
-				.filter((part): part is string => part !== undefined)
-				.join(" ");
-			return `・${config.claim_status_labels[claim.status]}: ${claim.claim}（出典: ${cited.join("、")}）${limits ? ` 限界: ${limits}` : ""}`;
-		})
-		.join("\n");
-}
+const BYOSAN_DESCRIPTION_FOOTER =
+	"----------\n※本動画は情報提供を目的としたものであり、特定の金融商品や投資行動を推奨するものではありません。";
 
 export function buildByosanDescription(
 	spec: ByosanDescriptionInput,
 	timeline: readonly ChapterSpan[],
 	config: ByosanChaptersConfig,
 ): string {
-	const compactInteractive = isInteractiveByosanRun(spec.runId);
 	const chapters = planByosanChapters(timeline, config)
 		.map(
 			(chapter) => `${formatChapterTimestamp(chapter.start)} ${chapter.title}`,
 		)
 		.join("\n");
-	const { primary, reference } = classifyByosanSources(
-		spec.sources,
-		spec.claims,
-	);
 	const sourceBlock = (sources: readonly ByosanFeatureSource[]): string =>
 		sources.map((source) => `${source.name}\n${source.url}`).join("\n\n");
 	const bullets = spec.descriptionBullets
@@ -154,16 +112,10 @@ export function buildByosanDescription(
 	return [
 		spec.descriptionLead,
 		`${config.headings.key_points}\n${bullets}`,
-		...(compactInteractive
-			? []
-			: [`${config.headings.evidence}\n${evidenceLines(spec, config)}`]),
 		`${config.headings.chapters}\n${chapters}`,
-		...(primary.length > 0
-			? [`${config.headings.primary_sources}\n${sourceBlock(primary)}`]
+		...(spec.sources.length > 0
+			? [`${config.headings.references}\n${sourceBlock(spec.sources)}`]
 			: []),
-		...(reference.length > 0
-			? [`${config.headings.reference_sources}\n${sourceBlock(reference)}`]
-			: []),
-		...(compactInteractive ? [] : [`※${spec.disclaimer}`]),
+		BYOSAN_DESCRIPTION_FOOTER,
 	].join("\n\n");
 }

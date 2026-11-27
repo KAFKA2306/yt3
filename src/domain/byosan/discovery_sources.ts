@@ -57,7 +57,15 @@ export function registryPath(): string {
 export function loadDiscoverySources(
 	filePath: string = registryPath(),
 ): DiscoverySourcesDocument {
-	return DiscoverySourcesSchema.parse(
+	const document = DiscoverySourcesSchema.parse(
 		fs.readJsonSync(filePath),
 	) as DiscoverySourcesDocument;
+	const ids = new Set<string>();
+	for (const source of document.sources) {
+		if (ids.has(source.id)) {
+			throw new Error(`BYOSAN_DISCOVERY_DUPLICATE_SOURCE_ID: ${source.id}`);
+		}
+		ids.add(source.id);
+	}
+	return document;
 }

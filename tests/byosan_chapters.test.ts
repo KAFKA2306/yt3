@@ -3,7 +3,6 @@ import {
 	type ByosanChaptersConfig,
 	type ByosanDescriptionInput,
 	buildByosanDescription,
-	classifyByosanSources,
 	formatChapterTimestamp,
 	planByosanChapters,
 } from "../src/domain/byosan/description.js";
@@ -12,36 +11,24 @@ const config: ByosanChaptersConfig = {
 	min_chapter_seconds: 10,
 	headings: {
 		key_points: "この動画の要点",
-		evidence: "根拠と限界",
 		chapters: "チャプター",
-		primary_sources: "一次資料",
-		reference_sources: "参考（数値の根拠ではない）",
-	},
-	claim_status_labels: {
-		verified: "確認済みの数値",
-		derived_with_caveat: "派生値（前提付き）",
-		analyst_estimate_not_company_non_gaap:
-			"アナリストの推計（会社の公式値ではない）",
+		references: "参照資料",
 	},
 };
 
-const citedSource = {
-	id: "cited",
+const firstSource = {
+	id: "first",
 	name: "第一ライフ",
 	url: "https://example.com/cited",
 };
 
-const uncitedSource = {
-	id: "index",
+const secondSource = {
+	id: "second",
 	name: "日本銀行",
 	url: "https://example.com/index",
 };
 
-const sources: ByosanDescriptionInput["sources"] = [citedSource, uncitedSource];
-
-const claims: ByosanDescriptionInput["claims"] = [
-	{ claim: "数値を支える主張です。", sourceIds: ["cited"], status: "verified" },
-];
+const sources: ByosanDescriptionInput["sources"] = [firstSource, secondSource];
 
 describe("planByosanChapters", () => {
 	test("groups consecutive short turns into chapters of at least the minimum length", () => {
@@ -163,25 +150,14 @@ describe("formatChapterTimestamp", () => {
 	});
 });
 
-describe("classifyByosanSources", () => {
-	test("separates sources cited by claims from sources no claim references", () => {
-		const { primary, reference } = classifyByosanSources(sources, claims);
-		expect(primary.map((source) => source.id)).toEqual(["cited"]);
-		expect(reference.map((source) => source.id)).toEqual(["index"]);
-	});
-});
-
 describe("buildByosanDescription", () => {
 	const input: ByosanDescriptionInput = {
-		runId: "byosan_money/2026-11-23-daily",
 		descriptionLead: "導入文です。",
 		descriptionBullets: ["要点1です。"],
-		disclaimer: "免責です。",
 		sources,
-		claims,
 	};
 
-	test("lists cited sources as primary and uncited sources as reference under their own headings", () => {
+	test("lists every source under one reference heading", () => {
 		expect(
 			buildByosanDescription(
 				input,
@@ -196,40 +172,16 @@ describe("buildByosanDescription", () => {
 			[
 				"導入文です。",
 				"この動画の要点\n・要点1です。",
-				"根拠と限界\n・確認済みの数値: 数値を支える主張です。（出典: 第一ライフ）",
 				"チャプター\n0:00 A\n0:20 B\n0:40 C",
-				"一次資料\n第一ライフ\nhttps://example.com/cited",
-				"参考（数値の根拠ではない）\n日本銀行\nhttps://example.com/index",
-				"※免責です。",
+				"参照資料\n第一ライフ\nhttps://example.com/cited\n\n日本銀行\nhttps://example.com/index",
+				"----------\n※本動画は情報提供を目的としたものであり、特定の金融商品や投資行動を推奨するものではありません。",
 			].join("\n\n"),
 		);
 	});
 
-	test("states each claim's status with its caveat and epistemic boundary in the evidence section", () => {
+	test("omits the reference heading when no sources are available", () => {
 		const description = buildByosanDescription(
-			{
-				...input,
-				claims: [
-					{
-						claim: "推計の数値です。",
-						sourceIds: ["cited"],
-						status: "analyst_estimate_not_company_non_gaap",
-						caveat: "前提に依存する",
-						epistemicBoundary: "発表主体側の値です。",
-					},
-				],
-			},
-			[{ headline: "A", duration: 60 }],
-			config,
-		);
-		expect(description).toContain(
-			"根拠と限界\n・アナリストの推計（会社の公式値ではない）: 推計の数値です。（出典: 第一ライフ） 限界: 前提に依存する 発表主体側の値です。",
-		);
-	});
-
-	test("omits the reference heading when every source is cited", () => {
-		const description = buildByosanDescription(
-			{ ...input, sources: [citedSource] },
+			{ ...input, sources: [] },
 			[
 				{ headline: "A", duration: 20 },
 				{ headline: "B", duration: 20 },
@@ -237,7 +189,6 @@ describe("buildByosanDescription", () => {
 			],
 			config,
 		);
-		expect(description).not.toContain("参考（数値の根拠ではない）");
-		expect(description).toContain("一次資料");
+		expect(description).not.toContain("参照資料");
 	});
 });

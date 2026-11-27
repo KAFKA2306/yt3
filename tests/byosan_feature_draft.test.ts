@@ -64,6 +64,77 @@ describe("diagnostics against the input articles", () => {
 		expect(issues).toContain("unsourced_number=987654");
 	});
 
+	test("matches natural Japanese units against the source's numeric format", () => {
+		const input = fixtureInput();
+		const article = input.today[0];
+		if (!article) throw new Error("fixture article is missing");
+		article.body += " Payroll increased by 65,000 people.";
+		const draft = fixtureDraft();
+		expect(
+			diagnostics({ ...draft, title: "雇用は6.5万人増" }, input).filter(
+				(issue) => issue.startsWith("unsourced_number="),
+			),
+		).toEqual([]);
+	});
+
+	test("matches a quoted Japanese unit to the same source value", () => {
+		const input = fixtureInput();
+		const article = input.today[0];
+		if (!article) throw new Error("fixture article is missing");
+		article.body += " Payroll increased by 65,000 people.";
+		const draft = fixtureDraft();
+		const explanation = draft.explanation as Json & { figures: Json[] };
+		const [figure, ...rest] = explanation.figures;
+		expect(
+			diagnostics(
+				{
+					...draft,
+					explanation: {
+						...explanation,
+						figures: [
+							{
+								...figure,
+								value: "6.5万人",
+								quote: "Payroll increased by 65,000 people.",
+							},
+							...rest,
+						],
+					},
+				},
+				input,
+			).filter((issue) => issue.startsWith("figure_not_grounded=")),
+		).toEqual([]);
+	});
+
+	test("matches full-width typography in quoted numeric evidence", () => {
+		const input = fixtureInput();
+		const article = input.today[0];
+		if (!article) throw new Error("fixture article is missing");
+		article.body += " The inflation target is 2%.";
+		const draft = fixtureDraft();
+		const explanation = draft.explanation as Json & { figures: Json[] };
+		const [figure, ...rest] = explanation.figures;
+		expect(
+			diagnostics(
+				{
+					...draft,
+					explanation: {
+						...explanation,
+						figures: [
+							{
+								...figure,
+								value: "２％",
+								quote: "The inflation target is ２％.",
+							},
+							...rest,
+						],
+					},
+				},
+				input,
+			).filter((issue) => issue.startsWith("figure_not_grounded=")),
+		).toEqual([]);
+	});
+
 	test("a claim number absent from the articles is reported", () => {
 		const draft = fixtureDraft();
 		const [first, second, ...rest] = draft.claims as Json[];

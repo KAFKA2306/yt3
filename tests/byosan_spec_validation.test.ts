@@ -113,6 +113,49 @@ describe("feature spec contract against the explanation", () => {
 		expect(issues).toEqual([]);
 	});
 
+	test("matches an Arabic number to its English ordinal source wording", () => {
+		const issues = auditFeatureSpecAgainstExplanation(
+			specWith([
+				{
+					text: `${conclusion}予想は2カ月連続で引き下げられた。`,
+					verificationRole: "landing",
+				},
+			]),
+			explanation,
+			`${articleText}. The estimate was lowered for the second month in a row.`,
+		);
+		expect(issues).toEqual([]);
+	});
+
+	test("matches a Japanese multiplier to an English double in the source", () => {
+		const issues = auditFeatureSpecAgainstExplanation(
+			specWith([
+				{
+					text: `${conclusion}15ゾーンは過去4年平均の2倍だった。`,
+					verificationRole: "landing",
+				},
+			]),
+			explanation,
+			"Prices in 15 zones were at least double the previous four-year average.",
+		);
+		expect(issues).toEqual([]);
+	});
+
+	test("does not treat a Japanese month range as an unsourced quantity", () => {
+		const issues = auditFeatureSpecAgainstExplanation(
+			specWith([
+				{
+					headline: "10〜11月の価格",
+					text: `${conclusion}10〜11月に182ドルまで上昇した。`,
+					verificationRole: "landing",
+				},
+			]),
+			explanation,
+			"Between October 1 and November 15, the price reached $182.",
+		);
+		expect(issues).toEqual([]);
+	});
+
 	test("does not match a number that only occurs inside a longer number", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
 			specWith([

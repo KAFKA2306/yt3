@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+	BYOSAN_NUMBER_PATTERN,
+	canonicalNumber,
+} from "./number_canonicalization.js";
 
 export const ExplanationSchema = z.object({
 	conclusion: z.string().min(1),
@@ -19,7 +23,21 @@ export const ExplanationSchema = z.object({
 
 export type Explanation = z.infer<typeof ExplanationSchema>;
 
-const squeeze = (text: string): string => text.replace(/\s+/g, "");
+const squeeze = (text: string): string =>
+	text.normalize("NFKC").replace(/\s+/g, "");
+const containsFigureValue = (quote: string, value: string): boolean => {
+	const valueNumbers =
+		value.normalize("NFKC").match(BYOSAN_NUMBER_PATTERN) ?? [];
+	const quoteNumbers = new Set(
+		(quote.normalize("NFKC").match(BYOSAN_NUMBER_PATTERN) ?? []).map(
+			canonicalNumber,
+		),
+	);
+	return (
+		valueNumbers.length > 0 &&
+		valueNumbers.some((token) => quoteNumbers.has(canonicalNumber(token)))
+	);
+};
 
 export function ungroundedFigureValues(
 	explanation: Explanation,
@@ -30,7 +48,7 @@ export function ungroundedFigureValues(
 		.filter(
 			(figure) =>
 				!bodies.some((body) => body.includes(squeeze(figure.quote))) ||
-				!figure.quote.includes(figure.value),
+				!containsFigureValue(figure.quote, figure.value),
 		)
 		.map((figure) => figure.value);
 }

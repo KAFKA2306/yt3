@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "fs-extra";
 import { ROOT } from "../../io/core.js";
+import { loadDiscoverySources as readDiscoveryRegistry } from "./discovery_sources.js";
 import {
 	accessionFigures,
 	type ConceptFact,
@@ -87,6 +88,27 @@ type Exclusion = { feed: string; url: string; reason: string };
 
 type Crawl = { entries: Entry[]; excluded: Exclusion[] };
 
+export type DiscoveryOutcome = {
+	feed: string;
+	status:
+		| "fetched"
+		| "empty"
+		| "http_error"
+		| "parse_error"
+		| "unreachable"
+		| "verify";
+	article_count: number;
+	detail?: string;
+};
+
+function isHttpFailure(error: unknown): boolean {
+	const detail = error instanceof Error ? error.message : String(error);
+	return (
+		detail.includes("FETCH_FAILED ") ||
+		(error instanceof TypeError && /fetch/i.test(error.message))
+	);
+}
+
 function excludeEmptyBodies<T extends Entry>(
 	feed: string,
 	entries: T[],
@@ -108,20 +130,26 @@ const ENTITIES: Record<string, string> = {
 	"&lt;": "<",
 	"&gt;": ">",
 	"&quot;": '"',
+	"&apos;": "'",
 	"&#39;": "'",
 	"&nbsp;": " ",
 };
 
-function decode(text: string): string {
-	return text.replace(
-		/&(amp|lt|gt|quot|#39|nbsp);/g,
-		(m) => ENTITIES[m] as string,
-	);
+export function decodeHtmlEntities(text: string): string {
+	return text
+		.replace(/&#(?:x([\da-f]+)|(\d+));/giu, (match, hex, decimal) => {
+			const codePoint = Number.parseInt(hex ?? decimal, hex ? 16 : 10);
+			return codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : match;
+		})
+		.replace(
+			/&(amp|lt|gt|quot|apos|#39|nbsp);/g,
+			(match) => ENTITIES[match] as string,
+		);
 }
 
 function plain(html: string): string {
-	return decode(
-		decode(html)
+	return decodeHtmlEntities(
+		decodeHtmlEntities(html)
 			.replace(/<(script|style)[\s\S]*?<\/\1>/g, " ")
 			.replace(/<[^>]+>/g, " "),
 	)
@@ -140,7 +168,7 @@ function meta(html: string, property: string): string {
 			`<meta[^>]+(?:property|name)="${property}"[^>]+content="([^"]*)"`,
 		),
 	);
-	return decode(m?.[1] ?? "").trim();
+	return decodeHtmlEntities(m?.[1] ?? "").trim();
 }
 
 async function get(
@@ -241,7 +269,11 @@ async function settle<T extends { url: string }>(
 		read(item).then(
 			(entry) => ({ entry }),
 			(error: unknown) => ({
-				exclusion: { feed, url: item.url, reason: String(error) },
+				exclusion: {
+					feed,
+					url: item.url,
+					reason: `${isHttpFailure(error) ? "HTTP_ERROR" : "PARSE_ERROR"} ${error instanceof Error ? error.message : String(error)}`,
+				},
 			}),
 		),
 	);
@@ -562,48 +594,91 @@ async function crawl(
 }
 
 export function loadDiscoverySources(cfg: DiscoveryConfig): DiscoverySource[] {
-	return (
-		fs.readJsonSync(path.join(ROOT, cfg.registry)) as {
-			sources: DiscoverySource[];
-		}
-	).sources.filter((source) => source.status === "採用");
+	const document = readDiscoveryRegistry(path.join(ROOT, cfg.registry));
+	const adopted = document.sources.filter((source) => source.status === "採用");
+	const missingFetch = adopted.find((source) => source.fetch === undefined);
+	if (missingFetch)
+		throw new Error(`DISCOVERY_SOURCE_FETCH_MISSING ${missingFetch.id}`);
+	return adopted.map((source) => ({
+		id: source.id,
+		issuer: source.issuer,
+		url: source.url,
+		status: source.status,
+		caution: source.caution,
+		fetch: source.fetch as SourceFetch,
+	}));
 }
 
 async function discoverArticles(
 	cfg: DiscoveryConfig,
 	now: Date,
-): Promise<{ articles: DiscoveredArticle[]; excluded: Exclusion[] }> {
+): Promise<{
+	articles: DiscoveredArticle[];
+	excluded: Exclusion[];
+	outcomes: DiscoveryOutcome[];
+}> {
 	const cutoff = now.getTime() - cfg.recent_days * 86_400_000;
 	const perSource = await Promise.all(
 		loadDiscoverySources(cfg).map(async (source) => {
+			if (source.fetch.type === "unreachable") {
+				return {
+					excluded: [],
+					articles: [] as DiscoveredArticle[],
+					outcome: {
+						feed: source.id,
+						status: "unreachable" as const,
+						article_count: 0,
+						detail: source.fetch.reason,
+					},
+				};
+			}
+			if (source.fetch.type === "verify") {
+				return {
+					excluded: [],
+					articles: [] as DiscoveredArticle[],
+					outcome: {
+						feed: source.id,
+						status: "verify" as const,
+						article_count: 0,
+					},
+				};
+			}
 			let result: Crawl;
 			try {
 				result = await crawl(source, cfg, cutoff);
 			} catch (error) {
-				if (
-					!(error instanceof Error) ||
-					(!error.message.startsWith("FETCH_FAILED ") &&
-						!(error instanceof TypeError && /fetch/i.test(error.message)))
-				) {
-					throw error;
-				}
+				const detail = error instanceof Error ? error.message : String(error);
+				const httpError = isHttpFailure(error);
 				return {
 					excluded: [
-						{ feed: source.id, url: source.url, reason: String(error) },
+						{
+							feed: source.id,
+							url: source.url,
+							reason: `${httpError ? "HTTP_ERROR" : "PARSE_ERROR"} ${detail}`,
+						},
 					],
 					articles: [],
+					outcome: {
+						feed: source.id,
+						status: httpError
+							? ("http_error" as const)
+							: ("parse_error" as const),
+						article_count: 0,
+						detail,
+					},
 				};
 			}
 			const { entries, excluded } = result;
-			if (
-				entries.length === 0 &&
-				source.fetch.type !== "verify" &&
-				source.fetch.type !== "unreachable"
-			) {
+			const failedEntry = excluded.find(
+				(item) =>
+					item.reason.startsWith("HTTP_ERROR") ||
+					item.reason.startsWith("PARSE_ERROR"),
+			);
+			if (entries.length === 0 && !failedEntry) {
 				excluded.push({
 					feed: source.id,
 					url: source.url,
-					reason: "NO_ITEMS_RETURNED (may be no new publications)",
+					reason: "EMPTY_FEED no recent items",
 				});
 			}
 			return {
@@ -617,6 +692,18 @@ async function discoverArticles(
 						issuer: source.issuer,
 						caution: source.caution,
 					})),
+				outcome: {
+					feed: source.id,
+					status: failedEntry
+						? failedEntry.reason.startsWith("HTTP_ERROR")
+							? ("http_error" as const)
+							: ("parse_error" as const)
+						: entries.length === 0
+							? ("empty" as const)
+							: ("fetched" as const),
+					article_count: entries.length,
+					...(failedEntry ? { detail: failedEntry.reason } : {}),
+				},
 			};
 		}),
 	);
@@ -625,7 +712,11 @@ async function discoverArticles(
 		.flatMap((s) => s.articles)
 		.filter((a) => !seen.has(a.url) && seen.add(a.url))
 		.sort((a, b) => b.published.localeCompare(a.published));
-	return { articles, excluded: perSource.flatMap((s) => s.excluded) };
+	return {
+		articles,
+		excluded: perSource.flatMap((s) => s.excluded),
+		outcomes: perSource.map((s) => s.outcome),
+	};
 }
 
 function windowed(
@@ -737,22 +828,43 @@ export async function writeDiscoveryEvidence(
 	const owned = fs.existsSync(ownerFile)
 		? ((await fs.readJson(ownerFile)) as DiscoveredArticle[])
 		: undefined;
-	const { articles, excluded } = owned
-		? { articles: owned, excluded: [] }
+	const discovered = owned
+		? { articles: owned, excluded: [], outcomes: [] as DiscoveryOutcome[] }
 		: await discoverArticles(cfg, now);
-	await fs.outputJson(
-		path.join(runDir, "research", "discovery_excluded.json"),
-		excluded,
-		{ spaces: 2 },
-	);
-	const baselineExcluded = owned
-		? []
-		: await updateDiscoveryBaseline(cfg, now, articles);
+	const { articles, excluded } = discovered;
+	const outcomes = [...discovered.outcomes];
+	let baselineExcluded: Exclusion[] = [];
+	if (!owned) {
+		try {
+			baselineExcluded = await updateDiscoveryBaseline(cfg, now, articles);
+		} catch (error) {
+			const detail = error instanceof Error ? error.message : String(error);
+			const httpError = isHttpFailure(error);
+			outcomes.push({
+				feed: "baseline",
+				status: httpError ? "http_error" : "parse_error",
+				article_count: 0,
+				detail,
+			});
+		}
+	}
 	await fs.outputJson(
 		path.join(runDir, "research", "discovery_excluded.json"),
 		[...excluded, ...baselineExcluded],
 		{ spaces: 2 },
 	);
+	await fs.outputJson(
+		path.join(runDir, "research", "discovery_outcomes.json"),
+		outcomes,
+		{ spaces: 2 },
+	);
+	for (const outcome of outcomes.filter((item) =>
+		["http_error", "parse_error"].includes(item.status),
+	)) {
+		console.warn(
+			`[byosan-discovery] ${outcome.status} feed=${outcome.feed} detail=${outcome.detail ?? ""}`,
+		);
+	}
 	if (articles.length === 0)
 		throw new Error(
 			"BYOSAN_ANGLE_STOP: no recent articles in registered sources",

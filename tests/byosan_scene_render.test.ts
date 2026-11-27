@@ -69,12 +69,9 @@ const claims = [
 	}),
 	ByosanFeatureClaimSchema.parse({
 		id: "c2",
-		claim: "電気代の補助終了で11月以降の物価は上がる可能性がある。",
+		claim: "市場の見通しでは、電気代補助の終了が11月以降の物価を押し上げる。",
 		sourceIds: ["s1"],
 		status: "derived_with_caveat",
-		caveat: "条件付きの見通し。",
-		confidence: 0.7,
-		unresolvedMismatches: [],
 	}),
 ];
 
@@ -115,7 +112,7 @@ const segments = [
 		claimIds: ["c1"],
 	}),
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "ずんだもん",
+		speaker: "春日部つむぎ",
 		emotion: "curious",
 		section: "比較",
 		headline: "利益と売上を比べる",
@@ -130,7 +127,7 @@ const segments = [
 		claimIds: ["c1"],
 	}),
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "ずんだもん",
+		speaker: "春日部つむぎ",
 		emotion: "curious",
 		section: "問い",
 		headline: "次は何を見る？",
@@ -154,7 +151,7 @@ const segments = [
 		claimIds: ["c1"],
 	}),
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "ずんだもん",
+		speaker: "春日部つむぎ",
 		emotion: "caution",
 		section: "見通し",
 		headline: "推計の比較",
@@ -165,7 +162,7 @@ const segments = [
 			stat("推計B", "+4.0%", "分析上の推計"),
 		],
 		source: "提示レポート",
-		text: "これは分析としての推計で、確定した実績ではない。",
+		text: "電気代の補助終了を受け、十一月以降に物価が上がる見通しだ。",
 		claimIds: ["c2"],
 	}),
 ];

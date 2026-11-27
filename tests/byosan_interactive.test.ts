@@ -4,7 +4,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import sharp from "sharp";
 import {
-	assertPackagedClaimsRetained,
+	assertNoSourceNames,
 	assertResolvedEnding,
 	assertSpeakableLines,
 } from "../src/domain/byosan/spoken_humanizer.js";
@@ -12,7 +12,6 @@ import {
 	buildInteractiveThumbnailFiles,
 	buildThumbnailFiles,
 } from "../src/domain/byosan/thumbnail.js";
-import { fixtureDraft } from "./fixtures/byosan_draft.js";
 
 const tempDirs: string[] = [];
 
@@ -45,6 +44,45 @@ describe("spoken_humanizer regression gates", () => {
 		).not.toThrow();
 	});
 
+	test("rejects authored footnotes and defensive excuses", () => {
+		for (const text of [
+			"これは予測であり実績ではありません。",
+			"12銘柄を持てば安全という保証でもありません。",
+			"3年分の上昇が安心を保証しない。",
+			"ここから先は断定できません。",
+			"記事が示していない因果関係で結ばないこと。",
+			"根拠と限界を確認します。",
+			"倍率だけでは景気後退の答えになりません。",
+			"利益の数字だけではありません。",
+			"この比率が1.00を下回ることがあります。",
+			"今後2年も利益が伸びると予想されています。",
+		]) {
+			expect(() => assertSpeakableLines([{ index: 0, text }])).toThrow(
+				"BYOSAN_HUMANIZER_FOOTNOTE_OR_EXCUSE",
+			);
+		}
+		expect(() =>
+			assertSpeakableLines([
+				{ index: 1, text: "景気後退ではなく、株価評価の変化です。" },
+			]),
+		).not.toThrow();
+	});
+
+	test("keeps publishers out of spoken copy", () => {
+		expect(() =>
+			assertNoSourceNames(
+				[{ index: 0, text: "Yardeniは利益予想が強いと分析しています。" }],
+				["Yardeni QuickTakes"],
+			),
+		).toThrow("BYOSAN_HUMANIZER_SOURCE_NAME_IN_PUBLIC_COPY");
+		expect(() =>
+			assertNoSourceNames(
+				[{ index: 0, text: "EPS予想は上向いています。" }],
+				["FactSet EPS"],
+			),
+		).not.toThrow();
+	});
+
 	test("rejects unanswered final questions and empty endings", () => {
 		expect(() => assertResolvedEnding([{ text: "   " }])).toThrow(
 			"BYOSAN_HUMANIZER_EMPTY_ENDING",
@@ -60,41 +98,6 @@ describe("spoken_humanizer regression gates", () => {
 				{ text: "売上は伸びたよ。" },
 				{ text: "同じ動きじゃないんだね。" },
 			]),
-		).not.toThrow();
-	});
-
-	test("retains all verified claims referenced by packaging", () => {
-		const base = fixtureDraft();
-		const draft = {
-			...base,
-			claims: [
-				{
-					id: "claim_0",
-					claim: "A",
-					evidence: "E1",
-					source: "https://example.com/1",
-					sourceIds: ["src_0"],
-					status: "verified" as const,
-				},
-				{
-					id: "claim_1",
-					claim: "B",
-					evidence: "E2",
-					source: "https://example.com/2",
-					sourceIds: ["src_0"],
-					status: "verified" as const,
-				},
-			],
-			packaging: {
-				primaryClaimId: "claim_0",
-				claimIds: ["claim_0", "claim_1"],
-			},
-		};
-		expect(() =>
-			assertPackagedClaimsRetained(draft, new Set(["claim_0"])),
-		).toThrow("BYOSAN_HUMANIZER_DROPPED_PACKAGED_FACTS: claim_1");
-		expect(() =>
-			assertPackagedClaimsRetained(draft, new Set(["claim_0", "claim_1"])),
 		).not.toThrow();
 	});
 });
