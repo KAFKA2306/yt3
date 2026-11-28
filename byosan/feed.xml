@@ -10,6 +10,35 @@
   <itunes:image href="https://kafka2306.github.io/yt3/byosan/cover.jpg" />
   <image><url>https://kafka2306.github.io/yt3/byosan/cover.jpg</url><title>秒算マネー</title><link>https://kafka2306.github.io/yt3/byosan/</link></image>
   <item>
+    <title>EPYC 7642・4スレッドで54%高速　Qwen3専用OSのメモリ設計</title>
+    <guid isPermaLink="false">yt3:byosan:2026-11-28-daily-interactive-llmasm3</guid>
+    <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-28-daily-interactive-llmasm3.m4a" length="1739365" type="audio/mp4" />
+    <itunes:duration>0:01:47</itunes:duration>
+    <description>開発者自身がAMD EPYC 7642でQwen3-0.6B Q8_0をCPUのみで比較計測し、4スレッドでは専用OSが78.89 tokens/s、Linux上のllama.cppが51.08 tokens/sと報告しました。高速化の理由として挙げたのは2 MiB巨大ページで、4 GiBまでの空間を割り当てる設計です。
+
+この動画の要点
+・OS本体のバイナリは24,252 bytes。起動74〜94 ms、EPYC 16コアQEMU/KVMの記録は84.89 ms
+・モデルは613.66 MiB、KVキャッシュなどは449 MiB。Proxmox VE VMはディスク0 GB
+・第1〜3部は計17,252行のアセンブリ。プロジェクト一覧には第4のRing -1ハイパーバイザーも掲載
+
+チャプター
+0:00 同じCPUで54%高速
+0:25 本体は24,252バイト
+0:47 2 MiB巨大ページ
+1:00 24KBのOSが支えるもの
+
+参照資料
+Alexey Fateev / alesha-pro・llm.asm README
+https://github.com/alesha-pro/llm.asm
+
+テクノエッジ編集部
+https://www.techno-edge.net/article/2026/11/26/5824.html
+
+----------
+※本動画は情報提供を目的としたものであり、特定の金融商品や投資行動を推奨するものではありません。</description>
+    <pubDate>Sat, 28 Nov 2026 12:00:00 GMT</pubDate>
+  </item>
+<item>
     <title>米10月雇用は6.5万人増予測、別の研究所はFRBの25bp利上げを見通す</title>
     <guid isPermaLink="false">yt3:byosan:2026-11-27-daily-0700</guid>
     <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-27-daily-0700.m4a" length="2159461" type="audio/mp4" />
@@ -47,7 +76,7 @@ https://www.dlri.co.jp/report/macro/678611.html
 ※本動画は情報提供を目的としたもので、特定の金融商品や投資行動を推奨するものではありません。数値は引用元に記載された対象・期間・定義に基づき、予測と実績、分析機関の見通しを区別しています。</description>
     <pubDate>Fri, 27 Nov 2026 12:00:00 GMT</pubDate>
   </item>
-  <item>
+<item>
     <title>ドラッケンミラーの「18か月先」｜集中投資を支えるリスク管理</title>
     <guid isPermaLink="false">yt3:byosan:2026-11-26-daily-interactive-druckenmiller</guid>
     <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-26-daily-interactive-druckenmiller.m4a" length="6906121" type="audio/mp4" />
@@ -93,7 +122,7 @@ SEC Investor.gov: Beginners’ Guide to Asset Allocation, Diversification, and R
 https://www.sec.gov/investor/pubs/assetallocation.htm</description>
     <pubDate>Thu, 26 Nov 2026 12:00:00 GMT</pubDate>
   </item>
-  <item>
+<item>
     <title>AI需要がガラス繊維布を逼迫、LED用4層PCBコストは10〜15%上昇</title>
     <guid isPermaLink="false">yt3:byosan:2026-11-25-daily-0700</guid>
     <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-25-daily-0700.m4a" length="3297586" type="audio/mp4" />
