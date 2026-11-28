@@ -366,13 +366,6 @@ export function humanizeByosanDraft(
 	draft = {
 		...draft,
 		title: stripSourceNames(draft.title, sourceNames),
-		thumbnailTitle: stripSourceNames(draft.thumbnailTitle, sourceNames),
-		thumbnail: Object.fromEntries(
-			Object.entries(draft.thumbnail).map(([key, value]) => [
-				key,
-				stripSourceNames(value, sourceNames),
-			]),
-		) as FeatureDraft["thumbnail"],
 		descriptionLead: stripSourceNames(draft.descriptionLead, sourceNames),
 		descriptionBullets: draft.descriptionBullets.map((text) =>
 			stripSourceNames(text, sourceNames),
@@ -397,9 +390,9 @@ export function humanizeByosanDraft(
 			"この動画を友人に話したくなる発見を一つ選びます。最初の一言で意外な出来事と答えを見せ、数字と具体例で仕組みを広げ、冒頭の手がかりを終盤で回収して最後に構造を一言で残します。説明文の要約や教訓、未回答の疑問で締めません。",
 			"全て春日部つむぎ一人の語りにします。台詞は声に出して自然な日本語にし、話者名を台詞本文に入れません。出典名や執筆者を語りで紹介せず、出典名はsourcesに任せます。文は助詞を補って言い切り、見出しのような名詞句を読み上げません。『記事は』『資料によると』『このレポートでは』のように記事や資料を台詞の主語にせず、そこに書かれた事実を直接述べます。制作メモ、先生のようなまとめ、注釈、免責、言い訳、限界の列挙を公開文に書きません。二つの結果の差は具体的に述べます。保証や否定形の予防線、根拠のない「かもしれない」「可能性がある」、否定形で補足する「だけではありません」は使いません。『ことがあります』のような曖昧な可能表現や、主体のない受け身の予測は使わず、日付や数値を示した観測事実を直接述べます。たとえば「今後2年も利益が伸びると予想されています」は「アナリストは今後2年も利益が伸びると見ています」のように、予想の主体を示す自然な文に直します。『なんですね』『ということです』のような説明の言い換えも避けます。堅い用語を会話の言葉に直します。",
 			"各セグメントに物語上の仕事を一つ持たせ、必要な事実だけを残します。問いにはすぐ答え、数字や具体例を続け、比喩で見える形にします。重複した事実と橋渡しを削り、結末では一つの構造か観測点を言い切ります。",
-			"この編集はsegments[].textの話し言葉だけを整えます。title、thumbnail、description、headline、subheadline、stats、出典、claim ledgerは変更しません。",
+			"この編集はsegments[].textの話し言葉だけを整えます。title、description、headline、subheadline、stats、出典、claim ledgerは変更しません。",
 			"入力と同じindexのセグメントを一つずつ返してください。セグメントを削除、追加、結合、分割、並べ替えせず、話し言葉だけを編集します。claimIdsは元のセグメントのまま維持されます。",
-			"新しい数字や因果関係を足さず、順序、出典、検証用claim、タイトル、サムネイル、概要欄を変えません。",
+			"新しい数字や因果関係を足さず、順序、出典、検証用claim、タイトル、概要欄を変えません。",
 			`[出典名（sources専用・台詞では使わない）]\n${JSON.stringify(sourceNameMarkers(sourceNames))}`,
 			`[VERIFIED_SOURCE_FACTS]\n${JSON.stringify(humanizerClaimFacts(draft))}`,
 			`[SEGMENT_SLOTS]\n${JSON.stringify(
@@ -450,12 +443,9 @@ export function humanizeByosanDraft(
 		};
 	});
 	assertResolvedEnding(segments);
-	const thumbnailCopy = Object.values(draft.thumbnail);
 	const publicLines = [
 		{ index: -13, text: response.value.story_spine },
 		{ index: -4, text: draft.title },
-		{ index: -5, text: draft.thumbnailTitle },
-		...thumbnailCopy.map((text, index) => ({ index: -6 - index, text })),
 		{ index: -1, text: draft.descriptionLead },
 		...draft.descriptionBullets.map((text, index) => ({
 			index: -2 - index,
@@ -483,8 +473,6 @@ export function humanizeByosanDraft(
 	});
 	const publicCopy = [
 		draft.title,
-		draft.thumbnailTitle,
-		...thumbnailCopy,
 		draft.descriptionLead,
 		...draft.descriptionBullets,
 		...segments.map(({ text }) => text),

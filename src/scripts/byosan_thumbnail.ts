@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import { getByosanProductionConfig } from "../domain/byosan/production_config.js";
-import { buildThumbnailFiles } from "../domain/byosan/thumbnail.js";
+import { buildByosanThumbnailFiles } from "../domain/byosan/thumbnail.js";
 import { getByosanVisualSystem } from "../domain/design/kafka_visual_system.js";
 import {
 	assertYouTubeChannelMatchesProfile,
@@ -11,7 +11,7 @@ import {
 } from "../domain/youtube_profiles.js";
 import { ROOT } from "../io/core.js";
 
-const TEXT_FLAG = "--text=";
+const TOPIC_FLAG = "--topic=";
 const config = getByosanProductionConfig();
 const F = config.feature_production;
 const RUN = F.run_layout;
@@ -20,20 +20,20 @@ const profile = YOUTUBE_PROFILES.byosan;
 
 const args = process.argv.slice(2);
 const runId = args.find((arg) => !arg.startsWith("--"));
-const text = args
-	.find((arg) => arg.startsWith(TEXT_FLAG))
-	?.slice(TEXT_FLAG.length);
-if (!runId || !text) {
+const topic = args
+	.find((arg) => arg.startsWith(TOPIC_FLAG))
+	?.slice(TOPIC_FLAG.length);
+if (!runId || !topic) {
 	throw new Error(
-		"usage: byosan_thumbnail.ts byosan_money/YYYY-MM-DD-slot --text=<question> [--dry]",
+		"usage: byosan_thumbnail.ts byosan_money/YYYY-MM-DD-slot --topic=<story moment> [--dry]",
 	);
 }
 const runDir = path.join(ROOT, config.workflow.paths.runs_dir, runId);
-const outDir = path.join(runDir, RUN.publish_dir, "thumbnail_question");
+const outDir = path.join(runDir, RUN.publish_dir, "thumbnail_story");
 await fs.ensureDir(outDir);
 const jpgPath = path.join(outDir, "thumbnail.jpg");
-await buildThumbnailFiles({
-	text,
+await buildByosanThumbnailFiles({
+	topic,
 	artPath: path.join(outDir, "art.png"),
 	refs: [
 		path.join(ROOT, F.characters.tsumugi_image),
@@ -42,14 +42,10 @@ await buildThumbnailFiles({
 	fullPath: path.join(outDir, "full.png"),
 	pngPath: path.join(outDir, "thumbnail.png"),
 	jpgPath,
-	brand: F.brand_label,
 	width: design.canvas.landscape.width,
 	height: design.canvas.landscape.height,
 	thumbnailWidth: design.canvas.thumbnail.width,
 	thumbnailHeight: design.canvas.thumbnail.height,
-	font: design.typography.japanese,
-	fontWeight: design.typography.weights.headline ?? "bold",
-	halfWidthUnits: F.captions.half_width_units,
 	pngCompression: F.image.png_compression_level,
 	config: F.thumbnail,
 });
@@ -69,6 +65,6 @@ await youtube.thumbnails.set({
 });
 fs.appendFileSync(
 	path.join(runDir, RUN.publish_dir, "thumbnail_updates.jsonl"),
-	`${JSON.stringify({ at: new Date().toISOString(), run_id: runId, video_id: videoId, text })}\n`,
+	`${JSON.stringify({ at: new Date().toISOString(), run_id: runId, video_id: videoId, topic })}\n`,
 );
 console.log(JSON.stringify({ run_id: runId, video_id: videoId, set: true }));

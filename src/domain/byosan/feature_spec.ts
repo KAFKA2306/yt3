@@ -128,16 +128,6 @@ const ByosanNarrativeSchema = z.object({
 	audiencePayoff: z.string().min(1),
 });
 
-export const ByosanThumbnailSchema = z.object({
-	eyebrow: z.string().min(2).max(18),
-	lead: z.string().min(1).max(8),
-	accent: z.string().min(1).max(10),
-	reaction: z.string().min(1).max(4),
-	secondLine: z.string().min(2).max(12),
-	calloutTop: z.string().min(2).max(22),
-	calloutBottom: z.string().min(2).max(18),
-});
-
 export const ByosanFeatureSpecSchema = z.object({
 	schemaVersion: z.literal("byosan_feature_v1"),
 	runId: z.string().regex(/^byosan_money\/\d{4}-\d{2}-\d{2}[a-zA-Z0-9_-]*$/),
@@ -145,8 +135,6 @@ export const ByosanFeatureSpecSchema = z.object({
 	angle: z.string().min(1),
 	searchQuery: z.string().min(1),
 	title: z.string().min(1).max(100),
-	thumbnailTitle: z.string().min(1),
-	thumbnail: ByosanThumbnailSchema,
 	descriptionLead: z.string().min(1),
 	descriptionBullets: z.array(z.string().min(1)).min(1),
 	hookPromises: z.array(z.string().min(1)).optional(),
@@ -238,9 +226,7 @@ function packagingIssues(spec: ByosanFeatureSpec): FeatureSpecIssue[] {
 		}
 	}
 	if (
-		/(最大|最安|最高|最低|急騰|急落|崩壊|級)/.test(
-			`${spec.title} ${spec.thumbnailTitle}`,
-		) &&
+		/(最大|最安|最高|最低|急騰|急落|崩壊|級)/.test(spec.title) &&
 		!spec.packaging.relativeAnchor
 	) {
 		issues.push({

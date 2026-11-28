@@ -3,14 +3,15 @@ import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
 import sharp from "sharp";
+import { getByosanProductionConfig } from "../src/domain/byosan/production_config.js";
 import {
 	assertNoSourceNames,
 	assertResolvedEnding,
 	assertSpeakableLines,
 } from "../src/domain/byosan/spoken_humanizer.js";
 import {
-	buildInteractiveThumbnailFiles,
-	buildThumbnailFiles,
+	buildByosanThumbnailFiles,
+	buildByosanThumbnailPrompt,
 } from "../src/domain/byosan/thumbnail.js";
 
 const tempDirs: string[] = [];
@@ -102,8 +103,53 @@ describe("spoken_humanizer regression gates", () => {
 	});
 });
 
-describe("interactive vs scheduled thumbnail rendering", () => {
-	test("interactive thumbnail outputs textless full-bleed renditions while scheduled keeps overlay", async () => {
+describe("canonical Byosan thumbnail", () => {
+	test("representative economic paradoxes produce specific, feed-readable image prompts", () => {
+		const template =
+			getByosanProductionConfig().feature_production.thumbnail.imagegen.prompt;
+		const topics = [
+			"半導体設備投資が膨らむ一方、投資家は回収時期を問う",
+			"24KBのLLMがOSコストを崩す仕組み",
+			"金利ショックで債券価格が急落し、住宅ローンへ波及する",
+		];
+		for (const topic of topics) {
+			const prompt = buildByosanThumbnailPrompt(template, topic);
+			expect(prompt).toContain(topic);
+			expect(prompt).toContain("one decisive action");
+			expect(prompt).toContain("strong light-dark and color contrast");
+			expect(prompt).toContain("reads at phone size in one second");
+			expect(prompt).toContain("no reserved title space");
+			expect(prompt).toContain(
+				"Avoid stock finance imagery and generic AI wallpaper",
+			);
+			for (const visualBanality of [
+				"floating coins",
+				"glowing brains",
+				"anonymous circuit boards",
+				"default candlestick charts",
+			]) {
+				expect(prompt).toContain(visualBanality);
+			}
+			expect(prompt).toContain("Image only: no text, letters, numerals");
+			for (const legacy of [
+				"left for the existing title overlay",
+				"light watercolor",
+				"impressionist",
+				"calloutTop",
+				"予測値",
+				"実績と別",
+				"限界",
+				"※注釈",
+			]) {
+				expect(prompt).not.toContain(legacy);
+			}
+		}
+		expect(() =>
+			buildByosanThumbnailPrompt("missing placeholder", "story"),
+		).toThrow("BYOSAN_THUMBNAIL_PROMPT_MISSING_TOPIC");
+	});
+
+	test("the single renderer produces image-only full-bleed renditions", async () => {
 		const dir = await fs.mkdtemp(path.join(os.tmpdir(), "byosan-thumb-"));
 		tempDirs.push(dir);
 
@@ -121,36 +167,20 @@ describe("interactive vs scheduled thumbnail rendering", () => {
 
 		const config = {
 			imagegen: { size: "1536x1024", prompt: "{topic}" },
-			text: {
-				x: 0.05,
-				y: 0.1,
-				width: 0.5,
-				height: 0.7,
-				max_font_ratio: 0.1,
-				line_height: 1.2,
-				max_lines: 3,
-				fill: "#FFFFFF",
-				stroke: "#000000",
-				stroke_ratio: 0.1,
-				break_penalty: 10,
-			},
-			brand: { x: 0.05, y: 0.9, font_ratio: 0.05 },
-			scrim: { width: 0.6, opacity: 0.5, color: "#000000" },
-			art_scale: 0.8,
 			jpeg_quality: 85,
 			jpeg_chroma_subsampling: "4:2:0" as const,
 		};
 
-		const interactivePng = path.join(dir, "interactive.png");
-		const interactiveJpg = path.join(dir, "interactive.jpg");
-		const interactiveFull = path.join(dir, "interactive_full.png");
-		await buildInteractiveThumbnailFiles({
+		const pngPath = path.join(dir, "thumbnail.png");
+		const jpgPath = path.join(dir, "thumbnail.jpg");
+		const fullPath = path.join(dir, "thumbnail_full.png");
+		await buildByosanThumbnailFiles({
 			topic: "NVIDIA vs NASDAQ",
 			artPath,
 			refs: [],
-			fullPath: interactiveFull,
-			pngPath: interactivePng,
-			jpgPath: interactiveJpg,
+			fullPath,
+			pngPath,
+			jpgPath,
 			width: 320,
 			height: 180,
 			thumbnailWidth: 160,
@@ -159,35 +189,11 @@ describe("interactive vs scheduled thumbnail rendering", () => {
 			config,
 		});
 
-		const interactiveMeta = await sharp(interactivePng).metadata();
-		expect(interactiveMeta.width).toBe(160);
-		expect(interactiveMeta.height).toBe(90);
-		expect(await fs.pathExists(interactiveJpg)).toBe(true);
-		const interactiveStats = await sharp(interactiveFull).stats();
-		expect(interactiveStats.channels[0]?.stdev ?? 1).toBe(0);
-
-		const scheduledPng = path.join(dir, "scheduled.png");
-		const scheduledJpg = path.join(dir, "scheduled.jpg");
-		const scheduledFull = path.join(dir, "scheduled_full.png");
-		await buildThumbnailFiles({
-			text: "テスト見出し",
-			artPath,
-			refs: [],
-			fullPath: scheduledFull,
-			pngPath: scheduledPng,
-			jpgPath: scheduledJpg,
-			brand: "秒算マネー",
-			width: 320,
-			height: 180,
-			thumbnailWidth: 160,
-			thumbnailHeight: 90,
-			font: "sans-serif",
-			fontWeight: 700,
-			halfWidthUnits: 0.5,
-			pngCompression: 6,
-			config,
-		});
-		const scheduledStats = await sharp(scheduledFull).stats();
-		expect(scheduledStats.channels[0]?.stdev ?? 0).toBeGreaterThan(0);
+		const metadata = await sharp(pngPath).metadata();
+		expect(metadata.width).toBe(160);
+		expect(metadata.height).toBe(90);
+		expect(await fs.pathExists(jpgPath)).toBe(true);
+		const stats = await sharp(fullPath).stats();
+		expect(stats.channels[0]?.stdev ?? 1).toBe(0);
 	});
 });

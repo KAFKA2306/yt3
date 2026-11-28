@@ -34,22 +34,9 @@ type SegmentFixture = {
 	verificationRole?: string;
 };
 
-function specWith(
-	segments: SegmentFixture[],
-	thumbnailLead = "上昇",
-): ByosanFeatureSpec {
+function specWith(segments: SegmentFixture[]): ByosanFeatureSpec {
 	return {
 		title: "物価の話です",
-		thumbnailTitle: "物価",
-		thumbnail: {
-			eyebrow: "速報",
-			lead: thumbnailLead,
-			accent: "上昇",
-			reaction: "驚き",
-			secondLine: "二行目",
-			calloutTop: "上段",
-			calloutBottom: "下段",
-		},
 		descriptionLead: "説明の導入文です。",
 		descriptionBullets: ["限定条件を示します。"],
 		hookPromises: ["2.1%"],
@@ -168,13 +155,13 @@ describe("feature spec contract against the explanation", () => {
 		expect(formatted(issues)).toEqual(["unsourced_number: 4"]);
 	});
 
-	test("checks numbers in thumbnail and description fields too", () => {
+	test("checks numbers in description fields too", () => {
 		const issues = auditFeatureSpecAgainstExplanation(
-			specWith(grounded, "3倍"),
+			{ ...specWith(grounded), descriptionBullets: ["3倍です。"] },
 			explanation,
 			articleText,
 		);
 		expect(formatted(issues)).toEqual(["unsourced_number: 3"]);
-		expect(issues[0]?.path).toBe("thumbnail");
+		expect(issues[0]?.path).toBe("descriptionBullets");
 	});
 });

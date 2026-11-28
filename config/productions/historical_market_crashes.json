@@ -2,16 +2,6 @@
 	"angle": "歴史上の下落を観測期間と売買・信用の経路で比較し、事前の急騰に注目する見方を対照事例で検証する。",
 	"searchQuery": "stock market crashes 1987 2010 flash crash 2022 UK gilt 1929 Goetzmann Bubble Investing",
 	"title": "暴落のあと、なぜすぐ戻る市場と戻らない市場があるのか？",
-	"thumbnailTitle": "暴落のあと\nなぜ戻らない？",
-	"thumbnail": {
-		"eyebrow": "秒算マネー",
-		"lead": "暴落のあと",
-		"accent": "なぜ戻らない？",
-		"reaction": "なぜ？",
-		"secondLine": "買い手は戻る？",
-		"calloutTop": "数分で反発、数年続く下落",
-		"calloutBottom": "売りが続いた理由を追う"
-	},
 	"descriptionLead": "暴落後の違いを、値動き・強制売り・信用への波及から追います。",
 	"descriptionBullets": [
 		"すぐ戻った市場、売りが続いた市場、急騰後も上がった市場を比べます。"

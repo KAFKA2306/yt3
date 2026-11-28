@@ -6,7 +6,6 @@ import {
 	ByosanFeatureDraftSchema,
 	ByosanFeatureSegmentSchema,
 	ByosanFeatureSpecSchema,
-	ByosanThumbnailSchema,
 	parseAndAuditByosanFeatureSpec,
 } from "../src/domain/byosan/feature_spec.js";
 import {
@@ -31,6 +30,8 @@ describe("byosan feature specification", () => {
 		legacy.claims[0].caveat = "旧注釈";
 		legacy.claims[0].epistemicBoundary = "旧境界";
 		legacy.claims[0].unresolvedMismatches = ["旧不一致"];
+		legacy.thumbnailTitle = "旧サムネイル文字";
+		legacy.thumbnail = { calloutTop: "旧上段", calloutBottom: "旧下段" };
 		const spec = ByosanFeatureSpecSchema.parse(legacy);
 		expect(spec).not.toHaveProperty("disclaimer");
 		expect(spec).not.toHaveProperty("adversarialEvidence");
@@ -38,6 +39,8 @@ describe("byosan feature specification", () => {
 		expect(spec.claims[0]).not.toHaveProperty("caveat");
 		expect(spec.claims[0]).not.toHaveProperty("epistemicBoundary");
 		expect(spec.claims[0]).not.toHaveProperty("unresolvedMismatches");
+		expect(spec).not.toHaveProperty("thumbnailTitle");
+		expect(spec).not.toHaveProperty("thumbnail");
 	});
 
 	test("the new draft schema has no disclaimer or caveat fields", () => {
@@ -49,6 +52,16 @@ describe("byosan feature specification", () => {
 			"unresolvedMismatches",
 			"adversarialEvidence",
 			"activeProbes",
+		]) {
+			expect(schema).not.toContain(`"${field}"`);
+		}
+		for (const field of [
+			"thumbnailTitle",
+			"thumbnail",
+			"eyebrow",
+			"secondLine",
+			"calloutTop",
+			"calloutBottom",
 		]) {
 			expect(schema).not.toContain(`"${field}"`);
 		}
@@ -73,15 +86,6 @@ describe("byosan structured output schema", () => {
 });
 
 describe("byosan feature draft hard limits", () => {
-	test("thumbnail reaction rejects more than four characters", () => {
-		expect(
-			ByosanThumbnailSchema.shape.reaction.safeParse("12345").success,
-		).toBe(false);
-		expect(ByosanThumbnailSchema.shape.reaction.safeParse("1234").success).toBe(
-			true,
-		);
-	});
-
 	test("segment stats accept an empty list and reject more than three", () => {
 		const stat = {
 			label: "利益",
@@ -103,10 +107,9 @@ describe("byosan feature draft hard limits", () => {
 
 	test("draft prompt limits are derived from the feature draft schema", () => {
 		const lines = zodSizeConstraintLines(ByosanFeatureDraftSchema);
-		expect(lines).toContain("thumbnail.reaction: 4文字以内");
-		expect(lines).toContain("thumbnail.secondLine: 2〜12文字");
 		expect(lines).toContain("segments[].stats: 3件以内");
 		expect(lines).toContain("segments[].headline: 34文字以内");
+		expect(lines.some((line) => line.startsWith("thumbnail"))).toBe(false);
 		expect(lines.some((line) => line.startsWith("segments: "))).toBe(false);
 		expect(lines.some((line) => line.startsWith("segments[].text:"))).toBe(
 			false,

@@ -66,7 +66,6 @@ steps:
     effects:
       - {type: "overlay", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.85, offset: {right: 20, bottom: 0}}
       - {type: "overlay", enabled: true, image_path: "assets/zundamon.webp", anchor: "bottom_left", height_ratio: 0.51, offset: {left: 20, bottom: 0}}
-    thumbnail_overlay: {enabled: false}
     subtitles:
       primary_colour: "&HFFFFFF&"
       outline_colour: "&H000000&"
@@ -457,11 +456,7 @@ feature_production:
     jpeg_chroma_subsampling: "4:4:4"
     imagegen:
       size: "2048x1152"
-      prompt: "YouTube thumbnail art, 16:9. Show one instantly readable story moment that makes the paradox in {topic} feel surprising. Choose one focal object, a clear physical contrast, and a vivid reaction; make it readable on a phone. Use a light watercolor and impressionist look in the KAFKA SIGNAL pastel palette. Leave a calm area at left for the existing title overlay. No charts, cards, panels, captions, labels, logos, or watermarks."
-    text: {x: 0.04, y: 0.1, width: 0.5, height: 0.8, max_font_ratio: 0.2, line_height: 1.18, max_lines: 3, fill: "#FFFFFF", stroke: "#17233F", stroke_ratio: 0.16, break_penalty: 4}
-    brand: {x: 0.04, y: 0.95, font_ratio: 0.06}
-    art_scale: 0.78
-    scrim: {width: 0.62, opacity: 0.55, color: "#17233F"}
+      prompt: "Create a single full-bleed 16:9 YouTube thumbnail image for 秒算マネー. Story: {topic}. Find the most counter-intuitive economic mechanism in this story and turn it into one concrete, physical, instantly readable moment: one dominant subject caught in one decisive action, with the paradox visible through scale, collision, imbalance, or an unexpected consequence. Make the subject fill the frame, use a bold camera angle, strong light-dark and color contrast, crisp silhouettes, and one unmistakable focal point that reads at phone size in one second. Make the scene specific to the supplied story; choose a visual treatment that intensifies that mechanism rather than applying a stock look. Keep the image truthful to the supplied story and visually forceful without inventing a new event. The image is the whole thumbnail: fill every edge, with no reserved title space. Image only: no text, letters, numerals, logos, labels, captions, chart marks, panels, cards, arrows, borders, or watermark. Avoid stock finance imagery and generic AI wallpaper, including floating coins, glowing brains, anonymous circuit boards, and default candlestick charts."
   audit:
     video_codec: "h264"
     audio_codec: "aac"
@@ -510,7 +505,7 @@ feature_draft:
 
     語りは春日部つむぎ一人を基本にします。出典名はsourcesに置き、台詞や画面で記事・資料・執筆者を紹介しません。記事掲載時点や記事掲載直前などのメタ表現を使わず、期間や出来事を直接示します。挨拶、ニュースの読み上げ、制作メモ、先生口調、問いを置いて答えない締め、定型の説明句、同じ事実の言い換えを入れません。最初の15秒に核心を置き、説明のためだけの段落や橋渡しを切ります。構成は題材の緊張に合わせ、クイズや章数を固定しません。
 
-    セリフ、見出し、タイトル、サムネイル文言、概要欄に、注釈、免責、予防線、言い訳、限界の列挙、メタ説明を書きません。「保証」「限界」「予測であり実績ではありません」「保証するものではありません」「とは言えません」「断定できません」「一概に言えない」「記事が示していない」「確認できない」「根拠と限界」などを出しません。比較は肯定文で二つの結果を並べ、否定形で例外や限界を説明しません。出典はsourcesとclaimsに記録し、語りでは確認できた出来事を主語と動詞で言い切ります。推計や見通しは主語に発表主体を置いて内容として語り、別の情報同士を因果で結びません。
+    セリフ、見出し、タイトル、概要欄に、注釈、免責、予防線、言い訳、限界の列挙、メタ説明を書きません。「保証」「限界」「予測であり実績ではありません」「保証するものではありません」「とは言えません」「断定できません」「一概に言えない」「記事が示していない」「確認できない」「根拠と限界」などを出しません。比較は肯定文で二つの結果を並べ、否定形で例外や限界を説明しません。出典はsourcesとclaimsに記録し、語りでは確認できた出来事を主語と動詞で言い切ります。推計や見通しは主語に発表主体を置いて内容として語り、別の情報同士を因果で結びません。
 
     数字、対象、期間、定義、発表主体を入力記事に合わせ、存在しない数字・因果・家計換算を作りません。確定事実、計算値、発表主体の見通しはclaimsに種別と出典を持たせ、視聴者向けの説明では定型注釈に変えません。売買推奨や「暴落確定」「爆益」などの煽りは書きません。構造化スキーマに従って制作データのみを返します。
 

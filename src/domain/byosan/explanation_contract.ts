@@ -32,11 +32,6 @@ type LocatedText = { path: string; text: string };
 function specNumberTexts(spec: ByosanFeatureSpec): LocatedText[] {
 	return [
 		{ path: "title", text: spec.title },
-		{ path: "thumbnailTitle", text: spec.thumbnailTitle },
-		...Object.values(spec.thumbnail).map((text) => ({
-			path: "thumbnail",
-			text,
-		})),
 		{ path: "descriptionLead", text: spec.descriptionLead },
 		...spec.claims.map((claim, index) => ({
 			path: claimIssuePath(index),

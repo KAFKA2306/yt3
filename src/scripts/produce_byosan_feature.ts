@@ -27,16 +27,12 @@ import {
 	getByosanProductionConfig,
 	getByosanSpeechPlan,
 } from "../domain/byosan/production_config.js";
-import { isInteractiveByosanRun } from "../domain/byosan/run_mode.js";
 import {
 	type ByosanSceneRender,
 	resolveSceneRender,
 } from "../domain/byosan/scene_render.js";
 import { compileScenes } from "../domain/byosan/scene_spec.js";
-import {
-	buildInteractiveThumbnailFiles,
-	buildThumbnailFiles,
-} from "../domain/byosan/thumbnail.js";
+import { buildByosanThumbnailFiles } from "../domain/byosan/thumbnail.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
 import {
 	capVoiceControls,
@@ -245,32 +241,14 @@ async function buildThumbnail(
 		path.join(PROJECT_ROOT, F.characters.tsumugi_image),
 		path.join(PROJECT_ROOT, F.characters.zundamon_image),
 	];
-	if (isInteractiveByosanRun(spec.runId)) {
-		await buildInteractiveThumbnailFiles({
-			...paths,
-			topic: `${spec.title}\n${spec.angle}`,
-			refs,
-			width: WIDTH,
-			height: HEIGHT,
-			thumbnailWidth: THUMBNAIL_CANVAS.width,
-			thumbnailHeight: THUMBNAIL_CANVAS.height,
-			pngCompression: F.image.png_compression_level,
-			config: F.thumbnail,
-		});
-		return { png: paths.pngPath, jpg: paths.jpgPath, full: paths.fullPath };
-	}
-	await buildThumbnailFiles({
+	await buildByosanThumbnailFiles({
 		...paths,
-		text: spec.thumbnailTitle,
+		topic: `${spec.title}\n${spec.angle}`,
 		refs,
-		brand: F.brand_label,
 		width: WIDTH,
 		height: HEIGHT,
 		thumbnailWidth: THUMBNAIL_CANVAS.width,
 		thumbnailHeight: THUMBNAIL_CANVAS.height,
-		font: FONT,
-		fontWeight: DESIGN.typography.weights.headline ?? "bold",
-		halfWidthUnits: F.captions.half_width_units,
 		pngCompression: F.image.png_compression_level,
 		config: F.thumbnail,
 	});
@@ -607,7 +585,7 @@ async function writeOutputs(
 	);
 	const metadata = {
 		title: spec.title,
-		thumbnail_title: spec.thumbnailTitle,
+		thumbnail_title: "",
 		description,
 		tags: spec.tags,
 	};
