@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<channel>
+  <title>夜話アーカイブ</title>
+  <link>https://kafka2306.github.io/yt3/yawa/</link>
+  <description>夜話アーカイブ official audio feed</description>
+  <language>ja</language>
+  <itunes:author>夜話アーカイブ</itunes:author>
+  <itunes:explicit>false</itunes:explicit>
+  <itunes:image href="https://kafka2306.github.io/yt3/yawa/cover.jpg" />
+  <image><url>https://kafka2306.github.io/yt3/yawa/cover.jpg</url><title>夜話アーカイブ</title><link>https://kafka2306.github.io/yt3/yawa/</link></image>
+  <item>
+    <title>月島なおとたどる古い手紙の謎、紅茶と続く夜</title>
+    <guid isPermaLink="false">yt3:yawa:yawa-2026-11-27</guid>
+    <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-yawa/yawa-yawa-2026-11-27.m4a" length="9643230" type="audio/mp4" />
+    <itunes:duration>0:09:39</itunes:duration>
+    <description>夜だけ開く古本喫茶「夜話」。店主の月島なおと、古い本にはさまっていた一通の手紙を読み解きます。書き手が残した小さな謎をたどった先に見つけたのは、街の片隅に続いていた、ささやかな思いやり。湯気の立つ紅茶と、ゆっくり流れる夜の空気をお楽しみください。
+
+この作品の台本・音声・画像はAIで生成しています。
+
+台本・音声・画像は本作品用に生成しています。</description>
+    <pubDate>Fri, 27 Nov 2026 12:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>白瀬しずく先輩と休日ランチ、古本市をめぐる寄り道</title>
+    <guid isPermaLink="false">yt3:yawa:yawa-2026-11-25</guid>
+    <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-yawa/yawa-yawa-2026-11-25.m4a" length="9637925" type="audio/mp4" />
+    <itunes:duration>0:09:38</itunes:duration>
+    <description>休日の昼下がり、白瀬しずく先輩と商店街でランチ。帰り道に見つけた小さな古本市で、持ち主の記憶が残る不思議な本をめぐって、仕事の話や街の思い出をゆっくり語ります。少し不器用で世話焼きな先輩との、あたたかな休日の会話劇です。
+
+この作品の台本・音声・画像はAIで生成しています。
+
+台本・音声・画像は本作品用に生成しています。</description>
+    <pubDate>Wed, 25 Nov 2026 12:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>日向はるかと古本喫茶で楽しむ休日ボードゲーム</title>
+    <guid isPermaLink="false">yt3:yawa:yawa-2026-11-22-vnfix</guid>
+    <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-yawa/yawa-yawa-2026-11-22-vnfix.m4a" length="6156067" type="audio/mp4" />
+    <itunes:duration>0:06:21</itunes:duration>
+    <description>休日の午後、同じ街の古本喫茶「夜話」で、はるかとボードゲーム対決。勝負の行方に一喜一憂しながら、古いゲーム箱に残された小さな謎を一緒にたどります。気心の知れた二人の軽快な掛け合いと、いつもより少し不思議な休日をお楽しみください。
+
+この作品の台本・音声・画像はAIで生成しています。
+
+台本・音声・画像は本作品用に生成しています。</description>
+    <pubDate>Sun, 22 Nov 2026 12:00:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>
