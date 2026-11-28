@@ -3,7 +3,6 @@ import fs from "fs-extra";
 import * as yaml from "js-yaml";
 import { z } from "zod";
 import { ByosanChaptersConfigSchema } from "./description.js";
-import { ByosanFeatureSegmentSchema } from "./feature_spec.js";
 import type { SpeechPlan } from "./production_audit.js";
 import { ByosanScenesConfigSchema } from "./scene_spec.js";
 
@@ -12,8 +11,6 @@ export const BYOSAN_CONFIG_PATH = path.join(
 	"config/domains/byosan_money.yaml",
 );
 
-const EmotionSchema = ByosanFeatureSegmentSchema.shape.emotion;
-const SpeakerSchema = ByosanFeatureSegmentSchema.shape.speaker;
 const nonEmptyString = z.string().min(1);
 const positiveInteger = z.number().int().positive();
 const nonNegativeNumber = z.number().nonnegative();
@@ -28,11 +25,6 @@ const VoiceControlsSchema = z.object({
 	postPhonemeLength: nonNegativeNumber,
 	pauseLengthScale: z.number().positive(),
 	outputSamplingRate: positiveInteger,
-});
-
-const VoiceCapSchema = z.object({
-	pitchScale: z.number().optional(),
-	intonationScale: z.number().positive().optional(),
 });
 
 const VoiceRegisterSchema = z.object({
@@ -68,6 +60,11 @@ const BedToneSchema = z.object({
 
 const FeatureProductionSchema = z.object({
 	default_spec: nonEmptyString,
+	evergreen: z.object({
+		min_duration_seconds: z.number().positive(),
+		max_duration_seconds: z.number().positive(),
+		visual_beat_seconds: z.number().positive(),
+	}),
 	hero_source_name: nonEmptyString,
 	brand_label: nonEmptyString,
 	yaml_line_width: positiveInteger,
@@ -105,13 +102,7 @@ const FeatureProductionSchema = z.object({
 		narration_replacements: z.array(
 			z.object({ from: nonEmptyString, to: z.string() }),
 		),
-		voice_presets: z.record(EmotionSchema, VoiceControlsSchema),
-		speaker_caps: z.record(SpeakerSchema, VoiceCapSchema),
-	}),
-	emotion_labels: z.record(EmotionSchema, nonEmptyString),
-	characters: z.object({
-		zundamon_image: nonEmptyString,
-		tsumugi_image: nonEmptyString,
+		voice_controls: VoiceControlsSchema,
 	}),
 	image: z.object({
 		png_compression_level: z.number().int().min(0).max(9),
@@ -236,10 +227,7 @@ const ByosanProductionConfigSchema = z.object({
 		tts: z.object({
 			voicevox: z.object({
 				url: z.url(),
-				speakers: z.object({
-					春日部つむぎ: positiveInteger,
-					ずんだもん: positiveInteger,
-				}),
+				speakers: z.object({ 青山龍星: positiveInteger }),
 				timeout_ms: z.object({
 					query: positiveInteger,
 					synthesis: positiveInteger,

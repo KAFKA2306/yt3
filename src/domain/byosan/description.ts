@@ -91,9 +91,6 @@ export function planByosanChapters(
 	).map(({ start, title }) => ({ start, title }));
 }
 
-const BYOSAN_DESCRIPTION_FOOTER =
-	"----------\n※本動画は情報提供を目的としたものであり、特定の金融商品や投資行動を推奨するものではありません。";
-
 export function buildByosanDescription(
 	spec: ByosanDescriptionInput,
 	timeline: readonly ChapterSpan[],
@@ -116,6 +113,5 @@ export function buildByosanDescription(
 		...(spec.sources.length > 0
 			? [`${config.headings.references}\n${sourceBlock(spec.sources)}`]
 			: []),
-		BYOSAN_DESCRIPTION_FOOTER,
 	].join("\n\n");
 }

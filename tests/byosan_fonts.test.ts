@@ -3,6 +3,7 @@ import path from "node:path";
 import {
 	fontconfigXml,
 	fontMatchProblem,
+	matchFontFamily,
 	parseFcMatch,
 	requiredFontFamilies,
 } from "../src/domain/byosan/fonts.js";
@@ -57,5 +58,13 @@ describe("byosan fonts", () => {
 		expect(fontMatchProblem("Geist", parseFcMatch(""), FONT_DIR)).toBe(
 			"Geist -> (no match)",
 		);
+	});
+
+	test("matches the bundled font files through the generated fontconfig", () => {
+		const fontDir = path.join(process.cwd(), "assets/fonts");
+		for (const family of ["IBM Plex Sans JP", "Geist"]) {
+			const match = matchFontFamily(family);
+			expect(fontMatchProblem(family, match, fontDir)).toBeUndefined();
+		}
 	});
 });

@@ -21,7 +21,7 @@
 	],
 	"segments": [
 		{
-			"speaker": "春日部つむぎ",
+			"speaker": "青山龍星",
 			"emotion": "curious",
 			"section": "導入",
 			"headline": "利益は本物？",
@@ -33,7 +33,7 @@
 			"text": "S&P500の利益成長率は47.4%でした。本当に全社が好調なのかを見ていきます。"
 		},
 		{
-			"speaker": "ずんだもん",
+			"speaker": "青山龍星",
 			"emotion": "reveal",
 			"section": "純利益",
 			"headline": "純利益は626億ドル",
@@ -52,7 +52,7 @@
 			"text": "Amazonの2026年Q2純利益は626.47億ドルで、前年から大きく増えました。"
 		},
 		{
-			"speaker": "春日部つむぎ",
+			"speaker": "青山龍星",
 			"emotion": "analytical",
 			"section": "営業利益",
 			"headline": "本業は二桁成長",
@@ -77,7 +77,7 @@
 			"text": "営業利益は前年比43%増、AWSの売上も37%増えており、本業も伸びています。"
 		},
 		{
-			"speaker": "ずんだもん",
+			"speaker": "青山龍星",
 			"emotion": "caution",
 			"section": "比較",
 			"headline": "利益と成長率は別物",
@@ -102,7 +102,7 @@
 			"text": "純利益の金額と成長率の%は同じ物差しではないため、並べて読む必要があります。"
 		},
 		{
-			"speaker": "春日部つむぎ",
+			"speaker": "青山龍星",
 			"emotion": "shock",
 			"section": "推移",
 			"headline": "四半期で加速",
@@ -133,7 +133,7 @@
 			"text": "利益成長率は3月期の23.2%から6月期の37.9%、9月期の47.4%へ加速しました。"
 		},
 		{
-			"speaker": "ずんだもん",
+			"speaker": "青山龍星",
 			"emotion": "confident",
 			"section": "変化",
 			"headline": "一期で9.5ポイント",
@@ -158,7 +158,7 @@
 			"text": "6月期から9月期にかけて、成長率はさらに9.5ポイント上がりました。"
 		},
 		{
-			"speaker": "春日部つむぎ",
+			"speaker": "青山龍星",
 			"emotion": "serious",
 			"section": "結論",
 			"headline": "優先株の評価益に注意",

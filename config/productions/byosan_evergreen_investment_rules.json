@@ -1,0 +1,562 @@
+{
+	"schemaVersion": "byosan_feature_v1",
+	"runId": "byosan_money/2026-11-28-evergreen-investment-rules-v2",
+	"asOf": "2026-11-28",
+	"angle": "底値待ちと定期購入を同じ資金判断に重ねると、いつまでも買えなくなる。購入の条件を定期日と目標配分の二つに分ける。",
+	"searchQuery": "Vanguard lump sum cost averaging 68% Schwab Ashley Peter Perfect investment discipline",
+	"title": "相場の底を待つほど買えなくなる｜迷わない2つの投資ルール",
+	"descriptionLead": "相場の底を待つ判断と、決めた日に買う判断を分ける。いつ買うかを決める二つのルールを、研究データと数字で整理します。",
+	"descriptionBullets": [
+		"資金が使える日に定額で買うコア積立",
+		"目標配分から外れた時だけ戻すリバランス",
+		"毎回の底値判断をなくす仕組み"
+	],
+	"production": {
+		"format": "evergreen",
+		"targetMinutes": 8,
+		"minSegments": 18,
+		"maxSegments": 20,
+		"reasons": [
+			"時事ニュースを使わず、投資行動の迷いを一つの問いとして解く",
+			"証拠を比べた後、二つの実行条件をルール図で示す",
+			"短い日次更新とは異なる、8分前後の保存版として設計する"
+		]
+	},
+	"narrative": {
+		"hiddenMechanism": "底値待ちと定期購入を同じ資金に求めると、購入判断が停止する",
+		"counterfactual": "買付日と目標配分の乖離だけで判断すれば、相場予測を挟まず実行できる",
+		"audiencePayoff": "次の資金発生日から使える二つの購入条件を持ち帰る"
+	},
+	"noveltyQueries": [
+		"site:corporate.vanguard.com cost averaging invest now temporarily hold cash 68%",
+		"site:schwab.com learn story does market timing work Ashley Peter Perfect",
+		"site:corporate.vanguard.com principles investing success discipline allocation cost rebalancing"
+	],
+	"tags": ["秒算マネー", "長期投資", "資産配分", "積立投資", "リバランス"],
+	"sources": [
+		{
+			"id": "vanguard_cost_averaging",
+			"name": "Vanguard — Cost averaging: Invest now or temporarily hold your cash?",
+			"url": "https://corporate.vanguard.com/content/dam/corp/research/pdf/cost_averaging_invest_now_or_temporarily_hold_your_cash.pdf",
+			"tier": "L1"
+		},
+		{
+			"id": "schwab_market_timing",
+			"name": "Charles Schwab — Does Market Timing Work?",
+			"url": "https://www.schwab.com/learn/story/does-market-timing-work",
+			"tier": "L1"
+		},
+		{
+			"id": "vanguard_principles",
+			"name": "Vanguard — Principles for Investing Success",
+			"url": "https://corporate.vanguard.com/content/dam/corp/research/pdf/vanguards_principles_for_investing_success.pdf",
+			"tier": "L1"
+		}
+	],
+	"claims": [
+		{
+			"id": "vanguard_68",
+			"claim": "Vanguardの全株式ポートフォリオの比較では、一括投資が3か月のコスト平均法を上回った期間は68%。",
+			"sourceIds": ["vanguard_cost_averaging"],
+			"status": "verified"
+		},
+		{
+			"id": "vanguard_76",
+			"claim": "Vanguardが示す米国株と現金の比較では、米国株が現金を上回った期間は76%。",
+			"sourceIds": ["vanguard_cost_averaging"],
+			"status": "verified"
+		},
+		{
+			"id": "schwab_ashley",
+			"claim": "Schwabの20年間の仮想比較では、受取時に投資したAshleyは170,555ドル、毎年の底値で投資したPeter Perfectは186,077ドル、差は15,522ドル。",
+			"sourceIds": ["schwab_market_timing"],
+			"status": "verified"
+		},
+		{
+			"id": "schwab_waiting",
+			"claim": "Schwabの20年間の仮想比較では、株を買わず現金で待ったLarry Lingerの最終額は47,357ドル。",
+			"sourceIds": ["schwab_market_timing"],
+			"status": "verified"
+		},
+		{
+			"id": "vanguard_principles",
+			"claim": "Vanguardは、目標設定、資産配分、コスト抑制、長期の規律を投資成功の四原則として示し、定期拠出、保有継続、リバランスを規律の要素として挙げる。",
+			"sourceIds": ["vanguard_principles"],
+			"status": "verified"
+		}
+	],
+	"segments": [
+		{
+			"speaker": "青山龍星",
+			"emotion": "shock",
+			"section": "同じ財布の矛盾",
+			"headline": "買いたいのに買えない",
+			"subheadline": "底を待つ判断と定期購入が衝突する",
+			"visualType": "question",
+			"stats": [],
+			"source": "編集設計",
+			"text": "安く買いたい。底値まで待ちたい。この二つを同じ財布に命じると、買う判断がいつまでも先延ばしになります。迷いを消すのは、買う条件を分けること。定期の資金は日付で買う。配分が崩れた時だけ、目標へ戻す。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "analytical",
+			"section": "同じ財布の矛盾",
+			"headline": "二つの命令を分ける",
+			"subheadline": "いつもの資金と配分調整を別の判断にする",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "積立",
+					"value": "買付日",
+					"detail": "日にちで決める",
+					"color": "cyan"
+				},
+				{
+					"label": "調整",
+					"value": "配分",
+					"detail": "目標との差で決める",
+					"color": "amber"
+				}
+			],
+			"source": "編集設計",
+			"text": "まず、毎月の積立と、暴落の時にどうするかを分けます。毎月の資金には買付日がある。資産配分には目標がある。この二つは、使うお金も見る数字も違います。そこへ毎回「もっと下がるか」を足すと、買付日にも配分調整にも答えが出なくなる。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "curious",
+			"section": "同じ財布の矛盾",
+			"headline": "底を待つほど迷う",
+			"subheadline": "安値の判定を毎回やり直す",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "待つ条件",
+					"value": "未定",
+					"detail": "底の基準が動く",
+					"color": "amber"
+				},
+				{
+					"label": "買付日",
+					"value": "延期",
+					"detail": "判断が続く",
+					"color": "muted"
+				}
+			],
+			"source": "編集設計",
+			"text": "底値を待つ判断には、いつ待つのを終えるかという別の判断がついてきます。少し下がれば、まだ下を考える。上がれば、次の下落を待つ。価格を見るたびに基準が動き、定期購入まで止まります。買うかどうかを相場の機嫌に預けるほど、実行日は遠ざかります。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "reveal",
+			"section": "数字で見る待つコスト",
+			"headline": "待機資金にも比較対象",
+			"subheadline": "値上がりを逃す時間が生まれる",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "投資済み",
+					"value": "市場に参加",
+					"detail": "保有期間を使う",
+					"color": "cyan"
+				},
+				{
+					"label": "現金待機",
+					"value": "機会を待つ",
+					"detail": "投資期間が短くなる",
+					"color": "amber"
+				}
+			],
+			"source": "Vanguardの一次研究",
+			"text": "現金で待つ時間は、価格変動を避ける時間であると同時に、市場に投資していない時間でもあります。投資済みの資金は市場の値動きに参加し、待機資金はまだ参加していない。買い時を選ぶ間に、資産が市場で働く時間が短くなる。まず、この時間差を数字で見ます。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "reveal",
+			"section": "数字で見る待つコスト",
+			"headline": "現金より株が上回る",
+			"subheadline": "比較された期間の76パーセント",
+			"visualType": "percentage_bar",
+			"stats": [
+				{
+					"label": "米国株が現金を上回った割合",
+					"value": "76%",
+					"detail": "現金待機の機会費用",
+					"color": "cyan"
+				}
+			],
+			"claimIds": ["vanguard_76"],
+			"source": "Vanguardの一次研究",
+			"text": "米国株と現金の比較では、株が上回った期間は76パーセント。68パーセントは一括投資と三か月分割の比較です。二つの数字は、それぞれ別の問いに答えています。手元で待つ資金にも、投資期間を逃すコストがある。数字ごとの対象を固定すると、待機資金の機会費用が見えてきます。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "analytical",
+			"section": "即時投資と分割の比較",
+			"headline": "一括投資と三か月分割",
+			"subheadline": "資金を今使うか、三回に分けるか",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "一括",
+					"value": "初日から投資",
+					"detail": "資金全体を動かす",
+					"color": "cyan"
+				},
+				{
+					"label": "三か月分割",
+					"value": "順に投資",
+					"detail": "一部は現金で待つ",
+					"color": "amber"
+				}
+			],
+			"source": "Vanguardの一次研究",
+			"text": "手元にまとまった投資資金がある。一括投資は、その全体をすぐ市場へ置く。三か月に分ける方法は、残りの資金を少しずつ置く。ここで扱うのは、今すぐ投資できる一つの資金をどう動かすかという問いです。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "confident",
+			"section": "即時投資と分割の比較",
+			"headline": "一括が上回った割合",
+			"subheadline": "三か月分割との直接比較で68パーセント",
+			"visualType": "percentage_bar",
+			"stats": [
+				{
+					"label": "一括投資が上回った割合",
+					"value": "68%",
+					"detail": "世界株式・1年後の比較",
+					"color": "cyan"
+				}
+			],
+			"claimIds": ["vanguard_68"],
+			"source": "Vanguardの一次研究",
+			"text": "世界株式を対象にした比較では、一括投資が三か月のコスト平均法を上回った期間は68パーセントでした。分析は1976年から2022年までの一年ローリング期間。現金に金利をつけない設定で、三か月分割の間に残る現金も比べています。結果は、一括が68、米国株と現金の比較は76。別々の問いに別々の数字です。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "analytical",
+			"section": "20年比較の結果",
+			"headline": "完璧な底値買いと即投資",
+			"subheadline": "同じ年額を投じた仮想比較",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "年間投資額",
+					"value": "$2,000",
+					"detail": "毎年受け取る資金",
+					"color": "white"
+				},
+				{
+					"label": "比較期間",
+					"value": "20年",
+					"detail": "仮想ポートフォリオ",
+					"color": "muted"
+				}
+			],
+			"source": "Charles Schwabの仮想比較",
+			"text": "次は、毎年同じ額を投じる二人を比べます。Peter Perfectは毎年の底値を正確に待って投資する。Ashley Actionは資金を受け取った日に投資する。どちらも毎年二千ドルを投じる仮想の比較です。片方は未来の最安値を知っていて、もう片方は知ろうとせず、受け取ったら動く。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "reveal",
+			"section": "20年比較の結果",
+			"headline": "完璧な底値との差は15,522ドル",
+			"subheadline": "Ashley 170,555ドル｜Peter 186,077ドル",
+			"visualType": "comparison_bars",
+			"stats": [
+				{
+					"label": "Peter Perfect",
+					"value": "$186,077",
+					"detail": "毎年の底値で投資",
+					"color": "amber"
+				},
+				{
+					"label": "Ashley Action",
+					"value": "$170,555",
+					"detail": "受取日に投資",
+					"color": "cyan"
+				},
+				{
+					"label": "二人の差",
+					"value": "$15,522",
+					"detail": "20年後の金額差",
+					"color": "muted"
+				}
+			],
+			"claimIds": ["schwab_ashley"],
+			"source": "Charles Schwabの仮想比較",
+			"text": "二十年後、完璧な底値で買ったPeterは186,077ドル。受取日に投資したAshleyは170,555ドル。差は15,522ドルです。完璧な底値当てが上回る。それでも、毎年すぐ投資したAshleyは差の小さい二番手に残る。底値を知る力の大きさと、実行するだけの方法との差がここに出ています。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "serious",
+			"section": "20年比較の結果",
+			"headline": "ずっと待つと結果が離れる",
+			"subheadline": "待機を続けたLarryは47,357ドル",
+			"visualType": "comparison_bars",
+			"stats": [
+				{
+					"label": "Ashley Action",
+					"value": "$170,555",
+					"detail": "受取日に投資",
+					"color": "cyan"
+				},
+				{
+					"label": "Larry Linger",
+					"value": "$47,357",
+					"detail": "株を買わず現金で待つ",
+					"color": "amber"
+				}
+			],
+			"claimIds": ["schwab_waiting"],
+			"source": "Charles Schwabの仮想比較",
+			"text": "比較相手を、ずっと現金で待ったLarryに替えます。最終額は47,357ドル。受取日に株へ投じたAshleyは170,555ドルです。最安値を当てる手法と、買付判断を先送りする行動は別の状況です。現金で待ち続けたLarryの結果は、資金を市場へ置いたAshleyから大きく離れました。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "analytical",
+			"section": "投資で守る四原則",
+			"headline": "予想より仕組みを守る",
+			"subheadline": "目標・配分・コスト・規律",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "方針",
+					"value": "目標",
+					"detail": "何のために運用するか",
+					"color": "cyan"
+				},
+				{
+					"label": "設計",
+					"value": "配分",
+					"detail": "株と債券の比率",
+					"color": "white"
+				},
+				{
+					"label": "維持",
+					"value": "低コスト",
+					"detail": "規律を保つ",
+					"color": "amber"
+				}
+			],
+			"claimIds": ["vanguard_principles"],
+			"source": "Vanguardの投資原則",
+			"text": "投資の土台は、目標、資産配分、費用、規律。この四つを先に決めます。値動きに合う配分を作り、費用を抑える。長期の計画を守り、必要な時にリバランスする。四つを目標から実行まで一本の仕組みに結びます。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "confident",
+			"section": "投資で守る四原則",
+			"headline": "規律は予測を減らす",
+			"subheadline": "定期拠出と保有継続、計画的な調整",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "拠出",
+					"value": "定期的",
+					"detail": "計画通りに買う",
+					"color": "cyan"
+				},
+				{
+					"label": "保有",
+					"value": "継続",
+					"detail": "値動きで停止しない",
+					"color": "white"
+				},
+				{
+					"label": "調整",
+					"value": "リバランス",
+					"detail": "目標配分へ戻す",
+					"color": "amber"
+				}
+			],
+			"claimIds": ["vanguard_principles"],
+			"source": "Vanguardの投資原則",
+			"text": "規律を形にするのは、定期的な拠出、値動きの中で投資を続けること、そして資産配分を目標に戻すこと。日々の相場に反応する回数を減らし、決めた計画を実行する。ここから、誰でも同じ条件で使える買付ルールに落とし込みます。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "reveal",
+			"section": "第1層 定期日に買う",
+			"headline": "第1層｜コア積立",
+			"subheadline": "IF 定期買付日・資金発生日 → THEN 定額購入",
+			"visualType": "if_then",
+			"stats": [
+				{
+					"label": "IF",
+					"value": "定期買付日",
+					"detail": "投資資金が使える",
+					"color": "cyan"
+				},
+				{
+					"label": "THEN",
+					"value": "定額を購入",
+					"detail": "相場環境を問わず実行",
+					"color": "white"
+				}
+			],
+			"claimIds": ["vanguard_principles"],
+			"source": "運用ルール",
+			"text": "第一のルールはコア積立です。定期買付日が来た、または投資資金が使える状態になった。条件はそれだけ。価格の動きに関係なく、決めた金額を購入します。下落予測で積立を止めない。買付日を先に固定すると、毎回の迷いを判断の入り口から外せます。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "analytical",
+			"section": "第1層 定期日に買う",
+			"headline": "買付日は価格の予想から独立",
+			"subheadline": "資金が生まれた時点で動かす",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "条件",
+					"value": "日付",
+					"detail": "資金の発生日",
+					"color": "cyan"
+				},
+				{
+					"label": "行動",
+					"value": "定額",
+					"detail": "決めた額を購入",
+					"color": "white"
+				}
+			],
+			"claimIds": ["vanguard_principles"],
+			"source": "運用ルール",
+			"text": "ここで買う額を相場に合わせて変えない。毎月の定額なら、その金額をその日に買う。まとまった投資資金なら、投資計画で決めた配分へ速やかに置く。価格が下がったから日付を延ばす、上がったから追いかける。その都度の判断を挟まず、資金が使える日を合図にします。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "serious",
+			"section": "第2層 比率を戻す",
+			"headline": "第2層｜暴落リバランス",
+			"subheadline": "IF 株式比率が許容範囲の下 → THEN 目標へ戻す",
+			"visualType": "if_then",
+			"stats": [
+				{
+					"label": "IF",
+					"value": "株式比率が下回る",
+					"detail": "目標から許容幅の外",
+					"color": "amber"
+				},
+				{
+					"label": "THEN",
+					"value": "目標へ戻す",
+					"detail": "現金・債券で不足分だけ",
+					"color": "cyan"
+				}
+			],
+			"claimIds": ["vanguard_principles"],
+			"source": "運用ルール",
+			"text": "第二のルールは暴落リバランスです。下落で株式の比率が目標からずれ、あらかじめ決めた許容幅を下回ったら、現金や債券から目標に戻る分だけ機械的に買う。相場がどこで反転するかは条件にしません。見るのは、株式比率が自分の目標からどれだけ離れたかです。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "confident",
+			"section": "第2層 比率を戻す",
+			"headline": "目標に戻ったら止める",
+			"subheadline": "追加購入を続けず許容幅で管理",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "購入額",
+					"value": "不足分",
+					"detail": "目標に戻る量だけ",
+					"color": "cyan"
+				},
+				{
+					"label": "終了",
+					"value": "復元",
+					"detail": "目標に戻ったら停止",
+					"color": "white"
+				}
+			],
+			"claimIds": ["vanguard_principles"],
+			"source": "運用ルール",
+			"text": "買うのは目標比率へ戻るのに必要な分だけ。目標に戻ったら、購入を終える。追加購入の条件は、相場の予想ではなく目標配分との差です。配分のずれを機械的に直す。この動きが、下落のたびに買う金額を膨らませない歯止めになります。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "reveal",
+			"section": "裁量をゼロにする",
+			"headline": "追加の判断枠はゼロ",
+			"subheadline": "底値当て・反転待ち・裁量枠を全廃",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "裁量枠",
+					"value": "0",
+					"detail": "別枠の判断を作らない",
+					"color": "amber"
+				},
+				{
+					"label": "底値待ち",
+					"value": "0",
+					"detail": "買付を保留しない",
+					"color": "muted"
+				},
+				{
+					"label": "反転待ち",
+					"value": "0",
+					"detail": "予想を条件にしない",
+					"color": "cyan"
+				}
+			],
+			"source": "運用ルール",
+			"text": "そして、追加の裁量枠はゼロにします。サテライトで別に買う、底値を見定める、反転を待つ。こうした判断枠を全廃するから、買付日に買い、配分がずれたら戻す、それだけを続けられる。選択肢を増やすほど判断が増える。必要な条件だけを残すことが、長く使える仕組みになります。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "warm",
+			"section": "二つのルールを残す",
+			"headline": "買付日と目標比率",
+			"subheadline": "資金の発生日に買う｜ずれたら目標へ戻す",
+			"visualType": "stat_cards",
+			"stats": [
+				{
+					"label": "日常",
+					"value": "定期日に定額",
+					"detail": "買付を止めない",
+					"color": "cyan"
+				},
+				{
+					"label": "調整",
+					"value": "許容幅を下回る",
+					"detail": "不足分だけ戻す",
+					"color": "amber"
+				}
+			],
+			"claimIds": [
+				"vanguard_68",
+				"vanguard_76",
+				"schwab_ashley",
+				"vanguard_principles"
+			],
+			"source": "二つの運用ルール",
+			"text": "迷ったら、確認することは二つです。投資資金が使える日か。株式比率が目標の許容幅を下回ったか。前者なら定額を買う。後者なら現金や債券から不足分だけ買い、戻ったら止める。底を当てる判断を足さない。買付日と目標比率、この二つを決めておけば、次の値動きが来ても手順は変わりません。"
+		},
+		{
+			"speaker": "青山龍星",
+			"emotion": "confident",
+			"section": "二つのルールを残す",
+			"headline": "底を探さず、計画を実行",
+			"subheadline": "資金を動かす条件を先に決める",
+			"visualType": "if_then",
+			"stats": [
+				{
+					"label": "IF",
+					"value": "資金が使える",
+					"detail": "または配分が許容幅の外",
+					"color": "cyan"
+				},
+				{
+					"label": "THEN",
+					"value": "買って戻す",
+					"detail": "目標に届いたら止める",
+					"color": "white"
+				}
+			],
+			"claimIds": ["vanguard_principles"],
+			"source": "秒算マネー",
+			"text": "相場の底を探す時間を、ルールの実行に変える。資金が使える日に定額を買う。配分が許容幅を下回ったら目標まで戻す。数字と手順を先に決めて、あとは実行する。予想に使う判断を減らし、買う条件を固定する。これが、いつまでも使える二つのルールです。"
+		}
+	]
+}

@@ -1,12 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { z } from "zod";
-import type { TtsVoiceControls } from "../../io/utils/tts_orchestrator.js";
 import type { ByosanVoiceRegisterConfig } from "./production_config.js";
-
-interface VoiceCap {
-	pitchScale?: number;
-	intonationScale?: number;
-}
 
 const VoiceRegisterMeasurementSchema = z.object({
 	path: z.string(),
@@ -20,26 +14,6 @@ const VoiceRegisterMeasurementSchema = z.object({
 export type VoiceRegisterMeasurement = z.infer<
 	typeof VoiceRegisterMeasurementSchema
 >;
-
-export function capVoiceControls(
-	voice: TtsVoiceControls,
-	cap: VoiceCap,
-): TtsVoiceControls {
-	const capped: TtsVoiceControls = { ...voice };
-	if (cap.pitchScale !== undefined && voice.pitchScale !== undefined) {
-		capped.pitchScale = Math.min(voice.pitchScale, cap.pitchScale);
-	}
-	if (
-		cap.intonationScale !== undefined &&
-		voice.intonationScale !== undefined
-	) {
-		capped.intonationScale = Math.min(
-			voice.intonationScale,
-			cap.intonationScale,
-		);
-	}
-	return capped;
-}
 
 export function measureVoiceRegister(
 	wavPaths: string[],

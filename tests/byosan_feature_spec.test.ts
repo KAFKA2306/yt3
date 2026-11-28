@@ -13,12 +13,12 @@ import {
 	zodSizeConstraintLines,
 } from "../src/io/core.js";
 
-const SPEC_PATH = "config/productions/sp500_anthropic_2026q2.json";
+const SPEC_PATH = "config/productions/byosan_evergreen_investment_rules.json";
 
 describe("byosan feature specification", () => {
 	test("the production reference remains compatible with the runtime schema", async () => {
 		const spec = parseAndAuditByosanFeatureSpec(await fs.readJson(SPEC_PATH));
-		expect(spec.segments.length).toBeGreaterThanOrEqual(20);
+		expect(spec.segments.length).toBeGreaterThanOrEqual(18);
 		expect(auditByosanFeatureSpec(spec)).toEqual([]);
 	});
 
@@ -118,7 +118,7 @@ describe("byosan feature draft hard limits", () => {
 
 	test("segment dialogue of any length is accepted", () => {
 		const segment = {
-			speaker: "春日部つむぎ",
+			speaker: "青山龍星",
 			emotion: "analytical",
 			section: "結論",
 			headline: "数字は一つだけ",

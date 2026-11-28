@@ -119,6 +119,12 @@ tasks:
     cmds:
       - bun src/scripts/byosan_metadata.ts {{.RUN}} {{.CLI_ARGS}}
 
+  byosan:evergreen:
+    desc: "Prepare one source-backed timeless 秒算マネー feature from SPEC=<spec.json> and its sibling .explanation.json"
+    deps: [sync:deps]
+    cmds:
+      - bun src/scripts/byosan_evergreen.ts {{.SPEC}}
+
   byosan:thumbnail:
     desc: "Generate a gpt-image-2 thumbnail with the question text and set it on one published 秒算マネー video, then read back (RUN=byosan_money/YYYY-MM-DD-slot; -- --text=QUESTION; add --dry to only build the files)"
     cmds:

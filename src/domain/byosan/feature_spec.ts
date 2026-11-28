@@ -14,6 +14,7 @@ export const ByosanProductionFormatSchema = z.enum([
 	"breaking",
 	"comparison",
 	"deep_dive",
+	"evergreen",
 	"regular",
 ]);
 
@@ -57,7 +58,7 @@ export const ByosanFeatureSegmentSchema = z.object({
 		.optional(),
 	claimIds: z.array(z.string().min(1)).optional(),
 	evidenceIds: z.array(z.string().min(1)).optional(),
-	speaker: z.enum(["春日部つむぎ", "ずんだもん"]),
+	speaker: z.enum(["青山龍星"]),
 	emotion: z.enum([
 		"shock",
 		"reveal",

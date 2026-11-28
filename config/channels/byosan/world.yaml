@@ -1,14 +1,14 @@
 schema_version: 1
 channel: byosan_money
 identity:
-  character: 秒算マネーの既存キャラクター
-  reuse_existing_asset: true
+  character: 秒算マネーのパステル構造図
+  reuse_existing_asset: false
   single_frame_recognition:
     protocol_version: 1
     fixed_markers:
-      - existing_character_asset
       - palette.background
       - palette.accent_primary
+      - palette.accent_secondary
     frame_sample_rule: midpoint_of_first_scene
     blinded_fields:
       - channel_name

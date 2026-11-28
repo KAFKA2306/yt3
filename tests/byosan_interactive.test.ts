@@ -27,11 +27,13 @@ describe("spoken_humanizer regression gates", () => {
 	test("rejects speaker labels and headline fragments in spoken narration", () => {
 		expect(() =>
 			assertSpeakableLines([
-				{ index: 0, text: "春日部つむぎ：売上が伸びたよ。" },
+				{ index: 0, text: "青山龍星：値動きを予想せず、決めた日に買う。" },
 			]),
 		).toThrow("speaker_label_in_spoken_text");
 		expect(() =>
-			assertSpeakableLines([{ index: 1, text: "ずんだもん: すごいのだ。" }]),
+			assertSpeakableLines([
+				{ index: 1, text: "秒算マネー: 決めた日に買う。" },
+			]),
 		).toThrow("speaker_label_in_spoken_text");
 		expect(() =>
 			assertSpeakableLines([

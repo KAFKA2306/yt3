@@ -174,7 +174,6 @@ describe("buildByosanDescription", () => {
 				"この動画の要点\n・要点1です。",
 				"チャプター\n0:00 A\n0:20 B\n0:40 C",
 				"参照資料\n第一ライフ\nhttps://example.com/cited\n\n日本銀行\nhttps://example.com/index",
-				"----------\n※本動画は情報提供を目的としたものであり、特定の金融商品や投資行動を推奨するものではありません。",
 			].join("\n\n"),
 		);
 	});

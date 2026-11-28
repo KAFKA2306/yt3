@@ -1,0 +1,61 @@
+{
+	"conclusion": "買付日には定額を購入し、目標配分から許容幅を外れた時だけ機械的に戻す。",
+	"principle": "市場予測より、目標配分、低コスト、定期拠出、保有継続、リバランスの規律を実行する。",
+	"figures": [
+		{
+			"metric": "一括投資と3か月コスト平均法の比較",
+			"population": "MSCI World Indexを使った全株式ポートフォリオ",
+			"period": "1976–2022の1年ローリング比較",
+			"unit": "比較期間に占める割合",
+			"value": "68%",
+			"quote": "LS is a better option than CA, outperforming 68% of the time",
+			"kind": "actual"
+		},
+		{
+			"metric": "米国株と現金の比較",
+			"population": "米国株と3か月米国財務省短期証券で近似した現金",
+			"period": "1976–2022",
+			"unit": "比較期間に占める割合",
+			"value": "76%",
+			"quote": "U.S. stocks and bonds outperformed cash—as proxied by the 3-month U.S. Treasury bill rate—76% of the time for stocks",
+			"kind": "actual"
+		},
+		{
+			"metric": "Peter Perfectの仮想最終資産額",
+			"population": "毎年2,000ドルをS&P 500連動ポートフォリオへ投資",
+			"period": "20年間",
+			"unit": "ドル",
+			"value": "$186,077",
+			"quote": "He accumulated $186,077",
+			"kind": "estimate"
+		},
+		{
+			"metric": "Ashley Actionの仮想最終資産額",
+			"population": "毎年2,000ドルを受取日にS&P 500連動ポートフォリオへ投資",
+			"period": "20年間",
+			"unit": "ドル",
+			"value": "$170,555",
+			"quote": "She came in second with $170,555",
+			"kind": "estimate"
+		},
+		{
+			"metric": "Peter PerfectとAshley Actionの仮想差額",
+			"population": "毎年2,000ドルを投資する二つの方法",
+			"period": "20年間",
+			"unit": "ドル",
+			"value": "$15,522",
+			"quote": "only $15,522 less than Peter Perfect",
+			"kind": "estimate"
+		},
+		{
+			"metric": "Larry Lingerの仮想最終資産額",
+			"population": "株式を買わず現金投資を継続",
+			"period": "20年間",
+			"unit": "ドル",
+			"value": "$47,357",
+			"quote": "Larry at $47,357",
+			"kind": "estimate"
+		}
+	],
+	"check": "76%は米国株と現金の比較、68%は一括投資と3か月コスト平均法の比較。二つの比較対象を分け、Schwabの金額は仮想例として伝える。"
+}

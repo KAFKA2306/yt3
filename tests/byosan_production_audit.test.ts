@@ -8,7 +8,7 @@ import {
 const segment = (
 	overrides: Partial<ByosanFeatureSegment> = {},
 ): ByosanFeatureSegment => ({
-	speaker: "春日部つむぎ",
+	speaker: "青山龍星",
 	emotion: "reveal",
 	section: "導入",
 	headline: "広がりと持続性を分ける",

@@ -3,8 +3,10 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import * as yaml from "js-yaml";
+import sharp from "sharp";
 import { buildByosanDescription } from "../domain/byosan/description.js";
 import { displayUnits, wrapDisplay } from "../domain/byosan/display_text.js";
+import { evergreenGraphicSvg } from "../domain/byosan/evergreen_visuals.js";
 import { ExplanationSchema } from "../domain/byosan/explanation.js";
 import { explanationCheckItems } from "../domain/byosan/explanation_contract.js";
 import {
@@ -13,6 +15,7 @@ import {
 	parseAndAuditByosanFeatureSpec,
 } from "../domain/byosan/feature_spec.js";
 import {
+	byosanFontconfigEnv,
 	byosanFontDir,
 	fontMatchProblem,
 	matchFontFamily,
@@ -35,7 +38,6 @@ import { compileScenes } from "../domain/byosan/scene_spec.js";
 import { buildByosanThumbnailFiles } from "../domain/byosan/thumbnail.js";
 import { resolveByosanVisualIdentity } from "../domain/byosan/visual_identity.js";
 import {
-	capVoiceControls,
 	measureVoiceRegister,
 	voiceRegisterPasses,
 } from "../domain/byosan/voice_register.js";
@@ -76,6 +78,7 @@ const _FPS = DESIGN.canvas.landscape.fps;
 const FONT = DESIGN.typography.japanese;
 const PROJECT_ROOT = process.cwd();
 const FONT_DIR = byosanFontDir();
+Object.assign(process.env, byosanFontconfigEnv());
 const DEFAULT_SPEC = path.join(PROJECT_ROOT, F.default_spec);
 const _VISUAL_IDENTITY = resolveByosanVisualIdentity(
 	yaml.load(fs.readFileSync(BYOSAN_CONFIG_PATH, "utf8")),
@@ -237,10 +240,7 @@ async function buildThumbnail(
 		pngPath: path.join(runDir, FILENAMES.thumbnail),
 		jpgPath: path.join(runDir, RUN.thumbnail_jpg),
 	};
-	const refs = [
-		path.join(PROJECT_ROOT, F.characters.tsumugi_image),
-		path.join(PROJECT_ROOT, F.characters.zundamon_image),
-	];
+	const refs: string[] = [];
 	await buildByosanThumbnailFiles({
 		...paths,
 		topic: `${spec.title}\n${spec.angle}`,
@@ -253,6 +253,105 @@ async function buildThumbnail(
 		config: F.thumbnail,
 	});
 	return { png: paths.pngPath, jpg: paths.jpgPath, full: paths.fullPath };
+}
+
+async function renderEvergreenVisualMaster(
+	spec: FeatureSpec,
+	timed: TimedSegment[],
+	videoDir: string,
+	duration: number,
+	visualPath: string,
+): Promise<void> {
+	const started = performance.now();
+	if (spec.production?.format !== "evergreen") {
+		throw new Error("BYOSAN_EVERGREEN_FORMAT_REQUIRED");
+	}
+	const beatStep = F.evergreen.visual_beat_seconds;
+	const beats: Array<{ path: string; duration: number }> = [];
+	let activePartIndex = 0;
+	for (let start = 0; start < duration; start += beatStep) {
+		while (
+			activePartIndex < timed.length - 1 &&
+			start >=
+				(timed[activePartIndex]?.start ?? 0) +
+					(timed[activePartIndex]?.duration ?? 0) -
+					0.001
+		) {
+			activePartIndex += 1;
+		}
+		const part = timed[activePartIndex];
+		if (!part) throw new Error("BYOSAN_EVERGREEN_TIMED_PART_MISSING");
+		const segment = spec.segments[part.sourceSegmentIndex];
+		if (!segment) {
+			throw new Error(
+				`BYOSAN_EVERGREEN_SOURCE_SEGMENT_MISSING: ${part.sourceSegmentIndex}`,
+			);
+		}
+		const segmentStart =
+			timed.find(
+				(candidate) => candidate.sourceSegmentIndex === part.sourceSegmentIndex,
+			)?.start ?? part.start;
+		const beatIndex = Math.floor((start - segmentStart) / beatStep);
+		const outputPath = path.join(
+			videoDir,
+			`evergreen-frame-${String(beats.length).padStart(3, "0")}.png`,
+		);
+		const svg = evergreenGraphicSvg(segment, beatIndex);
+		await sharp(Buffer.from(svg)).png().toFile(outputPath);
+		beats.push({
+			path: outputPath,
+			duration: Math.min(beatStep, duration - start),
+		});
+	}
+	const finalBeat = beats.at(-1);
+	if (!finalBeat) throw new Error("BYOSAN_EVERGREEN_VISUAL_BEATS_EMPTY");
+	const listPath = path.join(videoDir, RUN.video_concat_list);
+	const quotePath = (filePath: string): string =>
+		filePath.replaceAll("'", "'\\''");
+	const lines = ["ffconcat version 1.0"];
+	for (const beat of beats) {
+		lines.push(`file '${quotePath(beat.path)}'`);
+		lines.push(`duration ${beat.duration.toFixed(3)}`);
+	}
+	lines.push(`file '${quotePath(finalBeat.path)}'`);
+	await fs.outputFile(listPath, `${lines.join("\n")}\n`);
+	run(
+		"ffmpeg",
+		[
+			"-y",
+			"-hide_banner",
+			"-loglevel",
+			"error",
+			"-f",
+			"concat",
+			"-safe",
+			"0",
+			"-i",
+			listPath,
+			"-vf",
+			`fps=30,format=${F.video.pixel_format}`,
+			"-r",
+			"30",
+			"-an",
+			...videoEncoderArgs(),
+			"-profile:v",
+			F.video.h264_profile,
+			"-g",
+			String(F.video.gop),
+			"-bf",
+			String(F.video.b_frames),
+			"-pix_fmt",
+			F.video.pixel_format,
+			...colorArgs(),
+			"-t",
+			duration.toFixed(3),
+			visualPath,
+		],
+		"Byosan evergreen structural render",
+	);
+	console.log(
+		`[byosan-stage] stage=evergreen_visual_generation elapsed_s=${((performance.now() - started) / 1000).toFixed(2)} beats=${beats.length}`,
+	);
 }
 
 function captionChunks(text: string): string[] {
@@ -325,8 +424,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Tsumugi,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.colors.accent_secondary)},${assColor(DESIGN.colors.accent_secondary)},${styleTail}
-Style: Zundamon,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.colors.success)},${assColor(DESIGN.colors.success)},${styleTail}
+Style: Byosan,${CONFIG.global_style.font_name},${style.font_size},${assColor(DESIGN.landscape.subtitle.color)},&H000000FF,${assColor(DESIGN.colors.accent_primary)},${assColor(DESIGN.colors.accent_primary)},${styleTail}
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -348,7 +446,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 			usableStart + usableDuration,
 			F.captions.min_cue_seconds,
 		);
-		const styleName = segment.speaker === "ずんだもん" ? "Zundamon" : "Tsumugi";
+		const styleName = "Byosan";
 		chunks.forEach((chunk, i) => {
 			const span = spans[i];
 			if (!span) throw new Error(`BYOSAN_CUE_MISSING: ${segment.index}`);
@@ -909,10 +1007,7 @@ async function main(): Promise<void> {
 		const stem = `${String(index).padStart(3, "0")}-${key}`;
 		const audioPath = path.join(audioDir, `${stem}.wav`);
 		const speakerId = VOICEVOX.speakers[segment.speaker];
-		const voice = capVoiceControls(
-			F.tts.voice_presets[segment.emotion],
-			F.tts.speaker_caps[segment.speaker],
-		);
+		const voice = F.tts.voice_controls;
 		if (!(await fs.pathExists(audioPath))) {
 			console.log(
 				`[TTS ${index + 1}/${speechParts.length}] ${segment.speaker} ${segment.emotion}`,
@@ -937,6 +1032,24 @@ async function main(): Promise<void> {
 			voice,
 		});
 		cursor += duration;
+	}
+	if (spec.production?.format === "evergreen") {
+		if (
+			spec.segments.length < spec.production.minSegments ||
+			spec.segments.length > spec.production.maxSegments
+		) {
+			throw new Error(
+				`BYOSAN_EVERGREEN_SEGMENT_COUNT: ${spec.segments.length} outside ${spec.production.minSegments}-${spec.production.maxSegments}`,
+			);
+		}
+		if (
+			cursor < F.evergreen.min_duration_seconds ||
+			cursor > F.evergreen.max_duration_seconds
+		) {
+			throw new Error(
+				`BYOSAN_EVERGREEN_DURATION_SECONDS: ${cursor.toFixed(2)} outside ${F.evergreen.min_duration_seconds}-${F.evergreen.max_duration_seconds}`,
+			);
+		}
 	}
 	console.log(
 		`[byosan-stage] stage=tts_synthesis elapsed_s=${((performance.now() - ttsStarted) / 1000).toFixed(2)} chunks=${timed.length}`,
@@ -969,132 +1082,143 @@ async function main(): Promise<void> {
 	const visualPath = path.join(videoDir, RUN.visual_master);
 	const narrationPath = path.join(audioDir, FILENAMES.audio_full);
 	concatNarration(timed, narrationPath, runDir);
-	const pivotIndex = (() => {
-		const firstReveal = spec.segments.findIndex(
-			(segment) => segment.emotion === "reveal" || segment.emotion === "shock",
+	if (spec.production?.format === "evergreen") {
+		await renderEvergreenVisualMaster(
+			spec,
+			timed,
+			videoDir,
+			cursor,
+			visualPath,
 		);
-		return firstReveal >= 0
-			? firstReveal
-			: Math.floor(spec.segments.length / 2);
-	})();
-	const lastPart = timed[timed.length - 1];
-	if (!lastPart) throw new Error("BYOSAN_JIZURA_TIMELINE_EMPTY");
-	const finalCueStart = Math.max(lastPart.start, cursor - 3.5);
-	const jizuraCues: Array<{
-		start: number;
-		duration: number;
-		headline: string;
-		stats: FeatureSegment["stats"];
-		cue: string;
-		source_index: number;
-		part_index: number;
-		part_count: number;
-		pivot: boolean;
-		beat_index: number;
-	}> = [];
-	const beatStep = 2.8;
-	let activePartIndex = 0;
-	let currentChunkIndex = -1;
-	let chunkBeatIndex = 0;
-	let pivotCueAdded = false;
-	for (let start = 0; start < finalCueStart; start += beatStep) {
-		while (
-			activePartIndex < timed.length - 1 &&
-			start >=
-				(timed[activePartIndex]?.start ?? 0) +
-					(timed[activePartIndex]?.duration ?? 0) -
-					0.001
-		) {
-			activePartIndex += 1;
-		}
-		const part = timed[activePartIndex];
-		if (!part) throw new Error("BYOSAN_JIZURA_TIMED_PART_MISSING");
-		const source = spec.segments[part.sourceSegmentIndex];
-		if (!source) {
-			throw new Error(
-				`BYOSAN_JIZURA_SOURCE_MISSING: segment ${part.sourceSegmentIndex}`,
+	} else {
+		const pivotIndex = (() => {
+			const firstReveal = spec.segments.findIndex(
+				(segment) =>
+					segment.emotion === "reveal" || segment.emotion === "shock",
 			);
+			return firstReveal >= 0
+				? firstReveal
+				: Math.floor(spec.segments.length / 2);
+		})();
+		const lastPart = timed[timed.length - 1];
+		if (!lastPart) throw new Error("BYOSAN_JIZURA_TIMELINE_EMPTY");
+		const finalCueStart = Math.max(lastPart.start, cursor - 3.5);
+		const jizuraCues: Array<{
+			start: number;
+			duration: number;
+			headline: string;
+			stats: FeatureSegment["stats"];
+			cue: string;
+			source_index: number;
+			part_index: number;
+			part_count: number;
+			pivot: boolean;
+			beat_index: number;
+		}> = [];
+		const beatStep = 2.8;
+		let activePartIndex = 0;
+		let currentChunkIndex = -1;
+		let chunkBeatIndex = 0;
+		let pivotCueAdded = false;
+		for (let start = 0; start < finalCueStart; start += beatStep) {
+			while (
+				activePartIndex < timed.length - 1 &&
+				start >=
+					(timed[activePartIndex]?.start ?? 0) +
+						(timed[activePartIndex]?.duration ?? 0) -
+						0.001
+			) {
+				activePartIndex += 1;
+			}
+			const part = timed[activePartIndex];
+			if (!part) throw new Error("BYOSAN_JIZURA_TIMED_PART_MISSING");
+			const source = spec.segments[part.sourceSegmentIndex];
+			if (!source) {
+				throw new Error(
+					`BYOSAN_JIZURA_SOURCE_MISSING: segment ${part.sourceSegmentIndex}`,
+				);
+			}
+			if (currentChunkIndex !== part.index) {
+				currentChunkIndex = part.index;
+				chunkBeatIndex = 0;
+			}
+			const stat = source.stats[part.partIndex - 1];
+			const primaryCue =
+				part.partIndex === 0
+					? Array.from(source.headline).length <= 12 ||
+						part.sourceSegmentIndex === pivotIndex
+						? source.headline
+						: source.section
+					: stat && Array.from(stat.value).length <= 12
+						? stat.value
+						: source.section;
+			const variants = Array.from(
+				new Set(
+					[
+						primaryCue,
+						source.section,
+						source.headline,
+						source.subheadline,
+						...source.stats.map((item) => item.value),
+					].filter((value) => Array.from(value).length <= 12),
+				),
+			);
+			const pivot =
+				!pivotCueAdded &&
+				part.sourceSegmentIndex === pivotIndex &&
+				part.partIndex === 0;
+			jizuraCues.push({
+				start,
+				duration: Math.min(beatStep, finalCueStart - start),
+				headline: source.headline,
+				stats: source.stats,
+				cue: variants[chunkBeatIndex % variants.length] ?? source.section,
+				source_index: part.sourceSegmentIndex,
+				part_index: part.partIndex,
+				part_count: timed.filter(
+					(item) => item.sourceSegmentIndex === part.sourceSegmentIndex,
+				).length,
+				pivot,
+				beat_index: jizuraCues.length,
+			});
+			if (pivot) pivotCueAdded = true;
+			chunkBeatIndex += 1;
 		}
-		if (currentChunkIndex !== part.index) {
-			currentChunkIndex = part.index;
-			chunkBeatIndex = 0;
-		}
-		const stat = source.stats[part.partIndex - 1];
-		const primaryCue =
-			part.partIndex === 0
-				? Array.from(source.headline).length <= 12 ||
-					part.sourceSegmentIndex === pivotIndex
-					? source.headline
-					: source.section
-				: stat && Array.from(stat.value).length <= 12
-					? stat.value
-					: source.section;
-		const variants = Array.from(
-			new Set(
-				[
-					primaryCue,
-					source.section,
-					source.headline,
-					source.subheadline,
-					...source.stats.map((item) => item.value),
-				].filter((value) => Array.from(value).length <= 12),
-			),
-		);
-		const pivot =
-			!pivotCueAdded &&
-			part.sourceSegmentIndex === pivotIndex &&
-			part.partIndex === 0;
 		jizuraCues.push({
-			start,
-			duration: Math.min(beatStep, finalCueStart - start),
-			headline: source.headline,
-			stats: source.stats,
-			cue: variants[chunkBeatIndex % variants.length] ?? source.section,
-			source_index: part.sourceSegmentIndex,
-			part_index: part.partIndex,
-			part_count: timed.filter(
-				(item) => item.sourceSegmentIndex === part.sourceSegmentIndex,
-			).length,
-			pivot,
+			start: finalCueStart,
+			duration: cursor - finalCueStart,
+			headline: "予測・実績・見通しを分ける",
+			stats: [],
+			cue: "予測・実績・見通し",
+			source_index: spec.segments.length,
+			part_index: 0,
+			part_count: 1,
+			pivot: false,
 			beat_index: jizuraCues.length,
 		});
-		if (pivot) pivotCueAdded = true;
-		chunkBeatIndex += 1;
+		const timelinePivotIndex = jizuraCues.findIndex((segment) => segment.pivot);
+		if (timelinePivotIndex < 0) {
+			throw new Error("BYOSAN_JIZURA_PIVOT_CUE_MISSING");
+		}
+		const timelinePath = path.join(videoDir, "jizura_timeline.json");
+		await fs.outputJson(
+			timelinePath,
+			{
+				run_id: spec.runId,
+				title: spec.title,
+				visual_title: spec.segments[0]?.section ?? "秒算マネー",
+				seed: Number.parseInt(
+					createHash("sha256").update(spec.runId).digest("hex").slice(0, 8),
+					16,
+				),
+				pivot_index: timelinePivotIndex,
+				duration: cursor,
+				segments: jizuraCues,
+			},
+			{ spaces: 2 },
+		);
+		renderVisualMaster(timelinePath, narrationPath, visualPath);
 	}
-	jizuraCues.push({
-		start: finalCueStart,
-		duration: cursor - finalCueStart,
-		headline: "予測・実績・見通しを分ける",
-		stats: [],
-		cue: "予測・実績・見通し",
-		source_index: spec.segments.length,
-		part_index: 0,
-		part_count: 1,
-		pivot: false,
-		beat_index: jizuraCues.length,
-	});
-	const timelinePivotIndex = jizuraCues.findIndex((segment) => segment.pivot);
-	if (timelinePivotIndex < 0) {
-		throw new Error("BYOSAN_JIZURA_PIVOT_CUE_MISSING");
-	}
-	const timelinePath = path.join(videoDir, "jizura_timeline.json");
-	await fs.outputJson(
-		timelinePath,
-		{
-			run_id: spec.runId,
-			title: spec.title,
-			visual_title: spec.segments[0]?.section ?? "秒算マネー",
-			seed: Number.parseInt(
-				createHash("sha256").update(spec.runId).digest("hex").slice(0, 8),
-				16,
-			),
-			pivot_index: timelinePivotIndex,
-			duration: cursor,
-			segments: jizuraCues,
-		},
-		{ spaces: 2 },
-	);
-	renderVisualMaster(timelinePath, narrationPath, visualPath);
 	const finalPath = path.join(videoDir, RUN.publish_video);
 	const muxStarted = performance.now();
 	composeFinal(visualPath, narrationPath, subtitlePath, cursor, finalPath);

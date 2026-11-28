@@ -32,8 +32,15 @@ export function fixtureDraft(): Json {
 		id: `claim_${index}`,
 	}));
 	const { schemaVersion: _a, runId: _b, asOf: _c, ...script } = reference;
+	const segments = Array.isArray(script.segments)
+		? script.segments.map((segment) => ({
+				...(segment as Record<string, unknown>),
+				speaker: "青山龍星",
+			}))
+		: script.segments;
 	return {
 		...script,
+		segments,
 		claims,
 		title: "S&P500利益47.4%増の正体｜評価益を除くと何が残るか | 秒算マネー",
 		packaging: {

@@ -68,6 +68,7 @@ const ExperienceIdentityMarkerSchema = z.enum([
 	"existing_character_asset",
 	"palette.background",
 	"palette.accent_primary",
+	"palette.accent_secondary",
 ]);
 
 const ExperienceIdentityRecognitionSchema = z

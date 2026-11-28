@@ -624,7 +624,7 @@ export function generateFeatureSpec(
 			`採用した物語の設計: ${JSON.stringify(storySelection)}`,
 			"titleと物語の中心は選定済みのangle・hook・answerに合わせ、別の数字や逆説へすり替えません。最初の台詞はhookの逆説と答えから始め、2〜4回の問いと即答で数字・具体例を積み、比喩で仕組みを見せてearly_clueをpayoffに回収します。出典名はsourcesに置き、本文は発表主体と事実を自然な文で言い切ります。推計と実績と見通しは説明書きにせず、話の主語として正確に表します。",
 			"注釈、免責、言い訳、限界、予防線、根拠の列挙はsegments、title、descriptionのどこにも書きません。「だけではありません」「そのものではない」のような否定形の補足を使わず、比較と仕組みを短く述べます。事実の差を示す自然な対比は使えます。「ことがあります」のような曖昧な可能表現や、主体のない受け身の予測を使わず、日付や数値を示した観測事実を直接述べます。descriptionLeadは発見を伝える1〜2文、descriptionBulletsは短い要点を最大3件にします。出典リンクと章は後段で追加されます。",
-			"語りは春日部つむぎ一人。冒頭の挨拶や前置き、先生口調、定型のまとめ、同じ数字の繰り返し、問いを残したままの締めを削ります。",
+			"語りは秒算マネーの単独ナレーター、青山龍星の声で統一します。鋭く権威があり、落ち着いた緊張感で核心を明晰に話します。ニュース読みの硬さ、相槌、口癖、空疎な橋渡し、説明の繰り返しを削ります。",
 			"公開する文言（segments[].text/headline/subheadline、descriptionLead/descriptionBullets、stats.label/detail）から、出典名、記事・資料・レポートへの言及、制作メモ、注釈、免責、言い訳を除きます。出典名はsourcesにだけ記録します。stats.detailも観測した事実を直接示し、「記事が『今週』とする週」のような出典の書きぶりを説明しません。本文は記事本文と入力済み根拠から作り、数値、対象、期間、定義、実績・推計・見通しを入力記事に合わせます。記事が支えない因果、数字、家庭への換算は加えません。explanation.figuresは数値で確認できる事実だけを記録し、valueの数字は引用文に必ず含めます。数値を含まない史実はclaimsとsegmentsで説明します。",
 			articles,
 		].join("\n\n"),
@@ -781,12 +781,10 @@ function recordNonBlockingAuditError(
 }
 
 async function dryRun(): Promise<void> {
-	const referencePath = path.join(
-		ROOT,
-		"config",
-		"productions",
-		"sp500_anthropic_2026q2.json",
-	);
+	const config = loadConfig("byosan_money") as unknown as {
+		feature_production: { default_spec: string };
+	};
+	const referencePath = path.join(ROOT, config.feature_production.default_spec);
 	const spec = parseAndAuditByosanFeatureSpec(await fs.readJson(referencePath));
 	console.log(
 		JSON.stringify(

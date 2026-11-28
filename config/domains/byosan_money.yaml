@@ -40,15 +40,9 @@ steps:
     context_overlap_lines: 3
     default_tags: ["Finance", "Economy"]
     speakers:
-      analyst:
-        name: "春日部つむぎ"
-        aliases: ["春日部つむぎ", "かすかべ つむぎ", "つむぎ"]
-      reporter:
-        name: "ずんだもん"
-        aliases: ["ずんだもん"]
-      narrator:
-        name: "玄野武宏"
-        aliases: ["玄野武宏", "ナレーション", "ナレーター"]
+      host:
+        name: "青山龍星"
+        aliases: ["青山龍星", "秒算マネー", "ナレーター"]
 
   audio:
     sample_rate: 24000
@@ -63,9 +57,7 @@ steps:
     background_color: "#F7F5EF"
     intro_seconds: 5
     codec: "h264_nvenc"
-    effects:
-      - {type: "overlay", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.85, offset: {right: 20, bottom: 0}}
-      - {type: "overlay", enabled: true, image_path: "assets/zundamon.webp", anchor: "bottom_left", height_ratio: 0.51, offset: {left: 20, bottom: 0}}
+    effects: []
     subtitles:
       primary_colour: "&HFFFFFF&"
       outline_colour: "&H000000&"
@@ -100,8 +92,7 @@ steps:
       corner_size: 40
     palettes:
       - {background_color: "#F7F5EF", title_color: "#17233F", outline_inner_color: "#7BA7E1", outline_inner_width: 15, outline_outer_color: "#FFFFFF", outline_outer_width: 20, subtitle_color: "#17233F"}
-    overlays:
-      - {name: "character", enabled: true, image_path: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v1.1.1.png", anchor: "bottom_right", height_ratio: 0.95, offset: {right: 0, bottom: 0}}
+    overlays: []
   youtube:
     enabled: true
     max_title_length: 100
@@ -123,7 +114,7 @@ providers:
     voicevox:
       enabled: true
       url: "http://localhost:50121"
-      speakers: {春日部つむぎ: 8, ずんだもん: 1, 玄野: 11, 玄野武宏: 11}
+      speakers: {青山龍星: 13}
       timeout_ms: {query: 30000, synthesis: 60000}
       health_timeout_ms: 5000
 
@@ -306,7 +297,11 @@ source_policy:
     require_life_impact_connection: true
 
 feature_production:
-  default_spec: "config/productions/sp500_anthropic_2026q2.json"
+  default_spec: "config/productions/byosan_evergreen_investment_rules.json"
+  evergreen:
+    min_duration_seconds: 420
+    max_duration_seconds: 600
+    visual_beat_seconds: 6.5
   hero_source_name: "hero_imagegen_source.png"
   brand_label: "秒算マネー"
   yaml_line_width: 110
@@ -356,34 +351,7 @@ feature_production:
       - {from: "Q2", to: "第2四半期"}
       - {from: "%", to: "パーセント"}
       - {from: "$", to: ""}
-    voice_presets:
-      shock: {speedScale: 1.12, pitchScale: 0.025, intonationScale: 1.32, volumeScale: 1.0, prePhonemeLength: 0.08, postPhonemeLength: 0.24, pauseLengthScale: 1.08, outputSamplingRate: 48000}
-      reveal: {speedScale: 1.04, pitchScale: 0.005, intonationScale: 1.22, volumeScale: 1.0, prePhonemeLength: 0.08, postPhonemeLength: 0.3, pauseLengthScale: 1.15, outputSamplingRate: 48000}
-      curious: {speedScale: 1.1, pitchScale: 0.035, intonationScale: 1.28, volumeScale: 0.98, prePhonemeLength: 0.08, postPhonemeLength: 0.22, pauseLengthScale: 1.05, outputSamplingRate: 48000}
-      analytical: {speedScale: 1.06, pitchScale: -0.005, intonationScale: 1.1, volumeScale: 0.98, prePhonemeLength: 0.08, postPhonemeLength: 0.25, pauseLengthScale: 1.04, outputSamplingRate: 48000}
-      caution: {speedScale: 0.99, pitchScale: -0.02, intonationScale: 1.16, volumeScale: 0.98, prePhonemeLength: 0.09, postPhonemeLength: 0.34, pauseLengthScale: 1.2, outputSamplingRate: 48000}
-      confident: {speedScale: 1.08, pitchScale: 0.0, intonationScale: 1.2, volumeScale: 1.0, prePhonemeLength: 0.08, postPhonemeLength: 0.26, pauseLengthScale: 1.05, outputSamplingRate: 48000}
-      warm: {speedScale: 1.02, pitchScale: 0.015, intonationScale: 1.18, volumeScale: 0.98, prePhonemeLength: 0.09, postPhonemeLength: 0.32, pauseLengthScale: 1.12, outputSamplingRate: 48000}
-      relieved: {speedScale: 1.05, pitchScale: 0.02, intonationScale: 1.2, volumeScale: 0.98, prePhonemeLength: 0.08, postPhonemeLength: 0.28, pauseLengthScale: 1.08, outputSamplingRate: 48000}
-      serious: {speedScale: 0.98, pitchScale: -0.025, intonationScale: 1.12, volumeScale: 0.99, prePhonemeLength: 0.09, postPhonemeLength: 0.36, pauseLengthScale: 1.18, outputSamplingRate: 48000}
-      joy: {speedScale: 1.08, pitchScale: 0.025, intonationScale: 1.26, volumeScale: 0.99, prePhonemeLength: 0.08, postPhonemeLength: 0.38, pauseLengthScale: 1.12, outputSamplingRate: 48000}
-    speaker_caps:
-      春日部つむぎ: {}
-      ずんだもん: {pitchScale: 0.0, intonationScale: 1.1}
-  emotion_labels:
-    shock: "驚き"
-    reveal: "核心"
-    curious: "疑問"
-    analytical: "分析"
-    caution: "注意"
-    confident: "確信"
-    warm: "納得"
-    relieved: "理解"
-    serious: "警戒"
-    joy: "次へ"
-  characters:
-    zundamon_image: "assets/zundamon.webp"
-    tsumugi_image: "assets/春日部つむぎ立ち絵公式_v2.0/春日部つむぎ立ち絵公式_v2.0.png"
+    voice_controls: {speedScale: 0.95, pitchScale: -0.02, intonationScale: 1.08, volumeScale: 1.0, prePhonemeLength: 0.08, postPhonemeLength: 0.3, pauseLengthScale: 1.15, outputSamplingRate: 48000}
   image:
     png_compression_level: 8
     hero_channels: 3
@@ -503,7 +471,7 @@ feature_draft:
   system: |
     秒算マネーの一本を、記事の順番ではなく一つの発見から組み立てます。視聴者が見出しを見て抱く「なぜ？」を冒頭の一文に置き、すぐ答えを出します。要点、具体的な数字や会社名を重ね、数字が動く仕組みを日常の光景や空間の比喩に置き換えます。冒頭で置いた数字や手がかりは後半で意味を反転させ、最後は構造を一言で残すか次に見る具体的な指標を一つ示して閉じます。
 
-    語りは春日部つむぎ一人を基本にします。出典名はsourcesに置き、台詞や画面で記事・資料・執筆者を紹介しません。記事掲載時点や記事掲載直前などのメタ表現を使わず、期間や出来事を直接示します。挨拶、ニュースの読み上げ、制作メモ、先生口調、問いを置いて答えない締め、定型の説明句、同じ事実の言い換えを入れません。最初の15秒に核心を置き、説明のためだけの段落や橋渡しを切ります。構成は題材の緊張に合わせ、クイズや章数を固定しません。
+    語りは秒算マネーの単独ナレーター、青山龍星の声で統一します。鋭く、権威があり、落ち着いた緊張感で核心を明晰に話します。ニュース読み上げの硬さや定型句、相槌、口癖、空疎な橋渡しを避け、短い自然な文で事実と仕組みを伝えます。出典名はsourcesに置き、台詞や画面で記事・資料・執筆者を紹介しません。記事掲載時点や記事掲載直前などのメタ表現を使わず、期間や出来事を直接示します。挨拶、制作メモ、先生口調、問いを置いて答えない締め、定型の説明句、同じ事実の言い換えを入れません。最初の15秒に核心を置き、説明のためだけの段落や橋渡しを切ります。構成は題材の緊張に合わせ、クイズや章数を毎回固定しません。
 
     セリフ、見出し、タイトル、概要欄に、注釈、免責、予防線、言い訳、限界の列挙、メタ説明を書きません。「保証」「限界」「予測であり実績ではありません」「保証するものではありません」「とは言えません」「断定できません」「一概に言えない」「記事が示していない」「確認できない」「根拠と限界」などを出しません。比較は肯定文で二つの結果を並べ、否定形で例外や限界を説明しません。出典はsourcesとclaimsに記録し、語りでは確認できた出来事を主語と動詞で言い切ります。推計や見通しは主語に発表主体を置いて内容として語り、別の情報同士を因果で結びません。
 

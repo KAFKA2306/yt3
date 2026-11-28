@@ -44,6 +44,7 @@ export function matchFontFamily(family: string): FontMatch {
 	return parseFcMatch(
 		execFileSync("fc-match", ["-f", "%{family[0]}\t%{file}", family], {
 			encoding: "utf8",
+			env: { ...process.env, ...byosanFontconfigEnv() },
 		}),
 	);
 }

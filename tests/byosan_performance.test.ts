@@ -29,7 +29,7 @@ describe("byosan performance summary", () => {
 			"INSERT INTO youtube_analytics_reach_daily VALUES (?, ?, ?, ?)",
 		);
 		const spec = fs.readJsonSync(
-			"config/productions/sp500_anthropic_2026q2.json",
+			"config/productions/byosan_evergreen_investment_rules.json",
 		);
 		for (const [index, retention] of [40, null, 0].entries()) {
 			const dir = path.join(root, "runs/byosan_money", `run-${index}`);

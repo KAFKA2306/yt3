@@ -84,7 +84,7 @@ const stat = (label: string, value: string, detail: string) => ({
 
 const segments = [
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "春日部つむぎ",
+		speaker: "青山龍星",
 		emotion: "analytical",
 		section: "月別の推移",
 		headline: "3か月で上がった",
@@ -100,7 +100,7 @@ const segments = [
 		claimIds: ["c1"],
 	}),
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "春日部つむぎ",
+		speaker: "青山龍星",
 		emotion: "reveal",
 		section: "品目の値上がり",
 		headline: "タブレットは＋28.7％",
@@ -112,7 +112,7 @@ const segments = [
 		claimIds: ["c1"],
 	}),
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "春日部つむぎ",
+		speaker: "青山龍星",
 		emotion: "curious",
 		section: "比較",
 		headline: "利益と売上を比べる",
@@ -127,7 +127,7 @@ const segments = [
 		claimIds: ["c1"],
 	}),
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "春日部つむぎ",
+		speaker: "青山龍星",
 		emotion: "curious",
 		section: "問い",
 		headline: "次は何を見る？",
@@ -139,7 +139,7 @@ const segments = [
 		claimIds: ["c1"],
 	}),
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "春日部つむぎ",
+		speaker: "青山龍星",
 		emotion: "analytical",
 		section: "規模",
 		headline: "売上と成長を並べる",
@@ -151,7 +151,7 @@ const segments = [
 		claimIds: ["c1"],
 	}),
 	ByosanFeatureSegmentSchema.parse({
-		speaker: "春日部つむぎ",
+		speaker: "青山龍星",
 		emotion: "caution",
 		section: "見通し",
 		headline: "推計の比較",

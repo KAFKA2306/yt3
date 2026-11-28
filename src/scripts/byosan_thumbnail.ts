@@ -35,10 +35,7 @@ const jpgPath = path.join(outDir, "thumbnail.jpg");
 await buildByosanThumbnailFiles({
 	topic,
 	artPath: path.join(outDir, "art.png"),
-	refs: [
-		path.join(ROOT, F.characters.tsumugi_image),
-		path.join(ROOT, F.characters.zundamon_image),
-	],
+	refs: [],
 	fullPath: path.join(outDir, "full.png"),
 	pngPath: path.join(outDir, "thumbnail.png"),
 	jpgPath,
