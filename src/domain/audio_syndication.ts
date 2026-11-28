@@ -641,7 +641,13 @@ export async function syncRunIsolated(
 			else if (
 				/^[A-Za-z0-9._-]+$/u.test(runId) &&
 				fs.existsSync(
-					path.join(ROOT, "runs", PRODUCTS[product].bucket, runId, "state.json"),
+					path.join(
+						ROOT,
+						"runs",
+						PRODUCTS[product].bucket,
+						runId,
+						"state.json",
+					),
 				)
 			) {
 				const runDir = path.join(ROOT, "runs", PRODUCTS[product].bucket, runId);
