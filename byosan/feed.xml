@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<channel>
+  <title>秒算マネー</title>
+  <link>https://kafka2306.github.io/yt3/byosan/</link>
+  <description>秒算マネー official audio feed</description>
+  <language>ja</language>
+  <itunes:author>秒算マネー</itunes:author>
+  <itunes:explicit>false</itunes:explicit>
+  <itunes:image href="https://kafka2306.github.io/yt3/byosan/cover.jpg" />
+  <image><url>https://kafka2306.github.io/yt3/byosan/cover.jpg</url><title>秒算マネー</title><link>https://kafka2306.github.io/yt3/byosan/</link></image>
+  <item>
+    <title>米10月雇用は6.5万人増予測、別の研究所はFRBの25bp利上げを見通す</title>
+    <guid isPermaLink="false">yt3:byosan:2026-11-27-daily-0700</guid>
+    <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-27-daily-0700.m4a" length="2159461" type="audio/mp4" />
+    <itunes:duration>0:02:13</itunes:duration>
+    <description>米10月の非農業部門雇用者数は、FactSet調査で中央値6万5,000人増の予測。第一ライフ資産運用経済研究所は、根強いインフレを理由にFRBの25bp追加利上げを見通しています。二つの情報を混同せず、予測・実績・見通しの違いを整理します。
+
+この動画の要点
+・FactSetの予測中央値は6万5,000人増。24件の予測の範囲は5万～12万5,000人です。
+・9月の雇用者数は2万9,000人増で、事前予測の中央値9万4,000人を下回りました。
+・第一ライフ資産運用経済研究所は、2026年11月PMIについて実態以上に強い可能性を指摘し、インフレ粘着を受けた25bpの追加利上げを見通しています。
+・雇用者数の予測だけでFRBの決定やインフレの動きを説明できるわけではありません。
+
+根拠と限界
+・確認済みの数値: FactSetによる2026年10月の米国非農業部門雇用者数の予測中央値は6万5,000人増。（出典: FactSet Insight — Total Nonfarm Payrolls for October 2026 Are Projected to Rise By 65,000） 限界: 実績値ではなく、FactSetが集めた予測の中央値。 この予測だけでは、雇用実績やFRBの政策決定は確定しない。
+・確認済みの数値: 6万5,000人という中央値は24件の予測に基づき、予測範囲は5万～12万5,000人。（出典: FactSet Insight — Total Nonfarm Payrolls for October 2026 Are Projected to Rise By 65,000） 限界: 予測のばらつきは7万5,000人。 個々の予測値や実績の確率分布を示すものではない。
+・確認済みの数値: FactSet記事によると、2026年9月の非農業部門雇用者数は2万9,000人増で、予測中央値の9万4,000人増を下回った。（出典: FactSet Insight — Total Nonfarm Payrolls for October 2026 Are Projected to Rise By 65,000） 限界: 同記事の記述に基づく。過去の実績値は改定後の数値を用いるとの注記がある。 この1か月の結果だけから雇用の長期傾向やFRBの次の判断を断定できない。
+・確認済みの数値: FactSetによる2026年10月の失業率予測中央値は4.2%。（出典: FactSet Insight — Total Nonfarm Payrolls for October 2026 Are Projected to Rise By 65,000） 限界: 実績ではなく、25件の予測の中央値。 記事抜粋にあるのは予測であり、10月の実績値は示されていない。
+・確認済みの数値: 第一ライフ資産運用経済研究所のレポート見出しは、根強いインフレ粘着を受け、FRBが25bpの追加利上げを行うとの見通しを示している。（出典: 第一ライフ資産運用経済研究所 — 米国：26年11月PMIは実態以上に強い可能性） 限界: 提供された記事本文はページ冒頭の抜粋で、PMIの数値や利上げ見通しの詳しい根拠は含まれていない。これは研究所の見通しであり、FRBの決定ではない。 FactSetの雇用予測が追加利上げを引き起こす、またはその根拠になるとは記事から確認できない。
+
+チャプター
+0:00 米10月雇用は6.5万人増予測
+0:14 予測は5万～12.5万人
+0:35 9月は予測を下回った
+0:54 25bp利上げは研究所の見通し
+1:27 雇用予測だけでは決まらない
+1:48 予測、実績、見通しを分ける
+
+一次資料
+FactSet Insight — Total Nonfarm Payrolls for October 2026 Are Projected to Rise By 65,000
+https://insight.factset.com/total-nonfarm-payrolls-for-october-2026-are-projected-to-rise-by-65000
+
+第一ライフ資産運用経済研究所 — 米国：26年11月PMIは実態以上に強い可能性
+https://www.dlri.co.jp/report/macro/678611.html
+
+※本動画は情報提供を目的としたもので、特定の金融商品や投資行動を推奨するものではありません。数値は引用元に記載された対象・期間・定義に基づき、予測と実績、分析機関の見通しを区別しています。</description>
+    <pubDate>Fri, 27 Nov 2026 12:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>ドラッケンミラーの「18か月先」｜集中投資を支えるリスク管理</title>
+    <guid isPermaLink="false">yt3:byosan:2026-11-26-daily-interactive-druckenmiller</guid>
+    <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-26-daily-interactive-druckenmiller.m4a" length="6906121" type="audio/mp4" />
+    <itunes:duration>0:07:08</itunes:duration>
+    <description>ドラッケンミラーの講演とインタビューを手がかりに、集中投資の裏側にある時間軸、判断の見直し、分散の考え方を一人語りで読み解きます。
+
+この動画の要点
+・2015年の講演で紹介された「18か月先を見る」という判断の時間軸。
+・2021年のインタビューで語られた、複数の資産クラスを見渡す姿勢と考えを改める姿勢。
+・SECの投資家向け資料を照らし合わせ、個人投資家が手法をそのまま真似できない理由を整理します。
+
+チャプター
+0:00 集中投資の核心
+0:19 問いを入れ替える
+0:36 18か月先を見る
+0:55 予言ではない
+1:17 時間軸が変えるもの
+1:35 株だけを見ない
+1:57 相対で考える
+2:19 間違いを認める
+2:41 見直しの条件
+3:02 ひとつのかご
+3:22 本人の考え方
+3:41 数字を真似しない
+4:02 分散の基本
+4:22 目的から配分へ
+4:43 少数株だけでは
+5:04 目安を規則にしない
+5:24 二つを両立する
+5:44 損失の余裕を測る
+6:05 見直しを予定にする
+6:25 判断カード
+6:45 集中の条件
+
+一次資料
+Stanley Druckenmiller Lost Tree Club speech transcript
+https://covestreetcapital.com/wp-content/uploads/2015/03/Druckenmiller-_Speech.pdf
+
+Goldman Sachs Talks at GS: Stanley Druckenmiller
+https://www.goldmansachs.com/insights/talks-at-gs/stanley-druckenmiller.html
+
+SEC Investor.gov: Beginners’ Guide to Asset Allocation, Diversification, and Rebalancing
+https://www.sec.gov/investor/pubs/assetallocation.htm</description>
+    <pubDate>Thu, 26 Nov 2026 12:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>AI需要がガラス繊維布を逼迫、LED用4層PCBコストは10〜15%上昇</title>
+    <guid isPermaLink="false">yt3:byosan:2026-11-25-daily-0700</guid>
+    <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-25-daily-0700.m4a" length="3297586" type="audio/mp4" />
+    <itunes:duration>0:03:24</itunes:duration>
+    <description>GPUの先にある基板材料にも、AI需要の影響が及んでいます。TrendForceの記事をもとに、電子グレードのガラス繊維布の供給逼迫がPCB価格とLEDディスプレイのコストにどうつながったのかを、対象と期間を確認しながら解説します。
+
+この動画の要点
+・4Q26に4層PCBコストが前期比10〜15%上昇したとされる背景
+・P1.25製品でCOB・SMD方式のBOMが約2%上昇する一方、MiP方式では約4%低下した対比
+・TrendForceが示す2027年1Qの高級PCBと従来型2層PCBの見通し
+
+根拠と限界
+・確認済みの数値: TrendForceによると、2026年4QはPCBがCOB・SMD・MiP LEDディスプレイの部品の中で最も大きく価格変動し、とりわけ4層PCBコストが前期比10〜15%上昇した。（出典: TrendForce Press Center, AI Demand Squeezes Glass Fiber Cloth Supply and Drives Up PCB Prices, Raising COB/SMD LED Display Costs by 2% QoQ in 4Q26） 限界: TrendForceのLEDディスプレイ関連レポートに基づく記述であり、PCB市場全体の全製品・全用途を示す数字ではない。 記事が示す対象は2026年4QのCOB・SMD・MiP LEDディスプレイに使われる部品と4層PCBコスト。企業別の契約価格や全PCB市場の平均値は示していない。
+・確認済みの数値: P1.25製品を例に、COBおよびSMD LEDディスプレイの総BOMコストは2026年4Qに前期比で約2%上昇した。（出典: TrendForce Press Center, AI Demand Squeezes Glass Fiber Cloth Supply and Drives Up PCB Prices, Raising COB/SMD LED Display Costs by 2% QoQ in 4Q26） 限界: P1.25製品を例とするTrendForceの推計であり、すべての画素ピッチや製品のコスト変化を示すものではない。 記事が示すのはLEDディスプレイ製造のBOMコストの前期比変化。販売価格、利益率、最終需要への影響は記載されていない。
+・確認済みの数値: P1.25 MiP LEDディスプレイの総BOMコストは、LEDパッケージ価格の低下を受け、2026年4Qに前期比で約4%低下したとTrendForceは報告した。（出典: TrendForce Press Center, AI Demand Squeezes Glass Fiber Cloth Supply and Drives Up PCB Prices, Raising COB/SMD LED Display Costs by 2% QoQ in 4Q26） 限界: P1.25製品のMiP方式に関する前期比の記述。MiPのBOM水準は従来型SMD LEDパッケージやMini LEDチップより相対的に高いとも記事は述べている。 記事はMiPのBOM低下を報告しているが、MiP製品の価格、採用数、需要や企業収益を示すものではない。
+・確認済みの数値: TrendForceは、AIコンピューティングや高速基板など高付加価値用途が電子グレードのガラス繊維布の生産能力を多く吸収し、主要供給企業が他材料の配分を絞ったこと、増産には時間がかかることをPCB価格上昇の背景として挙げた。（出典: TrendForce Press Center, AI Demand Squeezes Glass Fiber Cloth Supply and Drives Up PCB Prices, Raising COB/SMD LED Display Costs by 2% QoQ in 4Q26） 限界: TrendForceが記事で示した供給要因の説明。個別メーカーの供給量や各要因の寄与率は記載されていない。 記事はガラス繊維布の需給と配分を価格上昇の背景として説明するが、特定企業の価格決定や値上がり幅の内訳までは示していない。
+・確認済みの数値: TrendForceは2027年1Qについて、高級PCB価格は上昇が続くもののペースは鈍化し、従来型2層PCB価格は横ばいまたは低下の可能性があると予想した。（出典: TrendForce Press Center, AI Demand Squeezes Glass Fiber Cloth Supply and Drives Up PCB Prices, Raising COB/SMD LED Display </description>
+    <pubDate>Wed, 25 Nov 2026 12:00:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>
