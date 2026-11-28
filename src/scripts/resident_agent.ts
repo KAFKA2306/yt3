@@ -457,6 +457,9 @@ function runTick(options?: {
 	});
 
 	console.log(JSON.stringify(result, null, 2));
+	if (result.work?.status === "failed" || result.work?.status === "aborted") {
+		process.exitCode = 1;
+	}
 }
 
 function showStatus() {

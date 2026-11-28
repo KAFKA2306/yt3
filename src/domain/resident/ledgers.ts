@@ -467,7 +467,7 @@ export function executeWorkCycle(
 			workLedger.items.push(work);
 		} else if (
 			work.trigger_id !== input.triggerId &&
-			(work.status === "verified" || work.status === "waiting_human")
+			["verified", "waiting_human", "failed", "aborted"].includes(work.status)
 		) {
 			// New scheduled cycle for a recurring work_id: refresh per-cycle steps while Question Ledger preserves deduplicated open questions
 			work.trigger_id = input.triggerId;
@@ -481,16 +481,18 @@ export function executeWorkCycle(
 
 		if (work.attempts_used >= work.max_attempts) {
 			work.status = "aborted";
-			work.last_error = `Reached max_attempts (${work.max_attempts})`;
 			work.updated_at = new Date().toISOString();
 			saveWorkLedger(input.paths, workLedger);
+			const failureDetail = work.last_error
+				? `; last_error=${work.last_error}`
+				: "";
 			appendResidentEvent(input.paths, {
 				event: "aborted",
 				work_id: work.work_id,
 				trigger_id: work.trigger_id,
 				attempt_id: attemptId,
 				status: "aborted",
-				detail: work.last_error,
+				detail: `Reached max_attempts (${work.max_attempts})${failureDetail}`,
 			});
 			return {
 				skipped_due_to_lock: false,
@@ -618,7 +620,7 @@ export function executeWorkCycle(
 			trigger_id: work.trigger_id,
 			attempt_id: attemptId,
 			status: work.status,
-			detail: `completed=${work.completed_steps.length}/${input.steps.length}, next_step=${work.next_step ?? "none"}, open_questions=${questionLedger.questions.filter((q) => q.status === "open").length}`,
+			detail: `completed=${work.completed_steps.length}/${input.steps.length}, next_step=${work.next_step ?? "none"}, open_questions=${questionLedger.questions.filter((q) => q.status === "open").length}${work.last_error ? `, last_error=${work.last_error}` : ""}`,
 		});
 
 		return {

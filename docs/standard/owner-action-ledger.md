@@ -12,7 +12,7 @@ aliases:
   - "owner-action-ledger"
 generated:
   by: "antigravity/gemini-4-neon-high"
-  at: "2026-11-20T00:57:00Z"
+  at: "2026-11-28T04:35:00Z"
 ---
 
 # Owner Action Ledger（ユーザ操作必須台帳）
@@ -28,7 +28,6 @@ generated:
 
 | Action ID | Linked Question ID | 対象 (`target`) | 種別 | 状態 | 必要なユーザ操作 | 停止中の工程 | 再開・解消条件 | 確認コマンド |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `OA-001` | `q-gcp-659942893881-enable-youtube-analytics-api-380ae07d` | `gcp:659942893881` | 外部API権限 | `open` | Google Cloud Console でプロジェクト `659942893881` の **YouTube Analytics API** (`youtubeanalytics.googleapis.com`) を有効化する | Layer 3 実績データ取得（`verify_youtube_analytics_api_live_data`） | 有効化後 `task analytics:refresh` が成功し、`db/evolution.db` の `youtube_analytics` に 1 件以上入ると自動解消 | `task analytics:refresh && task analytics:build` |
 | `OA-003` | `manual:l2-judge-calibration` | `yt3:benchmark-l2` | 人手校正 | `open` | 新方針で生成されたランが各チャンネル 3〜5 本たまった段階で実視聴・実聴取し、良例／悪例ラベルを与えて Layer 2 採点（`task bench:judge`）の一致率を校正する | Layer 2 採点の校正ステータス（現在 `UNCALIBRATED`）および音声・歌唱の知覚品質（`UNVERIFIED`） | 校正セットで人手判定とモデル判定の一致率を記録し、`benchmark-standard.md` へ反映 | `task bench:all -- --limit=5 --with-lexicon` |
 | `OA-004` | `manual:okf-human-verified` | `docs:okf-bundle` | 人手承認 | `open` | [docs/index.md](../index.md) 配下の OKF v0.3 知識文書（16 概念）を確認し、確定した文書へ `verified: [{ by: "human:<id>", at: "<ISO8601>" }]` を記録する | OKF 信頼度層（現在すべて `unverified`） | オーナー確認後に該当 Markdown の `verified` を更新 | `task resident:status` |
 
@@ -36,6 +35,7 @@ generated:
 
 | Action ID | 対象 | 最終状態 | 完了日 | 根拠・確認結果 |
 | --- | --- | --- | --- | --- |
+| `OA-001` | `gcp:659942893881` | `obsolete` | 2026-11-21 | Resident question ledger resolved the linked question after `youtube_analytics` contained 304 measured rows; no API activation is needed for the resident check. |
 | `OA-002` | `systemd:yt3-discord.service` | `obsolete` | 2026-11-20 | 日次 Discord 通知は `.env` の `DISCORD_WEBHOOK_URL` 経由で稼働しており、スタンドアロン Bot は不要のため自動解消。 |
 | `OA-005` | `cli:claude` | `obsolete` | 2026-11-20 | 現在 Claude は未使用のため `yt3-env-refresh.timer` を無効化し、監視対象から除外。 |
 

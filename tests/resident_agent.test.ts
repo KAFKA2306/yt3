@@ -235,7 +235,103 @@ describe("Kafstyler resident agent ledgers, resumability, and idempotency", () =
 		expect(executed).toEqual(["prepare", "verify_output", "verify_output"]);
 	});
 
-	it("5. human-blocked step deduplicates 1 question across retries, completes independent steps, and resumes after answer", () => {
+	it("5. a new scheduled trigger starts a fresh cycle after a failed trigger", () => {
+		const paths = makePaths("new-trigger-after-failure");
+		let shouldFail = true;
+		const steps: ResidentStep[] = [
+			{
+				id: "refresh_snapshot",
+				run: () =>
+					shouldFail
+						? { status: "failed", error: "snapshot write failed" }
+						: { status: "verified", ref: "snapshot://fresh" },
+			},
+		];
+
+		const failed = executeWorkCycle({
+			paths,
+			workId: "work:failed-cycle",
+			target: "yt3:resident",
+			goal: "recover a recurring cycle after a failed trigger",
+			schedule: "hourly",
+			triggerId: "hourly:1",
+			inputVersion: "v1",
+			steps,
+		});
+		expect(failed.work?.status).toBe("failed");
+		expect(failed.work?.last_error).toBe(
+			"refresh_snapshot: snapshot write failed",
+		);
+
+		shouldFail = false;
+		const recovered = executeWorkCycle({
+			paths,
+			workId: "work:failed-cycle",
+			target: "yt3:resident",
+			goal: "recover a recurring cycle after a failed trigger",
+			schedule: "hourly",
+			triggerId: "hourly:2",
+			inputVersion: "v1",
+			steps,
+		});
+		expect(recovered.work?.status).toBe("verified");
+		expect(recovered.work?.trigger_id).toBe("hourly:2");
+		expect(recovered.work?.attempts_used).toBe(1);
+		expect(recovered.work?.completed_steps).toEqual(["refresh_snapshot"]);
+	});
+
+	it("6. a new trigger recovers an aborted cycle without erasing its last failure", () => {
+		const paths = makePaths("new-trigger-after-abort");
+		let shouldFail = true;
+		const steps: ResidentStep[] = [
+			{
+				id: "refresh_snapshot",
+				run: () =>
+					shouldFail
+						? { status: "failed", error: "snapshot permission denied" }
+						: { status: "verified", ref: "snapshot://fresh" },
+			},
+		];
+		const input = {
+			paths,
+			workId: "work:aborted-cycle",
+			target: "yt3:resident",
+			goal: "recover a recurring cycle after an abort",
+			schedule: "hourly",
+			inputVersion: "v1",
+			maxAttempts: 1,
+			steps,
+		};
+
+		const failed = executeWorkCycle({
+			...input,
+			triggerId: "hourly:1",
+		});
+		expect(failed.work?.status).toBe("failed");
+
+		const aborted = executeWorkCycle({
+			...input,
+			triggerId: "hourly:1",
+		});
+		expect(aborted.work?.status).toBe("aborted");
+		expect(aborted.work?.last_error).toBe(
+			"refresh_snapshot: snapshot permission denied",
+		);
+		expect(fs.readFileSync(paths.eventLogPath, "utf8")).toContain(
+			"last_error=refresh_snapshot: snapshot permission denied",
+		);
+
+		shouldFail = false;
+		const recovered = executeWorkCycle({
+			...input,
+			triggerId: "hourly:2",
+		});
+		expect(recovered.work?.status).toBe("verified");
+		expect(recovered.work?.trigger_id).toBe("hourly:2");
+		expect(recovered.work?.attempts_used).toBe(1);
+	});
+
+	it("7. human-blocked step deduplicates 1 question across retries, completes independent steps, and resumes after answer", () => {
 		const paths = makePaths("human-question");
 		let independentRuns = 0;
 
@@ -338,7 +434,7 @@ describe("Kafstyler resident agent ledgers, resumability, and idempotency", () =
 		expect(tick3.open_questions.length).toBe(0);
 	});
 
-	it("6. recurring hourly triggers while waiting_human keep refreshing independent steps without hitting max_attempts", () => {
+	it("8. recurring hourly triggers while waiting_human keep refreshing independent steps without hitting max_attempts", () => {
 		const paths = makePaths("recurring-waiting-human");
 		let independentRuns = 0;
 		const steps: ResidentStep[] = [
@@ -392,7 +488,7 @@ describe("Kafstyler resident agent ledgers, resumability, and idempotency", () =
 		expect(md).toContain("Enable API?");
 	});
 
-	it("7. token-minimizing supervisor skips LLM and dbt when state/anomaly fingerprint is unchanged, and builds compact delta only on new anomalies", () => {
+	it("9. token-minimizing supervisor skips LLM and dbt when state/anomaly fingerprint is unchanged, and builds compact delta only on new anomalies", () => {
 		const detected = detectAnomaliesAndBias({
 			byosanRuns: [
 				{
@@ -464,7 +560,7 @@ describe("Kafstyler resident agent ledgers, resumability, and idempotency", () =
 		expect(prompt).toContain("yawa:bias:no_late_night_care_convergence");
 	});
 
-	it("8. skips actively building runs to eliminate false-positive LLM advisory spend", () => {
+	it("10. skips actively building runs to eliminate false-positive LLM advisory spend", () => {
 		const lockDir = path.join(tmpRoot, "run-with-lock");
 		fs.outputFileSync(path.join(lockDir, ".prepare.lock"), "{}");
 		expect(isRunInProgress(lockDir)).toBe(true);
