@@ -10,6 +10,50 @@
   <itunes:image href="https://kafka2306.github.io/yt3/byosan/cover.jpg" />
   <image><url>https://kafka2306.github.io/yt3/byosan/cover.jpg</url><title>秒算マネー</title><link>https://kafka2306.github.io/yt3/byosan/</link></image>
   <item>
+    <title>相場の底を待つほど買えなくなる｜迷わない2つの投資ルール</title>
+    <guid isPermaLink="false">yt3:byosan:2026-11-28-evergreen-investment-rules-v2</guid>
+    <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-28-evergreen-investment-rules-v2.m4a" length="7015400" type="audio/mp4" />
+    <itunes:duration>0:07:07</itunes:duration>
+    <description>相場の底を待つ判断と、決めた日に買う判断を分ける。いつ買うかを決める二つのルールを、研究データと数字で整理します。
+
+この動画の要点
+・資金が使える日に定額で買うコア積立
+・目標配分から外れた時だけ戻すリバランス
+・毎回の底値判断をなくす仕組み
+
+チャプター
+0:00 買いたいのに買えない
+0:17 二つの命令を分ける
+0:39 底を待つほど迷う
+1:00 待機資金にも比較対象
+1:22 現金より株が上回る
+1:46 一括投資と三か月分割
+2:02 一括が上回った割合
+2:32 完璧な底値買いと即投資
+2:56 完璧な底値との差は15,522ドル
+3:24 ずっと待つと結果が離れる
+3:53 予想より仕組みを守る
+4:12 規律は予測を減らす
+4:32 第1層｜コア積立
+4:54 買付日は価格の予想から独立
+5:15 第2層｜暴落リバランス
+5:36 目標に戻ったら止める
+5:56 追加の判断枠はゼロ
+6:20 買付日と目標比率
+6:45 底を探さず、計画を実行
+
+参照資料
+Vanguard — Cost averaging: Invest now or temporarily hold your cash?
+https://corporate.vanguard.com/content/dam/corp/research/pdf/cost_averaging_invest_now_or_temporarily_hold_your_cash.pdf
+
+Charles Schwab — Does Market Timing Work?
+https://www.schwab.com/learn/story/does-market-timing-work
+
+Vanguard — Principles for Investing Success
+https://corporate.vanguard.com/content/dam/corp/research/pdf/vanguards_principles_for_investing_success.pdf</description>
+    <pubDate>Sat, 28 Nov 2026 12:00:00 GMT</pubDate>
+  </item>
+<item>
     <title>EPYC 7642・4スレッドで54%高速　Qwen3専用OSのメモリ設計</title>
     <guid isPermaLink="false">yt3:byosan:2026-11-28-daily-interactive-llmasm3</guid>
     <enclosure url="https://github.com/KAFKA2306/yt3/releases/download/audio-byosan/byosan-2026-11-28-daily-interactive-llmasm3.m4a" length="1739365" type="audio/mp4" />
