@@ -181,6 +181,10 @@ tasks:
     desc: "Publish to YouTube (PROFILE=byosan|yawa|humanity; required)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/publish_youtube.ts {{.CLI_ARGS}}"]
 
+  audio:sync:
+    desc: "Retry yt3 audio syndication for prepared and published runs (default: latest 3 valid runs per show; --all or --run <show>/<run-id>)"
+    cmds: ["bun src/scripts/sync_audio_feeds.ts {{.CLI_ARGS}}"]
+
   auth:
     desc: "YouTube OAuth (PROFILE=byosan|yawa|humanity; required)"
     cmds: ["YOUTUBE_CHANNEL_PROFILE={{.PROFILE}} bun src/scripts/youtube_oauth.ts {{.CLI_ARGS}}"]

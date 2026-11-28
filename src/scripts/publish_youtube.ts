@@ -1,5 +1,6 @@
 import path from "node:path";
 import { PublishAgent } from "../domain/agents/publish.js";
+import { syncRunIsolated } from "../domain/audio_syndication.js";
 import { type AgentState, AgentStateSchema } from "../domain/types.js";
 import { loadYouTubeProfileEnv } from "../domain/youtube_profiles.js";
 import { AssetStore } from "../io/core.js";
@@ -54,6 +55,13 @@ async function main() {
 			].filter(Boolean),
 			note: `YouTube publication verified for profile ${profile.profileName}; video_id=${results.youtube?.video_id ?? "none"}.`,
 		});
+		const product =
+			profile.profileName === "byosan" ||
+			profile.profileName === "yawa" ||
+			profile.profileName === "humanity"
+				? profile.profileName
+				: undefined;
+		if (product) await syncRunIsolated(product, runId.split("/")[1] ?? runId);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		const failure = classifyFailureMessage(message);

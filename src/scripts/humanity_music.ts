@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { google } from "googleapis";
 import { z } from "zod";
+import { syncRunIsolated } from "../domain/audio_syndication.js";
 import {
 	TitleFitSchema,
 	TitleProposalSchema,
@@ -710,6 +711,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 	fs.outputJsonSync(path.join(dir, "audit", "result.json"), audit, {
 		spaces: 2,
 	});
+	await syncRunIsolated("humanity", path.basename(dir));
 	console.log(
 		JSON.stringify({
 			run_id: runId,

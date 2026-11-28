@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import fs from "fs-extra";
 import { z } from "zod";
+import { syncRunIsolated } from "../domain/audio_syndication.js";
 import {
 	buildCanonicalAudit,
 	hostOf,
@@ -1006,6 +1007,7 @@ async function runByosanDaily(): Promise<void> {
 		recordNonBlockingAuditError(store.runDir, "canonical", error);
 	}
 	markFailureRecovered(store.runDir);
+	await syncRunIsolated("byosan", path.basename(store.runDir));
 	console.log(`PRODUCTION_PASS=${runId}`);
 }
 

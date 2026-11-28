@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import fs from "fs-extra";
+import { syncRunIsolated } from "../domain/audio_syndication.js";
 import {
 	TitleFitSchema,
 	TitleProposalSchema,
@@ -1221,6 +1222,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 			console.log(
 				`[yawa] ${name} is VERIFIED; existing artifacts are left untouched`,
 			);
+			await syncRunIsolated("yawa", name);
 			return;
 		}
 		const device = requestedDevice();
@@ -1281,6 +1283,7 @@ async function prepare(date: string, slot?: string): Promise<void> {
 				...(images.thumbnail ? { thumbnail_path: images.thumbnail } : {}),
 			}),
 		);
+		await syncRunIsolated("yawa", name);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		try {
